@@ -16,11 +16,11 @@ export default function Sections({ t, cards }: Props) {
 
   return (
     <section id="secs" className="secs">
-      <div className="secs__eyebrow">{t.eyebrow}</div>
-      <h2 className="secs__h serif">{t.headline}</h2>
+      <div className="secs__eyebrow" data-reveal>{t.eyebrow}</div>
+      <h2 className="secs__h serif" data-reveal data-delay="1">{t.headline}</h2>
 
       <div className="secs__grid">
-        <a className="card card--feature" href="#">
+        <a className="card card--feature" href="#" data-reveal data-delay="1">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={featureMeta.image} alt="" />
           <div className="overlay" />
@@ -32,8 +32,8 @@ export default function Sections({ t, cards }: Props) {
         </a>
 
         <div className="secs__col-right">
-          {otherCards.map(({ meta, text }) => (
-            <a key={meta.key} className="card" href="#">
+          {otherCards.map(({ meta, text }, i) => (
+            <a key={meta.key} className="card" href="#" data-reveal data-delay={i + 2}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={meta.image} alt="" />
               <div className="overlay" />

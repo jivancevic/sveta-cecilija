@@ -12,7 +12,6 @@
   },
   "hero": {
     "buyTickets": "Buy Tickets",
-    "discover": "Discover",
     "scroll": "scroll ↓"
   },
   "about": {
@@ -28,6 +27,7 @@
     "venueName": "Summer Cinema, Korčula",
     "subAfter": "Showtime 21:00",
     "available": "Available",
+    "fewLeft": "Few tickets left",
     "soldOut": "Sold Out",
     "left": "{count} left",
     "buyTickets": "Buy Tickets →",
@@ -63,12 +63,12 @@
     "cards": [
       {
         "num": "01 / 02",
-        "tagline": "For your group, for one night only",
+        "tagline": "An exclusive performance, just for your group",
         "name": "Private Moreška",
         "blurb": "A full private performance for groups, at the Summer Cinema or Centar za kulturu Korčula.",
         "bullets": [
           "Full Moreška performance with all seven kolapi",
-          "Live brass orchestra & Klapa a cappella opening",
+          "Live brass orchestra",
           "Summer Cinema (open-air) or Centar za kulturu (indoor)",
           "Up to 600 guests · Bookings for cruises, retreats, weddings"
         ],
@@ -106,7 +106,6 @@
     "message": "Message",
     "messagePlaceholder": "Tell us about your enquiry…",
     "submit": "Send Message →",
-    "responseTime": "We'll respond within 2 business days.",
     "successTitle": "Message sent",
     "successBody": "Thank you for reaching out. We'll be in touch within 2 business days."
   },
@@ -136,26 +135,29 @@
     "heroHeadline": "The Story of HGD Sveta Cecilija",
     "heroSubtitle": "Guardians of Korčula's living heritage since 1883",
     "intro": [
-      "On a small island off the Dalmatian coast, a cultural society has kept a 400-year-old sword dance alive through wars, occupations, and the rise and fall of nations. HGD Sveta Cecilija — founded in 1883 during the Croatian National Revival — is not merely a performance group. It is the institutional soul of Korčula, and the last guardian of a tradition that has survived everything history could throw at it.",
-      "The Moreška is performed every summer at the open-air Summer Cinema — not as a tourist spectacle, but as a living inheritance, passed from father to son, unchanged in its essential form for generations. The same iron swords. The same archaic Korčulan verse. The same seven battles.",
-      "Around the Moreška, HGD Sveta Cecilija has built four active ensembles: the Moreška troupe, the Wind Orchestra, Klapa Sveta Cecilija, and the Choir. Each carries a distinct dimension of Korčulan cultural life. Together, they form one of Dalmatia's oldest and most complete cultural organisations."
+      "Two kings. One captive maiden. A stolen love, a ritual challenge, and seven battles to decide the fate of honour. This is the Moreška — Europe's last surviving war dance, and the soul of Korčula. For over four centuries, men on this small Dalmatian island have drawn iron swords to re-enact a drama of virtue and force. The Bula, fiancée of the White King Osman, is held by Moro — the Black King who would claim her by force. Her reply cuts through the stone silence: 'Far more pain for me is your unwanted love than the steel.' What follows is the Sfida — the challenge — and then seven escalating figures of double-sword combat that have not changed in centuries.",
+      "What separates the Moreška from every other folk performance in Europe is the double-sword technique. Each moreškant wields two iron blades — the right hand strikes, the left parries — preserving the martial technique of a 16th-century Adriatic garrison. The swords weigh a kilogram each and strike hard enough to produce sparks. In 1937, Croatian composer Krsto Odak wrote the definitive brass band score that drives every figure — seven movements beginning in lyrical tension and escalating to a furious 4/4 finale as the Black army's circle tightens and yields. The costumes trace to 17th-century Italian court ballet: full pleated skirts, Roman cuffs, sashes. The White army wears red; the Black army wears black. There is nothing like it anywhere in Europe.",
+      "In 1883, during the Croatian National Revival, Korčulan citizens founded the Singing Society St. Cecily — today's HGD Sveta Cecilija. Their mission: to ennoble the hearts of local youth, defend the Croatian language, and keep the Moreška alive. What followed was a century and a half of institutional resilience. The society survived the Austro-Hungarian empire, two World Wars — the second of which destroyed the costumes, the swords, and the scores entirely. As the island was liberated in 1944, town barber Ivo Lozica and schoolteacher Božo Jeričević trained a new troop of boys aged 12 to 17 from scratch, sewing costumes from church altar cloth. In 1991, HGD Sveta Cecilija was re-established under its original name following Croatian independence. The dance had survived everything.",
+      "In Korčula, there is a saying: 'You are not a male if you cannot dance Moreška.' Boys begin learning the steps in elementary school. Roles — the kings, the Bula — are passed from father to son across generations. The dance is not performed for tourists. It is performed because it has always been performed — because a town that has survived Venetians, Ottomans, Habsburgs, and Yugoslav commissars knows what it means to hold something sacred. Every summer, from May through October, HGD Sveta Cecilija performs 24 times at the open-air Summer Cinema in the old town. The same iron swords. The same archaic Korčulan verse. The same seven battles. Come witness it."
     ],
-    "historyHeadline": "Our History",
-    "ensemblesHeadline": "Our Ensembles",
-    "ensemblesIntro": "Four ensembles, one society. Each with its own tradition and repertoire — and each integral to the experience of a Moreška performance night.",
     "ctaHeadline": "Every summer at the Summer Cinema, Korčula.",
     "ctaBody": "Twenty-four performances from May through October. Showtime 21:00.",
-    "ctaButton": "See the 2026 Schedule",
-    "allVignettes": [
-      { "place": "Lérida, Spain",                     "title": "The Dance Is Born",            "body": "The earliest recorded Moreška-style performance takes place in Lérida, commemorating the Christian capture of Aragon. A ritual of mock combat between two armies is born — one that will travel the Mediterranean for centuries." },
-      { "place": "Korčula enters the Venetian world", "title": "Four Centuries of Venice",     "body": "Korčula begins nearly four centuries under Venetian rule. Maritime trade routes connect the island to Sicily, Southern Italy, and Spain — the same routes that will carry the sword dance tradition to its final home." },
-      { "place": "Korčula, 7 March",                  "title": "First Record in Korčula",      "body": "A town journal entry dated 7 March 1666 records a Moreška performance during carnival. The dance has already taken root. While similar traditions fade across Dalmatia, Korčula holds on." },
-      { "place": "Croatian National Revival",          "title": "HGD Sveta Cecilija Is Founded","body": "During the Croatian National Revival, local citizens establish the Korčula Singing Society St. Cecily — today's HGD Sveta Cecilija. Its founding statutes declare a mission to \"ennoble the hearts of local youth\" and defend Croatian language, folk song, and identity." },
-      { "place": "The score is set",                  "title": "The Music Is Written Down",    "body": "Croatian composer Krsto Odak and conductor Josip Svoboda create the definitive brass band score for the Moreška — the same arrangement used to this day. Seven movements, each escalating in tempo, culminating in the furious finale of the final kolap." },
-      { "place": "Liberation",                        "title": "Revived from the Ashes",       "body": "The Second World War silences the society. Costumes and swords are lost. But as the island is liberated, town barber Ivo Lozica and schoolteacher Božo Jeričević train a new troop from scratch — boys aged 12 to 17. The tradition does not die." },
-      { "place": "A free Croatia",                    "title": "A New Era",                    "body": "Following Croatia's declaration of independence, HGD Sveta Cecilija is officially re-established under its original name and mission. The society returns to its roots: preserving the Moreška and cultivating every dimension of Korčulan cultural life." },
-      { "place": "Today",                             "title": "A Protected Living Heritage",  "body": "The Moreška is recognised as a protected cultural good of the Republic of Croatia. Performed twice weekly through the summer at the Summer Cinema, it remains what it has always been: the soul of Korčula, passed from father to son, one clash of iron at a time." }
-    ]
+    "ctaButton": "See the 2026 Schedule"
+  },
+  "performancesPage": {
+    "eyebrow": "Summer Cinema, Korčula",
+    "headline": "2026 Season — All Performances",
+    "subline": "Every performance at the Summer Cinema · Showtime 21:00",
+    "book": "Book Tickets",
+    "soldOutLabel": "Sold Out",
+    "adults": "Adults",
+    "children": "Children (under 14)",
+    "adultPrice": "€20 each",
+    "childPrice": "€10 each",
+    "total": "Total",
+    "confirm": "Confirm Booking →",
+    "successTitle": "Booking received",
+    "successBody": "We'll be in touch to confirm your reservation."
   },
   "sectionPages": {
     "backLink": "← All Sections",

@@ -23,30 +23,21 @@ export default function Schedule({ t, performances, locale }: Props) {
   return (
     <section id="sched" className="opera">
       <div className="opera__head">
-        <div className="opera__eyebrow">{t.eyebrow}</div>
-        <h2 className="opera__h serif">{t.headline}</h2>
-        <div className="opera__sub">
-          {t.subBefore}{' '}
-          <a
-            href="https://maps.app.goo.gl/jbkEs9o7L9oa3S2F9"
-            target="_blank"
-            rel="noreferrer"
-          >
-            {t.venueName}
-          </a>
-          {' · '}{t.subAfter}
-        </div>
+        <div className="opera__eyebrow" data-reveal>{t.eyebrow}</div>
+        <h2 className="opera__h serif" data-reveal data-delay="1">{t.headline}</h2>
       </div>
 
       <div className="opera__grid">
-        {performances.map((p) => {
+        {performances.map((p, i) => {
           const { day, month, year, weekday } = formatDate(p.date, locale);
-          const remaining = p.capacity - p.sold;
-          const tight = remaining > 0 && remaining < 100;
-          const soldOut = remaining <= 0;
+          const soldOut = p.capacity - p.sold <= 0;
+          const isNext = i === 0;
+
+          const pillClass = soldOut ? '' : isNext ? ' amber' : ' green';
+          const pillText = soldOut ? t.soldOut : isNext ? t.fewLeft : t.available;
 
           return (
-            <a key={p.date} href="#sched" className="opera__card">
+            <a key={p.date} href="#sched" className="opera__card" data-reveal data-delay={i + 1}>
               <div className="opera__photo">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={p.image} alt="" />
@@ -62,17 +53,12 @@ export default function Schedule({ t, performances, locale }: Props) {
                 <h3 className="opera__title serif">Moreška</h3>
                 <div className="opera__meta">
                   <span>{weekday} · 21:00</span>
-                  <span className={`opera__pill${tight ? ' amber' : ''}`}>
+                  <span className={`opera__pill${pillClass}`}>
                     <span className="dot" />
-                    {soldOut
-                      ? t.soldOut
-                      : tight
-                      ? t.left.replace('{count}', remaining.toString())
-                      : t.available}
+                    {pillText}
                   </span>
                 </div>
                 <div className="opera__cta">
-                  <span className="opera__price mono">{t.priceNote}</span>
                   <span className="opera__buy">{t.buyTickets}</span>
                 </div>
               </div>
@@ -81,8 +67,8 @@ export default function Schedule({ t, performances, locale }: Props) {
         })}
       </div>
 
-      <div className="opera__foot">
-        <a href="#sched" className="opera__viewall">{t.viewAll}</a>
+      <div className="opera__foot" data-reveal>
+        <a href={`/${locale}/performances`} className="opera__viewall">{t.viewAll}</a>
         <span className="opera__price-note">{t.priceNote}</span>
       </div>
     </section>

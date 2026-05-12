@@ -16,6 +16,7 @@ import Sections from '@/components/Sections';
 import Services from '@/components/Services';
 import Contact from '@/components/Contact';
 import Footer from '@/components/Footer';
+import ScrollReveal from '@/components/ScrollReveal';
 
 export default async function HomePage({
   params,
@@ -39,6 +40,7 @@ export default async function HomePage({
       <Services t={dict.services} cards={SERVICE_CARDS_META} />
       <Contact t={dict.contact} />
       <Footer locale={locale} t={dict.footer} />
+      <ScrollReveal />
     </div>
   );
 }

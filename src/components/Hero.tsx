@@ -42,7 +42,6 @@ export default function Hero({ t }: Props) {
 
       <div className="hero__ctas">
         <a className="btn btn--primary" href="#sched">{t.buyTickets}</a>
-        <a className="btn btn--ghost" href="#about">{t.discover}</a>
       </div>
 
       <div className="hero__scroll">{t.scroll}</div>

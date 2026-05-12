@@ -9,15 +9,15 @@ interface Props {
 export default function Services({ t, cards }: Props) {
   return (
     <section id="svcs" className="svcs">
-      <div className="svcs__eyebrow">{t.eyebrow}</div>
-      <h2 className="svcs__h serif">{t.headline}</h2>
-      <p className="svcs__lede serif">{t.lede}</p>
+      <div className="svcs__eyebrow" data-reveal>{t.eyebrow}</div>
+      <h2 className="svcs__h serif" data-reveal data-delay="1">{t.headline}</h2>
+      <p className="svcs__lede serif" data-reveal data-delay="2">{t.lede}</p>
 
       <div className="svcs__grid">
         {t.cards.map((card, i) => {
           const meta = cards[i];
           return (
-            <article key={i} className="svc">
+            <article key={i} className="svc" data-reveal data-delay={i + 1}>
               <div className="svc__photo">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={meta.image} alt="" />

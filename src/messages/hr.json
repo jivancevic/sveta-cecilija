@@ -12,7 +12,6 @@
   },
   "hero": {
     "buyTickets": "Kupi ulaznice",
-    "discover": "Otkrij",
     "scroll": "scroll ↓"
   },
   "about": {
@@ -28,6 +27,7 @@
     "venueName": "Ljetnom kinu, Korčula",
     "subAfter": "Početak u 21:00",
     "available": "Dostupno",
+    "fewLeft": "Malo preostalih",
     "soldOut": "Rasprodano",
     "left": "Ostalo {count}",
     "buyTickets": "Kupi ulaznice →",
@@ -79,12 +79,12 @@
     "cards": [
       {
         "num": "01 / 02",
-        "tagline": "Za vašu skupinu, za jednu noć",
+        "tagline": "Ekskluzivna izvedba, isključivo za vašu skupinu",
         "name": "Privatna Moreška",
         "blurb": "Cjelovita privatna izvedba za grupe, u Ljetnom kinu ili Centru za kulturu Korčula.",
         "bullets": [
           "Cjelovita izvedba Moreške sa svih sedam kolapa",
-          "Živački nastup puhačkog orkestra i klapa a cappella uvod",
+          "Nastup puhačkog orkestra uživo",
           "Ljetno kino (na otvorenom) ili Centar za kulturu (zatvoreno)",
           "Do 600 gostiju · Rezervacije za kruzere, retreate, vjenčanja"
         ],
@@ -122,7 +122,6 @@
     "message": "Poruka",
     "messagePlaceholder": "Opišite nam vaš upit…",
     "submit": "Pošalji poruku →",
-    "responseTime": "Odgovaramo unutar 2 radna dana.",
     "successTitle": "Poruka poslana",
     "successBody": "Hvala što ste nam se obratili. Javit ćemo vam se unutar 2 radna dana."
   },
@@ -130,26 +129,29 @@
     "heroHeadline": "Priča o HGD Sveta Cecilija",
     "heroSubtitle": "Čuvari korčulanske žive baštine od 1883. godine",
     "intro": [
-      "Na malom otoku uz dalmatinsku obalu, jedno kulturno društvo održava 400 godina star ples s mačevima živ — kroz ratove, okupacije i uspon i pad naroda. HGD Sveta Cecilija — osnovano 1883. za vrijeme Hrvatskog narodnog preporoda — nije samo izvedbena skupina. To je institucionalna duša Korčule i posljednji čuvar tradicije koja je preživjela sve što joj je povijest mogla baciti u lice.",
-      "Moreška se izvodi svako ljeto u otvorenom Ljetnom kinu — ne kao turistička atrakcija, već kao živa baština, prenošena s oca na sina, u svom temeljnom obliku nepromijenjena generacijama. Isti željezni mačevi. Isti arhaični korčulanski stihovi. Iste sedam borbi.",
-      "Oko Moreške, HGD Sveta Cecilija izgradilo je četiri aktivna ansambla: moreškarsku skupinu, Puhački orkestar, Klapu Sveta Cecilija i Zbor. Svaki nosi posebnu dimenziju korčulanskog kulturnog života. Zajedno čine jednu od najstarijih i najcjelovitijih kulturnih organizacija u Dalmaciji."
+      "Dva kralja. Jedna zarobljena djevojka. Ukradena ljubav, ritualni izazov i sedam borbi koje odlučuju o sudbini časti. To je Moreška — posljednji preživjeli ratni ples Europe i duša Korčule. Više od četiri stoljeća, muškarci na ovom malom dalmatinskom otoku vuku željezne mačeve kako bi ponovo izveli dramu vrline i sile. Bula, zaručnica Bijeloga kralja Osmana, zarobljena je od Mora — Crnoga kralja koji je želi prisilom. Njezin odgovor prosijeca kamenu tišinu: 'Veće mi je jado tvoja nehtjena ljubav neg li čelik.' Ono što slijedi je Sfida — izazov — a zatim sedam eskalacijskih figura borbe s dva mača koje se nisu promijenile kroz stoljeća.",
+      "Ono što Morešku odvaja od svake druge folklorne izvedbe u Europi je tehnika dvojnog mača. Svaki moreškar nosi dvije željezne oštrice — desna ruka udara, lijeva para — čuvajući borilačku tehniku jadranskog garnizona iz 16. stoljeća. Mačevi teže kilogram svaki i udaraju dovoljno snažno da izbijaju iskre. Godine 1937. hrvatski skladatelj Krsto Odak napisao je definitivan notni zapis za limeni orkestar koji pokreće svaku figuru — sedam stavaka koji počinju u lirskoj napetosti i eskaliraju do žestokog finala u 4/4 taktu dok se krug Crne vojske sužava i predaje. Kostimi prate tradiciju talijanskog dvorskog baleta 17. stoljeća: pune naborane suknje, rimske manšete, pojasevi. Bijela vojska nosi crvenu boju; Crna vojska nosi crnu. Nema ničega sličnog nigdje u Europi.",
+      "Godine 1883., za vrijeme Hrvatskog narodnog preporoda, korčulanski su građani osnovali Pjevačko društvo Sveta Cecilija — današnje HGD Sveta Cecilija. Njihova misija: oplemenjivati srca lokalne mladeži, braniti hrvatski jezik i čuvati Morešku. Uslijedilo je stoljeće i pol institucionalne otpornosti. Društvo je preživjelo Austro-Ugarsku monarhiju, dva svjetska rata — od kojih je drugi potpuno uništio kostime, mačeve i notne zapise. Dok je otok oslobađan 1944., gradski berberin Ivo Lozica i učitelj Božo Jeričević ispočetka su uvježbali novu skupinu dječaka od 12 do 17 godina, šijući kostime od oltarnog platna. Godine 1991., HGD Sveta Cecilija je obnovljeno pod izvornim imenom nakon proglašenja hrvatske neovisnosti. Ples je preživio sve.",
+      "U Korčuli postoji izreka: 'Nisi muški ako ne znaš moreški.' Dječaci počinju učiti korake već u osnovnoj školi. Uloge — kraljevi, Bula — prelaze s oca na sina kroz generacije. Ples se ne izvodi za turiste. Izvodi se jer se uvijek izvodio — jer grad koji je preživio Mlečane, Osmanlije, Habsburgovce i jugoslavenske komesare zna što znači čuvati nešto sveto. Svako ljeto, od svibnja do listopada, HGD Sveta Cecilija nastupa 24 puta u otvorenom Ljetnom kinu u starom gradu. Isti željezni mačevi. Isti arhaični korčulanski stihovi. Iste sedam borbi. Dođite svjedočiti."
     ],
-    "historyHeadline": "Naša povijest",
-    "ensemblesHeadline": "Naši ansambli",
-    "ensemblesIntro": "Četiri ansambla, jedno društvo. Svaki sa svojom tradicijom i repertoarom — i svaki neizostavan za doživljaj večeri Moreške.",
     "ctaHeadline": "Svako ljeto u Ljetnom kinu, Korčula.",
     "ctaBody": "Dvadeset i četiri nastupa od svibnja do listopada. Početak u 21:00.",
-    "ctaButton": "Pogledaj raspored 2026.",
-    "allVignettes": [
-      { "place": "Lleida, Španjolska",               "title": "Ples se rađa",                   "body": "Najraniji zabilježeni nastup u stilu Moreške odvija se u Lleidi, u spomen na kršćansko osvajanje Aragona. Rađa se ritual insceniranog sukoba dviju vojski — koji će putovati Sredozemljem kroz stoljeća." },
-      { "place": "Korčula ulazi u mletački svijet",   "title": "Četiri stoljeća Venecije",       "body": "Korčula ulazi u gotovo četiri stoljeća mletačke vlasti. Pomorske trgovačke rute povezuju otok sa Sicilijom, južnom Italijom i Španjolskom — iste rute kojima će tradicija plesnih borbi putovati do svog konačnog doma." },
-      { "place": "Korčula, 7. ožujka",                "title": "Prvi zapis na Korčuli",          "body": "Gradski dnevnik od 7. ožujka 1666. bilježi nastup Moreške za vrijeme karnevala. Ples je već duboko ukorijenjen. Dok slične tradicije nestaju diljem Dalmacije, Korčula ih čuva." },
-      { "place": "Hrvatski narodni preporod",          "title": "Osnovano HGD Sveta Cecilija",    "body": "Za vrijeme Hrvatskog narodnog preporoda, mještani osnivaju Korčulansko pjevačko društvo sv. Cecilije — danas HGD Sveta Cecilija. Osnivački statuti proglašavaju misiju \"oplemeniti srca lokalne mladeži\" i braniti hrvatski jezik, narodnu pjesmu i identitet." },
-      { "place": "Partitura je zapisana",              "title": "Glazba je zapisana",             "body": "Hrvatski skladatelj Krsto Odak i dirigent Josip Svoboda stvaraju definitivan notni zapis za puhački orkestar za Morešku — isti aranžman koji se koristi i danas. Sedam stavaka, svaki eskalacijom tempa, kulminira žestokim finalom zadnjeg kolapa." },
-      { "place": "Oslobođenje",                        "title": "Obnova iz pepela",               "body": "Drugi svjetski rat ušutkava društvo. Kostimi i mačevi su izgubljeni. Ali čim je otok oslobođen, brijač Ivo Lozica i učitelj Božo Jeričević treniraju novu skupinu od nule — dječaci od 12 do 17 godina. Tradicija ne umire." },
-      { "place": "Slobodna Hrvatska",                  "title": "Novo doba",                      "body": "Nakon proglašenja hrvatske neovisnosti, HGD Sveta Cecilija službeno se obnavlja pod izvornim imenom i misijom. Društvo se vraća korijenima: čuvanju Moreške i njegovanja svih dimenzija korčulanskog kulturnog života." },
-      { "place": "Danas",                              "title": "Zaštićena živa baština",         "body": "Moreška je prepoznata kao zaštićeno kulturno dobro Republike Hrvatske. Izvodi se dva puta tjedno ljeti u Ljetnom kinu, ostajući ono što je uvijek bila: duša Korčule, prenošena s oca na sina, jedan udar željeza u drugi." }
-    ]
+    "ctaButton": "Pogledaj raspored 2026."
+  },
+  "performancesPage": {
+    "eyebrow": "Ljetno kino, Korčula",
+    "headline": "Sezona 2026. — Svi nastupi",
+    "subline": "Svaki nastup u Ljetnom kinu · Početak u 21:00",
+    "book": "Rezerviraj ulaznice",
+    "soldOutLabel": "Rasprodano",
+    "adults": "Odrasli",
+    "children": "Djeca (do 14 godina)",
+    "adultPrice": "20 € po osobi",
+    "childPrice": "10 € po osobi",
+    "total": "Ukupno",
+    "confirm": "Potvrdi rezervaciju →",
+    "successTitle": "Rezervacija primljena",
+    "successBody": "Kontaktirat ćemo vas za potvrdu rezervacije."
   },
   "sectionPages": {
     "backLink": "← Sve sekcije",

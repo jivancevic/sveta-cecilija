@@ -34,7 +34,7 @@ export default function Nav({ locale, t, variant = 'homepage' }: Props) {
         </a>
 
         <div className="nav__links">
-          <a href={`/${locale}#sched`}>{t.performances}</a>
+          <a href={`/${locale}/performances`}>{t.performances}</a>
           <a href={`/${locale}#about`}>{t.about}</a>
           <a href={`/${locale}#history`}>{t.history}</a>
           <a href={`/${locale}#secs`}>{t.sections}</a>
@@ -71,7 +71,7 @@ export default function Nav({ locale, t, variant = 'homepage' }: Props) {
           </a>
 
           <div className="nav__overlay-links">
-            <a href={`/${locale}#sched`} onClick={close}>{t.performances}</a>
+            <a href={`/${locale}/performances`} onClick={close}>{t.performances}</a>
             <a href={`/${locale}#about`} onClick={close}>{t.about}</a>
             <a href={`/${locale}#history`} onClick={close}>{t.history}</a>
             <a href={`/${locale}#secs`} onClick={close}>{t.sections}</a>

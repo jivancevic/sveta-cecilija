@@ -1,5 +1,11 @@
-## Hero section
-- I'm going to omit whole first 5 seconds of a video with buttons greyed out, only video showing, and then logo aminating in. Start animating logo and text from 0 seconds. Don't make buttons with lower opacity at start anymore.
+### Hero
+- remove Discover CTA, keep Buy tickets only
+- in mobile view, extend to 100vh
 
-## Font
-- I need to have 3 fonts. Omit totally Newsreader and Vinque. From now on, use Bodoni Moda SC https://fonts.google.com/specimen/Bodoni+Moda+SC for titles, headlines, and other important headlines, use IBM Plex Mono for the same that you are using it now, and Inter for body.
+### About Page
+- make it as a section where people can educate about the MOreska and HGD Sveta Cecilija. Make it 3 or 4 paragraphs, remove Our history and Our sections in current form. Make it so that it has text, behave as expert copywriting expert using sveta-cecilija.md for inspiration. Between each paragraph, put one image.
+
+### Performances Page
+- when user clicks on View all 24 performances, he should be redirected to Performances Page
+- make new Performances page, where user can see all of the performances, info about the price, and be able to buy the tickets. Implement user flow for buying the tickets, similar to shopping cart process.
+

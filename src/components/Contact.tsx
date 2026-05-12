@@ -68,7 +68,6 @@ export default function Contact({ t }: Props) {
               <label>{t.message}</label>
               <textarea placeholder={t.messagePlaceholder} />
             </div>
-            <p style={{ fontSize: 12, opacity: 0.55, margin: 0 }}>{t.responseTime}</p>
           </form>
         )}
       </div>

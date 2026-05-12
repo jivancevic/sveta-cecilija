@@ -10,27 +10,22 @@ export default function History({ t, vignettes }: Props) {
   return (
     <section id="history" className="hist">
       <div className="hist__head">
-        <div className="hist__eyebrow">{t.eyebrow}</div>
-        <h2 className="hist__h serif">{t.headline}</h2>
-        <p className="hist__sub serif">{t.subline}</p>
+        <div className="hist__eyebrow" data-reveal>{t.eyebrow}</div>
+        <h2 className="hist__h serif" data-reveal data-delay="1">{t.headline}</h2>
+        <p className="hist__sub serif" data-reveal data-delay="2">{t.subline}</p>
       </div>
 
-      <div className="hist__grid">
+      <div className="hist__timeline">
         {t.vignettes.map((v, i) => {
           const meta = vignettes[i];
           return (
-            <article key={meta.year} className="vignette">
-              <div className={`vignette__photo${meta.imageContain ? ' contain' : ''}`}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={meta.image} alt="" />
-              </div>
-              <div className="vignette__body">
-                <div className="vignette__year serif">{meta.year}</div>
-                <div className="vignette__place mono">{v.place}</div>
-                <h3 className="vignette__title serif">{v.title}</h3>
-                <p className="vignette__text">{v.body}</p>
-              </div>
-            </article>
+            <div key={meta.year} className="hist__event" data-reveal data-delay={i + 1}>
+              <div className="hist__dot" />
+              <div className="hist__event-year serif">{meta.year}</div>
+              <div className="hist__event-place mono">{v.place}</div>
+              <h3 className="hist__event-title serif">{v.title}</h3>
+              <p className="hist__event-body">{v.body}</p>
+            </div>
           );
         })}
       </div>
