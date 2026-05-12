@@ -1,0 +1,198 @@
+{
+  "nav": {
+    "wordmarkTop": "Sveta Cecilija",
+    "wordmarkBot": "Korčula · est. 1883",
+    "performances": "Performances",
+    "about": "About",
+    "history": "History",
+    "sections": "Sections",
+    "services": "Services",
+    "contact": "Contact",
+    "buyTickets": "Buy Tickets"
+  },
+  "hero": {
+    "buyTickets": "Buy Tickets",
+    "discover": "Discover",
+    "scroll": "scroll ↓"
+  },
+  "about": {
+    "eyebrow": "Since 1883",
+    "headline": "A Living Tradition, 143 Years in the Making",
+    "body": "Since 1883, HGD Sveta Cecilija has stood as the guardian of Korčula's most treasured ritual. The Moreška — Europe's last authentic war dance — is performed here, on this island, by the sons of Korčula. Iron swords, archaic verse, and seven battles that have not changed in centuries. Come witness it.",
+    "cta": "Discover Our Story →"
+  },
+  "schedule": {
+    "eyebrow": "Currently at the Summer Cinema",
+    "headline": "2026 Season Performances",
+    "subBefore": "Every performance at the",
+    "venueName": "Summer Cinema, Korčula",
+    "subAfter": "Showtime 21:00",
+    "available": "Available",
+    "soldOut": "Sold Out",
+    "left": "{count} left",
+    "buyTickets": "Buy Tickets →",
+    "viewAll": "View All 24 Performances",
+    "priceNote": "Adults €20 · Children under 14 €10"
+  },
+  "history": {
+    "eyebrow": "Four Centuries",
+    "headline": "A Curated History",
+    "subline": "Four moments that brought a Spanish ritual of mock combat to a Korčulan stone courtyard — and kept it there.",
+    "vignettes": [
+      { "place": "Lérida, Spain",            "title": "The Dance Is Born",            "body": "The earliest recorded Moreška-style performance takes place in Lérida, commemorating the Christian capture of Aragon. A ritual of mock combat between two armies — one that will travel the Mediterranean for centuries before finding its final home." },
+      { "place": "Korčula, 7 March",         "title": "First Record in Korčula",      "body": "A town journal entry dated 7 March 1666 records a Moreška performance during carnival. The dance has already taken root. While similar traditions fade across Dalmatia, Korčula holds on — and never lets go." },
+      { "place": "Croatian National Revival", "title": "HGD Sveta Cecilija Is Founded","body": "Local citizens establish the Korčula Singing Society St. Cecily. Its founding statutes declare a mission to \"ennoble the hearts of local youth\" and defend Croatian language, song, and identity. The institutional home of Moreška is born." },
+      { "place": "A free Croatia",            "title": "A New Era",                   "body": "Following Croatia's declaration of independence, HGD Sveta Cecilija is officially re-established under its original name and mission. The society returns to its roots: preserving the Moreška and cultivating every dimension of Korčulan cultural life." }
+    ]
+  },
+  "sections": {
+    "eyebrow": "Four ensembles, one society",
+    "headline": "Our Sections",
+    "discover": "Discover →",
+    "cards": [
+      { "key": "moreska", "name": "Moreška",             "blurb": "Europe's last authentic war dance, performed since 1666." },
+      { "key": "band",    "name": "Wind Orchestra",       "blurb": "The brass backbone of every performance since 1937." },
+      { "key": "klapa",   "name": "Klapa Sveta Cecilija", "blurb": "The voice before the sword — Dalmatian a cappella, UNESCO heritage." },
+      { "key": "choir",   "name": "Choir",                "blurb": "Reborn in 2023. Choral repertoire spanning folk, sacred, contemporary." }
+    ]
+  },
+  "services": {
+    "eyebrow": "Bring Moreška to your group",
+    "headline": "Private Experiences",
+    "lede": "Two ways to bring Korčula's living heritage closer — a full private staging, or an intimate behind-the-scenes encounter.",
+    "cards": [
+      {
+        "num": "01 / 02",
+        "tagline": "For your group, for one night only",
+        "name": "Private Moreška",
+        "blurb": "A full private performance for groups, at the Summer Cinema or Centar za kulturu Korčula.",
+        "bullets": [
+          "Full Moreška performance with all seven kolapi",
+          "Live brass orchestra & Klapa a cappella opening",
+          "Summer Cinema (open-air) or Centar za kulturu (indoor)",
+          "Up to 600 guests · Bookings for cruises, retreats, weddings"
+        ],
+        "meta": "Pricing on enquiry · 90 minutes",
+        "cta": "Request a Quote →"
+      },
+      {
+        "num": "02 / 02",
+        "tagline": "A close encounter with the tradition",
+        "name": "The Moreška Experience",
+        "blurb": "An intimate educational encounter with the costumes, swords, and dialogue. Min. 5 people.",
+        "bullets": [
+          "Heritage & regalia — costumes and iron swords up close",
+          "Origins of the Moreška, from Lérida to Korčula",
+          "Highlights of the dramatic dialogues, in archaic Korčulan",
+          "Excerpts of the chivalrous sword dance, performed live"
+        ],
+        "meta": "Min. 5 people · By appointment · 60 minutes",
+        "cta": "Enquire Now →"
+      }
+    ]
+  },
+  "contact": {
+    "eyebrow": "We'd love to hear from you",
+    "headline": "Get in Touch",
+    "subline": "For general enquiries, private bookings, press, or anything else — we'd love to hear from you.",
+    "emailAddress": "info@moreska.eu",
+    "name": "Name",
+    "namePlaceholder": "Your name",
+    "email": "Email",
+    "emailPlaceholder": "you@email.com",
+    "enquiry": "Enquiry type",
+    "enquirySelect": "Select…",
+    "enquiryOptions": ["General", "Private Moreška", "Moreška Experience", "Press", "Other"],
+    "message": "Message",
+    "messagePlaceholder": "Tell us about your enquiry…",
+    "submit": "Send Message →",
+    "responseTime": "We'll respond within 2 business days.",
+    "successTitle": "Message sent",
+    "successBody": "Thank you for reaching out. We'll be in touch within 2 business days."
+  },
+  "footer": {
+    "tagline": "Guardians of the Steel Dance\nsince 1883.",
+    "visitLabel": "Visit",
+    "sectionsLabel": "Sections",
+    "contactLabel": "Contact",
+    "performances": "Performances",
+    "about": "About",
+    "history": "History",
+    "sections": "Sections",
+    "services": "Services",
+    "moreska": "Moreška",
+    "windOrchestra": "Wind Orchestra",
+    "klapa": "Klapa",
+    "choir": "Choir",
+    "location": "Korčula, Croatia",
+    "facebook": "Facebook",
+    "instagram": "Instagram",
+    "youtube": "YouTube",
+    "legal": "© 2026 HGD Sveta Cecilija",
+    "privacyPolicy": "Privacy Policy",
+    "cookiePolicy": "Cookie Policy"
+  },
+  "aboutPage": {
+    "heroHeadline": "The Story of HGD Sveta Cecilija",
+    "heroSubtitle": "Guardians of Korčula's living heritage since 1883",
+    "intro": [
+      "On a small island off the Dalmatian coast, a cultural society has kept a 400-year-old sword dance alive through wars, occupations, and the rise and fall of nations. HGD Sveta Cecilija — founded in 1883 during the Croatian National Revival — is not merely a performance group. It is the institutional soul of Korčula, and the last guardian of a tradition that has survived everything history could throw at it.",
+      "The Moreška is performed every summer at the open-air Summer Cinema — not as a tourist spectacle, but as a living inheritance, passed from father to son, unchanged in its essential form for generations. The same iron swords. The same archaic Korčulan verse. The same seven battles.",
+      "Around the Moreška, HGD Sveta Cecilija has built four active ensembles: the Moreška troupe, the Wind Orchestra, Klapa Sveta Cecilija, and the Choir. Each carries a distinct dimension of Korčulan cultural life. Together, they form one of Dalmatia's oldest and most complete cultural organisations."
+    ],
+    "historyHeadline": "Our History",
+    "ensemblesHeadline": "Our Ensembles",
+    "ensemblesIntro": "Four ensembles, one society. Each with its own tradition and repertoire — and each integral to the experience of a Moreška performance night.",
+    "ctaHeadline": "Every summer at the Summer Cinema, Korčula.",
+    "ctaBody": "Twenty-four performances from May through October. Showtime 21:00.",
+    "ctaButton": "See the 2026 Schedule",
+    "allVignettes": [
+      { "place": "Lérida, Spain",                     "title": "The Dance Is Born",            "body": "The earliest recorded Moreška-style performance takes place in Lérida, commemorating the Christian capture of Aragon. A ritual of mock combat between two armies is born — one that will travel the Mediterranean for centuries." },
+      { "place": "Korčula enters the Venetian world", "title": "Four Centuries of Venice",     "body": "Korčula begins nearly four centuries under Venetian rule. Maritime trade routes connect the island to Sicily, Southern Italy, and Spain — the same routes that will carry the sword dance tradition to its final home." },
+      { "place": "Korčula, 7 March",                  "title": "First Record in Korčula",      "body": "A town journal entry dated 7 March 1666 records a Moreška performance during carnival. The dance has already taken root. While similar traditions fade across Dalmatia, Korčula holds on." },
+      { "place": "Croatian National Revival",          "title": "HGD Sveta Cecilija Is Founded","body": "During the Croatian National Revival, local citizens establish the Korčula Singing Society St. Cecily — today's HGD Sveta Cecilija. Its founding statutes declare a mission to \"ennoble the hearts of local youth\" and defend Croatian language, folk song, and identity." },
+      { "place": "The score is set",                  "title": "The Music Is Written Down",    "body": "Croatian composer Krsto Odak and conductor Josip Svoboda create the definitive brass band score for the Moreška — the same arrangement used to this day. Seven movements, each escalating in tempo, culminating in the furious finale of the final kolap." },
+      { "place": "Liberation",                        "title": "Revived from the Ashes",       "body": "The Second World War silences the society. Costumes and swords are lost. But as the island is liberated, town barber Ivo Lozica and schoolteacher Božo Jeričević train a new troop from scratch — boys aged 12 to 17. The tradition does not die." },
+      { "place": "A free Croatia",                    "title": "A New Era",                    "body": "Following Croatia's declaration of independence, HGD Sveta Cecilija is officially re-established under its original name and mission. The society returns to its roots: preserving the Moreška and cultivating every dimension of Korčulan cultural life." },
+      { "place": "Today",                             "title": "A Protected Living Heritage",  "body": "The Moreška is recognised as a protected cultural good of the Republic of Croatia. Performed twice weekly through the summer at the Summer Cinema, it remains what it has always been: the soul of Korčula, passed from father to son, one clash of iron at a time." }
+    ]
+  },
+  "sectionPages": {
+    "backLink": "← All Sections",
+    "ctaHeadline": "Witness it live.",
+    "ctaBody": "Twenty-four performances at the Summer Cinema, Korčula. May through October, 21:00.",
+    "ctaButton": "Buy Tickets",
+    "moreska": {
+      "heroHeadline": "The Steel Dance of Korčula",
+      "heroSubtitle": "Europe's last authentic war dance, performed since 1666.",
+      "lead": "Of all the sword dances that once spanned the Mediterranean — from Spain to Sicily, from Venice to the Greek islands — only the Moreška of Korčula has survived intact. Not as a museum piece. As a living performance, performed in the original 17th-century Korčulan dialect, with iron swords that weigh a kilogram each and strike hard enough to produce sparks.",
+      "storyHeadline": "The Story",
+      "storyBody": "Two kings. One captive maiden. Seven battles to decide her fate. The White King, Osman, arrives to reclaim his betrothed — the Bula — from the Black King, Moro, who has taken her by force. The Bula refuses to yield: \"Far more pain for me is your unwanted love than the steel.\" What follows is the Sfida — the challenge — and then seven kolapi: a sequence of increasingly intense sword-clash figures that escalates from lyrical circling to furious final combat. The Black army is surrounded, their circle shrinking with each figure, until the Black King surrenders his sword at Osman's feet. The Bula is freed. Virtue wins. It has always won.",
+      "danceHeadline": "The Dance",
+      "danceBody": "The Moreška is unique in European folk tradition for its double-sword technique: every dancer wields two iron blades — the right hand strikes, the left parries. The choreography is fixed and has been passed down unchanged for generations. Each of the seven figures has a name: Rugier, Moreška, Finta, Moro in dentro, Križ, Rugier de fuorivia, and the Final Figure — executed at full speed in 4/4 time. The sound alone is worth the journey. Iron on iron, echoing off the stone walls of the old town.",
+      "costumeHeadline": "The Costume",
+      "costumeBody": "The moreškant's attire is unlike anything else in Croatian folklore — a Roman-Oriental style tracing back to 17th-century Italian court ballet. The White army wears red; the Black army wears black. Full pleated skirts, white Roman cuffs, sashes, handkerchiefs. Ornate, martial, unmistakable.",
+      "participationHeadline": "Participation",
+      "participationBody": "Moreška is traditionally performed by males from Korčulan families. Boys begin learning the steps in elementary school. A local saying captures what it means: \"You are not a male if you cannot dance Moreška.\" Roles — including the kings and the Bula — are often passed from father to son across generations."
+    },
+    "band": {
+      "heroHeadline": "The Sound of the Sword Dance",
+      "heroSubtitle": "The musical backbone of Moreška since 1937.",
+      "body1": "The Wind Orchestra of HGD Sveta Cecilija is the musical backbone of the Moreška. Every clash of the swords, every dramatic turn in the story, is underscored by a brass arrangement composed by Krsto Odak in 1937 — one of Croatia's foremost composers — and performed live at every performance to this day.",
+      "body2": "But the Orchestra's role extends far beyond the summer stage. Throughout the year, the ensemble performs concert repertoire, accompanies civic celebrations, and represents Korčula at regional and national festivals. From march arrangements to contemporary Croatian compositions, the Wind Orchestra carries the musical identity of the island wherever it performs. It is the oldest continuously active musical ensemble in Southern Dalmatia."
+    },
+    "klapa": {
+      "heroHeadline": "The Voice Before the Sword",
+      "heroSubtitle": "Dalmatian a cappella, UNESCO intangible cultural heritage.",
+      "body1": "Before the iron clashes, there is the voice. Klapa Sveta Cecilija opens every Moreška performance with traditional Dalmatian a cappella song — the art form of the Adriatic coast, recognised by UNESCO as intangible cultural heritage. No instruments, no amplification. Just the harmony of male voices carrying centuries of maritime soul.",
+      "body2": "Klapa singing is the sound of Dalmatia at its most distilled: melancholic, warm, technically demanding, and entirely communal. To hear it in the stone courtyard of the Summer Cinema, before the swords appear, is to understand something essential about life on this island. The ensemble performs at every Moreška throughout the season and at festivals, concerts, and cultural events across the region."
+    },
+    "choir": {
+      "heroHeadline": "A Voice Reborn",
+      "heroSubtitle": "Founded in 2023. Growing with purpose.",
+      "body1": "Founded in 2023, the HGD Sveta Cecilija Choir is growing slowly but surely. After performing a series of well-received concerts and drawing members from across Korčula, the ensemble is building something the island has long been waiting for.",
+      "body2": "As the oldest singing society in Dalmatia, HGD Sveta Cecilija has waited a long time to bring the choir back. The choir performs choral repertoire spanning Croatian folk music, sacred works, and contemporary compositions. New members are always welcome. If you sing — or have always wanted to — the doors are open.",
+      "note": "Full programme and upcoming concert dates coming soon."
+    }
+  }
+}
