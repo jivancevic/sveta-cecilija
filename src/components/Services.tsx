@@ -1,12 +1,15 @@
 import type { Dictionary } from '@/lib/i18n';
 import type { ServiceCardMeta } from '@/lib/data';
 
+const SERVICE_SLUGS = ['private-moreska', 'moreska-experience'];
+
 interface Props {
   t: Dictionary['services'];
   cards: ServiceCardMeta[];
+  locale: string;
 }
 
-export default function Services({ t, cards }: Props) {
+export default function Services({ t, cards, locale }: Props) {
   return (
     <section id="svcs" className="svcs">
       <div className="svcs__eyebrow" data-reveal>{t.eyebrow}</div>
@@ -37,7 +40,7 @@ export default function Services({ t, cards }: Props) {
                 </ul>
                 <div className="svc__foot">
                   <span className="svc__meta mono">{card.meta}</span>
-                  <a className="btn btn--primary btn--small" href="#contact">
+                  <a className="btn btn--primary btn--small" href={`/${locale}/services/${SERVICE_SLUGS[i]}`}>
                     {card.cta}
                   </a>
                 </div>

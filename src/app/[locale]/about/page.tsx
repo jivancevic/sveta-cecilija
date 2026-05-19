@@ -52,7 +52,7 @@ export default async function AboutPage({
       <div className="ip-cta">
         <h2 className="ip-cta__h serif">{t.ctaHeadline}</h2>
         <p className="ip-cta__body">{t.ctaBody}</p>
-        <a href={`/${locale}/performances`} className="btn btn--primary">{t.ctaButton}</a>
+        <a href={`/${locale}/tickets`} className="btn btn--primary">{t.ctaButton}</a>
       </div>
 
       <Footer locale={locale} t={dict.footer} />

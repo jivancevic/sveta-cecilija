@@ -63,7 +63,7 @@ export default function Nav({ locale, t, variant = 'homepage' }: Props) {
         </a>
 
         <div className="nav__links">
-          <a href={`/${locale}/performances`}>{t.performances}</a>
+          <a href={`/${locale}/tickets`}>{t.performances}</a>
           <a href={`/${locale}#about`}>{t.about}</a>
           <a href={`/${locale}#history`}>{t.history}</a>
           <a href={`/${locale}#secs`}>{t.sections}</a>
@@ -74,7 +74,7 @@ export default function Nav({ locale, t, variant = 'homepage' }: Props) {
             {' · '}
             <a href={`/${otherLocale}`}>{otherLocale.toUpperCase()}</a>
           </span>
-          <a className="btn btn--primary btn--small nav__cta" href={`/${locale}#sched`}>
+          <a className="btn btn--primary btn--small nav__cta" href={`/${locale}/tickets`}>
             {t.buyTickets}
           </a>
         </div>
@@ -108,7 +108,7 @@ export default function Nav({ locale, t, variant = 'homepage' }: Props) {
           </a>
 
           <div className="nav__overlay-links">
-            <a href={`/${locale}/performances`} onClick={close}>{t.performances}</a>
+            <a href={`/${locale}/tickets`} onClick={close}>{t.performances}</a>
             <a href={`/${locale}#about`} onClick={close}>{t.about}</a>
             <a href={`/${locale}#history`} onClick={close}>{t.history}</a>
             <a href={`/${locale}#secs`} onClick={close}>{t.sections}</a>
@@ -116,7 +116,7 @@ export default function Nav({ locale, t, variant = 'homepage' }: Props) {
             <a href={`/${locale}#contact`} onClick={close}>{t.contact}</a>
           </div>
 
-          <a className="btn btn--primary" href={`/${locale}#sched`} onClick={close}>
+          <a className="btn btn--primary" href={`/${locale}/tickets`} onClick={close}>
             {t.buyTickets}
           </a>
 

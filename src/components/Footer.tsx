@@ -55,7 +55,7 @@ export default function Footer({ locale, t }: Props) {
 
       <div className="foot__bottom">
         <div className="foot__legal">
-          {t.legal} · <a href="#">{t.privacyPolicy}</a> · <a href="#">{t.cookiePolicy}</a>
+          {t.legal} · <a href={`/${locale}/privacy-policy`}>{t.privacyPolicy}</a> · <a href={`/${locale}/cookie-policy`}>{t.cookiePolicy}</a>
         </div>
         <div className="foot__lang">
           <a href={`/${locale}`} className="active">{locale.toUpperCase()}</a>

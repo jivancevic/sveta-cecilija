@@ -5,7 +5,12 @@
       "Bash(mkdir -p \"/Users/jivancevic/projects/websites/sveta-cecilija/sveta-cecilija-web/src/app/[locale]/about\")",
       "Bash(mkdir -p \"/Users/jivancevic/projects/websites/sveta-cecilija/sveta-cecilija-web/src/app/[locale]/sections/[slug]\")",
       "Bash(npm run *)",
-      "Bash(gh issue *)"
+      "Bash(gh issue *)",
+      "Bash(python3 -c \"import json,sys; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d.get\\('services', d.get\\('svcs', {}\\)\\), indent=2\\)\\)\")",
+      "Bash(python3 -c ' *)",
+      "Bash(mkdir -p \"/Users/jivancevic/projects/websites/sveta-cecilija/sveta-cecilija-web/src/app/[locale]/privacy-policy\")",
+      "Bash(mkdir -p \"/Users/jivancevic/projects/websites/sveta-cecilija/sveta-cecilija-web/src/app/[locale]/cookie-policy\")",
+      "Bash(git add *)"
     ]
   }
 }

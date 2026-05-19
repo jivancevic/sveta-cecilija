@@ -5,9 +5,10 @@ import type { Dictionary } from '@/lib/i18n';
 
 interface Props {
   t: Dictionary['hero'];
+  locale: string;
 }
 
-export default function Hero({ t }: Props) {
+export default function Hero({ t, locale }: Props) {
   const [videoSrc, setVideoSrc] = useState('/hero-horizontal.webm');
   const [videoReady, setVideoReady] = useState(false);
   const [minTimeDone, setMinTimeDone] = useState(false);
@@ -66,7 +67,7 @@ export default function Hero({ t }: Props) {
       </div>
 
       <div className="hero__ctas">
-        <a className="btn btn--primary btn--hero-cta" href="#sched">{t.buyTickets}</a>
+        <a className="btn btn--primary btn--hero-cta" href={`/${locale}/tickets`}>{t.buyTickets}</a>
       </div>
 
       <div className="hero__scroll">{t.scroll}</div>

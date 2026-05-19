@@ -1,2 +1,0 @@
-- Performances - mobile view - put photos on topt
-- Experiences - CTA buttons - white text
