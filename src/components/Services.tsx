@@ -22,7 +22,6 @@ export default function Services({ t, cards }: Props) {
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={meta.image} alt="" />
                 <div className="svc__photo-overlay" />
-                <span className="svc__num mono">{card.num}</span>
               </div>
               <div className="svc__body">
                 <div className="svc__tagline serif">{card.tagline}</div>

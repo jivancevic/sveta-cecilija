@@ -10,7 +10,12 @@ export default function About({ t, locale }: Props) {
   return (
     <section id="about" className="about">
       <div className="about__copy">
-        <div className="about__eyebrow" data-reveal>{t.eyebrow}</div>
+        <div className="about__eyebrow" data-reveal>
+          <span className="about__eyebrow-rule" />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/swords.png" className="about__eyebrow-swords" alt="" />
+          <span className="about__eyebrow-rule" />
+        </div>
         <h2 className="about__h serif" data-reveal data-delay="1">{t.headline}</h2>
         <p className="about__body" data-reveal data-delay="2">{t.body}</p>
         <a href={`/${locale}/about`} className="about__cta" data-reveal data-delay="3">{t.cta}</a>

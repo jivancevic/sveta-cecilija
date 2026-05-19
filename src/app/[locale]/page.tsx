@@ -8,7 +8,6 @@ import {
 } from '@/lib/data';
 import Nav from '@/components/Nav';
 import Hero from '@/components/Hero';
-import GoldDivider from '@/components/GoldDivider';
 import About from '@/components/About';
 import Schedule from '@/components/Schedule';
 import History from '@/components/History';
@@ -32,7 +31,6 @@ export default async function HomePage({
     <div className="hp t-stone">
       <Nav locale={locale} t={dict.nav} variant="homepage" />
       <Hero t={dict.hero} />
-      <GoldDivider />
       <About t={dict.about} locale={locale} />
       <Schedule t={dict.schedule} performances={upcoming} locale={locale} />
       <History t={dict.history} vignettes={HISTORY_VIGNETTES_HOME} />
