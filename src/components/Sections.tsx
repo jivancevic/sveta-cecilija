@@ -1,12 +1,20 @@
 import type { Dictionary } from '@/lib/i18n';
 import type { SectionCardMeta } from '@/lib/data';
 
+const KEY_TO_SLUG: Record<string, string> = {
+  moreska: 'moreska',
+  band: 'wind-orchestra',
+  klapa: 'klapa',
+  choir: 'choir',
+};
+
 interface Props {
   t: Dictionary['sections'];
   cards: SectionCardMeta[];
+  locale: string;
 }
 
-export default function Sections({ t, cards }: Props) {
+export default function Sections({ t, cards, locale }: Props) {
   const featureMeta = cards.find((c) => c.feature)!;
   const featureCard = t.cards.find((c) => c.key === featureMeta.key)!;
   const otherCards = cards.filter((c) => !c.feature).map((meta) => ({
@@ -20,7 +28,7 @@ export default function Sections({ t, cards }: Props) {
       <h2 className="secs__h serif" data-reveal data-delay="1">{t.headline}</h2>
 
       <div className="secs__grid">
-        <a className="card card--feature" href="#" data-reveal data-delay="1">
+        <a className="card card--feature" href={`/${locale}/sections/${KEY_TO_SLUG[featureMeta.key]}`} data-reveal data-delay="1">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={featureMeta.image} alt="" />
           <div className="overlay" />
@@ -33,7 +41,7 @@ export default function Sections({ t, cards }: Props) {
 
         <div className="secs__col-right">
           {otherCards.map(({ meta, text }, i) => (
-            <a key={meta.key} className="card" href="#" data-reveal data-delay={i + 2}>
+            <a key={meta.key} className="card" href={`/${locale}/sections/${KEY_TO_SLUG[meta.key]}`} data-reveal data-delay={i + 2}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src={meta.image} alt="" />
               <div className="overlay" />

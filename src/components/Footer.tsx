@@ -25,18 +25,18 @@ export default function Footer({ locale, t }: Props) {
         <div className="foot__cols">
           <div className="foot__col">
             <h5 className="foot__col-h">{t.visitLabel}</h5>
-            <a href="#sched">{t.performances}</a>
-            <a href="#about">{t.about}</a>
-            <a href="#history">{t.history}</a>
-            <a href="#secs">{t.sections}</a>
-            <a href="#svcs">{t.services}</a>
+            <a href={`/${locale}/tickets`}>{t.performances}</a>
+            <a href={`/${locale}/about`}>{t.about}</a>
+            <a href={`/${locale}/about`}>{t.history}</a>
+            <a href={`/${locale}#secs`}>{t.sections}</a>
+            <a href={`/${locale}#svcs`}>{t.services}</a>
           </div>
           <div className="foot__col">
             <h5 className="foot__col-h">{t.sectionsLabel}</h5>
-            <a href="#secs">{t.moreska}</a>
-            <a href="#secs">{t.windOrchestra}</a>
-            <a href="#secs">{t.klapa}</a>
-            <a href="#secs">{t.choir}</a>
+            <a href={`/${locale}/sections/moreska`}>{t.moreska}</a>
+            <a href={`/${locale}/sections/wind-orchestra`}>{t.windOrchestra}</a>
+            <a href={`/${locale}/sections/klapa`}>{t.klapa}</a>
+            <a href={`/${locale}/sections/choir`}>{t.choir}</a>
           </div>
           <div className="foot__col">
             <h5 className="foot__col-h">{t.contactLabel}</h5>

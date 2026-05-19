@@ -34,7 +34,7 @@ export default async function HomePage({
       <About t={dict.about} locale={locale} />
       <Schedule t={dict.schedule} performances={upcoming} locale={locale} />
       <History t={dict.history} vignettes={HISTORY_VIGNETTES_HOME} />
-      <Sections t={dict.sections} cards={SECTION_CARDS_META} />
+      <Sections t={dict.sections} cards={SECTION_CARDS_META} locale={locale} />
       <Services t={dict.services} cards={SERVICE_CARDS_META} locale={locale} />
       <Contact t={dict.contact} />
       <Footer locale={locale} t={dict.footer} />

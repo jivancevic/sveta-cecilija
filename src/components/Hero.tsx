@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import type { Dictionary } from '@/lib/i18n';
 
 interface Props {
@@ -10,10 +10,6 @@ interface Props {
 
 export default function Hero({ t, locale }: Props) {
   const [videoSrc, setVideoSrc] = useState('/hero-horizontal.webm');
-  const [videoReady, setVideoReady] = useState(false);
-  const [minTimeDone, setMinTimeDone] = useState(false);
-  const loaded = videoReady && minTimeDone;
-  const loaderRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const update = () => {
@@ -24,37 +20,21 @@ export default function Hero({ t, locale }: Props) {
     return () => window.removeEventListener('resize', update);
   }, []);
 
-  useEffect(() => {
-    const t = setTimeout(() => setMinTimeDone(true), 1200);
-    return () => clearTimeout(t);
-  }, []);
-
-  useEffect(() => {
-    if (!loaded || !loaderRef.current) return;
-    const el = loaderRef.current;
-    el.style.opacity = '0';
-    const onEnd = () => { el.style.display = 'none'; };
-    el.addEventListener('transitionend', onEnd, { once: true });
-  }, [loaded]);
+  const poster = videoSrc === '/hero-vertical.webm'
+    ? '/hero-vertical-poster.webp'
+    : '/hero-horizontal-poster.webp';
 
   return (
     <section className="hero">
-      {/* Loading overlay */}
-      <div ref={loaderRef} className="hero__loader">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/cecilija-logo.png" className="hero__loader-logo" alt="" />
-      </div>
-
       <video
         key={videoSrc}
         className="hero__video"
         src={videoSrc}
+        poster={poster}
         autoPlay
         muted
         loop
         playsInline
-        onCanPlayThrough={() => setVideoReady(true)}
-        onLoadedData={() => setVideoReady(true)}
       />
       <div className="hero__darken" />
       <div className="hero__grey" />
