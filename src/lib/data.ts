@@ -105,3 +105,8 @@ export const SECTION_PAGE_META: Record<string, { image: string; sectionKey: stri
   'klapa':           { image: '/klapa-todor.webp',      sectionKey: 'klapa' },
   'choir':           { image: '/choir.jpeg',            sectionKey: 'choir' },
 };
+
+export const SERVICE_PAGE_META: Record<string, { image: string; cardIndex: number }> = {
+  'private-moreska':    { image: '/black-king-closeup.jpg', cardIndex: 0 },
+  'moreska-experience': { image: '/moreska-experience.jpg', cardIndex: 1 },
+};

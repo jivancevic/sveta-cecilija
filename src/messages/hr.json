@@ -2,11 +2,11 @@
   "nav": {
     "wordmarkTop": "Sveta Cecilija",
     "wordmarkBot": "Korčula · od 1883.",
-    "performances": "Nastupi",
+    "performances": "Ulaznice",
     "about": "O nama",
     "history": "Povijest",
     "sections": "Sekcije",
-    "services": "Usluge",
+    "services": "Iskustvo",
     "contact": "Kontakt",
     "buyTickets": "Kupi ulaznice"
   },
@@ -31,8 +31,8 @@
     "soldOut": "Rasprodano",
     "left": "Ostalo {count}",
     "buyTickets": "Kupi ulaznice →",
-    "viewAll": "Svi 24 nastupa",
-    "priceNote": "Odrasli 20 € · Djeca do 14 godina 10 €"
+    "viewAll": "Svi nastupi",
+    "priceNote": "Odrasli 20 € · Djeca do 14 godina 10 € · Grupe: svaka peta ulaznica gratis"
   },
   "history": {
     "eyebrow": "Četiri stoljeća",
@@ -153,6 +153,44 @@
     "successTitle": "Rezervacija primljena",
     "successBody": "Kontaktirat ćemo vas za potvrdu rezervacije."
   },
+  "cookieBanner": {
+    "body": "Koristimo kolačiće kako bismo razumjeli kako koristite ovu stranicu. Analitički kolačići učitavaju se samo uz vašu suglasnost.",
+    "learnMore": "Saznaj više",
+    "accept": "Prihvati sve",
+    "decline": "Odbij"
+  },
+  "privacyPage": {
+    "heroHeadline": "Politika privatnosti",
+    "heroSubtitle": "Kako prikupljamo, koristimo i štitimo vaše podatke",
+    "lastUpdated": "Posljednje ažuriranje: svibanj 2026.",
+    "sections": [
+      { "heading": "Tko smo", "body": "HGD Sveta Cecilija (Hrvatsko glazbeno društvo Sveta Cecilija) kulturna je udruga sa sjedištem u Korčuli, Hrvatska, koja upravlja web stranicom moreska.eu. Kao voditelj obrade osobnih podataka, odgovorni smo za vaše osobne podatke. Kontakt: info@moreska.eu" },
+      { "heading": "Koje podatke prikupljamo i zašto", "body": "Kontaktni i upitni obrasci: Prikupljamo vaše ime, e-mail adresu i poruku kako bismo odgovorili na vaš upit. Pravna osnova: legitimni interes.\n\nRezervacije ulaznica: Prikupljamo vaše ime i e-mail radi potvrde rezervacije i slanja ulaznica. Pravna osnova: izvršenje ugovora.\n\nAnalitika: Uz vašu suglasnost, koristimo Google Analytics za prikupljanje anonimiziranih podataka o korištenju stranice. Nikakvi osobni podaci ne povezuju se s analitičkim izvješćima. Pravna osnova: privola." },
+      { "heading": "Čuvanje podataka", "body": "Podaci iz kontaktnih obrazaca čuvaju se 2 godine. Podaci o rezervacijama čuvaju se 7 godina radi ispunjenja računovodstvenih obveza. Analitički podaci čuvaju se prema standardnim postavkama Googlea (26 mjeseci)." },
+      { "heading": "Vaša prava", "body": "Prema GDPR-u imate pravo pristupa, ispravka, brisanja, ograničenja ili prenosivosti vaših osobnih podataka, te pravo povlačenja privole u bilo kojem trenutku. Za ostvarivanje navedenih prava obratite nam se na info@moreska.eu. Ako smatrate da su vaša prava povrijeđena, možete podnijeti pritužbu Agenciji za zaštitu osobnih podataka (AZOP) na azop.hr." },
+      { "heading": "Izmjene ove politike", "body": "Ovu Politiku privatnosti možemo povremeno ažurirati. Datum posljednjeg ažuriranja naveden je iznad. Daljnjim korištenjem stranice nakon izmjena prihvaćate ažuriranu politiku." }
+    ]
+  },
+  "cookiePage": {
+    "heroHeadline": "Politika kolačića",
+    "heroSubtitle": "Koje kolačiće koristimo i kako njima upravljati",
+    "lastUpdated": "Posljednje ažuriranje: svibanj 2026.",
+    "sections": [
+      { "heading": "Što su kolačići?", "body": "Kolačići su male tekstualne datoteke koje vaš preglednik pohranjuje na vaš uređaj kada posjetite web stranicu. Pomažu stranici zapamtiti informacije o vašoj posjeti." },
+      { "heading": "Nužni kolačići", "body": "Ovi kolačići potrebni su za ispravno funkcioniranje web stranice. Ne prate vas na drugim stranicama i ne mogu se isključiti. Nužni kolačići ne prikupljaju osobne podatke." },
+      { "heading": "Analitički kolačići", "body": "Uz vašu suglasnost, koristimo Google Analytics kako bismo razumjeli kako posjetitelji koriste ovu stranicu. Ovi kolačići prikupljaju anonimizirane podatke — posjećene stranice, provedeno vrijeme i slične metrike. Nikakvi osobni podaci ne bilježe se niti se povezuju s vašim identitetom. Suglasnost možete povući u bilo kojem trenutku putem bannera za upravljanje kolačićima." },
+      { "heading": "Upravljanje kolačićima", "body": "Kolačićima možete upravljati i brisati ih putem postavki vašeg preglednika. Brisanje ili blokiranje kolačića može utjecati na vaše iskustvo na stranici. Za analitičke kolačiće koristite banner koji se prikazuje pri prvoj posjeti. Više o načinu na koji Google koristi podatke: policies.google.com/privacy." },
+      { "heading": "Izmjene ove politike", "body": "Ovu Politiku kolačića možemo povremeno ažurirati. Datum posljednjeg ažuriranja naveden je iznad." }
+    ]
+  },
+  "servicePages": {
+    "backLink": "← Privatne izvedbe",
+    "formTitle": "Pošalji upit",
+    "formBody": "Opišite svoju skupinu i javit ćemo vam se u roku dva radna dana.",
+    "ctaHeadline": "Doživite Morešku uživo.",
+    "ctaBody": "Dvadeset i četiri nastupa u Ljetnom kinu, Korčula. Svibanj–listopadu, 21:00.",
+    "ctaButton": "Pogledaj raspored nastupa"
+  },
   "sectionPages": {
     "backLink": "← Sve sekcije",
     "ctaHeadline": "Doživite uživo.",
@@ -196,11 +234,11 @@
     "visitLabel": "Posjeti",
     "sectionsLabel": "Sekcije",
     "contactLabel": "Kontakt",
-    "performances": "Nastupi",
+    "performances": "Ulaznice",
     "about": "O nama",
     "history": "Povijest",
     "sections": "Sekcije",
-    "services": "Usluge",
+    "services": "Iskustvo",
     "moreska": "Moreška",
     "windOrchestra": "Puhački orkestar",
     "klapa": "Klapa",

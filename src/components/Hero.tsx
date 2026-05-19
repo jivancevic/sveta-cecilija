@@ -5,9 +5,10 @@ import type { Dictionary } from '@/lib/i18n';
 
 interface Props {
   t: Dictionary['hero'];
+  locale: string;
 }
 
-export default function Hero({ t }: Props) {
+export default function Hero({ t, locale }: Props) {
   const [videoSrc, setVideoSrc] = useState('/hero-horizontal.webm');
 
   useEffect(() => {
@@ -19,12 +20,17 @@ export default function Hero({ t }: Props) {
     return () => window.removeEventListener('resize', update);
   }, []);
 
+  const poster = videoSrc === '/hero-vertical.webm'
+    ? '/hero-vertical-poster.webp'
+    : '/hero-horizontal-poster.webp';
+
   return (
     <section className="hero">
       <video
         key={videoSrc}
         className="hero__video"
         src={videoSrc}
+        poster={poster}
         autoPlay
         muted
         loop
@@ -41,7 +47,7 @@ export default function Hero({ t }: Props) {
       </div>
 
       <div className="hero__ctas">
-        <a className="btn btn--primary" href="#sched">{t.buyTickets}</a>
+        <a className="btn btn--primary btn--hero-cta" href={`/${locale}/tickets`}>{t.buyTickets}</a>
       </div>
 
       <div className="hero__scroll">{t.scroll}</div>

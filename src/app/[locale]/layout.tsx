@@ -1,6 +1,8 @@
 import type { Metadata } from 'next';
 import { Bodoni_Moda_SC, IBM_Plex_Mono, Inter } from 'next/font/google';
 import { locales, type Locale } from '@/proxy';
+import { getDictionary } from '@/lib/i18n';
+import CookieConsent from '@/components/CookieConsent';
 import '../globals.css';
 
 const bodoniModa = Bodoni_Moda_SC({
@@ -43,13 +45,17 @@ export default async function LocaleLayout({
 }) {
   const { locale: rawLocale } = await params;
   const locale = (locales.includes(rawLocale as Locale) ? rawLocale : 'en') as Locale;
+  const dict = await getDictionary(locale);
 
   return (
     <html
       lang={locale}
       className={`${bodoniModa.variable} ${ibmPlexMono.variable} ${inter.variable}`}
     >
-      <body>{children}</body>
+      <body>
+        {children}
+        <CookieConsent t={dict.cookieBanner} locale={locale} />
+      </body>
     </html>
   );
 }

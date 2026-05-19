@@ -1,12 +1,15 @@
 import type { Dictionary } from '@/lib/i18n';
 import type { ServiceCardMeta } from '@/lib/data';
 
+const SERVICE_SLUGS = ['private-moreska', 'moreska-experience'];
+
 interface Props {
   t: Dictionary['services'];
   cards: ServiceCardMeta[];
+  locale: string;
 }
 
-export default function Services({ t, cards }: Props) {
+export default function Services({ t, cards, locale }: Props) {
   return (
     <section id="svcs" className="svcs">
       <div className="svcs__eyebrow" data-reveal>{t.eyebrow}</div>
@@ -22,7 +25,6 @@ export default function Services({ t, cards }: Props) {
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={meta.image} alt="" />
                 <div className="svc__photo-overlay" />
-                <span className="svc__num mono">{card.num}</span>
               </div>
               <div className="svc__body">
                 <div className="svc__tagline serif">{card.tagline}</div>
@@ -38,7 +40,7 @@ export default function Services({ t, cards }: Props) {
                 </ul>
                 <div className="svc__foot">
                   <span className="svc__meta mono">{card.meta}</span>
-                  <a className="btn btn--primary btn--small" href="#contact">
+                  <a className="btn btn--primary btn--small" href={`/${locale}/services/${SERVICE_SLUGS[i]}`}>
                     {card.cta}
                   </a>
                 </div>
