@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { Performance } from '@/lib/data';
 import type { Dictionary } from '@/lib/i18n';
 import type { Locale } from '@/proxy';
@@ -10,6 +10,7 @@ interface Props {
   tSchedule: Dictionary['schedule'];
   performances: Performance[];
   locale: Locale;
+  initialDate?: string;
 }
 
 function formatDate(isoDate: string, locale: Locale) {
@@ -23,11 +24,24 @@ function formatDate(isoDate: string, locale: Locale) {
   return { day, month, year, weekday };
 }
 
-export default function PerformancesPage({ t, tSchedule, performances, locale }: Props) {
-  const [activeDate, setActiveDate] = useState<string | null>(null);
+function todayStr() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+export default function PerformancesPage({ t, tSchedule, performances, locale, initialDate }: Props) {
+  const [activeDate, setActiveDate] = useState<string | null>(initialDate ?? null);
   const [adults, setAdults] = useState(2);
   const [children, setChildren] = useState(0);
   const [confirmed, setConfirmed] = useState<string | null>(null);
+  const targetRef = useRef<HTMLDivElement | null>(null);
+
+  const upcoming = performances.filter((p) => p.date >= todayStr());
+
+  useEffect(() => {
+    if (initialDate && targetRef.current) {
+      targetRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [initialDate]);
 
   function openBooking(date: string) {
     if (activeDate === date) {
@@ -44,7 +58,13 @@ export default function PerformancesPage({ t, tSchedule, performances, locale }:
     setActiveDate(null);
   }
 
-  const total = adults * 20 + children * 10;
+  const totalTickets = adults + children;
+  const hasAdult = adults > 0;
+  const discount = Math.floor(totalTickets / 5) * (hasAdult ? 20 : 10);
+  const total = adults * 20 + children * 10 - discount;
+
+  const showNudge = totalTickets > 0 && totalTickets % 5 === 4;
+  const showCelebrate = discount > 0;
 
   return (
     <section className="perfs-page">
@@ -54,8 +74,29 @@ export default function PerformancesPage({ t, tSchedule, performances, locale }:
         <p className="perfs-sub">{t.subline}</p>
       </div>
 
+      {/* Venue info block */}
+      <div className="perfs-venue">
+        <a
+          className="perfs-venue__item perfs-venue__location"
+          href={t.venueMapUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <span className="perfs-venue__icon">📍</span>
+          <span>{t.venue}</span>
+        </a>
+        <div className="perfs-venue__item">
+          <span className="perfs-venue__icon">⏱</span>
+          <span>{t.duration}</span>
+        </div>
+        <div className="perfs-venue__item">
+          <span className="perfs-venue__icon">🎭</span>
+          <span>{t.programme}</span>
+        </div>
+      </div>
+
       <div className="perfs-grid">
-        {performances.map((p, i) => {
+        {upcoming.map((p, i) => {
           const { day, month, year, weekday } = formatDate(p.date, locale);
           const soldOut = p.capacity - p.sold <= 0;
           const isActive = activeDate === p.date;
@@ -72,6 +113,7 @@ export default function PerformancesPage({ t, tSchedule, performances, locale }:
           return (
             <div
               key={p.date}
+              ref={p.date === initialDate ? targetRef : null}
               className={`perf-card${isActive ? ' perf-card--active' : ''}`}
             >
               <div className="perf-card__photo">
@@ -128,6 +170,16 @@ export default function PerformancesPage({ t, tSchedule, performances, locale }:
                     <button className="qty-btn" onClick={() => setChildren(children + 1)}>+</button>
                   </div>
                 </div>
+
+                {showNudge && !showCelebrate && (
+                  <div className="perf-booking__nudge">{t.freeTicketNudge}</div>
+                )}
+                {showCelebrate && (
+                  <div className="perf-booking__celebrate">
+                    {t.freeTicketUnlocked} <span className="perf-booking__discount">−€{discount}</span>
+                  </div>
+                )}
+
                 <div className="perf-booking__total">
                   <span>{t.total}</span>
                   <span className="perf-booking__total-amount">€{total}</span>

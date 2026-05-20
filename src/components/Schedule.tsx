@@ -37,7 +37,7 @@ export default function Schedule({ t, performances, locale }: Props) {
           const pillText = soldOut ? t.soldOut : isNext ? t.fewLeft : t.available;
 
           return (
-            <a key={p.date} href={`/${locale}/tickets`} className="opera__card" data-reveal data-delay={i + 1}>
+            <a key={p.date} href={`/tickets?date=${p.date}`} className="opera__card" data-reveal data-delay={i + 1}>
               <div className="opera__photo">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={p.image} alt="" />
@@ -68,7 +68,7 @@ export default function Schedule({ t, performances, locale }: Props) {
       </div>
 
       <div className="opera__foot" data-reveal>
-        <a href={`/${locale}/tickets`} className="opera__viewall">{t.viewAll}</a>
+        <a href="/tickets" className="opera__viewall">{t.viewAll}</a>
         <span className="opera__price-note">{t.priceNote}</span>
       </div>
     </section>

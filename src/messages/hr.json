@@ -16,12 +16,12 @@
   },
   "about": {
     "eyebrow": "Od 1883.",
-    "headline": "Živa tradicija, 143 godine u nastajanju",
-    "body": "Od 1883. godine HGD Sveta Cecilija čuvar je najdragocjenije tradicije Korčule. Moreška — posljednji autentični ratni ples Europe — izvodi se ovdje, na ovom otoku, od strane sinova Korčule. Željezni mačevi, arhaični stihovi i sedam borbi koje se nisu promijenile kroz stoljeća. Dođite i svjedočite tome.",
+    "headline": "Tradicija bojnog plesa i glazbe",
+    "body": "HGD Sveta Cecilija od 1883. godine djeluje kao čuvar korčulanske kulturne baštine. Dok je moreška u prošlosti bila raširena diljem Mediterana, do danas se u svom izvornom, bojnom obliku zadržala isključivo na ovom otoku. Generacije Korčulana kroz stoljeća prenose neizmijenjenu koreografiju s pravim mačevima, arhaični dramski tekst i orkestralnu pratnju. Budite dio te povijesti.",
     "cta": "Otkrij našu priču →"
   },
   "schedule": {
-    "eyebrow": "Trenutno u Ljetnom kinu",
+    "eyebrow": "Doživite morešku",
     "headline": "Nastupi sezone 2026.",
     "subBefore": "Svaki nastup u",
     "venueName": "Ljetnom kinu, Korčula",
@@ -35,29 +35,29 @@
     "priceNote": "Odrasli 20 € · Djeca do 14 godina 10 € · Grupe: svaka peta ulaznica gratis"
   },
   "history": {
-    "eyebrow": "Četiri stoljeća",
-    "headline": "Pregled povijesti",
-    "subline": "Četiri trenutka koji su španjolski ritual sceniranog sukoba doveli na korčulansko kameno dvorište — i zadržali ga tamo.",
+    "eyebrow": "Kroz stoljeća",
+    "headline": "Povijesni pregled",
+    "subline": "Četiri ključna trenutka koji su mediteranski bojni ritual, od njegovih španjolskih korijena, doveli do korčulanskih kamenih ulica — i ondje ga trajno sačuvali.",
     "vignettes": [
       {
         "place": "Lleida, Španjolska",
-        "title": "Ples se rađa",
-        "body": "Najraniji zabilježeni nastup Moreške odvija se u Lleidi, u spomen na kršćansko osvajanje Aragona. Rađa se ritual insceniranog sukoba dviju vojski — koji će putovati Sredozemljem kroz stoljeća."
+        "title": "Nastanak moreške",
+        "body": "U španjolskoj Lleidi bilježi se prva poznata izvedba moreške, izvedena u čast kršćanske pobjede u Aragonu. Taj rani oblik bojnog rituala postat će temelj tradicije koja će se stoljećima širiti mediteranskom obalom."
       },
       {
         "place": "Korčula, 7. ožujka",
-        "title": "Prvi zapis na Korčuli",
-        "body": "Gradski dnevnik od 7. ožujka 1666. bilježi nastup Moreške za vrijeme karnevala. Ples je već duboko ukorijenjen. Dok slične tradicije nestaju diljem Dalmacije, Korčula ih čuva — i nikada ne pušta."
+        "title": "Dolazak na otok",
+        "body": "Korčulanski zapisi iz 1666. godine bilježe nastup moreške u vrijeme karnevala, otkrivajući da je običaj već tada bio dio otočkog identiteta. U stoljećima koja slijede, dok slične tradicije gasnu diljem Dalmacije, Korčula ostaje njezino sigurno utočište do danas."
       },
       {
         "place": "Hrvatski narodni preporod",
-        "title": "Osnovano HGD Sveta Cecilija",
-        "body": "Mještani osnivaju Korčulansko pjevačko društvo sv. Cecilije. Osnivački statuti proglašavaju misiju \"oplemeniti srca lokalne mladeži\" i braniti hrvatski jezik, narodnu pjesmu i identitet. Institucionalni dom Moreške je rođen."
+        "title": "Osnutak društva",
+        "body": "Korčulani osnivaju Korčulansko pjevačko društvo „Sveta Cecilija\". Osnivački statut definira jasnu misiju: odgoj lokalne mladeži te obrana hrvatskog jezika, narodne pjesme i kulturnog identiteta. Društvo pod ovim imenom postaje središnji stup očuvanja moreške, djelujući u kontinuitetu sve do Drugog svjetskog rata."
       },
       {
         "place": "Slobodna Hrvatska",
-        "title": "Novo doba",
-        "body": "Nakon proglašenja hrvatske neovisnosti, HGD Sveta Cecilija službeno se obnavlja pod izvornim imenom i misijom. Društvo se vraća korijenima: čuvanju Moreške i njegovanja svih dimenzija korčulanskog kulturnog života."
+        "title": "Obnova društva",
+        "body": "Nakon proglašenja hrvatske neovisnosti, HGD Sveta Cecilija službeno se obnavlja pod izvornim imenom i misijom. Društvo se vraća korijenima: čuvanju moreške i njegovanja svih dimenzija korčulanskog kulturnog života."
       }
     ]
   },
@@ -66,24 +66,40 @@
     "headline": "Naše sekcije",
     "discover": "Otkrij →",
     "cards": [
-      { "key": "moreska", "name": "Moreška",              "blurb": "Posljednji autentični ratni ples Europe, koji se izvodi od 1666." },
-      { "key": "band",    "name": "Puhački orkestar",      "blurb": "Mjedeni zvuk svake izvedbe od 1937. godine." },
-      { "key": "klapa",   "name": "Klapa Sveta Cecilija",  "blurb": "Glas prije mača — dalmatinska a cappella, baština UNESCO-a." },
-      { "key": "choir",   "name": "Zbor",                  "blurb": "Obnova 2023. Zborski repertoar — folk, sakralno, suvremeno." }
+      {
+        "key": "moreska",
+        "name": "moreška",
+        "blurb": "Posljednji autentični ratni ples Europe, koji se izvodi od 1666."
+      },
+      {
+        "key": "band",
+        "name": "Puhački orkestar",
+        "blurb": "Mjedeni zvuk svake izvedbe od 1937. godine."
+      },
+      {
+        "key": "klapa",
+        "name": "Klapa Sveta Cecilija",
+        "blurb": "Glas prije mača — dalmatinska a cappella, baština UNESCO-a."
+      },
+      {
+        "key": "choir",
+        "name": "Zbor",
+        "blurb": "Obnova 2023. Zborski repertoar — folk, sakralno, suvremeno."
+      }
     ]
   },
   "services": {
-    "eyebrow": "Dovedite Morešku svojoj skupini",
+    "eyebrow": "Dovedite morešku svojoj skupini",
     "headline": "Privatne izvedbe",
     "lede": "Dva načina da Korčulansku živu baštinu dovedete bliže — cjelovita privatna izvedba ili intimni susret iza kulisa.",
     "cards": [
       {
         "num": "01 / 02",
         "tagline": "Ekskluzivna izvedba, isključivo za vašu skupinu",
-        "name": "Privatna Moreška",
+        "name": "Privatna moreška",
         "blurb": "Cjelovita privatna izvedba za grupe, u Ljetnom kinu ili Centru za kulturu Korčula.",
         "bullets": [
-          "Cjelovita izvedba Moreške sa svih sedam kolapa",
+          "Cjelovita izvedba moreške sa svih sedam kolapa",
           "Nastup puhačkog orkestra uživo",
           "Ljetno kino (na otvorenom) ili Centar za kulturu (zatvoreno)",
           "Do 600 gostiju · Rezervacije za kruzere, retreate, vjenčanja"
@@ -94,11 +110,11 @@
       {
         "num": "02 / 02",
         "tagline": "Bliski susret s tradicijom",
-        "name": "Moreška iskustvo",
+        "name": "moreška iskustvo",
         "blurb": "Intimni edukativni susret s kostimima, mačevima i dijalogom. Min. 5 osoba.",
         "bullets": [
           "Baština i regalia — kostimi i željezni mačevi izbliza",
-          "Podrijetlo Moreške, od Lleide do Korčule",
+          "Podrijetlo moreške, od Lleide do Korčule",
           "Dramski dijalozi na arhaičnom korčulanskom, u izvodima",
           "Isječci iz viteške borbe mačevima, izvedeni uživo"
         ],
@@ -118,7 +134,13 @@
     "emailPlaceholder": "vi@email.com",
     "enquiry": "Vrsta upita",
     "enquirySelect": "Odaberite…",
-    "enquiryOptions": ["Općenito", "Privatna Moreška", "Moreška iskustvo", "Tisak", "Ostalo"],
+    "enquiryOptions": [
+      "Općenito",
+      "Privatna moreška",
+      "moreška iskustvo",
+      "Tisak",
+      "Ostalo"
+    ],
     "message": "Poruka",
     "messagePlaceholder": "Opišite nam vaš upit…",
     "submit": "Pošalji poruku →",
@@ -129,9 +151,9 @@
     "heroHeadline": "Priča o HGD Sveta Cecilija",
     "heroSubtitle": "Čuvari korčulanske žive baštine od 1883. godine",
     "intro": [
-      "Dva kralja. Jedna zarobljena djevojka. Ukradena ljubav, ritualni izazov i sedam borbi koje odlučuju o sudbini časti. To je Moreška — posljednji preživjeli ratni ples Europe i duša Korčule. Više od četiri stoljeća, muškarci na ovom malom dalmatinskom otoku vuku željezne mačeve kako bi ponovo izveli dramu vrline i sile. Bula, zaručnica Bijeloga kralja Osmana, zarobljena je od Mora — Crnoga kralja koji je želi prisilom. Njezin odgovor prosijeca kamenu tišinu: 'Veće mi je jado tvoja nehtjena ljubav neg li čelik.' Ono što slijedi je Sfida — izazov — a zatim sedam eskalacijskih figura borbe s dva mača koje se nisu promijenile kroz stoljeća.",
-      "Ono što Morešku odvaja od svake druge folklorne izvedbe u Europi je tehnika dvojnog mača. Svaki moreškar nosi dvije željezne oštrice — desna ruka udara, lijeva para — čuvajući borilačku tehniku jadranskog garnizona iz 16. stoljeća. Mačevi teže kilogram svaki i udaraju dovoljno snažno da izbijaju iskre. Godine 1937. hrvatski skladatelj Krsto Odak napisao je definitivan notni zapis za limeni orkestar koji pokreće svaku figuru — sedam stavaka koji počinju u lirskoj napetosti i eskaliraju do žestokog finala u 4/4 taktu dok se krug Crne vojske sužava i predaje. Kostimi prate tradiciju talijanskog dvorskog baleta 17. stoljeća: pune naborane suknje, rimske manšete, pojasevi. Bijela vojska nosi crvenu boju; Crna vojska nosi crnu. Nema ničega sličnog nigdje u Europi.",
-      "Godine 1883., za vrijeme Hrvatskog narodnog preporoda, korčulanski su građani osnovali Pjevačko društvo Sveta Cecilija — današnje HGD Sveta Cecilija. Njihova misija: oplemenjivati srca lokalne mladeži, braniti hrvatski jezik i čuvati Morešku. Uslijedilo je stoljeće i pol institucionalne otpornosti. Društvo je preživjelo Austro-Ugarsku monarhiju, dva svjetska rata — od kojih je drugi potpuno uništio kostime, mačeve i notne zapise. Dok je otok oslobađan 1944., gradski berberin Ivo Lozica i učitelj Božo Jeričević ispočetka su uvježbali novu skupinu dječaka od 12 do 17 godina, šijući kostime od oltarnog platna. Godine 1991., HGD Sveta Cecilija je obnovljeno pod izvornim imenom nakon proglašenja hrvatske neovisnosti. Ples je preživio sve.",
+      "Dva kralja. Jedna zarobljena djevojka. Ukradena ljubav, ritualni izazov i sedam borbi koje odlučuju o sudbini časti. To je moreška — posljednji preživjeli ratni ples Europe i duša Korčule. Više od četiri stoljeća, muškarci na ovom malom dalmatinskom otoku vuku željezne mačeve kako bi ponovo izveli dramu vrline i sile. Bula, zaručnica Bijeloga kralja Osmana, zarobljena je od Mora — Crnoga kralja koji je želi prisilom. Njezin odgovor prosijeca kamenu tišinu: 'Veće mi je jado tvoja nehtjena ljubav neg li čelik.' Ono što slijedi je Sfida — izazov — a zatim sedam eskalacijskih figura borbe s dva mača koje se nisu promijenile kroz stoljeća.",
+      "Ono što morešku odvaja od svake druge folklorne izvedbe u Europi je tehnika dvojnog mača. Svaki moreškar nosi dvije željezne oštrice — desna ruka udara, lijeva para — čuvajući borilačku tehniku jadranskog garnizona iz 16. stoljeća. Mačevi teže kilogram svaki i udaraju dovoljno snažno da izbijaju iskre. Godine 1937. hrvatski skladatelj Krsto Odak napisao je definitivan notni zapis za limeni orkestar koji pokreće svaku figuru — sedam stavaka koji počinju u lirskoj napetosti i eskaliraju do žestokog finala u 4/4 taktu dok se krug Crne vojske sužava i predaje. Kostimi prate tradiciju talijanskog dvorskog baleta 17. stoljeća: pune naborane suknje, rimske manšete, pojasevi. Bijela vojska nosi crvenu boju; Crna vojska nosi crnu. Nema ničega sličnog nigdje u Europi.",
+      "Godine 1883., za vrijeme Hrvatskog narodnog preporoda, korčulanski su građani osnovali Pjevačko društvo Sveta Cecilija — današnje HGD Sveta Cecilija. Njihova misija: oplemenjivati srca lokalne mladeži, braniti hrvatski jezik i čuvati morešku. Uslijedilo je stoljeće i pol institucionalne otpornosti. Društvo je preživjelo Austro-Ugarsku monarhiju, dva svjetska rata — od kojih je drugi potpuno uništio kostime, mačeve i notne zapise. Dok je otok oslobađan 1944., gradski berberin Ivo Lozica i učitelj Božo Jeričević ispočetka su uvježbali novu skupinu dječaka od 12 do 17 godina, šijući kostime od oltarnog platna. Godine 1991., HGD Sveta Cecilija je obnovljeno pod izvornim imenom nakon proglašenja hrvatske neovisnosti. Ples je preživio sve.",
       "U Korčuli postoji izreka: 'Nisi muški ako ne znaš moreški.' Dječaci počinju učiti korake već u osnovnoj školi. Uloge — kraljevi, Bula — prelaze s oca na sina kroz generacije. Ples se ne izvodi za turiste. Izvodi se jer se uvijek izvodio — jer grad koji je preživio Mlečane, Osmanlije, Habsburgovce i jugoslavenske komesare zna što znači čuvati nešto sveto. Svako ljeto, od svibnja do listopada, HGD Sveta Cecilija nastupa 24 puta u otvorenom Ljetnom kinu u starom gradu. Isti željezni mačevi. Isti arhaični korčulanski stihovi. Iste sedam borbi. Dođite svjedočiti."
     ],
     "ctaHeadline": "Svako ljeto u Ljetnom kinu, Korčula.",
@@ -142,7 +164,7 @@
     "eyebrow": "Ljetno kino, Korčula",
     "headline": "Sezona 2026. — Svi nastupi",
     "subline": "Svaki nastup u Ljetnom kinu · Početak u 21:00",
-    "book": "Rezerviraj ulaznice",
+    "book": "Kupi ulaznice",
     "soldOutLabel": "Rasprodano",
     "adults": "Odrasli",
     "children": "Djeca (do 14 godina)",
@@ -151,7 +173,13 @@
     "total": "Ukupno",
     "confirm": "Potvrdi rezervaciju →",
     "successTitle": "Rezervacija primljena",
-    "successBody": "Kontaktirat ćemo vas za potvrdu rezervacije."
+    "successBody": "Kontaktirat ćemo vas za potvrdu rezervacije.",
+    "venueMapUrl": "https://maps.app.goo.gl/bVYpoQAHw6sixyYk9",
+    "venue": "Ljetno kino, Korčula",
+    "duration": "1 sat",
+    "programme": "Nastup klape · moreška uz živi puhaći orkestar",
+    "freeTicketNudge": "Dodaj još jednu kartu — peta je besplatna!",
+    "freeTicketUnlocked": "Besplatna karta uključena"
   },
   "cookieBanner": {
     "body": "Koristimo kolačiće kako bismo razumjeli kako koristite ovu stranicu. Analitički kolačići učitavaju se samo uz vašu suglasnost.",
@@ -164,11 +192,26 @@
     "heroSubtitle": "Kako prikupljamo, koristimo i štitimo vaše podatke",
     "lastUpdated": "Posljednje ažuriranje: svibanj 2026.",
     "sections": [
-      { "heading": "Tko smo", "body": "HGD Sveta Cecilija (Hrvatsko glazbeno društvo Sveta Cecilija) kulturna je udruga sa sjedištem u Korčuli, Hrvatska, koja upravlja web stranicom moreska.eu. Kao voditelj obrade osobnih podataka, odgovorni smo za vaše osobne podatke. Kontakt: info@moreska.eu" },
-      { "heading": "Koje podatke prikupljamo i zašto", "body": "Kontaktni i upitni obrasci: Prikupljamo vaše ime, e-mail adresu i poruku kako bismo odgovorili na vaš upit. Pravna osnova: legitimni interes.\n\nRezervacije ulaznica: Prikupljamo vaše ime i e-mail radi potvrde rezervacije i slanja ulaznica. Pravna osnova: izvršenje ugovora.\n\nAnalitika: Uz vašu suglasnost, koristimo Google Analytics za prikupljanje anonimiziranih podataka o korištenju stranice. Nikakvi osobni podaci ne povezuju se s analitičkim izvješćima. Pravna osnova: privola." },
-      { "heading": "Čuvanje podataka", "body": "Podaci iz kontaktnih obrazaca čuvaju se 2 godine. Podaci o rezervacijama čuvaju se 7 godina radi ispunjenja računovodstvenih obveza. Analitički podaci čuvaju se prema standardnim postavkama Googlea (26 mjeseci)." },
-      { "heading": "Vaša prava", "body": "Prema GDPR-u imate pravo pristupa, ispravka, brisanja, ograničenja ili prenosivosti vaših osobnih podataka, te pravo povlačenja privole u bilo kojem trenutku. Za ostvarivanje navedenih prava obratite nam se na info@moreska.eu. Ako smatrate da su vaša prava povrijeđena, možete podnijeti pritužbu Agenciji za zaštitu osobnih podataka (AZOP) na azop.hr." },
-      { "heading": "Izmjene ove politike", "body": "Ovu Politiku privatnosti možemo povremeno ažurirati. Datum posljednjeg ažuriranja naveden je iznad. Daljnjim korištenjem stranice nakon izmjena prihvaćate ažuriranu politiku." }
+      {
+        "heading": "Tko smo",
+        "body": "HGD Sveta Cecilija (Hrvatsko glazbeno društvo Sveta Cecilija) kulturna je udruga sa sjedištem u Korčuli, Hrvatska, koja upravlja web stranicom moreska.eu. Kao voditelj obrade osobnih podataka, odgovorni smo za vaše osobne podatke. Kontakt: info@moreska.eu"
+      },
+      {
+        "heading": "Koje podatke prikupljamo i zašto",
+        "body": "Kontaktni i upitni obrasci: Prikupljamo vaše ime, e-mail adresu i poruku kako bismo odgovorili na vaš upit. Pravna osnova: legitimni interes.\n\nRezervacije ulaznica: Prikupljamo vaše ime i e-mail radi potvrde rezervacije i slanja ulaznica. Pravna osnova: izvršenje ugovora.\n\nAnalitika: Uz vašu suglasnost, koristimo Google Analytics za prikupljanje anonimiziranih podataka o korištenju stranice. Nikakvi osobni podaci ne povezuju se s analitičkim izvješćima. Pravna osnova: privola."
+      },
+      {
+        "heading": "Čuvanje podataka",
+        "body": "Podaci iz kontaktnih obrazaca čuvaju se 2 godine. Podaci o rezervacijama čuvaju se 7 godina radi ispunjenja računovodstvenih obveza. Analitički podaci čuvaju se prema standardnim postavkama Googlea (26 mjeseci)."
+      },
+      {
+        "heading": "Vaša prava",
+        "body": "Prema GDPR-u imate pravo pristupa, ispravka, brisanja, ograničenja ili prenosivosti vaših osobnih podataka, te pravo povlačenja privole u bilo kojem trenutku. Za ostvarivanje navedenih prava obratite nam se na info@moreska.eu. Ako smatrate da su vaša prava povrijeđena, možete podnijeti pritužbu Agenciji za zaštitu osobnih podataka (AZOP) na azop.hr."
+      },
+      {
+        "heading": "Izmjene ove politike",
+        "body": "Ovu Politiku privatnosti možemo povremeno ažurirati. Datum posljednjeg ažuriranja naveden je iznad. Daljnjim korištenjem stranice nakon izmjena prihvaćate ažuriranu politiku."
+      }
     ]
   },
   "cookiePage": {
@@ -176,18 +219,33 @@
     "heroSubtitle": "Koje kolačiće koristimo i kako njima upravljati",
     "lastUpdated": "Posljednje ažuriranje: svibanj 2026.",
     "sections": [
-      { "heading": "Što su kolačići?", "body": "Kolačići su male tekstualne datoteke koje vaš preglednik pohranjuje na vaš uređaj kada posjetite web stranicu. Pomažu stranici zapamtiti informacije o vašoj posjeti." },
-      { "heading": "Nužni kolačići", "body": "Ovi kolačići potrebni su za ispravno funkcioniranje web stranice. Ne prate vas na drugim stranicama i ne mogu se isključiti. Nužni kolačići ne prikupljaju osobne podatke." },
-      { "heading": "Analitički kolačići", "body": "Uz vašu suglasnost, koristimo Google Analytics kako bismo razumjeli kako posjetitelji koriste ovu stranicu. Ovi kolačići prikupljaju anonimizirane podatke — posjećene stranice, provedeno vrijeme i slične metrike. Nikakvi osobni podaci ne bilježe se niti se povezuju s vašim identitetom. Suglasnost možete povući u bilo kojem trenutku putem bannera za upravljanje kolačićima." },
-      { "heading": "Upravljanje kolačićima", "body": "Kolačićima možete upravljati i brisati ih putem postavki vašeg preglednika. Brisanje ili blokiranje kolačića može utjecati na vaše iskustvo na stranici. Za analitičke kolačiće koristite banner koji se prikazuje pri prvoj posjeti. Više o načinu na koji Google koristi podatke: policies.google.com/privacy." },
-      { "heading": "Izmjene ove politike", "body": "Ovu Politiku kolačića možemo povremeno ažurirati. Datum posljednjeg ažuriranja naveden je iznad." }
+      {
+        "heading": "Što su kolačići?",
+        "body": "Kolačići su male tekstualne datoteke koje vaš preglednik pohranjuje na vaš uređaj kada posjetite web stranicu. Pomažu stranici zapamtiti informacije o vašoj posjeti."
+      },
+      {
+        "heading": "Nužni kolačići",
+        "body": "Ovi kolačići potrebni su za ispravno funkcioniranje web stranice. Ne prate vas na drugim stranicama i ne mogu se isključiti. Nužni kolačići ne prikupljaju osobne podatke."
+      },
+      {
+        "heading": "Analitički kolačići",
+        "body": "Uz vašu suglasnost, koristimo Google Analytics kako bismo razumjeli kako posjetitelji koriste ovu stranicu. Ovi kolačići prikupljaju anonimizirane podatke — posjećene stranice, provedeno vrijeme i slične metrike. Nikakvi osobni podaci ne bilježe se niti se povezuju s vašim identitetom. Suglasnost možete povući u bilo kojem trenutku putem bannera za upravljanje kolačićima."
+      },
+      {
+        "heading": "Upravljanje kolačićima",
+        "body": "Kolačićima možete upravljati i brisati ih putem postavki vašeg preglednika. Brisanje ili blokiranje kolačića može utjecati na vaše iskustvo na stranici. Za analitičke kolačiće koristite banner koji se prikazuje pri prvoj posjeti. Više o načinu na koji Google koristi podatke: policies.google.com/privacy."
+      },
+      {
+        "heading": "Izmjene ove politike",
+        "body": "Ovu Politiku kolačića možemo povremeno ažurirati. Datum posljednjeg ažuriranja naveden je iznad."
+      }
     ]
   },
   "servicePages": {
     "backLink": "← Privatne izvedbe",
     "formTitle": "Pošalji upit",
     "formBody": "Opišite svoju skupinu i javit ćemo vam se u roku dva radna dana.",
-    "ctaHeadline": "Doživite Morešku uživo.",
+    "ctaHeadline": "Doživite morešku uživo.",
     "ctaBody": "Dvadeset i četiri nastupa u Ljetnom kinu, Korčula. Svibanj–listopadu, 21:00.",
     "ctaButton": "Pogledaj raspored nastupa"
   },
@@ -199,11 +257,11 @@
     "moreska": {
       "heroHeadline": "Čelični ples Korčule",
       "heroSubtitle": "Posljednji autentični ratni ples Europe, koji se izvodi od 1666.",
-      "lead": "Od svih plesova s mačevima koji su nekad prošarani Sredozemljem — od Španjolske do Sicilije, od Venecije do grčkih otoka — samo je Moreška s Korčule preživjela netaknuta. Ne kao muzejski eksponat. Kao živa izvedba, prikazana u originalnom korčulanskom dijalektu 17. stoljeća, sa željeznim mačevima koji teže kilogram svaki i udaraju dovoljno snažno da izbijaju iskre.",
+      "lead": "Od svih plesova s mačevima koji su nekad prošarani Sredozemljem — od Španjolske do Sicilije, od Venecije do grčkih otoka — samo je moreška s Korčule preživjela netaknuta. Ne kao muzejski eksponat. Kao živa izvedba, prikazana u originalnom korčulanskom dijalektu 17. stoljeća, sa željeznim mačevima koji teže kilogram svaki i udaraju dovoljno snažno da izbijaju iskre.",
       "storyHeadline": "Priča",
       "storyBody": "Dva kralja. Jedna zarobljena djevojka. Sedam borbi da se odluči njezina sudbina. Bijeli kralj Osman dolazi da povrati svoju zaručnicu — Bulu — od Crnog kralja Mora, koji ju je uzeo silom. Bula odbija popustiti: \"Veće mi je jado tvoja nehtjena ljubav neg li čelik.\" Slijedi Sfida — izazov — a zatim sedam kolapa: niz sve intenzivnijih figura s mačevima koje eskaliraju od lirskog kruženja do žestoke završne borbe. Crna vojska je opkoljena, njihov krug se sužava s každom figurom, dok Crni kralj ne položi mač pred Osmanovim nogama. Bula je slobodna. Vrlina pobjeđuje. Uvijek je pobjeđivala.",
       "danceHeadline": "Ples",
-      "danceBody": "Moreška je jedinstvena u europskoj folklornoj tradiciji po tehnici s dva mača: svaki plesač viteški drži dvije željezne oštrice — desna ruka udara, lijeva para. Koreografija je fiksna i prenošena nepromijenjena generacijama. Svaka od sedam figura ima ime: Rugier, Moreška, Finta, Moro in dentro, Križ, Rugier de fuorivia i Završna figura — izvodi se punom brzinom u 4/4 taktu. Sam zvuk vrijedi putovati. Željezo o željezo, odjeknuje od kamenih zidova starog grada.",
+      "danceBody": "Moreška je jedinstvena u europskoj folklornoj tradiciji po tehnici s dva mača: svaki plesač viteški drži dvije željezne oštrice — desna ruka udara, lijeva para. Koreografija je fiksna i prenošena nepromijenjena generacijama. Svaka od sedam figura ima ime: Rugier, moreška, Finta, Moro in dentro, Križ, Rugier de fuorivia i Završna figura — izvodi se punom brzinom u 4/4 taktu. Sam zvuk vrijedi putovati. Željezo o željezo, odjeknuje od kamenih zidova starog grada.",
       "costumeHeadline": "Kostim",
       "costumeBody": "Odora moreškarante za razliku je od svega drugog u hrvatskom folkloru — rimsko-orijentalni stil koji seže do talijanskog dvorskog baleta 17. stoljeća. Bijela vojska nosi crveno; Crna vojska nosi crno. Puni nabrani suknji, bijele rimske manšete, pojasevi, rupčići. Raskošno, ratničko, neponovljivo.",
       "participationHeadline": "Sudjelovanje",
@@ -211,15 +269,15 @@
     },
     "band": {
       "heroHeadline": "Zvuk plesnih borbi",
-      "heroSubtitle": "Glazbena okosnica Moreške od 1937.",
-      "body1": "Puhački orkestar HGD Sveta Cecilija glazbena je okosnica Moreške. Svaki udar mačeva, svaki dramatični obrat u priči, podcrtan je puhačkim aranžmanom koji je 1937. sastavio Krsto Odak — jedan od vodećih hrvatskih skladatelja — i koji se izvodi uživo na svakom nastupu do danas.",
+      "heroSubtitle": "Glazbena okosnica moreške od 1937.",
+      "body1": "Puhački orkestar HGD Sveta Cecilija glazbena je okosnica moreške. Svaki udar mačeva, svaki dramatični obrat u priči, podcrtan je puhačkim aranžmanom koji je 1937. sastavio Krsto Odak — jedan od vodećih hrvatskih skladatelja — i koji se izvodi uživo na svakom nastupu do danas.",
       "body2": "Ali uloga Orkestra proteže se daleko izvan ljetne pozornice. Kroz godinu, ansambl izvodi koncertni repertoar, prati građanske proslave i predstavlja Korčulu na regionalnim i nacionalnim festivalima. Od marševa do suvremenih hrvatskih skladbi, Puhački orkestar nosi glazbeni identitet otoka kamo god nastupi. Najstariji je neprekidno aktivni glazbeni ansambl u južnoj Dalmaciji."
     },
     "klapa": {
       "heroHeadline": "Glas prije mača",
       "heroSubtitle": "Dalmatinska a cappella, nematerijalna kulturna baština UNESCO-a.",
-      "body1": "Prije nego što se željező sukoba, čuje se glas. Klapa Sveta Cecilija otvara svaki nastup Moreške tradicijskom dalmatinskom a cappella pjesmom — umjetničkim oblikom jadranske obale, prepoznatim od UNESCO-a kao nematerijalna kulturna baština. Bez instrumenata, bez pojačanja. Samo harmonija muških glasova koji nose stoljeća pomorske duše.",
-      "body2": "Klapsko pjevanje zvuk je Dalmacije u najčišćem obliku: melankolično, toplo, tehnički zahtjevno i potpuno zajedničko. Čuti ga u kamenom dvorištu Ljetnog kina, prije nego što se pojave mačevi, znači razumjeti nešto bitno o životu na ovom otoku. Ansambl nastupa na svakoj Moreški kroz sezonu i na festivalima, koncertima i kulturnim događanjima diljem regije."
+      "body1": "Prije nego što se željező sukoba, čuje se glas. Klapa Sveta Cecilija otvara svaki nastup moreške tradicijskom dalmatinskom a cappella pjesmom — umjetničkim oblikom jadranske obale, prepoznatim od UNESCO-a kao nematerijalna kulturna baština. Bez instrumenata, bez pojačanja. Samo harmonija muških glasova koji nose stoljeća pomorske duše.",
+      "body2": "Klapsko pjevanje zvuk je Dalmacije u najčišćem obliku: melankolično, toplo, tehnički zahtjevno i potpuno zajedničko. Čuti ga u kamenom dvorištu Ljetnog kina, prije nego što se pojave mačevi, znači razumjeti nešto bitno o životu na ovom otoku. Ansambl nastupa na svakoj moreški kroz sezonu i na festivalima, koncertima i kulturnim događanjima diljem regije."
     },
     "choir": {
       "heroHeadline": "Glas koji se obnavlja",
@@ -230,7 +288,7 @@
     }
   },
   "footer": {
-    "tagline": "Čuvari plesa mačevima\nod 1883. godine.",
+    "tagline": "Čuvari korčulanske baštine od 1883.",
     "visitLabel": "Posjeti",
     "sectionsLabel": "Sekcije",
     "contactLabel": "Kontakt",
@@ -239,7 +297,7 @@
     "history": "Povijest",
     "sections": "Sekcije",
     "services": "Iskustvo",
-    "moreska": "Moreška",
+    "moreska": "moreška",
     "windOrchestra": "Puhački orkestar",
     "klapa": "Klapa",
     "choir": "Zbor",
