@@ -40,7 +40,7 @@ export default function Hero({ t }: Props) {
 
       <div className="hero__logo">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/cecilija-logo.png" alt="" />
+        <img src="/cecilija-logo.webp" alt="" />
         <div className="name serif">HGD Sveta Cecilija</div>
         <div className="est">Korčula · since 1883</div>
       </div>

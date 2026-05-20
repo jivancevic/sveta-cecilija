@@ -53,7 +53,7 @@ export default function Nav({ locale, t, variant = 'homepage' }: Props) {
       <nav className={navClass}>
         <a href="/" className="nav__logo" aria-label="HGD Sveta Cecilija">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/cecilija-logo.png" alt="" />
+          <img src="/cecilija-logo.webp" alt="" />
           <span className="nav__wordmark">
             <span className="top">{t.wordmarkTop}</span>
             <span className="bot">{t.wordmarkBot}</span>
@@ -93,7 +93,7 @@ export default function Nav({ locale, t, variant = 'homepage' }: Props) {
 
           <a href="/" className="nav__overlay-logo" onClick={close}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/cecilija-logo.png" alt="HGD Sveta Cecilija" />
+            <img src="/cecilija-logo.webp" alt="HGD Sveta Cecilija" />
           </a>
 
           <div className="nav__overlay-links">

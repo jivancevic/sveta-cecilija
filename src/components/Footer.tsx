@@ -11,13 +11,13 @@ export default function Footer({ locale, t }: Props) {
   return (
     <footer className="foot foot--atmos">
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img className="foot__bg" src="/moreska-wide.jpg" alt="" />
+      <img className="foot__bg" src="/moreska-wide.webp" alt="" />
       <div className="foot__overlay" />
 
       <div className="foot__inner">
         <div className="foot__brand">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img className="foot__logo" src="/cecilija-logo.png" alt="HGD Sveta Cecilija" />
+          <img className="foot__logo" src="/cecilija-logo.webp" alt="HGD Sveta Cecilija" />
           <div className="foot__tag serif">{t.tagline}</div>
         </div>
 

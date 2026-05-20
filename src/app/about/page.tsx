@@ -6,7 +6,7 @@ import Footer from '@/components/Footer';
 
 const BLOCK_IMAGES = [
   '/bula-kralj.webp',
-  '/moreska-wide.jpg',
+  '/moreska-wide.webp',
   '/glazba.webp',
   '/todor-2-vojske.webp',
 ];
@@ -23,7 +23,7 @@ export default async function AboutPage() {
       <PageHero
         headline={t.heroHeadline}
         subtitle={t.heroSubtitle}
-        image="/moreska01.jpg"
+        image="/moreska01.webp"
       />
 
       <div className="ab-article">
