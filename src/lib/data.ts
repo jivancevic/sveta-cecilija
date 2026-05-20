@@ -29,9 +29,9 @@ const images = [
   '/moreska-wide.jpg',
   '/torches.jpg',
   '/bula-kralj.jpg',
-  '/klapa.jpg',
+  '/bula-krupni.jpg',
   '/moreska02.jpg',
-  '/band01.jpg',
+  '/crni-kralj.webp',
 ];
 
 export const SCHEDULE_ALL: Performance[] = [

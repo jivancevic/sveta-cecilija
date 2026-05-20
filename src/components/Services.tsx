@@ -6,10 +6,9 @@ const SERVICE_SLUGS = ['private-moreska', 'moreska-experience'];
 interface Props {
   t: Dictionary['services'];
   cards: ServiceCardMeta[];
-  locale: string;
 }
 
-export default function Services({ t, cards, locale }: Props) {
+export default function Services({ t, cards }: Props) {
   return (
     <section id="svcs" className="svcs">
       <div className="svcs__eyebrow" data-reveal>{t.eyebrow}</div>
@@ -40,7 +39,7 @@ export default function Services({ t, cards, locale }: Props) {
                 </ul>
                 <div className="svc__foot">
                   <span className="svc__meta mono">{card.meta}</span>
-                  <a className="btn btn--primary btn--small" href={`/${locale}/services/${SERVICE_SLUGS[i]}`}>
+                  <a className="btn btn--primary btn--small" href={`/services/${SERVICE_SLUGS[i]}`}>
                     {card.cta}
                   </a>
                 </div>

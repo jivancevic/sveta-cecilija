@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { locales, type Locale } from '@/proxy';
+import { getLocale } from '@/lib/locale';
 import { getDictionary } from '@/lib/i18n';
 import { SERVICE_PAGE_META } from '@/lib/data';
 import Nav from '@/components/Nav';
@@ -10,22 +10,19 @@ import ServiceEnquiryForm from '@/components/ServiceEnquiryForm';
 const SLUGS = Object.keys(SERVICE_PAGE_META);
 
 export function generateStaticParams() {
-  return locales.flatMap((locale) =>
-    SLUGS.map((slug) => ({ locale, slug }))
-  );
+  return SLUGS.map((slug) => ({ slug }));
 }
 
 export default async function ServicePage({
   params,
 }: {
-  params: Promise<{ locale: string; slug: string }>;
+  params: Promise<{ slug: string }>;
 }) {
-  const { locale: rawLocale, slug } = await params;
-  const locale = (locales.includes(rawLocale as Locale) ? rawLocale : 'en') as Locale;
-
+  const { slug } = await params;
   const meta = SERVICE_PAGE_META[slug];
   if (!meta) notFound();
 
+  const locale = await getLocale();
   const dict = await getDictionary(locale);
   const card = dict.services.cards[meta.cardIndex];
   const t = dict.servicePages;
@@ -42,7 +39,7 @@ export default async function ServicePage({
 
       <section className="svc-page__content">
         <div className="svc-page__inner">
-          <a href={`/${locale}/#svcs`} className="sp-back">{t.backLink}</a>
+          <a href="/#svcs" className="sp-back">{t.backLink}</a>
 
           <div className="svc-page__body">
             <div className="svc-page__info">
@@ -70,7 +67,7 @@ export default async function ServicePage({
       <div className="ip-cta">
         <h2 className="ip-cta__h serif">{t.ctaHeadline}</h2>
         <p className="ip-cta__body">{t.ctaBody}</p>
-        <a href={`/${locale}/tickets`} className="btn btn--primary">{t.ctaButton}</a>
+        <a href="/tickets" className="btn btn--primary">{t.ctaButton}</a>
       </div>
 
       <Footer locale={locale} t={dict.footer} />

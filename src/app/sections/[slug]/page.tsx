@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import { locales, type Locale } from '@/proxy';
+import { getLocale } from '@/lib/locale';
 import { getDictionary } from '@/lib/i18n';
 import { SECTION_PAGE_META } from '@/lib/data';
 import Nav from '@/components/Nav';
@@ -9,22 +9,19 @@ import Footer from '@/components/Footer';
 const SLUGS = Object.keys(SECTION_PAGE_META);
 
 export function generateStaticParams() {
-  return locales.flatMap((locale) =>
-    SLUGS.map((slug) => ({ locale, slug }))
-  );
+  return SLUGS.map((slug) => ({ slug }));
 }
 
 export default async function SectionPage({
   params,
 }: {
-  params: Promise<{ locale: string; slug: string }>;
+  params: Promise<{ slug: string }>;
 }) {
-  const { locale: rawLocale, slug } = await params;
-  const locale = (locales.includes(rawLocale as Locale) ? rawLocale : 'en') as Locale;
-
+  const { slug } = await params;
   const meta = SECTION_PAGE_META[slug];
   if (!meta) notFound();
 
+  const locale = await getLocale();
   const dict = await getDictionary(locale);
   const t = dict.sectionPages;
   const section = t[meta.sectionKey as keyof typeof t] as Record<string, string>;
@@ -41,7 +38,7 @@ export default async function SectionPage({
 
       <section style={{ background: 'var(--light)', padding: 'var(--pad) var(--sectionPadX)' }}>
         <div style={{ maxWidth: 'var(--maxW)', margin: '0 auto' }}>
-          <a href={`/${locale}/about`} className="sp-back">{t.backLink}</a>
+          <a href="/about" className="sp-back">{t.backLink}</a>
 
           {meta.sectionKey === 'moreska' && (
             <MoreskaContent t={section} />
@@ -58,7 +55,7 @@ export default async function SectionPage({
       <div className="ip-cta">
         <h2 className="ip-cta__h serif">{t.ctaHeadline}</h2>
         <p className="ip-cta__body">{t.ctaBody}</p>
-        <a href={`/${locale}#sched`} className="btn btn--primary">{t.ctaButton}</a>
+        <a href="/#sched" className="btn btn--primary">{t.ctaButton}</a>
       </div>
 
       <Footer locale={locale} t={dict.footer} />

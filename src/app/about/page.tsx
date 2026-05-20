@@ -1,12 +1,8 @@
-import { locales, type Locale } from '@/proxy';
+import { getLocale } from '@/lib/locale';
 import { getDictionary } from '@/lib/i18n';
 import Nav from '@/components/Nav';
 import PageHero from '@/components/PageHero';
 import Footer from '@/components/Footer';
-
-export function generateStaticParams() {
-  return locales.map((locale) => ({ locale }));
-}
 
 const BLOCK_IMAGES = [
   '/bula-kralj.webp',
@@ -15,13 +11,8 @@ const BLOCK_IMAGES = [
   '/todor-2-vojske.webp',
 ];
 
-export default async function AboutPage({
-  params,
-}: {
-  params: Promise<{ locale: string }>;
-}) {
-  const { locale: rawLocale } = await params;
-  const locale = (locales.includes(rawLocale as Locale) ? rawLocale : 'en') as Locale;
+export default async function AboutPage() {
+  const locale = await getLocale();
   const dict = await getDictionary(locale);
   const t = dict.aboutPage;
 
@@ -52,7 +43,7 @@ export default async function AboutPage({
       <div className="ip-cta">
         <h2 className="ip-cta__h serif">{t.ctaHeadline}</h2>
         <p className="ip-cta__body">{t.ctaBody}</p>
-        <a href={`/${locale}/tickets`} className="btn btn--primary">{t.ctaButton}</a>
+        <a href="/tickets" className="btn btn--primary">{t.ctaButton}</a>
       </div>
 
       <Footer locale={locale} t={dict.footer} />

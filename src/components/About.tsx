@@ -1,12 +1,10 @@
-import type { Locale } from '@/proxy';
 import type { Dictionary } from '@/lib/i18n';
 
 interface Props {
   t: Dictionary['about'];
-  locale: Locale;
 }
 
-export default function About({ t, locale }: Props) {
+export default function About({ t }: Props) {
   return (
     <section id="about" className="about">
       <div className="about__copy">
@@ -18,7 +16,7 @@ export default function About({ t, locale }: Props) {
         </div>
         <h2 className="about__h serif" data-reveal data-delay="1">{t.headline}</h2>
         <p className="about__body" data-reveal data-delay="2">{t.body}</p>
-        <a href={`/${locale}/about`} className="about__cta" data-reveal data-delay="3">{t.cta}</a>
+        <a href="/about" className="about__cta" data-reveal data-delay="3">{t.cta}</a>
       </div>
 
       <div className="about__collage">

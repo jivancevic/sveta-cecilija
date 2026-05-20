@@ -1,9 +1,9 @@
 import type { Metadata } from 'next';
 import { Bodoni_Moda_SC, IBM_Plex_Mono, Inter } from 'next/font/google';
-import { locales, type Locale } from '@/proxy';
+import { getLocale } from '@/lib/locale';
 import { getDictionary } from '@/lib/i18n';
 import CookieConsent from '@/components/CookieConsent';
-import '../globals.css';
+import './globals.css';
 
 const bodoniModa = Bodoni_Moda_SC({
   subsets: ['latin'],
@@ -26,25 +26,14 @@ const inter = Inter({
   display: 'swap',
 });
 
-export async function generateStaticParams() {
-  return locales.map((locale) => ({ locale }));
-}
-
 export const metadata: Metadata = {
   title: 'HGD Sveta Cecilija — Moreška Korčula',
   description:
     'The home of Moreška — Europe\'s last authentic war dance. Performances at the Summer Cinema, Korčula. Tickets, history, and private bookings.',
 };
 
-export default async function LocaleLayout({
-  children,
-  params,
-}: {
-  children: React.ReactNode;
-  params: Promise<{ locale: string }>;
-}) {
-  const { locale: rawLocale } = await params;
-  const locale = (locales.includes(rawLocale as Locale) ? rawLocale : 'en') as Locale;
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const locale = await getLocale();
   const dict = await getDictionary(locale);
 
   return (
@@ -54,7 +43,7 @@ export default async function LocaleLayout({
     >
       <body>
         {children}
-        <CookieConsent t={dict.cookieBanner} locale={locale} />
+        <CookieConsent t={dict.cookieBanner} />
       </body>
     </html>
   );

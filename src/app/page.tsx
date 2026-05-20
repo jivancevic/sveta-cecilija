@@ -1,4 +1,4 @@
-import { locales, type Locale } from '@/proxy';
+import { getLocale } from '@/lib/locale';
 import { getDictionary } from '@/lib/i18n';
 import {
   getUpcomingPerformances,
@@ -17,25 +17,20 @@ import Contact from '@/components/Contact';
 import Footer from '@/components/Footer';
 import ScrollReveal from '@/components/ScrollReveal';
 
-export default async function HomePage({
-  params,
-}: {
-  params: Promise<{ locale: string }>;
-}) {
-  const { locale: rawLocale } = await params;
-  const locale = (locales.includes(rawLocale as Locale) ? rawLocale : 'en') as Locale;
+export default async function HomePage() {
+  const locale = await getLocale();
   const dict = await getDictionary(locale);
   const upcoming = getUpcomingPerformances(4);
 
   return (
     <div className="hp t-stone">
       <Nav locale={locale} t={dict.nav} variant="homepage" />
-      <Hero t={dict.hero} locale={locale} />
-      <About t={dict.about} locale={locale} />
+      <Hero t={dict.hero} />
+      <About t={dict.about} />
       <Schedule t={dict.schedule} performances={upcoming} locale={locale} />
       <History t={dict.history} vignettes={HISTORY_VIGNETTES_HOME} />
-      <Sections t={dict.sections} cards={SECTION_CARDS_META} locale={locale} />
-      <Services t={dict.services} cards={SERVICE_CARDS_META} locale={locale} />
+      <Sections t={dict.sections} cards={SECTION_CARDS_META} />
+      <Services t={dict.services} cards={SERVICE_CARDS_META} />
       <Contact t={dict.contact} />
       <Footer locale={locale} t={dict.footer} />
       <ScrollReveal />

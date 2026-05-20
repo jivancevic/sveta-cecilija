@@ -5,24 +5,39 @@ export const locales = ['en', 'hr'] as const;
 export type Locale = (typeof locales)[number];
 const defaultLocale: Locale = 'en';
 
+function detectFromHeaders(request: NextRequest): Locale {
+  const lang = request.headers
+    .get('accept-language')
+    ?.split(',')[0]
+    ?.split('-')[0]
+    ?.toLowerCase();
+  return locales.includes(lang as Locale) ? (lang as Locale) : defaultLocale;
+}
+
 export function proxy(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+  const cookieLocale = request.cookies.get('moreska_locale')?.value;
+  const locale: Locale = locales.includes(cookieLocale as Locale)
+    ? (cookieLocale as Locale)
+    : detectFromHeaders(request);
 
-  const pathnameHasLocale = locales.some(
-    (locale) => pathname.startsWith(`/${locale}/`) || pathname === `/${locale}`
-  );
+  // Forward locale to server components via request header
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set('x-locale', locale);
 
-  if (!pathnameHasLocale) {
-    const locale =
-      (request.headers
-        .get('accept-language')
-        ?.split(',')[0]
-        ?.split('-')[0]
-        ?.toLowerCase() as Locale | undefined) ?? defaultLocale;
+  const response = NextResponse.next({
+    request: { headers: requestHeaders },
+  });
 
-    const resolved = locales.includes(locale) ? locale : defaultLocale;
-    return NextResponse.redirect(new URL(`/${resolved}${pathname}`, request.url));
+  // Set cookie on first visit so subsequent requests skip detection
+  if (!locales.includes(cookieLocale as Locale)) {
+    response.cookies.set('moreska_locale', locale, {
+      path: '/',
+      maxAge: 60 * 60 * 24 * 365,
+      sameSite: 'lax',
+    });
   }
+
+  return response;
 }
 
 export const config = {

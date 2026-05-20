@@ -10,7 +10,12 @@
       "Bash(python3 -c ' *)",
       "Bash(mkdir -p \"/Users/jivancevic/projects/websites/sveta-cecilija/sveta-cecilija-web/src/app/[locale]/privacy-policy\")",
       "Bash(mkdir -p \"/Users/jivancevic/projects/websites/sveta-cecilija/sveta-cecilija-web/src/app/[locale]/cookie-policy\")",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(python3 -m json.tool)",
+      "Bash(python3 *)",
+      "Bash(npx tsc *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)"
     ]
   }
 }
