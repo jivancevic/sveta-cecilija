@@ -39,3 +39,13 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# design reference (not part of the codebase)
+/Sveta Cecilija/
+
+# claude local files
+/.claude/
+
+# runtime logs (dev artifacts)
+/docs/logs.txt
+/docs/runtime-logs.txt
