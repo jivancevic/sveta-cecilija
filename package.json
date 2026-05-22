@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db": "docker compose up -d",
+    "db:stop": "docker compose down"
   },
   "dependencies": {
     "@payloadcms/db-postgres": "^3.84.1",
