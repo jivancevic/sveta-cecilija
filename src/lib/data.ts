@@ -110,8 +110,3 @@ export const SERVICE_PAGE_META: Record<string, { image: string; cardIndex: numbe
   'private-moreska':    { image: '/black-king-closeup.webp', cardIndex: 0 },
   'moreska-experience': { image: '/moreska-experience.webp', cardIndex: 1 },
 };
-
-export const SERVICE_PAGE_META: Record<string, { image: string; cardIndex: number }> = {
-  'private-moreska':    { image: '/black-king-closeup.jpg', cardIndex: 0 },
-  'moreska-experience': { image: '/moreska-experience.jpg', cardIndex: 1 },
-};
