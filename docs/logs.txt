@@ -1,0 +1,128 @@
+2026-May-22 19:50:47.220287 Docker 29.5.2 with BuildKit and Buildx detected on deployment server (hetzner-ubuntu-4gb-fsn1-1).
+2026-May-22 19:50:47.226321 Starting deployment of jivancevic/sveta-cecilija:main to hetzner-ubuntu-4gb-fsn1-1.
+2026-May-22 19:50:47.873173 Preparing container with helper image: ghcr.io/coollabsio/coolify-helper:1.0.14
+2026-May-22 19:50:50.919491 Image not found (zek88q652dijih0ywodgffux:8a148e52910667105b578746d1e35fcef5c6495e). Building new image.
+2026-May-22 19:50:51.127840 ----------------------------------------
+2026-May-22 19:50:51.136994 Importing jivancevic/sveta-cecilija:main (commit sha 8a148e52910667105b578746d1e35fcef5c6495e) to /artifacts/erwlcsbwe9hzxabkdq2o5ysp.
+2026-May-22 19:50:56.726274 Generating nixpacks configuration with: nixpacks plan -f json --env 'NIXPACKS_NODE_VERSION=22' --env 'COOLIFY_URL=https://moreska.eu' --env 'COOLIFY_FQDN=moreska.eu' --env 'COOLIFY_BRANCH=main' --env 'COOLIFY_RESOURCE_UUID=zek88q652dijih0ywodgffux' /artifacts/erwlcsbwe9hzxabkdq2o5ysp
+2026-May-22 19:50:57.493390 Found application type: node.
+2026-May-22 19:50:57.501604 If you need further customization, please check the documentation of Nixpacks: https://nixpacks.com/docs/providers/node
+2026-May-22 19:50:58.955457 ----------------------------------------
+2026-May-22 19:50:58.964317 Building docker image started.
+2026-May-22 19:50:58.971274 To check the current progress, click on Show Debug Logs.
+2026-May-22 19:51:52.206051 ========================================
+2026-May-22 19:51:52.211730 Deployment failed: Command execution failed (exit code 1): docker exec erwlcsbwe9hzxabkdq2o5ysp bash -c 'bash /artifacts/build.sh'
+2026-May-22 19:51:52.211730 Error: #0 building with "default" instance using docker driver
+2026-May-22 19:51:52.211730
+2026-May-22 19:51:52.211730 #1 [internal] load build definition from Dockerfile
+2026-May-22 19:51:52.211730 #1 transferring dockerfile: 1.81kB done
+2026-May-22 19:51:52.211730 #1 DONE 0.0s
+2026-May-22 19:51:52.211730
+2026-May-22 19:51:52.211730 #2 [internal] load metadata for ghcr.io/railwayapp/nixpacks:ubuntu-1745885067
+2026-May-22 19:51:52.211730 #2 DONE 0.4s
+2026-May-22 19:51:52.211730
+2026-May-22 19:51:52.211730 #3 [internal] load .dockerignore
+2026-May-22 19:51:52.211730 #3 transferring context: 2B done
+2026-May-22 19:51:52.211730 #3 DONE 0.0s
+2026-May-22 19:51:52.211730
+2026-May-22 19:51:52.211730 #4 [stage-0 1/11] FROM ghcr.io/railwayapp/nixpacks:ubuntu-1745885067@sha256:d45c89d80e13d7ad0fd555b5130f22a866d9dd10e861f589932303ef2314c7de
+2026-May-22 19:51:52.211730 #4 resolve ghcr.io/railwayapp/nixpacks:ubuntu-1745885067@sha256:d45c89d80e13d7ad0fd555b5130f22a866d9dd10e861f589932303ef2314c7de 0.0s done
+2026-May-22 19:51:52.211730 #4 DONE 0.0s
+2026-May-22 19:51:52.211730
+2026-May-22 19:51:52.211730 #5 [internal] load build context
+2026-May-22 19:51:52.211730 #5 transferring context: 98.69MB 0.5s done
+2026-May-22 19:51:52.211730 #5 DONE 0.6s
+2026-May-22 19:51:52.211730
+2026-May-22 19:51:52.211730 #6 [stage-0 2/11] WORKDIR /app/
+2026-May-22 19:51:52.211730 #6 CACHED
+2026-May-22 19:51:52.211730
+2026-May-22 19:51:52.211730 #7 [stage-0 3/11] COPY .nixpacks/nixpkgs-ffeebf0acf3ae8b29f8c7049cd911b9636efd7e7.nix .nixpacks/nixpkgs-ffeebf0acf3ae8b29f8c7049cd911b9636efd7e7.nix
+2026-May-22 19:51:52.211730 #7 CACHED
+2026-May-22 19:51:52.211730
+2026-May-22 19:51:52.211730 #8 [stage-0 4/11] RUN nix-env -if .nixpacks/nixpkgs-ffeebf0acf3ae8b29f8c7049cd911b9636efd7e7.nix && nix-collect-garbage -d
+2026-May-22 19:51:52.211730 #8 CACHED
+2026-May-22 19:51:52.211730
+2026-May-22 19:51:52.211730 #9 [stage-0 5/11] RUN sudo apt-get update && sudo apt-get install -y --no-install-recommends curl wget
+2026-May-22 19:51:52.211730 #9 CACHED
+2026-May-22 19:51:52.211730
+2026-May-22 19:51:52.211730 #10 [stage-0 6/11] COPY . /app/.
+2026-May-22 19:51:52.211730 #10 DONE 0.2s
+2026-May-22 19:51:52.211730
+2026-May-22 19:51:52.211730 #11 [stage-0 7/11] RUN --mount=type=cache,id=zek88q652dijih0ywodgffux-/root/npm,target=/root/.npm npm ci
+2026-May-22 19:51:52.211730 #11 0.239 npm warn config production Use `--omit=dev` instead.
+2026-May-22 19:51:52.211730 #11 1.499 npm warn EBADENGINE Unsupported engine {
+2026-May-22 19:51:52.211730 #11 1.499 npm warn EBADENGINE package: 'eslint-visitor-keys@5.0.1',
+2026-May-22 19:51:52.211730 #11 1.499 npm warn EBADENGINE required: { node: '^20.19.0 || ^22.13.0 || >=24' },
+2026-May-22 19:51:52.211730 #11 1.499 npm warn EBADENGINE current: { node: 'v22.11.0', npm: '10.9.0' }
+2026-May-22 19:51:52.211730 #11 1.499 npm warn EBADENGINE }
+2026-May-22 19:51:52.211730 #11 8.080 npm warn deprecated @esbuild-kit/esm-loader@2.6.5: Merged into tsx: https://tsx.is
+2026-May-22 19:51:52.211730 #11 8.238 npm warn deprecated @esbuild-kit/core-utils@3.3.2:<REDACTED>@0.1.0 build
+2026-May-22 19:51:52.211730 #13 0.235 > next build
+2026-May-22 19:51:52.211730 #13 0.235
+2026-May-22 19:51:52.211730 #13 0.909 ▲ Next.js 16.2.6 (Turbopack)
+2026-May-22 19:51:52.211730 #13 0.911 - Experiments (use with caution):
+2026-May-22 19:51:52.211730 #13 0.911 ⨯ turbopackServerFastRefresh
+2026-May-22 19:51:52.211730 #13 0.911
+2026-May-22 19:51:52.211730 #13 0.983 Creating an optimized production build ...
+2026-May-22 19:51:52.211730 #13 29.58
+2026-May-22 19:51:52.211730 #13 29.58 > Build error occurred
+2026-May-22 19:51:52.211730 #13 29.59 Error: Turbopack build failed with 1 errors:
+2026-May-22 19:51:52.211730 #13 29.59 ./src/lib/data.ts:114:14
+2026-May-22 19:51:52.211730 #13 29.59 the name `SERVICE_PAGE_META` is defined multiple times
+2026-May-22 19:51:52.211730 #13 29.59 112 | };
+2026-May-22 19:51:52.211730 #13 29.59 113 |
+2026-May-22 19:51:52.211730 #13 29.59 > 114 | export const SERVICE_PAGE_META: Record<string, { image: string; cardIndex: number }> = {
+2026-May-22 19:51:52.211730 #13 29.59 | ^^^^^^^^^^^^^^^^^
+2026-May-22 19:51:52.211730 #13 29.59 115 | 'private-moreska': { image: '/black-king-closeup.jpg', cardIndex: 0 },
+2026-May-22 19:51:52.211730 #13 29.59 116 | 'moreska-experience': { image: '/moreska-experience.jpg', cardIndex: 1 },
+2026-May-22 19:51:52.211730 #13 29.59 117 | };
+2026-May-22 19:51:52.211730 #13 29.59
+2026-May-22 19:51:52.211730 #13 29.59 Ecmascript file had an error
+2026-May-22 19:51:52.211730 #13 29.59
+2026-May-22 19:51:52.211730 #13 29.59 Import trace:
+2026-May-22 19:51:52.211730 #13 29.59 Server Component:
+2026-May-22 19:51:52.211730 #13 29.59 ./src/lib/data.ts
+2026-May-22 19:51:52.211730 #13 29.59 ./src/app/tickets/page.tsx
+2026-May-22 19:51:52.211730 #13 29.59
+2026-May-22 19:51:52.211730 #13 29.59
+2026-May-22 19:51:52.211730 #13 29.59 at <unknown> (./src/lib/data.ts:114:14)
+2026-May-22 19:51:52.211730 #13 ERROR: process "/bin/bash -ol pipefail -c npm run build" did not complete successfully: exit code: 1
+2026-May-22 19:51:52.211730 ------
+2026-May-22 19:51:52.211730 > [stage-0 9/11] RUN --mount=type=cache,id=zek88q652dijih0ywodgffux-next/cache,target=/app/.next/cache --mount=type=cache,id=zek88q652dijih0ywodgffux-node_modules/cache,target=/app/node_modules/.cache npm run build:
+2026-May-22 19:51:52.211730 29.59
+2026-May-22 19:51:52.211730 29.59 Ecmascript file had an error
+2026-May-22 19:51:52.211730 29.59
+2026-May-22 19:51:52.211730 29.59 Import trace:
+2026-May-22 19:51:52.211730 29.59 Server Component:
+2026-May-22 19:51:52.211730 29.59 ./src/lib/data.ts
+2026-May-22 19:51:52.211730 29.59 ./src/app/tickets/page.tsx
+2026-May-22 19:51:52.211730 29.59
+2026-May-22 19:51:52.211730 29.59
+2026-May-22 19:51:52.211730 29.59 at <unknown> (./src/lib/data.ts:114:14)
+2026-May-22 19:51:52.211730 ------
+2026-May-22 19:51:52.211730
+2026-May-22 19:51:52.211730 11 warnings found (use docker --debug to expand):
+2026-May-22 19:51:52.211730 - SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ARG "BREVO_API_KEY") (line 11)
+2026-May-22 19:51:52.211730 - SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ARG "STRIPE_PUBLISHABLE_KEY") (line 11)
+2026-May-22 19:51:52.211730 - SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ARG "STRIPE_SECRET_KEY") (line 11)
+2026-May-22 19:51:52.211730 - SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ENV "PAYLOAD_SECRET") (line 12)
+2026-May-22 19:51:52.211730 - SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ENV "STRIPE_PUBLISHABLE_KEY") (line 12)
+2026-May-22 19:51:52.211730 - SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ENV "STRIPE_SECRET_KEY") (line 12)
+2026-May-22 19:51:52.211730 - SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ARG "PAYLOAD_SECRET") (line 11)
+2026-May-22 19:51:52.211730 - SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ARG "STRIPE_WEBHOOK_SECRET") (line 11)
+2026-May-22 19:51:52.211730 - SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ENV "BREVO_API_KEY") (line 12)
+2026-May-22 19:51:52.211730 - SecretsUsedInArgOrEnv: Do not use ARG or ENV instructions for sensitive data (ENV "STRIPE_WEBHOOK_SECRET") (line 12)
+2026-May-22 19:51:52.211730 - UndefinedVar: Usage of undefined variable '$NIXPACKS_PATH' (line 18)
+2026-May-22 19:51:52.211730 Dockerfile:24
+2026-May-22 19:51:52.211730 --------------------
+2026-May-22 19:51:52.211730 22 | # build phase
+2026-May-22 19:51:52.211730 23 | COPY . /app/.
+2026-May-22 19:51:52.211730 24 | >>> RUN --mount=type=cache,id=zek88q652dijih0ywodgffux-next/cache,target=/app/.next/cache --mount=type=cache,id=zek88q652dijih0ywodgffux-node_modules/cache,target=/app/node_modules/.cache npm run build
+2026-May-22 19:51:52.211730 25 |
+2026-May-22 19:51:52.211730 26 |
+2026-May-22 19:51:52.211730 --------------------
+2026-May-22 19:51:52.211730 ERROR: failed to build: failed to solve: process "/bin/bash -ol pipefail -c npm run build" did not complete successfully: exit code: 1
+2026-May-22 19:51:52.211730 exit status 1
+2026-May-22 19:51:52.267029 ========================================
+2026-May-22 19:51:52.272211 Deployment failed. Removing the new version of your application.
+2026-May-22 19:51:53.566042 Gracefully shutting down build container: erwlcsbwe9hzxabkdq2o5ysp

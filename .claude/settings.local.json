@@ -22,7 +22,8 @@
       "Bash(magick 1666.png -quality 82 1666.webp)",
       "Bash(magick swords.png -quality 90 swords.webp)",
       "Bash(magick cecilija-old-logo.png -quality 90 cecilija-old-logo.webp)",
-      "Bash(npm install *)"
+      "Bash(npm install *)",
+      "Bash(git commit -m 'Fix duplicate SERVICE_PAGE_META export introduced by merge *)"
     ]
   }
 }
