@@ -28,9 +28,11 @@ Website for HGD Sveta Cecilija, a 143-year-old cultural organisation from Korču
 - **Fonts:** Bodoni Moda SC, IBM Plex Mono, Inter via `next/font/google`. Bodoni Moda SC (var `--font-bodoni`) for all headlines/titles; IBM Plex Mono for codes/tags; Inter for body.
 - **CMS:** Payload CMS v3 (`@payloadcms/next` adapter, integrated directly into Next.js app). Admin at `/admin`.
 - **Database:** PostgreSQL via `@payloadcms/db-postgres`. Connection via `DATABASE_URL` env var. Auth gated by `PAYLOAD_SECRET`.
-- **Payments:** Stripe (EUR). Payment Element handles cards + Google Pay + Apple Pay. Webhook at `POST /api/stripe/webhook` (verified by signature). Keys: `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET`.
-- **Email:** Resend, sending from `info@moreska.eu`. Key: `RESEND_API_KEY`.
-- **Infrastructure:** DigitalOcean Droplet (4 GB RAM, Frankfurt) + Coolify for deployment + Let's Encrypt SSL. Setup guide in `docs/todo.md`.
+- **Payments:** Stripe (EUR). Payment Element handles cards + Google Pay + Apple Pay. Webhook at `POST /api/stripe/webhook` (verified by signature). Keys: `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET`. Existing Stripe account was connected to `korcula-moreska.com` — migrating to `moreska.eu` by running dual webhook endpoints during transition; old endpoint removed after DNS cutover is stable.
+- **Email sending:** Brevo (free tier — 300 emails/day, 9k/month). Sends from `info@moreska.eu`. Key: `BREVO_API_KEY`. Domain verified via SPF/DKIM/DMARC records in Hetzner DNS.
+- **Email receiving:** ImprovMX — forwards `info@moreska.eu` to personal inbox via MX records in Hetzner DNS. No mailbox to manage.
+- **Infrastructure:** Hetzner Cloud server (CX32 or Cost-Optimized equivalent, Nuremberg) + Coolify for deployment. SSL is automatic via Traefik — no separate toggle; just set domain to `https://` in Coolify and Traefik provisions Let's Encrypt on first request after DNS propagates. Setup guide in `docs/todo.md`.
+- **DNS:** Hetzner DNS (`dns.hetzner.com`). Nameservers: `hydrogen/oxygen/helium.ns.hetzner.com`. Domain `moreska.eu` registered at Totohost — nameserver change requested from them to hand off DNS control to Hetzner.
 
 ### Pages
 
