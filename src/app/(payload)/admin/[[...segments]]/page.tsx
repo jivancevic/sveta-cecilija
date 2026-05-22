@@ -13,6 +13,11 @@ type Args = {
 export const generateMetadata = (args: Args): Promise<Metadata> =>
   generatePageMetadata({ config, params: args.params, searchParams: args.searchParams })
 
-export default function Page(args: Args) {
-  return RootPage({ config, importMap, params: args.params, searchParams: args.searchParams })
+export default async function Page(args: Args) {
+  try {
+    return await RootPage({ config, importMap, params: args.params, searchParams: args.searchParams })
+  } catch (err) {
+    console.error('[admin] RootPage error:', err)
+    throw err
+  }
 }
