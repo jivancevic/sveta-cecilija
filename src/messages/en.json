@@ -16,12 +16,12 @@
   },
   "about": {
     "eyebrow": "Since 1883",
-    "headline": "A Living Tradition, 143 Years in the Making",
-    "body": "Since 1883, HGD Sveta Cecilija has stood as the guardian of Korčula's most treasured ritual. The Moreška — Europe's last authentic war dance — is performed here, on this island, by the sons of Korčula. Iron swords, archaic verse, and seven battles that have not changed in centuries. Come witness it.",
+    "headline": "A Tale of Swords and Music",
+    "body": "Since 1883, HGD Sveta Cecilija has stood as the guardian of Korčula's most treasured ritual. While the fierce cadence of the Moreška sword dance once echoed across the entire Mediterranean, today it is performed here only, on this island, by the sons of Korčula. Iron swords, archaic verse, and seven battles that have not changed in centuries. Come witness it.",
     "cta": "Discover Our Story →"
   },
   "schedule": {
-    "eyebrow": "Currently at the Summer Cinema",
+    "eyebrow": "Experience the Battle",
     "headline": "2026 Season Performances",
     "subBefore": "Every performance at the",
     "venueName": "Summer Cinema, Korčula",
@@ -35,14 +35,30 @@
     "priceNote": "Adults €20 · Children under 14 €10 · Groups: every 5th ticket free"
   },
   "history": {
-    "eyebrow": "Four Centuries",
+    "eyebrow": "Through the ages",
     "headline": "A Curated History",
     "subline": "Four moments that brought a Spanish ritual of mock combat to a Korčulan stone courtyard — and kept it there.",
     "vignettes": [
-      { "place": "Lérida, Spain",            "title": "The Dance Is Born",            "body": "The earliest recorded Moreška-style performance takes place in Lérida, commemorating the Christian capture of Aragon. A ritual of mock combat between two armies — one that will travel the Mediterranean for centuries before finding its final home." },
-      { "place": "Korčula, 7 March",         "title": "First Record in Korčula",      "body": "A town journal entry dated 7 March 1666 records a Moreška performance during carnival. The dance has already taken root. While similar traditions fade across Dalmatia, Korčula holds on — and never lets go." },
-      { "place": "Croatian National Revival", "title": "HGD Sveta Cecilija Is Founded","body": "Local citizens establish the Korčula Singing Society St. Cecily. Its founding statutes declare a mission to \"ennoble the hearts of local youth\" and defend Croatian language, song, and identity. The institutional home of Moreška is born." },
-      { "place": "A free Croatia",            "title": "A New Era",                   "body": "Following Croatia's declaration of independence, HGD Sveta Cecilija is officially re-established under its original name and mission. The society returns to its roots: preserving the Moreška and cultivating every dimension of Korčulan cultural life." }
+      {
+        "place": "Lérida, Spain",
+        "title": "The Dance Is Born",
+        "body": "The earliest recorded Moreška-style performance takes place in Lérida, commemorating the Christian capture of Aragon. A ritual of mock combat between two armies — one that will travel the Mediterranean for centuries before finding its final home."
+      },
+      {
+        "place": "Korčula, 7 March",
+        "title": "First Record in Korčula",
+        "body": "A town journal entry dated 7 March 1666 records a Moreška performance during carnival. The dance has already taken root. While similar traditions fade across Dalmatia, Korčula holds on — and never lets go."
+      },
+      {
+        "place": "Croatian National Revival",
+        "title": "HGD Sveta Cecilija Is Founded",
+        "body": "Local citizens establish the Korčula Singing Society St. Cecily. Its founding statutes declare a mission to \"ennoble the hearts of local youth\" and defend Croatian language, song, and identity. The institutional home of Moreška is born."
+      },
+      {
+        "place": "A free Croatia",
+        "title": "A New Era",
+        "body": "Following Croatia's declaration of independence, HGD Sveta Cecilija is officially re-established under its original name and mission. The society returns to its roots: preserving the Moreška and cultivating every dimension of Korčulan cultural life."
+      }
     ]
   },
   "sections": {
@@ -50,10 +66,26 @@
     "headline": "Our Sections",
     "discover": "Discover →",
     "cards": [
-      { "key": "moreska", "name": "Moreška",             "blurb": "Europe's last authentic war dance, performed since 1666." },
-      { "key": "band",    "name": "Wind Orchestra",       "blurb": "The brass backbone of every performance since 1937." },
-      { "key": "klapa",   "name": "Klapa Sveta Cecilija", "blurb": "The voice before the sword — Dalmatian a cappella, UNESCO heritage." },
-      { "key": "choir",   "name": "Choir",                "blurb": "Reborn in 2023. Choral repertoire spanning folk, sacred, contemporary." }
+      {
+        "key": "moreska",
+        "name": "Moreška",
+        "blurb": "Europe's last authentic war dance, performed since 1666."
+      },
+      {
+        "key": "band",
+        "name": "Wind Orchestra",
+        "blurb": "The brass backbone of every performance since 1937."
+      },
+      {
+        "key": "klapa",
+        "name": "Klapa Sveta Cecilija",
+        "blurb": "The voice before the sword — Dalmatian a cappella, UNESCO heritage."
+      },
+      {
+        "key": "choir",
+        "name": "Choir",
+        "blurb": "Reborn in 2023. Choral repertoire spanning folk, sacred, contemporary."
+      }
     ]
   },
   "services": {
@@ -102,7 +134,13 @@
     "emailPlaceholder": "you@email.com",
     "enquiry": "Enquiry type",
     "enquirySelect": "Select…",
-    "enquiryOptions": ["General", "Private Moreška", "Moreška Experience", "Press", "Other"],
+    "enquiryOptions": [
+      "General",
+      "Private Moreška",
+      "Moreška Experience",
+      "Press",
+      "Other"
+    ],
     "message": "Message",
     "messagePlaceholder": "Tell us about your enquiry…",
     "submit": "Send Message →",
@@ -157,7 +195,81 @@
     "total": "Total",
     "confirm": "Confirm Booking →",
     "successTitle": "Booking received",
-    "successBody": "We'll be in touch to confirm your reservation."
+    "successBody": "We'll be in touch to confirm your reservation.",
+    "venueMapUrl": "https://maps.app.goo.gl/bVYpoQAHw6sixyYk9",
+    "venue": "Summer Cinema, Korčula",
+    "duration": "1 hour",
+    "programme": "Klapa performance · Moreška with live wind orchestra",
+    "freeTicketNudge": "Add 1 more ticket — the 5th is free!",
+    "freeTicketUnlocked": "Free ticket included"
+  },
+  "cookieBanner": {
+    "body": "We use cookies to understand how you use this site. Analytics cookies are only loaded with your consent.",
+    "learnMore": "Learn more",
+    "accept": "Accept All",
+    "decline": "Decline"
+  },
+  "privacyPage": {
+    "heroHeadline": "Privacy Policy",
+    "heroSubtitle": "How we collect, use, and protect your data",
+    "lastUpdated": "Last updated: May 2026",
+    "sections": [
+      {
+        "heading": "Who We Are",
+        "body": "HGD Sveta Cecilija (Hrvatsko glazbeno društvo Sveta Cecilija) is a cultural association based in Korčula, Croatia, operating the website moreska.eu. As data controller, we are responsible for your personal data. Contact: info@moreska.eu"
+      },
+      {
+        "heading": "Data We Collect and Why",
+        "body": "Contact and enquiry forms: We collect your name, email address, and message to respond to your enquiry. Legal basis: legitimate interests.\n\nPerformance bookings: We collect your name and email to confirm your booking and deliver your tickets. Legal basis: performance of a contract.\n\nAnalytics: With your consent, we use Google Analytics to collect anonymised data about how visitors use this website. No personal data is linked to analytics reports. Legal basis: consent."
+      },
+      {
+        "heading": "Data Retention",
+        "body": "Contact and enquiry records are retained for 2 years. Booking records are retained for 7 years to meet accounting obligations. Analytics data is retained according to Google's standard settings (26 months)."
+      },
+      {
+        "heading": "Your Rights",
+        "body": "Under GDPR you have the right to access, correct, delete, restrict, or port your personal data, and to withdraw consent at any time. To exercise any of these rights, email us at info@moreska.eu. If you believe your rights have been violated, you may lodge a complaint with the Croatian Personal Data Protection Agency (AZOP) at azop.hr."
+      },
+      {
+        "heading": "Changes to This Policy",
+        "body": "We may update this Privacy Policy from time to time. The date of the most recent update appears above. Continued use of the site after any changes constitutes acceptance of the updated policy."
+      }
+    ]
+  },
+  "cookiePage": {
+    "heroHeadline": "Cookie Policy",
+    "heroSubtitle": "What cookies we use and how to manage them",
+    "lastUpdated": "Last updated: May 2026",
+    "sections": [
+      {
+        "heading": "What Are Cookies?",
+        "body": "Cookies are small text files stored on your device by your browser when you visit a website. They help the site remember information about your visit."
+      },
+      {
+        "heading": "Essential Cookies",
+        "body": "These cookies are required for the website to function correctly. They do not track you across other sites and cannot be turned off. No personal data is collected by essential cookies."
+      },
+      {
+        "heading": "Analytics Cookies",
+        "body": "With your consent, we use Google Analytics to understand how visitors use this site. These cookies collect anonymised data — pages visited, time spent, and similar metrics. No personal information is recorded or linked to your identity. You can withdraw consent at any time using the cookie settings banner."
+      },
+      {
+        "heading": "Managing Cookies",
+        "body": "You can control and delete cookies through your browser settings. Deleting or blocking cookies may affect your experience on this site. For analytics cookies, use the consent banner displayed when you first visit. For more on how Google uses data: policies.google.com/privacy."
+      },
+      {
+        "heading": "Changes to This Policy",
+        "body": "We may update this Cookie Policy from time to time. The date of the most recent update appears above."
+      }
+    ]
+  },
+  "servicePages": {
+    "backLink": "← Private Experiences",
+    "formTitle": "Make an Enquiry",
+    "formBody": "Tell us about your group and we'll be in touch within 2 business days.",
+    "ctaHeadline": "Witness Moreška live.",
+    "ctaBody": "Twenty-four performances at the Summer Cinema, Korčula. May through October, 21:00.",
+    "ctaButton": "View Performances"
   },
   "cookieBanner": {
     "body": "We use cookies to understand how you use this site. Analytics cookies are only loaded with your consent.",

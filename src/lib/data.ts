@@ -24,22 +24,22 @@ export interface ServiceCardMeta {
 }
 
 const images = [
-  '/moreska01.jpg',
-  '/black-king-moreska.jpg',
-  '/moreska-wide.jpg',
-  '/torches.jpg',
-  '/bula-kralj.jpg',
-  '/klapa.jpg',
-  '/moreska02.jpg',
-  '/band01.jpg',
+  '/moreska01.webp',
+  '/black-king-moreska.webp',
+  '/moreska-wide.webp',
+  '/torches.webp',
+  '/bula-kralj.webp',
+  '/bula-krupni.webp',
+  '/moreska02.webp',
+  '/crni-kralj.webp',
 ];
 
 export const SCHEDULE_ALL: Performance[] = [
-  { date: '2026-05-04',  capacity: 312, sold: 312, image: '/torches.jpg',           tag: 'Season Opener' },
-  { date: '2026-05-11',  capacity: 312, sold: 268, image: '/kraljevi-krupni.jpg',    tag: 'May' },
-  { date: '2026-05-18',  capacity: 312, sold: 192, image: '/black-king-moreska.jpg', tag: 'May' },
-  { date: '2026-05-25',  capacity: 312, sold: 118, image: '/moreska-wide.jpg',       tag: 'May' },
-  { date: '2026-06-08',  capacity: 312, sold: 54,  image: '/torches.jpg',           tag: 'June' },
+  { date: '2026-05-04',  capacity: 312, sold: 312, image: '/torches.webp',           tag: 'Season Opener' },
+  { date: '2026-05-11',  capacity: 312, sold: 268, image: '/kraljevi-krupni.webp',    tag: 'May' },
+  { date: '2026-05-18',  capacity: 312, sold: 192, image: '/black-king-moreska.webp', tag: 'May' },
+  { date: '2026-05-25',  capacity: 312, sold: 118, image: '/moreska-wide.webp',       tag: 'May' },
+  { date: '2026-06-08',  capacity: 312, sold: 54,  image: '/torches.webp',           tag: 'June' },
   { date: '2026-06-10',  capacity: 312, sold: 24,  image: images[6],                tag: 'June' },
   { date: '2026-06-22',  capacity: 312, sold: 0,   image: images[4],                tag: 'June' },
   { date: '2026-06-24',  capacity: 312, sold: 0,   image: images[0],                tag: 'June' },
@@ -69,14 +69,14 @@ export function getUpcomingPerformances(count = 4): Performance[] {
 
 // All 8 vignettes — used on the About page
 export const HISTORY_VIGNETTES_META: HistoryVignetteMeta[] = [
-  { year: '1150', image: '/lerida.png' },
-  { year: '1420', image: '/moreska-wide.jpg' },
-  { year: '1666', image: '/1666.png' },
-  { year: '1883', image: '/cecilija-old-logo.png', imageContain: true },
+  { year: '1150', image: '/lerida.webp' },
+  { year: '1420', image: '/moreska-wide.webp' },
+  { year: '1666', image: '/1666.webp' },
+  { year: '1883', image: '/cecilija-old-logo.webp', imageContain: true },
   { year: '1937', image: '/glazba.webp' },
   { year: '1944', image: '/crni-kralj.webp' },
-  { year: '1991', image: '/bula-kralj.jpg' },
-  { year: '∞',    image: '/moreska01.jpg' },
+  { year: '1991', image: '/bula-kralj.webp' },
+  { year: '∞',    image: '/moreska01.webp' },
 ];
 
 // 4 curated vignettes for the homepage history section
@@ -88,22 +88,27 @@ export const HISTORY_VIGNETTES_HOME: HistoryVignetteMeta[] = [
 ];
 
 export const SECTION_CARDS_META: SectionCardMeta[] = [
-  { key: 'moreska', image: '/kraljevi-krupni.jpg', feature: true },
-  { key: 'band',    image: '/band01.jpg' },
-  { key: 'klapa',   image: '/klapa.jpg' },
-  { key: 'choir',   image: '/choir.jpeg' },
+  { key: 'moreska', image: '/kraljevi-krupni.webp', feature: true },
+  { key: 'band',    image: '/band01.webp' },
+  { key: 'klapa',   image: '/klapa.webp' },
+  { key: 'choir',   image: '/choir.webp' },
 ];
 
 export const SERVICE_CARDS_META: ServiceCardMeta[] = [
-  { key: 'private',    image: '/black-king-closeup.jpg' },
-  { key: 'experience', image: '/moreska-experience.jpg' },
+  { key: 'private',    image: '/black-king-closeup.webp' },
+  { key: 'experience', image: '/moreska-experience.webp' },
 ];
 
 export const SECTION_PAGE_META: Record<string, { image: string; sectionKey: string }> = {
   'moreska':         { image: '/todor-2-vojske.webp',  sectionKey: 'moreska' },
   'wind-orchestra':  { image: '/glazba.webp',           sectionKey: 'band' },
   'klapa':           { image: '/klapa-todor.webp',      sectionKey: 'klapa' },
-  'choir':           { image: '/choir.jpeg',            sectionKey: 'choir' },
+  'choir':           { image: '/choir.webp',            sectionKey: 'choir' },
+};
+
+export const SERVICE_PAGE_META: Record<string, { image: string; cardIndex: number }> = {
+  'private-moreska':    { image: '/black-king-closeup.webp', cardIndex: 0 },
+  'moreska-experience': { image: '/moreska-experience.webp', cardIndex: 1 },
 };
 
 export const SERVICE_PAGE_META: Record<string, { image: string; cardIndex: number }> = {

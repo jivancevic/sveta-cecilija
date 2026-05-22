@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import type { Locale } from '@/proxy';
 import type { Dictionary } from '@/lib/i18n';
+import LangSwitcher from './LangSwitcher';
 
 interface Props {
   locale: Locale;
@@ -15,7 +16,6 @@ export default function Nav({ locale, t, variant = 'homepage' }: Props) {
   const [scrolled, setScrolled] = useState(false);
   const [mobileVisible, setMobileVisible] = useState(true);
   const lastScrollY = useRef(0);
-  const otherLocale = locale === 'en' ? 'hr' : 'en';
 
   useEffect(() => {
     document.body.style.overflow = open ? 'hidden' : '';
@@ -25,9 +25,7 @@ export default function Nav({ locale, t, variant = 'homepage' }: Props) {
   useEffect(() => {
     const onScroll = () => {
       const y = window.scrollY;
-      // Laptop: transparent → dark
       setScrolled(y > 60);
-      // Mobile: show on scroll-up, hide on scroll-down
       if (y < 60) {
         setMobileVisible(true);
       } else if (y > lastScrollY.current + 4) {
@@ -53,9 +51,9 @@ export default function Nav({ locale, t, variant = 'homepage' }: Props) {
   return (
     <>
       <nav className={navClass}>
-        <a href={`/${locale}`} className="nav__logo" aria-label="HGD Sveta Cecilija">
+        <a href="/" className="nav__logo" aria-label="HGD Sveta Cecilija">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/cecilija-logo.png" alt="" />
+          <img src="/cecilija-logo.webp" alt="" />
           <span className="nav__wordmark">
             <span className="top">{t.wordmarkTop}</span>
             <span className="bot">{t.wordmarkBot}</span>
@@ -63,29 +61,20 @@ export default function Nav({ locale, t, variant = 'homepage' }: Props) {
         </a>
 
         <div className="nav__links">
-          <a href={`/${locale}/tickets`}>{t.performances}</a>
-          <a href={`/${locale}#about`}>{t.about}</a>
-          <a href={`/${locale}#history`}>{t.history}</a>
-          <a href={`/${locale}#secs`}>{t.sections}</a>
-          <a href={`/${locale}#svcs`}>{t.services}</a>
-          <a href={`/${locale}#contact`}>{t.contact}</a>
-          <span className="nav__lang">
-            <a href={`/${locale}`} className="active">{locale.toUpperCase()}</a>
-            {' · '}
-            <a href={`/${otherLocale}`}>{otherLocale.toUpperCase()}</a>
-          </span>
-          <a className="btn btn--primary btn--small nav__cta" href={`/${locale}/tickets`}>
+          <a href="/tickets">{t.performances}</a>
+          <a href="/#about">{t.about}</a>
+          <a href="/#history">{t.history}</a>
+          <a href="/#secs">{t.sections}</a>
+          <a href="/#svcs">{t.services}</a>
+          <a href="/#contact">{t.contact}</a>
+          <LangSwitcher locale={locale} className="nav__lang" />
+          <a className="btn btn--primary btn--small nav__cta" href="/tickets">
             {t.buyTickets}
           </a>
         </div>
 
-        {/* Mobile: lang toggle + hamburger */}
         <div className="nav__mobile-right">
-          <span className="nav__lang-mobile">
-            <a href={`/${locale}`} className="active">{locale.toUpperCase()}</a>
-            {' · '}
-            <a href={`/${otherLocale}`}>{otherLocale.toUpperCase()}</a>
-          </span>
+          <LangSwitcher locale={locale} className="nav__lang-mobile" />
           <button
             className="nav__hamburger"
             onClick={() => setOpen(true)}
@@ -102,28 +91,26 @@ export default function Nav({ locale, t, variant = 'homepage' }: Props) {
         <div className="nav__overlay">
           <button className="nav__overlay-close" onClick={close} aria-label="Close menu">✕</button>
 
-          <a href={`/${locale}`} className="nav__overlay-logo" onClick={close}>
+          <a href="/" className="nav__overlay-logo" onClick={close}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/cecilija-logo.png" alt="HGD Sveta Cecilija" />
+            <img src="/cecilija-logo.webp" alt="HGD Sveta Cecilija" />
           </a>
 
           <div className="nav__overlay-links">
-            <a href={`/${locale}/tickets`} onClick={close}>{t.performances}</a>
-            <a href={`/${locale}#about`} onClick={close}>{t.about}</a>
-            <a href={`/${locale}#history`} onClick={close}>{t.history}</a>
-            <a href={`/${locale}#secs`} onClick={close}>{t.sections}</a>
-            <a href={`/${locale}#svcs`} onClick={close}>{t.services}</a>
-            <a href={`/${locale}#contact`} onClick={close}>{t.contact}</a>
+            <a href="/tickets" onClick={close}>{t.performances}</a>
+            <a href="/#about" onClick={close}>{t.about}</a>
+            <a href="/#history" onClick={close}>{t.history}</a>
+            <a href="/#secs" onClick={close}>{t.sections}</a>
+            <a href="/#svcs" onClick={close}>{t.services}</a>
+            <a href="/#contact" onClick={close}>{t.contact}</a>
           </div>
 
-          <a className="btn btn--primary" href={`/${locale}/tickets`} onClick={close}>
+          <a className="btn btn--primary" href="/tickets" onClick={close}>
             {t.buyTickets}
           </a>
 
           <div className="nav__overlay-lang">
-            <a href={`/${locale}`} className="active" onClick={close}>{locale.toUpperCase()}</a>
-            {' · '}
-            <a href={`/${otherLocale}`} onClick={close}>{otherLocale.toUpperCase()}</a>
+            <LangSwitcher locale={locale} className="nav__overlay-lang-switcher" />
           </div>
         </div>
       )}

@@ -13,10 +13,9 @@ const STORAGE_KEY = 'moreska_cookie_consent';
 
 interface Props {
   t: Dictionary['cookieBanner'];
-  locale: string;
 }
 
-export default function CookieConsent({ t, locale }: Props) {
+export default function CookieConsent({ t }: Props) {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -58,7 +57,7 @@ export default function CookieConsent({ t, locale }: Props) {
       <div className="cookie-banner__inner">
         <p className="cookie-banner__text">
           {t.body}{' '}
-          <a href={`/${locale}/cookie-policy`} className="cookie-banner__link">{t.learnMore}</a>
+          <a href="/cookie-policy" className="cookie-banner__link">{t.learnMore}</a>
         </p>
         <div className="cookie-banner__actions">
           <button className="btn btn--ghost btn--small" onClick={decline}>{t.decline}</button>

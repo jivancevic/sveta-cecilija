@@ -5,10 +5,9 @@ import type { Dictionary } from '@/lib/i18n';
 
 interface Props {
   t: Dictionary['hero'];
-  locale: string;
 }
 
-export default function Hero({ t, locale }: Props) {
+export default function Hero({ t }: Props) {
   const [videoSrc, setVideoSrc] = useState('/hero-horizontal.webm');
 
   useEffect(() => {
@@ -41,13 +40,13 @@ export default function Hero({ t, locale }: Props) {
 
       <div className="hero__logo">
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/cecilija-logo.png" alt="" />
+        <img src="/cecilija-logo.webp" alt="" />
         <div className="name serif">HGD Sveta Cecilija</div>
         <div className="est">Korčula · since 1883</div>
       </div>
 
       <div className="hero__ctas">
-        <a className="btn btn--primary btn--hero-cta" href={`/${locale}/tickets`}>{t.buyTickets}</a>
+        <a className="btn btn--primary btn--hero-cta" href="/tickets">{t.buyTickets}</a>
       </div>
 
       <div className="hero__scroll">{t.scroll}</div>
