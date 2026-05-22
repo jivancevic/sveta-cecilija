@@ -3,7 +3,7 @@ import { Bodoni_Moda_SC, IBM_Plex_Mono, Inter } from 'next/font/google';
 import { getLocale } from '@/lib/locale';
 import { getDictionary } from '@/lib/i18n';
 import CookieConsent from '@/components/CookieConsent';
-import './globals.css';
+import '../globals.css';
 
 const bodoniModa = Bodoni_Moda_SC({
   subsets: ['latin'],
