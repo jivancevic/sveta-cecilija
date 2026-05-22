@@ -10,8 +10,14 @@ type Args = {
   searchParams: Promise<{ [key: string]: string | string[] }>
 }
 
-export const generateMetadata = (args: Args): Promise<Metadata> =>
-  generatePageMetadata({ config, params: args.params, searchParams: args.searchParams })
+export const generateMetadata = async (args: Args): Promise<Metadata> => {
+  try {
+    return await generatePageMetadata({ config, params: args.params, searchParams: args.searchParams })
+  } catch (err) {
+    console.error('[admin] generateMetadata error:', err)
+    return {}
+  }
+}
 
 export default async function Page(args: Args) {
   try {
