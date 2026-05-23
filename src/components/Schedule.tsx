@@ -7,7 +7,6 @@ const SHOW_IMAGES = [
   '/moreska01.webp',
   '/black-king-moreska.webp',
   '/moreska-wide.webp',
-  '/bula-kralj.webp',
   '/bula-krupni.webp',
   '/moreska02.webp',
   '/crni-kralj.webp',

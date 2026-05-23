@@ -6,7 +6,6 @@ import type { Dictionary } from '@/lib/i18n';
 import type { Locale } from '@/proxy';
 
 const SHOW_IMAGES = [
-  '/bula-kralj.webp',
   '/moreska-wide.webp',
   '/kraljevi-krupni.webp',
   '/moreska01.webp',
