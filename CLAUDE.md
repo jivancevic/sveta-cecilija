@@ -142,6 +142,22 @@ Remaining capacity per show = `VENUE_CAPACITY[venue] - onlineSold - inPersonSold
 - **Pretix:** dropped from MVP. Door scanning uses the browser-based `/scan/[token]` page only — staff scan with any phone camera.
 - **Refunds:** admin-initiated only (no self-service). Idempotent — check `refundStatus` before calling Stripe to prevent double-refunds.
 
+### Payload CMS admin customization (v3.84)
+
+**Component references must always be string paths** — never direct React imports. Every component slot in `buildConfig` and collection configs (`PayloadComponent` type) takes `'@/path/to/File#ExportName'`. Direct imports (e.g. `Component: CollectionCards`) fail TypeScript.
+
+**Admin component placement map** (non-obvious nesting):
+- Custom root admin route (`/admin/my-page`): `admin.components.views[key]` in `buildConfig`, with `path: '/my-page'`
+- Button in collection list header: `collection.admin.components.views.list.actions`
+- Item in edit view 3-dot menu: `collection.admin.components.edit.editMenuItems`
+- **No per-row list actions exist in v3** — cancel/single-doc actions belong in the edit view
+
+**`importMap.js` is manually maintained** — `src/app/(payload)/admin/importMap.js` is not auto-generated. Every new component added to `payload.config.ts` or a collection config must also be imported and keyed there. Omitting it causes a silent render failure.
+
+**`MetaConfig` valid keys** — only `titleSuffix` and `defaultOGImageType` are Payload additions on top of Next.js `Metadata`. There is no `favicon` property.
+
+**Auth in custom API routes** — use `payload.auth({ headers: req.headers })` to verify the admin session before calling `payload.create` / `payload.find` / etc.
+
 ### Design decisions
 
 - **Shows data is live:** Homepage and `/tickets` page both read from the Shows collection via `getUpcomingShows()` in `src/lib/shows.ts`. Both pages use `export const dynamic = 'force-dynamic'` — required for fresh capacity data on every request. Any page that displays remaining seats must be force-dynamic.
