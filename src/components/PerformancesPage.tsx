@@ -1,14 +1,26 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
-import type { Performance } from '@/lib/data';
+import type { Show } from '@/lib/shows';
 import type { Dictionary } from '@/lib/i18n';
 import type { Locale } from '@/proxy';
+
+const SHOW_IMAGES = [
+  '/torches.webp',
+  '/moreska01.webp',
+  '/black-king-moreska.webp',
+  '/moreska-wide.webp',
+  '/bula-kralj.webp',
+  '/bula-krupni.webp',
+  '/moreska02.webp',
+  '/crni-kralj.webp',
+  '/kraljevi-krupni.webp',
+];
 
 interface Props {
   t: Dictionary['performancesPage'];
   tSchedule: Dictionary['schedule'];
-  performances: Performance[];
+  shows: Show[];
   locale: Locale;
   initialDate?: string;
 }
@@ -24,18 +36,12 @@ function formatDate(isoDate: string, locale: Locale) {
   return { day, month, year, weekday };
 }
 
-function todayStr() {
-  return new Date().toISOString().slice(0, 10);
-}
-
-export default function PerformancesPage({ t, tSchedule, performances, locale, initialDate }: Props) {
+export default function PerformancesPage({ t, tSchedule, shows, locale, initialDate }: Props) {
   const [activeDate, setActiveDate] = useState<string | null>(initialDate ?? null);
   const [adults, setAdults] = useState(2);
   const [children, setChildren] = useState(0);
   const [confirmed, setConfirmed] = useState<string | null>(null);
   const targetRef = useRef<HTMLDivElement | null>(null);
-
-  const upcoming = performances.filter((p) => p.date >= todayStr());
 
   useEffect(() => {
     if (initialDate && targetRef.current) {
@@ -95,115 +101,120 @@ export default function PerformancesPage({ t, tSchedule, performances, locale, i
         </div>
       </div>
 
-      <div className="perfs-grid">
-        {upcoming.map((p, i) => {
-          const { day, month, year, weekday } = formatDate(p.date, locale);
-          const soldOut = p.capacity - p.sold <= 0;
-          const isActive = activeDate === p.date;
-          const isConfirmed = confirmed === p.date;
-          const fewLeft = !soldOut && p.capacity - p.sold <= 50 && i < 3;
+      {shows.length === 0 ? (
+        <div className="perfs-empty">{t.noShows}</div>
+      ) : (
+        <div className="perfs-grid">
+          {shows.map((show, i) => {
+            const { day, month, year, weekday } = formatDate(show.date, locale);
+            const soldOut = show.remaining <= 0;
+            const isActive = activeDate === show.date;
+            const isConfirmed = confirmed === show.date;
+            const fewLeft = !soldOut && show.remaining <= 50 && i < 3;
+            const image = SHOW_IMAGES[i % SHOW_IMAGES.length];
 
-          const pillClass = soldOut ? '' : fewLeft ? ' amber' : ' green';
-          const pillText = soldOut
-            ? t.soldOutLabel
-            : fewLeft
-            ? tSchedule.fewLeft
-            : tSchedule.available;
+            const pillClass = soldOut ? '' : fewLeft ? ' amber' : ' green';
+            const pillText = soldOut
+              ? t.soldOutLabel
+              : fewLeft
+              ? tSchedule.fewLeft
+              : tSchedule.available;
 
-          return (
-            <div
-              key={p.date}
-              ref={p.date === initialDate ? targetRef : null}
-              className={`perf-card${isActive ? ' perf-card--active' : ''}`}
-            >
-              <div className="perf-card__photo">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={p.image} alt="" />
-                <div className="perf-card__photo-overlay" />
-              </div>
-
-              <div className="perf-card__body">
-                <div className="perf-card__date">
-                  <span className="perf-card__day mono">{day}</span>
-                  <span className="perf-card__mo mono">{month} {year}</span>
+            return (
+              <div
+                key={show.id}
+                ref={show.date === initialDate ? targetRef : null}
+                className={`perf-card${isActive ? ' perf-card--active' : ''}`}
+              >
+                <div className="perf-card__photo">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={image} alt="" />
+                  <div className="perf-card__photo-overlay" />
                 </div>
-                <div className="perf-card__divider" />
-                <div className="perf-card__meta">
-                  <span>{weekday} · 21:00</span>
-                  <span className={`perf-card__pill${pillClass}`}>
-                    <span className="dot" />
-                    {pillText}
-                  </span>
+
+                <div className="perf-card__body">
+                  <div className="perf-card__date">
+                    <span className="perf-card__day mono">{day}</span>
+                    <span className="perf-card__mo mono">{month} {year}</span>
+                  </div>
+                  <div className="perf-card__divider" />
+                  <div className="perf-card__meta">
+                    <span>{weekday} · {show.time}</span>
+                    <span className={`perf-card__pill${pillClass}`}>
+                      <span className="dot" />
+                      {pillText}
+                    </span>
+                  </div>
+                  <div className="perf-card__cta">
+                    <button
+                      className="perf-card__book"
+                      onClick={() => openBooking(show.date)}
+                      disabled={soldOut || isConfirmed}
+                    >
+                      {isConfirmed ? '✓' : soldOut ? t.soldOutLabel : t.book}
+                    </button>
+                  </div>
                 </div>
-                <div className="perf-card__cta">
+
+                {/* Booking expansion */}
+                <div className={`perf-booking${isActive ? ' perf-booking--open' : ''}`}>
+                  <div className="perf-booking__row">
+                    <span className="perf-booking__label">
+                      {t.adults}
+                      <span className="perf-booking__price">{t.adultPrice}</span>
+                    </span>
+                    <div className="qty-picker">
+                      <button className="qty-btn" onClick={() => setAdults(Math.max(0, adults - 1))}>−</button>
+                      <span className="qty-val">{adults}</span>
+                      <button className="qty-btn" onClick={() => setAdults(adults + 1)}>+</button>
+                    </div>
+                  </div>
+                  <div className="perf-booking__row">
+                    <span className="perf-booking__label">
+                      {t.children}
+                      <span className="perf-booking__price">{t.childPrice}</span>
+                    </span>
+                    <div className="qty-picker">
+                      <button className="qty-btn" onClick={() => setChildren(Math.max(0, children - 1))}>−</button>
+                      <span className="qty-val">{children}</span>
+                      <button className="qty-btn" onClick={() => setChildren(children + 1)}>+</button>
+                    </div>
+                  </div>
+
+                  {showNudge && !showCelebrate && (
+                    <div className="perf-booking__nudge">{t.freeTicketNudge}</div>
+                  )}
+                  {showCelebrate && (
+                    <div className="perf-booking__celebrate">
+                      {t.freeTicketUnlocked} <span className="perf-booking__discount">−€{discount}</span>
+                    </div>
+                  )}
+
+                  <div className="perf-booking__total">
+                    <span>{t.total}</span>
+                    <span className="perf-booking__total-amount">€{total}</span>
+                  </div>
                   <button
-                    className="perf-card__book"
-                    onClick={() => openBooking(p.date)}
-                    disabled={soldOut || isConfirmed}
+                    className="perf-booking__confirm"
+                    onClick={() => confirm(show.date)}
+                    disabled={adults + children === 0}
                   >
-                    {isConfirmed ? '✓' : soldOut ? t.soldOutLabel : t.book}
+                    {t.confirm}
                   </button>
                 </div>
-              </div>
 
-              {/* Booking expansion */}
-              <div className={`perf-booking${isActive ? ' perf-booking--open' : ''}`}>
-                <div className="perf-booking__row">
-                  <span className="perf-booking__label">
-                    {t.adults}
-                    <span className="perf-booking__price">{t.adultPrice}</span>
-                  </span>
-                  <div className="qty-picker">
-                    <button className="qty-btn" onClick={() => setAdults(Math.max(0, adults - 1))}>−</button>
-                    <span className="qty-val">{adults}</span>
-                    <button className="qty-btn" onClick={() => setAdults(adults + 1)}>+</button>
-                  </div>
-                </div>
-                <div className="perf-booking__row">
-                  <span className="perf-booking__label">
-                    {t.children}
-                    <span className="perf-booking__price">{t.childPrice}</span>
-                  </span>
-                  <div className="qty-picker">
-                    <button className="qty-btn" onClick={() => setChildren(Math.max(0, children - 1))}>−</button>
-                    <span className="qty-val">{children}</span>
-                    <button className="qty-btn" onClick={() => setChildren(children + 1)}>+</button>
-                  </div>
-                </div>
-
-                {showNudge && !showCelebrate && (
-                  <div className="perf-booking__nudge">{t.freeTicketNudge}</div>
-                )}
-                {showCelebrate && (
-                  <div className="perf-booking__celebrate">
-                    {t.freeTicketUnlocked} <span className="perf-booking__discount">−€{discount}</span>
+                {/* Success state */}
+                {isConfirmed && (
+                  <div className="perf-success">
+                    <p className="perf-success__title">{t.successTitle}</p>
+                    <p className="perf-success__body">{t.successBody}</p>
                   </div>
                 )}
-
-                <div className="perf-booking__total">
-                  <span>{t.total}</span>
-                  <span className="perf-booking__total-amount">€{total}</span>
-                </div>
-                <button
-                  className="perf-booking__confirm"
-                  onClick={() => confirm(p.date)}
-                  disabled={adults + children === 0}
-                >
-                  {t.confirm}
-                </button>
               </div>
-
-              {/* Success state */}
-              {isConfirmed && (
-                <div className="perf-success">
-                  <p className="perf-success__title">{t.successTitle}</p>
-                  <p className="perf-success__body">{t.successBody}</p>
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
     </section>
   );
 }

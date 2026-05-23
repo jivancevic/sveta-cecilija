@@ -179,7 +179,8 @@
     "duration": "1 sat",
     "programme": "Nastup klape · moreška uz živi puhaći orkestar",
     "freeTicketNudge": "Dodaj još jednu kartu — peta je besplatna!",
-    "freeTicketUnlocked": "Besplatna karta uključena"
+    "freeTicketUnlocked": "Besplatna karta uključena",
+    "noShows": "Trenutno nema zakazanih nastupa. Provjerite uskoro."
   },
   "cookieBanner": {
     "body": "Koristimo kolačiće kako bismo razumjeli kako koristite ovu stranicu. Analitički kolačići učitavaju se samo uz vašu suglasnost.",
