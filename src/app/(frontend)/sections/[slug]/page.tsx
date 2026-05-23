@@ -52,7 +52,14 @@ export default async function SectionPage({
         </div>
       </section>
 
-      <div className="ip-cta">
+      <div
+        className="ip-cta"
+        style={meta.sectionKey === 'moreska' ? {
+          backgroundImage: 'url(/moreskanti-cool.jpg)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        } : undefined}
+      >
         <h2 className="ip-cta__h serif">{t.ctaHeadline}</h2>
         <p className="ip-cta__body">{t.ctaBody}</p>
         <a href="/#sched" className="btn btn--primary">{t.ctaButton}</a>

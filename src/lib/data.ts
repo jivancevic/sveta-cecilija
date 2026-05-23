@@ -24,41 +24,45 @@ export interface ServiceCardMeta {
 }
 
 const images = [
-  '/moreska01.webp',
-  '/black-king-moreska.webp',
-  '/moreska-wide.webp',
-  '/torches.webp',
-  '/bula-kralj.webp',
-  '/bula-krupni.webp',
-  '/moreska02.webp',
-  '/crni-kralj.webp',
+  '/fila.jpg',             // 0
+  '/kraljevi-krupni.webp', // 1
+  '/kraljevi.webp',        // 2
+  '/moreska-wide.webp',    // 3
+  '/moreska01.webp',       // 4
+  '/moreska02.webp',       // 5
+  '/torches.webp',         // 6
+  '/black-bula.jpg',       // 7
+  '/sfida-wide.jpg',       // 8
+  '/sword-clash.jpg',      // 9
+  '/top-7-kolap.jpg',      // 10
+  '/wave.jpg',             // 11
 ];
 
 export const SCHEDULE_ALL: Performance[] = [
-  { date: '2026-05-04',  capacity: 312, sold: 312, image: '/torches.webp',           tag: 'Season Opener' },
-  { date: '2026-05-11',  capacity: 312, sold: 268, image: '/kraljevi-krupni.webp',    tag: 'May' },
-  { date: '2026-05-18',  capacity: 312, sold: 192, image: '/black-king-moreska.webp', tag: 'May' },
-  { date: '2026-05-25',  capacity: 312, sold: 118, image: '/moreska-wide.webp',       tag: 'May' },
-  { date: '2026-06-08',  capacity: 312, sold: 54,  image: '/torches.webp',           tag: 'June' },
-  { date: '2026-06-10',  capacity: 312, sold: 24,  image: images[6],                tag: 'June' },
-  { date: '2026-06-22',  capacity: 312, sold: 0,   image: images[4],                tag: 'June' },
-  { date: '2026-06-24',  capacity: 312, sold: 0,   image: images[0],                tag: 'June' },
-  { date: '2026-07-06',  capacity: 312, sold: 0,   image: images[1],                tag: 'July' },
-  { date: '2026-07-08',  capacity: 312, sold: 0,   image: images[2],                tag: 'July' },
-  { date: '2026-07-20',  capacity: 312, sold: 0,   image: images[3],                tag: 'July' },
-  { date: '2026-07-22',  capacity: 312, sold: 0,   image: images[5],                tag: 'July' },
-  { date: '2026-08-03',  capacity: 312, sold: 0,   image: images[6],                tag: 'August' },
-  { date: '2026-08-06',  capacity: 312, sold: 0,   image: images[7],                tag: 'August' },
-  { date: '2026-08-17',  capacity: 312, sold: 0,   image: images[0],                tag: 'August' },
-  { date: '2026-08-20',  capacity: 312, sold: 0,   image: images[1],                tag: 'August' },
-  { date: '2026-08-31',  capacity: 312, sold: 0,   image: images[2],                tag: 'August' },
-  { date: '2026-09-02',  capacity: 312, sold: 0,   image: images[3],                tag: 'September' },
-  { date: '2026-09-14',  capacity: 312, sold: 0,   image: images[4],                tag: 'September' },
-  { date: '2026-09-16',  capacity: 312, sold: 0,   image: images[5],                tag: 'September' },
-  { date: '2026-09-28',  capacity: 312, sold: 0,   image: images[6],                tag: 'September' },
-  { date: '2026-09-30',  capacity: 312, sold: 0,   image: images[7],                tag: 'October' },
-  { date: '2026-10-12',  capacity: 312, sold: 0,   image: images[0],                tag: 'October' },
-  { date: '2026-10-14',  capacity: 312, sold: 0,   image: images[1],                tag: 'October' },
+  { date: '2026-05-04',  capacity: 312, sold: 312, image: images[0],  tag: 'Season Opener' },
+  { date: '2026-05-11',  capacity: 312, sold: 268, image: images[1],  tag: 'May' },
+  { date: '2026-05-18',  capacity: 312, sold: 192, image: images[2],  tag: 'May' },
+  { date: '2026-05-25',  capacity: 312, sold: 118, image: images[3],  tag: 'May' },
+  { date: '2026-06-08',  capacity: 312, sold: 54,  image: images[4],  tag: 'June' },
+  { date: '2026-06-10',  capacity: 312, sold: 24,  image: images[5],  tag: 'June' },
+  { date: '2026-06-22',  capacity: 312, sold: 0,   image: images[6],  tag: 'June' },
+  { date: '2026-06-24',  capacity: 312, sold: 0,   image: images[7],  tag: 'June' },
+  { date: '2026-07-06',  capacity: 312, sold: 0,   image: images[8],  tag: 'July' },
+  { date: '2026-07-08',  capacity: 312, sold: 0,   image: images[9],  tag: 'July' },
+  { date: '2026-07-20',  capacity: 312, sold: 0,   image: images[10], tag: 'July' },
+  { date: '2026-07-22',  capacity: 312, sold: 0,   image: images[11], tag: 'July' },
+  { date: '2026-08-03',  capacity: 312, sold: 0,   image: images[0],  tag: 'August' },
+  { date: '2026-08-06',  capacity: 312, sold: 0,   image: images[1],  tag: 'August' },
+  { date: '2026-08-17',  capacity: 312, sold: 0,   image: images[2],  tag: 'August' },
+  { date: '2026-08-20',  capacity: 312, sold: 0,   image: images[3],  tag: 'August' },
+  { date: '2026-08-31',  capacity: 312, sold: 0,   image: images[4],  tag: 'August' },
+  { date: '2026-09-02',  capacity: 312, sold: 0,   image: images[5],  tag: 'September' },
+  { date: '2026-09-14',  capacity: 312, sold: 0,   image: images[6],  tag: 'September' },
+  { date: '2026-09-16',  capacity: 312, sold: 0,   image: images[7],  tag: 'September' },
+  { date: '2026-09-28',  capacity: 312, sold: 0,   image: images[8],  tag: 'September' },
+  { date: '2026-09-30',  capacity: 312, sold: 0,   image: images[9],  tag: 'October' },
+  { date: '2026-10-12',  capacity: 312, sold: 0,   image: images[10], tag: 'October' },
+  { date: '2026-10-14',  capacity: 312, sold: 0,   image: images[11], tag: 'October' },
 ];
 
 export function getUpcomingPerformances(count = 4): Performance[] {
@@ -69,13 +73,13 @@ export function getUpcomingPerformances(count = 4): Performance[] {
 
 // All 8 vignettes — used on the About page
 export const HISTORY_VIGNETTES_META: HistoryVignetteMeta[] = [
-  { year: '1150', image: '/lerida.webp' },
+  { year: '1150', image: '/moreska-nobilo.jpg' },
   { year: '1420', image: '/moreska-wide.webp' },
   { year: '1666', image: '/1666.webp' },
   { year: '1883', image: '/cecilija-old-logo.webp', imageContain: true },
   { year: '1937', image: '/glazba.webp' },
   { year: '1944', image: '/crni-kralj.webp' },
-  { year: '1991', image: '/bula-kralj.webp' },
+  { year: '1991', image: '/bula.jpg' },
   { year: '∞',    image: '/moreska01.webp' },
 ];
 
@@ -95,7 +99,7 @@ export const SECTION_CARDS_META: SectionCardMeta[] = [
 ];
 
 export const SERVICE_CARDS_META: ServiceCardMeta[] = [
-  { key: 'private',    image: '/black-king-closeup.webp' },
+  { key: 'private',    image: '/kraljevi.webp' },
   { key: 'experience', image: '/moreska-experience.webp' },
 ];
 
@@ -107,6 +111,6 @@ export const SECTION_PAGE_META: Record<string, { image: string; sectionKey: stri
 };
 
 export const SERVICE_PAGE_META: Record<string, { image: string; cardIndex: number }> = {
-  'private-moreska':    { image: '/black-king-closeup.webp', cardIndex: 0 },
+  'private-moreska':    { image: '/kraljevi.webp', cardIndex: 0 },
   'moreska-experience': { image: '/moreska-experience.webp', cardIndex: 1 },
 };

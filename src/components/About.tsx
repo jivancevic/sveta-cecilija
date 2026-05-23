@@ -22,7 +22,7 @@ export default function About({ t }: Props) {
       <div className="about__collage">
         <div className="about__photo about__photo--tall" data-reveal>
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/moreska02.webp" alt="Moreška performers in costume" />
+          <img src="/top-3-kolap.jpg" alt="Moreška performers in costume" />
         </div>
         <div className="about__photo about__photo--top" data-reveal data-delay="1">
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -30,7 +30,7 @@ export default function About({ t }: Props) {
         </div>
         <div className="about__photo about__photo--mid" data-reveal data-delay="2">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/bula-kralj.webp" alt="Bula and king" />
+          <img src="/wave.jpg" alt="Bula and king" />
         </div>
         <div className="about__photo about__photo--bot" data-reveal data-delay="3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
