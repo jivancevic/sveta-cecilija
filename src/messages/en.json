@@ -32,7 +32,9 @@
     "left": "{count} left",
     "buyTickets": "Buy Tickets →",
     "viewAll": "View All Performances",
-    "priceNote": "Adults €20 · Children under 14 €10 · Groups: every 5th ticket free"
+    "priceNote": "Adults €20 · Children under 14 €10 · Groups: every 5th ticket free",
+    "venueLjetno": "Summer Cinema",
+    "venueZimsko": "Cultural Center Korčula"
   },
   "history": {
     "eyebrow": "Through the ages",
@@ -201,7 +203,11 @@
     "duration": "1 hour",
     "programme": "Klapa performance · Moreška with live wind orchestra",
     "freeTicketNudge": "Add 1 more ticket — the 5th is free!",
-    "freeTicketUnlocked": "Free ticket included"
+    "freeTicketUnlocked": "Free ticket included",
+    "noShows": "No performances scheduled at this time. Check back soon.",
+    "venueLjetno": "Summer Cinema",
+    "venueZimsko": "Cultural Center Korčula",
+    "venueNote": "Performances are held at the Summer Cinema, Korčula. In case of bad weather, performances are moved to the Cultural Center Korčula."
   },
   "cookieBanner": {
     "body": "We use cookies to understand how you use this site. Analytics cookies are only loaded with your consent.",
@@ -261,44 +267,6 @@
         "heading": "Changes to This Policy",
         "body": "We may update this Cookie Policy from time to time. The date of the most recent update appears above."
       }
-    ]
-  },
-  "servicePages": {
-    "backLink": "← Private Experiences",
-    "formTitle": "Make an Enquiry",
-    "formBody": "Tell us about your group and we'll be in touch within 2 business days.",
-    "ctaHeadline": "Witness Moreška live.",
-    "ctaBody": "Twenty-four performances at the Summer Cinema, Korčula. May through October, 21:00.",
-    "ctaButton": "View Performances"
-  },
-  "cookieBanner": {
-    "body": "We use cookies to understand how you use this site. Analytics cookies are only loaded with your consent.",
-    "learnMore": "Learn more",
-    "accept": "Accept All",
-    "decline": "Decline"
-  },
-  "privacyPage": {
-    "heroHeadline": "Privacy Policy",
-    "heroSubtitle": "How we collect, use, and protect your data",
-    "lastUpdated": "Last updated: May 2026",
-    "sections": [
-      { "heading": "Who We Are", "body": "HGD Sveta Cecilija (Hrvatsko glazbeno društvo Sveta Cecilija) is a cultural association based in Korčula, Croatia, operating the website moreska.eu. As data controller, we are responsible for your personal data. Contact: info@moreska.eu" },
-      { "heading": "Data We Collect and Why", "body": "Contact and enquiry forms: We collect your name, email address, and message to respond to your enquiry. Legal basis: legitimate interests.\n\nPerformance bookings: We collect your name and email to confirm your booking and deliver your tickets. Legal basis: performance of a contract.\n\nAnalytics: With your consent, we use Google Analytics to collect anonymised data about how visitors use this website. No personal data is linked to analytics reports. Legal basis: consent." },
-      { "heading": "Data Retention", "body": "Contact and enquiry records are retained for 2 years. Booking records are retained for 7 years to meet accounting obligations. Analytics data is retained according to Google's standard settings (26 months)." },
-      { "heading": "Your Rights", "body": "Under GDPR you have the right to access, correct, delete, restrict, or port your personal data, and to withdraw consent at any time. To exercise any of these rights, email us at info@moreska.eu. If you believe your rights have been violated, you may lodge a complaint with the Croatian Personal Data Protection Agency (AZOP) at azop.hr." },
-      { "heading": "Changes to This Policy", "body": "We may update this Privacy Policy from time to time. The date of the most recent update appears above. Continued use of the site after any changes constitutes acceptance of the updated policy." }
-    ]
-  },
-  "cookiePage": {
-    "heroHeadline": "Cookie Policy",
-    "heroSubtitle": "What cookies we use and how to manage them",
-    "lastUpdated": "Last updated: May 2026",
-    "sections": [
-      { "heading": "What Are Cookies?", "body": "Cookies are small text files stored on your device by your browser when you visit a website. They help the site remember information about your visit." },
-      { "heading": "Essential Cookies", "body": "These cookies are required for the website to function correctly. They do not track you across other sites and cannot be turned off. No personal data is collected by essential cookies." },
-      { "heading": "Analytics Cookies", "body": "With your consent, we use Google Analytics to understand how visitors use this site. These cookies collect anonymised data — pages visited, time spent, and similar metrics. No personal information is recorded or linked to your identity. You can withdraw consent at any time using the cookie settings banner." },
-      { "heading": "Managing Cookies", "body": "You can control and delete cookies through your browser settings. Deleting or blocking cookies may affect your experience on this site. For analytics cookies, use the consent banner displayed when you first visit. For more on how Google uses data: policies.google.com/privacy." },
-      { "heading": "Changes to This Policy", "body": "We may update this Cookie Policy from time to time. The date of the most recent update appears above." }
     ]
   },
   "servicePages": {

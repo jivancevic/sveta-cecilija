@@ -30,9 +30,9 @@ There is an existing active Stripe account tied to **korcula-moreska.com**. No n
 - ~~Go to brevo.com and create a free account~~ ✓
 - ~~Add domain `moreska.eu` and get DNS records~~ ✓
 - ~~Add SPF, DKIM, DMARC records to Hetzner DNS~~ ✓ (done in 4e)
-- [ ] Wait for domain verification — **in progress** (up to 24 hours)
-- [ ] Once verified: In Brevo → **Senders & IPs → Senders → Add a sender**: `info@moreska.eu`
-- [ ] Once verified: retrieve **API Key** (Brevo → top-right menu → **SMTP & API → API Keys**) → add as `BREVO_API_KEY` in Coolify
+- ~~Wait for domain verification~~ ✓
+- ~~Add sender `info@moreska.eu`~~ ✓
+- ~~Retrieve API Key and add as `BREVO_API_KEY` in Coolify~~ ✓
 
 ---
 
@@ -55,7 +55,7 @@ There is an existing active Stripe account tied to **korcula-moreska.com**. No n
 
 - ~~Steps 1–8, 10: GitHub connected, project created, Nixpacks, port set~~ ✓
 - ~~Step 9 — Fill in environment variables in Coolify:~~
-  - [ ] `DATABASE_URL` — from Payload CMS / PostgreSQL setup (issue #3)
+  - ~~`DATABASE_URL`~~ ✓
   - ~~`PAYLOAD_SECRET`~~ ✓
   - ~~`STRIPE_SECRET_KEY`~~ ✓
   - ~~`STRIPE_WEBHOOK_SECRET`~~ ✓
@@ -65,20 +65,16 @@ There is an existing active Stripe account tied to **korcula-moreska.com**. No n
 
 ### ~~4d. Configure DNS and SSL for moreska.eu~~ ✓ Done
 
-### 4e. Brevo DNS Records — ✓ Added (DKIM propagation pending)
-
-- ~~SPF and DMARC records added to Hetzner DNS~~ ✓
-- ~~DKIM record added to Hetzner DNS~~ ✓ — **propagation in progress**
-- [ ] Once DKIM propagates: go to Brevo → **Domains** → click **Verify** to confirm all three records
+### ~~4e. Brevo DNS Records~~ ✓ Done
 
 ---
 
 ## Order of Operations
 
 **1 (Stripe):** Steps 1–2 done ✓. Steps 3–4 are post-go-live cleanup.  
-**2 (Brevo):** Domain added, DNS records in place — waiting for verification. Add sender and API key once verified.  
+**2 (Brevo):** ✓ Done — domain verified, sender added, API key in Coolify.  
 **4a (DO Droplet):** Site confirmed live ✓ — destroy the DO Droplet now to stop billing.  
-**4c (env vars):** All set except `DATABASE_URL` — add once issue #3 (Payload CMS + PostgreSQL) is done.  
-**4e (DKIM):** Propagating — check Brevo dashboard and verify once it clears.  
+**4c (env vars):** ✓ All set.  
+**4e (Brevo DNS):** ✓ Done.  
 
 All of these can be completed while development is in progress.

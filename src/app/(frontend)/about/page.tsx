@@ -5,8 +5,8 @@ import PageHero from '@/components/PageHero';
 import Footer from '@/components/Footer';
 
 const BLOCK_IMAGES = [
-  '/bula-kralj.webp',
-  '/moreska-wide.webp',
+  '/kraljevi-krupni.webp',
+  '/mate.jpg',
   '/glazba.webp',
   '/todor-2-vojske.webp',
 ];

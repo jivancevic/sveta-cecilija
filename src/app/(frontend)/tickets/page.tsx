@@ -1,9 +1,11 @@
 import { getLocale } from '@/lib/locale';
 import { getDictionary } from '@/lib/i18n';
-import { SCHEDULE_ALL } from '@/lib/data';
+import { getUpcomingShows } from '@/lib/shows';
 import Nav from '@/components/Nav';
 import Footer from '@/components/Footer';
 import PerformancesPage from '@/components/PerformancesPage';
+
+export const dynamic = 'force-dynamic';
 
 export default async function PerformancesRoute({
   searchParams,
@@ -12,7 +14,10 @@ export default async function PerformancesRoute({
 }) {
   const locale = await getLocale();
   const { date: initialDate } = await searchParams;
-  const dict = await getDictionary(locale);
+  const [dict, shows] = await Promise.all([
+    getDictionary(locale),
+    getUpcomingShows(),
+  ]);
 
   return (
     <div className="inner-page t-stone">
@@ -20,7 +25,7 @@ export default async function PerformancesRoute({
       <PerformancesPage
         t={dict.performancesPage}
         tSchedule={dict.schedule}
-        performances={SCHEDULE_ALL}
+        shows={shows}
         locale={locale}
         initialDate={initialDate}
       />

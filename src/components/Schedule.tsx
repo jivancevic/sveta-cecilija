@@ -1,10 +1,22 @@
 import type { Dictionary } from '@/lib/i18n';
-import type { Performance } from '@/lib/data';
+import type { Show } from '@/lib/shows';
 import type { Locale } from '@/proxy';
+
+const SHOW_IMAGES = [
+  '/torches.webp',
+  '/moreska01.webp',
+  '/black-king-moreska.webp',
+  '/moreska-wide.webp',
+  '/bula-kralj.webp',
+  '/bula-krupni.webp',
+  '/moreska02.webp',
+  '/crni-kralj.webp',
+  '/kraljevi-krupni.webp',
+];
 
 interface Props {
   t: Dictionary['schedule'];
-  performances: Performance[];
+  shows: Show[];
   locale: Locale;
 }
 
@@ -19,7 +31,7 @@ function formatDate(isoDate: string, locale: Locale) {
   return { day, month, year, weekday };
 }
 
-export default function Schedule({ t, performances, locale }: Props) {
+export default function Schedule({ t, shows, locale }: Props) {
   return (
     <section id="sched" className="opera">
       <div className="opera__head">
@@ -28,21 +40,22 @@ export default function Schedule({ t, performances, locale }: Props) {
       </div>
 
       <div className="opera__grid">
-        {performances.map((p, i) => {
-          const { day, month, year, weekday } = formatDate(p.date, locale);
-          const soldOut = p.capacity - p.sold <= 0;
+        {shows.map((show, i) => {
+          const { day, month, year, weekday } = formatDate(show.date, locale);
+          const soldOut = show.remaining <= 0;
           const isNext = i === 0;
+          const image = SHOW_IMAGES[i % SHOW_IMAGES.length];
+          const venueName = show.venue === 'zimsko-kino' ? t.venueZimsko : t.venueLjetno;
 
           const pillClass = soldOut ? '' : isNext ? ' amber' : ' green';
           const pillText = soldOut ? t.soldOut : isNext ? t.fewLeft : t.available;
 
           return (
-            <a key={p.date} href={`/tickets?date=${p.date}`} className="opera__card" data-reveal data-delay={i + 1}>
+            <a key={show.id} href={`/tickets?date=${show.date}`} className="opera__card" data-reveal data-delay={i + 1}>
               <div className="opera__photo">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={p.image} alt="" />
+                <img src={image} alt="" />
                 <div className="opera__photo-overlay" />
-                <div className="opera__tag mono">{p.tag}</div>
               </div>
               <div className="opera__body">
                 <div className="opera__date">
@@ -52,7 +65,7 @@ export default function Schedule({ t, performances, locale }: Props) {
                 <div className="opera__divider" />
                 <h3 className="opera__title serif">Moreška</h3>
                 <div className="opera__meta">
-                  <span>{weekday} · 21:00</span>
+                  <span>{weekday} · {show.time} · {venueName}</span>
                   <span className={`opera__pill${pillClass}`}>
                     <span className="dot" />
                     {pillText}

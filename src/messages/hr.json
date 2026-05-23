@@ -32,7 +32,9 @@
     "left": "Ostalo {count}",
     "buyTickets": "Kupi ulaznice →",
     "viewAll": "Svi nastupi",
-    "priceNote": "Odrasli 20 € · Djeca do 14 godina 10 € · Grupe: svaka peta ulaznica gratis"
+    "priceNote": "Odrasli 20 € · Djeca do 14 godina 10 € · Grupe: svaka peta ulaznica gratis",
+    "venueLjetno": "Ljetno kino",
+    "venueZimsko": "Centar za kulturu"
   },
   "history": {
     "eyebrow": "Kroz stoljeća",
@@ -179,7 +181,11 @@
     "duration": "1 sat",
     "programme": "Nastup klape · moreška uz živi puhaći orkestar",
     "freeTicketNudge": "Dodaj još jednu kartu — peta je besplatna!",
-    "freeTicketUnlocked": "Besplatna karta uključena"
+    "freeTicketUnlocked": "Besplatna karta uključena",
+    "noShows": "Trenutno nema zakazanih nastupa. Provjerite uskoro.",
+    "venueLjetno": "Ljetno kino",
+    "venueZimsko": "Centar za kulturu",
+    "venueNote": "Nastupi se održavaju u Ljetnom kinu u Korčuli. U slučaju lošeg vremena, nastupi se održavaju u Centru za kulturu."
   },
   "cookieBanner": {
     "body": "Koristimo kolačiće kako bismo razumjeli kako koristite ovu stranicu. Analitički kolačići učitavaju se samo uz vašu suglasnost.",

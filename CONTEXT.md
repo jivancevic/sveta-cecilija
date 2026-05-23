@@ -8,13 +8,30 @@ No locale prefixes in URLs. `/tickets`, `/about`, etc. — not `/en/tickets`. Th
 ### Language switcher
 Always renders `HR · EN` (fixed order, HR left). Active language shown in a distinct colour (gold); inactive is dimmed. Switching: save `window.scrollY` to `sessionStorage`, set `moreska_locale` cookie, reload — on mount, read `sessionStorage` and `window.scrollTo` to restore position.
 
-### Summer Cinema (Ljetno kino)
-The outdoor venue in Korčula where Moreška performances are held. Google Maps: https://maps.app.goo.gl/bVYpoQAHw6sixyYk9
+### Venues
+Two venues are used. Capacity is fixed per venue — no per-show overrides.
 
-A venue info block appears at the top of the tickets page, containing:
-- Location name + Google Maps link (text link, no embedded map)
+| Venue | Croatian name | Capacity | Typical use |
+|---|---|---|---|
+| Admin value | Croatian (public) | English (public) | Capacity | Notes |
+|---|---|---|---|---|
+| `ljetno-kino` | Ljetno kino | Summer Cinema | 320 | Default for all public ticketed shows |
+| `zimsko-kino` | Centar za kulturu | Cultural Center Korčula | 250 | Same building as Zimsko kino. Used for private/tour-operator shows; fallback when bad weather forces a move indoors |
+
+Venue is exposed on the public-facing `Show` type — a `Redovna` show may be moved to Zimsko kino due to bad weather, and ticket buyers must see this.
+
+**Public tickets page — venue info block (top of page):**
+Static note: "Performances are held at the Summer Cinema. In case of bad weather, performances move to the Korčula Culture Centre." Always shown regardless of which shows are listed below.
+
+**Show cards:** Venue name displayed on every card. When a show is moved to the bad-weather venue, the card reflects this — buyers see it immediately without having to notice a badge.
+
+Other venue block details (always shown):
+- Google Maps link for Summer Cinema (https://maps.app.goo.gl/bVYpoQAHw6sixyYk9)
 - Show duration: 1 hour
 - Programme order: klapa performance first, then Moreška with live wind orchestra
+
+### Show time format
+Stored and displayed as `HH:MM` (24-hour, e.g. `21:00`, `10:30`). Validated on input — the admin rejects any value that doesn't match the pattern. No predefined pick-list; free text with format enforcement.
 
 ### Performance visibility
 Only performances whose date >= today (YYYY-MM-DD, compared at midnight) are shown on the tickets page. Today's show is always visible; it disappears when the next calendar day begins.
