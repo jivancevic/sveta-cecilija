@@ -6,15 +6,27 @@ import type { Dictionary } from '@/lib/i18n';
 import type { Locale } from '@/proxy';
 
 const SHOW_IMAGES = [
-  '/torches.webp',
-  '/moreska01.webp',
-  '/black-king-moreska.webp',
-  '/moreska-wide.webp',
   '/bula-kralj.webp',
-  '/bula-krupni.webp',
-  '/moreska02.webp',
-  '/crni-kralj.webp',
+  '/moreska-wide.webp',
   '/kraljevi-krupni.webp',
+  '/moreska01.webp',
+  '/kraljevi.webp',
+  '/moreska02.webp',
+  '/black-king-moreska.webp',
+  '/fila.webp',
+  '/torches.webp',
+  '/black-bula.webp',
+  '/bula-alone.webp',
+  '/kings-face-off.webp',
+  '/kings-side.webp',
+  '/mate.webp',
+  '/sfida-wide.webp',
+  '/sword-clash.webp',
+  '/top-3-kolap.webp',
+  '/top-7-kolap.webp',
+  '/top-end-kolap.webp',
+  '/top-end.webp',
+  '/wave.webp',
 ];
 
 interface Props {
