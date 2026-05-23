@@ -51,5 +51,6 @@ next-env.d.ts
 /docs/runtime-logs.txt
 
 # Payload CMS - auto-generated build artifacts
-src/app/(payload)/admin/importMap.js
+# NOTE: importMap.js is manually maintained (not auto-generated) — committed to git
+# so Coolify builds have it available. Do not add it back to gitignore.
 src/payload-types.ts
