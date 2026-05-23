@@ -5,6 +5,16 @@ export const Shows: CollectionConfig = {
   admin: {
     useAsTitle: 'date',
     defaultColumns: ['date', 'time', 'capacity', 'onlineSold', 'inPersonSold', 'status'],
+    components: {
+      edit: {
+        editMenuItems: ['@/components/payload/CancelShowMenuItem#CancelShowMenuItem'],
+      },
+      views: {
+        list: {
+          actions: ['@/components/payload/BulkCreateLink#BulkCreateLink'],
+        },
+      },
+    },
   },
   fields: [
     {

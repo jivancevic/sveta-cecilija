@@ -1,7 +1,6 @@
 import { buildConfig } from 'payload'
 import { postgresAdapter } from '@payloadcms/db-postgres'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
-import { CollectionCards } from '@payloadcms/next/rsc'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { Users } from './collections/Users'
@@ -18,7 +17,6 @@ export default buildConfig({
     user: Users.slug,
     meta: {
       titleSuffix: '— Sveta Cecilija',
-      favicon: '/favicon.ico',
     },
     theme: 'dark',
     components: {
@@ -26,12 +24,18 @@ export default buildConfig({
         Logo: '@/components/payload/AdminLogo#AdminLogo',
         Icon: '@/components/payload/AdminIcon#AdminIcon',
       },
+      views: {
+        bulkCreateShows: {
+          Component: '@/components/payload/BulkCreateShowsView#BulkCreateShowsView',
+          path: '/bulk-create-shows',
+        },
+      },
     },
     dashboard: {
       widgets: [
         {
           slug: 'collections',
-          Component: CollectionCards,
+          Component: '@payloadcms/next/rsc#CollectionCards',
           minWidth: 'full',
         },
       ],
