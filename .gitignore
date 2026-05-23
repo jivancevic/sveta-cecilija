@@ -49,3 +49,7 @@ next-env.d.ts
 # runtime logs (dev artifacts)
 /docs/logs.txt
 /docs/runtime-logs.txt
+
+# Payload CMS - auto-generated build artifacts
+src/app/(payload)/admin/importMap.js
+src/payload-types.ts

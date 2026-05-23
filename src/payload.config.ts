@@ -1,6 +1,7 @@
 import { buildConfig } from 'payload'
 import { postgresAdapter } from '@payloadcms/db-postgres'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
+import { CollectionCards } from '@payloadcms/next/rsc'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { Users } from './collections/Users'
@@ -15,6 +16,26 @@ const dirname = path.dirname(filename)
 export default buildConfig({
   admin: {
     user: Users.slug,
+    meta: {
+      titleSuffix: '— Sveta Cecilija',
+      favicon: '/favicon.ico',
+    },
+    theme: 'dark',
+    components: {
+      graphics: {
+        Logo: '@/components/payload/AdminLogo#AdminLogo',
+        Icon: '@/components/payload/AdminIcon#AdminIcon',
+      },
+    },
+    dashboard: {
+      widgets: [
+        {
+          slug: 'collections',
+          Component: CollectionCards,
+          minWidth: 'full',
+        },
+      ],
+    },
   },
   collections: [Users, Shows, Orders, QRTokens, ContactSubmissions],
   editor: lexicalEditor(),
