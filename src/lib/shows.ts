@@ -1,12 +1,19 @@
 import { getPayload } from 'payload'
 import config from '@payload-config'
 
+export type Venue = 'ljetno-kino' | 'zimsko-kino'
+
+export const VENUE_CAPACITY: Record<Venue, number> = {
+  'ljetno-kino': 320,
+  'zimsko-kino': 250,
+}
+
 export interface Show {
   id: string;
   date: string;      // YYYY-MM-DD
   time: string;
-  capacity: number;
-  remaining: number; // capacity - onlineSold - inPersonSold
+  venue: Venue;
+  remaining: number; // venue capacity - onlineSold - inPersonSold
 }
 
 export async function getUpcomingShows(limit?: number): Promise<Show[]> {
@@ -27,14 +34,15 @@ export async function getUpcomingShows(limit?: number): Promise<Show[]> {
     depth: 0,
   })
 
-  return result.docs.map((show) => ({
-    id: String(show.id),
-    date: new Date(show.date as string).toISOString().slice(0, 10),
-    time: show.time as string,
-    capacity: show.capacity as number,
-    remaining:
-      (show.capacity as number) -
-      ((show.onlineSold as number) ?? 0) -
-      ((show.inPersonSold as number) ?? 0),
-  }))
+  return result.docs.map((show) => {
+    const venue = (show.venue as Venue) ?? 'ljetno-kino'
+    const capacity = VENUE_CAPACITY[venue]
+    return {
+      id: String(show.id),
+      date: new Date(show.date as string).toISOString().slice(0, 10),
+      time: show.time as string,
+      venue,
+      remaining: capacity - ((show.onlineSold as number) ?? 0) - ((show.inPersonSold as number) ?? 0),
+    }
+  })
 }

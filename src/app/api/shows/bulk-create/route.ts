@@ -12,10 +12,13 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json()
-  const { startDate, endDate, daysOfWeek, time, capacity } = body
+  const { startDate, endDate, daysOfWeek, time, venue } = body
 
-  if (!startDate || !endDate || !Array.isArray(daysOfWeek) || !daysOfWeek.length || !time || !capacity) {
+  if (!startDate || !endDate || !Array.isArray(daysOfWeek) || !daysOfWeek.length || !time || !venue) {
     return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+  }
+  if (venue !== 'ljetno-kino' && venue !== 'zimsko-kino') {
+    return NextResponse.json({ error: 'Invalid venue' }, { status: 400 })
   }
 
   const start = new Date(startDate)
@@ -81,7 +84,7 @@ export async function POST(req: NextRequest) {
       data: {
         date: date.toISOString(),
         time,
-        capacity: Number(capacity),
+        venue,
         onlineSold: 0,
         inPersonSold: 0,
         status: 'active',

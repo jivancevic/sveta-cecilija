@@ -32,7 +32,9 @@
     "left": "{count} left",
     "buyTickets": "Buy Tickets →",
     "viewAll": "View All Performances",
-    "priceNote": "Adults €20 · Children under 14 €10 · Groups: every 5th ticket free"
+    "priceNote": "Adults €20 · Children under 14 €10 · Groups: every 5th ticket free",
+    "venueLjetno": "Summer Cinema",
+    "venueZimsko": "Cultural Center Korčula"
   },
   "history": {
     "eyebrow": "Through the ages",
@@ -202,7 +204,10 @@
     "programme": "Klapa performance · Moreška with live wind orchestra",
     "freeTicketNudge": "Add 1 more ticket — the 5th is free!",
     "freeTicketUnlocked": "Free ticket included",
-    "noShows": "No performances scheduled at this time. Check back soon."
+    "noShows": "No performances scheduled at this time. Check back soon.",
+    "venueLjetno": "Summer Cinema",
+    "venueZimsko": "Cultural Center Korčula",
+    "venueNote": "Performances are held at the Summer Cinema, Korčula. In case of bad weather, performances are moved to the Cultural Center Korčula."
   },
   "cookieBanner": {
     "body": "We use cookies to understand how you use this site. Analytics cookies are only loaded with your consent.",

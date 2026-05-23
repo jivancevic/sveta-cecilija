@@ -100,6 +100,7 @@ export default function PerformancesPage({ t, tSchedule, shows, locale, initialD
           <span>{t.programme}</span>
         </div>
       </div>
+      <p className="perfs-venue-note">{t.venueNote}</p>
 
       {shows.length === 0 ? (
         <div className="perfs-empty">{t.noShows}</div>
@@ -112,6 +113,7 @@ export default function PerformancesPage({ t, tSchedule, shows, locale, initialD
             const isConfirmed = confirmed === show.date;
             const fewLeft = !soldOut && show.remaining <= 50 && i < 3;
             const image = SHOW_IMAGES[i % SHOW_IMAGES.length];
+            const venueName = show.venue === 'zimsko-kino' ? t.venueZimsko : t.venueLjetno;
 
             const pillClass = soldOut ? '' : fewLeft ? ' amber' : ' green';
             const pillText = soldOut
@@ -139,7 +141,7 @@ export default function PerformancesPage({ t, tSchedule, shows, locale, initialD
                   </div>
                   <div className="perf-card__divider" />
                   <div className="perf-card__meta">
-                    <span>{weekday} · {show.time}</span>
+                    <span>{weekday} · {show.time} · {venueName}</span>
                     <span className={`perf-card__pill${pillClass}`}>
                       <span className="dot" />
                       {pillText}

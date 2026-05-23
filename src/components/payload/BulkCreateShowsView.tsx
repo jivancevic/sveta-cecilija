@@ -19,7 +19,7 @@ export function BulkCreateShowsView() {
   const [endDate, setEndDate] = useState('')
   const [selectedDays, setSelectedDays] = useState<number[]>([])
   const [time, setTime] = useState('21:00')
-  const [capacity, setCapacity] = useState(250)
+  const [venue, setVenue] = useState<'ljetno-kino' | 'zimsko-kino'>('ljetno-kino')
   const [loading, setLoading] = useState(false)
   const [result, setResult] = useState<Result | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -44,7 +44,7 @@ export function BulkCreateShowsView() {
       const res = await fetch('/api/shows/bulk-create', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ startDate, endDate, daysOfWeek: selectedDays, time, capacity }),
+        body: JSON.stringify({ startDate, endDate, daysOfWeek: selectedDays, time, venue }),
       })
       const data = await res.json()
       if (!res.ok) {
@@ -151,15 +151,16 @@ export function BulkCreateShowsView() {
             />
           </div>
           <div>
-            <label style={labelStyle}>Capacity</label>
-            <input
-              type="number"
-              value={capacity}
-              onChange={(e) => setCapacity(Number(e.target.value))}
-              min={1}
+            <label style={labelStyle}>Venue</label>
+            <select
+              value={venue}
+              onChange={(e) => setVenue(e.target.value as 'ljetno-kino' | 'zimsko-kino')}
               required
               style={inputStyle}
-            />
+            >
+              <option value="ljetno-kino">Ljetno kino (320)</option>
+              <option value="zimsko-kino">Zimsko kino / Centar za kulturu (250)</option>
+            </select>
           </div>
         </div>
 

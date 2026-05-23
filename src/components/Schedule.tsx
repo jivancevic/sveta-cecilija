@@ -45,6 +45,7 @@ export default function Schedule({ t, shows, locale }: Props) {
           const soldOut = show.remaining <= 0;
           const isNext = i === 0;
           const image = SHOW_IMAGES[i % SHOW_IMAGES.length];
+          const venueName = show.venue === 'zimsko-kino' ? t.venueZimsko : t.venueLjetno;
 
           const pillClass = soldOut ? '' : isNext ? ' amber' : ' green';
           const pillText = soldOut ? t.soldOut : isNext ? t.fewLeft : t.available;
@@ -64,7 +65,7 @@ export default function Schedule({ t, shows, locale }: Props) {
                 <div className="opera__divider" />
                 <h3 className="opera__title serif">Moreška</h3>
                 <div className="opera__meta">
-                  <span>{weekday} · {show.time}</span>
+                  <span>{weekday} · {show.time} · {venueName}</span>
                   <span className={`opera__pill${pillClass}`}>
                     <span className="dot" />
                     {pillText}
