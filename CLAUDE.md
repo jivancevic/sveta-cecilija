@@ -139,6 +139,22 @@ Remaining capacity per show = `capacity - onlineSold - inPersonSold`.
 - **Pretix:** dropped from MVP. Door scanning uses the browser-based `/scan/[token]` page only — staff scan with any phone camera.
 - **Refunds:** admin-initiated only (no self-service). Idempotent — check `refundStatus` before calling Stripe to prevent double-refunds.
 
+### Payload CMS admin customization (v3.84)
+
+**Component references must always be string paths** — never direct React imports. Every component slot in `buildConfig` and collection configs (`PayloadComponent` type) takes `'@/path/to/File#ExportName'`. Direct imports (e.g. `Component: CollectionCards`) fail TypeScript.
+
+**Admin component placement map** (non-obvious nesting):
+- Custom root admin route (`/admin/my-page`): `admin.components.views[key]` in `buildConfig`, with `path: '/my-page'`
+- Button in collection list header: `collection.admin.components.views.list.actions`
+- Item in edit view 3-dot menu: `collection.admin.components.edit.editMenuItems`
+- **No per-row list actions exist in v3** — cancel/single-doc actions belong in the edit view
+
+**`importMap.js` is manually maintained** — `src/app/(payload)/admin/importMap.js` is not auto-generated. Every new component added to `payload.config.ts` or a collection config must also be imported and keyed there. Omitting it causes a silent render failure.
+
+**`MetaConfig` valid keys** — only `titleSuffix` and `defaultOGImageType` are Payload additions on top of Next.js `Metadata`. There is no `favicon` property.
+
+**Auth in custom API routes** — use `payload.auth({ headers: req.headers })` to verify the admin session before calling `payload.create` / `payload.find` / etc.
+
 ### Design decisions
 
 - **Content migration in progress:** `src/lib/data.ts` hardcoded schedule is being replaced by the Shows collection. Homepage shows 4 next upcoming active shows from the DB. Once complete, `SCHEDULE_ALL` in `data.ts` can be removed.
@@ -166,7 +182,7 @@ Remaining capacity per show = `capacity - onlineSold - inPersonSold`.
 | [#5](https://github.com/jivancevic/sveta-cecilija/issues/5) | Stripe checkout flow | AFK |
 | [#6](https://github.com/jivancevic/sveta-cecilija/issues/6) | QR ticket email via Resend | AFK |
 | [#7](https://github.com/jivancevic/sveta-cecilija/issues/7) | Door scan endpoint `/scan/[token]` | AFK |
-| [#8](https://github.com/jivancevic/sveta-cecilija/issues/8) | Admin — show management | AFK |
+| [#8](https://github.com/jivancevic/sveta-cecilija/issues/8) | Admin — show management | Done |
 | [#9](https://github.com/jivancevic/sveta-cecilija/issues/9) | Admin — in-person sales | AFK |
 | [#10](https://github.com/jivancevic/sveta-cecilija/issues/10) | Admin — order list + manual refund | AFK |
 | [#11](https://github.com/jivancevic/sveta-cecilija/issues/11) | Cutover: smoke test + DNS switch from WordPress | HITL |
