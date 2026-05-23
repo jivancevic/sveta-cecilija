@@ -1,12 +1,8 @@
 import { getPayload } from 'payload'
 import config from '@payload-config'
+import { VENUE_CAPACITY, type Venue } from './venues'
 
-export type Venue = 'ljetno-kino' | 'zimsko-kino'
-
-export const VENUE_CAPACITY: Record<Venue, number> = {
-  'ljetno-kino': 320,
-  'zimsko-kino': 250,
-}
+export { VENUE_CAPACITY, type Venue }
 
 export interface Show {
   id: string;
