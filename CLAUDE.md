@@ -54,6 +54,7 @@ Website for HGD Sveta Cecilija, a 143-year-old cultural organisation from Korču
 | Path | Purpose |
 |---|---|
 | `src/proxy.ts` | Locale detection & redirect (Next.js 16 "proxy" convention) |
+| `src/lib/shows.ts` | **Only server-side entry point for frontend show data.** `getUpcomingShows(limit?)` queries Payload and returns `Show[]` with `remaining` derived from `VENUE_CAPACITY[venue]`. Never query the Shows collection directly in page components. |
 | `src/messages/en.json` | All English strings — nav, hero, about, schedule, history, sections, services, contact, footer, `aboutPage`, `sectionPages`, `servicePages`, `cookieBanner`, `privacyPage`, `cookiePage`, `performancesPage` |
 | `src/messages/hr.json` | All Croatian strings — identical structure to en.json |
 | `src/lib/data.ts` | Locale-agnostic data: 24 performances, `HISTORY_VIGNETTES_META` (8), `HISTORY_VIGNETTES_HOME` (4 for homepage), `SECTION_CARDS_META`, `SERVICE_CARDS_META`, `SECTION_PAGE_META` (slug→image+sectionKey), `SERVICE_PAGE_META` (slug→image+cardIndex) |
@@ -123,17 +124,19 @@ Defined in `SERVICE_PAGE_META` in `data.ts`:
 
 | Collection | Key fields |
 |---|---|
-| `Shows` | `date` (DateTime), `time` (text), `capacity` (number), `onlineSold` (number), `inPersonSold` (number), `status` (active \| cancelled) |
+| `Shows` | `date` (DateTime), `time` (text, HH:MM validated), `venue` (select: `ljetno-kino` \| `zimsko-kino`), `onlineSold` (number), `inPersonSold` (number), `status` (active \| cancelled) |
 | `Orders` | `buyerName`, `email`, `adultCount`, `childCount`, `total` (EUR cents), `stripePaymentIntentId`, `refundStatus` (none \| refunded), `show` → Shows |
 | `QRTokens` | `token` (unique, URL-safe), `order` → Orders, `scanned` (bool), `scannedAt` (DateTime) |
 | `ContactSubmissions` | `name`, `email`, `enquiryType`, `message`, `createdAt` |
 
-Remaining capacity per show = `capacity - onlineSold - inPersonSold`.
+Remaining capacity per show = `VENUE_CAPACITY[venue] - onlineSold - inPersonSold` (derived in `src/lib/shows.ts`). **There is no `capacity` field on Shows — never add one.** Capacity is fixed per venue, not per show.
 
 ### Ticketing rules
 
 - **Ticket prices:** €20 adult, €10 child (fixed — no dynamic pricing)
-- **Venue capacity:** 250 per show
+- **Venue capacities:** `ljetno-kino` (Summer Cinema / Ljetno kino) = 320 seats; `zimsko-kino` (Cultural Center Korčula / Centar za kulturu) = 250 seats. No per-show overrides — capacity is always derived from `VENUE_CAPACITY` in `src/lib/shows.ts`.
+- **Venue public names differ from DB values:** EN: "Summer Cinema" / "Cultural Center Korčula". HR: "Ljetno kino" / "Centar za kulturu". Translation keys: `schedule.venueLjetno`, `schedule.venueZimsko`, `performancesPage.venueLjetno`, `performancesPage.venueZimsko`.
+- **Venue shown on every show card** (both homepage `Schedule` and `/tickets` `PerformancesPage`). A bad-weather note appears at the top of the tickets page explaining that zimsko-kino is the fallback venue.
 - **Show types in `docs/performances.md`:** `Redovna` = public ticketed shows. `Gulliver` / `Adriatic DMC` = private tour operator (pre-booked, not publicly ticketed). `Crveni križ` = charity. Only `Redovna` shows appear on the public performances page.
 - **QR codes:** generated server-side at order creation, one per ticket. Each encodes `https://moreska.eu/scan/[token]`. Embedded as inline base64 in the Resend email.
 - **Pretix:** dropped from MVP. Door scanning uses the browser-based `/scan/[token]` page only — staff scan with any phone camera.
@@ -141,7 +144,8 @@ Remaining capacity per show = `capacity - onlineSold - inPersonSold`.
 
 ### Design decisions
 
-- **Content migration in progress:** `src/lib/data.ts` hardcoded schedule is being replaced by the Shows collection. Homepage shows 4 next upcoming active shows from the DB. Once complete, `SCHEDULE_ALL` in `data.ts` can be removed.
+- **Shows data is live:** Homepage and `/tickets` page both read from the Shows collection via `getUpcomingShows()` in `src/lib/shows.ts`. Both pages use `export const dynamic = 'force-dynamic'` — required for fresh capacity data on every request. Any page that displays remaining seats must be force-dynamic.
+- **`SCHEDULE_ALL` in `data.ts` can be removed** — it is no longer used now that the Shows collection is the source of truth.
 - Contact form shows a **local success state** on submit — Resend email sending comes in a later issue.
 - Homepage history section uses 4 vignettes (`HISTORY_VIGNETTES_HOME`); About page uses all 8 (`HISTORY_VIGNETTES_META`).
 - No `next/image` — plain `<img>` throughout. Migrate in a later optimisation pass.
@@ -162,11 +166,11 @@ Remaining capacity per show = `capacity - onlineSold - inPersonSold`.
 |---|---|---|
 | [#2](https://github.com/jivancevic/sveta-cecilija/issues/2) | Infrastructure: DO Droplet + Coolify + DNS + deploy | HITL |
 | [#3](https://github.com/jivancevic/sveta-cecilija/issues/3) | Payload CMS v3 + PostgreSQL integration | AFK |
-| [#4](https://github.com/jivancevic/sveta-cecilija/issues/4) | `/tickets` page wired to Shows collection | AFK |
+| [#4](https://github.com/jivancevic/sveta-cecilija/issues/4) | `/tickets` page wired to Shows collection | Done |
 | [#5](https://github.com/jivancevic/sveta-cecilija/issues/5) | Stripe checkout flow | AFK |
 | [#6](https://github.com/jivancevic/sveta-cecilija/issues/6) | QR ticket email via Resend | AFK |
 | [#7](https://github.com/jivancevic/sveta-cecilija/issues/7) | Door scan endpoint `/scan/[token]` | AFK |
-| [#8](https://github.com/jivancevic/sveta-cecilija/issues/8) | Admin — show management | AFK |
+| [#8](https://github.com/jivancevic/sveta-cecilija/issues/8) | Admin — show management | Done |
 | [#9](https://github.com/jivancevic/sveta-cecilija/issues/9) | Admin — in-person sales | AFK |
 | [#10](https://github.com/jivancevic/sveta-cecilija/issues/10) | Admin — order list + manual refund | AFK |
 | [#11](https://github.com/jivancevic/sveta-cecilija/issues/11) | Cutover: smoke test + DNS switch from WordPress | HITL |
