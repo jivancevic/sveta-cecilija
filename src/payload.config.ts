@@ -31,6 +31,15 @@ export default buildConfig({
         },
       },
     },
+    dashboard: {
+      widgets: [
+        {
+          slug: 'collections',
+          Component: '@payloadcms/next/rsc#CollectionCards',
+          minWidth: 'full',
+        },
+      ],
+    },
   },
   collections: [Users, Shows, Orders, QRTokens, ContactSubmissions],
   editor: lexicalEditor(),
