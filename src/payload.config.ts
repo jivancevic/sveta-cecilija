@@ -15,6 +15,22 @@ const dirname = path.dirname(filename)
 export default buildConfig({
   admin: {
     user: Users.slug,
+    meta: {
+      titleSuffix: '— Sveta Cecilija',
+    },
+    theme: 'dark',
+    components: {
+      graphics: {
+        Logo: '@/components/payload/AdminLogo#AdminLogo',
+        Icon: '@/components/payload/AdminIcon#AdminIcon',
+      },
+      views: {
+        bulkCreateShows: {
+          Component: '@/components/payload/BulkCreateShowsView#BulkCreateShowsView',
+          path: '/bulk-create-shows',
+        },
+      },
+    },
   },
   collections: [Users, Shows, Orders, QRTokens, ContactSubmissions],
   editor: lexicalEditor(),
