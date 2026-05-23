@@ -1,0 +1,33 @@
+/* HGD Sveta Cecilija — admin branding overrides.
+   Written outside @layer so these beat @layer payload-default in the cascade. */
+
+/* Primary button: gold instead of Payload's default gray */
+.btn--style-primary {
+  --bg-color: #B8881A;
+  --color: #fff;
+  --hover-bg: #D9A526;
+  --hover-color: #fff;
+}
+
+/* Text selection highlight: warm gold tint */
+::selection {
+  background: rgba(184, 136, 26, 0.35);
+}
+
+/* Sidebar nav active link */
+.nav__link--active,
+.nav__link--active svg {
+  color: #D9A526;
+  fill: #D9A526;
+}
+
+/* Focus ring: gold instead of blue */
+:focus-visible {
+  outline-color: #B8881A;
+}
+
+/* Checkbox / toggle accent */
+input[type="checkbox"]:checked,
+input[type="radio"]:checked {
+  accent-color: #B8881A;
+}

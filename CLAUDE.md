@@ -154,7 +154,7 @@ Remaining capacity per show = `capacity - onlineSold - inPersonSold`.
 - **`.hp a { color: inherit }` specificity pitfall:** This rule (specificity 11) beats `.btn--primary { color: #fff }` (specificity 10), making button text dark on light cards. Fixed with `.hp .btn--primary { color: #fff }` (specificity 20). Apply the same pattern for any new coloured button inside `.hp`.
 - **Components requiring `locale` prop for link building:** `Nav`, `Footer`, `Sections`, `Services`, `About`, `Schedule`. Always pass `locale` when composing these.
 - **Git branching:** `main` = stable, client-facing (deploys to production). `dev` = active development (Vercel preview URL). Workflow: edit locally → commit to `dev` → push → review on Vercel preview → merge to `main` when stable.
-- **Background session isolation:** `.claude/settings.json` has `"worktree": { "bgIsolation": "none" }` — background Claude sessions edit the working tree directly rather than a worktree.
+- **Background session isolation:** `.claude/settings.json` has `"worktree": { "bgIsolation": "worktree" }` — background Claude sessions run in isolated git worktrees by default.
 
 ### MVP issues (active development — GitHub Issues #2–#11)
 
