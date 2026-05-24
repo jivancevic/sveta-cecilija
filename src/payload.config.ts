@@ -38,6 +38,10 @@ export default buildConfig({
           Component: '@/components/payload/BulkCreateShowsView#BulkCreateShowsView',
           path: '/bulk-create-shows',
         },
+        stats: {
+          Component: '@/components/payload/AdminStatsView#AdminStatsView',
+          path: '/stats',
+        },
       },
     },
     dashboard: {
