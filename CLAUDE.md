@@ -61,7 +61,7 @@ Website for HGD Sveta Cecilija, a 143-year-old cultural organisation from Korču
 | `/checkout/[showId]/confirmation` | `src/app/(frontend)/checkout/[showId]/confirmation/page.tsx` | Post-payment landing page — looks up the Order by `pi` query param (5×400ms retry to bridge the webhook race) |
 | `/privacy-policy` | `src/app/(frontend)/privacy-policy/page.tsx` | Privacy Policy — GDPR-compliant, 5 sections, EN + HR |
 | `/cookie-policy` | `src/app/(frontend)/cookie-policy/page.tsx` | Cookie Policy — 5 sections, EN + HR |
-| `/scan/[token]` | `src/app/scan/[token]/page.tsx` | Door scan result — VALID / ALREADY_SCANNED / INVALID. Race-safe. Mobile-optimised. |
+| `/scan/[token]` | `src/app/scan/[token]/page.tsx` (+ `src/app/scan/layout.tsx`) | Door scan result — VALID / ALREADY_SCANNED / INVALID. Race-safe. Mobile-optimised. Lives outside `(frontend)` so it has its own minimal root layout (no fonts/CookieConsent). |
 | `/admin` | Payload CMS built-in | Admin dashboard — show management, orders, in-person sales, refunds |
 | `/api/stripe/webhook` | `src/app/api/stripe/webhook/route.ts` | Stripe webhook — creates Order + QRTokens on payment success |
 
@@ -71,6 +71,7 @@ Website for HGD Sveta Cecilija, a 143-year-old cultural organisation from Korču
 |---|---|
 | `src/proxy.ts` | Locale detection & redirect (Next.js 16 "proxy" convention) |
 | `src/lib/shows.ts` | **Only server-side entry point for frontend show data.** `getUpcomingShows(limit?)` queries Payload and returns `Show[]` with `remaining` derived from `VENUE_CAPACITY[venue]`. Never query the Shows collection directly in page components. |
+| `src/lib/scan-token.ts` | Pure DI logic for `/scan/[token]`. `scanToken(token, deps)` returns discriminated union `VALID \| ALREADY_SCANNED \| INVALID`. Race-safety is delegated to `deps.atomicMarkScanned` — the page wires it to a raw `UPDATE qr_tokens SET scanned=true WHERE token=$1 AND scanned=false RETURNING ...` via Payload's drizzle. |
 | `src/messages/en.json` | All English strings — nav, hero, about, schedule, history, sections, services, contact, footer, `aboutPage`, `sectionPages`, `servicePages`, `cookieBanner`, `privacyPage`, `cookiePage`, `performancesPage` |
 | `src/messages/hr.json` | All Croatian strings — identical structure to en.json |
 | `src/lib/data.ts` | Locale-agnostic data: 24 performances, `HISTORY_VIGNETTES_META` (8), `HISTORY_VIGNETTES_HOME` (4 for homepage), `SECTION_CARDS_META`, `SERVICE_CARDS_META`, `SECTION_PAGE_META` (slug→image+sectionKey), `SERVICE_PAGE_META` (slug→image+cardIndex) |
@@ -191,6 +192,8 @@ Remaining capacity per show = `VENUE_CAPACITY[venue] - onlineSold - inPersonSold
 - **Components requiring `locale` prop for link building:** `Nav`, `Footer`, `Sections`, `Services`, `About`, `Schedule`. Always pass `locale` when composing these.
 - **Git branching:** `main` = stable, client-facing (deploys to production). `dev` = active development (Vercel preview URL). Workflow: edit locally → commit to `dev` → push → review on Vercel preview → merge to `main` when stable.
 - **Background session isolation:** `.claude/settings.json` has `"worktree": { "bgIsolation": "worktree" }` — background Claude sessions run in isolated git worktrees by default.
+- **Route groups own their root layout.** `src/app/(frontend)/layout.tsx` provides `<html>`/`<body>` for everything inside `(frontend)`. Any page placed OUTSIDE a route group (e.g. `src/app/scan/[token]/page.tsx`) needs its own sibling `layout.tsx` with html/body, or Next.js throws "Missing `<html>` and `<body>` tags". Keep utility-page layouts minimal — don't pull in fonts/CookieConsent that the public site needs.
+- **Raw SQL for race-sensitive ops:** Payload's `find`/`update` are read-then-write under the hood and not safe for "first-one-wins" semantics. For atomic mark-and-read (e.g. ticket scan), drop to drizzle: `const drizzle: any = (payload.db as any).drizzle` then `drizzle.execute(sql\`UPDATE ... WHERE cond=false RETURNING ...\`)` with `sql` imported from `@payloadcms/db-postgres`. Result rows live on `res.rows`. Verified race-safe end-to-end: 20 concurrent identical scans → exactly 1 VALID.
 
 ### MVP issues (active development — GitHub Issues #2–#11)
 
@@ -201,7 +204,7 @@ Remaining capacity per show = `VENUE_CAPACITY[venue] - onlineSold - inPersonSold
 | [#4](https://github.com/jivancevic/sveta-cecilija/issues/4) | `/tickets` page wired to Shows collection | Done |
 | [#5](https://github.com/jivancevic/sveta-cecilija/issues/5) | Stripe checkout flow | AFK |
 | [#6](https://github.com/jivancevic/sveta-cecilija/issues/6) | QR ticket email via Resend | AFK |
-| [#7](https://github.com/jivancevic/sveta-cecilija/issues/7) | Door scan endpoint `/scan/[token]` | AFK |
+| [#7](https://github.com/jivancevic/sveta-cecilija/issues/7) | Door scan endpoint `/scan/[token]` | Done |
 | [#8](https://github.com/jivancevic/sveta-cecilija/issues/8) | Admin — show management | Done |
 | [#9](https://github.com/jivancevic/sveta-cecilija/issues/9) | Admin — in-person sales | AFK |
 | [#10](https://github.com/jivancevic/sveta-cecilija/issues/10) | Admin — order list + manual refund | AFK |
