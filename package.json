@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
+    "start": "node scripts/bootstrap-db.mjs && next start",
+    "db:bootstrap": "node scripts/bootstrap-db.mjs",
     "lint": "eslint",
     "db": "docker compose up -d",
     "db:stop": "docker compose down",
@@ -20,6 +21,7 @@
     "@stripe/stripe-js": "^9.6.0",
     "next": "16.2.6",
     "payload": "^3.84.1",
+    "pg": "^8.21.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "stripe": "^22.1.1"

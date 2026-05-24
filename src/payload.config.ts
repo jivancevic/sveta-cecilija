@@ -51,7 +51,11 @@ export default buildConfig({
     pool: {
       connectionString: process.env.DATABASE_URL,
     },
-    push: true,
+    // Auto-push schema in dev. In production it's a no-op (Payload
+    // disables push in NODE_ENV=production); schema is applied by
+    // scripts/bootstrap-db.mjs from the start script before next start.
+    // See docs/agents/db-bootstrap.md.
+    push: process.env.NODE_ENV !== 'production',
   }),
   serverURL: process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000',
   graphQL: {

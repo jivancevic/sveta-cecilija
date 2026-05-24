@@ -10,6 +10,10 @@ Issues live in GitHub Issues at https://github.com/jivancevic/sveta-cecilija. Se
 
 Using the default five-role label vocabulary. See `docs/agents/triage-labels.md`.
 
+### Schema management
+
+Production schema is applied by `scripts/bootstrap-db.mjs` (runs from `npm start` before `next start`) using idempotent SQL in `db/schema/*.sql`. Local dev uses Payload's `push: true`. See `docs/agents/db-bootstrap.md` for how to add a column or collection.
+
 ### Domain docs
 
 Multi-context layout — `CONTEXT-MAP.md` at the root points to per-context `CONTEXT.md` files. See `docs/agents/domain.md`.
