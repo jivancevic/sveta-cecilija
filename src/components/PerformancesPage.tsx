@@ -1,9 +1,11 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import Link from 'next/link';
 import type { Show } from '@/lib/shows';
 import type { Dictionary } from '@/lib/i18n';
 import type { Locale } from '@/proxy';
+import { calculateOrderTotal } from '@/lib/pricing';
 
 const SHOW_IMAGES = [
   '/moreska-wide.webp',
@@ -48,10 +50,9 @@ function formatDate(isoDate: string, locale: Locale) {
 }
 
 export default function PerformancesPage({ t, tSchedule, shows, locale, initialDate }: Props) {
-  const [activeDate, setActiveDate] = useState<string | null>(initialDate ?? null);
+  const [activeId, setActiveId] = useState<string | null>(null);
   const [adults, setAdults] = useState(2);
   const [children, setChildren] = useState(0);
-  const [confirmed, setConfirmed] = useState<string | null>(null);
   const targetRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -60,28 +61,20 @@ export default function PerformancesPage({ t, tSchedule, shows, locale, initialD
     }
   }, [initialDate]);
 
-  function openBooking(date: string) {
-    if (activeDate === date) {
-      setActiveDate(null);
+  function openBooking(id: string) {
+    if (activeId === id) {
+      setActiveId(null);
     } else {
-      setActiveDate(date);
+      setActiveId(id);
       setAdults(2);
       setChildren(0);
     }
   }
 
-  function confirm(date: string) {
-    setConfirmed(date);
-    setActiveDate(null);
-  }
-
+  const totals = calculateOrderTotal({ adults, children });
   const totalTickets = adults + children;
-  const hasAdult = adults > 0;
-  const discount = Math.floor(totalTickets / 5) * (hasAdult ? 20 : 10);
-  const total = adults * 20 + children * 10 - discount;
-
   const showNudge = totalTickets > 0 && totalTickets % 5 === 4;
-  const showCelebrate = discount > 0;
+  const showCelebrate = totals.discountEur > 0;
 
   return (
     <section className="perfs-page">
@@ -120,8 +113,7 @@ export default function PerformancesPage({ t, tSchedule, shows, locale, initialD
           {shows.map((show, i) => {
             const { day, month, year, weekday } = formatDate(show.date, locale);
             const soldOut = show.remaining <= 0;
-            const isActive = activeDate === show.date;
-            const isConfirmed = confirmed === show.date;
+            const isActive = activeId === show.id;
             const fewLeft = !soldOut && show.remaining <= 50 && i < 3;
             const image = SHOW_IMAGES[i % SHOW_IMAGES.length];
             const venueName = show.venue === 'zimsko-kino' ? t.venueZimsko : t.venueLjetno;
@@ -161,10 +153,10 @@ export default function PerformancesPage({ t, tSchedule, shows, locale, initialD
                   <div className="perf-card__cta">
                     <button
                       className="perf-card__book"
-                      onClick={() => openBooking(show.date)}
-                      disabled={soldOut || isConfirmed}
+                      onClick={() => openBooking(show.id)}
+                      disabled={soldOut}
                     >
-                      {isConfirmed ? '✓' : soldOut ? t.soldOutLabel : t.book}
+                      {soldOut ? t.soldOutLabel : t.book}
                     </button>
                   </div>
                 </div>
@@ -199,30 +191,27 @@ export default function PerformancesPage({ t, tSchedule, shows, locale, initialD
                   )}
                   {showCelebrate && (
                     <div className="perf-booking__celebrate">
-                      {t.freeTicketUnlocked} <span className="perf-booking__discount">−€{discount}</span>
+                      {t.freeTicketUnlocked} <span className="perf-booking__discount">−€{totals.discountEur}</span>
                     </div>
                   )}
 
                   <div className="perf-booking__total">
                     <span>{t.total}</span>
-                    <span className="perf-booking__total-amount">€{total}</span>
+                    <span className="perf-booking__total-amount">€{totals.totalEur}</span>
                   </div>
-                  <button
-                    className="perf-booking__confirm"
-                    onClick={() => confirm(show.date)}
-                    disabled={adults + children === 0}
-                  >
-                    {t.confirm}
-                  </button>
+                  {soldOut || totalTickets === 0 ? (
+                    <button className="perf-booking__confirm" disabled>
+                      {t.confirm}
+                    </button>
+                  ) : (
+                    <Link
+                      href={`/checkout/${show.id}?adults=${adults}&children=${children}`}
+                      className="perf-booking__confirm"
+                    >
+                      {t.confirm}
+                    </Link>
+                  )}
                 </div>
-
-                {/* Success state */}
-                {isConfirmed && (
-                  <div className="perf-success">
-                    <p className="perf-success__title">{t.successTitle}</p>
-                    <p className="perf-success__body">{t.successBody}</p>
-                  </div>
-                )}
               </div>
             );
           })}

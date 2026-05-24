@@ -24,7 +24,7 @@ Website for HGD Sveta Cecilija, a 143-year-old cultural organisation from Korču
 
 - **Framework:** Next.js 16 (App Router, TypeScript)
 - **Styling:** Tailwind CSS + custom CSS (`src/app/globals.css`). Homepage scoped under `.hp .t-stone`; inner pages under `.inner-page .t-stone`. Design tokens (colors, spacing) in `.t-stone` CSS custom properties.
-- **i18n:** Manual `[locale]` routing (`/en`, `/hr`). Proxy in `src/proxy.ts`. Translations in `src/messages/{en,hr}.json`. Helper: `src/lib/i18n.ts` (`getDictionary`). Dictionary type inferred from `en.json` — both locale files must stay structurally identical.
+- **i18n:** Routes are at the top level (e.g. `/tickets`, `/checkout/[showId]`, `/about`) — locale is **not** in the URL. `src/proxy.ts` reads the `moreska_locale` cookie (or `Accept-Language` on first visit) and forwards it to server components via an `x-locale` request header; pages call `getLocale()` from `src/lib/locale.ts` to read it. Translations in `src/messages/{en,hr}.json`. Helper: `src/lib/i18n.ts` (`getDictionary`). Dictionary type inferred from `en.json` — both locale files must stay structurally identical. **Never build internal URLs with a `/en` or `/hr` prefix** — those routes 404.
 - **Fonts:** Bodoni Moda SC, IBM Plex Mono, Inter via `next/font/google`. Bodoni Moda SC (var `--font-bodoni`) for all headlines/titles; IBM Plex Mono for codes/tags; Inter for body.
 - **CMS:** Payload CMS v3 (`@payloadcms/next` adapter, integrated directly into Next.js app). Admin at `/admin`.
 - **Database:** PostgreSQL via `@payloadcms/db-postgres`. Connection via `DATABASE_URL` env var. Auth gated by `PAYLOAD_SECRET`.
@@ -38,13 +38,15 @@ Website for HGD Sveta Cecilija, a 143-year-old cultural organisation from Korču
 
 | Route | File | Notes |
 |---|---|---|
-| `/[locale]` | `src/app/[locale]/page.tsx` | Homepage — 10 sections |
-| `/[locale]/about` | `src/app/[locale]/about/page.tsx` | About HGD — PageHero + intro + 8-vignette history + ensemble cards + CTA |
-| `/[locale]/sections/[slug]` | `src/app/[locale]/sections/[slug]/page.tsx` | Section pages (moreska, wind-orchestra, klapa, choir) |
-| `/[locale]/tickets` | `src/app/[locale]/tickets/page.tsx` | Public show schedule — reads from Shows collection; hides cancelled/sold-out |
-| `/[locale]/services/[slug]` | `src/app/[locale]/services/[slug]/page.tsx` | Service pages (private-moreska, moreska-experience) — enquiry form only, no pricing |
-| `/[locale]/privacy-policy` | `src/app/[locale]/privacy-policy/page.tsx` | Privacy Policy — GDPR-compliant, 5 sections, EN + HR |
-| `/[locale]/cookie-policy` | `src/app/[locale]/cookie-policy/page.tsx` | Cookie Policy — 5 sections, EN + HR |
+| `/` | `src/app/(frontend)/page.tsx` | Homepage — 10 sections |
+| `/about` | `src/app/(frontend)/about/page.tsx` | About HGD — PageHero + intro + 8-vignette history + ensemble cards + CTA |
+| `/sections/[slug]` | `src/app/(frontend)/sections/[slug]/page.tsx` | Section pages (moreska, wind-orchestra, klapa, choir) |
+| `/tickets` | `src/app/(frontend)/tickets/page.tsx` | Public show schedule — reads from Shows collection; hides cancelled/sold-out |
+| `/services/[slug]` | `src/app/(frontend)/services/[slug]/page.tsx` | Service pages (private-moreska, moreska-experience) — enquiry form only, no pricing |
+| `/checkout/[showId]` | `src/app/(frontend)/checkout/[showId]/page.tsx` | Stripe checkout — order summary, buyer form, Stripe Payment Element |
+| `/checkout/[showId]/confirmation` | `src/app/(frontend)/checkout/[showId]/confirmation/page.tsx` | Post-payment landing page — looks up the Order by `pi` query param (5×400ms retry to bridge the webhook race) |
+| `/privacy-policy` | `src/app/(frontend)/privacy-policy/page.tsx` | Privacy Policy — GDPR-compliant, 5 sections, EN + HR |
+| `/cookie-policy` | `src/app/(frontend)/cookie-policy/page.tsx` | Cookie Policy — 5 sections, EN + HR |
 | `/scan/[token]` | `src/app/scan/[token]/page.tsx` | Door scan result — VALID / ALREADY_SCANNED / INVALID. Race-safe. Mobile-optimised. |
 | `/admin` | Payload CMS built-in | Admin dashboard — show management, orders, in-person sales, refunds |
 | `/api/stripe/webhook` | `src/app/api/stripe/webhook/route.ts` | Stripe webhook — creates Order + QRTokens on payment success |
