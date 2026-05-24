@@ -1,5 +1,9 @@
 import React from 'react'
 import Link from 'next/link'
+import { headers } from 'next/headers'
+import { redirect } from 'next/navigation'
+import { getPayload } from 'payload'
+import config from '@payload-config'
 import { getStatsInput } from '@/lib/stats-data'
 import { computeStats, type StatsRow, type StatsHeader } from '@/lib/stats'
 
@@ -95,6 +99,13 @@ function ShowRow({ row }: { row: StatsRow }) {
 }
 
 export async function AdminStatsView() {
+  // The Payload admin shell renders this view's layout even when no user is
+  // present, so we must gate the data ourselves — otherwise season revenue
+  // and order counts leak to anonymous visitors.
+  const payload = await getPayload({ config })
+  const { user } = await payload.auth({ headers: await headers() })
+  if (!user) redirect('/admin/login?redirect=/admin/stats')
+
   const input = await getStatsInput()
   const { header, rows } = computeStats(input)
 
