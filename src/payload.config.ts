@@ -19,6 +19,15 @@ export default buildConfig({
       titleSuffix: '— Sveta Cecilija',
     },
     theme: 'dark',
+    // Disable Payload's runtime regeneration of src/app/(payload)/admin/importMap.js.
+    // The regeneration is async — it overwrites the file *after* layout.tsx has
+    // already imported it, leaving the in-memory `importMap` reference empty `{}`
+    // and silently rendering nothing for editMenuItems / Logo / Icon. We commit a
+    // hand-maintained importMap.js (which already has correct keys), and Payload
+    // does not touch it.
+    importMap: {
+      autoGenerate: false,
+    },
     components: {
       graphics: {
         Logo: '@/components/payload/AdminLogo#AdminLogo',
