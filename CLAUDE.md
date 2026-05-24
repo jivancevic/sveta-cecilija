@@ -14,6 +14,16 @@ Using the default five-role label vocabulary. See `docs/agents/triage-labels.md`
 
 Production schema is applied by `scripts/bootstrap-db.mjs` (runs from `npm start` before `next start`) using idempotent SQL in `db/schema/*.sql`. Local dev uses Payload's `push: true`. See `docs/agents/db-bootstrap.md` for how to add a column or collection.
 
+### Deployment (Coolify / Nixpacks)
+
+Coolify on Hetzner builds with Nixpacks, runs `npm ci --production` (= `--omit=dev`), then `npm start` (= bootstrap + `next start`). Three gotchas worth knowing before you touch the build:
+
+1. **Pin Node via `engines` in `package.json`**, not the `NIXPACKS_NODE_VERSION` env var. Nixpacks's pinned nixpkgs revision only goes up to `nodejs_22` — `NIXPACKS_NODE_VERSION=24` fails the nix-env step with `undefined variable 'nodejs_24'`.
+2. **Regenerate `package-lock.json` carefully on macOS.** `npm install <pkg> --save` can leave the lockfile out of sync (esbuild platform binaries lose their `optional: true` flag), and Coolify's `npm ci` is strict. After any dep change, run `npm install` from scratch (`rm -rf node_modules package-lock.json && npm install`) and verify in a Linux container: `docker run --rm -v "$PWD":/app -w /app node:22 sh -c "npm ci --production"` should exit 0.
+3. **`overrides` keeps esbuild flat.** `package.json` has `"overrides": { "esbuild": "^0.25.0" }` to collapse vitest's nested esbuild into the root version — without this, Coolify hits `EBADPLATFORM @esbuild/aix-ppc64`. If you bump vitest or add a devDep that brings its own esbuild, re-verify in the container before pushing.
+
+See `docs/agents/deployment.md` for the full debugging playbook + log triage patterns.
+
 ### Domain docs
 
 Multi-context layout — `CONTEXT-MAP.md` at the root points to per-context `CONTEXT.md` files. See `docs/agents/domain.md`.
