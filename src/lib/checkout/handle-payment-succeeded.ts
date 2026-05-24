@@ -1,5 +1,12 @@
 import type { PurchasableShow } from '../capacity'
 
+// Errors of this type indicate a structurally malformed event that no number
+// of retries can fix — the webhook route should log + return 200 so Stripe
+// stops retrying.
+export class UnrecoverableWebhookError extends Error {
+  override name = 'UnrecoverableWebhookError'
+}
+
 export interface PaymentSucceededEvent {
   paymentIntentId: string
   amountReceived: number
@@ -44,12 +51,12 @@ export async function handlePaymentSucceeded(
   if (existing) return { orderId: existing.id, skipped: true }
 
   const showId = evt.metadata.showId
-  if (!showId) throw new Error('Webhook missing showId metadata')
+  if (!showId) throw new UnrecoverableWebhookError('Webhook missing showId metadata')
 
   const adults = Number(evt.metadata.adults ?? '0')
   const children = Number(evt.metadata.children ?? '0')
   const total = adults + children
-  if (total <= 0) throw new Error('Webhook has zero tickets')
+  if (total <= 0) throw new UnrecoverableWebhookError('Webhook has zero tickets')
 
   const order = await deps.createOrder({
     buyerName: evt.metadata.buyerName ?? '',

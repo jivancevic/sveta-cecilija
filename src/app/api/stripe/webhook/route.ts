@@ -2,7 +2,10 @@ import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { getPayload } from 'payload'
 import config from '@payload-config'
-import { handlePaymentSucceeded } from '@/lib/checkout/handle-payment-succeeded'
+import {
+  handlePaymentSucceeded,
+  UnrecoverableWebhookError,
+} from '@/lib/checkout/handle-payment-succeeded'
 import { generateQrToken } from '@/lib/qr-token'
 import type { PurchasableShow } from '@/lib/capacity'
 import { sendTicketEmail } from '@/lib/email/send-ticket-email'
@@ -107,7 +110,7 @@ export async function POST(req: Request) {
           })
         },
         generateToken: generateQrToken,
-        notifyBuyer: async ({ showId, buyer, order, tokens, locale }) => {
+        notifyBuyer: async ({ orderId, showId, buyer, order, tokens, locale }) => {
           // Wrapped here (not just in sendTicketEmail) because the show lookup
           // itself can throw — webhook must still return 200 either way so
           // Stripe never retries and double-creates the order.
@@ -118,6 +121,7 @@ export async function POST(req: Request) {
             const date = isoDate.slice(0, 10)
             await sendTicketEmail(
               {
+                orderId,
                 buyer,
                 show: {
                   date,
@@ -143,6 +147,11 @@ export async function POST(req: Request) {
     return NextResponse.json({ received: true })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Webhook handler error'
+    if (err instanceof UnrecoverableWebhookError) {
+      // 200 so Stripe stops retrying — retries can't fix bad metadata.
+      console.error('[stripe/webhook] unrecoverable, acknowledging:', message)
+      return NextResponse.json({ received: true, ignored: message })
+    }
     console.error('[stripe/webhook]', message)
     return NextResponse.json({ error: message }, { status: 500 })
   }

@@ -3,6 +3,7 @@ import { sendTicketEmail, type SendTicketEmailDeps } from './send-ticket-email'
 
 function makeInput(overrides: Record<string, unknown> = {}) {
   return {
+    orderId: 'order_42',
     buyer: { name: 'Ana Anić', email: 'ana@example.com' },
     show: {
       date: '2026-07-15',
@@ -118,5 +119,19 @@ describe('sendTicketEmail', () => {
       fetch: vi.fn().mockRejectedValue(new Error('network down')),
     })
     await expect(sendTicketEmail(makeInput(), deps)).resolves.toBeUndefined()
+  })
+
+  it('failure logs include orderId, buyer email and token count for manual recovery', async () => {
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const deps = makeDeps({
+      fetch: vi.fn().mockResolvedValue(new Response('boom', { status: 503 })),
+    })
+    await sendTicketEmail(makeInput({ orderId: 'order_99' }), deps)
+    const logged = errSpy.mock.calls.flat().join(' ')
+    expect(logged).toContain('orderId=order_99')
+    expect(logged).toContain('email=ana@example.com')
+    expect(logged).toContain('tokens=3')
+    expect(logged).toContain('status=503')
+    errSpy.mockRestore()
   })
 })

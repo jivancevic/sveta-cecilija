@@ -117,4 +117,20 @@ describe('handlePaymentSucceeded', () => {
       expect.objectContaining({ locale: 'en' }),
     )
   })
+
+  it('throws UnrecoverableWebhookError when showId metadata is missing', async () => {
+    const deps = makeDeps()
+    const evt = event()
+    delete (evt.metadata as Record<string, string | undefined>).showId
+    await expect(handlePaymentSucceeded(evt, deps)).rejects.toMatchObject({
+      name: 'UnrecoverableWebhookError',
+    })
+  })
+
+  it('throws UnrecoverableWebhookError when ticket count is zero', async () => {
+    const deps = makeDeps()
+    await expect(
+      handlePaymentSucceeded(event({ adults: '0', children: '0' }), deps),
+    ).rejects.toMatchObject({ name: 'UnrecoverableWebhookError' })
+  })
 })

@@ -59,6 +59,7 @@ function renderHtml(input: SendTicketEmailInput): string {
 }
 
 export interface SendTicketEmailInput {
+  orderId: string
   buyer: { name: string; email: string }
   show: { date: string; time: string; venue: Venue }
   order: { adultCount: number; childCount: number; total: number }
@@ -101,9 +102,17 @@ export async function sendTicketEmail(
     })
     if (!res.ok) {
       const text = await res.text().catch(() => '')
-      console.error('[sendTicketEmail] Brevo error', res.status, text)
+      // Prefix fields so failures are grep-able (`orderId=`) for manual resend
+      // — see #6 mitigation: Brevo 5xx on the only attempt would otherwise
+      // silently lose the buyer's tickets.
+      console.error(
+        `[sendTicketEmail] Brevo error orderId=${input.orderId} email=${input.buyer.email} tokens=${input.tokens.length} status=${res.status} body=${text}`,
+      )
     }
   } catch (err) {
-    console.error('[sendTicketEmail] fetch failed', err)
+    const msg = err instanceof Error ? err.message : String(err)
+    console.error(
+      `[sendTicketEmail] fetch failed orderId=${input.orderId} email=${input.buyer.email} tokens=${input.tokens.length} error=${msg}`,
+    )
   }
 }
