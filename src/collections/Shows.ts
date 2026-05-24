@@ -9,6 +9,7 @@ export const Shows: CollectionConfig = {
       edit: {
         editMenuItems: [
           '@/components/payload/InPersonSalesMenuItem#InPersonSalesMenuItem',
+          '@/components/payload/ViewOrdersForShowMenuItem#ViewOrdersForShowMenuItem',
           '@/components/payload/CancelShowMenuItem#CancelShowMenuItem',
         ],
       },

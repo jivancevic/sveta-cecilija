@@ -5,6 +5,12 @@ export const Orders: CollectionConfig = {
   admin: {
     useAsTitle: 'buyerName',
     defaultColumns: ['buyerName', 'email', 'adultCount', 'childCount', 'total', 'refundStatus', 'show'],
+    listSearchableFields: ['buyerName', 'email'],
+    components: {
+      edit: {
+        editMenuItems: ['@/components/payload/RefundOrderMenuItem#RefundOrderMenuItem'],
+      },
+    },
   },
   fields: [
     { name: 'buyerName', type: 'text', required: true },
