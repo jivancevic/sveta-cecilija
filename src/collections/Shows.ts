@@ -7,7 +7,10 @@ export const Shows: CollectionConfig = {
     defaultColumns: ['date', 'time', 'venue', 'onlineSold', 'inPersonSold', 'status'],
     components: {
       edit: {
-        editMenuItems: ['@/components/payload/CancelShowMenuItem#CancelShowMenuItem'],
+        editMenuItems: [
+          '@/components/payload/InPersonSalesMenuItem#InPersonSalesMenuItem',
+          '@/components/payload/CancelShowMenuItem#CancelShowMenuItem',
+        ],
       },
       views: {
         list: {
