@@ -14,6 +14,24 @@ Using the default five-role label vocabulary. See `docs/agents/triage-labels.md`
 
 Production schema is applied by `scripts/bootstrap-db.mjs` (runs from `npm start` before `next start`) using idempotent SQL in `db/schema/*.sql`. Local dev uses Payload's `push: true`. See `docs/agents/db-bootstrap.md` for how to add a column or collection.
 
+### Env files
+
+`.env.example` (committed) is the template — copy to `.env.local` for dev and fill values. `.gitignore` blocks every `.env*` except the example. Production secrets live only in Coolify env settings, never in any file in this repo. Stripe live keys and BREVO_API_KEY should never appear in chat sessions — if they do, rotate them.
+
+### Atomic DB writes when a field accumulates
+
+When an API endpoint adds-to a numeric column (`inPersonSold`, `onlineSold`, etc.) instead of replacing it, **never** do `find` → compute → `update` — that read-modify-write loses updates under concurrent requests. Use a single SQL statement via the underlying pool:
+
+```ts
+const db = (payload.db as unknown as { pool: { query: (sql: string, params: unknown[]) => Promise<{ rows: any[] }> } }).pool
+const res = await db.query(
+  'UPDATE shows SET in_person_sold = COALESCE(in_person_sold, 0) + $1, updated_at = NOW() WHERE id = $2 RETURNING in_person_sold',
+  [delta, Number(showId)],
+)
+```
+
+Pattern proven in `src/app/api/shows/[id]/in-person-sales/route.ts`. The lib helper takes an `atomicIncrement` dep so unit tests can mock it; only the route wires the real SQL.
+
 ### Deployment (Coolify / Nixpacks)
 
 Coolify on Hetzner builds with Nixpacks, runs `npm ci --production` (= `--omit=dev`), then `npm start` (= bootstrap + `next start`). Three gotchas worth knowing before you touch the build:
@@ -41,7 +59,7 @@ Website for HGD Sveta Cecilija, a 143-year-old cultural organisation from Korču
 - **i18n:** Routes are at the top level (e.g. `/tickets`, `/checkout/[showId]`, `/about`) — locale is **not** in the URL. `src/proxy.ts` reads the `moreska_locale` cookie (or `Accept-Language` on first visit) and forwards it to server components via an `x-locale` request header; pages call `getLocale()` from `src/lib/locale.ts` to read it. Translations in `src/messages/{en,hr}.json`. Helper: `src/lib/i18n.ts` (`getDictionary`). Dictionary type inferred from `en.json` — both locale files must stay structurally identical. **Never build internal URLs with a `/en` or `/hr` prefix** — those routes 404.
 - **Fonts:** Bodoni Moda SC, IBM Plex Mono, Inter via `next/font/google`. Bodoni Moda SC (var `--font-bodoni`) for all headlines/titles; IBM Plex Mono for codes/tags; Inter for body.
 - **CMS:** Payload CMS v3 (`@payloadcms/next` adapter, integrated directly into Next.js app). Admin at `/admin`.
-- **Database:** PostgreSQL via `@payloadcms/db-postgres`. Connection via `DATABASE_URL` env var. Auth gated by `PAYLOAD_SECRET`.
+- **Database:** PostgreSQL via `@payloadcms/db-postgres`. Connection via `DATABASE_URL` env var. Auth gated by `PAYLOAD_SECRET`. **Local dev DB is `sveta_cecilija_dev`, production is `sveta_cecilija`** — distinct names so a misconfigured DATABASE_URL cannot read or write the wrong database. Local seeds + a throwaway admin account (`admin/admin`) live only on `_dev`; never copy that password to prod.
 - **Payments:** Stripe (EUR). Payment Element handles cards + Google Pay + Apple Pay. Webhook at `POST /api/stripe/webhook` (verified by signature). Keys: `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET`. Existing Stripe account was connected to `korcula-moreska.com` — migrating to `moreska.eu` by running dual webhook endpoints during transition; old endpoint removed after DNS cutover is stable.
 - **Email sending:** Brevo (free tier — 300 emails/day, 9k/month). Sends from `info@moreska.eu`. Key: `BREVO_API_KEY`. Domain verified via SPF/DKIM/DMARC records in Hetzner DNS.
 - **Email receiving:** ImprovMX — forwards `info@moreska.eu` to personal inbox via MX records in Hetzner DNS. No mailbox to manage.
@@ -209,7 +227,7 @@ Two tied-together gotchas you must keep in place or every custom admin component
 | [#6](https://github.com/jivancevic/sveta-cecilija/issues/6) | QR ticket email via Resend | AFK |
 | [#7](https://github.com/jivancevic/sveta-cecilija/issues/7) | Door scan endpoint `/scan/[token]` | AFK |
 | [#8](https://github.com/jivancevic/sveta-cecilija/issues/8) | Admin — show management | Done |
-| [#9](https://github.com/jivancevic/sveta-cecilija/issues/9) | Admin — in-person sales | AFK |
+| [#9](https://github.com/jivancevic/sveta-cecilija/issues/9) | Admin — in-person sales | Done |
 | [#10](https://github.com/jivancevic/sveta-cecilija/issues/10) | Admin — order list + manual refund | AFK |
 | [#11](https://github.com/jivancevic/sveta-cecilija/issues/11) | Cutover: smoke test + DNS switch from WordPress | HITL |
 
