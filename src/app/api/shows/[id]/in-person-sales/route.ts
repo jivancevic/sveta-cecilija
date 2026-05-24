@@ -19,17 +19,17 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const result = await addInPersonSales(
       { showId: id, count },
       {
-        findShow: async (showId) => {
-          const show = await payload.findByID({ collection: 'shows', id: showId, depth: 0 })
-          if (!show) return null
-          return {
-            id: String(show.id),
-            onlineSold: Number(show.onlineSold ?? 0),
-            inPersonSold: Number(show.inPersonSold ?? 0),
-          }
-        },
-        updateShow: async (showId, data) => {
-          await payload.update({ collection: 'shows', id: showId, data })
+        atomicIncrement: async (showId, delta) => {
+          // Single SQL statement — postgres serialises concurrent writes to
+          // the same row, so two parallel adds cannot lose updates.
+          // The payload-postgres adapter exposes its pool at `payload.db.pool`.
+          const db = (payload.db as unknown as { pool: { query: (sql: string, params: unknown[]) => Promise<{ rows: { in_person_sold: number }[] }> } }).pool
+          const res = await db.query(
+            'UPDATE shows SET in_person_sold = COALESCE(in_person_sold, 0) + $1, updated_at = NOW() WHERE id = $2 RETURNING in_person_sold',
+            [delta, Number(showId)],
+          )
+          if (res.rows.length === 0) return null
+          return { inPersonSold: Number(res.rows[0].in_person_sold) }
         },
       },
     )

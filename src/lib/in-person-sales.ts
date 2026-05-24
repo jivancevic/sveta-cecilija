@@ -4,8 +4,11 @@ export interface AddInPersonSalesInput {
 }
 
 export interface AddInPersonSalesDeps {
-  findShow: (id: string) => Promise<{ id: string; onlineSold: number; inPersonSold: number } | null>
-  updateShow: (id: string, data: { inPersonSold: number }) => Promise<void>
+  // Atomically increments in_person_sold by `delta` and returns the new total.
+  // Returns null if the show does not exist. Implementations must be race-safe
+  // (e.g. SQL `UPDATE … SET col = col + $1 RETURNING col`) — the helper
+  // does not lock.
+  atomicIncrement: (showId: string, delta: number) => Promise<{ inPersonSold: number } | null>
 }
 
 export async function addInPersonSales(
@@ -14,9 +17,7 @@ export async function addInPersonSales(
 ): Promise<{ inPersonSold: number }> {
   if (!Number.isInteger(input.count)) throw new Error('Count must be an integer')
   if (input.count <= 0) throw new Error('Count must be a positive integer')
-  const show = await deps.findShow(input.showId)
-  if (!show) throw new Error('Show not found')
-  const next = show.inPersonSold + input.count
-  await deps.updateShow(show.id, { inPersonSold: next })
-  return { inPersonSold: next }
+  const result = await deps.atomicIncrement(input.showId, input.count)
+  if (!result) throw new Error('Show not found')
+  return { inPersonSold: result.inPersonSold }
 }
