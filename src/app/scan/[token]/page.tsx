@@ -3,7 +3,13 @@ import { sql } from '@payloadcms/db-postgres'
 import { headers } from 'next/headers'
 import QRCode from 'qrcode'
 import config from '@payload-config'
-import { scanToken, type ScanDeps, type ScanResult, type ScanViewer } from '@/lib/scan-token'
+import {
+  scanToken,
+  canUndoScan,
+  type ScanDeps,
+  type ScanResult,
+  type ScanViewer,
+} from '@/lib/scan-token'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -188,7 +194,47 @@ function BuyerView({
   )
 }
 
-function ResultView({ result, qrDataUrl }: { result: ScanResult; qrDataUrl?: string }) {
+function UndoForm({ token }: { token: string }) {
+  return (
+    <form
+      method="post"
+      action={`/api/scan/${encodeURIComponent(token)}/undo`}
+      style={{ marginTop: '2rem' }}
+    >
+      <button
+        type="submit"
+        style={{
+          background: 'rgba(255,255,255,0.15)',
+          color: '#fff',
+          border: '2px solid rgba(255,255,255,0.85)',
+          borderRadius: '0.5rem',
+          padding: '0.85rem 1.5rem',
+          fontSize: '1.125rem',
+          fontWeight: 600,
+          cursor: 'pointer',
+          minHeight: '48px',
+          minWidth: '180px',
+        }}
+      >
+        Undo scan
+      </button>
+    </form>
+  )
+}
+
+function ResultView({
+  result,
+  qrDataUrl,
+  token,
+  viewer,
+  undoRejected,
+}: {
+  result: ScanResult
+  qrDataUrl?: string
+  token: string
+  viewer: ScanViewer
+  undoRejected?: boolean
+}) {
   if (result.status === 'BUYER_VIEW') {
     return <BuyerView result={result} qrDataUrl={qrDataUrl ?? ''} />
   }
@@ -212,6 +258,7 @@ function ResultView({ result, qrDataUrl }: { result: ScanResult; qrDataUrl?: str
   }
 
   if (result.status === 'ALREADY_SCANNED') {
+    const showUndo = viewer === 'staff' && canUndoScan(result.scannedAt)
     return (
       <main style={{ background: '#b46a00', color: '#fff', ...wrapStyle }}>
         <div style={badgeStyle}>ALREADY SCANNED</div>
@@ -219,6 +266,12 @@ function ResultView({ result, qrDataUrl }: { result: ScanResult; qrDataUrl?: str
           First scanned at <strong>{formatScannedAt(result.scannedAt)}</strong>
         </div>
         <ShowLine showDate={result.showDate} showTime={result.showTime} venue={result.venue} />
+        {showUndo && <UndoForm token={token} />}
+        {undoRejected && (
+          <div style={{ marginTop: '1rem', fontSize: '1rem', opacity: 0.9 }}>
+            Undo window expired (2 minutes).
+          </div>
+        )}
       </main>
     )
   }
@@ -267,8 +320,15 @@ async function resolveViewer(): Promise<ScanViewer> {
   return 'buyer'
 }
 
-export default async function ScanPage({ params }: { params: Promise<{ token: string }> }) {
+export default async function ScanPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ token: string }>
+  searchParams: Promise<{ undo?: string }>
+}) {
   const { token } = await params
+  const { undo } = await searchParams
   const viewer = await resolveViewer()
   const deps = await buildDeps()
   const result = await scanToken(token, deps, { viewer })
@@ -276,5 +336,13 @@ export default async function ScanPage({ params }: { params: Promise<{ token: st
     result.status === 'BUYER_VIEW'
       ? await QRCode.toDataURL(`https://moreska.eu/scan/${token}`, { margin: 1, width: 320 })
       : undefined
-  return <ResultView result={result} qrDataUrl={qrDataUrl} />
+  return (
+    <ResultView
+      result={result}
+      qrDataUrl={qrDataUrl}
+      token={token}
+      viewer={viewer}
+      undoRejected={undo === 'rejected'}
+    />
+  )
 }

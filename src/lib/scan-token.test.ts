@@ -1,5 +1,11 @@
 import { describe, it, expect, vi } from 'vitest'
-import { scanToken, type ScanDeps } from './scan-token'
+import {
+  scanToken,
+  canUndoScan,
+  undoScan,
+  UNDO_WINDOW_MS,
+  type ScanDeps,
+} from './scan-token'
 
 function makeDeps(overrides: Partial<ScanDeps> = {}): ScanDeps {
   return {
@@ -108,6 +114,45 @@ describe('scanToken', () => {
       showTime: '21:00',
       venue: 'ljetno-kino',
     })
+  })
+
+  it('canUndoScan: true when scannedAt is within the 2-minute window', () => {
+    const now = new Date('2026-05-24T19:01:00.000Z')
+    const scannedAt = '2026-05-24T19:00:00.000Z'
+    expect(canUndoScan(scannedAt, now)).toBe(true)
+  })
+
+  it('canUndoScan: false when scannedAt is older than the window', () => {
+    const now = new Date('2026-05-24T19:05:00.000Z')
+    const scannedAt = '2026-05-24T19:00:00.000Z'
+    expect(canUndoScan(scannedAt, now)).toBe(false)
+  })
+
+  it('canUndoScan: false when scannedAt is empty/missing', () => {
+    expect(canUndoScan('', new Date())).toBe(false)
+  })
+
+  it('UNDO_WINDOW_MS is 2 minutes', () => {
+    expect(UNDO_WINDOW_MS).toBe(2 * 60 * 1000)
+  })
+
+  it('undoScan returns UNDONE and passes the configured window to atomicUndo', async () => {
+    const atomicUndo = vi.fn().mockResolvedValue(true)
+    const result = await undoScan('tok_abc', { atomicUndo })
+    expect(result).toEqual({ status: 'UNDONE' })
+    expect(atomicUndo).toHaveBeenCalledWith('tok_abc', UNDO_WINDOW_MS)
+  })
+
+  it('undoScan returns REJECTED when atomicUndo flipped no rows (out of window or already-undone)', async () => {
+    const atomicUndo = vi.fn().mockResolvedValue(false)
+    const result = await undoScan('tok_abc', { atomicUndo })
+    expect(result).toEqual({ status: 'REJECTED' })
+  })
+
+  it('undoScan honours a custom windowMs option', async () => {
+    const atomicUndo = vi.fn().mockResolvedValue(true)
+    await undoScan('tok_abc', { atomicUndo }, { windowMs: 5_000 })
+    expect(atomicUndo).toHaveBeenCalledWith('tok_abc', 5_000)
   })
 
   it('returns ALREADY_SCANNED with original timestamp + show details when the token was previously scanned', async () => {

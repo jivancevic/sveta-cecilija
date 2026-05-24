@@ -49,6 +49,37 @@ export type ScanResult =
 
 export type ScanViewer = 'buyer' | 'staff'
 
+export const UNDO_WINDOW_MS = 2 * 60 * 1000
+
+export function canUndoScan(scannedAt: string, now: Date = new Date()): boolean {
+  if (!scannedAt) return false
+  const t = new Date(scannedAt).getTime()
+  if (Number.isNaN(t)) return false
+  return now.getTime() - t <= UNDO_WINDOW_MS
+}
+
+export interface UndoDeps {
+  /**
+   * Atomically flips scanned -> false for the token, but ONLY when the row's
+   * scanned_at is still within `windowMs` of `now`. Returns true if a row was
+   * updated. The window check belongs in SQL so concurrent stale requests
+   * cannot succeed even if the client thought they could.
+   */
+  atomicUndo: (token: string, windowMs: number) => Promise<boolean>
+}
+
+export type UndoResult = { status: 'UNDONE' } | { status: 'REJECTED' }
+
+export async function undoScan(
+  token: string,
+  deps: UndoDeps,
+  opts: { windowMs?: number } = {},
+): Promise<UndoResult> {
+  const windowMs = opts.windowMs ?? UNDO_WINDOW_MS
+  const ok = await deps.atomicUndo(token, windowMs)
+  return ok ? { status: 'UNDONE' } : { status: 'REJECTED' }
+}
+
 export async function scanToken(
   token: string,
   deps: ScanDeps,
