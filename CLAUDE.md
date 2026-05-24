@@ -163,6 +163,7 @@ Defined in `SERVICE_PAGE_META` in `data.ts`:
 | `Orders` | `buyerName`, `email`, `adultCount`, `childCount`, `total` (EUR cents), `stripePaymentIntentId`, `refundStatus` (none \| refunded), `show` → Shows |
 | `QRTokens` | `token` (unique, URL-safe), `order` → Orders, `scanned` (bool), `scannedAt` (DateTime) |
 | `ContactSubmissions` | `name`, `email`, `enquiryType`, `message`, `createdAt` |
+| `Users` | Payload auth + `role` (select: `admin` \| `door-staff`, default `admin`, required). `door-staff` is the shared account that will authenticate `/scan/[token]` and the upcoming `/admin/stats` dashboard. The role exists and is selectable; role gating itself lands in the follow-up access-controls ticket. Shared `door-staff@moreska.eu` user is created manually via /admin — credentials live in Coolify/password manager, never in repo. |
 
 Remaining capacity per show = `VENUE_CAPACITY[venue] - onlineSold - inPersonSold` (derived in `src/lib/shows.ts`). **There is no `capacity` field on Shows — never add one.** Capacity is fixed per venue, not per show.
 
