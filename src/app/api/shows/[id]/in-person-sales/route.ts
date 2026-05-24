@@ -13,7 +13,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   const { id } = await params
   const body = await req.json().catch(() => ({}))
-  const count = Number(body?.count)
+  const rawCount = body?.count
+  if (typeof rawCount !== 'number' || !Number.isInteger(rawCount) || rawCount <= 0) {
+    return NextResponse.json({ error: 'count must be a positive integer' }, { status: 400 })
+  }
+  const count = rawCount
 
   try {
     const result = await addInPersonSales(

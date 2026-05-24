@@ -56,7 +56,11 @@ export default buildConfig({
   },
   collections: [Users, Shows, Orders, QRTokens, ContactSubmissions],
   editor: lexicalEditor(),
-  secret: process.env.PAYLOAD_SECRET || '',
+  secret: (() => {
+    const s = process.env.PAYLOAD_SECRET
+    if (!s) throw new Error('PAYLOAD_SECRET is not set')
+    return s
+  })(),
   typescript: {
     outputFile: path.resolve(dirname, 'payload-types.ts'),
   },
