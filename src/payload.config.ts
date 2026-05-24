@@ -41,6 +41,12 @@ export default buildConfig({
         stats: {
           Component: '@/components/payload/AdminStatsView#AdminStatsView',
           path: '/stats',
+          exact: true,
+        },
+        showStats: {
+          Component: '@/components/payload/AdminShowStatsView#AdminShowStatsView',
+          path: '/stats/:showId',
+          exact: true,
         },
       },
     },
