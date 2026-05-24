@@ -17,6 +17,15 @@ export interface CreateOrderInput {
   show: string
 }
 
+export interface NotifyBuyerInput {
+  orderId: string
+  showId: string
+  buyer: { name: string; email: string }
+  order: { adultCount: number; childCount: number; total: number }
+  tokens: string[]
+  locale: 'en' | 'hr'
+}
+
 export interface PaymentSucceededDeps {
   findOrderByPaymentIntent: (id: string) => Promise<{ id: string } | null>
   findShow: (id: string) => Promise<PurchasableShow | null>
@@ -24,6 +33,7 @@ export interface PaymentSucceededDeps {
   createQrToken: (input: { token: string; order: string }) => Promise<void>
   incrementOnlineSold: (showId: string, by: number) => Promise<void>
   generateToken: () => string
+  notifyBuyer: (input: NotifyBuyerInput) => Promise<void>
 }
 
 export async function handlePaymentSucceeded(
@@ -52,11 +62,24 @@ export async function handlePaymentSucceeded(
     show: showId,
   })
 
+  const tokens: string[] = []
   for (let i = 0; i < total; i++) {
-    await deps.createQrToken({ token: deps.generateToken(), order: order.id })
+    const token = deps.generateToken()
+    tokens.push(token)
+    await deps.createQrToken({ token, order: order.id })
   }
 
   await deps.incrementOnlineSold(showId, total)
+
+  const locale = evt.metadata.locale === 'hr' ? 'hr' : 'en'
+  await deps.notifyBuyer({
+    orderId: order.id,
+    showId,
+    buyer: { name: evt.metadata.buyerName ?? '', email: evt.metadata.email ?? '' },
+    order: { adultCount: adults, childCount: children, total: evt.amountReceived },
+    tokens,
+    locale,
+  })
 
   return { orderId: order.id, skipped: false }
 }
