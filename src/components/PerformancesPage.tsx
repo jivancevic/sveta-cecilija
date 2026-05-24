@@ -7,35 +7,13 @@ import type { Dictionary } from '@/lib/i18n';
 import type { Locale } from '@/proxy';
 import { calculateOrderTotal } from '@/lib/pricing';
 
-const SHOW_IMAGES = [
-  '/moreska-wide.webp',
-  '/kraljevi-krupni.webp',
-  '/moreska01.webp',
-  '/kraljevi.webp',
-  '/moreska02.webp',
-  '/black-king-moreska.webp',
-  '/fila.webp',
-  '/torches.webp',
-  '/black-bula.webp',
-  '/bula-alone.webp',
-  '/kings-face-off.webp',
-  '/kings-side.webp',
-  '/mate.webp',
-  '/sfida-wide.webp',
-  '/sword-clash.webp',
-  '/top-3-kolap.webp',
-  '/top-7-kolap.webp',
-  '/top-end-kolap.webp',
-  '/top-end.webp',
-  '/wave.webp',
-];
-
 interface Props {
   t: Dictionary['performancesPage'];
   tSchedule: Dictionary['schedule'];
   shows: Show[];
   locale: Locale;
   initialDate?: string;
+  images: string[];
 }
 
 function formatDate(isoDate: string, locale: Locale) {
@@ -49,7 +27,7 @@ function formatDate(isoDate: string, locale: Locale) {
   return { day, month, year, weekday };
 }
 
-export default function PerformancesPage({ t, tSchedule, shows, locale, initialDate }: Props) {
+export default function PerformancesPage({ t, tSchedule, shows, locale, initialDate, images }: Props) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [adults, setAdults] = useState(2);
   const [children, setChildren] = useState(0);
@@ -84,27 +62,42 @@ export default function PerformancesPage({ t, tSchedule, shows, locale, initialD
         <p className="perfs-sub">{t.subline}</p>
       </div>
 
-      {/* Venue info block */}
+      {/* Venue panel: primary venue (hero) + rain-plan callout below */}
       <div className="perfs-venue">
-        <a
-          className="perfs-venue__item perfs-venue__location"
-          href={t.venueMapUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <span className="perfs-venue__icon">📍</span>
-          <span>{t.venue}</span>
-        </a>
-        <div className="perfs-venue__item">
-          <span className="perfs-venue__icon">⏱</span>
-          <span>{t.duration}</span>
+        <div className="perfs-venue__primary">
+          <div className="perfs-venue__label">{t.venueLabel}</div>
+          <div className="perfs-venue__row">
+            <div className="perfs-venue__name">{t.venuePrimary}</div>
+            <a
+              className="perfs-venue__map"
+              href={t.venuePrimaryMapUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {t.venueViewMap}
+            </a>
+          </div>
+          <div className="perfs-venue__divider" />
+          <div className="perfs-venue__details">
+            <span className="perfs-venue__details-label">{t.venueDetailsLabel}</span>
+            <span className="perfs-venue__details-text">{t.venueDetails}</span>
+          </div>
         </div>
-        <div className="perfs-venue__item">
-          <span className="perfs-venue__icon">🎭</span>
-          <span>{t.programme}</span>
+        <div className="perfs-venue__rain">
+          <span className="perfs-venue__rain-label">{t.rainPlanLabel}</span>
+          <span className="perfs-venue__rain-text">
+            {t.rainPlanIntro}{' '}
+            <a
+              className="perfs-venue__rain-link"
+              href={t.rainPlanMapUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {t.rainPlanVenue}
+            </a>
+          </span>
         </div>
       </div>
-      <p className="perfs-venue-note">{t.venueNote}</p>
 
       {shows.length === 0 ? (
         <div className="perfs-empty">{t.noShows}</div>
@@ -115,7 +108,7 @@ export default function PerformancesPage({ t, tSchedule, shows, locale, initialD
             const soldOut = show.remaining <= 0;
             const isActive = activeId === show.id;
             const fewLeft = !soldOut && show.remaining <= 50 && i < 3;
-            const image = SHOW_IMAGES[i % SHOW_IMAGES.length];
+            const image = images[i % images.length];
             const venueName = show.venue === 'zimsko-kino' ? t.venueZimsko : t.venueLjetno;
 
             const pillClass = soldOut ? '' : fewLeft ? ' amber' : ' green';
