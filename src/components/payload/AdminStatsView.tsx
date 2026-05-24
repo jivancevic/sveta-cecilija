@@ -1,11 +1,15 @@
 import React from 'react'
 import Link from 'next/link'
 import { headers } from 'next/headers'
-import { redirect } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { getPayload } from 'payload'
 import config from '@payload-config'
 import { getStatsInput } from '@/lib/stats-data'
 import { computeStats, type StatsRow, type StatsHeader } from '@/lib/stats'
+import { getShowStatsInput } from '@/lib/show-stats-data'
+import { computeShowStats } from '@/lib/show-stats'
+import { isAdmin } from '@/lib/access/roles'
+import { AdminShowStatsBody } from './AdminShowStatsView'
 
 export const dynamic = 'force-dynamic'
 
@@ -98,13 +102,41 @@ function ShowRow({ row }: { row: StatsRow }) {
   )
 }
 
-export async function AdminStatsView() {
+type AdminStatsViewProps = {
+  initPageResult?: { req?: { pathname?: string } }
+}
+
+// Treats /admin/stats as the list view and /admin/stats/<showId> as the
+// drill-down. Done as one component because Payload v3 only resolves custom
+// view paths with a single segment — `/stats/:showId` registered separately
+// is never reached. See payload.config.ts.
+function parseShowId(pathname: string | undefined): string | null {
+  if (!pathname) return null
+  const match = pathname.match(/\/stats\/([^/?#]+)\/?$/)
+  return match ? match[1] : null
+}
+
+export async function AdminStatsView(props: AdminStatsViewProps = {}) {
+  const pathname = props.initPageResult?.req?.pathname
+  const showId = parseShowId(pathname)
+
   // The Payload admin shell renders this view's layout even when no user is
   // present, so we must gate the data ourselves — otherwise season revenue
-  // and order counts leak to anonymous visitors.
+  // and order PII leak to anonymous visitors.
   const payload = await getPayload({ config })
   const { user } = await payload.auth({ headers: await headers() })
-  if (!user) redirect('/admin/login?redirect=/admin/stats')
+  if (!user) {
+    const target = showId ? `/admin/stats/${showId}` : '/admin/stats'
+    redirect(`/admin/login?redirect=${encodeURIComponent(target)}`)
+  }
+
+  if (showId) {
+    const input = await getShowStatsInput(showId)
+    if (!input) notFound()
+    const { header, orders } = computeShowStats(input)
+    const adminView = isAdmin(user as { role?: string })
+    return <AdminShowStatsBody header={header} orders={orders} adminView={adminView} />
+  }
 
   const input = await getStatsInput()
   const { header, rows } = computeStats(input)
