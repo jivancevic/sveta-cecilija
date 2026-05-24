@@ -25,6 +25,16 @@ DO $$ BEGIN
   CREATE TYPE enum_orders_refund_status AS ENUM ('none', 'refunded');
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
+DO $$ BEGIN
+  CREATE TYPE enum_users_role AS ENUM ('admin', 'door-staff');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+-- ─── users ────────────────────────────────────────────────────────────
+-- Auth table owned by Payload; we only add the role column. Existing rows
+-- default to 'admin' so existing accounts keep their current capabilities.
+
+ALTER TABLE users ADD COLUMN IF NOT EXISTS role enum_users_role NOT NULL DEFAULT 'admin';
+
 -- ─── shows ────────────────────────────────────────────────────────────
 -- Table exists from the original deploy; only the post-#4 columns need
 -- to be added.
