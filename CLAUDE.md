@@ -168,7 +168,13 @@ Remaining capacity per show = `VENUE_CAPACITY[venue] - onlineSold - inPersonSold
 - Item in edit view 3-dot menu: `collection.admin.components.edit.editMenuItems`
 - **No per-row list actions exist in v3** — cancel/single-doc actions belong in the edit view
 
-**`importMap.js` is manually maintained** — `src/app/(payload)/admin/importMap.js` is not auto-generated. Every new component added to `payload.config.ts` or a collection config must also be imported and keyed there. Omitting it causes a silent render failure.
+**`importMap.js` is manually maintained.** `src/app/(payload)/admin/importMap.js` is not auto-generated. Every new component added to `payload.config.ts` or a collection config must also be imported and keyed there. Omitting it causes a silent render failure.
+
+Two tied-together gotchas you must keep in place or every custom admin component (Logo, Icon, edit-menu items) silently renders nothing:
+
+1. **`admin.importMap.autoGenerate: false`** in `payload.config.ts`. Without this, Payload runs its own `generateImportMap` on every reload — it rewrites `importMap.js` *after* `layout.tsx` and `page.tsx` have already imported it, so the in-memory `importMap` reference stays empty `{}`. Symptom: `getFromImportMap: PayloadComponent not found in importMap` for keys that are literally present in the source file.
+
+2. **`src/app/(payload)/admin/[[...segments]]/not-found.tsx` must import the real `importMap`**, not a local `const importMap: ImportMap = {}`. The Payload starter ships with the empty placeholder; the not-found route is rendered for any unmatched admin URL and shares lookup paths with siblings, so an empty map there leaks back into the edit-view document renders. Replace with `import { importMap } from '../importMap'`.
 
 **`MetaConfig` valid keys** — only `titleSuffix` and `defaultOGImageType` are Payload additions on top of Next.js `Metadata`. There is no `favicon` property.
 
