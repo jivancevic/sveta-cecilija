@@ -163,7 +163,21 @@ Defined in `SERVICE_PAGE_META` in `data.ts`:
 | `Orders` | `buyerName`, `email`, `adultCount`, `childCount`, `total` (EUR cents), `stripePaymentIntentId`, `refundStatus` (none \| refunded), `show` → Shows |
 | `QRTokens` | `token` (unique, URL-safe), `order` → Orders, `scanned` (bool), `scannedAt` (DateTime) |
 | `ContactSubmissions` | `name`, `email`, `enquiryType`, `message`, `createdAt` |
-| `Users` | Payload auth + `role` (select: `admin` \| `door-staff`, default `admin`, required). `door-staff` is the shared account that will authenticate `/scan/[token]` and the upcoming `/admin/stats` dashboard. The role exists and is selectable; role gating itself lands in the follow-up access-controls ticket. Shared `door-staff@moreska.eu` user is created manually via /admin — credentials live in Coolify/password manager, never in repo. |
+| `Users` | Payload auth + `role` (select: `admin` \| `door-staff`, default `admin`, required). Shared `door-staff@moreska.eu` user is created manually via /admin — credentials live in Coolify/password manager, never in repo. |
+
+### Role-based access controls
+
+Collection access is keyed off `user.role` via two predicates in `src/lib/access/roles.ts`: `isAdmin(user)` and `isAuthed(user)` (admin OR door-staff).
+
+| Collection | read | create/update/delete |
+|---|---|---|
+| `Orders` | admin | admin |
+| `ContactSubmissions` | admin | admin |
+| `Shows` | authed (admin + door-staff — door staff needs read for `/scan` + stats) | admin |
+| `QRTokens` | authed | admin |
+| `Users` | self-or-admin (door-staff sees only own record via `{ id: { equals: req.user.id } }`) | create+delete admin-only; update self-or-admin |
+
+The refund route `POST /api/orders/[id]/refund` re-checks `isAdmin(user)` and returns 403 otherwise. Payload's local API runs with `overrideAccess: true`, so collection-level `access.update` does not gate it on its own — any admin-only mutation route must re-check in the handler. The Stripe webhook and frontend show queries use the local API, so collection access does not affect them.
 
 Remaining capacity per show = `VENUE_CAPACITY[venue] - onlineSold - inPersonSold` (derived in `src/lib/shows.ts`). **There is no `capacity` field on Shows — never add one.** Capacity is fixed per venue, not per show.
 

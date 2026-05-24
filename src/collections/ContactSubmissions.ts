@@ -1,7 +1,17 @@
 import type { CollectionConfig } from 'payload'
+import { isAdmin } from '@/lib/access/roles'
+
+const adminOnly = ({ req }: { req: { user: unknown } }) =>
+  isAdmin(req.user as { role?: string } | null)
 
 export const ContactSubmissions: CollectionConfig = {
   slug: 'contact-submissions',
+  access: {
+    read: adminOnly,
+    update: adminOnly,
+    delete: adminOnly,
+    create: adminOnly,
+  },
   admin: {
     useAsTitle: 'name',
     defaultColumns: ['name', 'email', 'enquiryType', 'createdAt'],

@@ -1,7 +1,17 @@
 import type { CollectionConfig } from 'payload'
+import { isAdmin } from '@/lib/access/roles'
+
+const adminOnly = ({ req }: { req: { user: unknown } }) =>
+  isAdmin(req.user as { role?: string } | null)
 
 export const Orders: CollectionConfig = {
   slug: 'orders',
+  access: {
+    read: adminOnly,
+    create: adminOnly,
+    update: adminOnly,
+    delete: adminOnly,
+  },
   admin: {
     useAsTitle: 'buyerName',
     defaultColumns: ['buyerName', 'email', 'adultCount', 'childCount', 'total', 'refundStatus', 'show'],

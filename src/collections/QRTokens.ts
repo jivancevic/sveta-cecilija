@@ -1,7 +1,19 @@
 import type { CollectionConfig } from 'payload'
+import { isAdmin, isAuthed } from '@/lib/access/roles'
+
+const adminOnly = ({ req }: { req: { user: unknown } }) =>
+  isAdmin(req.user as { role?: string } | null)
+const authedOnly = ({ req }: { req: { user: unknown } }) =>
+  isAuthed(req.user as { role?: string } | null)
 
 export const QRTokens: CollectionConfig = {
   slug: 'qr-tokens',
+  access: {
+    read: authedOnly,
+    create: adminOnly,
+    update: adminOnly,
+    delete: adminOnly,
+  },
   admin: {
     defaultColumns: ['token', 'order', 'scanned', 'scannedAt'],
   },
