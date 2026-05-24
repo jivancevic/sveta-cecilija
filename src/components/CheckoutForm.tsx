@@ -109,6 +109,7 @@ export default function CheckoutForm({
       adults,
       children,
       buyer: { name: name.trim(), email: email.trim() },
+      locale,
     })
     setCreating(false)
     if (!res.ok) {

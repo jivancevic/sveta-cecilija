@@ -6,6 +6,7 @@ export interface CheckoutInput {
   adults: number
   children: number
   buyer: { name: string; email: string }
+  locale?: 'en' | 'hr'
 }
 
 export interface CheckoutDeps {
@@ -52,6 +53,7 @@ export async function createCheckoutSession(
       children: String(input.children),
       buyerName: name,
       email: input.buyer.email,
+      locale: input.locale ?? 'en',
     },
   })
 

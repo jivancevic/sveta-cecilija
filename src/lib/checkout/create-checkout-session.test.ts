@@ -42,8 +42,22 @@ describe('createCheckoutSession', () => {
         children: '1',
         buyerName: 'Ana',
         email: 'a@b.co',
+        locale: 'en',
       },
     })
+  })
+
+  it('propagates the buyer locale into PaymentIntent metadata', async () => {
+    const deps = makeDeps()
+    await createCheckoutSession(
+      { showId: '1', adults: 1, children: 0, buyer: { name: 'A', email: 'a@b.co' }, locale: 'hr' },
+      deps,
+    )
+    expect(deps.createPaymentIntent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        metadata: expect.objectContaining({ locale: 'hr' }),
+      }),
+    )
   })
 
   it('rejects when the show is missing or cancelled', async () => {

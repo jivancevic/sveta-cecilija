@@ -19,6 +19,7 @@ function makeDeps(overrides: Partial<PaymentSucceededDeps> = {}) {
     createQrToken: vi.fn().mockResolvedValue(undefined),
     incrementOnlineSold: vi.fn().mockResolvedValue(undefined),
     generateToken: vi.fn(() => 'tok_' + Math.random().toString(36).slice(2)),
+    notifyBuyer: vi.fn().mockResolvedValue(undefined),
     ...overrides,
   }
   return deps
@@ -88,5 +89,48 @@ describe('handlePaymentSucceeded', () => {
     expect(deps.createOrder).not.toHaveBeenCalled()
     expect(deps.createQrToken).not.toHaveBeenCalled()
     expect(deps.incrementOnlineSold).not.toHaveBeenCalled()
+    expect(deps.notifyBuyer).not.toHaveBeenCalled()
+  })
+
+  it('notifies the buyer with order + token info after order creation', async () => {
+    const tokens = ['t1', 't2', 't3']
+    let i = 0
+    const deps = makeDeps({
+      generateToken: vi.fn(() => tokens[i++]),
+    })
+    await handlePaymentSucceeded(event({ locale: 'hr' }), deps)
+    expect(deps.notifyBuyer).toHaveBeenCalledTimes(1)
+    expect(deps.notifyBuyer).toHaveBeenCalledWith({
+      orderId: 'order_1',
+      showId: 'show_1',
+      buyer: { name: 'Ana', email: 'a@b.co' },
+      order: { adultCount: 2, childCount: 1, total: 5000 },
+      tokens,
+      locale: 'hr',
+    })
+  })
+
+  it('defaults locale to en when metadata omits it', async () => {
+    const deps = makeDeps()
+    await handlePaymentSucceeded(event(), deps)
+    expect(deps.notifyBuyer).toHaveBeenCalledWith(
+      expect.objectContaining({ locale: 'en' }),
+    )
+  })
+
+  it('throws UnrecoverableWebhookError when showId metadata is missing', async () => {
+    const deps = makeDeps()
+    const evt = event()
+    delete (evt.metadata as Record<string, string | undefined>).showId
+    await expect(handlePaymentSucceeded(evt, deps)).rejects.toMatchObject({
+      name: 'UnrecoverableWebhookError',
+    })
+  })
+
+  it('throws UnrecoverableWebhookError when ticket count is zero', async () => {
+    const deps = makeDeps()
+    await expect(
+      handlePaymentSucceeded(event({ adults: '0', children: '0' }), deps),
+    ).rejects.toMatchObject({ name: 'UnrecoverableWebhookError' })
   })
 })

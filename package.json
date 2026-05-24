@@ -22,9 +22,11 @@
     "@payloadcms/richtext-lexical": "^3.84.1",
     "@stripe/react-stripe-js": "^6.4.0",
     "@stripe/stripe-js": "^9.6.0",
+    "@types/qrcode": "^1.5.6",
     "next": "16.2.6",
     "payload": "^3.84.1",
     "pg": "^8.21.0",
+    "qrcode": "^1.5.4",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "stripe": "^22.1.1"

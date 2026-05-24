@@ -2,9 +2,15 @@ import { NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { getPayload } from 'payload'
 import config from '@payload-config'
-import { handlePaymentSucceeded } from '@/lib/checkout/handle-payment-succeeded'
+import {
+  handlePaymentSucceeded,
+  UnrecoverableWebhookError,
+} from '@/lib/checkout/handle-payment-succeeded'
 import { generateQrToken } from '@/lib/qr-token'
 import type { PurchasableShow } from '@/lib/capacity'
+import { sendTicketEmail } from '@/lib/email/send-ticket-email'
+import { generateQrPng } from '@/lib/email/qr'
+import type { Venue } from '@/lib/venues'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -104,11 +110,48 @@ export async function POST(req: Request) {
           })
         },
         generateToken: generateQrToken,
+        notifyBuyer: async ({ orderId, showId, buyer, order, tokens, locale }) => {
+          // Wrapped here (not just in sendTicketEmail) because the show lookup
+          // itself can throw — webhook must still return 200 either way so
+          // Stripe never retries and double-creates the order.
+          try {
+            const showIdRef = Number.isFinite(Number(showId)) ? Number(showId) : showId
+            const showDoc = await payload.findByID({ collection: 'shows', id: showIdRef, depth: 0 })
+            const isoDate = showDoc.date as string
+            const date = isoDate.slice(0, 10)
+            await sendTicketEmail(
+              {
+                orderId,
+                buyer,
+                show: {
+                  date,
+                  time: (showDoc.time as string) ?? '',
+                  venue: showDoc.venue as Venue,
+                },
+                order,
+                tokens,
+                locale,
+              },
+              {
+                fetch: globalThis.fetch,
+                generateQrPng,
+                brevoApiKey: process.env.BREVO_API_KEY ?? '',
+              },
+            )
+          } catch (err) {
+            console.error('[stripe/webhook] notifyBuyer failed', err)
+          }
+        },
       },
     )
     return NextResponse.json({ received: true })
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Webhook handler error'
+    if (err instanceof UnrecoverableWebhookError) {
+      // 200 so Stripe stops retrying — retries can't fix bad metadata.
+      console.error('[stripe/webhook] unrecoverable, acknowledging:', message)
+      return NextResponse.json({ received: true, ignored: message })
+    }
     console.error('[stripe/webhook]', message)
     return NextResponse.json({ error: message }, { status: 500 })
   }
