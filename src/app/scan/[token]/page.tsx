@@ -1,7 +1,9 @@
 import { getPayload } from 'payload'
 import { sql } from '@payloadcms/db-postgres'
+import { headers } from 'next/headers'
+import QRCode from 'qrcode'
 import config from '@payload-config'
-import { scanToken, type ScanDeps, type ScanResult } from '@/lib/scan-token'
+import { scanToken, type ScanDeps, type ScanResult, type ScanViewer } from '@/lib/scan-token'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -120,7 +122,76 @@ function ShowLine({
   )
 }
 
-function ResultView({ result }: { result: ScanResult }) {
+function BuyerView({
+  result,
+  qrDataUrl,
+}: {
+  result: Extract<ScanResult, { status: 'BUYER_VIEW' }>
+  qrDataUrl: string
+}) {
+  const totalTickets = result.adultCount + result.childCount
+  return (
+    <main
+      style={{
+        background: '#111',
+        color: '#fff',
+        minHeight: '100vh',
+        padding: '1.5rem 1.25rem',
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        textAlign: 'center',
+        fontFamily: 'system-ui, -apple-system, sans-serif',
+      }}
+    >
+      <div style={{ fontSize: '0.875rem', letterSpacing: '0.1em', opacity: 0.7, textTransform: 'uppercase' }}>
+        Your ticket
+      </div>
+      <div style={{ fontSize: '1.75rem', fontWeight: 700, marginTop: '0.5rem' }}>
+        {result.buyerName}
+      </div>
+      <div style={{ fontSize: '1.125rem', marginTop: '0.25rem', opacity: 0.92 }}>
+        {totalTickets} ticket{totalTickets === 1 ? '' : 's'}
+        {result.childCount > 0
+          ? ` (${result.adultCount} adult${result.adultCount === 1 ? '' : 's'}, ${result.childCount} child${result.childCount === 1 ? '' : 'ren'})`
+          : ''}
+      </div>
+      <ShowLine showDate={result.showDate} showTime={result.showTime} venue={result.venue} />
+      <img
+        src={qrDataUrl}
+        alt="Ticket QR code"
+        style={{
+          width: 'min(80vw, 320px)',
+          height: 'auto',
+          marginTop: '1.5rem',
+          background: '#fff',
+          padding: '0.5rem',
+          borderRadius: '0.5rem',
+        }}
+      />
+      <div
+        style={{
+          marginTop: '1.5rem',
+          padding: '1rem 1.25rem',
+          background: 'rgba(255,255,255,0.08)',
+          border: '1px solid rgba(255,255,255,0.2)',
+          borderRadius: '0.5rem',
+          fontSize: '1rem',
+          lineHeight: 1.4,
+          maxWidth: '28rem',
+        }}
+      >
+        Show this screen at the door.<br />
+        <strong>Do not tap the QR again</strong> — it activates only when staff scans it.
+      </div>
+    </main>
+  )
+}
+
+function ResultView({ result, qrDataUrl }: { result: ScanResult; qrDataUrl?: string }) {
+  if (result.status === 'BUYER_VIEW') {
+    return <BuyerView result={result} qrDataUrl={qrDataUrl ?? ''} />
+  }
   if (result.status === 'VALID') {
     return (
       <main style={{ background: '#0f7a3a', color: '#fff', ...wrapStyle }}>
@@ -183,9 +254,27 @@ const badgeStyle: React.CSSProperties = {
   borderRadius: '0.75rem',
 }
 
+async function resolveViewer(): Promise<ScanViewer> {
+  try {
+    const payload = await getPayload({ config })
+    const h = await headers()
+    const { user } = await payload.auth({ headers: h })
+    const role = (user as { role?: string } | null)?.role
+    if (role === 'admin' || role === 'door-staff') return 'staff'
+  } catch {
+    // fall through to buyer
+  }
+  return 'buyer'
+}
+
 export default async function ScanPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params
+  const viewer = await resolveViewer()
   const deps = await buildDeps()
-  const result = await scanToken(token, deps)
-  return <ResultView result={result} />
+  const result = await scanToken(token, deps, { viewer })
+  const qrDataUrl =
+    result.status === 'BUYER_VIEW'
+      ? await QRCode.toDataURL(`https://moreska.eu/scan/${token}`, { margin: 1, width: 320 })
+      : undefined
+  return <ResultView result={result} qrDataUrl={qrDataUrl} />
 }

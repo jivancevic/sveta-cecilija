@@ -35,9 +35,43 @@ export type ScanResult =
       showTime: string
       venue: string
     }
+  | {
+      status: 'BUYER_VIEW'
+      token: string
+      buyerName: string
+      adultCount: number
+      childCount: number
+      showDate: string
+      showTime: string
+      venue: string
+    }
   | { status: 'INVALID' }
 
-export async function scanToken(token: string, deps: ScanDeps): Promise<ScanResult> {
+export type ScanViewer = 'buyer' | 'staff'
+
+export async function scanToken(
+  token: string,
+  deps: ScanDeps,
+  opts: { viewer: ScanViewer } = { viewer: 'staff' },
+): Promise<ScanResult> {
+  if (opts.viewer === 'buyer') {
+    const existing = await deps.findScannedToken(token)
+    if (!existing) return { status: 'INVALID' }
+    const order = await deps.findOrderDetails(existing.orderId)
+    if (!order) return { status: 'INVALID' }
+    const show = await deps.findShowDetails(order.showId)
+    if (!show) return { status: 'INVALID' }
+    return {
+      status: 'BUYER_VIEW',
+      token,
+      buyerName: order.buyerName,
+      adultCount: order.adultCount,
+      childCount: order.childCount,
+      showDate: show.date,
+      showTime: show.time,
+      venue: show.venue,
+    }
+  }
   const marked = await deps.atomicMarkScanned(token)
   if (marked) {
     const order = await deps.findOrderDetails(marked.orderId)

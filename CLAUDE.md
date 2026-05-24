@@ -79,7 +79,7 @@ Website for HGD Sveta Cecilija, a 143-year-old cultural organisation from Korču
 | `/checkout/[showId]/confirmation` | `src/app/(frontend)/checkout/[showId]/confirmation/page.tsx` | Post-payment landing page — looks up the Order by `pi` query param (5×400ms retry to bridge the webhook race) |
 | `/privacy-policy` | `src/app/(frontend)/privacy-policy/page.tsx` | Privacy Policy — GDPR-compliant, 5 sections, EN + HR |
 | `/cookie-policy` | `src/app/(frontend)/cookie-policy/page.tsx` | Cookie Policy — 5 sections, EN + HR |
-| `/scan/[token]` | `src/app/scan/[token]/page.tsx` (+ `src/app/scan/layout.tsx`) | Door scan result — VALID / ALREADY_SCANNED / INVALID. Race-safe. Mobile-optimised. Lives outside `(frontend)` so it has its own minimal root layout (no fonts/CookieConsent). |
+| `/scan/[token]` | `src/app/scan/[token]/page.tsx` (+ `src/app/scan/layout.tsx`) | Auth-aware door scan. Unauthenticated (buyer tapping QR from email) → buyer ticket view with on-page QR + "do not tap again" notice, no DB write. Authenticated `admin` / `door-staff` → atomic mark-and-read, renders VALID / ALREADY_SCANNED / INVALID. Race-safe. Mobile-optimised. Lives outside `(frontend)` so it has its own minimal root layout (no fonts/CookieConsent). |
 | `/admin` | Payload CMS built-in | Admin dashboard — show management, orders, in-person sales, refunds |
 | `/api/stripe/webhook` | `src/app/api/stripe/webhook/route.ts` | Stripe webhook — creates Order + QRTokens on payment success |
 
@@ -213,6 +213,11 @@ Two tied-together gotchas you must keep in place or every custom admin component
 **`MetaConfig` valid keys** — only `titleSuffix` and `defaultOGImageType` are Payload additions on top of Next.js `Metadata`. There is no `favicon` property.
 
 **Auth in custom API routes** — use `payload.auth({ headers: req.headers })` to verify the admin session before calling `payload.create` / `payload.find` / etc.
+
+**Payload cookie auth has a CSRF gate.** Payload pushes `serverURL` into its `csrf` allowlist during sanitization. When extracting the `payload-token` cookie, it accepts the request only if `Origin` matches an allowlisted entry, or (no Origin) `Sec-Fetch-Site` is `none` / `same-origin` / `same-site`. Two consequences:
+
+1. **Locally**, `NEXT_PUBLIC_BASE_URL` must match the actual port `next dev` runs on. If they diverge (e.g. `.env.local` says `:3000` but `PORT=3456`), every cookie-authenticated request — including `payload.auth({ headers })` inside server components like `/scan/[token]` — silently returns `user: null` and you get the unauthenticated branch. The `Authorization: JWT` header bypasses this check, which is why `/api/users/me` curls work with header auth but not Cookie auth.
+2. **In production**, real phone camera scans of QR codes navigate to `https://moreska.eu/scan/[token]` with `Sec-Fetch-Site: none` and no Origin → cookie accepted. Address-bar typing and in-app `/admin` links also work (`none` / `same-origin`). Cross-site initiations (clicking the URL from Slack, Gmail, etc.) get `cross-site` → cookie rejected → page renders the buyer view and the token is never marked scanned. Staff must navigate from within `moreska.eu` for the staff path to trigger.
 
 ### Design decisions
 
