@@ -39,14 +39,14 @@ export default buildConfig({
           path: '/bulk-create-shows',
         },
         stats: {
+          // Handles both /admin/stats (list) and /admin/stats/[showId]
+          // (drill-down) — Payload v3 only dispatches custom views for
+          // single-segment top-level paths, so the drill-down can't be a
+          // separate `path: '/stats/:showId'` entry. Branch inside the
+          // component based on the requested pathname.
           Component: '@/components/payload/AdminStatsView#AdminStatsView',
           path: '/stats',
-          exact: true,
-        },
-        showStats: {
-          Component: '@/components/payload/AdminShowStatsView#AdminShowStatsView',
-          path: '/stats/:showId',
-          exact: true,
+          exact: false,
         },
       },
     },

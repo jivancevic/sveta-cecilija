@@ -1,14 +1,6 @@
 import React from 'react'
 import Link from 'next/link'
-import { headers } from 'next/headers'
-import { notFound, redirect } from 'next/navigation'
-import { getPayload } from 'payload'
-import config from '@payload-config'
-import { isAdmin } from '@/lib/access/roles'
-import { getShowStatsInput } from '@/lib/show-stats-data'
-import { computeShowStats, type ShowStatsHeader, type ShowStatsOrderRow } from '@/lib/show-stats'
-
-export const dynamic = 'force-dynamic'
+import type { ShowStatsHeader, ShowStatsOrderRow } from '@/lib/show-stats'
 
 const VENUE_LABEL: Record<string, string> = {
   'ljetno-kino': 'Ljetno kino',
@@ -177,29 +169,15 @@ function OrderList({ orders }: { orders: ShowStatsOrderRow[] }) {
   )
 }
 
-type Props = {
-  params?: { [key: string]: string | string[] | undefined }
-}
-
-export async function AdminShowStatsView(props: Props) {
-  const rawShowId = props.params?.showId
-  const showId = Array.isArray(rawShowId) ? rawShowId[0] : rawShowId
-
-  // The Payload admin shell renders this view even for unauthenticated visitors;
-  // gate the data ourselves so order PII / revenue can never leak.
-  const payload = await getPayload({ config })
-  const { user } = await payload.auth({ headers: await headers() })
-  const redirectTo = `/admin/stats${showId ? `/${showId}` : ''}`
-  if (!user) redirect(`/admin/login?redirect=${encodeURIComponent(redirectTo)}`)
-
-  if (!showId) notFound()
-
-  const input = await getShowStatsInput(showId)
-  if (!input) notFound()
-
-  const { header, orders } = computeShowStats(input)
-  const adminView = isAdmin(user as { role?: string })
-
+export function AdminShowStatsBody({
+  header,
+  orders,
+  adminView,
+}: {
+  header: ShowStatsHeader
+  orders: ShowStatsOrderRow[]
+  adminView: boolean
+}) {
   return (
     <div style={{ padding: '24px clamp(16px, 4vw, 40px)', maxWidth: 1280 }}>
       <div style={{ marginBottom: 8 }}>
