@@ -27,6 +27,7 @@ Door-staff currently authenticate to `/admin` via a shared Payload User with ema
 - **`pr@moreska.eu`** — login/recovery address for Instagram / Facebook / TikTok / YouTube and any future social platforms. The social manager does **not** log into this mailbox; they log into the platforms. Notifications and platform admin mail forward to `info@`.
 - **`bookings@moreska.eu`** — published address for tour operators and group/charter inquiries. Lets us filter/route group requests separately later if a real volume need surfaces.
 - **`press@moreska.eu`** — published on the site for journalists. Forwards to `info@`. Zero ongoing cost; signals professionalism.
+- **`dev@moreska.eu`** — technical-admin contact used as the account email for SaaS providers (Stripe, Brevo, Coolify, Hetzner, Cloudflare, GitHub org, ImprovMX itself). Survives developer turnover better than a personal address and is clearer than the generic `webmaster@`. Forwarding to `info@` means the secretary also sees outage / billing / security mail.
 
 ### Renamed (operational)
 
@@ -40,7 +41,7 @@ Door-staff currently authenticate to `/admin` via a shared Payload User with ema
 
 ### Forwarding mechanics
 
-ImprovMX already handles `info@moreska.eu` → personal inbox via MX records on `moreska.eu`. All new aliases (`tickets@`, `pr@`, `bookings@`, `press@`) are added as ImprovMX forwards to `info@`. No new mailboxes to provision; ImprovMX aliases are free at this scale.
+ImprovMX already handles `info@moreska.eu` → personal inbox via MX records on `moreska.eu`. All new aliases (`tickets@`, `pr@`, `bookings@`, `press@`, `dev@`) are added as ImprovMX forwards to `info@`. No new mailboxes to provision; ImprovMX aliases are free at this scale.
 
 ## Alternatives considered
 
@@ -56,7 +57,7 @@ ImprovMX already handles `info@moreska.eu` → personal inbox via MX records on 
 - **Pro:** Social platforms anchor to an org-controlled address; volunteer turnover doesn't risk account loss.
 - **Pro:** Marketing-class mail on a separate subdomain protects ticket-delivery reputation.
 - **Pro:** Provider upgrade is a billing flip, not a migration.
-- **Con:** Five aliases to keep in sync in ImprovMX. Documented above; low cognitive cost.
+- **Con:** Six aliases to keep in sync in ImprovMX (five forwards + the `info@` mailbox). Documented above; low cognitive cost.
 - **Con:** `bilten.moreska.eu` requires DNS records (SPF, DKIM, DMARC, MX-or-CNAME per Brevo) before the first send. One-off setup task tracked separately.
 
 ## Related

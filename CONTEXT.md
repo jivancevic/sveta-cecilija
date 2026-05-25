@@ -106,6 +106,7 @@ One real mailbox (`info@moreska.eu`) read by Josip and the secretary; everything
 | `pr@moreska.eu` | Alias → `info@` | Login/recovery for Instagram / Facebook / TikTok / YouTube. Social manager logs into platforms, not this mailbox. |
 | `bookings@moreska.eu` | Alias → `info@` | Tour operator + group/charter inquiries. |
 | `press@moreska.eu` | Alias → `info@` | Journalist contact published on site. |
+| `dev@moreska.eu` | Alias → `info@` | Technical-admin contact for SaaS accounts (Stripe, Brevo, Coolify, Hetzner, Cloudflare, GitHub org, ImprovMX). Survives developer turnover. |
 | `tehnika@moreska.eu` | Payload login string | Shared door-staff `/admin` login in production. No inbox; nothing sent to it. Renamed from `door-staff@moreska.eu`. |
 
 Transactional mail sends from root `moreska.eu` via Brevo. Future bulk post-show mail will send from subdomain `bilten.moreska.eu` (separate DKIM, isolated reputation) once Brevo Starter (~€9/mo) is activated. See [ADR-0004](../docs/adr/0004-email-infrastructure.md).
