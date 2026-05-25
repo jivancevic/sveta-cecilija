@@ -6,6 +6,7 @@ import { getDictionary } from '@/lib/i18n'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
 import PurchaseEvent from '@/components/PurchaseEvent'
+import MetaPixelPurchase from '@/components/MetaPixelPurchase'
 
 export const dynamic = 'force-dynamic'
 
@@ -43,14 +44,16 @@ export default async function ConfirmationRoute({ params, searchParams }: RouteP
   const ticketCount = ((order.adultCount as number) ?? 0) + ((order.childCount as number) ?? 0)
   const totalCents = (order.total as number) ?? 0
   const transactionId = (order.stripePaymentIntentId as string) ?? paymentIntentId
+  const purchaseValueEur = totalCents / 100
 
   return (
     <div className="inner-page t-stone">
       <PurchaseEvent
         transactionId={transactionId}
-        value={totalCents / 100}
+        value={purchaseValueEur}
         quantity={ticketCount}
       />
+      <MetaPixelPurchase value={purchaseValueEur} currency="EUR" orderId={order.id as string | number} />
       <Nav locale={locale} t={dict.nav} variant="inner" />
       <main className="checkout-confirm">
         <h1 className="checkout-confirm__h">{dict.checkoutPage.thankYouHeading}</h1>
