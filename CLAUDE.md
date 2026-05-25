@@ -165,7 +165,7 @@ Defined in `SERVICE_PAGE_META` in `data.ts`:
 | `Orders` | `buyerName`, `email`, `adultCount`, `childCount`, `total` (EUR cents), `stripePaymentIntentId`, `refundStatus` (none \| refunded), `show` → Shows |
 | `QRTokens` | `token` (unique, URL-safe), `order` → Orders, `scanned` (bool), `scannedAt` (DateTime) |
 | `ContactSubmissions` | `name`, `email`, `enquiryType`, `message`, `createdAt` |
-| `Users` | Payload auth + `role` (select: `admin` \| `door-staff`, default `admin`, required). Shared `door-staff@moreska.eu` user is created manually via /admin — credentials live in Coolify/password manager, never in repo. |
+| `Users` | Payload auth + `role` (select: `admin` \| `door-staff`, default `admin`, required). Shared `tehnika@moreska.eu` user (role `door-staff`) is created manually via /admin — credentials live in Coolify/password manager, never in repo. Login string only; no inbox. |
 
 ### Role-based access controls
 
