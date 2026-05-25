@@ -14,6 +14,7 @@ function makeShow(overrides: Partial<StatsShow> = {}): StatsShow {
     venue: 'ljetno-kino',
     onlineSold: 0,
     inPersonSold: 0,
+    legacyReserved: 0,
     scannedCount: 0,
     status: 'active',
     ...overrides,
@@ -93,6 +94,38 @@ describe('computeShowStats — header big numbers', () => {
     )
 
     expect(out.header.scanned).toBe(2)
+  })
+
+  it('surfaces legacyReserved as its own header field and subtracts it from remaining', () => {
+    const out = computeShowStats(
+      makeInput({
+        show: makeShow({
+          venue: 'ljetno-kino',
+          onlineSold: 100,
+          inPersonSold: 20,
+          legacyReserved: 50,
+        }),
+      }),
+    )
+
+    expect(out.header.legacyReserved).toBe(50)
+    // 320 − 100 − 20 − 50 = 150
+    expect(out.header.remaining).toBe(150)
+  })
+
+  it('renders remaining = 0 when legacy + online + in-person == capacity (sold-out boundary)', () => {
+    const out = computeShowStats(
+      makeInput({
+        show: makeShow({
+          venue: 'ljetno-kino',
+          onlineSold: 100,
+          inPersonSold: 20,
+          legacyReserved: 200,
+        }),
+      }),
+    )
+
+    expect(out.header.remaining).toBe(0)
   })
 
   it('derives capacity per venue and remaining = capacity − onlineSold − inPersonSold', () => {

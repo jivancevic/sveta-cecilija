@@ -7,6 +7,7 @@ export interface StatsShow {
   venue: Venue
   onlineSold: number
   inPersonSold: number
+  legacyReserved: number
   scannedCount: number
   status: 'active' | 'cancelled'
 }
@@ -37,6 +38,7 @@ export interface StatsRow {
   capacity: number
   onlineSold: number
   inPersonSold: number
+  legacyReserved: number
   scanned: number
   remaining: number
   status: 'active' | 'cancelled'
@@ -78,8 +80,9 @@ export function computeStats(input: StatsInput): StatsOutput {
       capacity: VENUE_CAPACITY[s.venue],
       onlineSold: s.onlineSold,
       inPersonSold: s.inPersonSold,
+      legacyReserved: s.legacyReserved,
       scanned: s.scannedCount,
-      remaining: VENUE_CAPACITY[s.venue] - s.onlineSold - s.inPersonSold,
+      remaining: VENUE_CAPACITY[s.venue] - s.onlineSold - s.inPersonSold - s.legacyReserved,
       status: s.status,
     }))
 

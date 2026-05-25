@@ -44,6 +44,12 @@ ALTER TABLE shows ADD COLUMN IF NOT EXISTS online_sold    numeric               
 ALTER TABLE shows ADD COLUMN IF NOT EXISTS in_person_sold numeric                    DEFAULT 0;
 ALTER TABLE shows ADD COLUMN IF NOT EXISTS status         enum_shows_status NOT NULL DEFAULT 'active';
 
+-- Tickets reserved on the previous WordPress site (korcula-moreska.com) before
+-- the moreska.eu cutover. Subtracted from venue capacity so the new booking
+-- flow doesn't oversell against legacy holders. Admin-edited; mostly static
+-- post-cutover (only changes if a legacy buyer is refunded by the old operator).
+ALTER TABLE shows ADD COLUMN IF NOT EXISTS legacy_reserved integer NOT NULL DEFAULT 0 CHECK (legacy_reserved >= 0);
+
 -- ─── orders ───────────────────────────────────────────────────────────
 
 CREATE TABLE IF NOT EXISTS orders (

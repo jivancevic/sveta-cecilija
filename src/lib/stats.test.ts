@@ -9,6 +9,7 @@ function makeShow(overrides: Partial<StatsShow> = {}): StatsShow {
     venue: 'ljetno-kino',
     onlineSold: 0,
     inPersonSold: 0,
+    legacyReserved: 0,
     scannedCount: 0,
     status: 'active',
     ...overrides,

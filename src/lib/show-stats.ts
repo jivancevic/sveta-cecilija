@@ -30,6 +30,7 @@ export interface ShowStatsHeader {
   status: 'active' | 'cancelled'
   onlineSold: number
   inPersonSold: number
+  legacyReserved: number
   totalSold: number
   scanned: number
   capacity: number
@@ -70,10 +71,11 @@ export function computeShowStats(input: ShowStatsInput): ShowStatsOutput {
       status: show.status,
       onlineSold: show.onlineSold,
       inPersonSold: show.inPersonSold,
+      legacyReserved: show.legacyReserved,
       totalSold: show.onlineSold + show.inPersonSold,
       scanned,
       capacity,
-      remaining: capacity - show.onlineSold - show.inPersonSold,
+      remaining: capacity - show.onlineSold - show.inPersonSold - show.legacyReserved,
       revenueCents,
     },
     orders: orders.map((o) => ({
