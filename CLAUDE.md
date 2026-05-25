@@ -52,6 +52,24 @@ Multi-context layout — `CONTEXT-MAP.md` at the root points to per-context `CON
 
 Website for HGD Sveta Cecilija, a 143-year-old cultural organisation from Korčula, Croatia, home of the Moreška sword dance. Public site at `moreska.eu`. Full PRD in GitHub Issues #1.
 
+### Organisation registry details
+
+Use these when filling out third-party platform business/verification forms (Meta Business Manager, Stripe, Google Ads, etc.). Source: https://www.fininfo.hr/Poduzece/Pregled/hrvatsko-glazbeno-drustvo-svcecilija-korcula/Detaljno/605996.
+
+| Field | Value |
+|---|---|
+| Legal name | `HRVATSKO GLAZBENO DRUŠTVO SV.CECILIJA - KORČULA` |
+| OIB (tax ID) | `52537805408` |
+| MB (registry no.) | `03688194` |
+| Registered address | `Knežev prolaz 1, 20260 Korčula, Croatia` |
+| Phone | `+385 92 1532305` |
+| Legal form | Membership organisation (`Djelatnosti ostalih članskih organizacija`) |
+| Date of establishment | 1991 (current Croatian legal entity; the cultural society itself dates to 1883 — use 1991 for any "company founded" registry field) |
+| Authorised representative | Velebit Veršić (President) |
+| Website (for new forms) | `https://moreska.eu` |
+
+Registry still lists `www.korcula-moreska.com` as the official website — update post-DNS-cutover.
+
 ### Stack
 
 - **Framework:** Next.js 16 (App Router, TypeScript)
@@ -63,6 +81,7 @@ Website for HGD Sveta Cecilija, a 143-year-old cultural organisation from Korču
 - **Payments:** Stripe (EUR). Payment Element handles cards + Google Pay + Apple Pay. Webhook at `POST /api/stripe/webhook` (verified by signature). Keys: `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET`. Existing Stripe account was connected to `korcula-moreska.com` — migrating to `moreska.eu` by running dual webhook endpoints during transition; old endpoint removed after DNS cutover is stable.
 - **Email sending:** Brevo (free tier — 300 emails/day, 9k/month). Sends from `info@moreska.eu`. Key: `BREVO_API_KEY`. Domain verified via SPF/DKIM/DMARC records in Hetzner DNS.
 - **Email receiving:** ImprovMX — forwards `info@moreska.eu` to personal inbox via MX records in Hetzner DNS. No mailbox to manage.
+- **Analytics & ad tracking:** Google Analytics 4 (env: `NEXT_PUBLIC_GA_ID`) is loaded via `next/script` inside `src/components/CookieConsent.tsx`, gated on the user accepting cookies. The Google tag is a single umbrella tag (`GT-*`) shared between GA4 and Google Ads — **one** `gtag('event', 'purchase', { value, currency, transaction_id })` call on `/checkout/[showId]/confirmation` covers both GA4 reporting and the Google Ads conversion (`AW-*`, sourced from GA4 → no separate `send_to` label). Meta Pixel install (env: `NEXT_PUBLIC_META_PIXEL_ID`) tracked in #70; the Ads conversion fire + Google Consent Mode v2 wiring (EEA-required) in #71. Don't load a second `<script src="...gtag/js?id=AW-...">` — that conflicts with the GA4 one. **Paid campaign management (Meta retargeting #45, Google Ads #46) and marketing listings (GBP #36, TripAdvisor #35, OTAs #39) are owned by a separate HGD member, not the developer.** Dev scope stops at tag firing + measurement correctness.
 - **Infrastructure:** Hetzner Cloud server (CX32 or Cost-Optimized equivalent, Nuremberg) + Coolify for deployment. SSL is automatic via Traefik — no separate toggle; just set domain to `https://` in Coolify and Traefik provisions Let's Encrypt on first request after DNS propagates. Setup guide in `docs/todo.md`.
 - **DNS:** Hetzner DNS (`dns.hetzner.com`). Nameservers: `hydrogen/oxygen/helium.ns.hetzner.com`. Domain `moreska.eu` registered at Totohost — nameserver change requested from them to hand off DNS control to Hetzner.
 
