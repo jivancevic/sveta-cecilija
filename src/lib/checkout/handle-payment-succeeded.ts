@@ -22,6 +22,7 @@ export interface CreateOrderInput {
   stripePaymentIntentId: string
   refundStatus: 'none'
   show: string
+  locale: 'en' | 'hr'
 }
 
 export interface NotifyBuyerInput {
@@ -58,6 +59,8 @@ export async function handlePaymentSucceeded(
   const total = adults + children
   if (total <= 0) throw new UnrecoverableWebhookError('Webhook has zero tickets')
 
+  const locale: 'en' | 'hr' = evt.metadata.locale === 'hr' ? 'hr' : 'en'
+
   const order = await deps.createOrder({
     buyerName: evt.metadata.buyerName ?? '',
     email: evt.metadata.email ?? '',
@@ -67,6 +70,7 @@ export async function handlePaymentSucceeded(
     stripePaymentIntentId: evt.paymentIntentId,
     refundStatus: 'none',
     show: showId,
+    locale,
   })
 
   const tokens: string[] = []
@@ -78,7 +82,6 @@ export async function handlePaymentSucceeded(
 
   await deps.incrementOnlineSold(showId, total)
 
-  const locale = evt.metadata.locale === 'hr' ? 'hr' : 'en'
   await deps.notifyBuyer({
     orderId: order.id,
     showId,

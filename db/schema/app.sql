@@ -60,6 +60,17 @@ CREATE TABLE IF NOT EXISTS orders (
   created_at               timestamptz NOT NULL DEFAULT now()
 );
 
+-- Buyer locale captured at checkout time so post-purchase emails
+-- (review request, future buyer comms) render in the right language
+-- without depending on Stripe metadata at send time.
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS locale varchar(2);
+
+-- Idempotency marker for the T+24h post-show review email.
+-- An atomic `UPDATE … WHERE review_email_sent_at IS NULL RETURNING …`
+-- guarantees at-most-once send under concurrent cron invocations.
+-- See src/lib/review-email/*.
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS review_email_sent_at timestamptz;
+
 -- ─── qr_tokens ────────────────────────────────────────────────────────
 
 CREATE TABLE IF NOT EXISTS qr_tokens (
