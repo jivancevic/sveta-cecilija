@@ -93,3 +93,20 @@ There is an existing active Stripe account tied to **korcula-moreska.com**. No n
 **4e (Brevo DNS):** ✓ Done.  
 
 All of these can be completed while development is in progress.
+
+---
+
+## Rename door-staff Payload login to tehnika@moreska.eu (issue #55)
+
+Production-only admin action. Code/docs already reference `tehnika@moreska.eu`; the live `Users` record still has the old email and must be renamed manually.
+
+- [ ] Log in to `/admin` as the existing admin user.
+- [ ] Open the `Users` collection and edit the record with email `door-staff@moreska.eu`.
+- [ ] Change `email` to `tehnika@moreska.eu`. Confirm `role` is still `door-staff`.
+- [ ] Reset the password (use the Payload "change password" flow) and store the new password in the shared password manager.
+- [ ] Verify: log in at `/admin` with `tehnika@moreska.eu` + new password → succeeds; `/admin/stats` is accessible; `/scan/[token]` continues to work for a real QR.
+- [ ] Inform door staff of the new credentials (replace the printed card / sticker).
+- [ ] Update the Coolify project notes / password-manager entry to drop `door-staff@moreska.eu`.
+- [ ] (Optional) After a few days of green operation, delete or disable the old `door-staff@moreska.eu` user record so it cannot be used to log in.
+
+Local `_dev` can keep any login string — no action required there.
