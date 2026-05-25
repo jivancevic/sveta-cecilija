@@ -8,7 +8,8 @@
     "sections": "Sections",
     "services": "Experience",
     "contact": "Contact",
-    "buyTickets": "Buy Tickets"
+    "buyTickets": "Buy Tickets",
+    "blog": "Blog"
   },
   "hero": {
     "buyTickets": "Buy Tickets",
@@ -169,7 +170,8 @@
     "youtube": "YouTube",
     "legal": "© 2026 HGD Sveta Cecilija",
     "privacyPolicy": "Privacy Policy",
-    "cookiePolicy": "Cookie Policy"
+    "cookiePolicy": "Cookie Policy",
+    "blog": "Blog"
   },
   "aboutPage": {
     "heroHeadline": "The Story of HGD Sveta Cecilija",
@@ -353,5 +355,20 @@
     "thankYouBody": "We've sent your tickets and QR codes to your email. Show your QR code at the door on the night of the performance.",
     "orderRefLabel": "Order reference",
     "ticketCountLabel": "Tickets"
+  },
+  "blogPage": {
+    "heroHeadline": "Stories from Korčula",
+    "heroSubtitle": "Notes on the Moreška, the music, and the people who keep them alive.",
+    "metaTitle": "Blog",
+    "metaDescription": "Long-form stories about the Moreška sword dance, klapa singing, the wind orchestra, and 143 years of HGD Sveta Cecilija on Korčula.",
+    "readMore": "Read more",
+    "backToBlog": "← All posts",
+    "empty": "No posts yet. Check back soon.",
+    "footerLinksHeadline": "Keep exploring",
+    "footerLinkTickets": "See upcoming performances",
+    "footerLinkAbout": "About HGD Sveta Cecilija",
+    "publishedOn": "Published",
+    "updatedOn": "Updated",
+    "dateLocale": "en-GB"
   }
 }

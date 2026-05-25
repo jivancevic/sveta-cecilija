@@ -8,7 +8,8 @@
     "sections": "Sekcije",
     "services": "Iskustvo",
     "contact": "Kontakt",
-    "buyTickets": "Kupi ulaznice"
+    "buyTickets": "Kupi ulaznice",
+    "blog": "Blog"
   },
   "hero": {
     "buyTickets": "Kupi ulaznice",
@@ -318,7 +319,8 @@
     "youtube": "YouTube",
     "legal": "© 2026 HGD Sveta Cecilija",
     "privacyPolicy": "Politika privatnosti",
-    "cookiePolicy": "Politika kolačića"
+    "cookiePolicy": "Politika kolačića",
+    "blog": "Blog"
   },
   "checkoutPage": {
     "pageHeading": "Završi rezervaciju",
@@ -353,5 +355,20 @@
     "thankYouBody": "Poslali smo vaše ulaznice i QR kodove na vaš email. Pokažite QR kod na ulazu večer nastupa.",
     "orderRefLabel": "Broj narudžbe",
     "ticketCountLabel": "Ulaznice"
+  },
+  "blogPage": {
+    "heroHeadline": "Priče s Korčule",
+    "heroSubtitle": "Zapisi o moreški, glazbi i ljudima koji ih čuvaju živima.",
+    "metaTitle": "Blog",
+    "metaDescription": "Priče o moreški, klapskom pjevanju, puhačkom orkestru i 143 godine HGD Sveta Cecilija na Korčuli.",
+    "readMore": "Pročitaj više",
+    "backToBlog": "← Sve objave",
+    "empty": "Još nema objava. Vrati se uskoro.",
+    "footerLinksHeadline": "Nastavi istraživati",
+    "footerLinkTickets": "Pogledaj nadolazeće nastupe",
+    "footerLinkAbout": "O HGD Sveta Cecilija",
+    "publishedOn": "Objavljeno",
+    "updatedOn": "Ažurirano",
+    "dateLocale": "hr-HR"
   }
 }
