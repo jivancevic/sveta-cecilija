@@ -27,6 +27,7 @@ export default function Footer({ locale, t }: Props) {
             <a href="/tickets">{t.performances}</a>
             <a href="/about">{t.about}</a>
             <a href="/about">{t.history}</a>
+            <a href="/blog">{t.blog}</a>
             <a href="/#secs">{t.sections}</a>
             <a href="/#svcs">{t.services}</a>
           </div>

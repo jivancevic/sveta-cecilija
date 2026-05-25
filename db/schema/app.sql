@@ -82,3 +82,34 @@ CREATE TABLE IF NOT EXISTS qr_tokens (
   updated_at  timestamptz NOT NULL DEFAULT now(),
   created_at  timestamptz NOT NULL DEFAULT now()
 );
+
+-- ─── posts (blog) ─────────────────────────────────────────────────────
+-- Blog posts authored in Payload admin. body is lexical JSON; the rest
+-- mirrors the collection fields in src/collections/Posts.ts.
+
+DO $$ BEGIN
+  CREATE TYPE enum_posts_locale AS ENUM ('en', 'hr');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+  CREATE TYPE enum_posts_status AS ENUM ('draft', 'published');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+CREATE TABLE IF NOT EXISTS posts (
+  id                 serial PRIMARY KEY,
+  title              varchar  NOT NULL,
+  slug               varchar  NOT NULL UNIQUE,
+  locale             enum_posts_locale NOT NULL DEFAULT 'en',
+  excerpt            varchar  NOT NULL,
+  hero_image         varchar  NOT NULL,
+  hero_image_alt     varchar,
+  body               jsonb    NOT NULL,
+  published_at       timestamptz NOT NULL,
+  updated_at_public  timestamptz,
+  status             enum_posts_status NOT NULL DEFAULT 'draft',
+  updated_at         timestamptz NOT NULL DEFAULT now(),
+  created_at         timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS posts_locale_status_published_at_idx
+  ON posts (locale, status, published_at DESC);
