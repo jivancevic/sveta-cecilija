@@ -15,21 +15,56 @@ interface Props {
   t: Dictionary['cookieBanner'];
 }
 
+function gtag(...args: unknown[]) {
+  window.dataLayer = window.dataLayer ?? [];
+  window.dataLayer.push(args);
+}
+
+// Consent Mode v2 default state. Must fire BEFORE any GA/Ads tag loads.
+// Idempotent — safe to call multiple times; gtag's consent system dedups.
+function initConsentDefaults() {
+  if (typeof window === 'undefined') return;
+  window.dataLayer = window.dataLayer ?? [];
+  gtag('consent', 'default', {
+    ad_storage: 'denied',
+    ad_user_data: 'denied',
+    ad_personalization: 'denied',
+    analytics_storage: 'denied',
+    wait_for_update: 500,
+  });
+}
+
 export default function CookieConsent({ t }: Props) {
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
+    // Fire denied-by-default consent state immediately on mount, before any tag injection.
+    initConsentDefaults();
+
     const stored = localStorage.getItem(STORAGE_KEY);
     if (!stored) {
       const timer = setTimeout(() => setVisible(true), 900);
       return () => clearTimeout(timer);
     }
-    if (stored === 'accepted') injectGA();
+    if (stored === 'accepted') {
+      injectGA();
+      updateConsentGranted();
+    }
   }, []);
+
+  function updateConsentGranted() {
+    gtag('consent', 'update', {
+      ad_storage: 'granted',
+      ad_user_data: 'granted',
+      ad_personalization: 'granted',
+      analytics_storage: 'granted',
+    });
+  }
 
   function accept() {
     localStorage.setItem(STORAGE_KEY, 'accepted');
     injectGA();
+    updateConsentGranted();
     setVisible(false);
   }
 
@@ -47,7 +82,6 @@ export default function CookieConsent({ t }: Props) {
     script.async = true;
     script.dataset.ga = '1';
     document.head.appendChild(script);
-    function gtag(...args: unknown[]) { window.dataLayer!.push(args); }
     gtag('js', new Date());
     gtag('config', id);
   }

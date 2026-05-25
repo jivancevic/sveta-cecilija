@@ -5,6 +5,7 @@ import { getLocale } from '@/lib/locale'
 import { getDictionary } from '@/lib/i18n'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
+import PurchaseEvent from '@/components/PurchaseEvent'
 
 export const dynamic = 'force-dynamic'
 
@@ -40,9 +41,16 @@ export default async function ConfirmationRoute({ params, searchParams }: RouteP
   if (!order) notFound()
 
   const ticketCount = ((order.adultCount as number) ?? 0) + ((order.childCount as number) ?? 0)
+  const totalCents = (order.total as number) ?? 0
+  const transactionId = (order.stripePaymentIntentId as string) ?? paymentIntentId
 
   return (
     <div className="inner-page t-stone">
+      <PurchaseEvent
+        transactionId={transactionId}
+        value={totalCents / 100}
+        quantity={ticketCount}
+      />
       <Nav locale={locale} t={dict.nav} variant="inner" />
       <main className="checkout-confirm">
         <h1 className="checkout-confirm__h">{dict.checkoutPage.thankYouHeading}</h1>
