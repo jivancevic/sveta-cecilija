@@ -29,11 +29,7 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: {
-    // No `template` — page-level generateMetadata already appends the brand
-    // layer via buildMetadata(), so a template would double-wrap it.
-    default: `Moreška Korčula — Sword Dance Tickets | ${BRAND_LAYER}`,
-  },
+  title: `Moreška Korčula — Sword Dance Tickets | ${BRAND_LAYER}`,
   description: TAGLINE,
 };
 
