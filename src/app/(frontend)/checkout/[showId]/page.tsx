@@ -7,6 +7,7 @@ import { VENUE_CAPACITY, type Venue } from '@/lib/venues'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
 import CheckoutForm from '@/components/CheckoutForm'
+import EventJsonLd from '@/components/EventJsonLd'
 import { buildMetadata } from '@/lib/seo'
 
 export const dynamic = 'force-dynamic'
@@ -57,8 +58,18 @@ export default async function CheckoutRoute({ params, searchParams }: RouteProps
 
   const publishableKey = process.env.STRIPE_PUBLISHABLE_KEY ?? ''
 
+  const showForJsonLd = {
+    id: String(showDoc.id),
+    date: showDoc.date as string,
+    time: showDoc.time as string,
+    venue,
+    remaining,
+    status: (showDoc.status as 'active' | 'cancelled') ?? 'active',
+  }
+
   return (
     <div className="inner-page t-stone">
+      <EventJsonLd shows={[showForJsonLd]} />
       <Nav locale={locale} t={dict.nav} variant="inner" />
       <main className="checkout-page">
         <a href="/tickets" className="checkout-page__back">{dict.checkoutPage.pageBack}</a>

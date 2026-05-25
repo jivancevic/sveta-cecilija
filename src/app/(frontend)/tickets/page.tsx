@@ -4,6 +4,7 @@ import { getUpcomingShows } from '@/lib/shows';
 import Nav from '@/components/Nav';
 import Footer from '@/components/Footer';
 import PerformancesPage from '@/components/PerformancesPage';
+import EventJsonLd from '@/components/EventJsonLd';
 import { buildMetadata } from '@/lib/seo';
 
 export const dynamic = 'force-dynamic';
@@ -65,6 +66,7 @@ export default async function PerformancesRoute({
 
   return (
     <div className="inner-page t-stone">
+      <EventJsonLd shows={shows} />
       <Nav locale={locale} t={dict.nav} variant="inner" />
       <PerformancesPage
         t={dict.performancesPage}
