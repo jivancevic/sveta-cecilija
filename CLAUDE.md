@@ -52,6 +52,24 @@ Multi-context layout — `CONTEXT-MAP.md` at the root points to per-context `CON
 
 Website for HGD Sveta Cecilija, a 143-year-old cultural organisation from Korčula, Croatia, home of the Moreška sword dance. Public site at `moreska.eu`. Full PRD in GitHub Issues #1.
 
+### Organisation registry details
+
+Use these when filling out third-party platform business/verification forms (Meta Business Manager, Stripe, Google Ads, etc.). Source: https://www.fininfo.hr/Poduzece/Pregled/hrvatsko-glazbeno-drustvo-svcecilija-korcula/Detaljno/605996.
+
+| Field | Value |
+|---|---|
+| Legal name | `HRVATSKO GLAZBENO DRUŠTVO SV.CECILIJA - KORČULA` |
+| OIB (tax ID) | `52537805408` |
+| MB (registry no.) | `03688194` |
+| Registered address | `Knežev prolaz 1, 20260 Korčula, Croatia` |
+| Phone | `+385 92 1532305` |
+| Legal form | Membership organisation (`Djelatnosti ostalih članskih organizacija`) |
+| Date of establishment | 1991 (current Croatian legal entity; the cultural society itself dates to 1883 — use 1991 for any "company founded" registry field) |
+| Authorised representative | Velebit Veršić (President) |
+| Website (for new forms) | `https://moreska.eu` |
+
+Registry still lists `www.korcula-moreska.com` as the official website — update post-DNS-cutover.
+
 ### Stack
 
 - **Framework:** Next.js 16 (App Router, TypeScript)
