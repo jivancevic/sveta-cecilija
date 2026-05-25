@@ -45,5 +45,25 @@ export const Orders: CollectionConfig = {
       relationTo: 'shows',
       required: true,
     },
+    {
+      name: 'locale',
+      type: 'select',
+      options: [
+        { label: 'English', value: 'en' },
+        { label: 'Croatian', value: 'hr' },
+      ],
+      admin: {
+        description: 'Buyer locale captured at checkout — drives post-purchase email language',
+      },
+    },
+    {
+      name: 'reviewEmailSentAt',
+      type: 'date',
+      admin: {
+        readOnly: true,
+        description: 'Timestamp the T+24h review-request email was sent. NULL = not yet sent.',
+        date: { pickerAppearance: 'dayAndTime' },
+      },
+    },
   ],
 }
