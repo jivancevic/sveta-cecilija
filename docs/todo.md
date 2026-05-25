@@ -4,6 +4,21 @@ These must be completed alongside development — all have waiting periods (veri
 
 ---
 
+## 0. Coordinate with old-site WordPress dev (korcula-moreska.com)
+
+Old WordPress site stays up read-only through end of 2026 season so `checkinera` keeps scanning legacy QRs. Ask the dev who built `korcula-moreska.com` to, on cutover day:
+
+1. **Disable all new ticket purchases** (remove/short-circuit checkout, hide "Buy tickets" CTAs). Keep the rest of the site reachable so `checkinera` and any QR-scan back-ends stay functional.
+2. **Replace homepage hero (or add a top-of-page banner) with a notice — in both HR and EN:**
+   - HR: *"Prodaja ulaznica preselila se na **moreska.eu**. Vaša postojeća ulaznica i dalje vrijedi — pokažite QR kod na ulazu kao i obično."*
+   - EN: *"Ticket sales have moved to **moreska.eu**. Your existing ticket is still valid — show your QR code at the door as usual."*
+3. **Confirm `checkinera` is independent** of the WordPress site's checkout — i.e. disabling checkout does not break door scanning. If `checkinera` reads from the WP database, document which tables must stay populated.
+4. **After 2026 season ends** (~end of October): 301-redirect whole domain to `moreska.eu`, then let domain expire at next renewal.
+
+Also ask them for: per-show count of legacy tickets sold (to populate `legacyReserved`).
+
+---
+
 ## 1. Stripe — Migrate from korcula-moreska.com to moreska.eu
 
 There is an existing active Stripe account tied to **korcula-moreska.com**. No new account or verification is needed — the same account and keys will be used for `moreska.eu`. The migration involves updating the webhook endpoint and branding only.
