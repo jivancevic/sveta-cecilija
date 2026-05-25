@@ -54,6 +54,13 @@ Reason: competitor `moreska.hr` owns the "Moreška Korčula" experience keyword 
 ### Croatian capitalisation: moreška
 "moreška" and its declensions (moreške, morešku, moreškom…) are always **lowercase** in Croatian — it is a common noun (a type of dance), not a proper name. Use uppercase only when it begins a sentence. In English, "Moreška" is treated as a proper name and capitalised throughout.
 
+### Legacy reservations
+Tickets sold on the previous site (`korcula-moreska.com`) before the moreska.eu cutover. Tracked as a per-show integer `legacyReserved` on the `Shows` collection, hand-entered by admin from counts supplied by the old-site operator. Subtracted from venue capacity so the booking flow can't oversell against seats already promised on the old system:
+
+`remaining = VENUE_CAPACITY[venue] − onlineSold − inPersonSold − legacyReserved`
+
+The field is write-once-per-show in normal use; after the old site is frozen, the count for a given show only changes if a legacy buyer is refunded by the old-site operator.
+
 ### Free-ticket discount
 Every 5th ticket in a single order is free. The free ticket's type matches the most expensive category present in the order: adult (€20) if any adult tickets were purchased, otherwise child (€10).
 
