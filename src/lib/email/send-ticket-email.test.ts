@@ -39,13 +39,14 @@ describe('sendTicketEmail', () => {
     expect(init.headers['content-type']).toBe('application/json')
   })
 
-  it('sends from info@moreska.eu to the buyer with subject referencing the show date', async () => {
+  it('sends from tickets@moreska.eu with Reply-To info@ to the buyer with subject referencing the show date', async () => {
     const deps = makeDeps()
     await sendTicketEmail(makeInput(), deps)
 
     const [, init] = (deps.fetch as ReturnType<typeof vi.fn>).mock.calls[0]
     const body = JSON.parse(init.body)
-    expect(body.sender.email).toBe('info@moreska.eu')
+    expect(body.sender.email).toBe('tickets@moreska.eu')
+    expect(body.replyTo.email).toBe('info@moreska.eu')
     expect(body.to).toEqual([{ email: 'ana@example.com', name: 'Ana Anić' }])
     expect(body.subject).toMatch(/Moreška/)
     expect(body.subject).toContain('2026-07-15')

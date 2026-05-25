@@ -85,7 +85,8 @@ export async function sendTicketEmail(
   )
 
   const body = {
-    sender: { email: 'info@moreska.eu', name: 'HGD Sveta Cecilija' },
+    sender: { email: 'tickets@moreska.eu', name: 'HGD Sveta Cecilija' },
+    replyTo: { email: 'info@moreska.eu', name: 'HGD Sveta Cecilija' },
     to: [{ email: input.buyer.email, name: input.buyer.name }],
     subject: renderSubject(input.locale, input.show.date),
     htmlContent: renderHtml(input),
