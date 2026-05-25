@@ -96,6 +96,20 @@ Password rotation is a one-off Payload admin edit when leaked. No per-volunteer 
 ### Undo-scan window
 On the ALREADY_SCANNED page, an authenticated `door-staff` user sees an "Undo scan" link if the scan was within the last **2 minutes**. Clicking it sets `scanned = false` again. This covers honest misclicks at the door without opening abuse vectors (no late-night "let my friend back in" undo).
 
+### Email addresses
+One real mailbox (`info@moreska.eu`) read by Josip and the secretary; everything else is a forward-only ImprovMX alias.
+
+| Address | Type | Purpose |
+|---|---|---|
+| `info@moreska.eu` | Mailbox | Catch-all; only readable inbox. Two readers: Josip + secretary. |
+| `tickets@moreska.eu` | Alias → `info@` | `From:` on Brevo ticket confirmations. `Reply-To: info@`. |
+| `pr@moreska.eu` | Alias → `info@` | Login/recovery for Instagram / Facebook / TikTok / YouTube. Social manager logs into platforms, not this mailbox. |
+| `bookings@moreska.eu` | Alias → `info@` | Tour operator + group/charter inquiries. |
+| `press@moreska.eu` | Alias → `info@` | Journalist contact published on site. |
+| `tehnika@moreska.eu` | Payload login string | Shared door-staff `/admin` login in production. No inbox; nothing sent to it. Renamed from `door-staff@moreska.eu`. |
+
+Transactional mail sends from root `moreska.eu` via Brevo. Future bulk post-show mail will send from subdomain `bilten.moreska.eu` (separate DKIM, isolated reputation) once Brevo Starter (~€9/mo) is activated. See [ADR-0004](../docs/adr/0004-email-infrastructure.md).
+
 ### Stats dashboard
 Lives at `/admin/stats`. Visible to `door-staff` and `admin`.
 
