@@ -79,8 +79,10 @@ Website for HGD Sveta Cecilija, a 143-year-old cultural organisation from Korču
 | `/checkout/[showId]/confirmation` | `src/app/(frontend)/checkout/[showId]/confirmation/page.tsx` | Post-payment landing page — looks up the Order by `pi` query param (5×400ms retry to bridge the webhook race) |
 | `/privacy-policy` | `src/app/(frontend)/privacy-policy/page.tsx` | Privacy Policy — GDPR-compliant, 5 sections, EN + HR |
 | `/cookie-policy` | `src/app/(frontend)/cookie-policy/page.tsx` | Cookie Policy — 5 sections, EN + HR |
-| `/scan/[token]` | `src/app/scan/[token]/page.tsx` (+ `src/app/scan/layout.tsx`) | Auth-aware door scan. Unauthenticated (buyer tapping QR from email) → buyer ticket view with on-page QR + "do not tap again" notice, no DB write. Authenticated `admin` / `door-staff` → atomic mark-and-read, renders VALID / ALREADY_SCANNED / INVALID. Race-safe. Mobile-optimised. Lives outside `(frontend)` so it has its own minimal root layout (no fonts/CookieConsent). |
+| `/scan/[token]` | `src/app/scan/[token]/page.tsx` (+ `src/app/scan/layout.tsx`) | Auth-aware door scan. Unauthenticated (buyer tapping QR from email) → buyer ticket view with on-page QR + "do not tap again" notice, no DB write. Authenticated `admin` / `door-staff` → atomic mark-and-read, renders VALID / ALREADY_SCANNED / INVALID. On ALREADY_SCANNED, authed users see an "Undo scan" link for 2 minutes after the original scan (server-enforced, not client-trust). Race-safe. Mobile-optimised. Lives outside `(frontend)` so it has its own minimal root layout (no fonts/CookieConsent). |
 | `/admin` | Payload CMS built-in | Admin dashboard — show management, orders, in-person sales, refunds |
+| `/admin/stats` | `src/components/payload/AdminStatsView.tsx` | Custom admin view — season aggregate header (tickets sold, scanned, revenue, by-venue split) + show table (upcoming + today + last 7 days). Force-dynamic. Visible to `admin` and `door-staff`. Mobile-friendly. |
+| `/admin/stats/[showId]` | `src/components/payload/AdminShowStatsView.tsx` | Per-show drill-down. Role-aware: `door-staff` sees numbers only (online/in-person sold, scanned, remaining, revenue); `admin` also sees the full order list with buyer PII and per-QR scan state. |
 | `/api/stripe/webhook` | `src/app/api/stripe/webhook/route.ts` | Stripe webhook — creates Order + QRTokens on payment success |
 
 ### Key files
@@ -238,21 +240,11 @@ Two tied-together gotchas you must keep in place or every custom admin component
 - **Background session isolation:** `.claude/settings.json` has `"worktree": { "bgIsolation": "worktree" }` — background Claude sessions run in isolated git worktrees by default.
 - **Route groups own their root layout.** `src/app/(frontend)/layout.tsx` provides `<html>`/`<body>` for everything inside `(frontend)`. Any page placed OUTSIDE a route group (e.g. `src/app/scan/[token]/page.tsx`) needs its own sibling `layout.tsx` with html/body, or Next.js throws "Missing `<html>` and `<body>` tags". Keep utility-page layouts minimal — don't pull in fonts/CookieConsent that the public site needs.
 - **Raw SQL for race-sensitive ops:** Payload's `find`/`update` are read-then-write under the hood and not safe for "first-one-wins" semantics. For atomic mark-and-read (e.g. ticket scan), drop to drizzle: `const drizzle: any = (payload.db as any).drizzle` then `drizzle.execute(sql\`UPDATE ... WHERE cond=false RETURNING ...\`)` with `sql` imported from `@payloadcms/db-postgres`. Result rows live on `res.rows`. Verified race-safe end-to-end: 20 concurrent identical scans → exactly 1 VALID.
+- **Security headers + fail-fast secrets:** `next.config.ts` sets HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, Permissions-Policy and disables `x-powered-by` for every response. `src/payload.config.ts` throws on missing `PAYLOAD_SECRET` instead of silently defaulting to `''` (which would mint forgeable JWTs). Don't relax either — it's the baseline that lets buyer-side `/scan/[token]` be safely public.
 
-### MVP issues (active development — GitHub Issues #2–#11)
+### MVP issues
 
-| # | Issue | Status |
-|---|---|---|
-| [#2](https://github.com/jivancevic/sveta-cecilija/issues/2) | Infrastructure: DO Droplet + Coolify + DNS + deploy | HITL |
-| [#3](https://github.com/jivancevic/sveta-cecilija/issues/3) | Payload CMS v3 + PostgreSQL integration | AFK |
-| [#4](https://github.com/jivancevic/sveta-cecilija/issues/4) | `/tickets` page wired to Shows collection | Done |
-| [#5](https://github.com/jivancevic/sveta-cecilija/issues/5) | Stripe checkout flow | AFK |
-| [#6](https://github.com/jivancevic/sveta-cecilija/issues/6) | QR ticket email via Resend | AFK |
-| [#7](https://github.com/jivancevic/sveta-cecilija/issues/7) | Door scan endpoint `/scan/[token]` | Done |
-| [#8](https://github.com/jivancevic/sveta-cecilija/issues/8) | Admin — show management | Done |
-| [#9](https://github.com/jivancevic/sveta-cecilija/issues/9) | Admin — in-person sales | Done |
-| [#10](https://github.com/jivancevic/sveta-cecilija/issues/10) | Admin — order list + manual refund | AFK |
-| [#11](https://github.com/jivancevic/sveta-cecilija/issues/11) | Cutover: smoke test + DNS switch from WordPress | HITL |
+All MVP build issues (#2–#10, #20–#25) are shipped. The only thing left before cutover is **[#11 — Cutover: smoke test + DNS switch from WordPress](https://github.com/jivancevic/sveta-cecilija/issues/11)** (HITL). For current open work, run `gh issue list --state open`.
 
 Target: cutover from `korcula-moreska.com` to `moreska.eu` before peak season (end of June 2026).
 
@@ -260,7 +252,6 @@ Target: cutover from `korcula-moreska.com` to `moreska.eu` before peak season (e
 
 - Payload CMS content management (About, section pages, Privacy Policy)
 - Bulk show-cancellation refunds
-- Admin statistics dashboard
 - Buyer email CSV export
 - Bulk email to ticket holders per show
 - `next/image` migration

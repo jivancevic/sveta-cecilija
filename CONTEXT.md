@@ -69,3 +69,33 @@ The discount is calculated per order (resets with each new purchase — no cross
 **UX — two-stage notification in the booking panel:**
 1. At 4 tickets (one short of threshold): nudge — "Add 1 more and get one free!"
 2. At a multiple of 5: celebrate — "You've unlocked a free ticket!" + update total visually.
+
+### Ticket scan authorization
+The `/scan/[token]` URL is **shared by buyers and door staff** — same URL, different behaviour based on auth:
+
+- **Unauthenticated visit (buyer tapping their own QR from email):** Renders ticket details — buyer name, show date/time/venue, ticket counts — plus the QR re-rendered on-page so the buyer can show their phone screen at the door. **Does NOT mark the token as scanned.** A prominent notice reads "Show this screen at the door — do not tap the QR again."
+- **Authenticated visit by a `door-staff` (or `admin`) user:** Atomically marks the token scanned (or shows ALREADY_SCANNED with timestamp) and the VALID screen.
+
+This split exists because buyers used to burn their own tickets by tapping the link to "check it works". The atomic mark-and-read race-safety still applies — only one staff scan can win for a given token.
+
+### Door-staff role
+A restricted Payload user role. One shared `door-staff` account (e.g. printed on a card for whoever works the door). Permissions:
+- Can authenticate `/scan/[token]` for atomic mark-as-scanned
+- Can view `/admin/stats` (the Stats dashboard) and per-show drill-down with non-PII counts only
+- **Cannot** see customer emails, order details, or issue refunds — those are admin-only
+
+Password rotation is a one-off Payload admin edit when leaked. No per-volunteer accounts; HGD is too small to justify the onboarding overhead.
+
+### Undo-scan window
+On the ALREADY_SCANNED page, an authenticated `door-staff` user sees an "Undo scan" link if the scan was within the last **2 minutes**. Clicking it sets `scanned = false` again. This covers honest misclicks at the door without opening abuse vectors (no late-night "let my friend back in" undo).
+
+### Stats dashboard
+Lives at `/admin/stats`. Visible to `door-staff` and `admin`.
+
+**Top of page — season aggregate:** total tickets sold (online + in-person), total scanned, total revenue (EUR), broken down by venue.
+
+**Body — show list:** one row per upcoming show + today + last 7 days of past shows. Columns: date, venue, capacity, online sold, in-person sold, scanned, remaining. Force-dynamic — refreshes on each page load (no polling). Past shows beyond 7 days are reachable from a "Browse all shows" link that filters/paginates.
+
+**Per-show drill-down `/admin/stats/[showId]`:**
+- For `door-staff`: bigger numbers only — online, in-person, scanned, remaining, revenue. No order list.
+- For `admin`: numbers + full order list (buyer name, email, ticket count, per-QR scanned/unscanned state). Used to find a specific buyer's order on demand.
