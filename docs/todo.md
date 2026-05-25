@@ -110,3 +110,17 @@ Production-only admin action. Code/docs already reference `tehnika@moreska.eu`; 
 - [ ] (Optional) After a few days of green operation, delete or disable the old `door-staff@moreska.eu` user record so it cannot be used to log in.
 
 Local `_dev` can keep any login string — no action required there.
+
+---
+
+## Social platform audit (issue #67) — 2026-05-26
+
+Reduced-scope status after #38 (Meta BM + Pixel) and #53 (`pr@moreska.eu` alias) shipped.
+
+- [x] **TikTok:** no `Moreška` / `Sveta Cecilija` presence found. Defer creation until #47 (content schedule).
+- [x] **YouTube:** no channel found. Defer until #47.
+- [ ] **Facebook Page ownership:** request submitted via HGD Meta BM → Pages → Request Access for the existing `Moreška` Page. Waiting on current personal-profile admin to approve.
+- [ ] **Instagram → BM link:** existing IG handle present and linked to the FB Page. Direct BM → Accounts → Instagram → Connect login popup hangs (Meta bug, reproduced across browsers + incognito + ad-blocker-off). **Workaround for later:** once the FB Page request is approved, link IG via Page → Settings → Linked accounts → Instagram instead; it will then auto-appear as a claimable asset in BM.
+- [ ] **2nd BM admin (bus-factor):** deferred — will add the HGD ad-campaign manager when they're onboarded.
+
+Issue #67 stays open with `ready-for-human` until the FB Page request is approved and IG linking completes.
