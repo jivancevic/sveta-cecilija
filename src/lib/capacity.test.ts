@@ -52,4 +52,30 @@ describe('assertPurchasable', () => {
       assertPurchasable(baseShow({ onlineSold: 200, inPersonSold: 121 }), { adults: 1, children: 0 }),
     ).toThrow()
   })
+
+  it('defaults legacyReserved to 0 when omitted (back-compat with pre-#60 callers)', () => {
+    // ljetno-kino capacity = 320; sold = 319; legacy unset → remaining 1, 1 ticket allowed
+    expect(() =>
+      assertPurchasable(baseShow({ onlineSold: 319 }), { adults: 1, children: 0 }),
+    ).not.toThrow()
+  })
+
+  it('subtracts legacyReserved from venue capacity', () => {
+    // 320 − 0 − 0 − 100 = 220 remaining
+    expect(() =>
+      assertPurchasable(baseShow({ legacyReserved: 100 }), { adults: 220, children: 0 }),
+    ).not.toThrow()
+    expect(() =>
+      assertPurchasable(baseShow({ legacyReserved: 100 }), { adults: 221, children: 0 }),
+    ).toThrow(/capacity|remaining/i)
+  })
+
+  it('treats legacy + online + in-person == capacity as sold out', () => {
+    expect(() =>
+      assertPurchasable(
+        baseShow({ onlineSold: 100, inPersonSold: 20, legacyReserved: 200 }),
+        { adults: 1, children: 0 },
+      ),
+    ).toThrow(/capacity|remaining|sold out/i)
+  })
 })

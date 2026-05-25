@@ -21,6 +21,7 @@ export async function startCheckout(input: CheckoutInput) {
             venue: doc.venue as PurchasableShow['venue'],
             onlineSold: (doc.onlineSold as number) ?? 0,
             inPersonSold: (doc.inPersonSold as number) ?? 0,
+            legacyReserved: (doc.legacyReserved as number) ?? 0,
             status: doc.status as 'active' | 'cancelled',
           }
         } catch {

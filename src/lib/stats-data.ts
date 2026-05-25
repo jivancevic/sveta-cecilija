@@ -46,6 +46,7 @@ export async function getStatsInput(today: Date = new Date()): Promise<StatsInpu
       venue: (s.venue as Venue) ?? 'ljetno-kino',
       onlineSold: Number(s.onlineSold ?? 0),
       inPersonSold: Number(s.inPersonSold ?? 0),
+      legacyReserved: Number(s.legacyReserved ?? 0),
       scannedCount: scannedByShow.get(id) ?? 0,
       status: (s.status as 'active' | 'cancelled') ?? 'active',
     }

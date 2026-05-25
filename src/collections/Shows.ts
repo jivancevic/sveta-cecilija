@@ -16,7 +16,7 @@ export const Shows: CollectionConfig = {
   },
   admin: {
     useAsTitle: 'date',
-    defaultColumns: ['date', 'time', 'venue', 'onlineSold', 'inPersonSold', 'status'],
+    defaultColumns: ['date', 'time', 'venue', 'onlineSold', 'inPersonSold', 'legacyReserved', 'status'],
     components: {
       edit: {
         editMenuItems: [
@@ -65,6 +65,22 @@ export const Shows: CollectionConfig = {
     },
     { name: 'onlineSold', type: 'number', defaultValue: 0 },
     { name: 'inPersonSold', type: 'number', defaultValue: 0 },
+    {
+      name: 'legacyReserved',
+      type: 'number',
+      defaultValue: 0,
+      min: 0,
+      admin: {
+        description:
+          'Tickets sold on the previous WordPress site (korcula-moreska.com) before cutover. Subtracted from venue capacity so moreska.eu cannot oversell against them.',
+      },
+      access: {
+        // Defense-in-depth: collection-level update is already admin-only,
+        // but pinning the field guarantees door-staff (or any future role)
+        // can never mutate it even if collection access is widened.
+        update: ({ req }) => isAdmin(req.user as { role?: string } | null),
+      },
+    },
     {
       name: 'status',
       type: 'select',

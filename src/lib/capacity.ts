@@ -6,6 +6,13 @@ export interface PurchasableShow {
   venue: Venue
   onlineSold: number
   inPersonSold: number
+  /**
+   * Tickets sold on the old WordPress site before cutover. Subtracted from
+   * venue capacity so we can't oversell against legacy holders. Optional for
+   * call-site convenience (older callers default to 0); always passed in
+   * production paths after #60.
+   */
+  legacyReserved?: number
   status: 'active' | 'cancelled'
 }
 
@@ -18,7 +25,12 @@ export class CheckoutValidationError extends Error {
 }
 
 export function remainingSeats(show: PurchasableShow): number {
-  return VENUE_CAPACITY[show.venue] - show.onlineSold - show.inPersonSold
+  return (
+    VENUE_CAPACITY[show.venue] -
+    show.onlineSold -
+    show.inPersonSold -
+    (show.legacyReserved ?? 0)
+  )
 }
 
 export function assertPurchasable(

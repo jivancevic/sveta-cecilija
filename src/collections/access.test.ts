@@ -63,6 +63,25 @@ describe('Shows access', () => {
     expect(call(Shows.access?.create, doorStaff)).toBe(false)
     expect(call(Shows.access?.update, admin)).toBe(true)
   })
+
+  it('legacyReserved field is admin-only edit (defense-in-depth field-level access)', () => {
+    const legacy = Shows.fields.find(
+      (f) => 'name' in f && f.name === 'legacyReserved',
+    ) as { access?: { update?: unknown } } | undefined
+    expect(legacy).toBeDefined()
+    const updateAccess = legacy?.access?.update
+    expect(call(updateAccess, admin)).toBe(true)
+    expect(call(updateAccess, doorStaff)).toBe(false)
+    expect(call(updateAccess, anon)).toBe(false)
+  })
+
+  it('legacyReserved defaults to 0 with min 0', () => {
+    const legacy = Shows.fields.find(
+      (f) => 'name' in f && f.name === 'legacyReserved',
+    ) as { defaultValue?: number; min?: number } | undefined
+    expect(legacy?.defaultValue).toBe(0)
+    expect(legacy?.min).toBe(0)
+  })
 })
 
 describe('Users access', () => {

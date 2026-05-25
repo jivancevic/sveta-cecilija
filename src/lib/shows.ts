@@ -9,7 +9,7 @@ export interface Show {
   date: string;      // YYYY-MM-DD
   time: string;
   venue: Venue;
-  remaining: number; // venue capacity - onlineSold - inPersonSold
+  remaining: number; // venue capacity - onlineSold - inPersonSold - legacyReserved
 }
 
 export async function getUpcomingShows(limit?: number): Promise<Show[]> {
@@ -38,7 +38,11 @@ export async function getUpcomingShows(limit?: number): Promise<Show[]> {
       date: new Date(show.date as string).toISOString().slice(0, 10),
       time: show.time as string,
       venue,
-      remaining: capacity - ((show.onlineSold as number) ?? 0) - ((show.inPersonSold as number) ?? 0),
+      remaining:
+        capacity -
+        ((show.onlineSold as number) ?? 0) -
+        ((show.inPersonSold as number) ?? 0) -
+        ((show.legacyReserved as number) ?? 0),
     }
   })
 }

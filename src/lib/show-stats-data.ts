@@ -32,6 +32,7 @@ export async function getShowStatsInput(showId: string): Promise<ShowStatsInput 
     venue: (showDoc.venue as Venue) ?? 'ljetno-kino',
     onlineSold: Number(showDoc.onlineSold ?? 0),
     inPersonSold: Number(showDoc.inPersonSold ?? 0),
+    legacyReserved: Number(showDoc.legacyReserved ?? 0),
     scannedCount: 0, // recomputed below from tokens, unused in show-stats
     status: (showDoc.status as 'active' | 'cancelled') ?? 'active',
   }

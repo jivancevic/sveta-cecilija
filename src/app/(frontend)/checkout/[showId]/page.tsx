@@ -54,7 +54,8 @@ export default async function CheckoutRoute({ params, searchParams }: RouteProps
   const remaining =
     VENUE_CAPACITY[venue] -
     ((showDoc.onlineSold as number) ?? 0) -
-    ((showDoc.inPersonSold as number) ?? 0)
+    ((showDoc.inPersonSold as number) ?? 0) -
+    ((showDoc.legacyReserved as number) ?? 0)
 
   const publishableKey = process.env.STRIPE_PUBLISHABLE_KEY ?? ''
 
