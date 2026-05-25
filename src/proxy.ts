@@ -5,20 +5,27 @@ export const locales = ['en', 'hr'] as const;
 export type Locale = (typeof locales)[number];
 const defaultLocale: Locale = 'en';
 
-function detectFromHeaders(request: NextRequest): Locale {
-  const lang = request.headers
-    .get('accept-language')
-    ?.split(',')[0]
-    ?.split('-')[0]
-    ?.toLowerCase();
+// SEO: cookieless requests (Googlebot) must resolve to 'en'. Indexing is EN-only
+// by decision — see CONTEXT.md "URL structure". Any Accept-Language that doesn't
+// resolve to 'hr' (including missing/empty) falls through to defaultLocale = 'en'.
+export function resolveLocale({
+  cookie,
+  acceptLanguage,
+}: {
+  cookie: string | undefined;
+  acceptLanguage: string | null | undefined;
+}): Locale {
+  if (locales.includes(cookie as Locale)) return cookie as Locale;
+  const lang = acceptLanguage?.split(',')[0]?.split('-')[0]?.toLowerCase();
   return locales.includes(lang as Locale) ? (lang as Locale) : defaultLocale;
 }
 
 export function proxy(request: NextRequest) {
   const cookieLocale = request.cookies.get('moreska_locale')?.value;
-  const locale: Locale = locales.includes(cookieLocale as Locale)
-    ? (cookieLocale as Locale)
-    : detectFromHeaders(request);
+  const locale: Locale = resolveLocale({
+    cookie: cookieLocale,
+    acceptLanguage: request.headers.get('accept-language'),
+  });
 
   // Forward locale to server components via request header
   const requestHeaders = new Headers(request.headers);
