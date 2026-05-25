@@ -119,3 +119,20 @@ CREATE TABLE IF NOT EXISTS posts (
 
 CREATE INDEX IF NOT EXISTS posts_locale_status_published_at_idx
   ON posts (locale, status, published_at DESC);
+
+-- ─── payload_locked_documents_rels: posts_id ──────────────────────────
+-- When Posts (#41) was added, the rels-table create in
+-- src/instrumentation.ts was not updated. Existing prod DBs only run
+-- CREATE TABLE IF NOT EXISTS, so they never gained posts_id. Every
+-- payload.findByID / payload.find then errors with "column posts_id
+-- does not exist", which silently breaks the Stripe webhook's ticket
+-- email and any admin lookup.
+
+ALTER TABLE payload_locked_documents_rels
+  ADD COLUMN IF NOT EXISTS posts_id integer;
+
+DO $$ BEGIN
+  ALTER TABLE payload_locked_documents_rels
+    ADD CONSTRAINT payload_locked_documents_rels_posts_fk
+    FOREIGN KEY (posts_id) REFERENCES posts(id) ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
