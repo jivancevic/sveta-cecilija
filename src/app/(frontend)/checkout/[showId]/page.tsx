@@ -7,8 +7,22 @@ import { VENUE_CAPACITY, type Venue } from '@/lib/venues'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
 import CheckoutForm from '@/components/CheckoutForm'
+import { buildMetadata } from '@/lib/seo'
 
 export const dynamic = 'force-dynamic'
+
+export async function generateMetadata({ params }: { params: Promise<{ showId: string }> }) {
+  const { showId } = await params
+  return {
+    ...buildMetadata({
+      title: 'Checkout — Moreška Korčula',
+      description:
+        'Complete your Moreška ticket purchase. Secure card payment via Stripe.',
+      path: `/checkout/${showId}`,
+    }),
+    robots: { index: false, follow: true },
+  }
+}
 
 interface RouteProps {
   params: Promise<{ showId: string }>

@@ -4,8 +4,18 @@ import { getUpcomingShows } from '@/lib/shows';
 import Nav from '@/components/Nav';
 import Footer from '@/components/Footer';
 import PerformancesPage from '@/components/PerformancesPage';
+import { buildMetadata } from '@/lib/seo';
 
 export const dynamic = 'force-dynamic';
+
+export function generateMetadata() {
+  return buildMetadata({
+    title: 'Moreška Tickets — 2026 Season Schedule',
+    description:
+      "Buy tickets for Korčula's Moreška sword dance, performed since 1883. Full 2026 season at the Summer Cinema. Adults €20, children €10.",
+    path: '/tickets',
+  });
+}
 
 // Landscape-only pool; portrait shots would crop badly in the 3:2 card frame.
 const SHOW_IMAGE_POOL = [

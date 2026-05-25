@@ -3,6 +3,17 @@ import { getDictionary } from '@/lib/i18n';
 import Nav from '@/components/Nav';
 import PageHero from '@/components/PageHero';
 import Footer from '@/components/Footer';
+import { buildMetadata } from '@/lib/seo';
+
+export function generateMetadata() {
+  return buildMetadata({
+    title: 'About HGD Sveta Cecilija',
+    description:
+      "Korčula's 143-year-old cultural society and guardian of the Moreška sword dance — klapa, wind orchestra, and choir, performing since 1883.",
+    path: '/about',
+    image: '/moreska01.webp',
+  });
+}
 
 const BLOCK_IMAGES = [
   '/kraljevi-krupni.webp',

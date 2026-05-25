@@ -16,8 +16,18 @@ import Services from '@/components/Services';
 import Contact from '@/components/Contact';
 import Footer from '@/components/Footer';
 import ScrollReveal from '@/components/ScrollReveal';
+import { buildMetadata } from '@/lib/seo';
 
 export const dynamic = 'force-dynamic';
+
+export function generateMetadata() {
+  return buildMetadata({
+    title: 'Moreška Korčula — Sword Dance Tickets',
+    description:
+      'The Original Moreška sword dance, performed since 1883. Live performances at the Summer Cinema, Korčula. Book your tickets online.',
+    path: '/',
+  });
+}
 
 export default async function HomePage() {
   const locale = await getLocale();
