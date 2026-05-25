@@ -6,11 +6,30 @@ import Nav from '@/components/Nav';
 import PageHero from '@/components/PageHero';
 import Footer from '@/components/Footer';
 import ServiceEnquiryForm from '@/components/ServiceEnquiryForm';
+import { buildMetadata } from '@/lib/seo';
 
 const SLUGS = Object.keys(SERVICE_PAGE_META);
 
 export function generateStaticParams() {
   return SLUGS.map((slug) => ({ slug }));
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+  const meta = SERVICE_PAGE_META[slug];
+  if (!meta) return {};
+  const dict = await getDictionary('en');
+  const card = dict.services.cards[meta.cardIndex];
+  return buildMetadata({
+    title: `${card.name} — ${card.tagline}`,
+    description: card.blurb,
+    path: `/services/${slug}`,
+    image: meta.image,
+  });
 }
 
 export default async function ServicePage({

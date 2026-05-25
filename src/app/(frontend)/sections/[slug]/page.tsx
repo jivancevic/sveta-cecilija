@@ -5,11 +5,31 @@ import { SECTION_PAGE_META } from '@/lib/data';
 import Nav from '@/components/Nav';
 import PageHero from '@/components/PageHero';
 import Footer from '@/components/Footer';
+import { buildMetadata } from '@/lib/seo';
 
 const SLUGS = Object.keys(SECTION_PAGE_META);
 
 export function generateStaticParams() {
   return SLUGS.map((slug) => ({ slug }));
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const { slug } = await params;
+  const meta = SECTION_PAGE_META[slug];
+  if (!meta) return {};
+  const dict = await getDictionary('en');
+  const t = dict.sectionPages;
+  const section = t[meta.sectionKey as keyof typeof t] as Record<string, string>;
+  return buildMetadata({
+    title: section.heroHeadline,
+    description: section.heroSubtitle,
+    path: `/sections/${slug}`,
+    image: meta.image,
+  });
 }
 
 export default async function SectionPage({
