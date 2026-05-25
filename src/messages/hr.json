@@ -248,6 +248,10 @@
         "body": "Uz vašu suglasnost, koristimo Google Ads praćenje konverzija kako bismo izmjerili učinkovitost našeg oglašavanja — konkretno, dolazi li posjetitelj s oglasa do kupnje ulaznice. To se izvodi putem iste Google oznake koja se koristi za Analytics; ne učitava se zasebni alat za praćenje. Koristimo Google Consent Mode v2: dok ne prihvatite kolačiće, svi signali za oglašavanje i analitiku zadano su postavljeni na 'denied' (odbijeno), a Google prima samo anonimizirane signale (bez identifikatora, bez personalizacije). Nakon prihvaćanja, signali se ažuriraju na 'granted' (odobreno) i prijavljuje se događaj kupnje. Odbijanjem ostaje sve odbijeno. Suglasnost možete povući u bilo kojem trenutku brisanjem pohrane preglednika za ovu stranicu."
       },
       {
+        "heading": "Meta Pixel",
+        "body": "Uz vašu suglasnost, koristimo Meta Pixel (Facebook Pixel) kako bismo mjerili učinkovitost našeg oglašavanja na Facebooku i Instagramu. Pixel bilježi posjete stranicama i kupnje ulaznica na ovoj stranici kako bismo razumjeli koje kampanje dovode do rezervacija. Podaci se dijele s Meta Platforms Ireland Ltd. Ne provodimo plaćene kampanje na društvenim mrežama bez ovog mjerenja. Suglasnost možete povući u bilo kojem trenutku putem bannera za upravljanje kolačićima. Više: facebook.com/privacy/policy."
+      },
+      {
         "heading": "Upravljanje kolačićima",
         "body": "Kolačićima možete upravljati i brisati ih putem postavki vašeg preglednika. Brisanje ili blokiranje kolačića može utjecati na vaše iskustvo na stranici. Za analitičke kolačiće koristite banner koji se prikazuje pri prvoj posjeti. Više o načinu na koji Google koristi podatke: policies.google.com/privacy."
       },
