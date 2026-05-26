@@ -30,10 +30,11 @@ function extractScanPath(decoded: string): string | null {
   return null
 }
 
-export function QRScannerButton() {
+export function QRScannerButton({ autoStart = false }: { autoStart?: boolean } = {}) {
   const [mode, setMode] = useState<Mode>('idle')
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const scannerRef = useRef<{ stop: () => Promise<void>; clear: () => void } | null>(null)
+  const autoStartedRef = useRef(false)
   const elementId = 'tehnika-qr-scanner-region'
 
   useEffect(() => {
@@ -44,6 +45,15 @@ export function QRScannerButton() {
       }
     }
   }, [])
+
+  useEffect(() => {
+    if (autoStart && !autoStartedRef.current) {
+      autoStartedRef.current = true
+      // fire-and-forget; startScanning handles its own error state
+      void startScanning()
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [autoStart])
 
   async function startScanning() {
     setMode('starting')
