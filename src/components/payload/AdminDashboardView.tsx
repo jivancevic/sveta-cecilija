@@ -9,7 +9,7 @@ import { computeStats } from '@/lib/stats'
 import { isAdminTier, isAuthed } from '@/lib/access/roles'
 import { getNextShow, getScannedPeopleForShow, type NextShow } from '@/lib/shows'
 import { HeaderBlock, ShowsTable } from './stats-blocks'
-import { QRScannerAutoStart } from './QRScannerAutoStart'
+import { QRScannerButton } from './QRScannerButton'
 import { TicketLookupPanel } from './TicketLookupPanel'
 
 export const dynamic = 'force-dynamic'
@@ -122,7 +122,7 @@ async function TehnikaDashboard({ role }: { role?: string }) {
       )}
 
       <div style={{ maxWidth: 480 }}>
-        <QRScannerAutoStart />
+        <QRScannerButton />
       </div>
 
       <p style={{ fontSize: 11, color: 'var(--theme-elevation-400)', marginTop: 24 }}>
