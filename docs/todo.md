@@ -98,31 +98,11 @@ All of these can be completed while development is in progress.
 
 ---
 
-## 5. From Dragan + Tatjana meetings (2026-05-26)
+## 5. Cross-references — open issues from 2026-05-26 brief
 
-### Refund policy
-
-Decisions (from session):
-- **Customer cancellation:** no refund.
-- **HGD cancels show:** full refund to all buyers.
-- **Venue moved (Ljetno → Zimsko):** not a refund trigger; case-by-case if buyer insists.
-
-To do:
-- [ ] Build `/refund-policy` page (mirror `LegalPage` structure used by Privacy + Cookie). Sections: customer cancellation, HGD cancellation, venue change, lost/stolen tickets, refund timing (Stripe 5–10 days), case-by-case contact.
-- [ ] Update `refundLabel` in `src/messages/{en,hr}.json` to link the new page (currently plain text, no link).
-- [ ] Add the public URL to Stripe Dashboard → Settings → "Refund policy URL" (reduces chargeback risk).
-
-### Show-moved-to-Zimsko workflow
-
-- [ ] Admin button in `/admin` → "Mark show as moved to Zimsko" → two-step modal: preview recipient list → confirm → bulk mail via Brevo informing buyers of venue change. Buyer replies to `info@` for case-by-case refund (handled via existing Payload refund flow).
-
-### Agency reservations workflow
-
-Tracked in **#86**. Blocked on agency phone calls — see "Personal tasks" below.
-
-### Door recovery flow
-
-Tracked in **#87**. Three deliverables: PDF download on confirmation page, tehnika order lookup by email/name (scoped to active show), "next show" view with 2h post-start grace.
+- **#86** — Agency reservations workflow (blocked on agency phone calls; questionnaire below in "Personal tasks").
+- **#87** — Door recovery flow (PDF download on confirmation, tehnika lookup, next-show window).
+- **#94** — Refund policy page + Zimsko venue-change buyer-notification workflow.
 
 ---
 
