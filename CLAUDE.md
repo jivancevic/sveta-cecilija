@@ -48,17 +48,19 @@ Pattern proven in `src/app/api/shows/[id]/in-person-sales/route.ts`. The lib hel
 Coolify on Hetzner builds with Nixpacks, runs `npm ci --production` (= `--omit=dev`), then `npm start` (= bootstrap + `next start`). Three gotchas worth knowing before you touch the build:
 
 1. **Pin Node via `engines` in `package.json`**, not the `NIXPACKS_NODE_VERSION` env var. Nixpacks's pinned nixpkgs revision only goes up to `nodejs_22` — `NIXPACKS_NODE_VERSION=24` fails the nix-env step with `undefined variable 'nodejs_24'`.
-2. **Regenerate `package-lock.json` carefully — npm 10 vs 11 produce incompatible lockfiles.** `npm install <pkg> --save` can leave the lockfile out of sync (esbuild platform binaries lose their `optional: true` flag), and Coolify's `npm ci` is strict. The trickier failure mode is **npm version skew**: macOS hosts run npm 11 (with Node 24+) which considers some nested optional peerDeps removable, but Coolify's node:22 image runs npm 10 which expects them present. Symptom in Coolify: `Missing: yaml@2.9.0 from lock file` (or any other transitive dep), even though `npm ci` succeeds locally.
+2. **Regenerate `package-lock.json` in a Linux container before any merge that touches deps. Hard pre-merge gate, not a tip.** Two distinct failure modes stack:
+   - **Platform / npm-version skew.** `npm install` on macOS resolves transitives differently and can omit entries Linux `npm ci` requires. macOS hosts on Node 24+ run npm 11, which considers some nested optional peerDeps removable; Coolify's `node:22` runs npm 10 and still requires them. Symptom on Coolify: Nixpacks fails at the `npm ci` step with `npm error code EUSAGE` and `Missing: <pkg>@<version> from lock file` (e.g. `yaml@2.9.0` from a vitest peerDep).
+   - Tests passing locally is *not* a substitute — vitest never runs `npm ci`. `next build` is not a substitute either — it reads `node_modules`, not the lockfile.
 
-Recipe: **regenerate the lockfile inside the node:22 container, lockfile-only mode** (avoids macOS bind-mount choking on `rm -rf node_modules`):
+   **Recipe**, lockfile-only inside `node:22` (avoids macOS bind-mount choking on `rm -rf node_modules`):
 
-```
-rm -f package-lock.json
-docker run --rm -v "$PWD":/app -w /app node:22 \
-  sh -c "npm install --package-lock-only --no-audit --no-fund"
-```
+   ```
+   rm -f package-lock.json
+   docker run --rm -v "$PWD":/app -w /app node:22 \
+     sh -c "npm install --package-lock-only --no-audit --no-fund"
+   ```
 
-Then verify in the same container: `docker run --rm -v "$PWD":/app -w /app node:22 sh -c "npm ci --omit=dev --dry-run"` should exit 0.
+   Then verify in the same image: `docker run --rm -v "$PWD":/app -w /app node:22 sh -c "npm ci --omit=dev --dry-run"` must exit 0.
 3. **`overrides` keeps esbuild flat.** `package.json` has `"overrides": { "esbuild": "^0.25.0" }` to collapse vitest's nested esbuild into the root version — without this, Coolify hits `EBADPLATFORM @esbuild/aix-ppc64`. If you bump vitest or add a devDep that brings its own esbuild, re-verify in the container before pushing.
 
 See `docs/agents/deployment.md` for the full debugging playbook + log triage patterns.

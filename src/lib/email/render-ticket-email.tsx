@@ -26,9 +26,9 @@ const COPY = {
   en: {
     preview: (date: string) => `Your Moreška tickets - ${date}`,
     greeting: (name: string) => `Hi ${name},`,
-    hero: 'Your Moreška tickets are attached.',
+    hero: 'Your Moreška ticket is attached.',
     heroSub:
-      'Open the attached PDF to view all tickets, one QR code per page. Present each at the door.',
+      'Open the attached PDF and present the QR code at the door. One scan admits your entire party.',
     showHeading: 'Show details',
     date: 'Date',
     time: 'Time',
@@ -48,9 +48,9 @@ const COPY = {
   hr: {
     preview: (date: string) => `Vaše ulaznice za morešku - ${date}`,
     greeting: (name: string) => `Poštovani ${name},`,
-    hero: 'Vaše ulaznice za morešku priložene su uz ovaj e-mail.',
+    hero: 'Vaša ulaznica za morešku priložena je uz ovaj e-mail.',
     heroSub:
-      'Otvorite priloženi PDF, svaka ulaznica je na zasebnoj stranici s vlastitim QR kodom. Pokažite svaku na ulazu.',
+      'Otvorite priloženi PDF i pokažite QR kod na ulazu. Jedno skeniranje pušta cijelu vašu skupinu.',
     showHeading: 'Detalji predstave',
     date: 'Datum',
     time: 'Vrijeme',
