@@ -72,7 +72,7 @@
       {
         "key": "moreska",
         "name": "moreška",
-        "blurb": "Posljednji autentični ratni ples Europe, koji se izvodi od 1666."
+        "blurb": "Posljednji autentični ratni ples Europe koji se izvodi od 1666."
       },
       {
         "key": "band",
@@ -275,8 +275,8 @@
     "ctaBody": "Dvadeset i četiri nastupa u Ljetnom kinu, Korčula. Svibanj–listopadu, 21:00.",
     "ctaButton": "Kupi ulaznice",
     "moreska": {
-      "heroHeadline": "Čelični ples Korčule",
-      "heroSubtitle": "Posljednji autentični ratni ples Europe, koji se izvodi od 1666.",
+      "heroHeadline": "Iza sraza mačeva, pobjeđuje ljubav",
+      "heroSubtitle": "Posljednji autentični ratni ples Europe koji se izvodi od 1666.",
       "lead": "Od svih plesova s mačevima koji su nekad prošarani Sredozemljem, od Španjolske do Sicilije, od Venecije do grčkih otoka, samo je moreška s Korčule preživjela netaknuta. Ne kao muzejski eksponat. Kao živa izvedba, prikazana u originalnom korčulanskom dijalektu 17. stoljeća, sa željeznim mačevima koji teže kilogram svaki i udaraju dovoljno snažno da izbijaju iskre.",
       "storyHeadline": "Priča",
       "storyBody": "Dva kralja. Jedna zarobljena djevojka. Sedam borbi da se odluči njezina sudbina. Bijeli kralj Osman dolazi da povrati svoju zaručnicu, Bulu, od Crnog kralja Mora, koji ju je uzeo silom. Bula odbija popustiti: \"Veće mi je jado tvoja nehtjena ljubav neg li čelik.\" Slijedi Sfida, izazov, a zatim sedam kolapa: niz sve intenzivnijih figura s mačevima koje eskaliraju od lirskog kruženja do žestoke završne borbe. Crna vojska je opkoljena, njihov krug se sužava s každom figurom, dok Crni kralj ne položi mač pred Osmanovim nogama. Bula je slobodna. Vrlina pobjeđuje. Uvijek je pobjeđivala.",
@@ -296,8 +296,8 @@
     "klapa": {
       "heroHeadline": "Glas prije mača",
       "heroSubtitle": "Dalmatinska a cappella, nematerijalna kulturna baština UNESCO-a.",
-      "body1": "Prije nego što se željező sukoba, čuje se glas. Klapa Sveta Cecilija otvara svaki nastup moreške tradicijskom dalmatinskom a cappella pjesmom, umjetničkim oblikom jadranske obale, prepoznatim od UNESCO-a kao nematerijalna kulturna baština. Bez instrumenata, bez pojačanja. Samo harmonija muških glasova koji nose stoljeća pomorske duše.",
-      "body2": "Klapsko pjevanje zvuk je Dalmacije u najčišćem obliku: melankolično, toplo, tehnički zahtjevno i potpuno zajedničko. Čuti ga u kamenom dvorištu Ljetnog kina, prije nego što se pojave mačevi, znači razumjeti nešto bitno o životu na ovom otoku. Ansambl nastupa na svakoj moreški kroz sezonu i na festivalima, koncertima i kulturnim događanjima diljem regije."
+      "body1": "Prije zvuka mača, čuje se glas! Klapsko pjevanje duboko je ukorijenjeno u kulturni identitet Korčule, otoka poznatog po bogatoj glazbenoj i klapskoj tradiciji. Harmonija glasova bez instrumentalne pratnje, emocija izražena kroz pjesmu i osjećaj zajedništva čine klapu jednim od najprepoznatljivijih simbola Dalmacije. Ovakav način pjevanja danas je prepoznat i zaštićen kao nematerijalna kulturna baština UNESCO-a, čuvajući njegovu vrijednost za buduće generacije.",
+      "body2": "Mješovita klapa Sveta Cecilija osnovana je 2016. godine i do danas svojim višeglasjem stvara glazbenu kulisu nakon koje slijedi izvedba moreške, obogaćujući tako doživljaj korčulanske tradicije."
     },
     "choir": {
       "heroHeadline": "Glas koji se obnavlja",
@@ -317,7 +317,7 @@
     "history": "Povijest",
     "sections": "Sekcije",
     "services": "Iskustvo",
-    "moreska": "moreška",
+    "moreska": "Moreška",
     "windOrchestra": "Puhački orkestar",
     "klapa": "Klapa",
     "choir": "Zbor",
