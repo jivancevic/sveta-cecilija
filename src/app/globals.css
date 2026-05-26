@@ -1580,6 +1580,27 @@ html, body { overflow-x: hidden; }
   font-weight: 500;
 }
 
+.inner-page .checkout-confirm__pdf {
+  margin: 24px 0 16px;
+  padding: 16px;
+  border: 1px solid color-mix(in oklab, var(--ink, #1a140c) 12%, transparent);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.inner-page .checkout-confirm__pdfBody {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.inner-page .checkout-confirm__pdfBtn {
+  text-decoration: none;
+}
+
 a.perf-booking__confirm {
   display: inline-block;
   text-decoration: none;

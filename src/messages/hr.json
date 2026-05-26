@@ -362,7 +362,9 @@
     "thankYouHeading": "Hvala vam, vaše su ulaznice rezervirane",
     "thankYouBody": "Poslali smo vaše ulaznice i QR kodove na vaš email. Pokažite QR kod na ulazu večer nastupa.",
     "orderRefLabel": "Broj narudžbe",
-    "ticketCountLabel": "Ulaznice"
+    "ticketCountLabel": "Ulaznice",
+    "ticketsAlsoSentTo": "Ulaznice šaljemo i na {email}. Ako ne stignu unutar 5 minuta, provjerite spam ili koristite gumb ispod.",
+    "downloadTicketsPdf": "Preuzmi ulaznice (PDF)"
   },
   "blogPage": {
     "heroHeadline": "Priče s Korčule",

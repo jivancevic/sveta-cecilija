@@ -52,3 +52,13 @@ UPDATE users SET role = 'tehnika' WHERE role = 'door-staff';
 - Adding a new tier later (e.g. `accountant` who sees Orders but not Shows) requires a Payload select option, a SQL backfill, and one new helper. The pattern accommodates it without refactor.
 - The buyer-side `/scan/[token]` path is unaffected. It still branches on "authed AND any admin tier" via `isAuthed`, and the `tehnika` rename doesn't change behaviour.
 - An in-browser QR scanner (lazy-loaded `html5-qrcode`) is added to the tehnika dashboard so door volunteers can scan from a live viewfinder in `/admin` instead of bouncing between the camera app and Safari. The existing `/scan/[token]` URL keeps working for native-camera fallback.
+
+### Follow-up: contextual read scope for tehnika (#87, 2026-05)
+
+Tehnika's read scope on `Orders` is widened in one specific direction: at the door, they can look up an individual order by email or first+last name **scoped to the active show only**. "Active show" is defined as the next future show OR the most recent show that started within the last 2 hours (`pickActiveShows` in `src/lib/active-show.ts`).
+
+The scope is *contextual*, not row-static — the same tehnika user can see Order A during a 21:00 show on Monday, and can't see it the next morning. Collection-level `access.read` on `Orders` can't express this (it's a static predicate of `{ req, id }`); it stays admin-only. Instead, the lookup is mediated by `POST /api/orders/lookup`, which re-checks the active-show window server-side before performing the search via `payload.find`. Direct `/admin/collections/orders` access remains 403 for tehnika.
+
+Every lookup is recorded in a new `order-lookups` audit collection (admin-read only) — even on zero matches. This keeps the audit trail honest if tehnika tries to fish for PII by guessing emails.
+
+The buyer-side recovery story is owned by the signed PDF download on `/checkout/[showId]/confirmation`, which doesn't need a logged-in session at all — the link is HMAC-signed with `TICKET_LINK_SECRET` (separate from `PAYLOAD_SECRET` so it can be rotated independently) and tied to order id + buyer email with a 30-day TTL.
