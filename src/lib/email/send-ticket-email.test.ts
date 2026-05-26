@@ -24,8 +24,8 @@ function makeDeps(overrides: Partial<SendTicketEmailDeps> = {}): SendTicketEmail
     brevoApiKey: 'test-key',
     renderTicketsPdf: vi.fn().mockResolvedValue(Buffer.from('%PDF-1.3 fake-pdf-bytes')),
     renderTicketEmail: vi.fn().mockResolvedValue({
-      html: '<html><body>Hi Ana — Summer Cinema 2026-07-15 21:00 €50.00 adult child</body></html>',
-      subject: 'Your Moreška tickets — Wednesday, 15 July 2026',
+      html: '<html><body>Hi Ana, Summer Cinema 2026-07-15 21:00 €50.00 adult child</body></html>',
+      subject: 'Your Moreška tickets - Wednesday, 15 July 2026',
     }),
     ...overrides,
   }

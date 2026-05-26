@@ -24,11 +24,11 @@ const MUTED = '#6B5E45'
 
 const COPY = {
   en: {
-    preview: (date: string) => `Your Moreška tickets — ${date}`,
+    preview: (date: string) => `Your Moreška tickets - ${date}`,
     greeting: (name: string) => `Hi ${name},`,
     hero: 'Your Moreška tickets are attached.',
     heroSub:
-      'Open the attached PDF to view all tickets — one QR code per page. Present each at the door.',
+      'Open the attached PDF to view all tickets, one QR code per page. Present each at the door.',
     showHeading: 'Show details',
     date: 'Date',
     time: 'Time',
@@ -46,11 +46,11 @@ const COPY = {
     contact: 'info@moreska.eu',
   },
   hr: {
-    preview: (date: string) => `Vaše ulaznice za morešku — ${date}`,
+    preview: (date: string) => `Vaše ulaznice za morešku - ${date}`,
     greeting: (name: string) => `Poštovani ${name},`,
     hero: 'Vaše ulaznice za morešku priložene su uz ovaj e-mail.',
     heroSub:
-      'Otvorite priloženi PDF — svaka ulaznica je na zasebnoj stranici s vlastitim QR kodom. Pokažite svaku na ulazu.',
+      'Otvorite priloženi PDF, svaka ulaznica je na zasebnoj stranici s vlastitim QR kodom. Pokažite svaku na ulazu.',
     showHeading: 'Detalji predstave',
     date: 'Datum',
     time: 'Vrijeme',

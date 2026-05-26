@@ -59,7 +59,7 @@ const COPY = {
     child: 'Child',
     order: 'Order',
     scanAtDoor: 'Scan this code at the door',
-    doNotShare: 'Do not share this QR — each code is single-use.',
+    doNotShare: 'Do not share this QR. Each code is single-use.',
     presentMobile: 'Present on phone or paper at the door.',
   },
   hr: {
@@ -74,7 +74,7 @@ const COPY = {
     child: 'Dijete',
     order: 'Narudžba',
     scanAtDoor: 'Skenirajte ovaj kod na ulazu',
-    doNotShare: 'Ne dijelite QR kod — svaki kod vrijedi za jedan ulaz.',
+    doNotShare: 'Ne dijelite QR kod. Svaki kod vrijedi za jedan ulaz.',
     presentMobile: 'Pokažite na mobitelu ili papiru na ulazu.',
   },
 } as const
@@ -265,7 +265,7 @@ export async function renderTicketsPdf(
 
   const doc = (
     <Document
-      title={`Moreška — ${input.show.date}`}
+      title={`Moreška - ${input.show.date}`}
       author="HGD Sveta Cecilija"
       subject={`Tickets for ${input.show.date}`}
     >
