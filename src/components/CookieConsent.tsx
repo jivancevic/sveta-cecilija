@@ -20,9 +20,15 @@ declare global {
 
 const STORAGE_KEY = 'moreska_cookie_consent';
 
-function gtag(...args: unknown[]) {
+// Must push the `arguments` object (not an Array) — gtag.js treats Array
+// pushes as data and silently ignores them as commands. See:
+// https://developers.google.com/tag-platform/security/guidance/consent-mode-v2
+// eslint-disable-next-line prefer-rest-params, @typescript-eslint/no-explicit-any
+function gtag(...args: any[]) {
+  void args;
   window.dataLayer = window.dataLayer ?? [];
-  window.dataLayer.push(args);
+  // eslint-disable-next-line prefer-rest-params
+  window.dataLayer.push(arguments);
 }
 
 // Consent Mode v2 default state. Must fire BEFORE any GA/Ads tag loads.
