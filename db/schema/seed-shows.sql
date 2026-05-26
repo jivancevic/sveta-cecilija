@@ -5,9 +5,9 @@
 -- subsequent runs are no-ops. Re-running won't clobber sold counts or
 -- manually-added private shows.
 --
--- Non-Redovna shows from performances.md (Gulliver, Adriatic DMC, Crveni
--- križ, Sv. Todor) are intentionally NOT seeded — those are private
--- bookings handled by the operator off-site and shouldn't appear on the
+-- Non-Redovna shows from performances.md (Gulliver, Adriatic DMC, KONCERT,
+-- Sv. Todor) are intentionally NOT seeded — those are private bookings or
+-- off-site events handled by the operator and shouldn't appear on the
 -- public /tickets page. Add them via the admin when they're confirmed.
 --
 -- All entries default to status='active', venue='ljetno-kino', 21:00.
@@ -15,8 +15,6 @@
 
 INSERT INTO shows (date, time, venue, status)
 SELECT * FROM (VALUES
-  ('2026-05-04 12:00:00+00'::timestamptz, '21:00', 'ljetno-kino'::enum_shows_venue, 'active'::enum_shows_status),
-  ('2026-05-11 12:00:00+00'::timestamptz, '21:00', 'ljetno-kino'::enum_shows_venue, 'active'::enum_shows_status),
   ('2026-05-18 12:00:00+00'::timestamptz, '21:00', 'ljetno-kino'::enum_shows_venue, 'active'::enum_shows_status),
   ('2026-05-25 12:00:00+00'::timestamptz, '21:00', 'ljetno-kino'::enum_shows_venue, 'active'::enum_shows_status),
   ('2026-06-08 12:00:00+00'::timestamptz, '21:00', 'ljetno-kino'::enum_shows_venue, 'active'::enum_shows_status),
@@ -24,9 +22,9 @@ SELECT * FROM (VALUES
   ('2026-06-22 12:00:00+00'::timestamptz, '21:00', 'ljetno-kino'::enum_shows_venue, 'active'::enum_shows_status),
   ('2026-06-24 12:00:00+00'::timestamptz, '21:00', 'ljetno-kino'::enum_shows_venue, 'active'::enum_shows_status),
   ('2026-07-06 12:00:00+00'::timestamptz, '21:00', 'ljetno-kino'::enum_shows_venue, 'active'::enum_shows_status),
-  ('2026-07-08 12:00:00+00'::timestamptz, '21:00', 'ljetno-kino'::enum_shows_venue, 'active'::enum_shows_status),
+  ('2026-07-09 12:00:00+00'::timestamptz, '21:00', 'ljetno-kino'::enum_shows_venue, 'active'::enum_shows_status),
   ('2026-07-20 12:00:00+00'::timestamptz, '21:00', 'ljetno-kino'::enum_shows_venue, 'active'::enum_shows_status),
-  ('2026-07-22 12:00:00+00'::timestamptz, '21:00', 'ljetno-kino'::enum_shows_venue, 'active'::enum_shows_status),
+  ('2026-07-23 12:00:00+00'::timestamptz, '21:00', 'ljetno-kino'::enum_shows_venue, 'active'::enum_shows_status),
   ('2026-08-03 12:00:00+00'::timestamptz, '21:00', 'ljetno-kino'::enum_shows_venue, 'active'::enum_shows_status),
   ('2026-08-06 12:00:00+00'::timestamptz, '21:00', 'ljetno-kino'::enum_shows_venue, 'active'::enum_shows_status),
   ('2026-08-17 12:00:00+00'::timestamptz, '21:00', 'ljetno-kino'::enum_shows_venue, 'active'::enum_shows_status),
