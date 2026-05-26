@@ -41,10 +41,10 @@ export default function Footer({ locale, t }: Props) {
           <div className="foot__col">
             <h5 className="foot__col-h">{t.contactLabel}</h5>
             <a href="mailto:info@moreska.eu">info@moreska.eu</a>
-            <a href="#">{t.location}</a>
+            <a href="https://maps.app.goo.gl/u73fPrGmBGhY7e5JA" target="_blank" rel="noopener noreferrer">{t.location}</a>
             <div className="foot__social">
-              <a href="#">{t.facebook}</a>
-              <a href="#">{t.instagram}</a>
+              <a href="https://www.facebook.com/svcecilijamoreska" target="_blank" rel="noopener noreferrer">{t.facebook}</a>
+              <a href="https://www.instagram.com/hgdsvetacecilija/" target="_blank" rel="noopener noreferrer">{t.instagram}</a>
               <a href="#">{t.youtube}</a>
             </div>
           </div>

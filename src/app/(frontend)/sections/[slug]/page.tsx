@@ -58,7 +58,7 @@ export default async function SectionPage({
 
       <section style={{ background: 'var(--light)', padding: 'var(--pad) var(--sectionPadX)' }}>
         <div style={{ maxWidth: 'var(--maxW)', margin: '0 auto' }}>
-          <a href="/about" className="sp-back">{t.backLink}</a>
+          <a href="/#secs" className="sp-back">{t.backLink}</a>
 
           {meta.sectionKey === 'moreska' && (
             <MoreskaContent t={section} />
