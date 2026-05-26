@@ -106,12 +106,26 @@ All of these can be completed while development is in progress.
 
 ---
 
+## Social platform audit (issue #67) — resolved 2026-05-26
+
+Reduced-scope status after #38 (Meta BM + Pixel) and #53 (`pr@moreska.eu` alias) shipped.
+
+- [x] **Facebook Page:** access to `facebook.com/svcecilijamoreska` obtained; HGD ad-campaign manager added as admin.
+- [x] **Instagram:** access to `instagram.com/hgdsvetacecilija` obtained; HGD ad-campaign manager added as admin.
+- [x] **YouTube:** existing channel `youtube.com/@hgdsv.cecilija6051` (2 videos) under `moreska.cecilija@gmail.com`. Josip has access. Ad manager does not need access (no YT ad spend planned). Add `pr@moreska.eu` as recovery email on that Google account for bus-factor.
+- [x] **TikTok:** no presence and not opening one now (no Reels/short-form content planned).
+- [x] **Credentials in password manager:** FB/IG/YT logins to be added by Josip.
+
+Issue #67 closed.
+
+---
+
 ## 6. Personal tasks (operational, not dev)
 
 - [ ] Create Google Calendar with 2026 season shows. (Manual one-off; auto-sync from Shows collection is a separate ask if it ever becomes painful.)
 - [ ] Update show schedule in `/admin` per Tatjana's latest email.
 - [ ] Send Brane the photo numbers.
-- [ ] Set up YouTube channel for HGD.
+- [ ] Add `pr@moreska.eu` as recovery email on the `moreska.cecilija@gmail.com` Google account (bus-factor for YouTube channel).
 - [ ] Clean up project files — needs concrete scope before doing. Candidates:
   - `assets/images/new-images/*` (untracked: black-bula.jpg, bula-alone.jpg, experience.jpeg, mate.jpg, moreska-nobilo.{jpg,pdf}, ocevi-sinovi.JPG, sfida-wide.jpg, sword-clash.jpg, wave.jpg) — decide kept / moved to `public/` / deleted.
   - `docs/` strays: `change-text.md`, `help.md`, `modify-issue#4.md`, `modify.md 16-42-44-630.md` — none look like permanent docs; review and delete.
