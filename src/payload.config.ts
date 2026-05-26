@@ -9,6 +9,7 @@ import { Orders } from './collections/Orders'
 import { QRTokens } from './collections/QRTokens'
 import { ContactSubmissions } from './collections/ContactSubmissions'
 import { Posts } from './collections/Posts'
+import { OrderLookups } from './collections/OrderLookups'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -17,7 +18,7 @@ export default buildConfig({
   admin: {
     user: Users.slug,
     meta: {
-      titleSuffix: '— Sveta Cecilija',
+      titleSuffix: '- Sveta Cecilija',
     },
     theme: 'dark',
     // Disable Payload's runtime regeneration of src/app/(payload)/admin/importMap.js.
@@ -40,28 +41,31 @@ export default buildConfig({
           path: '/bulk-create-shows',
         },
         stats: {
-          // Handles both /admin/stats (list) and /admin/stats/[showId]
-          // (drill-down) — Payload v3 only dispatches custom views for
-          // single-segment top-level paths, so the drill-down can't be a
-          // separate `path: '/stats/:showId'` entry. Branch inside the
-          // component based on the requested pathname.
+          // Handles /admin/stats/[showId] drill-down. Bare /admin/stats
+          // redirects to /admin (the list view is folded into the dashboard).
+          // Payload v3 only dispatches custom views for single-segment paths
+          // when exact=false, so we keep the drill-down here.
           Component: '@/components/payload/AdminStatsView#AdminStatsView',
           path: '/stats',
           exact: false,
         },
+        scan: {
+          // Inline scan station for tehnika. Camera stays live across scans;
+          // results overlay the feed via /api/scan/[token]. No page transitions.
+          Component: '@/components/payload/AdminScanView#AdminScanView',
+          path: '/scan',
+        },
+        // Replace Payload's default collection-card dashboard with the
+        // role-branched view. `admin.dashboard.widgets` is additive (it
+        // appends to the default `CollectionCards` widget), so to *replace*
+        // the dashboard we override the dashboard view entirely. See ADR-0006.
+        dashboard: {
+          Component: '@/components/payload/AdminDashboardView#AdminDashboardView',
+        },
       },
     },
-    dashboard: {
-      widgets: [
-        {
-          slug: 'collections',
-          Component: '@payloadcms/next/rsc#CollectionCards',
-          minWidth: 'full',
-        },
-      ],
-    },
   },
-  collections: [Users, Shows, Orders, QRTokens, ContactSubmissions, Posts],
+  collections: [Users, Shows, Orders, QRTokens, ContactSubmissions, Posts, OrderLookups],
   editor: lexicalEditor(),
   secret: (() => {
     const s = process.env.PAYLOAD_SECRET

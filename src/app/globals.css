@@ -630,7 +630,21 @@ html, body { overflow-x: hidden; }
 .perf-card__pill .dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
 .perf-card__pill.green { background: rgba(74,222,128,0.12); color: #4ade80; }
 .perf-card__pill.amber { background: rgba(217,165,38,0.14); color: var(--goldBright); }
-.perf-card__cta { margin-top: auto; padding-top: 10px; border-top: 1px solid rgba(184,136,26,0.15); }
+.perf-card__cta {
+  margin-top: auto; padding-top: 10px; border-top: 1px solid rgba(184,136,26,0.15);
+  display: grid; grid-template-rows: 1fr;
+  overflow: hidden; opacity: 1;
+  transition: grid-template-rows 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.25s ease, padding-top 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+    border-top-color 0.25s ease;
+}
+.perf-card__cta--hidden {
+  grid-template-rows: 0fr;
+  opacity: 0;
+  padding-top: 0;
+  border-top-color: transparent;
+}
+.perf-card__cta > * { min-height: 0; }
 .perf-card__book {
   width: 100%; padding: 8px 14px; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase;
   font-family: var(--font-bodoni, 'Bodoni Moda SC'), serif; font-weight: 600;
@@ -643,13 +657,25 @@ html, body { overflow-x: hidden; }
 
 /* Booking expansion */
 .perf-booking {
-  overflow: hidden; max-height: 0; padding: 0 18px;
+  display: grid;
+  grid-template-rows: 0fr;
   background: rgba(217,165,38,0.04);
-  transition: max-height 0.35s ease, padding 0.35s ease, border-top 0.35s;
+  transition: grid-template-rows 0.45s cubic-bezier(0.4, 0, 0.2, 1);
 }
 .perf-booking--open {
-  max-height: 380px; padding: 20px 18px;
+  grid-template-rows: 1fr;
+}
+.perf-booking__inner {
+  overflow: hidden;
+  min-height: 0;
+  padding: 0 18px;
+  opacity: 0;
+  transition: padding 0.45s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease 0.1s;
+}
+.perf-booking--open .perf-booking__inner {
+  padding: 20px 18px;
   border-top: 1px solid rgba(217,165,38,0.18);
+  opacity: 1;
 }
 .perf-booking__row {
   display: flex; justify-content: space-between; align-items: center;
@@ -1552,6 +1578,35 @@ html, body { overflow-x: hidden; }
   margin: 0;
   font-size: 16px;
   font-weight: 500;
+}
+
+.inner-page .checkout-confirm__pdf {
+  margin: 24px 0 16px;
+  padding: 16px;
+  border: 1px solid color-mix(in oklab, var(--ink, #1a140c) 12%, transparent);
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  align-items: center;
+  text-align: center;
+}
+
+.inner-page .checkout-confirm__pdfBody {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.inner-page .checkout-confirm__pdfBtn {
+  display: inline-block;
+  text-decoration: none;
+}
+/* `.inner-page a { color: inherit }` (specificity 11) beats
+   `.btn--primary { color: #fff }` (10). Re-assert white inside inner-page. */
+.inner-page .btn--primary,
+.inner-page .btn--primary:hover {
+  color: #fff;
 }
 
 a.perf-booking__confirm {

@@ -96,20 +96,13 @@ All of these can be completed while development is in progress.
 
 ---
 
-## Rename door-staff Payload login to tehnika@moreska.eu (issue #55)
+---
 
-Production-only admin action. Code/docs already reference `tehnika@moreska.eu`; the live `Users` record still has the old email and must be renamed manually.
+## 5. Cross-references — open issues from 2026-05-26 brief
 
-- [ ] Log in to `/admin` as the existing admin user.
-- [ ] Open the `Users` collection and edit the record with email `door-staff@moreska.eu`.
-- [ ] Change `email` to `tehnika@moreska.eu`. Confirm `role` is still `door-staff`.
-- [ ] Reset the password (use the Payload "change password" flow) and store the new password in the shared password manager.
-- [ ] Verify: log in at `/admin` with `tehnika@moreska.eu` + new password → succeeds; `/admin/stats` is accessible; `/scan/[token]` continues to work for a real QR.
-- [ ] Inform door staff of the new credentials (replace the printed card / sticker).
-- [ ] Update the Coolify project notes / password-manager entry to drop `door-staff@moreska.eu`.
-- [ ] (Optional) After a few days of green operation, delete or disable the old `door-staff@moreska.eu` user record so it cannot be used to log in.
-
-Local `_dev` can keep any login string — no action required there.
+- **#86** — Agency reservations workflow (blocked on agency phone calls; questionnaire below in "Personal tasks").
+- **#87** — Door recovery flow (PDF download on confirmation, tehnika lookup, next-show window).
+- **#94** — Refund policy page + Zimsko venue-change buyer-notification workflow.
 
 ---
 
@@ -124,3 +117,56 @@ Reduced-scope status after #38 (Meta BM + Pixel) and #53 (`pr@moreska.eu` alias)
 - [x] **Credentials in password manager:** FB/IG/YT logins to be added by Josip.
 
 Issue #67 closed.
+
+---
+
+## 6. Personal tasks (operational, not dev)
+
+- [ ] Create Google Calendar with 2026 season shows. (Manual one-off; auto-sync from Shows collection is a separate ask if it ever becomes painful.)
+- [ ] Update show schedule in `/admin` per Tatjana's latest email.
+- [ ] Send Brane the photo numbers.
+- [ ] Add `pr@moreska.eu` as recovery email on the `moreska.cecilija@gmail.com` Google account (bus-factor for YouTube channel).
+- [ ] Clean up project files — needs concrete scope before doing. Candidates:
+  - `assets/images/new-images/*` (untracked: black-bula.jpg, bula-alone.jpg, experience.jpeg, mate.jpg, moreska-nobilo.{jpg,pdf}, ocevi-sinovi.JPG, sfida-wide.jpg, sword-clash.jpg, wave.jpg) — decide kept / moved to `public/` / deleted.
+  - `docs/` strays: `change-text.md`, `help.md`, `modify-issue#4.md`, `modify.md 16-42-44-630.md` — none look like permanent docs; review and delete.
+- [ ] Call agencies (Kaleta, Iliskovic, Rent a Đir, Hotel Korčula, Marko Polo, Liburna, Bon Repos) — questionnaire in #86 comments. Operational prerequisite for the agency build.
+
+---
+
+## 7. Pending decisions (no dev work until decided)
+
+### Adult / child split in stats
+
+Brief asked for per-show counts split by adult / child / agency. Agency column is tracked in #86. Adult/child breakdown is **not currently in `AdminStatsView` or `AdminShowStatsView`** (verified: no `adult` or `child` references in those components). Source data is on `Orders.adultCount` / `childCount`, so this is a pure presentation change — add columns to the per-show row and to the per-show drill-down. Worth doing alongside the agency column from #86 so the stats redesign happens once.
+
+### Season aggregate stats
+
+Already implemented per CONTEXT.md (`/admin` top block shows total tickets, scanned, revenue, by-venue split). Verify after first month of real season data that the numbers are useful as-is; extend (per-month, per-show-type, per-agency once #86 ships) only if Dragan asks for more.
+
+### POS receipt / Croatian fiscalization
+
+Deferred. Any cash-at-door sale legally requires a fiscal receipt (Porezna uprava API, certificate, JIR/ZKI). Self-contained large project — separate certificate provisioning, signing, real-time reporting. Not in scope until basic season operations are smooth.
+
+### Group discount — revisit "every 5th ticket free"
+
+Currently shipped per CONTEXT.md (`floor(totalTickets / 5) × (hasAdult ? 20 : 10)`). Brief flagged this for review. Open questions before changing anything:
+- Is the current rule actually losing meaningful revenue, or is it driving group size up enough to compensate? Check stats after first month of season before changing.
+- Does the discount interact with agency commission (#86)? Default: does **not** stack.
+- Alternative models to consider: flat group rate from 10+ tickets, school-trip rate, no discount.
+
+### Croatian name for "Moreška Experience"
+
+Current state: EN "Moreška Experience"; HR translation in `services.cards[1]` needs the canonical name. Candidates:
+- "Doživi Morešku" (active framing)
+- "Moreška izbliza"
+- (other — Tereza / Taso input?)
+
+Pick one, then update `src/messages/hr.json` + any meta titles.
+
+### Tereza logo
+
+Waiting on Tereza to deliver new logo asset. Once received: drop into `public/`, swap reference in `Nav`, `Footer`, `Hero`, OG meta.
+
+### Marketing (Taso)
+
+Out of scope for dev — paid campaigns are owned by a separate HGD member. Only dev-adjacent ask is verifying tag firing (#71 Consent Mode etc.) when assets land.

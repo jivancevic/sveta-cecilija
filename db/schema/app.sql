@@ -136,3 +136,42 @@ DO $$ BEGIN
     ADD CONSTRAINT payload_locked_documents_rels_posts_fk
     FOREIGN KEY (posts_id) REFERENCES posts(id) ON DELETE CASCADE;
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+-- ─── order_lookups (audit) ────────────────────────────────────────────
+-- Door-side ticket-lookup audit log (#87). Tehnika has read scope into
+-- orders via the lookup API; every search is recorded here for admin
+-- review.
+
+DO $$ BEGIN
+  CREATE TYPE enum_order_lookups_mode AS ENUM ('email', 'name');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+CREATE TABLE IF NOT EXISTS order_lookups (
+  id              serial PRIMARY KEY,
+  user_id         integer REFERENCES users(id),
+  show_id         integer REFERENCES shows(id),
+  query           varchar,
+  mode            enum_order_lookups_mode,
+  matched_order_id varchar,
+  updated_at      timestamptz NOT NULL DEFAULT now(),
+  created_at      timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS order_lookups_created_at_idx
+  ON order_lookups (created_at DESC);
+
+-- ─── payload_locked_documents_rels: order_lookups_id ──────────────────
+-- Same trap as posts_id above: when OrderLookups was added (#87) the
+-- rels-table create in src/instrumentation.ts wasn't updated. Existing
+-- prod DBs only run CREATE TABLE IF NOT EXISTS, so they never gained
+-- order_lookups_id. Payload's session-lock query references it on every
+-- SSR page → checkout 500s.
+
+ALTER TABLE payload_locked_documents_rels
+  ADD COLUMN IF NOT EXISTS order_lookups_id integer;
+
+DO $$ BEGIN
+  ALTER TABLE payload_locked_documents_rels
+    ADD CONSTRAINT payload_locked_documents_rels_order_lookups_fk
+    FOREIGN KEY (order_lookups_id) REFERENCES order_lookups(id) ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;

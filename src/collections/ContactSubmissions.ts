@@ -1,8 +1,8 @@
 import type { CollectionConfig } from 'payload'
-import { isAdmin } from '@/lib/access/roles'
+import { isAdminTier } from '@/lib/access/roles'
 
 const adminOnly = ({ req }: { req: { user: unknown } }) =>
-  isAdmin(req.user as { role?: string } | null)
+  isAdminTier(req.user as { role?: string } | null)
 
 export const ContactSubmissions: CollectionConfig = {
   slug: 'contact-submissions',
@@ -15,6 +15,7 @@ export const ContactSubmissions: CollectionConfig = {
   admin: {
     useAsTitle: 'name',
     defaultColumns: ['name', 'email', 'enquiryType', 'createdAt'],
+    hidden: ({ user }) => !isAdminTier(user as { role?: string } | null),
   },
   fields: [
     { name: 'name', type: 'text', required: true },

@@ -111,7 +111,7 @@ export async function POST(req: Request) {
           })
         },
         generateToken: generateQrToken,
-        notifyBuyer: async ({ orderId, showId, buyer, order, tokens, locale }) => {
+        notifyBuyer: async ({ orderId, showId, buyer, order, token, locale }) => {
           // Wrapped here (not just in sendTicketEmail) because the show lookup
           // itself can throw — webhook must still return 200 either way so
           // Stripe never retries and double-creates the order.
@@ -130,7 +130,7 @@ export async function POST(req: Request) {
                   venue: showDoc.venue as Venue,
                 },
                 order,
-                tokens,
+                token,
                 locale,
               },
               {

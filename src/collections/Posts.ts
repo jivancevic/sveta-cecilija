@@ -1,12 +1,12 @@
 import type { CollectionConfig, Where } from 'payload'
-import { isAdmin } from '@/lib/access/roles'
+import { isAdminTier } from '@/lib/access/roles'
 
 const adminOnly = ({ req }: { req: { user: unknown } }) =>
-  isAdmin(req.user as { role?: string } | null)
+  isAdminTier(req.user as { role?: string } | null)
 
 // Public reads: only published posts. Admins see everything (drafts + scheduled).
 const publicRead = ({ req }: { req: { user: unknown } }): true | Where => {
-  if (isAdmin(req.user as { role?: string } | null)) return true
+  if (isAdminTier(req.user as { role?: string } | null)) return true
   return {
     and: [
       { status: { equals: 'published' } },
@@ -38,7 +38,8 @@ export const Posts: CollectionConfig = {
     useAsTitle: 'title',
     defaultColumns: ['title', 'locale', 'status', 'publishedAt'],
     description:
-      'Blog posts. Author = HGD Sveta Cecilija. Pick a locale — posts only appear on the public /blog of that locale.',
+      'Blog posts. Author = HGD Sveta Cecilija. Pick a locale; posts only appear on the public /blog of that locale.',
+    hidden: ({ user }) => !isAdminTier(user as { role?: string } | null),
   },
   fields: [
     { name: 'title', type: 'text', required: true },

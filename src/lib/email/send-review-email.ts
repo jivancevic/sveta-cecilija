@@ -43,7 +43,7 @@ function renderHtml(input: SendReviewEmailInput, locale: 'en' | 'hr'): string {
     <tr><td style="padding:36px 32px 12px 32px;">
       <h1 style="font-family:${fontHeading};font-size:28px;line-height:1.2;margin:0 0 16px 0;color:${text};">Hvala što ste bili s nama</h1>
       <p style="margin:0 0 16px 0;font-size:16px;line-height:1.55;">Poštovani ${buyer.name},</p>
-      <p style="margin:0 0 16px 0;font-size:16px;line-height:1.55;">Nadamo se da Vam se naša Moreška svidjela. Jako bi nam značilo ako Vam dvije minute izdvojite za kratku recenziju — Vaša priča pomaže drugim posjetiteljima da pronađu autentičnu Morešku.</p>
+      <p style="margin:0 0 16px 0;font-size:16px;line-height:1.55;">Nadamo se da Vam se naša Moreška svidjela. Jako bi nam značilo ako Vam dvije minute izdvojite za kratku recenziju. Vaša priča pomaže drugim posjetiteljima da pronađu autentičnu Morešku.</p>
     </td></tr>
     <tr><td align="center" style="padding:8px 32px 24px 32px;">
       <a href="${tripadvisorUrl}" style="${buttonStyle}">Recenzija na TripAdvisoru</a>
@@ -66,7 +66,7 @@ function renderHtml(input: SendReviewEmailInput, locale: 'en' | 'hr'): string {
     <tr><td style="padding:36px 32px 12px 32px;">
       <h1 style="font-family:${fontHeading};font-size:28px;line-height:1.2;margin:0 0 16px 0;color:${text};">Thank you for being with us</h1>
       <p style="margin:0 0 16px 0;font-size:16px;line-height:1.55;">Hi ${buyer.name},</p>
-      <p style="margin:0 0 16px 0;font-size:16px;line-height:1.55;">We hope you enjoyed the Moreška. It would mean a great deal if you could spare two minutes to leave a short review — your story helps other visitors find the original Moreška.</p>
+      <p style="margin:0 0 16px 0;font-size:16px;line-height:1.55;">We hope you enjoyed the Moreška. It would mean a great deal if you could spare two minutes to leave a short review. Your story helps other visitors find the original Moreška.</p>
     </td></tr>
     <tr><td align="center" style="padding:8px 32px 24px 32px;">
       <a href="${tripadvisorUrl}" style="${buttonStyle}">Review on TripAdvisor</a>

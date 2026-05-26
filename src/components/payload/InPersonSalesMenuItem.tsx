@@ -57,7 +57,7 @@ export function InPersonSalesMenuItem() {
           Add in-person ticket sales
         </p>
         <p style={{ margin: '0 0 10px', fontSize: 12, color: 'var(--theme-elevation-500)' }}>
-          Adds to the current total — does not replace it.
+          Adds to the current total, does not replace it.
         </p>
         <input
           type="number"

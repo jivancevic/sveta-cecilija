@@ -1,0 +1,281 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>moreska.eu — Design Brief</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bodoni+Moda+SC:ital,wght@0,400;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#000; --bgDeep:#050505; --noir:#0A0A0A; --noirSoft:#111;
+    --light:#F5F2EC; --lightAlt:#EDE9E0; --paper:#D8D8D8;
+    --red:#8B0000; --redHover:#6E0000;
+    --gold:#B8881A; --goldBright:#D9A526;
+    --ink:#1A140C; --muted:#9A9A9A;
+    --rule:rgba(184,136,26,0.7);
+    --serif:'Bodoni Moda SC', serif;
+    --mono:'IBM Plex Mono', ui-monospace, monospace;
+    --sans:'Inter', system-ui, sans-serif;
+  }
+  @page { size: A4; margin: 0; }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--light);color:var(--ink);font-family:var(--sans);font-size:11pt;line-height:1.55;-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+
+  .page{
+    width:210mm; min-height:297mm; padding:18mm 18mm 16mm;
+    page-break-after:always; position:relative;
+    background:
+      radial-gradient(1200px 600px at 80% -10%, rgba(184,136,26,0.06), transparent 60%),
+      radial-gradient(900px 500px at -10% 110%, rgba(184,136,26,0.05), transparent 60%),
+      var(--light);
+  }
+  .page:last-child{page-break-after:auto;}
+  .page.dark{
+    background:
+      radial-gradient(1200px 700px at 50% -10%, rgba(184,136,26,0.10), transparent 65%),
+      var(--bgDeep);
+    color:var(--paper);
+  }
+
+  /* Cover */
+  .cover{display:flex;flex-direction:column;justify-content:space-between;min-height:261mm;}
+  .cover__top{display:flex;justify-content:space-between;align-items:flex-start;}
+  .eyebrow{font-family:var(--mono);font-size:10pt;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);display:flex;align-items:center;gap:14px;}
+  .eyebrow::after{content:'';display:inline-block;height:1px;width:36px;background:var(--gold);}
+  .cover__org{font-family:var(--mono);font-size:9pt;letter-spacing:.18em;text-transform:uppercase;color:var(--paper);opacity:.7;text-align:right;}
+  .cover__org strong{display:block;color:var(--goldBright);letter-spacing:.22em;margin-bottom:4px;}
+  .cover__title{font-family:var(--serif);font-weight:600;font-size:64pt;line-height:.95;letter-spacing:-.01em;margin:0;color:var(--paper);}
+  .cover__title em{font-style:italic;color:var(--goldBright);font-weight:400;}
+  .cover__sub{font-family:var(--serif);font-style:italic;font-weight:400;font-size:18pt;color:var(--paper);opacity:.82;margin-top:18px;max-width:130mm;line-height:1.3;}
+  .cover__rule{height:1px;background:var(--rule);margin:32px 0;}
+  .cover__meta{display:flex;gap:48px;font-family:var(--mono);font-size:9pt;letter-spacing:.14em;text-transform:uppercase;color:var(--paper);opacity:.85;}
+  .cover__meta span strong{display:block;color:var(--goldBright);font-weight:500;margin-bottom:6px;font-size:8pt;}
+
+  /* Section header */
+  h1.section{font-family:var(--serif);font-weight:600;font-size:32pt;line-height:1;letter-spacing:-.015em;margin:0 0 8px;color:var(--ink);}
+  .lead{font-family:var(--serif);font-style:italic;font-size:13pt;line-height:1.45;color:var(--ink);opacity:.78;margin:0 0 26px;max-width:155mm;}
+  .rule{height:1px;background:var(--rule);margin:6px 0 24px;width:48px;}
+
+  h2{font-family:var(--serif);font-weight:600;font-size:18pt;letter-spacing:-.01em;margin:28px 0 10px;color:var(--ink);}
+  h3{font-family:var(--mono);font-size:9pt;letter-spacing:.2em;text-transform:uppercase;color:var(--gold);margin:18px 0 10px;font-weight:500;}
+
+  p{margin:0 0 12px;}
+  .dim{color:var(--ink);opacity:.78;}
+  code{font-family:var(--mono);font-size:9pt;background:rgba(184,136,26,0.10);padding:1px 6px;border-radius:3px;color:var(--ink);}
+
+  /* Type specimens */
+  .type-grid{display:grid;grid-template-columns:1fr;gap:18px;margin:8px 0 6px;}
+  .type{border:1px solid rgba(184,136,26,0.28);background:rgba(255,255,255,0.55);padding:16px 18px;border-radius:2px;}
+  .type__meta{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:10px;}
+  .type__name{font-family:var(--mono);font-size:9pt;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);}
+  .type__role{font-family:var(--mono);font-size:8.5pt;letter-spacing:.1em;text-transform:uppercase;color:var(--ink);opacity:.55;}
+  .type__sample{margin:2px 0 6px;}
+  .type__sample.serif{font-family:var(--serif);font-weight:600;font-size:32pt;line-height:1;letter-spacing:-.01em;color:var(--ink);}
+  .type__sample.mono{font-family:var(--mono);font-weight:500;font-size:20pt;line-height:1.1;color:var(--ink);letter-spacing:.04em;}
+  .type__sample.sans{font-family:var(--sans);font-weight:400;font-size:14pt;line-height:1.4;color:var(--ink);}
+  .type__weights{font-family:var(--mono);font-size:8.5pt;color:var(--ink);opacity:.7;letter-spacing:.08em;}
+
+  /* Color swatches */
+  .swatches{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:8px 0 6px;}
+  .sw{border:1px solid rgba(0,0,0,0.06);border-radius:2px;overflow:hidden;background:#fff;}
+  .sw__chip{height:60px;display:flex;align-items:flex-end;padding:8px;}
+  .sw__chip .hex{font-family:var(--mono);font-size:8.5pt;letter-spacing:.06em;}
+  .sw__body{padding:8px 10px 10px;}
+  .sw__token{font-family:var(--mono);font-size:8.5pt;letter-spacing:.06em;color:var(--ink);}
+  .sw__use{font-size:8.5pt;color:var(--ink);opacity:.65;margin-top:2px;line-height:1.3;}
+  .sw.light .hex{color:var(--ink);}
+  .sw.dark .hex{color:#fff;}
+
+  /* Table */
+  table{width:100%;border-collapse:collapse;font-size:9.5pt;margin:6px 0 6px;}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid rgba(184,136,26,0.22);vertical-align:top;}
+  th{font-family:var(--mono);font-size:8.5pt;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);font-weight:500;border-bottom:1px solid var(--gold);}
+  td code{background:rgba(184,136,26,0.08);}
+
+  /* Buttons demo */
+  .btn-row{display:flex;gap:14px;align-items:center;margin:10px 0 4px;}
+  .btn{font-family:var(--serif);font-weight:600;font-size:11pt;padding:10px 22px;border-radius:999px;border:1px solid transparent;letter-spacing:.02em;}
+  .btn--primary{background:var(--red);color:#fff;}
+  .btn--ghost{background:transparent;color:var(--ink);border:1px solid var(--ink);}
+  .btn-note{font-family:var(--mono);font-size:8.5pt;letter-spacing:.1em;text-transform:uppercase;color:var(--ink);opacity:.55;}
+
+  /* Notes list */
+  ul.notes{padding:0;margin:8px 0 0;list-style:none;}
+  ul.notes li{padding:10px 0 10px 22px;border-bottom:1px dashed rgba(184,136,26,0.3);position:relative;font-size:10pt;line-height:1.5;}
+  ul.notes li::before{content:'';position:absolute;left:0;top:18px;width:12px;height:1px;background:var(--gold);}
+  ul.notes li:last-child{border-bottom:none;}
+
+  /* Footer */
+  .pfoot{position:absolute;left:18mm;right:18mm;bottom:10mm;display:flex;justify-content:space-between;font-family:var(--mono);font-size:7.5pt;letter-spacing:.18em;text-transform:uppercase;color:var(--ink);opacity:.5;}
+  .page.dark .pfoot{color:var(--paper);opacity:.55;}
+
+  /* Section ribbon for headers on light pages */
+  .ribbon{display:inline-flex;align-items:center;gap:14px;font-family:var(--mono);font-size:9pt;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);margin-bottom:14px;}
+  .ribbon::after{content:'';height:1px;width:36px;background:var(--gold);}
+</style>
+</head>
+<body>
+
+<!-- COVER -->
+<section class="page dark">
+  <div class="cover">
+    <div class="cover__top">
+      <div class="eyebrow">Design brief · 2026</div>
+      <div class="cover__org"><strong>HGD Sv. Cecilija</strong>moreška · korčula · est. 1883</div>
+    </div>
+    <div>
+      <h1 class="cover__title">moreška<br><em>visual identity</em></h1>
+      <p class="cover__sub">Fonts, colour palette and design tokens currently used on moreska.eu — a reference for the graphic designer.</p>
+      <div class="cover__rule"></div>
+      <div class="cover__meta">
+        <span><strong>Site</strong>moreska.eu</span>
+        <span><strong>Stack</strong>Next.js · Tailwind</span>
+        <span><strong>Prepared</strong>May 2026</span>
+      </div>
+    </div>
+    <div class="pfoot"><span>moreska.eu</span><span>cover</span></div>
+  </div>
+</section>
+
+<!-- TYPOGRAPHY -->
+<section class="page">
+  <div class="ribbon">Typography</div>
+  <h1 class="section">Three voices, one stage.</h1>
+  <div class="rule"></div>
+  <p class="lead">A small-caps serif carries the headlines, a precise monospace marks the eyebrows and codes, and Inter handles the running text. All three load from Google Fonts via <code>next/font</code>.</p>
+
+  <div class="type-grid">
+    <div class="type">
+      <div class="type__meta">
+        <span class="type__name">Bodoni Moda SC</span>
+        <span class="type__role">Headlines · titles · decorative</span>
+      </div>
+      <div class="type__sample serif">Moreška Korčula</div>
+      <div class="type__sample serif" style="font-size:18pt;font-style:italic;font-weight:400;opacity:.82;">est. 1883 — a sword dance kept alive</div>
+      <div class="type__weights">CSS var <code>--font-bodoni</code> · weights 400 / 600 / 700 · italic available</div>
+    </div>
+
+    <div class="type">
+      <div class="type__meta">
+        <span class="type__name">IBM Plex Mono</span>
+        <span class="type__role">Eyebrows · codes · ticket tags</span>
+      </div>
+      <div class="type__sample mono">TICKET&nbsp;·&nbsp;ZIMSKO KINO&nbsp;·&nbsp;20:30</div>
+      <div class="type__weights">CSS var <code>--font-ibm-plex-mono</code> · weights 400 / 500 / 600 · uppercase + 0.18em tracking</div>
+    </div>
+
+    <div class="type">
+      <div class="type__meta">
+        <span class="type__name">Inter</span>
+        <span class="type__role">Body · UI · paragraphs</span>
+      </div>
+      <div class="type__sample sans">The Moreška is performed every Monday and Thursday from June through September. Buy your tickets in advance — venues are intimate and the season is short.</div>
+      <div class="type__weights">CSS var <code>--font-inter</code> · variable weight axis · default UI face</div>
+    </div>
+  </div>
+
+  <h3>Notes</h3>
+  <p class="dim" style="font-size:10pt;">Headlines use weight 600 (token <code>--headlineWeight</code>). Eyebrows are uppercase IBM Plex Mono in gold with wide tracking, finished by a 36 px gold hairline. The file <code>public/Vinque-Rg.otf</code> sits in the repo but is not referenced anywhere in CSS — safe to ignore or remove.</p>
+
+  <div class="pfoot"><span>moreska.eu · design brief</span><span>01 / typography</span></div>
+</section>
+
+<!-- COLOUR -->
+<section class="page">
+  <div class="ribbon">Colour palette</div>
+  <h1 class="section">Black, parchment, gold, blood.</h1>
+  <div class="rule"></div>
+  <p class="lead">A cinematic dark palette for the homepage and a warm parchment for the inner pages, tied together by a single gold accent and a deep blood-red call-to-action.</p>
+
+  <h3>Surfaces</h3>
+  <div class="swatches">
+    <div class="sw dark"><div class="sw__chip" style="background:#000000;"><span class="hex">#000000</span></div><div class="sw__body"><div class="sw__token">--bg</div><div class="sw__use">Page black</div></div></div>
+    <div class="sw dark"><div class="sw__chip" style="background:#050505;"><span class="hex">#050505</span></div><div class="sw__body"><div class="sw__token">--bgDeep</div><div class="sw__use">Inner-page hero</div></div></div>
+    <div class="sw dark"><div class="sw__chip" style="background:#0A0A0A;"><span class="hex">#0A0A0A</span></div><div class="sw__body"><div class="sw__token">--noir</div><div class="sw__use">CTA bands · footer</div></div></div>
+    <div class="sw dark"><div class="sw__chip" style="background:#111111;"><span class="hex">#111111</span></div><div class="sw__body"><div class="sw__token">--noirSoft</div><div class="sw__use">Lifted dark</div></div></div>
+
+    <div class="sw light"><div class="sw__chip" style="background:#F5F2EC;"><span class="hex">#F5F2EC</span></div><div class="sw__body"><div class="sw__token">--light</div><div class="sw__use">Parchment background</div></div></div>
+    <div class="sw light"><div class="sw__chip" style="background:#EDE9E0;"><span class="hex">#EDE9E0</span></div><div class="sw__body"><div class="sw__token">--lightAlt</div><div class="sw__use">Alt parchment</div></div></div>
+    <div class="sw light"><div class="sw__chip" style="background:#D8D8D8;"><span class="hex">#D8D8D8</span></div><div class="sw__body"><div class="sw__token">--paper</div><div class="sw__use">Paper-grey on dark</div></div></div>
+    <div class="sw light"><div class="sw__chip" style="background:#1A140C;"><span class="hex" style="color:#fff;">#1A140C</span></div><div class="sw__body"><div class="sw__token">--ink</div><div class="sw__use">Body text on light</div></div></div>
+  </div>
+
+  <h3>Accents</h3>
+  <div class="swatches">
+    <div class="sw dark"><div class="sw__chip" style="background:#8B0000;"><span class="hex">#8B0000</span></div><div class="sw__body"><div class="sw__token">--red</div><div class="sw__use">Primary button</div></div></div>
+    <div class="sw dark"><div class="sw__chip" style="background:#6E0000;"><span class="hex">#6E0000</span></div><div class="sw__body"><div class="sw__token">--redHover</div><div class="sw__use">Primary hover</div></div></div>
+    <div class="sw dark"><div class="sw__chip" style="background:#B8881A;"><span class="hex">#B8881A</span></div><div class="sw__body"><div class="sw__token">--gold</div><div class="sw__use">Eyebrows · rules · links</div></div></div>
+    <div class="sw dark"><div class="sw__chip" style="background:#D9A526;"><span class="hex">#D9A526</span></div><div class="sw__body"><div class="sw__token">--goldBright</div><div class="sw__use">Hover / active accent</div></div></div>
+
+    <div class="sw light"><div class="sw__chip" style="background:#9A9A9A;"><span class="hex">#9A9A9A</span></div><div class="sw__body"><div class="sw__token">--muted</div><div class="sw__use">Secondary text</div></div></div>
+    <div class="sw light"><div class="sw__chip" style="background:rgba(184,136,26,0.7);"><span class="hex" style="color:#fff;">rule</span></div><div class="sw__body"><div class="sw__token">--rule</div><div class="sw__use">Gold hairlines</div></div></div>
+    <div class="sw light"><div class="sw__chip" style="background:#C9A84C;"><span class="hex">#C9A84C</span></div><div class="sw__body"><div class="sw__token">cookie gold</div><div class="sw__use">Cookie banner link</div></div></div>
+    <div class="sw light"><div class="sw__chip" style="background:#E2C060;"><span class="hex">#E2C060</span></div><div class="sw__body"><div class="sw__token">cookie hover</div><div class="sw__use">Warm gold variant</div></div></div>
+  </div>
+
+  <h3>Buttons</h3>
+  <div class="btn-row">
+    <button class="btn btn--primary">Buy tickets</button>
+    <button class="btn btn--ghost">Learn more</button>
+    <span class="btn-note">Pill shape · Bodoni 600 · solid red primary · ghost on dark</span>
+  </div>
+
+  <div class="pfoot"><span>moreska.eu · design brief</span><span>02 / colour</span></div>
+</section>
+
+<!-- LAYOUT + CHARACTER + NOTES -->
+<section class="page">
+  <div class="ribbon">Layout &amp; character</div>
+  <h1 class="section">Cinematic, then quiet.</h1>
+  <div class="rule"></div>
+  <p class="lead">The homepage is dark and cinematic — a full-bleed hero video over black, with a silver-foil gradient on the brand name. Inner pages exhale onto warm parchment, keeping the same Bodoni headlines and gold accents for continuity.</p>
+
+  <h2>Layout tokens</h2>
+  <table>
+    <thead><tr><th>Token</th><th>Value</th><th>Meaning</th></tr></thead>
+    <tbody>
+      <tr><td><code>--maxW</code></td><td>1480 px</td><td>Maximum content width</td></tr>
+      <tr><td><code>--pad</code></td><td>130 px</td><td>Section vertical padding</td></tr>
+      <tr><td><code>--sectionPadX</code></td><td>64 px</td><td>Section horizontal padding</td></tr>
+      <tr><td>Headline weight</td><td>600</td><td>Token <code>--headlineWeight</code></td></tr>
+      <tr><td>Eyebrow tracking</td><td>0.18 em uppercase</td><td>Mono · gold · followed by 36 px hairline</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Breakpoints</h2>
+  <table>
+    <thead><tr><th>Width</th><th>Behaviour</th></tr></thead>
+    <tbody>
+      <tr><td><code>≥ 1280 px</code></td><td>Full desktop layout</td></tr>
+      <tr><td><code>1024 px</code></td><td>Grid tightening</td></tr>
+      <tr><td><code>768 px</code></td><td>Hamburger nav, stacked sections, compact tiles</td></tr>
+      <tr><td><code>480 px</code></td><td>Compact mobile</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Assets</h2>
+  <table>
+    <thead><tr><th>Asset</th><th>Path</th><th>Notes</th></tr></thead>
+    <tbody>
+      <tr><td>Logo (web)</td><td><code>public/cecilija-logo.webp</code></td><td>Used in Nav, Hero, Footer</td></tr>
+      <tr><td>Logo (PDF tickets)</td><td><code>assets/images/cecilija-logo.png</code></td><td>react-pdf can't decode webp</td></tr>
+      <tr><td>Hero video — desktop</td><td><code>public/hero-horizontal.webm</code></td><td>≥ 768 px viewport · poster at 0.5 s</td></tr>
+      <tr><td>Hero video — mobile</td><td><code>public/hero-vertical.webm</code></td><td>&lt; 768 px viewport · poster at 0.5 s</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Notes for the designer</h2>
+  <ul class="notes">
+    <li><strong>Plain <code>&lt;img&gt;</code> everywhere</strong> — no <code>next/image</code> yet, so high-quality source files are enough; multiple sizes aren't needed.</li>
+    <li><strong>"moreška" vs "Moreška"</strong> — lowercase in Croatian (common noun), capitalised in English (proper noun). Important for any new copy or mockups.</li>
+    <li><strong>No em-dashes</strong> in user-visible copy — use commas, colons, or periods. Em-dashes read as "AI-written" in this voice.</li>
+    <li><strong>Hero animation</strong> — overlays fade in at 0 s, logo at 0.3 s, name rises at 0.6 s, "est." line at 1.0 s. Posters are extracted at 0.5 s so first paint is never black.</li>
+    <li><strong>Accent rule</strong> — every eyebrow is followed by a 36 px × 1 px gold hairline. It's the single recurring decorative motif across the site.</li>
+  </ul>
+
+  <div class="pfoot"><span>moreska.eu · design brief</span><span>03 / layout &amp; notes</span></div>
+</section>
+
+</body>
+</html>

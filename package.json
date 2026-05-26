@@ -6,7 +6,7 @@
     "node": ">=22 <23"
   },
   "scripts": {
-    "dev": "next dev",
+    "dev": "node scripts/bootstrap-db.mjs && next dev",
     "build": "next build",
     "start": "node scripts/bootstrap-db.mjs && next start",
     "db:bootstrap": "node scripts/bootstrap-db.mjs",
@@ -20,9 +20,13 @@
     "@payloadcms/db-postgres": "^3.84.1",
     "@payloadcms/next": "^3.84.1",
     "@payloadcms/richtext-lexical": "^3.84.1",
+    "@react-email/components": "^1.0.12",
+    "@react-email/render": "^2.0.8",
+    "@react-pdf/renderer": "^4.5.1",
     "@stripe/react-stripe-js": "^6.4.0",
     "@stripe/stripe-js": "^9.6.0",
     "@types/qrcode": "^1.5.6",
+    "html5-qrcode": "^2.3.8",
     "next": "16.2.6",
     "payload": "^3.84.1",
     "pg": "^8.21.0",

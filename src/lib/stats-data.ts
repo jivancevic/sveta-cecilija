@@ -16,9 +16,12 @@ export async function getStatsInput(today: Date = new Date()): Promise<StatsInpu
     depth: 0,
   })
 
-  // Scanned-ticket count per show. qr_tokens.order_id → orders.id; orders.show_id → shows.id.
+  // Scanned-people count per show. "Scanned" counts people through the door
+  // (adult_count + child_count for orders with a scanned QR), not tokens, so
+  // it stays apples-to-apples with onlineSold under the one-QR-per-order model.
   const scannedRes = await pool.query(`
-    SELECT o.show_id AS show_id, COUNT(*)::int AS scanned
+    SELECT o.show_id AS show_id,
+           COALESCE(SUM(o.adult_count + o.child_count), 0)::int AS scanned
     FROM qr_tokens q
     JOIN orders o ON o.id = q.order_id
     WHERE q.scanned = true

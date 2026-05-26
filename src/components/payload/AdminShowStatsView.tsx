@@ -70,7 +70,7 @@ function HeaderBlock({ header, showAdminBits }: { header: ShowStatsHeader; showA
       >
         <Stat label="Online sold" value={header.onlineSold} />
         <Stat label="In-person sold" value={header.inPersonSold} />
-        <Stat label="Legacy reserved" value={header.legacyReserved} />
+        {showAdminBits ? <Stat label="Legacy reserved" value={header.legacyReserved} /> : null}
         <Stat label="Scanned" value={header.scanned} />
         <Stat label="Remaining" value={header.remaining} />
         {showAdminBits ? <Stat label="Revenue" value={eur(header.revenueCents)} /> : null}

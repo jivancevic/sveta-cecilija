@@ -58,21 +58,20 @@ describe('handlePaymentSucceeded', () => {
     )
   })
 
-  it('creates one QRToken per ticket', async () => {
+  it('creates exactly one QRToken per order regardless of ticket count', async () => {
     const deps = makeDeps()
     await handlePaymentSucceeded(event(), deps) // 2 + 1 = 3 tickets
-    expect(deps.createQrToken).toHaveBeenCalledTimes(3)
+    expect(deps.createQrToken).toHaveBeenCalledTimes(1)
   })
 
-  it('each QRToken is generated with a unique value linked to the order', async () => {
+  it('the QRToken is linked to the order', async () => {
     const deps = makeDeps()
     await handlePaymentSucceeded(event(), deps)
     const calls = (deps.createQrToken as ReturnType<typeof vi.fn>).mock.calls
-    const tokens = calls.map((c) => c[0].token)
-    expect(new Set(tokens).size).toBe(3)
-    for (const call of calls) {
-      expect(call[0].order).toBe('order_1')
-    }
+    expect(calls).toHaveLength(1)
+    expect(calls[0][0].order).toBe('order_1')
+    expect(typeof calls[0][0].token).toBe('string')
+    expect(calls[0][0].token.length).toBeGreaterThan(0)
   })
 
   it('increments onlineSold by the total ticket count', async () => {
@@ -93,10 +92,8 @@ describe('handlePaymentSucceeded', () => {
   })
 
   it('notifies the buyer with order + token info after order creation', async () => {
-    const tokens = ['t1', 't2', 't3']
-    let i = 0
     const deps = makeDeps({
-      generateToken: vi.fn(() => tokens[i++]),
+      generateToken: vi.fn(() => 'tok_single'),
     })
     await handlePaymentSucceeded(event({ locale: 'hr' }), deps)
     expect(deps.notifyBuyer).toHaveBeenCalledTimes(1)
@@ -105,9 +102,12 @@ describe('handlePaymentSucceeded', () => {
       showId: 'show_1',
       buyer: { name: 'Ana', email: 'a@b.co' },
       order: { adultCount: 2, childCount: 1, total: 5000 },
-      tokens,
+      token: 'tok_single',
       locale: 'hr',
     })
+    // The single token passed to notifyBuyer matches the token persisted.
+    const qrCall = (deps.createQrToken as ReturnType<typeof vi.fn>).mock.calls[0][0]
+    expect(qrCall.token).toBe('tok_single')
   })
 
   it('defaults locale to en when metadata omits it', async () => {

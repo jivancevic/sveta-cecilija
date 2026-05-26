@@ -29,7 +29,7 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: `Moreška Korčula — Sword Dance Tickets | ${BRAND_LAYER}`,
+  title: `Moreška Korčula - Sword Dance Tickets | ${BRAND_LAYER}`,
   description: TAGLINE,
 };
 
@@ -60,7 +60,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       lang={locale}
       className={`${bodoniModa.variable} ${ibmPlexMono.variable} ${inter.variable}`}
     >
-      <body>
+      <body suppressHydrationWarning>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}

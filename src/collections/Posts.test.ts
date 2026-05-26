@@ -24,13 +24,13 @@ describe('Posts collection', () => {
   describe('access.read', () => {
     const read = Posts.access!.read as ReadAccess
 
-    it('admin sees everything (returns true, no where filter)', () => {
-      const result = read({ req: { user: { role: 'admin' } } })
-      expect(result).toBe(true)
+    it('admin-tier sees everything (returns true, no where filter)', () => {
+      expect(read({ req: { user: { role: 'superadmin' } } })).toBe(true)
+      expect(read({ req: { user: { role: 'admin' } } })).toBe(true)
     })
 
-    it('door-staff is treated as public (no admin bypass) — published-only filter applied', () => {
-      const result = read({ req: { user: { role: 'door-staff' } } })
+    it('tehnika is treated as public (no admin bypass) — published-only filter applied', () => {
+      const result = read({ req: { user: { role: 'tehnika' } } })
       expect(typeof result).toBe('object')
       const where = result as { and: Array<Record<string, unknown>> }
       expect(where.and).toEqual(
@@ -62,11 +62,12 @@ describe('Posts collection', () => {
 
   describe('access.create/update/delete', () => {
     it.each(['create', 'update', 'delete'] as const)(
-      '%s is admin-only — door-staff is rejected',
+      '%s is admin-tier-only — tehnika is rejected',
       (op) => {
         const fn = Posts.access![op] as ReadAccess
-        expect(fn({ req: { user: { role: 'door-staff' } } })).toBe(false)
+        expect(fn({ req: { user: { role: 'tehnika' } } })).toBe(false)
         expect(fn({ req: { user: { role: 'admin' } } })).toBe(true)
+        expect(fn({ req: { user: { role: 'superadmin' } } })).toBe(true)
         expect(fn({ req: { user: null } })).toBe(false)
       },
     )
