@@ -159,3 +159,19 @@ CREATE TABLE IF NOT EXISTS order_lookups (
 
 CREATE INDEX IF NOT EXISTS order_lookups_created_at_idx
   ON order_lookups (created_at DESC);
+
+-- ─── payload_locked_documents_rels: order_lookups_id ──────────────────
+-- Same trap as posts_id above: when OrderLookups was added (#87) the
+-- rels-table create in src/instrumentation.ts wasn't updated. Existing
+-- prod DBs only run CREATE TABLE IF NOT EXISTS, so they never gained
+-- order_lookups_id. Payload's session-lock query references it on every
+-- SSR page → checkout 500s.
+
+ALTER TABLE payload_locked_documents_rels
+  ADD COLUMN IF NOT EXISTS order_lookups_id integer;
+
+DO $$ BEGIN
+  ALTER TABLE payload_locked_documents_rels
+    ADD CONSTRAINT payload_locked_documents_rels_order_lookups_fk
+    FOREIGN KEY (order_lookups_id) REFERENCES order_lookups(id) ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;

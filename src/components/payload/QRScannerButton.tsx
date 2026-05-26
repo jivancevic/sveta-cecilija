@@ -30,11 +30,10 @@ function extractScanPath(decoded: string): string | null {
   return null
 }
 
-export function QRScannerButton({ autoStart = false }: { autoStart?: boolean } = {}) {
+export function QRScannerButton() {
   const [mode, setMode] = useState<Mode>('idle')
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const scannerRef = useRef<{ stop: () => Promise<void>; clear: () => void } | null>(null)
-  const autoStartedRef = useRef(false)
   const elementId = 'tehnika-qr-scanner-region'
 
   useEffect(() => {
@@ -46,14 +45,16 @@ export function QRScannerButton({ autoStart = false }: { autoStart?: boolean } =
     }
   }, [])
 
+  // Lock background scroll while the fullscreen overlay is open. iOS Safari
+  // otherwise lets a swipe drag the page behind the camera.
   useEffect(() => {
-    if (autoStart && !autoStartedRef.current) {
-      autoStartedRef.current = true
-      // fire-and-forget; startScanning handles its own error state
-      void startScanning()
+    if (mode !== 'scanning' && mode !== 'starting') return
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = prev
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoStart])
+  }, [mode])
 
   async function startScanning() {
     setMode('starting')
@@ -62,9 +63,11 @@ export function QRScannerButton({ autoStart = false }: { autoStart?: boolean } =
       const Html5Qrcode = await loadScanner()
       const instance = new Html5Qrcode(elementId)
       scannerRef.current = instance as unknown as { stop: () => Promise<void>; clear: () => void }
+      const shorter = Math.min(window.innerWidth, window.innerHeight)
+      const boxSize = Math.min(Math.round(shorter * 0.6), 480)
       await instance.start(
         { facingMode: 'environment' },
-        { fps: 10, qrbox: { width: 250, height: 250 } },
+        { fps: 10, qrbox: { width: boxSize, height: boxSize } },
         async (decodedText: string) => {
           const target = extractScanPath(decodedText)
           if (!target) return // ignore non-ticket QRs; keep scanning
@@ -131,35 +134,69 @@ export function QRScannerButton({ autoStart = false }: { autoStart?: boolean } =
   }
 
   return (
-    <div>
+    <div
+      style={{
+        position: 'fixed',
+        inset: 0,
+        zIndex: 9999,
+        background: '#000',
+      }}
+    >
       <div
         id={elementId}
         style={{
+          position: 'absolute',
+          inset: 0,
           width: '100%',
-          maxWidth: 480,
-          aspectRatio: '1 / 1',
-          background: 'black',
-          borderRadius: 8,
-          overflow: 'hidden',
+          height: '100%',
+        }}
+      />
+      <div
+        aria-hidden
+        style={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          width: 'min(60vmin, 480px)',
+          height: 'min(60vmin, 480px)',
+          border: '2px solid rgba(255,255,255,0.85)',
+          borderRadius: 12,
+          boxShadow: '0 0 0 9999px rgba(0,0,0,0.5)',
+          pointerEvents: 'none',
         }}
       />
       <button
         type="button"
         onClick={stopScanning}
         style={{
-          marginTop: 12,
-          padding: '10px 16px',
-          background: 'var(--theme-elevation-100)',
-          color: 'var(--theme-text)',
-          border: '1px solid var(--theme-elevation-200)',
-          borderRadius: 6,
+          position: 'absolute',
+          top: 'max(env(safe-area-inset-top, 0px), 16px)',
+          right: 16,
+          padding: '10px 18px',
+          background: 'rgba(0,0,0,0.6)',
+          color: '#fff',
+          border: '1px solid rgba(255,255,255,0.5)',
+          borderRadius: 999,
+          fontSize: 15,
+          fontWeight: 600,
           cursor: 'pointer',
         }}
       >
         Cancel
       </button>
       {mode === 'starting' ? (
-        <p style={{ fontSize: 13, color: 'var(--theme-elevation-500)', marginTop: 8 }}>
+        <p
+          style={{
+            position: 'absolute',
+            bottom: 'max(env(safe-area-inset-bottom, 0px), 24px)',
+            left: 0,
+            right: 0,
+            textAlign: 'center',
+            color: '#fff',
+            fontSize: 14,
+          }}
+        >
           Starting camera…
         </p>
       ) : null}
