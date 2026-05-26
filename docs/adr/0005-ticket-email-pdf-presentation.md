@@ -83,3 +83,35 @@ Unchanged. `notifyBuyer` keeps its existing `try/catch` in `src/app/api/stripe/w
 - `src/lib/email/send-ticket-email.ts` — current orchestrator (to be refactored)
 - `src/app/api/stripe/webhook/route.ts` — sole call site; failure-mode contract preserved
 - CLAUDE.md — "Email sending", Coolify / Nixpacks deploy gotchas, design tokens
+
+---
+
+## Amendment — 2026-05-26: one QR per order, single-page PDF
+
+After the first ship the "one page per ticket + per-ticket adult/child derivation" model was reversed. The buyer artefact and the data model both shift to **one token per order**:
+
+**What changes:**
+
+- **Data model.** `handle-payment-succeeded.ts` no longer loops `for (i = 0; i < total; i++)` to create N `QRTokens` rows. It creates exactly one row per order. `QRTokens` schema is unchanged — only the write call site collapses. The buyer's email carries one QR.
+- **PDF layout.** Single A4 portrait page per order. Layout: `cecilija-logo.png` top-left, Bodoni Moda SC `MOREŠKA` wordmark, show card (title, date, time, venue), buyer name, **one large centred QR (≈80mm square)**, IBM Plex Mono ticket-count line (`4 tickets — 3 adults, 1 child`), order reference, doors time. **No perforation, no stub, no per-ticket page.**
+- **Adult/child becomes a label only.** The original ADR's "first N tokens render as Adult, next M as Child" derivation is dead — there is one token, and the breakdown is read directly off `orders.adult_count` / `orders.child_count`. No deterministic per-token type. Per-seat refunds / transfers remain a known follow-up if the use case ever arrives; the schema doesn't change here either.
+- **Door-staff scan UX.** The `/scan/[token]` result for staff (VALID) shows the same ticket-count label so the scanner knows how many people to admit on a single scan. The scan-result screens (VALID, ALREADY_SCANNED, INVALID) now render two stacked buttons: **Scan new** (primary, links to `/admin?scan=1` which auto-opens the camera) and **Back** (secondary, to `/admin`). ALREADY_SCANNED keeps the existing Undo button above these.
+- **Tehnika dashboard.** Strips the season aggregate. Renders one block for the next show only (date, online sold, **scanned (people)**, in-person sold). No revenue. See CONTEXT.md "Stats dashboard" and "Scanned (people)" entries. The dashboard's "Scanned" semantic moves from `COUNT(*) where scanned = true` (which now means orders, not seats) to `SUM(adult_count + child_count)` over scanned orders.
+- **Existing tokens.** Production tokens issued before this amendment were test data; the migration `TRUNCATE qr_tokens` and resets `shows.online_sold`/`shows.in_person_sold` to zero. No production buyer data is lost.
+
+**What stays:**
+
+- `@react-pdf/renderer` (pure Node, ~2MB) — still the right call for one A4 page with embedded PNG QR.
+- `@react-email/components` for the HTML email body — unchanged.
+- Visual identity: stone background, Bodoni Moda SC wordmark, IBM Plex Mono codes, Inter body, gold rule, logo top-left.
+- Failure-mode contract in the webhook (`notifyBuyer` wrapped in try/catch; 200 always; manual resend on log diagnosis).
+- Email body — confirmation only, no inline QR; PDF is the sole scan surface.
+- Brevo as the sender; `tickets@moreska.eu` as the From.
+
+**Why the reversal:**
+
+1. The N-PNGs-per-order model produced N tokens that *had no buyer-visible identity* once the PDF merged them — a buyer holding "ticket 3 of 4" had no operational meaning at the door beyond "let four people in", which the order's adult/child counts already say. The per-token granularity was paid-for and unused.
+2. The dashboard "Scanned" metric had no useful interpretation under N-tokens. `2 of 4 scanned` for a single party is a buggy-looking state at the door (does the party come back?); `1 of 1` for an admitted order is unambiguous. The shift cascades cleanly into the next-show tehnika block: a single integer that tracks people through the door.
+3. Operational simplicity for door staff: one scan = entire party admitted. The previous model was "you need to scan each PNG"; in practice door staff scanned once and waved everyone through, leaving the trailing tokens permanently unscanned and polluting the metric.
+
+The bulk of the original decision (visual identity, react-pdf stack, failure mode) survives. The amendment is a *narrowing* — the same renderer, with fewer pages and a simpler data flow.
