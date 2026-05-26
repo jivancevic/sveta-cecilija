@@ -362,7 +362,9 @@
     "thankYouHeading": "Thank you, your tickets are booked",
     "thankYouBody": "We've sent your tickets and QR codes to your email. Show your QR code at the door on the night of the performance.",
     "orderRefLabel": "Order reference",
-    "ticketCountLabel": "Tickets"
+    "ticketCountLabel": "Tickets",
+    "ticketsAlsoSentTo": "Tickets are also being sent to {email}. If they don't arrive in 5 minutes, check spam, or use the button below.",
+    "downloadTicketsPdf": "Download tickets (PDF)"
   },
   "blogPage": {
     "heroHeadline": "Stories from Korčula",
