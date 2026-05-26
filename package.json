@@ -6,7 +6,7 @@
     "node": ">=22 <23"
   },
   "scripts": {
-    "dev": "next dev",
+    "dev": "node scripts/bootstrap-db.mjs && next dev",
     "build": "next build",
     "start": "node scripts/bootstrap-db.mjs && next start",
     "db:bootstrap": "node scripts/bootstrap-db.mjs",
