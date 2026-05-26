@@ -30,7 +30,7 @@ export interface NotifyBuyerInput {
   showId: string
   buyer: { name: string; email: string }
   order: { adultCount: number; childCount: number; total: number }
-  tokens: string[]
+  token: string
   locale: 'en' | 'hr'
 }
 
@@ -73,12 +73,10 @@ export async function handlePaymentSucceeded(
     locale,
   })
 
-  const tokens: string[] = []
-  for (let i = 0; i < total; i++) {
-    const token = deps.generateToken()
-    tokens.push(token)
-    await deps.createQrToken({ token, order: order.id })
-  }
+  // One QRToken per order — door staff scan once to admit the entire party.
+  // See CONTEXT.md "One QR per order" and ADR-0005 Amendment (2026-05-26).
+  const token = deps.generateToken()
+  await deps.createQrToken({ token, order: order.id })
 
   await deps.incrementOnlineSold(showId, total)
 
@@ -87,7 +85,7 @@ export async function handlePaymentSucceeded(
     showId,
     buyer: { name: evt.metadata.buyerName ?? '', email: evt.metadata.email ?? '' },
     order: { adultCount: adults, childCount: children, total: evt.amountReceived },
-    tokens,
+    token,
     locale,
   })
 

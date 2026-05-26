@@ -7,7 +7,7 @@ export interface SendTicketEmailInput {
   buyer: { name: string; email: string }
   show: { date: string; time: string; venue: Venue }
   order: { adultCount: number; childCount: number; total: number }
-  tokens: string[]
+  token: string
   locale: 'en' | 'hr'
 }
 
@@ -44,7 +44,7 @@ export async function sendTicketEmail(
         buyer: input.buyer,
         show: input.show,
         order: input.order,
-        tokens: input.tokens,
+        token: input.token,
         locale: input.locale,
         orderRef: input.orderId,
       },
@@ -77,13 +77,13 @@ export async function sendTicketEmail(
       const text = await res.text().catch(() => '')
       // Prefix fields so failures are grep-able (`orderId=`) for manual resend.
       console.error(
-        `[sendTicketEmail] Brevo error orderId=${input.orderId} email=${input.buyer.email} tokens=${input.tokens.length} status=${res.status} body=${text}`,
+        `[sendTicketEmail] Brevo error orderId=${input.orderId} email=${input.buyer.email} token=${input.token} status=${res.status} body=${text}`,
       )
     }
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
     console.error(
-      `[sendTicketEmail] fetch failed orderId=${input.orderId} email=${input.buyer.email} tokens=${input.tokens.length} error=${msg}`,
+      `[sendTicketEmail] fetch failed orderId=${input.orderId} email=${input.buyer.email} token=${input.token} error=${msg}`,
     )
   }
 }

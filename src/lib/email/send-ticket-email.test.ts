@@ -11,7 +11,7 @@ function makeInput(overrides: Record<string, unknown> = {}) {
       venue: 'ljetno-kino' as const,
     },
     order: { adultCount: 2, childCount: 1, total: 5000 },
-    tokens: ['tok_a', 'tok_b', 'tok_c'],
+    token: 'tok_single',
     locale: 'en' as const,
     ...overrides,
   }
@@ -62,7 +62,7 @@ describe('sendTicketEmail', () => {
 
     expect(deps.renderTicketsPdf).toHaveBeenCalledTimes(1)
     const pdfCallArgs = (deps.renderTicketsPdf as ReturnType<typeof vi.fn>).mock.calls[0]
-    expect(pdfCallArgs[0].tokens).toEqual(['tok_a', 'tok_b', 'tok_c'])
+    expect(pdfCallArgs[0].token).toBe('tok_single')
     expect(pdfCallArgs[0].orderRef).toBe('1247')
     expect(pdfCallArgs[0].locale).toBe('en')
 
@@ -131,7 +131,7 @@ describe('sendTicketEmail', () => {
     const logged = errSpy.mock.calls.flat().join(' ')
     expect(logged).toContain('orderId=order_99')
     expect(logged).toContain('email=ana@example.com')
-    expect(logged).toContain('tokens=3')
+    expect(logged).toContain('token=tok_single')
     expect(logged).toContain('status=503')
     errSpy.mockRestore()
   })
