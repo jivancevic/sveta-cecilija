@@ -52,10 +52,15 @@ export default buildConfig({
       },
     },
     dashboard: {
+      // Replace Payload's default collection-card dashboard with a custom
+      // role-branched view. The component handles its own auth check (Payload
+      // renders widgets even for unauthed visitors in some paths) and reads
+      // the role from `payload.auth(...)` to decide which actions to show.
+      // See ADR-0006.
       widgets: [
         {
-          slug: 'collections',
-          Component: '@payloadcms/next/rsc#CollectionCards',
+          slug: 'dashboard',
+          Component: '@/components/payload/AdminDashboardView#AdminDashboardView',
           minWidth: 'full',
         },
       ],
