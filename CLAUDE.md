@@ -12,7 +12,11 @@ Using the default five-role label vocabulary. See `docs/agents/triage-labels.md`
 
 ### Schema management
 
-Production schema is applied by `scripts/bootstrap-db.mjs` (runs from `npm start` before `next start`) using idempotent SQL in `db/schema/*.sql`. Local dev uses Payload's `push: true`. See `docs/agents/db-bootstrap.md` for how to add a column or collection.
+Production schema is applied by `scripts/bootstrap-db.mjs` (runs from both `npm start` and `npm run dev`, before `next start` / `next dev`) using idempotent SQL in `db/schema/*.sql`. Local dev also uses Payload's `push: true` after bootstrap. See `docs/agents/db-bootstrap.md` for how to add a column or collection.
+
+**Enum migrations need ordering care.** When you change a Payload `select` field's options, the underlying Postgres enum (`enum_<table>_<field>`) must be widened *before* any SQL UPDATE references the new values, otherwise the UPDATE fails with `invalid input value for enum`. Pattern: at the top of the migration file, run `ALTER TYPE enum_users_role ADD VALUE IF NOT EXISTS 'newvalue';` (one statement per new value — Postgres requires standalone `ADD VALUE`, not in a `DO` block). Then your UPDATEs are safe. In dev, Payload's `push: true` will subsequently rewrite the enum to match the field config and ALTER COLUMN with a USING cast — that cast fails if any row still holds a value not in the new enum, so always migrate data *first*. See `db/schema/migrate-roles.sql` for the working pattern.
+
+**`npm run dev` runs bootstrap-db.mjs**, but only if `DATABASE_URL` is in the shell env. `next dev` itself loads `.env.local`, but standalone node scripts don't. If bootstrap prints `DATABASE_URL is not set — skipping`, source env first: `set -a && . .env.local && set +a && npm run dev`. A fresh clone hitting an enum-change migration will 500 until this is done.
 
 ### Env files
 
@@ -219,8 +223,11 @@ Remaining capacity per show = `VENUE_CAPACITY[venue] - onlineSold - inPersonSold
 
 **Admin component placement map** (non-obvious nesting):
 - Custom root admin route (`/admin/my-page`): `admin.components.views[key]` in `buildConfig`, with `path: '/my-page'`
+- **Replace the `/admin` dashboard itself**: `admin.components.views.dashboard.Component` (no `path`). `admin.dashboard.widgets` is *additive* — it appends widgets to the built-in `CollectionCards`, not a replacement. If you want the dashboard to be your component only, use the dashboard view override.
 - Button in collection list header: `collection.admin.components.views.list.actions`
 - Item in edit view 3-dot menu: `collection.admin.components.edit.editMenuItems`
+- Hide a collection from the sidebar (per-role): `collection.admin.hidden: ({ user }) => !isAdminTier(user)`. Hidden collections also return 404 on direct URL access, not just sidebar omission.
+- Field-level access (e.g. lock a role/permission field against self-promotion): `field.access: { read, update, create }`. Each takes a function of `{ req }`. The field is silently dropped from updates if the predicate returns false — no error to the caller.
 - **No per-row list actions exist in v3** — cancel/single-doc actions belong in the edit view
 
 **`importMap.js` is manually maintained.** `src/app/(payload)/admin/importMap.js` is not auto-generated. Every new component added to `payload.config.ts` or a collection config must also be imported and keyed there. Omitting it causes a silent render failure.
