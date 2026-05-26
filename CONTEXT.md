@@ -35,6 +35,9 @@ Other venue block details (always shown):
 ### Show time format
 Stored and displayed as `HH:MM` (24-hour, e.g. `21:00`, `10:30`). Validated on input — the admin rejects any value that doesn't match the pattern. No predefined pick-list; free text with format enforcement.
 
+### 2026 season
+22 Redovna shows from 2026-05-18 to 2026-10-14, all at `ljetno-kino`, all 21:00. Seeded into the `shows` collection via `db/schema/seed-shows.sql` (idempotent `WHERE NOT EXISTS` guard). The full schedule in `docs/performances.md` lists 36 rows total — the 14 non-Redovna entries (Adriatic DMC charter shows on cruise ships like Le Ponant / Le Bougainville / NG Orion / Lady Eleganza, Gulliver group tours, KONCERT at Sv. Justina, and the Sv. Todor pilgrimage performance) stay in the docs as scheduling context for the secretary but are deliberately not in the DB — they aren't publicly ticketed and would clutter `/tickets`.
+
 ### Performance visibility
 Only performances whose date >= today (YYYY-MM-DD, compared at midnight) are shown on the tickets page. Today's show is always visible; it disappears when the next calendar day begins.
 

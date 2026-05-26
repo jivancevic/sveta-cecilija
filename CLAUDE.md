@@ -14,7 +14,14 @@ Using the default five-role label vocabulary. See `docs/agents/triage-labels.md`
 
 Production schema is applied by `scripts/bootstrap-db.mjs` (runs from both `npm start` and `npm run dev`, before `next start` / `next dev`) using idempotent SQL in `db/schema/*.sql`. Local dev also uses Payload's `push: true` after bootstrap. See `docs/agents/db-bootstrap.md` for how to add a column or collection.
 
-**Enum migrations need ordering care.** When you change a Payload `select` field's options, the underlying Postgres enum (`enum_<table>_<field>`) must be widened *before* any SQL UPDATE references the new values, otherwise the UPDATE fails with `invalid input value for enum`. Pattern: at the top of the migration file, run `ALTER TYPE enum_users_role ADD VALUE IF NOT EXISTS 'newvalue';` (one statement per new value — Postgres requires standalone `ADD VALUE`, not in a `DO` block). Then your UPDATEs are safe. In dev, Payload's `push: true` will subsequently rewrite the enum to match the field config and ALTER COLUMN with a USING cast — that cast fails if any row still holds a value not in the new enum, so always migrate data *first*. See `db/schema/migrate-roles.sql` for the working pattern.
+**Enum migrations need ordering care AND a file split.** When you change a Payload `select` field's options, the underlying Postgres enum (`enum_<table>_<field>`) must be widened *before* any SQL UPDATE references the new values. Two gotchas stack:
+
+1. **`ALTER TYPE … ADD VALUE` cannot be used within the same transaction that references the new value** — Postgres errors with `unsafe use of new value of enum type`. `IF NOT EXISTS` doesn't help; that's about idempotency, not transaction scoping.
+2. **`bootstrap-db.mjs` sends each `.sql` file as a single `client.query(sql)` call** — pg's simple query protocol treats multi-statement strings as one implicit transaction. So `ALTER TYPE ADD VALUE` and a downstream `UPDATE` cannot share a file.
+
+Pattern: split into two files that run alphabetically. `migrate-roles-1-enum.sql` contains only `ALTER TYPE enum_users_role ADD VALUE IF NOT EXISTS 'newvalue';` (one statement per new value, no DO block). `migrate-roles-2-data.sql` contains the `UPDATE` statements. Each runs in its own implicit transaction; the new enum values are visible by the time step 2 runs.
+
+In dev, Payload's `push: true` will subsequently rewrite the enum to match the field config and `ALTER COLUMN … USING <cast>` — the cast fails if any row still holds a value not in the new enum, so always migrate data *first*. See `db/schema/migrate-roles-1-enum.sql` and `migrate-roles-2-data.sql` for the working pattern.
 
 **`npm run dev` runs bootstrap-db.mjs**, but only if `DATABASE_URL` is in the shell env. `next dev` itself loads `.env.local`, but standalone node scripts don't. If bootstrap prints `DATABASE_URL is not set — skipping`, source env first: `set -a && . .env.local && set +a && npm run dev`. A fresh clone hitting an enum-change migration will 500 until this is done.
 
@@ -41,7 +48,17 @@ Pattern proven in `src/app/api/shows/[id]/in-person-sales/route.ts`. The lib hel
 Coolify on Hetzner builds with Nixpacks, runs `npm ci --production` (= `--omit=dev`), then `npm start` (= bootstrap + `next start`). Three gotchas worth knowing before you touch the build:
 
 1. **Pin Node via `engines` in `package.json`**, not the `NIXPACKS_NODE_VERSION` env var. Nixpacks's pinned nixpkgs revision only goes up to `nodejs_22` — `NIXPACKS_NODE_VERSION=24` fails the nix-env step with `undefined variable 'nodejs_24'`.
-2. **Regenerate `package-lock.json` carefully on macOS.** `npm install <pkg> --save` can leave the lockfile out of sync (esbuild platform binaries lose their `optional: true` flag), and Coolify's `npm ci` is strict. After any dep change, run `npm install` from scratch (`rm -rf node_modules package-lock.json && npm install`) and verify in a Linux container: `docker run --rm -v "$PWD":/app -w /app node:22 sh -c "npm ci --production"` should exit 0.
+2. **Regenerate `package-lock.json` carefully — npm 10 vs 11 produce incompatible lockfiles.** `npm install <pkg> --save` can leave the lockfile out of sync (esbuild platform binaries lose their `optional: true` flag), and Coolify's `npm ci` is strict. The trickier failure mode is **npm version skew**: macOS hosts run npm 11 (with Node 24+) which considers some nested optional peerDeps removable, but Coolify's node:22 image runs npm 10 which expects them present. Symptom in Coolify: `Missing: yaml@2.9.0 from lock file` (or any other transitive dep), even though `npm ci` succeeds locally.
+
+Recipe: **regenerate the lockfile inside the node:22 container, lockfile-only mode** (avoids macOS bind-mount choking on `rm -rf node_modules`):
+
+```
+rm -f package-lock.json
+docker run --rm -v "$PWD":/app -w /app node:22 \
+  sh -c "npm install --package-lock-only --no-audit --no-fund"
+```
+
+Then verify in the same container: `docker run --rm -v "$PWD":/app -w /app node:22 sh -c "npm ci --omit=dev --dry-run"` should exit 0.
 3. **`overrides` keeps esbuild flat.** `package.json` has `"overrides": { "esbuild": "^0.25.0" }` to collapse vitest's nested esbuild into the root version — without this, Coolify hits `EBADPLATFORM @esbuild/aix-ppc64`. If you bump vitest or add a devDep that brings its own esbuild, re-verify in the container before pushing.
 
 See `docs/agents/deployment.md` for the full debugging playbook + log triage patterns.
@@ -143,8 +160,10 @@ All production assets live in `public/`. Key files:
 - `hero-vertical.webm` — autoplay hero video (mobile, <768px) — loaded dynamically in `Hero.tsx`
 - `hero-horizontal-poster.webp` — first-frame poster for horizontal video (74 KB, extracted at 0.5s)
 - `hero-vertical-poster.webp` — first-frame poster for vertical video (41 KB, extracted at 0.5s)
-- `cecilija-logo.png` — organisation logo used in Nav, Footer, Hero
+- `cecilija-logo.webp` — organisation logo used in Nav, Footer, Hero (web `<img>` use)
 - `Vinque-Rg.otf` — custom serif font
+
+The PNG variant of the logo lives at **`assets/images/cecilija-logo.png`** (outside `public/`) — used by `@react-pdf/renderer` in `src/lib/email/render-tickets-pdf.tsx`, which can't decode webp. Read via `fs.readFileSync` at module load, embedded as a `<Image>` in the PDF. Don't move it without updating the renderer.
 
 ### CSS architecture
 
