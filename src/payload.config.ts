@@ -17,7 +17,7 @@ export default buildConfig({
   admin: {
     user: Users.slug,
     meta: {
-      titleSuffix: '— Sveta Cecilija',
+      titleSuffix: '- Sveta Cecilija',
     },
     theme: 'dark',
     // Disable Payload's runtime regeneration of src/app/(payload)/admin/importMap.js.

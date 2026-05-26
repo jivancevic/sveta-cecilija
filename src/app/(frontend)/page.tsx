@@ -22,7 +22,7 @@ export const dynamic = 'force-dynamic';
 
 export function generateMetadata() {
   return buildMetadata({
-    title: 'Moreška Korčula — Sword Dance Tickets',
+    title: 'Moreška Korčula - Sword Dance Tickets',
     description:
       'The Original Moreška sword dance, performed since 1883. Live performances at the Summer Cinema, Korčula. Book your tickets online.',
     path: '/',

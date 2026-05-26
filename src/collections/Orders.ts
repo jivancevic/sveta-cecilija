@@ -54,7 +54,7 @@ export const Orders: CollectionConfig = {
         { label: 'Croatian', value: 'hr' },
       ],
       admin: {
-        description: 'Buyer locale captured at checkout — drives post-purchase email language',
+        description: 'Buyer locale captured at checkout; drives post-purchase email language',
       },
     },
     {

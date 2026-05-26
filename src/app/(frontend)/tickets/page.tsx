@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic';
 
 export function generateMetadata() {
   return buildMetadata({
-    title: 'Moreška Tickets — 2026 Season Schedule',
+    title: 'Moreška Tickets - 2026 Season Schedule',
     description:
       "Buy tickets for Korčula's Moreška sword dance, performed since 1883. Full 2026 season at the Summer Cinema. Adults €20, children €10.",
     path: '/tickets',

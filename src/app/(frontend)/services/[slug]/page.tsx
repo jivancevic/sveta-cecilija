@@ -25,7 +25,7 @@ export async function generateMetadata({
   const dict = await getDictionary('en');
   const card = dict.services.cards[meta.cardIndex];
   return buildMetadata({
-    title: `${card.name} — ${card.tagline}`,
+    title: `${card.name} - ${card.tagline}`,
     description: card.blurb,
     path: `/services/${slug}`,
     image: meta.image,

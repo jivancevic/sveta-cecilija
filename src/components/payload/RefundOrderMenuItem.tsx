@@ -31,7 +31,7 @@ export function RefundOrderMenuItem() {
   if (!hasPaymentIntent) {
     return (
       <div style={{ padding: '8px 16px', fontSize: 13, color: 'var(--theme-elevation-500)' }}>
-        No Stripe payment — refund N/A
+        No Stripe payment, refund N/A
       </div>
     )
   }
