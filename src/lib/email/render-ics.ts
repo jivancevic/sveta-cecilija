@@ -53,8 +53,8 @@ export interface RenderIcsInput {
 }
 
 const SUMMARY: Record<'en' | 'hr', string> = {
-  en: 'Moreška — Korčula',
-  hr: 'Moreška — Korčula',
+  en: 'Moreška sword dance',
+  hr: 'Predstava moreške',
 }
 
 const DESCRIPTION: Record<'en' | 'hr', string> = {
