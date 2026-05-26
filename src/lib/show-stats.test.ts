@@ -74,26 +74,38 @@ describe('computeShowStats — header big numbers', () => {
     expect(out.header.totalSold).toBe(120)
   })
 
-  it('counts scanned tokens across all orders (ignores refund status)', () => {
+  it('counts scanned people (adult + child) across orders with a scanned QR (ignores refund status)', () => {
     const out = computeShowStats(
       makeInput({
         orders: [
           makeOrder({
+            // 2 adults + 1 child = 3 people through the door
+            adultCount: 2,
+            childCount: 1,
             tokens: [
               { token: 't1', scanned: true, scannedAt: '2026-07-12T20:55:00Z' },
-              { token: 't2', scanned: false, scannedAt: null },
             ],
           }),
           makeOrder({
             id: 'o2',
+            // refunded but scanned: still walked in → counts
+            adultCount: 1,
+            childCount: 0,
             refunded: true,
             tokens: [{ token: 't3', scanned: true, scannedAt: '2026-07-12T21:00:00Z' }],
+          }),
+          makeOrder({
+            id: 'o3',
+            // unscanned order → not counted
+            adultCount: 5,
+            childCount: 0,
+            tokens: [{ token: 't4', scanned: false, scannedAt: null }],
           }),
         ],
       }),
     )
 
-    expect(out.header.scanned).toBe(2)
+    expect(out.header.scanned).toBe(4)
   })
 
   it('surfaces legacyReserved as its own header field and subtracts it from remaining', () => {
