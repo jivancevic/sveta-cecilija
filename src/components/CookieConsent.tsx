@@ -106,8 +106,8 @@ export default function CookieConsent({ t }: Props) {
       return () => clearTimeout(timer);
     }
     if (stored === 'accepted') {
-      injectGA();
       updateConsentGranted();
+      injectGA();
       injectMetaPixel();
     }
   }, []);
@@ -122,8 +122,8 @@ export default function CookieConsent({ t }: Props) {
 
   function accept() {
     localStorage.setItem(STORAGE_KEY, 'accepted');
-    injectGA();
     updateConsentGranted();
+    injectGA();
     injectMetaPixel();
     // Manually fire the first PageView once the pixel is in place — the
     // pathname-change effect above only runs on route transitions.
