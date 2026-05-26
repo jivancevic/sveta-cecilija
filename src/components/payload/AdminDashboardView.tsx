@@ -10,6 +10,7 @@ import { isAdminTier, isAuthed } from '@/lib/access/roles'
 import { getNextShow, getScannedPeopleForShow, type NextShow } from '@/lib/shows'
 import { HeaderBlock, ShowsTable } from './stats-blocks'
 import { QRScannerAutoStart } from './QRScannerAutoStart'
+import { TicketLookupPanel } from './TicketLookupPanel'
 
 export const dynamic = 'force-dynamic'
 
@@ -175,6 +176,9 @@ function NextShowBlock({ next, scanned }: { next: NextShow; scanned: number }) {
         <Stat label="Online sold" value={next.onlineSold} />
         <Stat label="Scanned" value={scanned} />
         <Stat label="In-person sold" value={next.inPersonSold} />
+      </div>
+      <div style={{ marginTop: 16 }}>
+        <TicketLookupPanel showId={next.id} />
       </div>
     </div>
   )

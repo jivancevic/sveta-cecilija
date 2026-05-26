@@ -26,12 +26,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   // Auth: either a signed token (?t=...) tied to this order + buyer email,
   // or an authenticated admin/tehnika cookie session.
   const url = new URL(req.url)
-  const token = url.searchParams.get('t')
+  const linkToken = url.searchParams.get('t')
   const buyerEmail = (order.email as string) ?? ''
 
   let authorized = false
-  if (token && buyerEmail) {
-    const result = verifyTicketLink(token, String(order.id), buyerEmail)
+  if (linkToken && buyerEmail) {
+    const result = verifyTicketLink(linkToken, String(order.id), buyerEmail)
     if (result.ok) authorized = true
   }
   if (!authorized) {
@@ -50,17 +50,19 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: 'Order missing show' }, { status: 500 })
   }
 
+  // One QR token per order since #93 — fetch the single token row.
   const tokensRes = await payload.find({
     collection: 'qr-tokens',
     where: { order: { equals: order.id } },
-    limit: 100,
+    limit: 1,
     depth: 0,
     sort: 'createdAt',
   })
-  const tokens = tokensRes.docs.map((d) => d.token as string)
-  if (tokens.length === 0) {
-    return NextResponse.json({ error: 'No tickets for this order' }, { status: 404 })
+  const tokenRow = tokensRes.docs[0]
+  if (!tokenRow) {
+    return NextResponse.json({ error: 'No ticket for this order' }, { status: 404 })
   }
+  const token = tokenRow.token as string
 
   const isoDate = show.date as string
   const date = typeof isoDate === 'string' ? isoDate.slice(0, 10) : ''
@@ -71,14 +73,13 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
   const pdfBuffer = await renderTicketsPdf(
     {
-      buyer: { name: order.buyerName as string, email: buyerEmail },
+      buyer: { name: order.buyerName as string },
       show: { date, time: show.time, venue: show.venue },
       order: {
         adultCount: (order.adultCount as number) ?? 0,
         childCount: (order.childCount as number) ?? 0,
-        total: (order.total as number) ?? 0,
       },
-      tokens,
+      token,
       locale,
       orderRef: String(order.id),
     },

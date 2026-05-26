@@ -9,6 +9,7 @@ import { Orders } from './collections/Orders'
 import { QRTokens } from './collections/QRTokens'
 import { ContactSubmissions } from './collections/ContactSubmissions'
 import { Posts } from './collections/Posts'
+import { OrderLookups } from './collections/OrderLookups'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -58,7 +59,7 @@ export default buildConfig({
       },
     },
   },
-  collections: [Users, Shows, Orders, QRTokens, ContactSubmissions, Posts],
+  collections: [Users, Shows, Orders, QRTokens, ContactSubmissions, Posts, OrderLookups],
   editor: lexicalEditor(),
   secret: (() => {
     const s = process.env.PAYLOAD_SECRET
