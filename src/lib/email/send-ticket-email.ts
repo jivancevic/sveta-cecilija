@@ -1,6 +1,7 @@
 import type { Venue } from '../venues'
 import { renderTicketEmail } from './render-ticket-email'
 import { renderTicketsPdf } from './render-tickets-pdf'
+import { renderIcs, googleCalendarLink } from './render-ics'
 
 export interface SendTicketEmailInput {
   orderId: string
@@ -23,6 +24,10 @@ function pdfFilename(date: string): string {
   return `moreska-tickets-${date}.pdf`
 }
 
+function icsFilename(date: string): string {
+  return `moreska-${date}.ics`
+}
+
 export async function sendTicketEmail(
   input: SendTicketEmailInput,
   deps: SendTicketEmailDeps,
@@ -31,12 +36,24 @@ export async function sendTicketEmail(
   const renderEmail = deps.renderTicketEmail ?? renderTicketEmail
 
   try {
+    const gcalUrl = googleCalendarLink({
+      orderId: input.orderId,
+      show: input.show,
+      locale: input.locale,
+    })
     const { html, subject } = await renderEmail({
       buyer: input.buyer,
       show: input.show,
       order: input.order,
       locale: input.locale,
       orderRef: input.orderId,
+      gcalUrl,
+    })
+
+    const icsContent = renderIcs({
+      orderId: input.orderId,
+      show: input.show,
+      locale: input.locale,
     })
 
     const pdfBuffer = await renderPdf(
@@ -61,6 +78,10 @@ export async function sendTicketEmail(
         {
           name: pdfFilename(input.show.date),
           content: pdfBuffer.toString('base64'),
+        },
+        {
+          name: icsFilename(input.show.date),
+          content: Buffer.from(icsContent, 'utf8').toString('base64'),
         },
       ],
     }

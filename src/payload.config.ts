@@ -49,6 +49,12 @@ export default buildConfig({
           path: '/stats',
           exact: false,
         },
+        scan: {
+          // Inline scan station for tehnika. Camera stays live across scans;
+          // results overlay the feed via /api/scan/[token]. No page transitions.
+          Component: '@/components/payload/AdminScanView#AdminScanView',
+          path: '/scan',
+        },
         // Replace Payload's default collection-card dashboard with the
         // role-branched view. `admin.dashboard.widgets` is additive (it
         // appends to the default `CollectionCards` widget), so to *replace*

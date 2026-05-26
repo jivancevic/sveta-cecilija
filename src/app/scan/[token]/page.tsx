@@ -259,7 +259,7 @@ function StaffActions() {
         gap: '0.75rem',
       }}
     >
-      <a href="/admin" style={primary}>Scan new</a>
+      <a href="/admin/scan" style={primary}>Scan new</a>
       <a href="/admin" style={secondary}>Back</a>
     </div>
   )
