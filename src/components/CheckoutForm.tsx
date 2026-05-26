@@ -174,6 +174,8 @@ export default function CheckoutForm({
           <span>{t.nameLabel}</span>
           <input
             type="text"
+            name="name"
+            autoComplete="name"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder={t.namePlaceholder}
@@ -185,6 +187,9 @@ export default function CheckoutForm({
           <span>{t.emailLabel}</span>
           <input
             type="email"
+            name="email"
+            autoComplete="email"
+            inputMode="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder={t.emailPlaceholder}
