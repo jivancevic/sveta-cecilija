@@ -1,12 +1,12 @@
 import type { CollectionConfig, Where } from 'payload'
-import { isAdmin } from '@/lib/access/roles'
+import { isAdminTier } from '@/lib/access/roles'
 
 const adminOnly = ({ req }: { req: { user: unknown } }) =>
-  isAdmin(req.user as { role?: string } | null)
+  isAdminTier(req.user as { role?: string } | null)
 
 // Public reads: only published posts. Admins see everything (drafts + scheduled).
 const publicRead = ({ req }: { req: { user: unknown } }): true | Where => {
-  if (isAdmin(req.user as { role?: string } | null)) return true
+  if (isAdminTier(req.user as { role?: string } | null)) return true
   return {
     and: [
       { status: { equals: 'published' } },

@@ -1,8 +1,8 @@
 import type { CollectionConfig } from 'payload'
-import { isAdmin, isAuthed } from '@/lib/access/roles'
+import { isAdminTier, isAuthed } from '@/lib/access/roles'
 
 const adminOnly = ({ req }: { req: { user: unknown } }) =>
-  isAdmin(req.user as { role?: string } | null)
+  isAdminTier(req.user as { role?: string } | null)
 const authedOnly = ({ req }: { req: { user: unknown } }) =>
   isAuthed(req.user as { role?: string } | null)
 

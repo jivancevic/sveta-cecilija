@@ -1,8 +1,8 @@
 import type { CollectionConfig } from 'payload'
-import { isAdmin, isAuthed } from '@/lib/access/roles'
+import { isAdminTier, isAuthed } from '@/lib/access/roles'
 
 const adminOnly = ({ req }: { req: { user: unknown } }) =>
-  isAdmin(req.user as { role?: string } | null)
+  isAdminTier(req.user as { role?: string } | null)
 const authedOnly = ({ req }: { req: { user: unknown } }) =>
   isAuthed(req.user as { role?: string } | null)
 
@@ -75,10 +75,10 @@ export const Shows: CollectionConfig = {
           'Tickets sold on the previous WordPress site (korcula-moreska.com) before cutover. Subtracted from venue capacity so moreska.eu cannot oversell against them.',
       },
       access: {
-        // Defense-in-depth: collection-level update is already admin-only,
-        // but pinning the field guarantees door-staff (or any future role)
+        // Defense-in-depth: collection-level update is already admin-tier-only,
+        // but pinning the field guarantees tehnika (or any future role)
         // can never mutate it even if collection access is widened.
-        update: ({ req }) => isAdmin(req.user as { role?: string } | null),
+        update: ({ req }) => isAdminTier(req.user as { role?: string } | null),
       },
     },
     {

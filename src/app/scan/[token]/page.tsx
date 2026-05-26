@@ -313,7 +313,7 @@ async function resolveViewer(): Promise<ScanViewer> {
     const h = await headers()
     const { user } = await payload.auth({ headers: h })
     const role = (user as { role?: string } | null)?.role
-    if (role === 'admin' || role === 'door-staff') return 'staff'
+    if (role === 'superadmin' || role === 'admin' || role === 'tehnika') return 'staff'
   } catch {
     // fall through to buyer
   }

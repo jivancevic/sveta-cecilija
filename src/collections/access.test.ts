@@ -5,8 +5,9 @@ import { Shows } from './Shows'
 import { QRTokens } from './QRTokens'
 import { Users } from './Users'
 
-const admin = { id: '1', role: 'admin' }
-const doorStaff = { id: '2', role: 'door-staff' }
+const superadmin = { id: '1', role: 'superadmin' }
+const admin = { id: '2', role: 'admin' }
+const tehnika = { id: '3', role: 'tehnika' }
 const anon = null
 
 function call(fn: unknown, user: unknown): boolean {
@@ -15,63 +16,57 @@ function call(fn: unknown, user: unknown): boolean {
 }
 
 describe('Orders access', () => {
-  it('only admin can read', () => {
+  it('admin-tier (superadmin + admin) can read; tehnika cannot', () => {
+    expect(call(Orders.access?.read, superadmin)).toBe(true)
     expect(call(Orders.access?.read, admin)).toBe(true)
-    expect(call(Orders.access?.read, doorStaff)).toBe(false)
+    expect(call(Orders.access?.read, tehnika)).toBe(false)
     expect(call(Orders.access?.read, anon)).toBe(false)
   })
 
-  it('only admin can update (blocks refund mutations)', () => {
-    expect(call(Orders.access?.update, admin)).toBe(true)
-    expect(call(Orders.access?.update, doorStaff)).toBe(false)
-  })
-
-  it('only admin can delete', () => {
-    expect(call(Orders.access?.delete, admin)).toBe(true)
-    expect(call(Orders.access?.delete, doorStaff)).toBe(false)
-  })
-
-  it('only admin can create', () => {
-    expect(call(Orders.access?.create, admin)).toBe(true)
-    expect(call(Orders.access?.create, doorStaff)).toBe(false)
+  it('admin-tier can mutate (CRUD); tehnika cannot', () => {
+    for (const op of ['create', 'update', 'delete'] as const) {
+      expect(call(Orders.access?.[op], superadmin)).toBe(true)
+      expect(call(Orders.access?.[op], admin)).toBe(true)
+      expect(call(Orders.access?.[op], tehnika)).toBe(false)
+    }
   })
 })
 
 describe('ContactSubmissions access', () => {
-  it('only admin can read', () => {
-    expect(call(ContactSubmissions.access?.read, admin)).toBe(true)
-    expect(call(ContactSubmissions.access?.read, doorStaff)).toBe(false)
-  })
-
-  it('only admin can mutate', () => {
-    expect(call(ContactSubmissions.access?.update, doorStaff)).toBe(false)
-    expect(call(ContactSubmissions.access?.delete, doorStaff)).toBe(false)
-    expect(call(ContactSubmissions.access?.create, doorStaff)).toBe(false)
+  it('admin-tier can read + mutate; tehnika cannot', () => {
+    for (const op of ['read', 'create', 'update', 'delete'] as const) {
+      expect(call(ContactSubmissions.access?.[op], superadmin)).toBe(true)
+      expect(call(ContactSubmissions.access?.[op], admin)).toBe(true)
+      expect(call(ContactSubmissions.access?.[op], tehnika)).toBe(false)
+    }
   })
 })
 
 describe('Shows access', () => {
-  it('admin and door-staff can read (for stats + scanning)', () => {
+  it('all authed roles can read (needed for stats + scanning)', () => {
+    expect(call(Shows.access?.read, superadmin)).toBe(true)
     expect(call(Shows.access?.read, admin)).toBe(true)
-    expect(call(Shows.access?.read, doorStaff)).toBe(true)
+    expect(call(Shows.access?.read, tehnika)).toBe(true)
     expect(call(Shows.access?.read, anon)).toBe(false)
   })
 
-  it('only admin can mutate', () => {
-    expect(call(Shows.access?.update, doorStaff)).toBe(false)
-    expect(call(Shows.access?.delete, doorStaff)).toBe(false)
-    expect(call(Shows.access?.create, doorStaff)).toBe(false)
-    expect(call(Shows.access?.update, admin)).toBe(true)
+  it('admin-tier can mutate; tehnika cannot', () => {
+    for (const op of ['create', 'update', 'delete'] as const) {
+      expect(call(Shows.access?.[op], superadmin)).toBe(true)
+      expect(call(Shows.access?.[op], admin)).toBe(true)
+      expect(call(Shows.access?.[op], tehnika)).toBe(false)
+    }
   })
 
-  it('legacyReserved field is admin-only edit (defense-in-depth field-level access)', () => {
+  it('legacyReserved is admin-tier-only edit (defense-in-depth field-level access)', () => {
     const legacy = Shows.fields.find(
       (f) => 'name' in f && f.name === 'legacyReserved',
     ) as { access?: { update?: unknown } } | undefined
     expect(legacy).toBeDefined()
     const updateAccess = legacy?.access?.update
+    expect(call(updateAccess, superadmin)).toBe(true)
     expect(call(updateAccess, admin)).toBe(true)
-    expect(call(updateAccess, doorStaff)).toBe(false)
+    expect(call(updateAccess, tehnika)).toBe(false)
     expect(call(updateAccess, anon)).toBe(false)
   })
 
@@ -90,46 +85,72 @@ describe('Users access', () => {
     return (fn as (args: { req: { user: unknown } }) => unknown)({ req: { user } })
   }
 
-  it('admin can read all users (returns true)', () => {
-    expect(callWith(Users.access?.read, admin)).toBe(true)
-  })
-
-  it('door-staff can only read their own user record (returns id-scoped where)', () => {
-    const result = callWith(Users.access?.read, { id: 42, role: 'door-staff' })
-    expect(result).toEqual({ id: { equals: 42 } })
-  })
-
-  it('anon cannot read users', () => {
+  it('superadmin reads all; admin + tehnika see only their own row', () => {
+    expect(callWith(Users.access?.read, superadmin)).toBe(true)
+    expect(callWith(Users.access?.read, { id: 42, role: 'admin' })).toEqual({ id: { equals: 42 } })
+    expect(callWith(Users.access?.read, { id: 43, role: 'tehnika' })).toEqual({ id: { equals: 43 } })
     expect(callWith(Users.access?.read, anon)).toBe(false)
   })
 
-  it('only admin can create users', () => {
-    expect(call(Users.access?.create, admin)).toBe(true)
-    expect(call(Users.access?.create, doorStaff)).toBe(false)
+  it('only superadmin can create users (admin tier cannot promote / add)', () => {
+    expect(call(Users.access?.create, superadmin)).toBe(true)
+    expect(call(Users.access?.create, admin)).toBe(false)
+    expect(call(Users.access?.create, tehnika)).toBe(false)
   })
 
-  it('only admin can delete users', () => {
-    expect(call(Users.access?.delete, admin)).toBe(true)
-    expect(call(Users.access?.delete, doorStaff)).toBe(false)
+  it('only superadmin can delete users', () => {
+    expect(call(Users.access?.delete, superadmin)).toBe(true)
+    expect(call(Users.access?.delete, admin)).toBe(false)
+    expect(call(Users.access?.delete, tehnika)).toBe(false)
   })
 
-  it('door-staff can only update their own record; admin can update any', () => {
-    expect(callWith(Users.access?.update, admin)).toBe(true)
-    expect(callWith(Users.access?.update, { id: 42, role: 'door-staff' })).toEqual({ id: { equals: 42 } })
+  it('superadmin can update any; admin + tehnika can only update self', () => {
+    expect(callWith(Users.access?.update, superadmin)).toBe(true)
+    expect(callWith(Users.access?.update, { id: 42, role: 'admin' })).toEqual({ id: { equals: 42 } })
+    expect(callWith(Users.access?.update, { id: 43, role: 'tehnika' })).toEqual({ id: { equals: 43 } })
     expect(callWith(Users.access?.update, anon)).toBe(false)
+  })
+
+  it('role field is locked to superadmin (self-promotion is blocked)', () => {
+    const roleField = Users.fields.find(
+      (f) => 'name' in f && f.name === 'role',
+    ) as { access?: { read?: unknown; update?: unknown; create?: unknown } } | undefined
+    expect(roleField?.access).toBeDefined()
+    for (const op of ['read', 'update', 'create'] as const) {
+      expect(call(roleField?.access?.[op], superadmin)).toBe(true)
+      expect(call(roleField?.access?.[op], admin)).toBe(false)
+      expect(call(roleField?.access?.[op], tehnika)).toBe(false)
+    }
+  })
+
+  it('Users collection is hidden from non-superadmin sidebars', () => {
+    const hidden = Users.admin?.hidden as ((args: { user: unknown }) => boolean) | undefined
+    expect(hidden).toBeTypeOf('function')
+    expect(hidden!({ user: superadmin })).toBe(false)
+    expect(hidden!({ user: admin })).toBe(true)
+    expect(hidden!({ user: tehnika })).toBe(true)
+    expect(hidden!({ user: anon })).toBe(true)
+  })
+
+  it('tokenExpiration is 30 days', () => {
+    const auth = Users.auth as { tokenExpiration?: number } | true | undefined
+    expect(typeof auth === 'object' && auth?.tokenExpiration).toBe(60 * 60 * 24 * 30)
   })
 })
 
 describe('QRTokens access', () => {
-  it('admin and door-staff can read', () => {
+  it('all authed roles can read', () => {
+    expect(call(QRTokens.access?.read, superadmin)).toBe(true)
     expect(call(QRTokens.access?.read, admin)).toBe(true)
-    expect(call(QRTokens.access?.read, doorStaff)).toBe(true)
+    expect(call(QRTokens.access?.read, tehnika)).toBe(true)
     expect(call(QRTokens.access?.read, anon)).toBe(false)
   })
 
-  it('only admin can mutate', () => {
-    expect(call(QRTokens.access?.update, doorStaff)).toBe(false)
-    expect(call(QRTokens.access?.delete, doorStaff)).toBe(false)
-    expect(call(QRTokens.access?.create, doorStaff)).toBe(false)
+  it('admin-tier can mutate; tehnika cannot', () => {
+    for (const op of ['create', 'update', 'delete'] as const) {
+      expect(call(QRTokens.access?.[op], superadmin)).toBe(true)
+      expect(call(QRTokens.access?.[op], admin)).toBe(true)
+      expect(call(QRTokens.access?.[op], tehnika)).toBe(false)
+    }
   })
 })

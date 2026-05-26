@@ -8,7 +8,7 @@ import { getStatsInput } from '@/lib/stats-data'
 import { computeStats, type StatsRow, type StatsHeader } from '@/lib/stats'
 import { getShowStatsInput } from '@/lib/show-stats-data'
 import { computeShowStats } from '@/lib/show-stats'
-import { isAdmin } from '@/lib/access/roles'
+import { isAdminTier } from '@/lib/access/roles'
 import { AdminShowStatsBody } from './AdminShowStatsView'
 
 export const dynamic = 'force-dynamic'
@@ -134,7 +134,7 @@ export async function AdminStatsView(props: AdminStatsViewProps = {}) {
     const input = await getShowStatsInput(showId)
     if (!input) notFound()
     const { header, orders } = computeShowStats(input)
-    const adminView = isAdmin(user as { role?: string })
+    const adminView = isAdminTier(user as { role?: string })
     return <AdminShowStatsBody header={header} orders={orders} adminView={adminView} />
   }
 
