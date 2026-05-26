@@ -77,13 +77,27 @@ The discount is calculated per order (resets with each new purchase — no cross
 1. At 4 tickets (one short of threshold): nudge — "Add 1 more and get one free!"
 2. At a multiple of 5: celebrate — "You've unlocked a free ticket!" + update total visually.
 
+### One QR per order
+Each order gets exactly **one** `QRTokens` row, regardless of how many tickets the buyer purchased. The buyer receives one A4 PDF page in their confirmation email; the PDF shows the ticket count ("4 tickets — 3 adults, 1 child") as a label. Adult vs child is not tracked per-token; it is an order-level breakdown derived from `orders.adult_count` / `orders.child_count`.
+
+Reasons: simpler buyer artefact (one page, not four), simpler door-staff workflow (one scan admits the entire party), and the dashboard's "Scanned" metric maps cleanly to "orders walked in" without needing a per-seat denominator. Supersedes the original "N tokens per order, first M = Adult" model from ADR-0005 — see that ADR's Amendment section.
+
+Schema is unchanged (`QRTokens` still keys on `token` and links to one order); only the write loop in `handle-payment-succeeded.ts` collapses from `for (let i = 0; i < total; i++)` to a single insert.
+
 ### Ticket scan authorization
 The `/scan/[token]` URL is **shared by buyers and door staff** — same URL, different behaviour based on auth:
 
 - **Unauthenticated visit (buyer tapping their own QR from email):** Renders ticket details — buyer name, show date/time/venue, ticket counts — plus the QR re-rendered on-page so the buyer can show their phone screen at the door. **Does NOT mark the token as scanned.** A prominent notice reads "Show this screen at the door — do not tap the QR again."
-- **Authenticated visit by a `door-staff` (or `admin`) user:** Atomically marks the token scanned (or shows ALREADY_SCANNED with timestamp) and the VALID screen.
+- **Authenticated visit by a `tehnika` (or `admin` / `superadmin`) user:** Atomically marks the token scanned (or shows ALREADY_SCANNED with timestamp) and the VALID screen.
 
 This split exists because buyers used to burn their own tickets by tapping the link to "check it works". The atomic mark-and-read race-safety still applies — only one staff scan can win for a given token.
+
+**Staff result screens** (VALID, ALREADY_SCANNED, INVALID) all render two stacked buttons below the result text:
+
+1. **Scan new** — primary, links to `/admin?scan=1` which auto-opens the in-page QR camera on mount (one tap re-enters scan mode for the next ticket).
+2. **Back** — secondary, links to `/admin`.
+
+ALREADY_SCANNED additionally renders **Undo scan** above these two when the original scan was within the last 2 minutes (see "Undo-scan window"). Buttons are stacked vertical, full-width, 48px min-height for thumb-tap reliability at the door.
 
 ### Admin tiers
 Three Payload user roles, see [ADR-0006](../docs/adr/0006-three-tier-admin-roles.md):
@@ -122,16 +136,23 @@ One real mailbox (`info@moreska.eu`) read by Josip and the secretary; everything
 Transactional mail sends from root `moreska.eu` via Brevo. Future bulk post-show mail will send from subdomain `bilten.moreska.eu` (separate DKIM, isolated reputation) once Brevo Starter (~€9/mo) is activated. See [ADR-0004](../docs/adr/0004-email-infrastructure.md).
 
 ### Stats dashboard
-Lives at `/admin` (the route is the admin landing page itself; the old `/admin/stats` URL is collapsed into it). Visible to `tehnika`, `admin`, and `superadmin`. See [ADR-0006](../docs/adr/0006-three-tier-admin-roles.md).
+Lives at `/admin` (the route is the admin landing page itself; the old `/admin/stats` URL is collapsed into it). Visible to `tehnika`, `admin`, and `superadmin`. See [ADR-0006](../docs/adr/0006-three-tier-admin-roles.md). Role-aware — different layouts:
 
-**Top of page — season aggregate:** total tickets sold (online + in-person), total scanned, total revenue (EUR), broken down by venue.
+**Admin / superadmin dashboard:**
+- Top — season aggregate: total tickets sold (online + in-person), total scanned, total revenue (EUR), broken down by venue.
+- Action row: Add show, Record in-person sale, Find order (deep-link into Orders list), Inquiries.
+- Body — show list: one row per upcoming show + today + last 7 days of past shows. Columns: date, venue, capacity, online sold, in-person sold, scanned, remaining. Force-dynamic — refreshes on each page load (no polling). Past shows beyond 7 days are reachable from a "Browse all shows" link.
 
-**Action row (admin/superadmin only, hidden for tehnika):** Add show, Record in-person sale, Find order (deep-link into Orders list), Inquiries.
+**Tehnika dashboard** — purpose-built for a door-staff workflow, deliberately minimal:
+- One single block for the **next show only** (`SELECT … FROM shows WHERE date >= today ORDER BY date ASC LIMIT 1`). Fields: show date, **Online sold** (= `shows.onlineSold`), **Scanned (people)**, **In-person sold** (= `shows.inPersonSold`).
+- **No season aggregate. No revenue. No other shows.** Tehnika does not need season-wide numbers; revenue is a PII-adjacent metric that ADR-0006 keeps out of the tehnika tier.
+- Action row: a single **Scan a ticket** button that lazy-loads the in-browser QR scanner. Auto-opens when the page is loaded with `?scan=1` (used by the scan-result screen's "Scan new" button to chain admits in one tap).
 
-**Tehnika action row:** a single "Scan a ticket" button that lazy-loads the in-browser QR scanner.
+### Scanned (people)
+The "Scanned" number on the dashboard counts **people through the door**, not orders or tokens. After the "one QR per order" rule, a single scanned token represents an entire party; the number that actually matters to door staff is the seat-equivalent count.
 
-**Body — show list:** one row per upcoming show + today + last 7 days of past shows. Columns: date, venue, capacity, online sold, in-person sold, scanned, remaining. Force-dynamic — refreshes on each page load (no polling). Past shows beyond 7 days are reachable from a "Browse all shows" link that filters/paginates.
+Computed via JOIN: `SELECT COALESCE(SUM(o.adult_count + o.child_count), 0) FROM orders o JOIN qr_tokens q ON q.order_id = o.id WHERE o.show = $1 AND q.scanned = true`. Apples-to-apples with `onlineSold` (also seat-based) so `onlineSold − scanned = people still expected to arrive`.
 
 **Per-show drill-down `/admin/stats/[showId]`:**
-- For `tehnika`: bigger numbers only — online, in-person, scanned, remaining, revenue. No order list.
-- For `admin` and `superadmin`: numbers + full order list (buyer name, email, ticket count, per-QR scanned/unscanned state). Used to find a specific buyer's order on demand.
+- For `tehnika`: bigger numbers only — online, in-person, scanned (people), remaining. **No revenue.** No order list.
+- For `admin` and `superadmin`: numbers (including revenue) + full order list (buyer name, email, ticket count, per-QR scanned/unscanned state). Used to find a specific buyer's order on demand.
