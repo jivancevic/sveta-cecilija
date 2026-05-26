@@ -40,9 +40,6 @@ const COPY = {
     orderRef: (ref: string) => `Order #${ref}`,
     refundNote:
       'Tickets are non-refundable by customer choice but 100% refundable if the show is cancelled by the organiser.',
-    calendarHeading: 'Add to your calendar',
-    calendarSub:
-      'A calendar invite (.ics) is attached — most calendar apps add it with one tap. Or use the button:',
     addToGoogle: 'Add to Google Calendar',
     questions: 'Questions?',
     org: 'HGD Sveta Cecilija',
@@ -66,9 +63,6 @@ const COPY = {
     orderRef: (ref: string) => `Narudžba #${ref}`,
     refundNote:
       'Povrat novca na zahtjev kupca nije moguć, no ulaznice su 100% povratne ako organizator otkaže predstavu.',
-    calendarHeading: 'Dodajte u kalendar',
-    calendarSub:
-      'Pozivnica za kalendar (.ics) priložena je uz e-mail — većina aplikacija dodaje je u jednom dodiru. Ili koristite gumb:',
     addToGoogle: 'Dodaj u Google Calendar',
     questions: 'Imate pitanje?',
     org: 'HGD Sveta Cecilija',
@@ -237,12 +231,6 @@ const styles = {
   calendarBlock: {
     margin: '0 0 24px',
   } as const,
-  calendarSub: {
-    fontSize: '13px',
-    color: MUTED,
-    lineHeight: '1.5',
-    margin: '0 0 12px',
-  } as const,
   calendarBtn: {
     display: 'inline-block',
     padding: '10px 18px',
@@ -340,8 +328,6 @@ function TicketEmail(input: RenderTicketEmailInput) {
 
           {input.gcalUrl && (
             <Section style={styles.calendarBlock}>
-              <Text style={styles.sectionHeading}>{c.calendarHeading}</Text>
-              <Text style={styles.calendarSub}>{c.calendarSub}</Text>
               <a href={input.gcalUrl} style={styles.calendarBtn}>
                 {c.addToGoogle}
               </a>

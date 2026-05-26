@@ -1588,7 +1588,8 @@ html, body { overflow-x: hidden; }
   display: flex;
   flex-direction: column;
   gap: 12px;
-  align-items: flex-start;
+  align-items: center;
+  text-align: center;
 }
 
 .inner-page .checkout-confirm__pdfBody {
@@ -1597,9 +1598,6 @@ html, body { overflow-x: hidden; }
   line-height: 1.5;
 }
 
-.inner-page .checkout-confirm__pdf {
-  text-align: center;
-}
 .inner-page .checkout-confirm__pdfBtn {
   display: inline-block;
   text-decoration: none;
