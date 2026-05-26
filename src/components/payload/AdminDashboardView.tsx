@@ -9,7 +9,6 @@ import { computeStats } from '@/lib/stats'
 import { isAdminTier, isAuthed } from '@/lib/access/roles'
 import { getNextShow, getScannedPeopleForShow, type NextShow } from '@/lib/shows'
 import { HeaderBlock, ShowsTable } from './stats-blocks'
-import { QRScannerButton } from './QRScannerButton'
 import { TicketLookupPanel } from './TicketLookupPanel'
 
 export const dynamic = 'force-dynamic'
@@ -122,7 +121,24 @@ async function TehnikaDashboard({ role }: { role?: string }) {
       )}
 
       <div style={{ maxWidth: 480 }}>
-        <QRScannerButton />
+        <Link
+          href="/admin/scan"
+          style={{
+            display: 'block',
+            width: '100%',
+            padding: '20px 16px',
+            fontSize: 18,
+            fontWeight: 700,
+            background: 'var(--theme-success-500, #1f7a3a)',
+            color: 'white',
+            border: 'none',
+            borderRadius: 8,
+            textAlign: 'center',
+            textDecoration: 'none',
+          }}
+        >
+          Scan a ticket
+        </Link>
       </div>
 
       <p style={{ fontSize: 11, color: 'var(--theme-elevation-400)', marginTop: 24 }}>

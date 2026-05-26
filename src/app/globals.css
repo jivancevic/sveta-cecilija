@@ -1597,8 +1597,18 @@ html, body { overflow-x: hidden; }
   line-height: 1.5;
 }
 
+.inner-page .checkout-confirm__pdf {
+  text-align: center;
+}
 .inner-page .checkout-confirm__pdfBtn {
+  display: inline-block;
   text-decoration: none;
+}
+/* `.inner-page a { color: inherit }` (specificity 11) beats
+   `.btn--primary { color: #fff }` (10). Re-assert white inside inner-page. */
+.inner-page .btn--primary,
+.inner-page .btn--primary:hover {
+  color: #fff;
 }
 
 a.perf-booking__confirm {

@@ -30,7 +30,11 @@ export const Users: CollectionConfig = {
   },
   admin: {
     useAsTitle: 'email',
-    hidden: ({ user }) => !isSuperadmin(user as ReqUser),
+    // No `hidden` predicate. Payload's top-bar Account link routes through
+    // this collection's edit view; hiding the collection 404s that page for
+    // non-superadmins. Sidebar entry shown to everyone, but selfOrSuperadmin
+    // read access restricts the list to the user's own row, and field-level
+    // access on `role` prevents self-promotion.
   },
   fields: [
     {

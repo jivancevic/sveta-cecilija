@@ -102,9 +102,9 @@ function ticketCountLabel(
 ): string {
   const total = adults + children
   const head = `${total} ${c.ticketsWord(total)}`
-  if (children === 0) return `${head}, ${adults} ${c.adultsWord(adults)}`
-  if (adults === 0) return `${head}, ${children} ${c.childrenWord(children)}`
-  return `${head}, ${adults} ${c.adultsWord(adults)}, ${children} ${c.childrenWord(children)}`
+  if (children === 0) return `${head}: ${adults} ${c.adultsWord(adults)}`
+  if (adults === 0) return `${head}: ${children} ${c.childrenWord(children)}`
+  return `${head}: ${adults} ${c.adultsWord(adults)}, ${children} ${c.childrenWord(children)}`
 }
 
 const styles = StyleSheet.create({
@@ -128,8 +128,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logo: {
+    // Source is 4488×5669 (portrait, ratio ~0.792). 36×46 preserves it.
     width: 36,
-    height: 36,
+    height: 46,
     marginRight: 12,
   },
   headerOrg: {

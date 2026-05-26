@@ -40,6 +40,10 @@ const COPY = {
     orderRef: (ref: string) => `Order #${ref}`,
     refundNote:
       'Tickets are non-refundable by customer choice but 100% refundable if the show is cancelled by the organiser.',
+    calendarHeading: 'Add to your calendar',
+    calendarSub:
+      'A calendar invite (.ics) is attached — most calendar apps add it with one tap. Or use the button:',
+    addToGoogle: 'Add to Google Calendar',
     questions: 'Questions?',
     org: 'HGD Sveta Cecilija',
     address: 'Knežev prolaz 1, 20260 Korčula, Croatia',
@@ -62,6 +66,10 @@ const COPY = {
     orderRef: (ref: string) => `Narudžba #${ref}`,
     refundNote:
       'Povrat novca na zahtjev kupca nije moguć, no ulaznice su 100% povratne ako organizator otkaže predstavu.',
+    calendarHeading: 'Dodajte u kalendar',
+    calendarSub:
+      'Pozivnica za kalendar (.ics) priložena je uz e-mail — većina aplikacija dodaje je u jednom dodiru. Ili koristite gumb:',
+    addToGoogle: 'Dodaj u Google Calendar',
     questions: 'Imate pitanje?',
     org: 'HGD Sveta Cecilija',
     address: 'Knežev prolaz 1, 20260 Korčula, Hrvatska',
@@ -183,12 +191,23 @@ const styles = {
     color: MUTED,
     margin: '0 0 12px',
   } as const,
-  summaryRow: {
+  summaryTable: {
+    width: '100%',
+    borderCollapse: 'collapse' as const,
+    margin: '0 0 6px',
+  } as const,
+  summaryCellLeft: {
     fontSize: '14px',
     color: INK,
-    margin: '0 0 6px',
-    display: 'flex',
-    justifyContent: 'space-between',
+    padding: '3px 0',
+    textAlign: 'left' as const,
+  } as const,
+  summaryCellRight: {
+    fontSize: '14px',
+    color: INK,
+    padding: '3px 0',
+    textAlign: 'right' as const,
+    whiteSpace: 'nowrap' as const,
   } as const,
   totalRule: {
     border: 'none',
@@ -215,6 +234,26 @@ const styles = {
     lineHeight: '1.5',
     margin: '0 0 24px',
   } as const,
+  calendarBlock: {
+    margin: '0 0 24px',
+  } as const,
+  calendarSub: {
+    fontSize: '13px',
+    color: MUTED,
+    lineHeight: '1.5',
+    margin: '0 0 12px',
+  } as const,
+  calendarBtn: {
+    display: 'inline-block',
+    padding: '10px 18px',
+    background: GOLD,
+    color: '#fff',
+    textDecoration: 'none',
+    fontSize: '13px',
+    fontWeight: 600,
+    letterSpacing: '0.5px',
+    borderRadius: '4px',
+  } as const,
   footerHr: {
     border: 'none',
     borderTop: `1px solid ${BG}`,
@@ -234,6 +273,7 @@ export interface RenderTicketEmailInput {
   order: { adultCount: number; childCount: number; total: number }
   locale: 'en' | 'hr'
   orderRef: string
+  gcalUrl?: string
 }
 
 function TicketEmail(input: RenderTicketEmailInput) {
@@ -274,18 +314,22 @@ function TicketEmail(input: RenderTicketEmailInput) {
           </Section>
 
           <Text style={styles.sectionHeading}>{c.summaryHeading}</Text>
-          {input.order.adultCount > 0 && (
-            <Text style={styles.summaryRow}>
-              <span>{c.adultRow(input.order.adultCount)}</span>
-              <span>{formatEur(adultTotal)}</span>
-            </Text>
-          )}
-          {input.order.childCount > 0 && (
-            <Text style={styles.summaryRow}>
-              <span>{c.childRow(input.order.childCount)}</span>
-              <span>{formatEur(childTotal)}</span>
-            </Text>
-          )}
+          <table style={styles.summaryTable} cellPadding={0} cellSpacing={0}>
+            <tbody>
+              {input.order.adultCount > 0 && (
+                <tr>
+                  <td style={styles.summaryCellLeft}>{c.adultRow(input.order.adultCount)}</td>
+                  <td style={styles.summaryCellRight}>{formatEur(adultTotal)}</td>
+                </tr>
+              )}
+              {input.order.childCount > 0 && (
+                <tr>
+                  <td style={styles.summaryCellLeft}>{c.childRow(input.order.childCount)}</td>
+                  <td style={styles.summaryCellRight}>{formatEur(childTotal)}</td>
+                </tr>
+              )}
+            </tbody>
+          </table>
           <Hr style={styles.totalRule} />
           <Text style={styles.totalRow}>
             <span>{c.total}</span> <span style={{ float: 'right' }}>{formatEur(input.order.total)}</span>
@@ -293,6 +337,16 @@ function TicketEmail(input: RenderTicketEmailInput) {
           <Text style={styles.orderRef}>{c.orderRef(input.orderRef)}</Text>
 
           <Text style={styles.refundNote}>{c.refundNote}</Text>
+
+          {input.gcalUrl && (
+            <Section style={styles.calendarBlock}>
+              <Text style={styles.sectionHeading}>{c.calendarHeading}</Text>
+              <Text style={styles.calendarSub}>{c.calendarSub}</Text>
+              <a href={input.gcalUrl} style={styles.calendarBtn}>
+                {c.addToGoogle}
+              </a>
+            </Section>
+          )}
 
           <Hr style={styles.footerHr} />
           <Text style={styles.footerText}>
