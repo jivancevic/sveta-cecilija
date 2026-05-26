@@ -85,16 +85,26 @@ The `/scan/[token]` URL is **shared by buyers and door staff** — same URL, dif
 
 This split exists because buyers used to burn their own tickets by tapping the link to "check it works". The atomic mark-and-read race-safety still applies — only one staff scan can win for a given token.
 
-### Door-staff role
-A restricted Payload user role. One shared `door-staff` account (e.g. printed on a card for whoever works the door). Permissions:
-- Can authenticate `/scan/[token]` for atomic mark-as-scanned
-- Can view `/admin/stats` (the Stats dashboard) and per-show drill-down with non-PII counts only
-- **Cannot** see customer emails, order details, or issue refunds — those are admin-only
+### Admin tiers
+Three Payload user roles, see [ADR-0006](../docs/adr/0006-three-tier-admin-roles.md):
 
-Password rotation is a one-off Payload admin edit when leaked. No per-volunteer accounts; HGD is too small to justify the onboarding overhead.
+| Role | Who | Can do |
+|---|---|---|
+| `superadmin` | Developer (Josip) | Everything, including user management (create/delete users, change roles). |
+| `admin` | HGD secretaries | Everything except user management. Add/cancel shows, view orders, issue refunds, read inquiries, record in-person sales. Sees own profile only; cannot see or promote other users. The `role` field is field-level locked to `superadmin` so secretaries can edit name/email/password but not their own tier. |
+| `tehnika` | Shared door-staff account (`tehnika@moreska.eu`) | Authenticate `/scan/[token]` for atomic mark-as-scanned. View `/admin` stats dashboard with non-PII counts only. Cannot see customer emails, order details, or issue refunds. |
+
+Per-role sidebar visibility: superadmin sees all collections; admin sees everything except Users (Shows, Orders, QRTokens, ContactSubmissions, Posts); tehnika sees an empty sidebar. The `/admin` landing route is a custom dashboard component that branches on role (stats-only for tehnika, full task dashboard for admin/superadmin).
+
+Session length: `Users.auth.tokenExpiration` is 30 days for all tiers so the shared tehnika device stays logged in across long stretches, and secretaries aren't re-logging daily. Password rotation invalidates if a device is lost.
+
+### Tehnika role
+Renamed from `door-staff` to match the shared login string `tehnika@moreska.eu`. Permissions are as listed in the Admin tiers table above; rotation policy: one-off Payload admin edit when leaked, no per-volunteer accounts (HGD is too small to justify the onboarding overhead).
+
+The tehnika dashboard includes a **"Scan a ticket"** button that opens a live camera viewfinder in-page (lazy-loaded `html5-qrcode`). Detected QRs navigate to `/scan/[token]`. This avoids the 4-tap dance of native-camera → notification → Safari for every ticket. The native camera flow still works as a fallback for any device that fails the camera-permission flow.
 
 ### Undo-scan window
-On the ALREADY_SCANNED page, an authenticated `door-staff` user sees an "Undo scan" link if the scan was within the last **2 minutes**. Clicking it sets `scanned = false` again. This covers honest misclicks at the door without opening abuse vectors (no late-night "let my friend back in" undo).
+On the ALREADY_SCANNED page, an authenticated `tehnika` (or `admin`/`superadmin`) user sees an "Undo scan" link if the scan was within the last **2 minutes**. Clicking it sets `scanned = false` again. This covers honest misclicks at the door without opening abuse vectors (no late-night "let my friend back in" undo).
 
 ### Email addresses
 One real mailbox (`info@moreska.eu`) read by Josip and the secretary; everything else is a forward-only ImprovMX alias.
@@ -107,17 +117,21 @@ One real mailbox (`info@moreska.eu`) read by Josip and the secretary; everything
 | `bookings@moreska.eu` | Alias → `info@` | Tour operator + group/charter inquiries. |
 | `press@moreska.eu` | Alias → `info@` | Journalist contact published on site. |
 | `dev@moreska.eu` | Alias → `info@` | Technical-admin contact for SaaS accounts (Stripe, Brevo, Coolify, Hetzner, Cloudflare, GitHub org, ImprovMX). Survives developer turnover. |
-| `tehnika@moreska.eu` | Payload login string | Shared door-staff `/admin` login in production. No inbox; nothing sent to it. Renamed from `door-staff@moreska.eu`. |
+| `tehnika@moreska.eu` | Payload login string | Shared tehnika `/admin` login in production. No inbox; nothing sent to it. Renamed from `door-staff@moreska.eu`. |
 
 Transactional mail sends from root `moreska.eu` via Brevo. Future bulk post-show mail will send from subdomain `bilten.moreska.eu` (separate DKIM, isolated reputation) once Brevo Starter (~€9/mo) is activated. See [ADR-0004](../docs/adr/0004-email-infrastructure.md).
 
 ### Stats dashboard
-Lives at `/admin/stats`. Visible to `door-staff` and `admin`.
+Lives at `/admin` (the route is the admin landing page itself; the old `/admin/stats` URL is collapsed into it). Visible to `tehnika`, `admin`, and `superadmin`. See [ADR-0006](../docs/adr/0006-three-tier-admin-roles.md).
 
 **Top of page — season aggregate:** total tickets sold (online + in-person), total scanned, total revenue (EUR), broken down by venue.
+
+**Action row (admin/superadmin only, hidden for tehnika):** Add show, Record in-person sale, Find order (deep-link into Orders list), Inquiries.
+
+**Tehnika action row:** a single "Scan a ticket" button that lazy-loads the in-browser QR scanner.
 
 **Body — show list:** one row per upcoming show + today + last 7 days of past shows. Columns: date, venue, capacity, online sold, in-person sold, scanned, remaining. Force-dynamic — refreshes on each page load (no polling). Past shows beyond 7 days are reachable from a "Browse all shows" link that filters/paginates.
 
 **Per-show drill-down `/admin/stats/[showId]`:**
-- For `door-staff`: bigger numbers only — online, in-person, scanned, remaining, revenue. No order list.
-- For `admin`: numbers + full order list (buyer name, email, ticket count, per-QR scanned/unscanned state). Used to find a specific buyer's order on demand.
+- For `tehnika`: bigger numbers only — online, in-person, scanned, remaining, revenue. No order list.
+- For `admin` and `superadmin`: numbers + full order list (buyer name, email, ticket count, per-QR scanned/unscanned state). Used to find a specific buyer's order on demand.

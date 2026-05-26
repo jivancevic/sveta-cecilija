@@ -7,7 +7,7 @@ import { AdminIcon as AdminIcon_7a969c861589af9322f5d573a708d2fb } from '@/compo
 import { AdminLogo as AdminLogo_313e964a7107ac39e31c5ff2e54b6ba9 } from '@/components/payload/AdminLogo'
 import { BulkCreateShowsView as BulkCreateShowsView_4791875e82fc193b95e30c08c823631e } from '@/components/payload/BulkCreateShowsView'
 import { AdminStatsView as AdminStatsView_stats } from '@/components/payload/AdminStatsView'
-import { CollectionCards as CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1 } from '@payloadcms/next/rsc'
+import { AdminDashboardView as AdminDashboardView_dashboard } from '@/components/payload/AdminDashboardView'
 
 /** @type import('payload').ImportMap */
 export const importMap = {
@@ -20,5 +20,5 @@ export const importMap = {
   "@/components/payload/AdminLogo#AdminLogo": AdminLogo_313e964a7107ac39e31c5ff2e54b6ba9,
   "@/components/payload/BulkCreateShowsView#BulkCreateShowsView": BulkCreateShowsView_4791875e82fc193b95e30c08c823631e,
   "@/components/payload/AdminStatsView#AdminStatsView": AdminStatsView_stats,
-  "@payloadcms/next/rsc#CollectionCards": CollectionCards_f9c02e79a4aed9a3924487c0cd4cafb1
+  "@/components/payload/AdminDashboardView#AdminDashboardView": AdminDashboardView_dashboard,
 }

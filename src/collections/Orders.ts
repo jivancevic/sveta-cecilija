@@ -1,8 +1,8 @@
 import type { CollectionConfig } from 'payload'
-import { isAdmin } from '@/lib/access/roles'
+import { isAdminTier } from '@/lib/access/roles'
 
 const adminOnly = ({ req }: { req: { user: unknown } }) =>
-  isAdmin(req.user as { role?: string } | null)
+  isAdminTier(req.user as { role?: string } | null)
 
 export const Orders: CollectionConfig = {
   slug: 'orders',
@@ -16,6 +16,7 @@ export const Orders: CollectionConfig = {
     useAsTitle: 'buyerName',
     defaultColumns: ['buyerName', 'email', 'adultCount', 'childCount', 'total', 'refundStatus', 'show'],
     listSearchableFields: ['buyerName', 'email'],
+    hidden: ({ user }) => !isAdminTier(user as { role?: string } | null),
     components: {
       edit: {
         editMenuItems: ['@/components/payload/RefundOrderMenuItem#RefundOrderMenuItem'],
