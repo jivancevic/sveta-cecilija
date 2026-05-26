@@ -214,7 +214,7 @@ export default function CheckoutForm({
             <Link href="/privacy-policy" target="_blank" rel="noopener noreferrer">
               {t.privacyLinkLabel}
             </Link>
-            {' — '}
+            {' - '}
             {t.privacyLabel}
           </span>
         </label>

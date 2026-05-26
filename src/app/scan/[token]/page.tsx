@@ -188,7 +188,7 @@ function BuyerView({
         }}
       >
         Show this screen at the door.<br />
-        <strong>Do not tap the QR again</strong> — it activates only when staff scans it.
+        <strong>Do not tap the QR again</strong>, it activates only when staff scans it.
       </div>
     </main>
   )

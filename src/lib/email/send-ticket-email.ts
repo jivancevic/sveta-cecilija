@@ -11,8 +11,8 @@ function formatEur(cents: number): string {
 
 function renderSubject(locale: 'en' | 'hr', date: string): string {
   return locale === 'hr'
-    ? `Vaše ulaznice za morešku — ${date}`
-    : `Your Moreška tickets — ${date}`
+    ? `Vaše ulaznice za morešku - ${date}`
+    : `Your Moreška tickets - ${date}`
 }
 
 function renderHtml(input: SendTicketEmailInput): string {
@@ -22,7 +22,7 @@ function renderHtml(input: SendTicketEmailInput): string {
   if (locale === 'hr') {
     return `
       <p>Poštovani ${buyer.name},</p>
-      <p>Vaše ulaznice za morešku priložene su kao QR kodovi — jedan po ulaznici.</p>
+      <p>Vaše ulaznice za morešku priložene su kao QR kodovi, jedan po ulaznici.</p>
       <h3>Sažetak narudžbe</h3>
       <ul>
         <li>${order.adultCount} odraslih × €20</li>
@@ -41,7 +41,7 @@ function renderHtml(input: SendTicketEmailInput): string {
 
   return `
     <p>Hi ${buyer.name},</p>
-    <p>Your Moreška tickets are attached as QR codes — one per ticket.</p>
+    <p>Your Moreška tickets are attached as QR codes, one per ticket.</p>
     <h3>Order summary</h3>
     <ul>
       <li>${order.adultCount} adult × €20</li>
