@@ -96,17 +96,71 @@ All of these can be completed while development is in progress.
 
 ---
 
-## Rename door-staff Payload login to tehnika@moreska.eu (issue #55)
+---
 
-Production-only admin action. Code/docs already reference `tehnika@moreska.eu`; the live `Users` record still has the old email and must be renamed manually.
+## 5. From Dragan + Tatjana meetings (2026-05-26)
 
-- [ ] Log in to `/admin` as the existing admin user.
-- [ ] Open the `Users` collection and edit the record with email `door-staff@moreska.eu`.
-- [ ] Change `email` to `tehnika@moreska.eu`. Confirm `role` is still `door-staff`.
-- [ ] Reset the password (use the Payload "change password" flow) and store the new password in the shared password manager.
-- [ ] Verify: log in at `/admin` with `tehnika@moreska.eu` + new password → succeeds; `/admin/stats` is accessible; `/scan/[token]` continues to work for a real QR.
-- [ ] Inform door staff of the new credentials (replace the printed card / sticker).
-- [ ] Update the Coolify project notes / password-manager entry to drop `door-staff@moreska.eu`.
-- [ ] (Optional) After a few days of green operation, delete or disable the old `door-staff@moreska.eu` user record so it cannot be used to log in.
+### Refund policy
 
-Local `_dev` can keep any login string — no action required there.
+Decisions (from session):
+- **Customer cancellation:** no refund.
+- **HGD cancels show:** full refund to all buyers.
+- **Venue moved (Ljetno → Zimsko):** not a refund trigger; case-by-case if buyer insists.
+
+To do:
+- [ ] Build `/refund-policy` page (mirror `LegalPage` structure used by Privacy + Cookie). Sections: customer cancellation, HGD cancellation, venue change, lost/stolen tickets, refund timing (Stripe 5–10 days), case-by-case contact.
+- [ ] Update `refundLabel` in `src/messages/{en,hr}.json` to link the new page (currently plain text, no link).
+- [ ] Add the public URL to Stripe Dashboard → Settings → "Refund policy URL" (reduces chargeback risk).
+
+### Show-moved-to-Zimsko workflow
+
+- [ ] Admin button in `/admin` → "Mark show as moved to Zimsko" → two-step modal: preview recipient list → confirm → bulk mail via Brevo informing buyers of venue change. Buyer replies to `info@` for case-by-case refund (handled via existing Payload refund flow).
+
+### Agency reservations workflow
+
+Tracked in **#86**. Blocked on agency phone calls — see "Personal tasks" below.
+
+### Door recovery flow
+
+Tracked in **#87**. Three deliverables: PDF download on confirmation page, tehnika order lookup by email/name (scoped to active show), "next show" view with 2h post-start grace.
+
+---
+
+## 6. Personal tasks (operational, not dev)
+
+- [ ] Create Google Calendar with 2026 season shows. (Manual one-off; auto-sync from Shows collection is a separate ask if it ever becomes painful.)
+- [ ] Update show schedule in `/admin` per Tatjana's latest email.
+- [ ] Send Brane the photo numbers.
+- [ ] Set up YouTube channel for HGD.
+- [ ] Clean up project files — needs concrete scope before doing. Candidates:
+  - `assets/images/new-images/*` (untracked: black-bula.jpg, bula-alone.jpg, experience.jpeg, mate.jpg, moreska-nobilo.{jpg,pdf}, ocevi-sinovi.JPG, sfida-wide.jpg, sword-clash.jpg, wave.jpg) — decide kept / moved to `public/` / deleted.
+  - `docs/` strays: `change-text.md`, `help.md`, `modify-issue#4.md`, `modify.md 16-42-44-630.md` — none look like permanent docs; review and delete.
+- [ ] Call agencies (Kaleta, Iliskovic, Rent a Đir, Hotel Korčula, Marko Polo, Liburna, Bon Repos) — questionnaire in #86 comments. Operational prerequisite for the agency build.
+
+---
+
+## 7. Pending decisions (no dev work until decided)
+
+### Group discount — revisit "every 5th ticket free"
+
+Currently shipped per CONTEXT.md (`floor(totalTickets / 5) × (hasAdult ? 20 : 10)`). Brief flagged this for review. Open questions before changing anything:
+- Is the current rule actually losing meaningful revenue, or is it driving group size up enough to compensate? Check stats after first month of season before changing.
+- Does the discount interact with agency commission (#86)? Default: does **not** stack.
+- Alternative models to consider: flat group rate from 10+ tickets, school-trip rate, no discount.
+
+### Croatian name for "Moreška Experience"
+
+Current state: EN "Moreška Experience"; HR translation in `services.cards[1]` needs the canonical name. Candidates:
+- "Doživi Morešku" (active framing)
+- "Moreška izbliza"
+- (other — Tereza / Taso input?)
+
+Pick one, then update `src/messages/hr.json` + any meta titles.
+
+### Tereza logo
+
+Waiting on Tereza to deliver new logo asset. Once received: drop into `public/`, swap reference in `Nav`, `Footer`, `Hero`, OG meta.
+
+### Marketing (Taso)
+
+Out of scope for dev — paid campaigns are owned by a separate HGD member. Only dev-adjacent ask is verifying tag firing (#71 Consent Mode etc.) when assets land.
