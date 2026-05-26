@@ -16,7 +16,7 @@ export async function generateMetadata({ params }: { params: Promise<{ showId: s
   const { showId } = await params
   return {
     ...buildMetadata({
-      title: 'Checkout — Moreška Korčula',
+      title: 'Checkout - Moreška Korčula',
       description:
         'Complete your Moreška ticket purchase. Secure card payment via Stripe.',
       path: `/checkout/${showId}`,
@@ -73,7 +73,6 @@ export default async function CheckoutRoute({ params, searchParams }: RouteProps
       <EventJsonLd shows={[showForJsonLd]} />
       <Nav locale={locale} t={dict.nav} variant="inner" />
       <main className="checkout-page">
-        <a href="/tickets" className="checkout-page__back">{dict.checkoutPage.pageBack}</a>
         <h1 className="checkout-page__h">{dict.checkoutPage.pageHeading}</h1>
         <CheckoutForm
           locale={locale}
@@ -86,10 +85,11 @@ export default async function CheckoutRoute({ params, searchParams }: RouteProps
             venue,
             remaining,
           }}
-          initialAdults={parseQty(adultsStr, 2)}
+          initialAdults={parseQty(adultsStr, 1)}
           initialChildren={parseQty(childrenStr, 0)}
           stripePublishableKey={publishableKey}
         />
+        <a href="/tickets" className="checkout-page__back">{dict.checkoutPage.pageBack}</a>
       </main>
       <Footer locale={locale} t={dict.footer} />
     </div>

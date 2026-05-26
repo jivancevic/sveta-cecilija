@@ -28,8 +28,9 @@ function formatDate(isoDate: string, locale: Locale) {
 }
 
 export default function PerformancesPage({ t, tSchedule, shows, locale, initialDate, images }: Props) {
-  const [activeId, setActiveId] = useState<string | null>(null);
-  const [adults, setAdults] = useState(2);
+  const initialMatch = initialDate ? shows.find((s) => s.date === initialDate) : undefined;
+  const [activeId, setActiveId] = useState<string | null>(initialMatch ? initialMatch.id : null);
+  const [adults, setAdults] = useState(1);
   const [children, setChildren] = useState(0);
   const targetRef = useRef<HTMLDivElement | null>(null);
 
@@ -44,7 +45,7 @@ export default function PerformancesPage({ t, tSchedule, shows, locale, initialD
       setActiveId(null);
     } else {
       setActiveId(id);
-      setAdults(2);
+      setAdults(1);
       setChildren(0);
     }
   }
@@ -143,7 +144,7 @@ export default function PerformancesPage({ t, tSchedule, shows, locale, initialD
                       {pillText}
                     </span>
                   </div>
-                  <div className="perf-card__cta">
+                  <div className={`perf-card__cta${isActive ? ' perf-card__cta--hidden' : ''}`}>
                     <button
                       className="perf-card__book"
                       onClick={() => openBooking(show.id)}
@@ -156,6 +157,7 @@ export default function PerformancesPage({ t, tSchedule, shows, locale, initialD
 
                 {/* Booking expansion */}
                 <div className={`perf-booking${isActive ? ' perf-booking--open' : ''}`}>
+                  <div className="perf-booking__inner">
                   <div className="perf-booking__row">
                     <span className="perf-booking__label">
                       {t.adults}
@@ -204,6 +206,7 @@ export default function PerformancesPage({ t, tSchedule, shows, locale, initialD
                       {t.confirm}
                     </Link>
                   )}
+                  </div>
                 </div>
               </div>
             );

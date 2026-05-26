@@ -24,8 +24,8 @@ export interface SendRefundEmailDeps {
 
 function renderSubject(locale: 'en' | 'hr', amount: string): string {
   return locale === 'hr'
-    ? `Povrat sredstava ${amount} — HGD Sveta Cecilija`
-    : `Your refund of ${amount} — HGD Sveta Cecilija`
+    ? `Povrat sredstava ${amount} - HGD Sveta Cecilija`
+    : `Your refund of ${amount} - HGD Sveta Cecilija`
 }
 
 function renderHtml(input: SendRefundEmailInput, locale: 'en' | 'hr'): string {
