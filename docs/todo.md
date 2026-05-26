@@ -121,6 +121,18 @@ All of these can be completed while development is in progress.
 
 ## 7. Pending decisions (no dev work until decided)
 
+### Adult / child split in stats
+
+Brief asked for per-show counts split by adult / child / agency. Agency column is tracked in #86. Adult/child breakdown is **not currently in `AdminStatsView` or `AdminShowStatsView`** (verified: no `adult` or `child` references in those components). Source data is on `Orders.adultCount` / `childCount`, so this is a pure presentation change — add columns to the per-show row and to the per-show drill-down. Worth doing alongside the agency column from #86 so the stats redesign happens once.
+
+### Season aggregate stats
+
+Already implemented per CONTEXT.md (`/admin` top block shows total tickets, scanned, revenue, by-venue split). Verify after first month of real season data that the numbers are useful as-is; extend (per-month, per-show-type, per-agency once #86 ships) only if Dragan asks for more.
+
+### POS receipt / Croatian fiscalization
+
+Deferred. Any cash-at-door sale legally requires a fiscal receipt (Porezna uprava API, certificate, JIR/ZKI). Self-contained large project — separate certificate provisioning, signing, real-time reporting. Not in scope until basic season operations are smooth.
+
 ### Group discount — revisit "every 5th ticket free"
 
 Currently shipped per CONTEXT.md (`floor(totalTickets / 5) × (hasAdult ? 20 : 10)`). Brief flagged this for review. Open questions before changing anything:
