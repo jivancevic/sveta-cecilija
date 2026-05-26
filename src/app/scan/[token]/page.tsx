@@ -199,11 +199,12 @@ function UndoForm({ token }: { token: string }) {
     <form
       method="post"
       action={`/api/scan/${encodeURIComponent(token)}/undo`}
-      style={{ marginTop: '2rem' }}
+      style={{ marginTop: '2rem', width: '100%', maxWidth: '24rem' }}
     >
       <button
         type="submit"
         style={{
+          width: '100%',
           background: 'rgba(255,255,255,0.15)',
           color: '#fff',
           border: '2px solid rgba(255,255,255,0.85)',
@@ -213,12 +214,54 @@ function UndoForm({ token }: { token: string }) {
           fontWeight: 600,
           cursor: 'pointer',
           minHeight: '48px',
-          minWidth: '180px',
         }}
       >
         Undo scan
       </button>
     </form>
+  )
+}
+
+function StaffActions() {
+  const baseBtn: React.CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+    minHeight: '48px',
+    padding: '0.85rem 1.25rem',
+    fontSize: '1.0625rem',
+    fontWeight: 600,
+    borderRadius: '0.5rem',
+    textDecoration: 'none',
+    boxSizing: 'border-box',
+  }
+  const primary: React.CSSProperties = {
+    ...baseBtn,
+    background: '#fff',
+    color: '#111',
+    border: '2px solid #fff',
+  }
+  const secondary: React.CSSProperties = {
+    ...baseBtn,
+    background: 'transparent',
+    color: '#fff',
+    border: '2px solid rgba(255,255,255,0.6)',
+  }
+  return (
+    <div
+      style={{
+        marginTop: '2rem',
+        width: '100%',
+        maxWidth: '24rem',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '0.75rem',
+      }}
+    >
+      <a href="/admin?scan=1" style={primary}>Scan new</a>
+      <a href="/admin" style={secondary}>Back</a>
+    </div>
   )
 }
 
@@ -253,6 +296,7 @@ function ResultView({
             : ''}
         </div>
         <ShowLine showDate={result.showDate} showTime={result.showTime} venue={result.venue} />
+        {viewer === 'staff' && <StaffActions />}
       </main>
     )
   }
@@ -272,6 +316,7 @@ function ResultView({
             Undo window expired (2 minutes).
           </div>
         )}
+        {viewer === 'staff' && <StaffActions />}
       </main>
     )
   }
@@ -282,6 +327,7 @@ function ResultView({
       <div style={{ fontSize: '1.25rem', marginTop: '1.5rem' }}>
         This ticket is not recognised.
       </div>
+      {viewer === 'staff' && <StaffActions />}
     </main>
   )
 }

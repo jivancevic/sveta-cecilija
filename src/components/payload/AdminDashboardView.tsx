@@ -8,7 +8,7 @@ import { getStatsInput } from '@/lib/stats-data'
 import { computeStats } from '@/lib/stats'
 import { isAdminTier, isAuthed } from '@/lib/access/roles'
 import { HeaderBlock, ShowsTable } from './stats-blocks'
-import { QRScannerButton } from './QRScannerButton'
+import { QRScannerAutoStart } from './QRScannerAutoStart'
 
 export const dynamic = 'force-dynamic'
 
@@ -89,7 +89,7 @@ function AdminActions() {
 function TehnikaActions() {
   return (
     <div style={{ maxWidth: 480, margin: '0 0 24px' }}>
-      <QRScannerButton />
+      <QRScannerAutoStart />
     </div>
   )
 }
