@@ -17,6 +17,7 @@ export const Shows: CollectionConfig = {
   admin: {
     useAsTitle: 'date',
     defaultColumns: ['date', 'time', 'venue', 'onlineSold', 'inPersonSold', 'legacyReserved', 'status'],
+    hidden: ({ user }) => !isAdminTier(user as { role?: string } | null),
     components: {
       edit: {
         editMenuItems: [

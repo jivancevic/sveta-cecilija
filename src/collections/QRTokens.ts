@@ -16,6 +16,7 @@ export const QRTokens: CollectionConfig = {
   },
   admin: {
     defaultColumns: ['token', 'order', 'scanned', 'scannedAt'],
+    hidden: ({ user }) => !isAdminTier(user as { role?: string } | null),
   },
   fields: [
     { name: 'token', type: 'text', required: true, unique: true },

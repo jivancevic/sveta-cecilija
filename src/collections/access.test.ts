@@ -138,6 +138,26 @@ describe('Users access', () => {
   })
 })
 
+describe('Sidebar visibility (admin.hidden)', () => {
+  const callHidden = (cfg: { admin?: { hidden?: unknown } }, user: unknown): boolean => {
+    const fn = cfg.admin?.hidden as ((args: { user: unknown }) => boolean) | undefined
+    if (typeof fn !== 'function') return false
+    return fn({ user })
+  }
+
+  it.each([
+    ['Orders', Orders],
+    ['Shows', Shows],
+    ['QRTokens', QRTokens],
+    ['ContactSubmissions', ContactSubmissions],
+  ] as const)('%s is visible to admin-tier, hidden from tehnika', (_name, cfg) => {
+    expect(callHidden(cfg, superadmin)).toBe(false)
+    expect(callHidden(cfg, admin)).toBe(false)
+    expect(callHidden(cfg, tehnika)).toBe(true)
+    expect(callHidden(cfg, anon)).toBe(true)
+  })
+})
+
 describe('QRTokens access', () => {
   it('all authed roles can read', () => {
     expect(call(QRTokens.access?.read, superadmin)).toBe(true)

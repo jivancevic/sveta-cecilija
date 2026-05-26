@@ -39,6 +39,7 @@ export const Posts: CollectionConfig = {
     defaultColumns: ['title', 'locale', 'status', 'publishedAt'],
     description:
       'Blog posts. Author = HGD Sveta Cecilija. Pick a locale — posts only appear on the public /blog of that locale.',
+    hidden: ({ user }) => !isAdminTier(user as { role?: string } | null),
   },
   fields: [
     { name: 'title', type: 'text', required: true },

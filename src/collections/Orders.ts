@@ -16,6 +16,7 @@ export const Orders: CollectionConfig = {
     useAsTitle: 'buyerName',
     defaultColumns: ['buyerName', 'email', 'adultCount', 'childCount', 'total', 'refundStatus', 'show'],
     listSearchableFields: ['buyerName', 'email'],
+    hidden: ({ user }) => !isAdminTier(user as { role?: string } | null),
     components: {
       edit: {
         editMenuItems: ['@/components/payload/RefundOrderMenuItem#RefundOrderMenuItem'],

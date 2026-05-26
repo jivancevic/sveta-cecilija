@@ -15,6 +15,7 @@ export const ContactSubmissions: CollectionConfig = {
   admin: {
     useAsTitle: 'name',
     defaultColumns: ['name', 'email', 'enquiryType', 'createdAt'],
+    hidden: ({ user }) => !isAdminTier(user as { role?: string } | null),
   },
   fields: [
     { name: 'name', type: 'text', required: true },
