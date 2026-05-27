@@ -52,7 +52,7 @@ export default function Nav({ locale, t, variant = 'homepage' }: Props) {
   return (
     <>
       <nav className={navClass}>
-        <a href="/" className="nav__logo" aria-label="HGD Sveta Cecilija">
+        <a href="/" className="nav__logo">
           <Image src="/cecilija-logo.webp" alt="" width={80} height={100} priority />
           <span className="nav__wordmark">
             <span className="top">{t.wordmarkTop}</span>

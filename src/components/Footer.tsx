@@ -22,7 +22,7 @@ export default function Footer({ locale, t }: Props) {
 
         <div className="foot__cols">
           <div className="foot__col">
-            <h5 className="foot__col-h">{t.visitLabel}</h5>
+            <h4 className="foot__col-h">{t.visitLabel}</h4>
             <a href="/tickets">{t.performances}</a>
             <a href="/about">{t.about}</a>
             <a href="/about">{t.history}</a>
@@ -31,14 +31,14 @@ export default function Footer({ locale, t }: Props) {
             <a href="/#svcs">{t.services}</a>
           </div>
           <div className="foot__col">
-            <h5 className="foot__col-h">{t.sectionsLabel}</h5>
+            <h4 className="foot__col-h">{t.sectionsLabel}</h4>
             <a href="/sections/moreska">{t.moreska}</a>
             <a href="/sections/wind-orchestra">{t.windOrchestra}</a>
             <a href="/sections/klapa">{t.klapa}</a>
             <a href="/sections/choir">{t.choir}</a>
           </div>
           <div className="foot__col">
-            <h5 className="foot__col-h">{t.contactLabel}</h5>
+            <h4 className="foot__col-h">{t.contactLabel}</h4>
             <a href="mailto:info@moreska.eu">info@moreska.eu</a>
             <a href="https://maps.app.goo.gl/u73fPrGmBGhY7e5JA" target="_blank" rel="noopener noreferrer">{t.location}</a>
             <div className="foot__social">
