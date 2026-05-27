@@ -162,8 +162,8 @@ Registry still lists `www.korcula-moreska.com` as the official website — updat
 All production assets live in `public/`. Key files:
 - `hero-horizontal.webm` — autoplay hero video (desktop, ≥768px)
 - `hero-vertical.webm` — autoplay hero video (mobile, <768px) — loaded dynamically in `Hero.tsx`
-- `hero-horizontal-poster.webp` — first-frame poster for horizontal video (74 KB, extracted at 0.5s)
-- `hero-vertical-poster.webp` — first-frame poster for vertical video (41 KB, extracted at 0.5s)
+- `hero-horizontal-poster.webp` — first-frame poster for horizontal video (63 KB, extracted at frame 0 to match video start — seamless swap)
+- `hero-vertical-poster.webp` — first-frame poster for vertical video (34 KB, extracted at frame 0 to match video start — seamless swap)
 - `cecilija-logo.webp` — organisation logo used in Nav, Footer, Hero, and the Organization JSON-LD `logo` field in `src/app/(frontend)/layout.tsx`
 
 Everything in `public/` is referenced from `src/` — `public/` is the served set, not an archive. Originals and B-roll live in `assets/images/` (gitignored deploy-side: only `public/` ships to the browser; `assets/` is read-only source kept in the repo for future use). Off-pipeline keepers go in `assets/images/archived/`; fonts not loaded by the app go in `assets/fonts/`. Don't dump candidates into `public/` — they bloat the Coolify build and the deploy without being served.
@@ -278,7 +278,7 @@ Two tied-together gotchas you must keep in place or every custom admin component
 - Contact form shows a **local success state** on submit — Resend email sending comes in a later issue.
 - Homepage history section uses 4 vignettes (`HISTORY_VIGNETTES_HOME`); About page uses all 8 (`HISTORY_VIGNETTES_META`).
 - Nav hamburger overlay replaces desktop links below 768px breakpoint.
-- **Hero loading:** No JS loading screen. The `<video>` element uses a `poster` attribute (`/hero-horizontal-poster.webp` or `/hero-vertical-poster.webp`) so the first frame is visible from the initial paint. The video plays underneath as soon as it's buffered. If the poster images are ever re-extracted, use `ffmpeg` at `0.5s` and convert via `cwebp -q 82`.
+- **Hero loading:** No JS loading screen. The `<video>` element uses a `poster` attribute (`/hero-horizontal-poster.webp` or `/hero-vertical-poster.webp`) so the first frame is visible from the initial paint. The video plays underneath as soon as it's buffered. If the poster images are ever re-extracted, extract frame 0 (`ffmpeg -i hero-*.webm -vf "select=eq(n\,0)" -vframes 1 out.png`) so the static poster matches the video's first frame exactly — otherwise the swap from poster to video shows a visible "jump". Convert via `cwebp -q 82`.
 - Hero animation sequence: overlays fade in immediately (0s, 0.8s duration). At 0.3s: logo image fades in. At 0.6s: name rises. At 1.0s: est line rises. CTAs are fully visible from load (no animation). Videos are pre-trimmed to start at an interesting frame.
 - **`backdrop-filter` pitfall:** Never put `backdrop-filter` on an element that starts at `opacity: 0`. Browsers (especially Safari) apply the filter regardless of opacity, leaking the effect before the animation starts. Use background overlays only for elements that animate in from invisible.
 - i18n routing structure is in place from day one — adding new locales requires only a new `src/messages/{locale}.json` and updating `locales` in `src/proxy.ts`.
