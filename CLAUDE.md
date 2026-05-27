@@ -162,8 +162,9 @@ All production assets live in `public/`. Key files:
 - `hero-vertical.webm` — autoplay hero video (mobile, <768px) — loaded dynamically in `Hero.tsx`
 - `hero-horizontal-poster.webp` — first-frame poster for horizontal video (74 KB, extracted at 0.5s)
 - `hero-vertical-poster.webp` — first-frame poster for vertical video (41 KB, extracted at 0.5s)
-- `cecilija-logo.webp` — organisation logo used in Nav, Footer, Hero (web `<img>` use)
-- `Vinque-Rg.otf` — custom serif font
+- `cecilija-logo.webp` — organisation logo used in Nav, Footer, Hero, and the Organization JSON-LD `logo` field in `src/app/(frontend)/layout.tsx`
+
+Everything in `public/` is referenced from `src/` — `public/` is the served set, not an archive. Originals and B-roll live in `assets/images/` (gitignored deploy-side: only `public/` ships to the browser; `assets/` is read-only source kept in the repo for future use). Off-pipeline keepers go in `assets/images/archived/`; fonts not loaded by the app go in `assets/fonts/`. Don't dump candidates into `public/` — they bloat the Coolify build and the deploy without being served.
 
 The PNG variant of the logo lives at **`assets/images/cecilija-logo.png`** (outside `public/`) — used by `@react-pdf/renderer` in `src/lib/email/render-tickets-pdf.tsx`, which can't decode webp. Read via `fs.readFileSync` at module load, embedded as a `<Image>` in the PDF. Don't move it without updating the renderer.
 

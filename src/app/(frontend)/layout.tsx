@@ -40,7 +40,7 @@ const organizationJsonLd = {
   alternateName: BRAND_LAYER,
   foundingDate: '1883',
   url: SITE_URL,
-  logo: `${SITE_URL}/cecilija-logo.png`,
+  logo: `${SITE_URL}/cecilija-logo.webp`,
   slogan: TAGLINE,
   email: 'info@moreska.eu',
   address: {
