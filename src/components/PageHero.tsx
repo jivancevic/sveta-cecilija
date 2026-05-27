@@ -1,3 +1,5 @@
+import Image from 'next/image';
+
 interface Props {
   headline: string;
   subtitle?: string;
@@ -8,8 +10,7 @@ interface Props {
 export default function PageHero({ headline, subtitle, image, imageAlt }: Props) {
   return (
     <section className="page-hero">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img className="page-hero__bg" src={image} alt={imageAlt ?? ''} />
+      <Image className="page-hero__bg" src={image} alt={imageAlt ?? ''} fill sizes="100vw" priority />
       <div className="page-hero__overlay" />
       <div className="page-hero__inner">
         <h1 className="page-hero__h serif">{headline}</h1>

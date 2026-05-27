@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import type { Dictionary } from '@/lib/i18n';
 import type { Show } from '@/lib/shows';
 import type { Locale } from '@/proxy';
@@ -52,8 +53,7 @@ export default function Schedule({ t, shows, locale }: Props) {
           return (
             <a key={show.id} href={`/tickets?date=${show.date}`} className="opera__card" data-reveal data-delay={i + 1}>
               <div className="opera__photo">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={image} alt="" />
+                <Image src={image} alt="" fill sizes="(min-width: 1280px) 25vw, (min-width: 768px) 33vw, 50vw" />
                 <div className="opera__photo-overlay" />
               </div>
               <div className="opera__body">

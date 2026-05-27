@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import Image from 'next/image';
 import type { Locale } from '@/proxy';
 import type { Dictionary } from '@/lib/i18n';
 import LangSwitcher from './LangSwitcher';
@@ -52,8 +53,7 @@ export default function Nav({ locale, t, variant = 'homepage' }: Props) {
     <>
       <nav className={navClass}>
         <a href="/" className="nav__logo" aria-label="HGD Sveta Cecilija">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/cecilija-logo.webp" alt="" />
+          <Image src="/cecilija-logo.webp" alt="" width={80} height={100} priority />
           <span className="nav__wordmark">
             <span className="top">{t.wordmarkTop}</span>
             <span className="bot">{t.wordmarkBot}</span>
@@ -92,8 +92,7 @@ export default function Nav({ locale, t, variant = 'homepage' }: Props) {
           <button className="nav__overlay-close" onClick={close} aria-label="Close menu">✕</button>
 
           <a href="/" className="nav__overlay-logo" onClick={close}>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/cecilija-logo.webp" alt="HGD Sveta Cecilija" />
+            <Image src="/cecilija-logo.webp" alt="HGD Sveta Cecilija" width={160} height={200} />
           </a>
 
           <div className="nav__overlay-links">

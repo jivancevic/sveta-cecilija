@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import { getLocale } from '@/lib/locale';
 import { getDictionary } from '@/lib/i18n';
 import Nav from '@/components/Nav';
@@ -44,8 +45,7 @@ export default async function AboutPage() {
               <p className="ab-block__para">{para}</p>
             </div>
             <div className="ab-block__image">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={BLOCK_IMAGES[i]} alt="" />
+              <Image src={BLOCK_IMAGES[i]} alt="" fill sizes="(min-width: 768px) 50vw, 100vw" />
             </div>
           </div>
         ))}

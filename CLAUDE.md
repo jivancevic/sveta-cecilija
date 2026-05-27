@@ -178,7 +178,7 @@ The PNG variant of the logo lives at **`assets/images/cecilija-logo.png`** (outs
 - **Responsive breakpoints:** `max-width: 1280px` → `1024px` → `768px` → `480px`. At 768px: hamburger shown, desktop nav links hidden, grids collapse. Hero uses `min(940px, 100vh)` so it always fits the viewport — never hardcode a px height taller than a laptop viewport (~800px).
 - **Mobile performances (≤768px):** 2×2 grid, photos hidden, compact tiles — large day number + title + tickets link only.
 - **Mobile sections block (≤768px):** All 4 cards stacked vertically. Moreška (`card--feature`) at 420px min-height; others at 200px.
-- No `next/image` — plain `<img>` throughout. Migrate to `next/image` in a later optimisation pass.
+- All `<img>` in the public site use `next/image` (`<Image>`) for responsive srcset + AVIF/webp content negotiation + lazy loading. Two patterns: small fixed assets (logos, decorative SVG-like webps) use explicit `width`/`height`; full-bleed photos that fill a positioned parent use `fill` with an explicit `sizes` matching the layout breakpoints. Above-fold images (Hero logo, Nav logo, PageHero bg) carry `priority`. Exceptions: `src/lib/email/render-tickets-pdf.tsx` uses `@react-pdf/renderer`'s `<Image>` (not next/image); `src/app/(frontend)/blog/page.tsx` keeps a plain `<img>` because `post.heroImage` may be a remote URL (Posts collection allows it) and `next.config.ts` has no `images.remotePatterns` allowlist.
 
 ### Section page slugs → sectionKey mapping
 
@@ -275,7 +275,6 @@ Two tied-together gotchas you must keep in place or every custom admin component
 - **`SCHEDULE_ALL` in `data.ts` can be removed** — it is no longer used now that the Shows collection is the source of truth.
 - Contact form shows a **local success state** on submit — Resend email sending comes in a later issue.
 - Homepage history section uses 4 vignettes (`HISTORY_VIGNETTES_HOME`); About page uses all 8 (`HISTORY_VIGNETTES_META`).
-- No `next/image` — plain `<img>` throughout. Migrate in a later optimisation pass.
 - Nav hamburger overlay replaces desktop links below 768px breakpoint.
 - **Hero loading:** No JS loading screen. The `<video>` element uses a `poster` attribute (`/hero-horizontal-poster.webp` or `/hero-vertical-poster.webp`) so the first frame is visible from the initial paint. The video plays underneath as soon as it's buffered. If the poster images are ever re-extracted, use `ffmpeg` at `0.5s` and convert via `cwebp -q 82`.
 - Hero animation sequence: overlays fade in immediately (0s, 0.8s duration). At 0.3s: logo image fades in. At 0.6s: name rises. At 1.0s: est line rises. CTAs are fully visible from load (no animation). Videos are pre-trimmed to start at an interesting frame.
@@ -302,6 +301,5 @@ Target: cutover from `korcula-moreska.com` to `moreska.eu` before peak season (e
 - Bulk show-cancellation refunds
 - Buyer email CSV export
 - Bulk email to ticket holders per show
-- `next/image` migration
 - SEO metadata (`generateMetadata`) on all pages
 - German language support

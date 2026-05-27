@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import type { Dictionary } from '@/lib/i18n';
 import type { SectionCardMeta } from '@/lib/data';
 
@@ -28,8 +29,7 @@ export default function Sections({ t, cards }: Props) {
 
       <div className="secs__grid">
         <a className="card card--feature" href={`/sections/${KEY_TO_SLUG[featureMeta.key]}`} data-reveal data-delay="1">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={featureMeta.image} alt="" />
+          <Image src={featureMeta.image} alt="" fill sizes="(min-width: 768px) 60vw, 100vw" />
           <div className="overlay" />
           <div className="card__body">
             <h3 className="card__name serif">{featureCard.name}</h3>
@@ -41,8 +41,7 @@ export default function Sections({ t, cards }: Props) {
         <div className="secs__col-right">
           {otherCards.map(({ meta, text }, i) => (
             <a key={meta.key} className="card" href={`/sections/${KEY_TO_SLUG[meta.key]}`} data-reveal data-delay={i + 2}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={meta.image} alt="" />
+              <Image src={meta.image} alt="" fill sizes="(min-width: 768px) 25vw, 50vw" />
               <div className="overlay" />
               <div className="card__body">
                 <h3 className="card__name serif">{text.name}</h3>

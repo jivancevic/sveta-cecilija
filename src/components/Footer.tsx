@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import type { Locale } from '@/proxy';
 import type { Dictionary } from '@/lib/i18n';
 import LangSwitcher from './LangSwitcher';
@@ -10,14 +11,12 @@ interface Props {
 export default function Footer({ locale, t }: Props) {
   return (
     <footer className="foot foot--atmos">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img className="foot__bg" src="/moreska-wide.webp" alt="" />
+      <Image className="foot__bg" src="/moreska-wide.webp" alt="" fill sizes="100vw" />
       <div className="foot__overlay" />
 
       <div className="foot__inner">
         <div className="foot__brand">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img className="foot__logo" src="/cecilija-logo.webp" alt="HGD Sveta Cecilija" />
+          <Image className="foot__logo" src="/cecilija-logo.webp" alt="HGD Sveta Cecilija" width={144} height={180} />
           <div className="foot__tag serif">{t.tagline}</div>
         </div>
 

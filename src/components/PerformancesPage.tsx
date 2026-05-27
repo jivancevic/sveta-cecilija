@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import type { Show } from '@/lib/shows';
 import type { Dictionary } from '@/lib/i18n';
@@ -126,8 +127,7 @@ export default function PerformancesPage({ t, tSchedule, shows, locale, initialD
                 className={`perf-card${isActive ? ' perf-card--active' : ''}`}
               >
                 <div className="perf-card__photo">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={image} alt="" />
+                  <Image src={image} alt="" fill sizes="(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw" />
                   <div className="perf-card__photo-overlay" />
                 </div>
 
