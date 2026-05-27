@@ -39,18 +39,18 @@ export default function Contact({ t }: Props) {
           <form className="form" onSubmit={handleSubmit}>
             <div className="form__row">
               <div className="field">
-                <label>{t.name}</label>
-                <input type="text" placeholder={t.namePlaceholder} required />
+                <label htmlFor="contact-name">{t.name}</label>
+                <input id="contact-name" type="text" placeholder={t.namePlaceholder} required />
               </div>
               <div className="field">
-                <label>{t.email}</label>
-                <input type="email" placeholder={t.emailPlaceholder} required />
+                <label htmlFor="contact-email">{t.email}</label>
+                <input id="contact-email" type="email" placeholder={t.emailPlaceholder} required />
               </div>
             </div>
             <div className="form__row">
               <div className="field">
-                <label>{t.enquiry}</label>
-                <select defaultValue="">
+                <label htmlFor="contact-enquiry">{t.enquiry}</label>
+                <select id="contact-enquiry" defaultValue="">
                   <option value="" disabled>{t.enquirySelect}</option>
                   {t.enquiryOptions.map((opt) => (
                     <option key={opt} value={opt}>{opt}</option>
@@ -58,15 +58,15 @@ export default function Contact({ t }: Props) {
                 </select>
               </div>
               <div className="field">
-                <label>&nbsp;</label>
+                <label aria-hidden="true">&nbsp;</label>
                 <button className="btn btn--primary form__submit" type="submit">
                   {t.submit}
                 </button>
               </div>
             </div>
             <div className="field">
-              <label>{t.message}</label>
-              <textarea placeholder={t.messagePlaceholder} />
+              <label htmlFor="contact-message">{t.message}</label>
+              <textarea id="contact-message" placeholder={t.messagePlaceholder} />
             </div>
           </form>
         )}

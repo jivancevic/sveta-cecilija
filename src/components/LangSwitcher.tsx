@@ -29,7 +29,7 @@ export default function LangSwitcher({ locale, className }: Props) {
       <button
         onClick={() => switchTo('hr')}
         className={locale === 'hr' ? 'active' : undefined}
-        aria-label="Switch to Croatian"
+        aria-label="HR — Switch to Croatian"
       >
         HR
       </button>
@@ -37,7 +37,7 @@ export default function LangSwitcher({ locale, className }: Props) {
       <button
         onClick={() => switchTo('en')}
         className={locale === 'en' ? 'active' : undefined}
-        aria-label="Switch to English"
+        aria-label="EN — Switch to English"
       >
         EN
       </button>
