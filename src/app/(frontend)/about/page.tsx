@@ -17,7 +17,7 @@ export function generateMetadata() {
 
 const BLOCK_IMAGES = [
   '/kraljevi-krupni.webp',
-  '/mate.jpg',
+  '/mate.webp',
   '/glazba.webp',
   '/todor-2-vojske.webp',
 ];

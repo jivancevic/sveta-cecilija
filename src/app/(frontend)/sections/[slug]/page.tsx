@@ -75,7 +75,7 @@ export default async function SectionPage({
       <div
         className="ip-cta"
         style={meta.sectionKey === 'moreska' ? {
-          backgroundImage: 'url(/moreskanti-cool.jpg)',
+          backgroundImage: 'url(/moreskanti-cool.webp)',
           backgroundSize: 'cover',
           backgroundPosition: 'center',
         } : undefined}

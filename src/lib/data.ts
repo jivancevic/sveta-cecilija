@@ -24,18 +24,18 @@ export interface ServiceCardMeta {
 }
 
 const images = [
-  '/fila.jpg',             // 0
+  '/fila.webp',            // 0
   '/kraljevi-krupni.webp', // 1
   '/kraljevi.webp',        // 2
   '/moreska-wide.webp',    // 3
   '/moreska01.webp',       // 4
   '/moreska02.webp',       // 5
   '/torches.webp',         // 6
-  '/black-bula.jpg',       // 7
-  '/sfida-wide.jpg',       // 8
-  '/sword-clash.jpg',      // 9
-  '/top-7-kolap.jpg',      // 10
-  '/wave.jpg',             // 11
+  '/black-bula.webp',      // 7
+  '/sfida-wide.webp',      // 8
+  '/sword-clash.webp',     // 9
+  '/top-7-kolap.webp',     // 10
+  '/wave.webp',            // 11
 ];
 
 export const SCHEDULE_ALL: Performance[] = [
@@ -73,13 +73,13 @@ export function getUpcomingPerformances(count = 4): Performance[] {
 
 // All 8 vignettes — used on the About page
 export const HISTORY_VIGNETTES_META: HistoryVignetteMeta[] = [
-  { year: '1150', image: '/moreska-nobilo.jpg' },
+  { year: '1150', image: '/moreska-nobilo.webp' },
   { year: '1420', image: '/moreska-wide.webp' },
   { year: '1666', image: '/1666.webp' },
   { year: '1883', image: '/cecilija-old-logo.webp', imageContain: true },
   { year: '1937', image: '/glazba.webp' },
   { year: '1944', image: '/crni-kralj.webp' },
-  { year: '1991', image: '/bula.jpg' },
+  { year: '1991', image: '/bula.webp' },
   { year: '∞',    image: '/moreska01.webp' },
 ];
 
