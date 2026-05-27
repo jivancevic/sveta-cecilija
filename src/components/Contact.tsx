@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 import type { Dictionary } from '@/lib/i18n';
 
 interface Props {
@@ -17,8 +18,7 @@ export default function Contact({ t }: Props) {
 
   return (
     <section id="contact" className="contact contact--dark">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img className="contact__bg" src="/klapa-todor.webp" alt="" />
+      <Image className="contact__bg" src="/klapa-todor.webp" alt="" fill sizes="100vw" />
       <div className="contact__overlay" />
       <div className="contact__inner">
         <div className="contact__head">

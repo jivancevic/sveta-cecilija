@@ -20,7 +20,7 @@ export default async function PrivacyPolicyPage({
       locale={locale}
       dict={dict}
       page={dict.privacyPage}
-      heroImage="/moreska-wide.jpg"
+      heroImage="/moreska-wide.webp"
     />
   );
 }

@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import type { Dictionary } from '@/lib/i18n';
 import type { HistoryVignetteMeta } from '@/lib/data';
 
@@ -20,8 +21,7 @@ export default function History({ t, vignettes }: Props) {
         <div className="hist__img-row">
           {vignettes.map((meta) => (
             <div key={meta.year} className="hist__img-cell">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={meta.image} alt="" className={meta.imageContain ? 'contain' : ''} />
+              <Image src={meta.image} alt="" className={meta.imageContain ? 'contain' : ''} fill sizes="(min-width: 1024px) 25vw, 33vw" />
             </div>
           ))}
         </div>
@@ -66,8 +66,7 @@ export default function History({ t, vignettes }: Props) {
                 <span className="hist__dot" />
               </div>
               <div className="hist__mobile-img">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={meta.image} alt="" className={meta.imageContain ? 'contain' : ''} />
+                <Image src={meta.image} alt="" className={meta.imageContain ? 'contain' : ''} fill sizes="50vw" />
               </div>
             </div>
           );

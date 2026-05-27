@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Image from 'next/image';
 import type { Dictionary } from '@/lib/i18n';
 
 interface Props {
@@ -39,8 +40,7 @@ export default function Hero({ t }: Props) {
       <div className="hero__grey" />
 
       <div className="hero__logo">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/cecilija-logo.webp" alt="" />
+        <Image src="/cecilija-logo.webp" alt="" width={240} height={300} priority />
         <div className="name serif">HGD Sveta Cecilija</div>
         <div className="est">Korčula · since 1883</div>
       </div>

@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import type { Dictionary } from '@/lib/i18n';
 import type { ServiceCardMeta } from '@/lib/data';
 
@@ -21,8 +22,7 @@ export default function Services({ t, cards }: Props) {
           return (
             <article key={i} className="svc" data-reveal data-delay={i + 1}>
               <div className="svc__photo">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={meta.image} alt="" />
+                <Image src={meta.image} alt="" fill sizes="(min-width: 768px) 50vw, 100vw" />
                 <div className="svc__photo-overlay" />
               </div>
               <div className="svc__body">
