@@ -80,7 +80,7 @@ export default async function SectionPage({
           backgroundSize: 'cover',
           // Wide-short band on laptop crops top/bottom; bias the crop upward so the
           // upper part of the photo (the dancers' faces) stays in frame, not the pavement.
-          backgroundPosition: 'center 30%',
+          backgroundPosition: 'center 20%',
         } : undefined}
       >
         <h2 className="ip-cta__h serif">{t.ctaHeadline}</h2>
