@@ -75,9 +75,12 @@ export default async function SectionPage({
       <div
         className="ip-cta"
         style={meta.sectionKey === 'moreska' ? {
-          backgroundImage: 'url(/moreskanti-cool.webp)',
+          backgroundImage:
+            'linear-gradient(rgba(20,16,11,0.62), rgba(20,16,11,0.62)), url(/moreskanti-cool.webp)',
           backgroundSize: 'cover',
-          backgroundPosition: 'center',
+          // Wide-short band on laptop crops top/bottom; bias the crop upward so the
+          // upper part of the photo (the dancers' faces) stays in frame, not the pavement.
+          backgroundPosition: 'center 40%',
         } : undefined}
       >
         <h2 className="ip-cta__h serif">{t.ctaHeadline}</h2>

@@ -1061,11 +1061,11 @@ html, body { overflow-x: hidden; }
 .svcs__grid { display: grid; grid-template-columns: 1fr; gap: 28px; max-width: var(--maxW); margin: 0 auto; }
 .svc {
   background: rgba(255,255,255,0.92); outline: 1px solid rgba(184,136,26,0.42);
-  display: grid; grid-template-columns: 1.05fr 1fr;
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   transition: transform 0.35s ease, box-shadow 0.35s ease; overflow: hidden;
 }
-/* Alternating layout: even card (Moreška Experience) flips photo to the right */
-.svc:nth-child(even) { grid-template-columns: 1fr 1.05fr; }
+/* Alternating layout: even card (Moreška Experience) flips photo to the right.
+   Both cards keep an even 50/50 split so the photo/text divider sits on the same x-axis. */
 .svc:nth-child(even) .svc__photo { order: 2; }
 .svc:nth-child(even) .svc__body { order: 1; }
 .svc:nth-child(even) .svc__photo-overlay {
