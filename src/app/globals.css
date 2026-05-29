@@ -381,6 +381,18 @@ html, body { overflow-x: hidden; }
 .sp-body { display: grid; grid-template-columns: 1fr 1fr; gap: 80px; align-items: start; }
 .sp-body--single { grid-template-columns: 1fr; max-width: 800px; }
 .sp-block { margin-bottom: 48px; }
+/* Moreška zig-zag: full-width rows, image and text side by side, alternating sides */
+.sp-zigzag { display: flex; flex-direction: column; gap: 72px; }
+.sp-zz { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: center; }
+.sp-zz__photo {
+  position: relative; aspect-ratio: 4 / 3; overflow: hidden;
+  border-radius: 2px; background: var(--lightAlt);
+}
+.sp-zz__photo img { object-fit: cover; object-position: center 30%; }
+.sp-zz .sp-block { margin-bottom: 0; }
+/* odd rows (1st, 3rd, …) → image on the right; even rows → image on the left */
+.sp-zz:nth-child(odd) .sp-zz__photo { order: 2; }
+.sp-zz:nth-child(odd) .sp-zz__body { order: 1; }
 .sp-block h3 {
   font-family: var(--font-bodoni, 'Bodoni Moda SC'), serif;
   font-weight: 600; font-size: clamp(22px, 2.5vw, 32px); margin: 0 0 16px;
@@ -1058,11 +1070,18 @@ html, body { overflow-x: hidden; }
   font-style: italic; text-align: center; max-width: 620px; margin: 0 auto 70px;
   font-size: 18px; color: #3D3830; opacity: 0.78;
 }
-.svcs__grid { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; max-width: var(--maxW); margin: 0 auto; }
+.svcs__grid { display: grid; grid-template-columns: 1fr; gap: 28px; max-width: var(--maxW); margin: 0 auto; }
 .svc {
   background: rgba(255,255,255,0.92); outline: 1px solid rgba(184,136,26,0.42);
-  display: grid; grid-template-columns: 1.05fr 1fr;
+  display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   transition: transform 0.35s ease, box-shadow 0.35s ease; overflow: hidden;
+}
+/* Alternating layout: even card (Moreška Experience) flips photo to the right.
+   Both cards keep an even 50/50 split so the photo/text divider sits on the same x-axis. */
+.svc:nth-child(even) .svc__photo { order: 2; }
+.svc:nth-child(even) .svc__body { order: 1; }
+.svc:nth-child(even) .svc__photo-overlay {
+  background: linear-gradient(to left, rgba(20,16,11,0.05), rgba(20,16,11,0.35) 100%);
 }
 .svc:hover { transform: translateY(-4px); box-shadow: 0 30px 60px -28px rgba(26,20,12,0.42); }
 .svc__photo { position: relative; overflow: hidden; min-height: 460px; }
@@ -1265,9 +1284,10 @@ html, body { overflow-x: hidden; }
   /* Performances grid — 2 columns */
   .perfs-grid { grid-template-columns: repeat(2, 1fr); }
 
-  /* Services: stack */
+  /* Services: stack photo over body, drop the alternating flip */
   .svcs__grid { grid-template-columns: 1fr; }
-  .svc { grid-template-columns: 1fr; }
+  .svc, .svc:nth-child(even) { grid-template-columns: 1fr; }
+  .svc:nth-child(even) .svc__photo, .svc:nth-child(even) .svc__body { order: 0; }
   .svc__photo { min-height: 360px; }
   .svcs__h { font-size: 52px; }
 
@@ -1278,6 +1298,10 @@ html, body { overflow-x: hidden; }
   /* Inner pages */
   .ip-ens-grid { grid-template-columns: repeat(2, 1fr); }
   .sp-body { grid-template-columns: 1fr; gap: 0; }
+  /* Zig-zag collapses to stacked image-over-text on mobile */
+  .sp-zigzag { gap: 44px; }
+  .sp-zz { grid-template-columns: 1fr; gap: 22px; }
+  .sp-zz:nth-child(odd) .sp-zz__photo, .sp-zz:nth-child(odd) .sp-zz__body { order: 0; }
 }
 
 /* ─────────────────────────────────────────────

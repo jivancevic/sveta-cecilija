@@ -21,16 +21,16 @@ export default function About({ t }: Props) {
 
       <div className="about__collage">
         <div className="about__photo about__photo--tall" data-reveal>
-          <Image src="/top-3-kolap.webp" alt="Moreška performers in costume" fill sizes="(min-width: 768px) 50vw, 100vw" />
+          <Image src="/sword-clash.webp" alt="Moreška performers in costume" fill sizes="(min-width: 768px) 50vw, 100vw" />
         </div>
         <div className="about__photo about__photo--top" data-reveal data-delay="1">
           <Image src="/black-king-closeup.webp" alt="Black King" fill sizes="(min-width: 768px) 25vw, 50vw" />
         </div>
         <div className="about__photo about__photo--mid" data-reveal data-delay="2">
-          <Image src="/wave.webp" alt="Bula and king" fill sizes="(min-width: 768px) 25vw, 50vw" />
+          <Image src="/torches.webp" alt="Torches" fill sizes="(min-width: 768px) 25vw, 50vw" />
         </div>
         <div className="about__photo about__photo--bot" data-reveal data-delay="3">
-          <Image src="/torches.webp" alt="Torches" fill sizes="(min-width: 768px) 25vw, 50vw" />
+          <Image src="/wave.webp" alt="Bula and king" fill sizes="(min-width: 768px) 25vw, 50vw" />
         </div>
       </div>
     </section>

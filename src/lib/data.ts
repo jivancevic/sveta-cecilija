@@ -76,7 +76,7 @@ export const HISTORY_VIGNETTES_META: HistoryVignetteMeta[] = [
   { year: '1150', image: '/moreska-nobilo.webp' },
   { year: '1420', image: '/moreska-wide.webp' },
   { year: '1666', image: '/1666.webp' },
-  { year: '1883', image: '/cecilija-old-logo.webp', imageContain: true },
+  { year: '1883', image: '/cecilija-est.webp' },
   { year: '1937', image: '/glazba.webp' },
   { year: '1944', image: '/crni-kralj.webp' },
   { year: '1991', image: '/bula.webp' },
@@ -100,7 +100,7 @@ export const SECTION_CARDS_META: SectionCardMeta[] = [
 
 export const SERVICE_CARDS_META: ServiceCardMeta[] = [
   { key: 'private',    image: '/kraljevi.webp' },
-  { key: 'experience', image: '/moreska-experience.webp' },
+  { key: 'experience', image: '/experience.webp' },
 ];
 
 export const SECTION_PAGE_META: Record<string, { image: string; sectionKey: string }> = {
@@ -112,5 +112,5 @@ export const SECTION_PAGE_META: Record<string, { image: string; sectionKey: stri
 
 export const SERVICE_PAGE_META: Record<string, { image: string; cardIndex: number }> = {
   'private-moreska':    { image: '/kraljevi.webp', cardIndex: 0 },
-  'moreska-experience': { image: '/moreska-experience.webp', cardIndex: 1 },
+  'moreska-experience': { image: '/experience.webp', cardIndex: 1 },
 };

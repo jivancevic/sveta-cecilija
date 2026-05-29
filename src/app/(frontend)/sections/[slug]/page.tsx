@@ -1,3 +1,4 @@
+import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { getLocale } from '@/lib/locale';
 import { getDictionary } from '@/lib/i18n';
@@ -75,9 +76,12 @@ export default async function SectionPage({
       <div
         className="ip-cta"
         style={meta.sectionKey === 'moreska' ? {
-          backgroundImage: 'url(/moreskanti-cool.webp)',
+          backgroundImage:
+            'linear-gradient(rgba(20,16,11,0.62), rgba(20,16,11,0.62)), url(/moreskanti-cool.webp)',
           backgroundSize: 'cover',
-          backgroundPosition: 'center',
+          // Wide-short band on laptop crops top/bottom; bias the crop upward so the
+          // upper part of the photo (the dancers' faces) stays in frame, not the pavement.
+          backgroundPosition: 'center 20%',
         } : undefined}
       >
         <h2 className="ip-cta__h serif">{t.ctaHeadline}</h2>
@@ -96,23 +100,39 @@ function MoreskaContent({ t }: { t: Record<string, string> }) {
       <div className="sp-lead">
         <p>{t.lead}</p>
       </div>
-      <div className="sp-body">
-        <div>
-          <div className="sp-block">
+      <div className="sp-zigzag">
+        <div className="sp-zz">
+          <div className="sp-zz__photo">
+            <Image src="/bula.webp" alt="Moreška dancer in costume" fill sizes="(min-width: 768px) 45vw, 90vw" />
+          </div>
+          <div className="sp-block sp-zz__body">
             <h3>{t.storyHeadline}</h3>
             <p>{t.storyBody}</p>
           </div>
-          <div className="sp-block">
+        </div>
+        <div className="sp-zz">
+          <div className="sp-zz__photo">
+            <Image src="/mate.webp" alt="The Moreška sword dance" fill sizes="(min-width: 768px) 45vw, 90vw" />
+          </div>
+          <div className="sp-block sp-zz__body">
             <h3>{t.danceHeadline}</h3>
             <p>{t.danceBody}</p>
           </div>
         </div>
-        <div>
-          <div className="sp-block">
+        <div className="sp-zz">
+          <div className="sp-zz__photo">
+            <Image src="/costume.webp" alt="Dressing in the Moreška costume" fill sizes="(min-width: 768px) 45vw, 90vw" />
+          </div>
+          <div className="sp-block sp-zz__body">
             <h3>{t.costumeHeadline}</h3>
             <p>{t.costumeBody}</p>
           </div>
-          <div className="sp-block">
+        </div>
+        <div className="sp-zz">
+          <div className="sp-zz__photo">
+            <Image src="/younglings.webp" alt="Young performers with wooden swords" fill sizes="(min-width: 768px) 45vw, 90vw" />
+          </div>
+          <div className="sp-block sp-zz__body">
             <h3>{t.participationHeadline}</h3>
             <p>{t.participationBody}</p>
           </div>
