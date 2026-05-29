@@ -100,35 +100,39 @@ function MoreskaContent({ t }: { t: Record<string, string> }) {
       <div className="sp-lead">
         <p>{t.lead}</p>
       </div>
-      <div className="sp-body">
-        <div>
-          <div className="sp-block">
-            <div className="sp-block__photo">
-              <Image src="/bula.webp" alt="Moreška dancer in costume" fill sizes="(min-width: 768px) 45vw, 90vw" />
-            </div>
+      <div className="sp-zigzag">
+        <div className="sp-zz">
+          <div className="sp-zz__photo">
+            <Image src="/bula.webp" alt="Moreška dancer in costume" fill sizes="(min-width: 768px) 45vw, 90vw" />
+          </div>
+          <div className="sp-block sp-zz__body">
             <h3>{t.storyHeadline}</h3>
             <p>{t.storyBody}</p>
           </div>
-          <div className="sp-block">
-            <div className="sp-block__photo">
-              <Image src="/mate.webp" alt="The Moreška sword dance" fill sizes="(min-width: 768px) 45vw, 90vw" />
-            </div>
+        </div>
+        <div className="sp-zz">
+          <div className="sp-zz__photo">
+            <Image src="/mate.webp" alt="The Moreška sword dance" fill sizes="(min-width: 768px) 45vw, 90vw" />
+          </div>
+          <div className="sp-block sp-zz__body">
             <h3>{t.danceHeadline}</h3>
             <p>{t.danceBody}</p>
           </div>
         </div>
-        <div>
-          <div className="sp-block">
-            <div className="sp-block__photo">
-              <Image src="/costume.webp" alt="Dressing in the Moreška costume" fill sizes="(min-width: 768px) 45vw, 90vw" />
-            </div>
+        <div className="sp-zz">
+          <div className="sp-zz__photo">
+            <Image src="/costume.webp" alt="Dressing in the Moreška costume" fill sizes="(min-width: 768px) 45vw, 90vw" />
+          </div>
+          <div className="sp-block sp-zz__body">
             <h3>{t.costumeHeadline}</h3>
             <p>{t.costumeBody}</p>
           </div>
-          <div className="sp-block">
-            <div className="sp-block__photo">
-              <Image src="/younglings.webp" alt="Young performers with wooden swords" fill sizes="(min-width: 768px) 45vw, 90vw" />
-            </div>
+        </div>
+        <div className="sp-zz">
+          <div className="sp-zz__photo">
+            <Image src="/younglings.webp" alt="Young performers with wooden swords" fill sizes="(min-width: 768px) 45vw, 90vw" />
+          </div>
+          <div className="sp-block sp-zz__body">
             <h3>{t.participationHeadline}</h3>
             <p>{t.participationBody}</p>
           </div>
