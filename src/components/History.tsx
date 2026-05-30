@@ -22,6 +22,7 @@ export default function History({ t, vignettes }: Props) {
           {vignettes.map((meta) => (
             <div key={meta.year} className="hist__img-cell">
               <Image src={meta.image} alt="" className={meta.imageContain ? 'contain' : ''} fill sizes="(min-width: 1024px) 25vw, 33vw" />
+              {meta.credit && <span className="hist__credit">{meta.credit}</span>}
             </div>
           ))}
         </div>
@@ -67,6 +68,7 @@ export default function History({ t, vignettes }: Props) {
               </div>
               <div className="hist__mobile-img">
                 <Image src={meta.image} alt="" className={meta.imageContain ? 'contain' : ''} fill sizes="50vw" />
+                {meta.credit && <span className="hist__credit">{meta.credit}</span>}
               </div>
             </div>
           );
