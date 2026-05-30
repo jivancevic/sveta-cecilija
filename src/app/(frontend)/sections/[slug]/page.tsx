@@ -164,6 +164,11 @@ function ChoirContent({ t }: { t: Record<string, string> }) {
       <div className="sp-block" style={{ marginTop: '28px' }}>
         <p style={{ fontSize: '17px', lineHeight: '1.7' }}>{t.body2}</p>
       </div>
+      {t.body3 && (
+        <div className="sp-block" style={{ marginTop: '28px' }}>
+          <p style={{ fontSize: '17px', lineHeight: '1.7' }}>{t.body3}</p>
+        </div>
+      )}
       {t.note && (
         <p style={{ marginTop: '32px', fontSize: '14px', fontStyle: 'italic', opacity: 0.65 }}>{t.note}</p>
       )}
