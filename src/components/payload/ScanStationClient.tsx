@@ -112,7 +112,9 @@ export function ScanStationClient() {
     setResponse(null)
     setUndoState('idle')
     processingRef.current = false
-    lastTokenRef.current = null
+    // Keep lastTokenRef set so the same QR still in frame at fps:10 doesn't
+    // immediately re-trigger the API. A different QR entering frame replaces
+    // it via the gate in handleDecoded.
     setPhase('live')
   }, [])
 
