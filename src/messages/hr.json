@@ -290,8 +290,8 @@
     "band": {
       "heroHeadline": "Zvuk plesnih borbi",
       "heroSubtitle": "Glazbena okosnica moreške od 1937.",
-      "body1": "Puhački orkestar HGD Sveta Cecilija glazbena je okosnica moreške. Svaki udar mačeva, svaki dramatični obrat u priči, podcrtan je puhačkim aranžmanom koji je 1937. sastavio Krsto Odak, jedan od vodećih hrvatskih skladatelja, i koji se izvodi uživo na svakom nastupu do danas.",
-      "body2": "Ali uloga Orkestra proteže se daleko izvan ljetne pozornice. Kroz godinu, ansambl izvodi koncertni repertoar, prati građanske proslave i predstavlja Korčulu na regionalnim i nacionalnim festivalima. Od marševa do suvremenih hrvatskih skladbi, Puhački orkestar nosi glazbeni identitet otoka kamo god nastupi. Najstariji je neprekidno aktivni glazbeni ansambl u južnoj Dalmaciji."
+      "body1": "Od 1937. godine viteška igra moreške diše u ritmu glazbe koju je posebno za nju skladao poznati hrvatski skladatelj Krsto Odak. Nije to tek pratnja uz mačeve i korake – ta je glazba nastala kako bi rasla zajedno s moreškom, da prati svaki zamah, svaki susret oštrica i svaki trenutak napetosti između suprotstavljenih strana. Ona moreškantima daje tempo, pokretu dinamiku, a prizoru onu svečanu snagu zbog koje se čini kao da se pred gledateljem na trenutak otvara neko staro vrijeme.",
+      "body2": "Naš orkestar nije vezan isključivo uz morešku. Tijekom godine ostvaruje niz samostalnih nastupa, među kojima posebno mjesto zauzima naš božićni koncert – svojevrsna kruna koncertne sezone. U orkestru zajedno sviraju glazbari različitih dobnih skupina, od osnovnoškolaca do umirovljenika, potvrđujući da glazba povezuje ljude bez obzira na godine i stvara zajedništvo koje nadilazi generacije."
     },
     "klapa": {
       "heroHeadline": "Glas prije mača",
@@ -302,9 +302,9 @@
     "choir": {
       "heroHeadline": "Glas koji se obnavlja",
       "heroSubtitle": "Osnovan 2023. Raste s namjerom.",
-      "body1": "Osnovan 2023. godine, Zbor HGD Sveta Cecilija polako ali sigurno raste. Nakon niza uspješno primljenih koncerata i privlačenja članova iz cijele Korčule, ansambl gradi nešto čega je otok dugo čekao.",
-      "body2": "Kao najstarije pjevačko društvo u Dalmaciji, HGD Sveta Cecilija dugo je čekalo da obnovi zbor. Zbor izvodi zborski repertoar koji obuhvaća hrvatsku narodnu glazbu, sakralna djela i suvremene skladbe. Novi članovi uvijek su dobrodošli. Ako pjevate, ili ste to uvijek željeli, vrata su otvorena.",
-      "note": "Puni program i datumi nadolazećih koncerata uskoro."
+      "body1": "Naš zbor, obnovljen 2023. godine, nastavlja njegovati bogatu tradiciju prvoga pjevačkog društva u Dalmaciji, koju smo s ponosom obnovili još 1991. godine. Okupljajući zaljubljenike u pjesmu različitih generacija, zbor čuva glazbenu baštinu i istodobno joj daje novi život kroz zajedničko muziciranje i nastupe.",
+      "body2": "Njegov repertoar temelji se ponajprije na domaćoj glazbi – od obrada zabavnih skladbi do dalmatinskih i klapskih pjesama koje posebno njeguju mediteranski duh i osjećaj zajedništva. Svakom probom i svakim nastupom zbor raste, a iz godine u godinu postaje sve sigurniji, uigraniji i kvalitetniji, potvrđujući da predanost, zajedništvo i ljubav prema pjesmi donose rezultate.",
+      "body3": "Osim glazbenog izraza, zbor ima i važnu društvenu ulogu: okuplja ljude, njeguje prijateljstva i prenosi ljubav prema zajedničkom pjevanju na mlađe naraštaje, stvarajući prostor u kojem tradicija ostaje živa, ali uvijek otvorena novim glasovima i novim interpretacijama."
     }
   },
   "footer": {

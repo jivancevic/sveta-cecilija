@@ -120,7 +120,7 @@ function MoreskaContent({ t }: { t: Record<string, string> }) {
           </div>
         </div>
         <div className="sp-zz">
-          <div className="sp-zz__photo">
+          <div className="sp-zz__photo sp-zz__photo--low">
             <Image src="/costume.webp" alt="Dressing in the Moreška costume" fill sizes="(min-width: 768px) 45vw, 90vw" />
           </div>
           <div className="sp-block sp-zz__body">
@@ -129,7 +129,7 @@ function MoreskaContent({ t }: { t: Record<string, string> }) {
           </div>
         </div>
         <div className="sp-zz">
-          <div className="sp-zz__photo">
+          <div className="sp-zz__photo sp-zz__photo--tall">
             <Image src="/younglings.webp" alt="Young performers with wooden swords" fill sizes="(min-width: 768px) 45vw, 90vw" />
           </div>
           <div className="sp-block sp-zz__body">
@@ -164,8 +164,10 @@ function ChoirContent({ t }: { t: Record<string, string> }) {
       <div className="sp-block" style={{ marginTop: '28px' }}>
         <p style={{ fontSize: '17px', lineHeight: '1.7' }}>{t.body2}</p>
       </div>
-      {t.note && (
-        <p style={{ marginTop: '32px', fontSize: '14px', fontStyle: 'italic', opacity: 0.65 }}>{t.note}</p>
+      {t.body3 && (
+        <div className="sp-block" style={{ marginTop: '28px' }}>
+          <p style={{ fontSize: '17px', lineHeight: '1.7' }}>{t.body3}</p>
+        </div>
       )}
     </div>
   );

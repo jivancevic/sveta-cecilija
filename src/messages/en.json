@@ -313,8 +313,8 @@
     "band": {
       "heroHeadline": "The Sound of the Sword Dance",
       "heroSubtitle": "The musical backbone of Moreška since 1937.",
-      "body1": "The Wind Orchestra of HGD Sveta Cecilija is the musical backbone of the Moreška. Every clash of the swords, every dramatic turn in the story, is underscored by a brass arrangement composed by Krsto Odak in 1937, one of Croatia's foremost composers, and performed live at every performance to this day.",
-      "body2": "But the Orchestra's role extends far beyond the summer stage. Throughout the year, the ensemble performs concert repertoire, accompanies civic celebrations, and represents Korčula at regional and national festivals. From march arrangements to contemporary Croatian compositions, the Wind Orchestra carries the musical identity of the island wherever it performs. It is the oldest continuously active musical ensemble in Southern Dalmatia."
+      "body1": "Since 1937, the Moreška sword dance has breathed to the rhythm of music written especially for it by the renowned Croatian composer Krsto Odak. This is no mere accompaniment to the blades and the footwork: the music was created to grow together with the Moreška, to follow every swing, every meeting of the swords, every moment of tension between the opposing sides. It gives the dancers their tempo, the movement its energy, and the scene a solemn power that makes it feel as though, for an instant, some older age were opening before the viewer.",
+      "body2": "Our orchestra is not bound to the Moreška alone. Throughout the year it gives a series of concerts of its own, chief among them our Christmas concert, the crowning event of the season. The orchestra brings together musicians of every age, from schoolchildren to retirees, proof that music connects people regardless of their years and builds a togetherness that reaches across generations."
     },
     "klapa": {
       "heroHeadline": "The Voice Before the Sword",
@@ -325,9 +325,9 @@
     "choir": {
       "heroHeadline": "A Voice Reborn",
       "heroSubtitle": "Founded in 2023. Growing with purpose.",
-      "body1": "Founded in 2023, the HGD Sveta Cecilija Choir is growing slowly but surely. After performing a series of well-received concerts and drawing members from across Korčula, the ensemble is building something the island has long been waiting for.",
-      "body2": "As the oldest singing society in Dalmatia, HGD Sveta Cecilija has waited a long time to bring the choir back. The choir performs choral repertoire spanning Croatian folk music, sacred works, and contemporary compositions. New members are always welcome. If you sing, or have always wanted to, the doors are open.",
-      "note": "Full programme and upcoming concert dates coming soon."
+      "body1": "Reborn in 2023, our choir carries on the rich tradition of the first singing society in Dalmatia, a tradition we proudly revived back in 1991. Bringing together music lovers from across the generations, the choir safeguards a musical heritage and, at the same time, gives it new life through singing and performing together.",
+      "body2": "Its repertoire draws above all on home-grown music, from arrangements of popular songs to Dalmatian and klapa pieces that hold especially close the Mediterranean spirit and the sense of togetherness. With every rehearsal and every performance the choir grows, and year after year it becomes more assured, more closely knit, and more accomplished, proof that dedication, fellowship, and a love of song bring results.",
+      "body3": "Beyond the music itself, the choir plays an important social role: it brings people together, nurtures friendships, and passes a love of shared singing on to younger generations, creating a space where tradition stays alive yet always open to new voices and new interpretations."
     }
   },
   "checkoutPage": {
