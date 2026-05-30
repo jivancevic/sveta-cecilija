@@ -389,6 +389,12 @@ html, body { overflow-x: hidden; }
   border-radius: 2px; background: var(--lightAlt);
 }
 .sp-zz__photo img { object-fit: cover; object-position: center 30%; }
+/* Near-square frame for photos whose key content runs top-to-bottom (e.g. younglings:
+   crown at the top, swords at the bottom) — a wide 4:3 crop would lose both ends. */
+.sp-zz__photo--tall { aspect-ratio: 9 / 10; }
+/* Bias the crop downward to keep lower-frame action in view (e.g. costume: the belt
+   being fastened sits ~70% down the image). */
+.sp-zz__photo--low img { object-position: center 58%; }
 .sp-zz .sp-block { margin-bottom: 0; }
 /* odd rows (1st, 3rd, …) → image on the right; even rows → image on the left */
 .sp-zz:nth-child(odd) .sp-zz__photo { order: 2; }
@@ -1302,6 +1308,10 @@ html, body { overflow-x: hidden; }
   .sp-zigzag { gap: 44px; }
   .sp-zz { grid-template-columns: 1fr; gap: 22px; }
   .sp-zz:nth-child(odd) .sp-zz__photo, .sp-zz:nth-child(odd) .sp-zz__body { order: 0; }
+  /* Taller, near-square photos on mobile so more of each shot is visible.
+     Re-assert the --tall override here so the 1:1 default doesn't win by source order. */
+  .sp-zz__photo { aspect-ratio: 1 / 1; }
+  .sp-zz__photo--tall { aspect-ratio: 9 / 10; }
 }
 
 /* ─────────────────────────────────────────────
