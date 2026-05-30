@@ -43,13 +43,13 @@ Both are ImprovMX forwarding aliases (no real mailbox), so adding one is near-ze
 - **Verification:** postcard to physical address; takes ~2 weeks. **Start today.**
 - **Post-verification:** photos, weekly post with show date, FAQ, booking link to moreska.eu.
 
-### 2. TripAdvisor (HIGHEST PRIORITY — currently unclaimed, fragile)
+### 2. TripAdvisor (CLAIMED — owned by `pr@moreska.eu`)
 
-- **Listing:** [Moreska Sword Dancing, d1898279](https://www.tripadvisor.com/Attraction_Review-g1007309-d1898279-Reviews-Moreska_Sword_Dancing-Korcula_Town_Korcula_Island_Dubrovnik_Neretva_County_Dalma.html) — 200 reviews / 4.3 stars, #1 of 1 Theater & Concerts in Korčula Town.
-- **Risk:** unclaimed. Anyone (including moreska.hr) can claim it and redirect 10+ years of inherited social proof.
-- **Action:** claim via TripAdvisor's "Is this your listing?" flow immediately. Verify hours match HGD's actual schedule (Mon/Thu most weeks; sometimes Mon/Wed).
-- **Reviews are shared with competitor performances** — tourists don't distinguish groups. Whoever claims captures all equity.
-- **Long-term:** swap listed website to moreska.eu post-cutover.
+- **Listing:** [Moreska Sword Dance, d1898279](https://www.tripadvisor.com/Attraction_Review-g1007309-d1898279-Reviews-Moreska_Sword_Dancing-Korcula_Town_Korcula_Island_Dubrovnik_Neretva_County_Dalma.html), ~200 reviews / 4.3 stars, #1 of 1 Theater & Concerts in Korčula Town.
+- **Status:** claimed via the TripAdvisor Owners portal under `pr@moreska.eu` (#35 closed). Hours, photos, and description set in the Management Center. Ongoing review responses / photo curation belong to the HGD campaign manager (re-point the `pr@` alias to hand off).
+- **Name kept generic on purpose:** "Moreska Sword Dance" (ASCII spelling; "Sword Dance" not "Sword Dancing"). Do NOT rebrand to "HGD Sveta Cecilija": the ~200 reviews are shared with the competitor's performances (tourists don't distinguish groups), so a generic name we control captures all that equity, and an org-rebrand would invite a misrepresentation dispute. The "Moreška" diacritic lives in the description/prose, not the name (the name doubles as a search hook and matches the ASCII domain).
+- **Deferred:** swap the listed website from korcula-moreska.com to moreska.eu only after the DNS cutover (#11) is live and stable. Tracked there, not on #35.
+- **Follow-up:** mine the ~200 reviews for experience improvements, see #124.
 
 ### 3. Reviews velocity (highest-ROI ongoing activity)
 
