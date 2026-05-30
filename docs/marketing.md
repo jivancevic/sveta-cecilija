@@ -25,6 +25,15 @@ Rough 2025 estimates (validate against real Shows data when available):
 
 ## Channels
 
+### Owning-email convention (info@ vs pr@)
+
+Which HGD email registers each listing determines who can manage it long-term. Set this deliberately, because ownership transfers on these platforms are painful.
+
+- **`info@moreska.eu`** is for operational / transactional accounts. Brevo sends from it, ticket + contact replies land here, and **Google Business Profile** is already registered to it (transferred 2026-05-26, with josip.ivancevic00@gmail.com as backup).
+- **`pr@moreska.eu`** is for outward marketing listings owned long-term by the HGD campaign manager rather than the developer: **TripAdvisor** (#35), OTAs (#39), and any future review/press platforms. Register the listing's business account under this alias so ownership re-points by changing the ImprovMX forwarding target, not by recovering a personal account.
+
+Both are ImprovMX forwarding aliases (no real mailbox), so adding one is near-zero cost. Verification on these platforms is normally phone-based (`+385 92 1532305`), so the email domain does not need to match the listed website. GBP staying on `info@` is the one intentional exception to "marketing goes on pr@"; keep *new* marketing listings on `pr@` so the split stays clean.
+
 ### 1. Google Business Profile (HIGHEST PRIORITY — 2-week lead time)
 
 - **Current state:** moreska.hr owns the only "moreska" Maps result in Korčula. HGD is invisible to in-destination tourists.
@@ -34,13 +43,13 @@ Rough 2025 estimates (validate against real Shows data when available):
 - **Verification:** postcard to physical address; takes ~2 weeks. **Start today.**
 - **Post-verification:** photos, weekly post with show date, FAQ, booking link to moreska.eu.
 
-### 2. TripAdvisor (HIGHEST PRIORITY — currently unclaimed, fragile)
+### 2. TripAdvisor (CLAIMED — owned by `pr@moreska.eu`)
 
-- **Listing:** [Moreska Sword Dancing, d1898279](https://www.tripadvisor.com/Attraction_Review-g1007309-d1898279-Reviews-Moreska_Sword_Dancing-Korcula_Town_Korcula_Island_Dubrovnik_Neretva_County_Dalma.html) — 200 reviews / 4.3 stars, #1 of 1 Theater & Concerts in Korčula Town.
-- **Risk:** unclaimed. Anyone (including moreska.hr) can claim it and redirect 10+ years of inherited social proof.
-- **Action:** claim via TripAdvisor's "Is this your listing?" flow immediately. Verify hours match HGD's actual schedule (Mon/Thu most weeks; sometimes Mon/Wed).
-- **Reviews are shared with competitor performances** — tourists don't distinguish groups. Whoever claims captures all equity.
-- **Long-term:** swap listed website to moreska.eu post-cutover.
+- **Listing:** [Moreska Sword Dance, d1898279](https://www.tripadvisor.com/Attraction_Review-g1007309-d1898279-Reviews-Moreska_Sword_Dancing-Korcula_Town_Korcula_Island_Dubrovnik_Neretva_County_Dalma.html), ~200 reviews / 4.3 stars, #1 of 1 Theater & Concerts in Korčula Town.
+- **Status:** claimed via the TripAdvisor Owners portal under `pr@moreska.eu` (#35 closed). Hours, photos, and description set in the Management Center. Ongoing review responses / photo curation belong to the HGD campaign manager (re-point the `pr@` alias to hand off).
+- **Name kept generic on purpose:** "Moreska Sword Dance" (ASCII spelling; "Sword Dance" not "Sword Dancing"). Do NOT rebrand to "HGD Sveta Cecilija": the ~200 reviews are shared with the competitor's performances (tourists don't distinguish groups), so a generic name we control captures all that equity, and an org-rebrand would invite a misrepresentation dispute. The "Moreška" diacritic lives in the description/prose, not the name (the name doubles as a search hook and matches the ASCII domain).
+- **Deferred:** swap the listed website from korcula-moreska.com to moreska.eu only after the DNS cutover (#11) is live and stable. Tracked there, not on #35.
+- **Follow-up:** mine the ~200 reviews for experience improvements, see #124.
 
 ### 3. Reviews velocity (highest-ROI ongoing activity)
 
