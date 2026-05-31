@@ -12,7 +12,7 @@ Using the default five-role label vocabulary. See `docs/agents/triage-labels.md`
 
 ### Schema management
 
-Production schema is applied by `scripts/bootstrap-db.mjs` (runs from both `npm start` and `npm run dev`, before `next start` / `next dev`) using idempotent SQL in `db/schema/*.sql`. Local dev also uses Payload's `push: true` after bootstrap. See `docs/agents/db-bootstrap.md` for how to add a column or collection.
+Production schema is applied by `scripts/bootstrap-db.mjs` (runs from both `npm start` and `npm run dev`, before `next start` / `next dev`) using idempotent SQL in `db/schema/*.sql`. Local dev also uses Payload's `push: true` after bootstrap. See `docs/agents/db-bootstrap.md` for how to add a column or collection, and `db/schema/README.md` for the directory's contract. A vitest guardrail (`src/lib/db-schema-safety.test.ts`) fails on any unguarded `UPDATE`/`DELETE`/`TRUNCATE` in `db/schema/*.sql` — added after PR #126 caught one running on every deploy.
 
 **Enum migrations need ordering care AND a file split.** When you change a Payload `select` field's options, the underlying Postgres enum (`enum_<table>_<field>`) must be widened *before* any SQL UPDATE references the new values. Two gotchas stack:
 
