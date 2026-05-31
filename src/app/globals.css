@@ -926,6 +926,21 @@ html, body { overflow-x: hidden; }
 }
 .hist__img-cell img.contain { object-fit: contain; padding: 12%; background: #fff; }
 .hist__img-cell:hover img { transform: scale(1.04); }
+.hist__credit {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1;
+  padding: 16px 10px 7px;
+  font-size: 11px;
+  line-height: 1.3;
+  letter-spacing: 0.02em;
+  font-style: italic;
+  color: rgba(255, 255, 255, 0.92);
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0));
+  pointer-events: none;
+}
 .hist__node-row {
   display: grid; grid-template-columns: repeat(4, 1fr);
   position: relative; margin: 28px 0 0;

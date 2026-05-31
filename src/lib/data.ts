@@ -10,6 +10,7 @@ export interface HistoryVignetteMeta {
   year: string;
   image: string;
   imageContain?: boolean;
+  credit?: string;
 }
 
 export interface SectionCardMeta {
@@ -73,7 +74,7 @@ export function getUpcomingPerformances(count = 4): Performance[] {
 
 // All 8 vignettes — used on the About page
 export const HISTORY_VIGNETTES_META: HistoryVignetteMeta[] = [
-  { year: '1150', image: '/moreska-nobilo.webp' },
+  { year: '1150', image: '/moreska-nobilo.webp', credit: 'Stipe Nobilo, „Moreška“' },
   { year: '1420', image: '/moreska-wide.webp' },
   { year: '1666', image: '/1666.webp' },
   { year: '1883', image: '/cecilija-est.webp' },
