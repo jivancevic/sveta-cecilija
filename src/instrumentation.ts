@@ -48,6 +48,9 @@ export async function register() {
 
       CREATE TABLE IF NOT EXISTS "orders" (
         "id" serial PRIMARY KEY NOT NULL,
+        "code" varchar,
+        "channel" varchar DEFAULT 'online',
+        "partner_id" integer,
         "buyer_name" varchar,
         "email" varchar,
         "adult_count" numeric,
@@ -62,18 +65,22 @@ export async function register() {
       );
       CREATE INDEX IF NOT EXISTS "orders_created_at_idx" ON "orders" ("created_at");
 
-      CREATE TABLE IF NOT EXISTS "qr_tokens" (
+      CREATE TABLE IF NOT EXISTS "tickets" (
         "id" serial PRIMARY KEY NOT NULL,
         "token" varchar,
         "order_id" integer,
+        "type" varchar DEFAULT 'adult',
+        "status" varchar DEFAULT 'active',
+        "cancelled_at" timestamp(3) with time zone,
+        "cancel_reason" varchar,
         "scanned" boolean DEFAULT false,
         "scanned_at" timestamp(3) with time zone,
         "updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
         "created_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
-        CONSTRAINT "qr_tokens_order_fk" FOREIGN KEY ("order_id") REFERENCES "orders"("id")
+        CONSTRAINT "tickets_order_fk" FOREIGN KEY ("order_id") REFERENCES "orders"("id")
       );
-      CREATE UNIQUE INDEX IF NOT EXISTS "qr_tokens_token_idx" ON "qr_tokens" ("token");
-      CREATE INDEX IF NOT EXISTS "qr_tokens_created_at_idx" ON "qr_tokens" ("created_at");
+      CREATE UNIQUE INDEX IF NOT EXISTS "tickets_token_idx" ON "tickets" ("token");
+      CREATE INDEX IF NOT EXISTS "tickets_created_at_idx" ON "tickets" ("created_at");
 
       CREATE TABLE IF NOT EXISTS "contact_submissions" (
         "id" serial PRIMARY KEY NOT NULL,
@@ -136,7 +143,7 @@ export async function register() {
         "users_id" integer,
         "shows_id" integer,
         "orders_id" integer,
-        "qr_tokens_id" integer,
+        "tickets_id" integer,
         "contact_submissions_id" integer,
         "posts_id" integer,
         "order_lookups_id" integer,
@@ -144,7 +151,7 @@ export async function register() {
         CONSTRAINT "payload_locked_documents_rels_users_fk" FOREIGN KEY ("users_id") REFERENCES "users"("id") ON DELETE CASCADE,
         CONSTRAINT "payload_locked_documents_rels_shows_fk" FOREIGN KEY ("shows_id") REFERENCES "shows"("id") ON DELETE CASCADE,
         CONSTRAINT "payload_locked_documents_rels_orders_fk" FOREIGN KEY ("orders_id") REFERENCES "orders"("id") ON DELETE CASCADE,
-        CONSTRAINT "payload_locked_documents_rels_qr_tokens_fk" FOREIGN KEY ("qr_tokens_id") REFERENCES "qr_tokens"("id") ON DELETE CASCADE,
+        CONSTRAINT "payload_locked_documents_rels_tickets_fk" FOREIGN KEY ("tickets_id") REFERENCES "tickets"("id") ON DELETE CASCADE,
         CONSTRAINT "payload_locked_documents_rels_contact_submissions_fk" FOREIGN KEY ("contact_submissions_id") REFERENCES "contact_submissions"("id") ON DELETE CASCADE,
         CONSTRAINT "payload_locked_documents_rels_posts_fk" FOREIGN KEY ("posts_id") REFERENCES "posts"("id") ON DELETE CASCADE,
         CONSTRAINT "payload_locked_documents_rels_order_lookups_fk" FOREIGN KEY ("order_lookups_id") REFERENCES "order_lookups"("id") ON DELETE CASCADE

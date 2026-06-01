@@ -109,7 +109,7 @@ function OrderList({ orders }: { orders: ShowStatsOrderRow[] }) {
             <th style={head}>Buyer</th>
             <th style={head}>Email</th>
             <th style={{ ...head, textAlign: 'right' }}>Tickets</th>
-            <th style={head}>QR tokens</th>
+            <th style={head}>Token state</th>
           </tr>
         </thead>
         <tbody>

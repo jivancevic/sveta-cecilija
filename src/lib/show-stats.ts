@@ -56,15 +56,14 @@ export function computeShowStats(input: ShowStatsInput): ShowStatsOutput {
   const { show, orders } = input
   const capacity = VENUE_CAPACITY[show.venue]
 
-  // "Scanned" = people through the door, not tokens.
-  // An order's QR is binary scanned/unscanned (one QR per order). If any of
-  // the order's tokens is scanned, the whole party (adultCount + childCount)
-  // walked in. Keeps the metric apples-to-apples with onlineSold/inPersonSold.
+  // "Scanned" = people through the door. Under the per-person ticket model
+  // (ADR-0007) each ticket is one person, so this is a COUNT of scanned
+  // tickets — consistent with the season view (stats-data) and
+  // getScannedPeopleForShow. `tokens` here are the order's active tickets.
   let scanned = 0
   let revenueCents = 0
   for (const o of orders) {
-    const anyScanned = o.tokens.some((t) => t.scanned)
-    if (anyScanned) scanned += o.adultCount + o.childCount
+    scanned += o.tokens.filter((t) => t.scanned).length
     if (!o.refunded) revenueCents += o.totalCents
   }
 

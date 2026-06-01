@@ -74,16 +74,20 @@ describe('computeShowStats — header big numbers', () => {
     expect(out.header.totalSold).toBe(120)
   })
 
-  it('counts scanned people (adult + child) across orders with a scanned QR (ignores refund status)', () => {
+  it('counts scanned tickets (one per person), ignoring refund status', () => {
+    // Per-person model (ADR-0007): each ticket is one person, so scanned is a
+    // COUNT of scanned tickets — not a sum of party sizes when "any" is scanned.
     const out = computeShowStats(
       makeInput({
         orders: [
           makeOrder({
-            // 2 adults + 1 child = 3 people through the door
+            // 2 adults + 1 child → 3 tickets; 2 scanned, 1 still outside
             adultCount: 2,
             childCount: 1,
             tokens: [
               { token: 't1', scanned: true, scannedAt: '2026-07-12T20:55:00Z' },
+              { token: 't2', scanned: true, scannedAt: '2026-07-12T20:56:00Z' },
+              { token: 't3', scanned: false, scannedAt: null },
             ],
           }),
           makeOrder({
@@ -92,20 +96,24 @@ describe('computeShowStats — header big numbers', () => {
             adultCount: 1,
             childCount: 0,
             refunded: true,
-            tokens: [{ token: 't3', scanned: true, scannedAt: '2026-07-12T21:00:00Z' }],
+            tokens: [{ token: 't4', scanned: true, scannedAt: '2026-07-12T21:00:00Z' }],
           }),
           makeOrder({
             id: 'o3',
             // unscanned order → not counted
             adultCount: 5,
             childCount: 0,
-            tokens: [{ token: 't4', scanned: false, scannedAt: null }],
+            tokens: [
+              { token: 't5', scanned: false, scannedAt: null },
+              { token: 't6', scanned: false, scannedAt: null },
+            ],
           }),
         ],
       }),
     )
 
-    expect(out.header.scanned).toBe(4)
+    // 2 (order 1) + 1 (order 2) + 0 (order 3) = 3 scanned tickets
+    expect(out.header.scanned).toBe(3)
   })
 
   it('surfaces legacyReserved as its own header field and subtracts it from remaining', () => {

@@ -14,11 +14,11 @@ async function buildDeps(): Promise<ScanDeps> {
   return {
     atomicMarkScanned: async (token) => {
       const res: any = await drizzle.execute(sql`
-        UPDATE qr_tokens
+        UPDATE tickets
         SET scanned = true,
             scanned_at = NOW(),
             updated_at = NOW()
-        WHERE token = ${token} AND scanned = false
+        WHERE token = ${token} AND scanned = false AND status = 'active'
         RETURNING order_id, scanned_at
       `)
       const row = (res.rows ?? res)[0]
@@ -30,7 +30,7 @@ async function buildDeps(): Promise<ScanDeps> {
     findScannedToken: async (token) => {
       const res: any = await drizzle.execute(sql`
         SELECT order_id, scanned_at
-        FROM qr_tokens
+        FROM tickets
         WHERE token = ${token}
         LIMIT 1
       `)

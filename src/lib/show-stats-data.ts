@@ -30,14 +30,14 @@ export async function getShowStatsInput(showId: string): Promise<ShowStatsInput 
     date: new Date(showDoc.date as string).toISOString().slice(0, 10),
     time: (showDoc.time as string) ?? '',
     venue: (showDoc.venue as Venue) ?? 'ljetno-kino',
-    onlineSold: Number(showDoc.onlineSold ?? 0),
+    onlineSold: 0, // active ticket count, computed from the ticket list below
     inPersonSold: Number(showDoc.inPersonSold ?? 0),
     legacyReserved: Number(showDoc.legacyReserved ?? 0),
     scannedCount: 0, // recomputed below from tokens, unused in show-stats
     status: (showDoc.status as 'active' | 'cancelled') ?? 'active',
   }
 
-  // Pull orders for this show, plus their QR tokens, in two simple queries.
+  // Pull orders for this show, plus their tickets, in two simple queries.
   const ordersRes = await pool.query(
     `SELECT id, buyer_name, email, adult_count, child_count, total, refund_status
      FROM orders WHERE show_id = $1 ORDER BY id ASC`,
@@ -49,7 +49,7 @@ export async function getShowStatsInput(showId: string): Promise<ShowStatsInput 
   if (orderIds.length > 0) {
     const tokensRes = await pool.query(
       `SELECT order_id, token, scanned, scanned_at
-       FROM qr_tokens WHERE order_id = ANY($1::int[])
+       FROM tickets t WHERE order_id = ANY($1::int[]) AND status = 'active'
        ORDER BY id ASC`,
       [orderIds],
     )
@@ -64,6 +64,9 @@ export async function getShowStatsInput(showId: string): Promise<ShowStatsInput 
       tokensByOrder.set(oid, list)
     }
   }
+
+  // Sold seats = active tickets (one per person). online_sold column is retired.
+  show.onlineSold = [...tokensByOrder.values()].reduce((n, list) => n + list.length, 0)
 
   const orders: ShowStatsOrder[] = ordersRes.rows.map((r) => {
     const id = Number(r.id)

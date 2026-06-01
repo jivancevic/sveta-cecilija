@@ -1,4 +1,5 @@
 import type { PurchasableShow } from '../capacity'
+import { issueTickets, type TicketType } from '../tickets/ticket-issuance'
 
 // Errors of this type indicate a structurally malformed event that no number
 // of retries can fix — the webhook route should log + return 200 so Stripe
@@ -14,6 +15,8 @@ export interface PaymentSucceededEvent {
 }
 
 export interface CreateOrderInput {
+  code: string
+  channel: 'online'
   buyerName: string
   email: string
   adultCount: number
@@ -38,9 +41,11 @@ export interface PaymentSucceededDeps {
   findOrderByPaymentIntent: (id: string) => Promise<{ id: string } | null>
   findShow: (id: string) => Promise<PurchasableShow | null>
   createOrder: (input: CreateOrderInput) => Promise<{ id: string }>
-  createQrToken: (input: { token: string; order: string }) => Promise<void>
-  incrementOnlineSold: (showId: string, by: number) => Promise<void>
+  // One ticket per person (ADR-0007). No longer one token per order.
+  createTickets: (input: { order: string; tickets: { token: string; type: TicketType }[] }) => Promise<void>
   generateToken: () => string
+  // Yields a unique order code (order-code.ts wired to a DB uniqueness check).
+  generateOrderCode: () => Promise<string>
   notifyBuyer: (input: NotifyBuyerInput) => Promise<void>
 }
 
@@ -61,7 +66,24 @@ export async function handlePaymentSucceeded(
 
   const locale: 'en' | 'hr' = evt.metadata.locale === 'hr' ? 'hr' : 'en'
 
+  // Derive the order code + one typed ticket per person (ADR-0007). The total is
+  // authoritative from Stripe (evt.amountReceived) — issued.totalCents would be
+  // the same online 5-for-4 figure, but we record what was actually charged.
+  const issued = await issueTickets(
+    {
+      show: { id: Number(showId) },
+      channel: 'online',
+      adults,
+      children,
+      locale,
+      buyer: { name: evt.metadata.buyerName ?? '', email: evt.metadata.email ?? '' },
+    },
+    { generateOrderCode: deps.generateOrderCode },
+  )
+
   const order = await deps.createOrder({
+    code: issued.code,
+    channel: 'online',
     buyerName: evt.metadata.buyerName ?? '',
     email: evt.metadata.email ?? '',
     adultCount: adults,
@@ -73,19 +95,19 @@ export async function handlePaymentSucceeded(
     locale,
   })
 
-  // One QRToken per order — door staff scan once to admit the entire party.
-  // See CONTEXT.md "One QR per order" and ADR-0005 Amendment (2026-05-26).
-  const token = deps.generateToken()
-  await deps.createQrToken({ token, order: order.id })
-
-  await deps.incrementOnlineSold(showId, total)
+  // One ticket per person, each with its own QR token. Seats are now counted
+  // as active ticket rows, so the webhook no longer bumps shows.online_sold.
+  const tickets = issued.tickets.map((t) => ({ token: deps.generateToken(), type: t.type }))
+  await deps.createTickets({ order: order.id, tickets })
 
   await deps.notifyBuyer({
     orderId: order.id,
     showId,
     buyer: { name: evt.metadata.buyerName ?? '', email: evt.metadata.email ?? '' },
     order: { adultCount: adults, childCount: children, total: evt.amountReceived },
-    token,
+    // Representative QR for the current single-QR email/PDF; the per-person
+    // 2-up PDF that embeds every ticket's QR lands in #140.
+    token: tickets[0].token,
     locale,
   })
 

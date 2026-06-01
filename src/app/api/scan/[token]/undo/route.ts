@@ -26,7 +26,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tok
       // Server-enforced window: SQL itself rejects rows whose scanned_at is
       // outside the window, so a stale client click cannot succeed.
       const res: any = await drizzle.execute(sql`
-        UPDATE qr_tokens
+        UPDATE tickets
         SET scanned = false,
             scanned_at = NULL,
             updated_at = NOW()

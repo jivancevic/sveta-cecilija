@@ -12,13 +12,14 @@ function makeDeps(overrides: Partial<PaymentSucceededDeps> = {}) {
     inPersonSold: 2,
     status: 'active' as const,
   }
+  let n = 0
   const deps: PaymentSucceededDeps = {
     findOrderByPaymentIntent: vi.fn().mockResolvedValue(null),
     findShow: vi.fn().mockResolvedValue(show),
     createOrder: vi.fn().mockResolvedValue({ id: 'order_1' }),
-    createQrToken: vi.fn().mockResolvedValue(undefined),
-    incrementOnlineSold: vi.fn().mockResolvedValue(undefined),
-    generateToken: vi.fn(() => 'tok_' + Math.random().toString(36).slice(2)),
+    createTickets: vi.fn().mockResolvedValue(undefined),
+    generateToken: vi.fn(() => `tok_${++n}`),
+    generateOrderCode: vi.fn().mockResolvedValue('AB23'),
     notifyBuyer: vi.fn().mockResolvedValue(undefined),
     ...overrides,
   }
@@ -41,11 +42,13 @@ function event(metadataOverrides: Record<string, string> = {}) {
 }
 
 describe('handlePaymentSucceeded', () => {
-  it('creates an Order linked to the show', async () => {
+  it('creates an Order linked to the show, with the generated code and online channel', async () => {
     const deps = makeDeps()
     await handlePaymentSucceeded(event(), deps)
     expect(deps.createOrder).toHaveBeenCalledWith(
       expect.objectContaining({
+        code: 'AB23',
+        channel: 'online',
         buyerName: 'Ana',
         email: 'a@b.co',
         adultCount: 2,
@@ -58,26 +61,27 @@ describe('handlePaymentSucceeded', () => {
     )
   })
 
-  it('creates exactly one QRToken per order regardless of ticket count', async () => {
+  it('creates one ticket per person, each typed and individually tokened', async () => {
     const deps = makeDeps()
-    await handlePaymentSucceeded(event(), deps) // 2 + 1 = 3 tickets
-    expect(deps.createQrToken).toHaveBeenCalledTimes(1)
+    await handlePaymentSucceeded(event(), deps) // 2 adults + 1 child = 3 people
+    expect(deps.createTickets).toHaveBeenCalledTimes(1)
+    const { order, tickets } = (deps.createTickets as ReturnType<typeof vi.fn>).mock.calls[0][0]
+    expect(order).toBe('order_1')
+    expect(tickets.map((t: { type: string }) => t.type)).toEqual(['adult', 'adult', 'child'])
+    // Distinct, non-empty tokens, one per person.
+    const tokens = tickets.map((t: { token: string }) => t.token)
+    expect(new Set(tokens).size).toBe(3)
+    expect(tokens.every((t: string) => t.length > 0)).toBe(true)
   })
 
-  it('the QRToken is linked to the order', async () => {
-    const deps = makeDeps()
+  it('does NOT maintain shows.online_sold (seats are counted from tickets now)', async () => {
+    // The dep no longer exists; assert the handler never reaches for it.
+    const deps = makeDeps() as PaymentSucceededDeps & { incrementOnlineSold?: unknown }
+    expect('incrementOnlineSold' in deps).toBe(false)
     await handlePaymentSucceeded(event(), deps)
-    const calls = (deps.createQrToken as ReturnType<typeof vi.fn>).mock.calls
-    expect(calls).toHaveLength(1)
-    expect(calls[0][0].order).toBe('order_1')
-    expect(typeof calls[0][0].token).toBe('string')
-    expect(calls[0][0].token.length).toBeGreaterThan(0)
-  })
-
-  it('increments onlineSold by the total ticket count', async () => {
-    const deps = makeDeps()
-    await handlePaymentSucceeded(event(), deps)
-    expect(deps.incrementOnlineSold).toHaveBeenCalledWith('show_1', 3)
+    // Sanity: order + tickets still created.
+    expect(deps.createOrder).toHaveBeenCalledTimes(1)
+    expect(deps.createTickets).toHaveBeenCalledTimes(1)
   })
 
   it('is idempotent: skips when an order already exists for this paymentIntent', async () => {
@@ -86,15 +90,13 @@ describe('handlePaymentSucceeded', () => {
     })
     await handlePaymentSucceeded(event(), deps)
     expect(deps.createOrder).not.toHaveBeenCalled()
-    expect(deps.createQrToken).not.toHaveBeenCalled()
-    expect(deps.incrementOnlineSold).not.toHaveBeenCalled()
+    expect(deps.createTickets).not.toHaveBeenCalled()
+    expect(deps.generateOrderCode).not.toHaveBeenCalled()
     expect(deps.notifyBuyer).not.toHaveBeenCalled()
   })
 
-  it('notifies the buyer with order + token info after order creation', async () => {
-    const deps = makeDeps({
-      generateToken: vi.fn(() => 'tok_single'),
-    })
+  it('notifies the buyer with the first ticket token after order creation', async () => {
+    const deps = makeDeps()
     await handlePaymentSucceeded(event({ locale: 'hr' }), deps)
     expect(deps.notifyBuyer).toHaveBeenCalledTimes(1)
     expect(deps.notifyBuyer).toHaveBeenCalledWith({
@@ -102,12 +104,12 @@ describe('handlePaymentSucceeded', () => {
       showId: 'show_1',
       buyer: { name: 'Ana', email: 'a@b.co' },
       order: { adultCount: 2, childCount: 1, total: 5000 },
-      token: 'tok_single',
+      token: 'tok_1',
       locale: 'hr',
     })
-    // The single token passed to notifyBuyer matches the token persisted.
-    const qrCall = (deps.createQrToken as ReturnType<typeof vi.fn>).mock.calls[0][0]
-    expect(qrCall.token).toBe('tok_single')
+    // The representative token matches the first persisted ticket.
+    const { tickets } = (deps.createTickets as ReturnType<typeof vi.fn>).mock.calls[0][0]
+    expect(tickets[0].token).toBe('tok_1')
   })
 
   it('defaults locale to en when metadata omits it', async () => {

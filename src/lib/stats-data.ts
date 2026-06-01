@@ -2,6 +2,7 @@ import { getPayload } from 'payload'
 import config from '@payload-config'
 import type { StatsInput, StatsShow } from './stats'
 import type { Venue } from './venues'
+import { getActiveTicketCountsByShow } from './tickets/sold-seats'
 
 type PoolQuery = (sql: string, params?: unknown[]) => Promise<{ rows: Record<string, unknown>[] }>
 
@@ -16,15 +17,15 @@ export async function getStatsInput(today: Date = new Date()): Promise<StatsInpu
     depth: 0,
   })
 
-  // Scanned-people count per show. "Scanned" counts people through the door
-  // (adult_count + child_count for orders with a scanned QR), not tokens, so
-  // it stays apples-to-apples with onlineSold under the one-QR-per-order model.
+  // Scanned-people count per show. Under the per-person ticket model there is
+  // one tickets row per person, so "scanned people" is a plain COUNT of scanned
+  // active tickets (each ticket = 1 person). Cancelled tickets are excluded.
   const scannedRes = await pool.query(`
     SELECT o.show_id AS show_id,
-           COALESCE(SUM(o.adult_count + o.child_count), 0)::int AS scanned
-    FROM qr_tokens q
-    JOIN orders o ON o.id = q.order_id
-    WHERE q.scanned = true
+           COUNT(*)::int AS scanned
+    FROM tickets t
+    JOIN orders o ON o.id = t.order_id
+    WHERE t.scanned = true AND t.status = 'active'
     GROUP BY o.show_id
   `)
   const scannedByShow = new Map<string, number>()
@@ -40,6 +41,10 @@ export async function getStatsInput(today: Date = new Date()): Promise<StatsInpu
   `)
   const totalRevenueCents = Number(revenueRes.rows[0]?.total ?? 0)
 
+  // Sold seats per show = active ticket count (the online_sold column is
+  // retired). No partner channel exists yet (#144), so active == online.
+  const soldByShow = await getActiveTicketCountsByShow((sql, params) => pool.query(sql, params))
+
   const shows: StatsShow[] = showsResult.docs.map((s) => {
     const id = String(s.id)
     return {
@@ -47,7 +52,7 @@ export async function getStatsInput(today: Date = new Date()): Promise<StatsInpu
       date: new Date(s.date as string).toISOString().slice(0, 10),
       time: (s.time as string) ?? '',
       venue: (s.venue as Venue) ?? 'ljetno-kino',
-      onlineSold: Number(s.onlineSold ?? 0),
+      onlineSold: soldByShow.get(id) ?? 0,
       inPersonSold: Number(s.inPersonSold ?? 0),
       legacyReserved: Number(s.legacyReserved ?? 0),
       scannedCount: scannedByShow.get(id) ?? 0,

@@ -81,7 +81,7 @@ export async function POST(req: NextRequest) {
     matchedIds.length === 0
       ? { docs: [] as Array<Record<string, unknown>> }
       : await payload.find({
-          collection: 'qr-tokens',
+          collection: 'tickets',
           where: { order: { in: matchedIds } },
           depth: 0,
           limit: 200,
