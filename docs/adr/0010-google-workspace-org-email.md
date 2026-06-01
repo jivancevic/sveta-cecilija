@@ -31,8 +31,9 @@ anticipate, and surfaced new requirements outside its scope (it was email-only):
      rather than today's `moreska.cecilija@gmail.com` + personal accounts.
 4. **The cost premise changed.** ADR-0004 weighed against paying for mailboxes. As a registered
    Croatian *udruga*, HGD should qualify for **Google for Nonprofits → Workspace for Nonprofits
-   (free)**, validated via TechSoup using `OIB 52537805408` / `MB 03688194`. That largely dissolves
-   ADR-0004's cost rationale.
+   (free)**, validated via **Goodstack** (Google's verification partner; formerly Percent, replacing
+   the retired TechSoup route) using `OIB 52537805408` / `MB 03688194`. That largely dissolves
+   ADR-0004's cost rationale. Goodstack's stated turnaround is **2-14 business days**.
 
 ## Decision
 
@@ -67,8 +68,8 @@ Nonprofits edition**, contingent on eligibility being granted.
   alignment sends QR codes to spam — ADR-0004 flags that as a serious CX failure. Sequence the
   Workspace MX flip into a low-traffic window **after #11 stabilises**, and re-verify Brevo
   deliverability immediately after.
-- **Optional interim stopgap** while TechSoup validation is pending (it has a long, uncertain lead
-  time): add the secretary's inbox as a 2nd ImprovMX forward target for `info@` so she can at least
+- **Optional interim stopgap** while Goodstack validation is pending (turnaround is uncertain): add
+  the secretary's inbox as a 2nd ImprovMX forward target for `info@` so she can at least
   *read* org mail. Caveat: mixed into her personal inbox, still no reply-as. A band-aid, not the
   solution.
 - **Legacy `korcula-moreska.com` forwarding (#166) is handled separately** via a cPanel forward —
@@ -101,7 +102,7 @@ Nonprofits edition**, contingent on eligibility being granted.
   sequenced away from #11 and verified.
 - **Con:** accounts to secure (2FA) and a lockout risk for non-technical volunteers; mitigated by
   recovery-phone + backup codes in the password manager at setup.
-- **Con:** TechSoup validation is slow and uncertain, so this decision is **contingent**; until it
+- **Con:** Goodstack validation is uncertain (2-14 business days), so this decision is **contingent**; until it
   lands, the status quo holds, with the optional stopgap above.
 - **Con:** ongoing admin (user provisioning, super-admin custody) that the lean ImprovMX model
   avoided. Kept small by minimal seats.
