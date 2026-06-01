@@ -11,7 +11,12 @@ function makeInput(overrides: Record<string, unknown> = {}) {
       venue: 'ljetno-kino' as const,
     },
     order: { adultCount: 2, childCount: 1, total: 5000 },
-    token: 'tok_single',
+    tickets: [
+      { token: 'tok_1', type: 'adult' as const, ref: 'AB23-1' },
+      { token: 'tok_2', type: 'adult' as const, ref: 'AB23-2' },
+      { token: 'tok_3', type: 'child' as const, ref: 'AB23-3' },
+    ],
+    orderCode: 'AB23',
     locale: 'en' as const,
     ...overrides,
   }
@@ -62,8 +67,10 @@ describe('sendTicketEmail', () => {
 
     expect(deps.renderTicketsPdf).toHaveBeenCalledTimes(1)
     const pdfCallArgs = (deps.renderTicketsPdf as ReturnType<typeof vi.fn>).mock.calls[0]
-    expect(pdfCallArgs[0].token).toBe('tok_single')
-    expect(pdfCallArgs[0].orderRef).toBe('1247')
+    // The full per-person ticket list + the order code reach the renderer.
+    expect(pdfCallArgs[0].tickets).toHaveLength(3)
+    expect(pdfCallArgs[0].tickets.map((t: { ref: string }) => t.ref)).toEqual(['AB23-1', 'AB23-2', 'AB23-3'])
+    expect(pdfCallArgs[0].orderRef).toBe('AB23')
     expect(pdfCallArgs[0].locale).toBe('en')
 
     const [, init] = (deps.fetch as ReturnType<typeof vi.fn>).mock.calls[0]
@@ -93,9 +100,9 @@ describe('sendTicketEmail', () => {
     expect(body.htmlContent).toContain('Ana')
   })
 
-  it('passes locale and order ref through to both renderers', async () => {
+  it('passes locale through to both renderers; PDF uses the order code, email uses the order id', async () => {
     const deps = makeDeps()
-    await sendTicketEmail(makeInput({ locale: 'hr', orderId: '9001' }), deps)
+    await sendTicketEmail(makeInput({ locale: 'hr', orderId: '9001', orderCode: 'CD45' }), deps)
 
     const emailCall = (deps.renderTicketEmail as ReturnType<typeof vi.fn>).mock.calls[0][0]
     expect(emailCall.locale).toBe('hr')
@@ -103,7 +110,7 @@ describe('sendTicketEmail', () => {
 
     const pdfCall = (deps.renderTicketsPdf as ReturnType<typeof vi.fn>).mock.calls[0][0]
     expect(pdfCall.locale).toBe('hr')
-    expect(pdfCall.orderRef).toBe('9001')
+    expect(pdfCall.orderRef).toBe('CD45')
   })
 
   it('resolves (does not throw) when Brevo returns an error response', async () => {
@@ -130,16 +137,16 @@ describe('sendTicketEmail', () => {
     expect(deps.fetch).not.toHaveBeenCalled()
   })
 
-  it('failure logs include orderId, buyer email and token count for manual recovery', async () => {
+  it('failure logs include orderId, buyer email and order code for manual recovery', async () => {
     const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     const deps = makeDeps({
       fetch: vi.fn().mockResolvedValue(new Response('boom', { status: 503 })),
     })
-    await sendTicketEmail(makeInput({ orderId: 'order_99' }), deps)
+    await sendTicketEmail(makeInput({ orderId: 'order_99', orderCode: 'ZZ99' }), deps)
     const logged = errSpy.mock.calls.flat().join(' ')
     expect(logged).toContain('orderId=order_99')
     expect(logged).toContain('email=ana@example.com')
-    expect(logged).toContain('token=tok_single')
+    expect(logged).toContain('code=ZZ99')
     expect(logged).toContain('status=503')
     errSpy.mockRestore()
   })
