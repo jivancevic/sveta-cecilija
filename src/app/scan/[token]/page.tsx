@@ -29,11 +29,11 @@ async function buildDeps(): Promise<ScanDeps> {
   return {
     atomicMarkScanned: async (token) => {
       const res: any = await drizzle.execute(sql`
-        UPDATE qr_tokens
+        UPDATE tickets
         SET scanned = true,
             scanned_at = NOW(),
             updated_at = NOW()
-        WHERE token = ${token} AND scanned = false
+        WHERE token = ${token} AND scanned = false AND status = 'active'
         RETURNING order_id, scanned_at
       `)
       const row = (res.rows ?? res)[0]
@@ -45,7 +45,7 @@ async function buildDeps(): Promise<ScanDeps> {
     findScannedToken: async (token) => {
       const res: any = await drizzle.execute(sql`
         SELECT order_id, scanned_at
-        FROM qr_tokens
+        FROM tickets
         WHERE token = ${token}
         LIMIT 1
       `)
@@ -58,6 +58,32 @@ async function buildDeps(): Promise<ScanDeps> {
             ? String(row.scanned_at)
             : ''
       return { orderId: String(row.order_id), scannedAt }
+    },
+    findTicket: async (token) => {
+      const res: any = await drizzle.execute(sql`
+        SELECT order_id, scanned, scanned_at, status, cancel_reason
+        FROM tickets
+        WHERE token = ${token}
+        LIMIT 1
+      `)
+      const row = (res.rows ?? res)[0]
+      if (!row) return null
+      const scannedAt =
+        row.scanned_at instanceof Date
+          ? row.scanned_at.toISOString()
+          : row.scanned_at
+            ? String(row.scanned_at)
+            : ''
+      return {
+        orderId: String(row.order_id),
+        scanned: Boolean(row.scanned),
+        scannedAt,
+        status: row.status === 'cancelled' ? 'cancelled' : 'active',
+        cancelReason:
+          row.cancel_reason === 'storno' || row.cancel_reason === 'refund'
+            ? row.cancel_reason
+            : null,
+      }
     },
     findOrderDetails: async (orderId) => {
       try {
@@ -222,6 +248,38 @@ function UndoForm({ token }: { token: string }) {
   )
 }
 
+function PartyAdmitForm({ token }: { token: string }) {
+  return (
+    <form
+      method="post"
+      action={`/api/scan/${encodeURIComponent(token)}/admit-party`}
+      style={{ marginTop: '1.5rem', width: '100%', maxWidth: '24rem' }}
+    >
+      {/* No count in the label: this person is already admitted by the scan
+          that surfaced this screen, and the page doesn't know how many other
+          siblings are already in. The post-admit banner reports the true
+          number newly admitted. */}
+      <button
+        type="submit"
+        style={{
+          width: '100%',
+          background: '#fff',
+          color: '#0f7a3a',
+          border: '2px solid #fff',
+          borderRadius: '0.5rem',
+          padding: '0.85rem 1.5rem',
+          fontSize: '1.125rem',
+          fontWeight: 700,
+          cursor: 'pointer',
+          minHeight: '48px',
+        }}
+      >
+        Admit rest of party
+      </button>
+    </form>
+  )
+}
+
 function StaffActions() {
   const baseBtn: React.CSSProperties = {
     display: 'flex',
@@ -271,17 +329,20 @@ function ResultView({
   token,
   viewer,
   undoRejected,
+  partyAdmitted,
 }: {
   result: ScanResult
   qrDataUrl?: string
   token: string
   viewer: ScanViewer
   undoRejected?: boolean
+  partyAdmitted?: number
 }) {
   if (result.status === 'BUYER_VIEW') {
     return <BuyerView result={result} qrDataUrl={qrDataUrl ?? ''} />
   }
   if (result.status === 'VALID') {
+    const partySize = result.adultCount + result.childCount
     return (
       <main style={{ background: '#0f7a3a', color: '#fff', ...wrapStyle }}>
         <div style={badgeStyle}>VALID</div>
@@ -289,11 +350,26 @@ function ResultView({
           {result.buyerName}
         </div>
         <div style={{ fontSize: '1.5rem', marginTop: '0.5rem' }}>
-          {result.adultCount + result.childCount} ticket
-          {result.adultCount + result.childCount === 1 ? '' : 's'}
+          {partySize} ticket
+          {partySize === 1 ? '' : 's'}
           {result.childCount > 0
             ? ` (${result.adultCount} adult${result.adultCount === 1 ? '' : 's'}, ${result.childCount} child${result.childCount === 1 ? '' : 'ren'})`
             : ''}
+        </div>
+        <ShowLine showDate={result.showDate} showTime={result.showTime} venue={result.venue} />
+        {/* Each scan admits one person; offer to walk in the rest of the party. */}
+        {viewer === 'staff' && partySize > 1 && <PartyAdmitForm token={token} />}
+        {viewer === 'staff' && <StaffActions />}
+      </main>
+    )
+  }
+
+  if (result.status === 'CANCELLED') {
+    return (
+      <main style={{ background: '#4a4a4a', color: '#fff', ...wrapStyle }}>
+        <div style={badgeStyle}>CANCELLED</div>
+        <div style={{ fontSize: '1.5rem', marginTop: '1.5rem' }}>
+          This ticket was voided{result.cancelReason === 'refund' ? ' (refunded)' : result.cancelReason === 'storno' ? ' (storno)' : ''}. Do not admit.
         </div>
         <ShowLine showDate={result.showDate} showTime={result.showTime} venue={result.venue} />
         {viewer === 'staff' && <StaffActions />}
@@ -309,6 +385,13 @@ function ResultView({
         <div style={{ fontSize: '1.5rem', marginTop: '1.5rem' }}>
           First scanned at <strong>{formatScannedAt(result.scannedAt)}</strong>
         </div>
+        {viewer === 'staff' && partyAdmitted !== undefined && (
+          <div style={{ marginTop: '1rem', fontSize: '1.25rem', fontWeight: 700 }}>
+            {partyAdmitted > 0
+              ? `Admitted ${partyAdmitted} more — full party is in.`
+              : 'Rest of the party was already scanned.'}
+          </div>
+        )}
         <ShowLine showDate={result.showDate} showTime={result.showTime} venue={result.venue} />
         {showUndo && <UndoForm token={token} />}
         {undoRejected && (
@@ -371,10 +454,10 @@ export default async function ScanPage({
   searchParams,
 }: {
   params: Promise<{ token: string }>
-  searchParams: Promise<{ undo?: string }>
+  searchParams: Promise<{ undo?: string; party?: string }>
 }) {
   const { token } = await params
-  const { undo } = await searchParams
+  const { undo, party } = await searchParams
   const viewer = await resolveViewer()
   const deps = await buildDeps()
   const result = await scanToken(token, deps, { viewer })
@@ -382,6 +465,8 @@ export default async function ScanPage({
     result.status === 'BUYER_VIEW'
       ? await QRCode.toDataURL(`https://moreska.eu/scan/${token}`, { margin: 1, width: 320 })
       : undefined
+  const partyAdmitted =
+    party !== undefined && /^\d+$/.test(party) ? Number(party) : undefined
   return (
     <ResultView
       result={result}
@@ -389,6 +474,7 @@ export default async function ScanPage({
       token={token}
       viewer={viewer}
       undoRejected={undo === 'rejected'}
+      partyAdmitted={partyAdmitted}
     />
   )
 }

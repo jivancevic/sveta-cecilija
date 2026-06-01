@@ -46,6 +46,9 @@ export const Users: CollectionConfig = {
         { label: 'Superadmin', value: 'superadmin' },
         { label: 'Admin', value: 'admin' },
         { label: 'Tehnika', value: 'tehnika' },
+        // Partner sales channel (ADR-0008). Value only here; scoped access +
+        // partner dashboard land in #143.
+        { label: 'Partner', value: 'partner' },
       ],
       access: {
         // Field-level lock: only superadmin can read or write the role field.

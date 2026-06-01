@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { Orders } from './Orders'
 import { ContactSubmissions } from './ContactSubmissions'
 import { Shows } from './Shows'
-import { QRTokens } from './QRTokens'
+import { Tickets } from './Tickets'
 import { Users } from './Users'
 
 const superadmin = { id: '1', role: 'superadmin' }
@@ -123,14 +123,10 @@ describe('Users access', () => {
     }
   })
 
-  it('Users collection is hidden from non-superadmin sidebars', () => {
-    const hidden = Users.admin?.hidden as ((args: { user: unknown }) => boolean) | undefined
-    expect(hidden).toBeTypeOf('function')
-    expect(hidden!({ user: superadmin })).toBe(false)
-    expect(hidden!({ user: admin })).toBe(true)
-    expect(hidden!({ user: tehnika })).toBe(true)
-    expect(hidden!({ user: anon })).toBe(true)
-  })
+  // Note: Users.admin.hidden was intentionally removed in d01ef84 — hiding the
+  // collection 404s the top-bar Account link for non-superadmins. Read access is
+  // restricted by selfOrSuperadmin and the role field is locked by field-level
+  // access (both covered by the tests above), so no sidebar-hiding test belongs here.
 
   it('tokenExpiration is 30 days', () => {
     const auth = Users.auth as { tokenExpiration?: number } | true | undefined
@@ -148,7 +144,7 @@ describe('Sidebar visibility (admin.hidden)', () => {
   it.each([
     ['Orders', Orders],
     ['Shows', Shows],
-    ['QRTokens', QRTokens],
+    ['Tickets', Tickets],
     ['ContactSubmissions', ContactSubmissions],
   ] as const)('%s is visible to admin-tier, hidden from tehnika', (_name, cfg) => {
     expect(callHidden(cfg, superadmin)).toBe(false)
@@ -158,19 +154,19 @@ describe('Sidebar visibility (admin.hidden)', () => {
   })
 })
 
-describe('QRTokens access', () => {
+describe('Tickets access', () => {
   it('all authed roles can read', () => {
-    expect(call(QRTokens.access?.read, superadmin)).toBe(true)
-    expect(call(QRTokens.access?.read, admin)).toBe(true)
-    expect(call(QRTokens.access?.read, tehnika)).toBe(true)
-    expect(call(QRTokens.access?.read, anon)).toBe(false)
+    expect(call(Tickets.access?.read, superadmin)).toBe(true)
+    expect(call(Tickets.access?.read, admin)).toBe(true)
+    expect(call(Tickets.access?.read, tehnika)).toBe(true)
+    expect(call(Tickets.access?.read, anon)).toBe(false)
   })
 
   it('admin-tier can mutate; tehnika cannot', () => {
     for (const op of ['create', 'update', 'delete'] as const) {
-      expect(call(QRTokens.access?.[op], superadmin)).toBe(true)
-      expect(call(QRTokens.access?.[op], admin)).toBe(true)
-      expect(call(QRTokens.access?.[op], tehnika)).toBe(false)
+      expect(call(Tickets.access?.[op], superadmin)).toBe(true)
+      expect(call(Tickets.access?.[op], admin)).toBe(true)
+      expect(call(Tickets.access?.[op], tehnika)).toBe(false)
     }
   })
 })

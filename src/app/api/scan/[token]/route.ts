@@ -14,11 +14,11 @@ async function buildDeps(): Promise<ScanDeps> {
   return {
     atomicMarkScanned: async (token) => {
       const res: any = await drizzle.execute(sql`
-        UPDATE qr_tokens
+        UPDATE tickets
         SET scanned = true,
             scanned_at = NOW(),
             updated_at = NOW()
-        WHERE token = ${token} AND scanned = false
+        WHERE token = ${token} AND scanned = false AND status = 'active'
         RETURNING order_id, scanned_at
       `)
       const row = (res.rows ?? res)[0]
@@ -30,7 +30,7 @@ async function buildDeps(): Promise<ScanDeps> {
     findScannedToken: async (token) => {
       const res: any = await drizzle.execute(sql`
         SELECT order_id, scanned_at
-        FROM qr_tokens
+        FROM tickets
         WHERE token = ${token}
         LIMIT 1
       `)
@@ -43,6 +43,32 @@ async function buildDeps(): Promise<ScanDeps> {
             ? String(row.scanned_at)
             : ''
       return { orderId: String(row.order_id), scannedAt }
+    },
+    findTicket: async (token) => {
+      const res: any = await drizzle.execute(sql`
+        SELECT order_id, scanned, scanned_at, status, cancel_reason
+        FROM tickets
+        WHERE token = ${token}
+        LIMIT 1
+      `)
+      const row = (res.rows ?? res)[0]
+      if (!row) return null
+      const scannedAt =
+        row.scanned_at instanceof Date
+          ? row.scanned_at.toISOString()
+          : row.scanned_at
+            ? String(row.scanned_at)
+            : ''
+      return {
+        orderId: String(row.order_id),
+        scanned: Boolean(row.scanned),
+        scannedAt,
+        status: row.status === 'cancelled' ? 'cancelled' : 'active',
+        cancelReason:
+          row.cancel_reason === 'storno' || row.cancel_reason === 'refund'
+            ? row.cancel_reason
+            : null,
+      }
     },
     findOrderDetails: async (orderId) => {
       try {

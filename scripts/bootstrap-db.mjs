@@ -44,6 +44,34 @@ async function main() {
   const client = new Client({ connectionString: url })
   await client.connect()
   try {
+    // Fresh-database guard.
+    //
+    // app.sql (and the role migrations / seed) ALTER and FK-reference
+    // Payload-owned base tables — `users`, `shows` — that this script does
+    // NOT create. Those tables are created by Next.js's instrumentation hook
+    // (src/instrumentation.ts `register()`) and, in dev, by Payload's
+    // `push: true`. Both run *inside* `next dev` / `next start`, i.e. AFTER
+    // this script in the `bootstrap-db && next` chain.
+    //
+    // On an existing DB (prod, or any dev DB booted at least once) the tables
+    // are present and every statement applies idempotently. On a brand new DB
+    // they don't exist yet, so a fresh `npm run dev` used to abort here with
+    // `relation "users" does not exist` before the server could create them.
+    // Skip this round when the DB is virgin: instrumentation + push build the
+    // full schema on first boot, and these migrations apply harmlessly on the
+    // next start. See issue #122.
+    const { rows } = await client.query(
+      "SELECT to_regclass('public.users') AS users, to_regclass('public.shows') AS shows",
+    )
+    if (!rows[0].users || !rows[0].shows) {
+      console.log(
+        '[bootstrap-db] Base Payload tables (users/shows) not found — looks like a fresh database. ' +
+          'Skipping app-managed SQL; Next.js instrumentation + Payload push will create the schema on ' +
+          'first boot, and these migrations apply on the next start.',
+      )
+      return
+    }
+
     for (const file of files) {
       const sql = readFileSync(path.join(schemaDir, file), 'utf-8')
       console.log(`[bootstrap-db] applying ${file}`)

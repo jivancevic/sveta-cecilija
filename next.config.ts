@@ -9,10 +9,18 @@ const securityHeaders = [
   { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
 ]
 
+// Staging (dev.moreska.eu) emits a blanket noindex on every response so search
+// engines cannot index it even if a URL leaks. Read at build/start time;
+// NEXT_PUBLIC_ENV is 'staging' only on the dev Coolify app (unset in prod).
+const stagingHeaders =
+  process.env.NEXT_PUBLIC_ENV === 'staging'
+    ? [{ key: 'X-Robots-Tag', value: 'noindex, nofollow' }]
+    : []
+
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   async headers() {
-    return [{ source: '/:path*', headers: securityHeaders }]
+    return [{ source: '/:path*', headers: [...securityHeaders, ...stagingHeaders] }]
   },
 }
 

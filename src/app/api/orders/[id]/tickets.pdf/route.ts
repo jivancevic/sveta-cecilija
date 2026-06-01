@@ -50,19 +50,30 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: 'Order missing show' }, { status: 500 })
   }
 
-  // One QR token per order since #93 — fetch the single token row.
-  const tokensRes = await payload.find({
-    collection: 'qr-tokens',
+  // One ticket row per person since ADR-0007 — this find may return N rows.
+  // One ticket row per person (ADR-0007). Fetch them all, in issuance order, so
+  // the 2-up A5 PDF renders one block per person with its CODE-N reference.
+  const ticketsRes = await payload.find({
+    collection: 'tickets',
     where: { order: { equals: order.id } },
-    limit: 1,
+    limit: 500,
     depth: 0,
-    sort: 'createdAt',
+    // Sort by the serial id (insertion order from the webhook's sequential
+    // createTickets) so CODE-N refs are deterministic. created_at can tie at
+    // millisecond precision and Payload omits its id tiebreaker when the sort
+    // already names created_at — that would permute the re-downloaded refs
+    // relative to the emailed PDF.
+    sort: 'id',
   })
-  const tokenRow = tokensRes.docs[0]
-  if (!tokenRow) {
-    return NextResponse.json({ error: 'No ticket for this order' }, { status: 404 })
+  if (ticketsRes.docs.length === 0) {
+    return NextResponse.json({ error: 'No tickets for this order' }, { status: 404 })
   }
-  const token = tokenRow.token as string
+  const code = (order.code as string) || String(order.id)
+  const tickets = ticketsRes.docs.map((d, i) => ({
+    token: d.token as string,
+    type: ((d.type as string) === 'child' ? 'child' : 'adult') as 'adult' | 'child',
+    ref: `${code}-${i + 1}`,
+  }))
 
   const isoDate = show.date as string
   const date = typeof isoDate === 'string' ? isoDate.slice(0, 10) : ''
@@ -73,15 +84,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
   const pdfBuffer = await renderTicketsPdf(
     {
-      buyer: { name: order.buyerName as string },
+      buyer: { name: (order.buyerName as string) ?? '' },
       show: { date, time: show.time, venue: show.venue },
-      order: {
-        adultCount: (order.adultCount as number) ?? 0,
-        childCount: (order.childCount as number) ?? 0,
-      },
-      token,
+      tickets,
       locale,
-      orderRef: String(order.id),
+      orderRef: code,
     },
     { generateQrPng },
   )

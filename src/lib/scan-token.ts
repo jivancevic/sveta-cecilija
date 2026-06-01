@@ -11,9 +11,22 @@ export interface ShowDetails {
   venue: string
 }
 
+export type CancelReason = 'storno' | 'refund'
+
+export interface TicketState {
+  orderId: string
+  scanned: boolean
+  scannedAt: string
+  status: 'active' | 'cancelled'
+  cancelReason: CancelReason | null
+}
+
 export interface ScanDeps {
   atomicMarkScanned: (token: string) => Promise<{ orderId: string; scannedAt: string } | null>
   findScannedToken: (token: string) => Promise<{ orderId: string; scannedAt: string } | null>
+  // Full ticket state for the staff "not freshly marked" branch — lets us tell
+  // cancelled vs already-scanned vs nonexistent apart (ADR-0007 per-person scan).
+  findTicket: (token: string) => Promise<TicketState | null>
   findOrderDetails: (orderId: string) => Promise<OrderDetails | null>
   findShowDetails: (showId: string) => Promise<ShowDetails | null>
 }
@@ -21,6 +34,8 @@ export interface ScanDeps {
 export type ScanResult =
   | {
       status: 'VALID'
+      // The order this ticket belongs to — drives the "Admit entire party" action.
+      orderId: string
       buyerName: string
       adultCount: number
       childCount: number
@@ -31,6 +46,14 @@ export type ScanResult =
   | {
       status: 'ALREADY_SCANNED'
       scannedAt: string
+      showDate: string
+      showTime: string
+      venue: string
+    }
+  | {
+      // A voided ticket (storno or refund). Scans to a clear dead-end, never VALID.
+      status: 'CANCELLED'
+      cancelReason: CancelReason | null
       showDate: string
       showTime: string
       venue: string
@@ -103,6 +126,9 @@ export async function scanToken(
       venue: show.venue,
     }
   }
+  // atomicMarkScanned only flips active + unscanned tickets (the SQL carries
+  // `AND status = 'active' AND scanned = false`), so a returned row is a genuine
+  // first admission.
   const marked = await deps.atomicMarkScanned(token)
   if (marked) {
     const order = await deps.findOrderDetails(marked.orderId)
@@ -111,6 +137,7 @@ export async function scanToken(
     if (!show) return { status: 'INVALID' }
     return {
       status: 'VALID',
+      orderId: marked.orderId,
       buyerName: order.buyerName,
       adultCount: order.adultCount,
       childCount: order.childCount,
@@ -119,17 +146,58 @@ export async function scanToken(
       venue: show.venue,
     }
   }
-  const existing = await deps.findScannedToken(token)
-  if (!existing) return { status: 'INVALID' }
-  const order = await deps.findOrderDetails(existing.orderId)
+
+  // Not freshly marked: cancelled, already-scanned, or unknown. Disambiguate.
+  const ticket = await deps.findTicket(token)
+  if (!ticket) return { status: 'INVALID' }
+  const order = await deps.findOrderDetails(ticket.orderId)
   if (!order) return { status: 'INVALID' }
   const show = await deps.findShowDetails(order.showId)
   if (!show) return { status: 'INVALID' }
-  return {
-    status: 'ALREADY_SCANNED',
-    scannedAt: existing.scannedAt,
-    showDate: show.date,
-    showTime: show.time,
-    venue: show.venue,
+
+  if (ticket.status === 'cancelled') {
+    return {
+      status: 'CANCELLED',
+      cancelReason: ticket.cancelReason,
+      showDate: show.date,
+      showTime: show.time,
+      venue: show.venue,
+    }
   }
+  if (ticket.scanned) {
+    return {
+      status: 'ALREADY_SCANNED',
+      scannedAt: ticket.scannedAt,
+      showDate: show.date,
+      showTime: show.time,
+      venue: show.venue,
+    }
+  }
+  // Active + unscanned yet atomicMarkScanned returned null: a lost race against a
+  // concurrent scan. Safe to report INVALID (no admission happened here).
+  return { status: 'INVALID' }
+}
+
+export interface AdmitPartyDeps {
+  /**
+   * Atomically marks every still-active, not-yet-scanned ticket of the order
+   * scanned, returning how many rows it flipped. Race-safe: N parallel taps
+   * admit each person at most once because the UPDATE filters `scanned = false`.
+   */
+  atomicAdmitParty: (orderId: string) => Promise<number>
+}
+
+export type AdmitPartyResult = { status: 'ADMITTED'; admitted: number }
+
+/**
+ * "Admit entire party" — marks all remaining active tickets of an order scanned
+ * in one tap. `admitted` is the number of people newly walked in (0 if the rest
+ * were already scanned).
+ */
+export async function admitParty(
+  orderId: string,
+  deps: AdmitPartyDeps,
+): Promise<AdmitPartyResult> {
+  const admitted = await deps.atomicAdmitParty(orderId)
+  return { status: 'ADMITTED', admitted }
 }

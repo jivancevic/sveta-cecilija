@@ -7,6 +7,8 @@ import {
   UnrecoverableWebhookError,
 } from '@/lib/checkout/handle-payment-succeeded'
 import { generateQrToken } from '@/lib/qr-token'
+import { generateOrderCode as makeOrderCode } from '@/lib/tickets/order-code'
+import { randomInt } from 'node:crypto'
 import type { PurchasableShow } from '@/lib/capacity'
 import { sendTicketEmail } from '@/lib/email/send-ticket-email'
 import { generateQrPng } from '@/lib/email/qr'
@@ -94,24 +96,32 @@ export async function POST(req: Request) {
           })
           return { id: String(doc.id) }
         },
-        createQrToken: async (input) => {
-          const orderRef = Number.isFinite(Number(input.order)) ? Number(input.order) : input.order
-          await payload.create({
-            collection: 'qr-tokens',
-            data: { ...input, order: orderRef as number },
-          })
-        },
-        incrementOnlineSold: async (showId, by) => {
-          const id = Number.isFinite(Number(showId)) ? Number(showId) : showId
-          const doc = await payload.findByID({ collection: 'shows', id, depth: 0 })
-          await payload.update({
-            collection: 'shows',
-            id,
-            data: { onlineSold: ((doc.onlineSold as number) ?? 0) + by },
-          })
+        createTickets: async ({ order, tickets }) => {
+          const orderRef = Number.isFinite(Number(order)) ? Number(order) : order
+          // One row per person. Sequential to keep the serial ids in ticket
+          // order; volume is tiny (a few per order).
+          for (const t of tickets) {
+            await payload.create({
+              collection: 'tickets',
+              data: { token: t.token, type: t.type, order: orderRef as number },
+            })
+          }
         },
         generateToken: generateQrToken,
-        notifyBuyer: async ({ orderId, showId, buyer, order, token, locale }) => {
+        generateOrderCode: () =>
+          makeOrderCode({
+            isUnique: async (code) => {
+              const r = await payload.find({
+                collection: 'orders',
+                where: { code: { equals: code } },
+                limit: 1,
+                depth: 0,
+              })
+              return r.docs.length === 0
+            },
+            randomInt: (max) => randomInt(max),
+          }),
+        notifyBuyer: async ({ orderId, showId, buyer, order, tickets, orderCode, locale }) => {
           // Wrapped here (not just in sendTicketEmail) because the show lookup
           // itself can throw — webhook must still return 200 either way so
           // Stripe never retries and double-creates the order.
@@ -130,7 +140,8 @@ export async function POST(req: Request) {
                   venue: showDoc.venue as Venue,
                 },
                 order,
-                token,
+                tickets,
+                orderCode,
                 locale,
               },
               {
