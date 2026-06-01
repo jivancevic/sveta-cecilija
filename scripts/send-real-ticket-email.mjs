@@ -56,5 +56,5 @@ const res = await fetch(URL, {
 console.log('status:', res.status)
 console.log('body:', await res.text())
 console.log('')
-console.log(`Cleanup later (drops test order + tokens, resets show count):`)
-console.log(`  PGPASSWORD=postgres psql -h localhost -U postgres -d sveta_cecilija -c "DELETE FROM qr_tokens WHERE order_id IN (SELECT id FROM orders WHERE stripe_payment_intent_id='${piId}'); DELETE FROM orders WHERE stripe_payment_intent_id='${piId}'; UPDATE shows SET online_sold = GREATEST(online_sold - 2, 0) WHERE id = ${SHOW_ID};"`)
+console.log(`Cleanup later (drops test order + tickets; seats free automatically as the tickets go):`)
+console.log(`  PGPASSWORD=postgres psql -h localhost -U postgres -d sveta_cecilija -c "DELETE FROM tickets WHERE order_id IN (SELECT id FROM orders WHERE stripe_payment_intent_id='${piId}'); DELETE FROM orders WHERE stripe_payment_intent_id='${piId}';"`)

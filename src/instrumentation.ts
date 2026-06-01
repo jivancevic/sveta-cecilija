@@ -48,6 +48,9 @@ export async function register() {
 
       CREATE TABLE IF NOT EXISTS "orders" (
         "id" serial PRIMARY KEY NOT NULL,
+        "code" varchar,
+        "channel" varchar DEFAULT 'online',
+        "partner_id" integer,
         "buyer_name" varchar,
         "email" varchar,
         "adult_count" numeric,

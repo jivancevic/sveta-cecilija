@@ -33,7 +33,7 @@ async function buildDeps(): Promise<ScanDeps> {
         SET scanned = true,
             scanned_at = NOW(),
             updated_at = NOW()
-        WHERE token = ${token} AND scanned = false
+        WHERE token = ${token} AND scanned = false AND status = 'active'
         RETURNING order_id, scanned_at
       `)
       const row = (res.rows ?? res)[0]
