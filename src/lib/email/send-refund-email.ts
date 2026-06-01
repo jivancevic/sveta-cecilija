@@ -1,4 +1,5 @@
 import type { Venue } from '../venues'
+import { postBrevoEmail } from './post-brevo-email'
 
 const VENUE_LABEL: Record<'en' | 'hr', Record<Venue, string>> = {
   en: { 'ljetno-kino': 'Summer Cinema', 'zimsko-kino': 'Cultural Center Korčula' },
@@ -60,10 +61,9 @@ export async function sendRefundEmail(
     htmlContent: renderHtml(input, locale),
   }
   try {
-    const res = await deps.fetch('https://api.brevo.com/v3/smtp/email', {
-      method: 'POST',
-      headers: { 'api-key': deps.brevoApiKey, 'content-type': 'application/json' },
-      body: JSON.stringify(body),
+    const res = await postBrevoEmail(body, {
+      fetch: deps.fetch,
+      brevoApiKey: deps.brevoApiKey,
     })
     if (!res.ok) {
       const text = await res.text().catch(() => '')
