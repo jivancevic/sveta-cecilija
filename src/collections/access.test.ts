@@ -123,14 +123,10 @@ describe('Users access', () => {
     }
   })
 
-  it('Users collection is hidden from non-superadmin sidebars', () => {
-    const hidden = Users.admin?.hidden as ((args: { user: unknown }) => boolean) | undefined
-    expect(hidden).toBeTypeOf('function')
-    expect(hidden!({ user: superadmin })).toBe(false)
-    expect(hidden!({ user: admin })).toBe(true)
-    expect(hidden!({ user: tehnika })).toBe(true)
-    expect(hidden!({ user: anon })).toBe(true)
-  })
+  // Note: Users.admin.hidden was intentionally removed in d01ef84 — hiding the
+  // collection 404s the top-bar Account link for non-superadmins. Read access is
+  // restricted by selfOrSuperadmin and the role field is locked by field-level
+  // access (both covered by the tests above), so no sidebar-hiding test belongs here.
 
   it('tokenExpiration is 30 days', () => {
     const auth = Users.auth as { tokenExpiration?: number } | true | undefined
