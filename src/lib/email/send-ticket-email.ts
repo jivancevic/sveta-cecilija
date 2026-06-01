@@ -2,6 +2,7 @@ import type { Venue } from '../venues'
 import { renderTicketEmail } from './render-ticket-email'
 import { renderTicketsPdf, type RenderTicketsPdfTicket } from './render-tickets-pdf'
 import { renderIcs, googleCalendarLink } from './render-ics'
+import { postBrevoEmail } from './post-brevo-email'
 
 export interface SendTicketEmailInput {
   orderId: string
@@ -89,13 +90,9 @@ export async function sendTicketEmail(
       ],
     }
 
-    const res = await deps.fetch('https://api.brevo.com/v3/smtp/email', {
-      method: 'POST',
-      headers: {
-        'api-key': deps.brevoApiKey,
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify(body),
+    const res = await postBrevoEmail(body, {
+      fetch: deps.fetch,
+      brevoApiKey: deps.brevoApiKey,
     })
     if (!res.ok) {
       const text = await res.text().catch(() => '')
