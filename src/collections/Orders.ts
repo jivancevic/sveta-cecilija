@@ -1,13 +1,23 @@
 import type { CollectionConfig } from 'payload'
 import { isAdminTier } from '@/lib/access/roles'
+import { partnerOwnOrdersWhere } from '@/lib/access/partner'
+
+type ReqUser = { role?: string; partner?: unknown } | null | undefined
 
 const adminOnly = ({ req }: { req: { user: unknown } }) =>
-  isAdminTier(req.user as { role?: string } | null)
+  isAdminTier(req.user as ReqUser)
 
 export const Orders: CollectionConfig = {
   slug: 'orders',
   access: {
-    read: adminOnly,
+    // Admin-tier reads every order; a partner reads only orders it sold
+    // (orders.partner = self). Tehnika has no collection read (door lookups go
+    // through the audited /api/orders/lookup route, not this access).
+    read: ({ req }) => {
+      const user = req.user as ReqUser
+      if (isAdminTier(user)) return true
+      return partnerOwnOrdersWhere(user)
+    },
     create: adminOnly,
     update: adminOnly,
     delete: adminOnly,
@@ -38,10 +48,14 @@ export const Orders: CollectionConfig = {
       ],
       admin: { description: 'Sales channel; drives pricing and invoicing' },
     },
-    // Partner who sold this order; null for online. Becomes a relationship to
-    // the partners collection in #143 — kept as a number for now (column
-    // partner_id) so Payload push doesn't drop it before that collection exists.
-    { name: 'partnerId', type: 'number', admin: { readOnly: true, description: 'Partner that sold this order (partner channel only)' } },
+    // Partner who sold this order; null for online (ADR-0008). Column stays
+    // `partner_id`; now a real relationship to the partners collection (#143).
+    {
+      name: 'partner',
+      type: 'relationship',
+      relationTo: 'partners',
+      admin: { readOnly: true, description: 'Partner that sold this order (partner channel only)' },
+    },
     // Buyer PII — present online, null for an anonymous partner POS sale.
     { name: 'buyerName', type: 'text' },
     { name: 'email', type: 'email' },

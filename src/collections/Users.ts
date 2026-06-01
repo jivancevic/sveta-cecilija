@@ -1,5 +1,5 @@
 import type { CollectionConfig } from 'payload'
-import { isSuperadmin } from '@/lib/access/roles'
+import { isSuperadmin, isAdminTier } from '@/lib/access/roles'
 
 type ReqUser = { id?: string | number; role?: string } | null | undefined
 
@@ -57,6 +57,24 @@ export const Users: CollectionConfig = {
         read: ({ req }) => isSuperadmin(req.user as ReqUser),
         update: ({ req }) => isSuperadmin(req.user as ReqUser),
         create: ({ req }) => isSuperadmin(req.user as ReqUser),
+      },
+    },
+    // The partner a `partner`-role login is bound to (ADR-0008). Read is left
+    // open so the value rides along on `req.user` for ownership scoping; write
+    // is locked to admin-tier. A partner can edit its own profile (selfOrSuper-
+    // admin update), so without this lock it could repoint itself at another
+    // partner and read that partner's data.
+    {
+      name: 'partner',
+      type: 'relationship',
+      relationTo: 'partners',
+      admin: {
+        description: 'Partner this login sells for (partner role only)',
+        condition: (data) => data?.role === 'partner',
+      },
+      access: {
+        update: ({ req }) => isAdminTier(req.user as ReqUser),
+        create: ({ req }) => isAdminTier(req.user as ReqUser),
       },
     },
   ],

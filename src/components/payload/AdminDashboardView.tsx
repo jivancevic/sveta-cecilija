@@ -6,7 +6,7 @@ import { getPayload } from 'payload'
 import config from '@payload-config'
 import { getStatsInput } from '@/lib/stats-data'
 import { computeStats } from '@/lib/stats'
-import { isAdminTier, isAuthed } from '@/lib/access/roles'
+import { isAdminTier, isAuthed, isPartner, partnerIdOf } from '@/lib/access/roles'
 import { getNextShow, getScannedPeopleForShow, type NextShow } from '@/lib/shows'
 import { HeaderBlock, ShowsTable } from './stats-blocks'
 import { TicketLookupPanel } from './TicketLookupPanel'
@@ -26,6 +26,12 @@ const VENUE_LABEL: Record<string, string> = {
 export async function AdminDashboardView() {
   const payload = await getPayload({ config })
   const { user } = await payload.auth({ headers: await headers() })
+
+  // Partner is authenticated but is NOT internal staff (isAuthed excludes it),
+  // so branch here before the staff-only login guard below.
+  if (isPartner(user as { role?: string } | null)) {
+    return <PartnerDashboard payload={payload} user={user} />
+  }
 
   if (!isAuthed(user as { role?: string } | null)) {
     redirect(`/admin/login?redirect=${encodeURIComponent('/admin')}`)
@@ -143,6 +149,114 @@ async function TehnikaDashboard({ role }: { role?: string }) {
 
       <p style={{ fontSize: 11, color: 'var(--theme-elevation-400)', marginTop: 24 }}>
         Signed in as {role}.
+      </p>
+    </div>
+  )
+}
+
+// Scoped dashboard shell for the `partner` role (ADR-0008, ADR-0006 pattern).
+// This slice (#143) establishes the role, the scoped landing, and the empty
+// sidebar; the sell form, own-stats and same-day storno land in later slices.
+// The layout here is HITL-reviewed before #143 is considered done.
+type PartnerRecord = { id: number | string; name?: string; active?: boolean; commissionPercent?: number }
+
+async function PartnerDashboard({
+  payload,
+  user,
+}: {
+  payload: Awaited<ReturnType<typeof getPayload>>
+  user: unknown
+}) {
+  const partnerId = partnerIdOf(user as { role?: string; partner?: unknown } | null)
+
+  let partner: PartnerRecord | null = null
+  if (partnerId != null) {
+    try {
+      partner = (await payload.findByID({
+        collection: 'partners',
+        id: partnerId,
+        depth: 0,
+      })) as unknown as PartnerRecord
+    } catch {
+      partner = null
+    }
+  }
+
+  const wrap: React.CSSProperties = { padding: '24px clamp(16px, 4vw, 40px)', maxWidth: 880, margin: '0 auto' }
+  const notice: React.CSSProperties = {
+    background: 'var(--theme-elevation-50)',
+    border: '1px solid var(--theme-elevation-150)',
+    borderRadius: 8,
+    padding: 20,
+    color: 'var(--theme-elevation-600)',
+  }
+
+  // Misconfigured login (no linked partner) or a deactivated partner: never
+  // show org data — just a clear message. Ownership is fail-safe by design.
+  if (!partner) {
+    return (
+      <div style={wrap}>
+        <h1 style={{ marginBottom: 16, fontSize: 24 }}>Partner dashboard</h1>
+        <div style={notice}>
+          This account isn’t linked to a partner yet. Please contact HGD Sveta Cecilija to finish setup.
+        </div>
+      </div>
+    )
+  }
+
+  if (partner.active === false) {
+    return (
+      <div style={wrap}>
+        <h1 style={{ marginBottom: 16, fontSize: 24 }}>{partner.name}</h1>
+        <div style={notice}>
+          This partner account is currently inactive. Please contact HGD Sveta Cecilija.
+        </div>
+      </div>
+    )
+  }
+
+  const card: React.CSSProperties = {
+    background: 'var(--theme-elevation-50)',
+    border: '1px solid var(--theme-elevation-150)',
+    borderRadius: 8,
+    padding: 20,
+  }
+
+  return (
+    <div style={wrap}>
+      <h1 style={{ marginBottom: 6, fontSize: 24 }}>{partner.name}</h1>
+      <p style={{ color: 'var(--theme-elevation-600)', marginBottom: 24 }}>Partner dashboard</p>
+
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+          gap: 16,
+        }}
+      >
+        <div style={card}>
+          <h2 style={{ fontSize: 16, marginBottom: 6 }}>Sell tickets</h2>
+          <p style={{ color: 'var(--theme-elevation-500)', fontSize: 13, margin: 0 }}>
+            Pick a show, enter adult and child counts, and print a combined ticket PDF. Coming soon.
+          </p>
+        </div>
+        <div style={card}>
+          <h2 style={{ fontSize: 16, marginBottom: 6 }}>Your sales</h2>
+          <p style={{ color: 'var(--theme-elevation-500)', fontSize: 13, margin: 0 }}>
+            Tickets sold this season, per show, and your recent sales. Coming soon.
+          </p>
+        </div>
+        <div style={card}>
+          <h2 style={{ fontSize: 16, marginBottom: 6 }}>Monthly statement</h2>
+          <p style={{ color: 'var(--theme-elevation-500)', fontSize: 13, margin: 0 }}>
+            A monthly breakdown of sales, cancellations, and the {partner.commissionPercent ?? 10}% commission. Coming
+            soon.
+          </p>
+        </div>
+      </div>
+
+      <p style={{ fontSize: 11, color: 'var(--theme-elevation-400)', marginTop: 24 }}>
+        Signed in as partner.
       </p>
     </div>
   )
