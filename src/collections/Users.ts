@@ -30,11 +30,15 @@ export const Users: CollectionConfig = {
   },
   admin: {
     useAsTitle: 'email',
-    // No `hidden` predicate. Payload's top-bar Account link routes through
-    // this collection's edit view; hiding the collection 404s that page for
-    // non-superadmins. Sidebar entry shown to everyone, but selfOrSuperadmin
-    // read access restricts the list to the user's own row, and field-level
-    // access on `role` prevents self-promotion.
+    // Hide Users from the sidebar for everyone but superadmin (ADR-0006: only
+    // the developer manages users; secretaries/tehnika/partner get no Users
+    // entry). The top-bar Account link routes to the dedicated `/admin/account`
+    // view — NOT this collection's edit page — so hiding the collection does
+    // not 404 the profile page (verified on Payload v3.84; an earlier comment
+    // here predated that routing and left Users leaking into every sidebar,
+    // including the partner's). Direct `/admin/collections/users` still 404s
+    // for non-superadmins, which is the intended lockdown.
+    hidden: ({ user }) => !isSuperadmin(user as ReqUser),
   },
   fields: [
     {

@@ -58,9 +58,7 @@ export async function AdminDashboardView() {
       <h2 style={{ fontSize: 16, margin: '24px 0 8px' }}>Shows (last 7 days + upcoming)</h2>
       <ShowsTable rows={rows} />
 
-      <p style={{ fontSize: 11, color: 'var(--theme-elevation-400)', marginTop: 24 }}>
-        Signed in as {role}.
-      </p>
+      <SignedInFooter role={role} />
     </div>
   )
 }

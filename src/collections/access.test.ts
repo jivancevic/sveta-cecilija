@@ -182,10 +182,19 @@ describe('Users access', () => {
     }
   })
 
-  // Note: Users.admin.hidden was intentionally removed in d01ef84 — hiding the
-  // collection 404s the top-bar Account link for non-superadmins. Read access is
-  // restricted by selfOrSuperadmin and the role field is locked by field-level
-  // access (both covered by the tests above), so no sidebar-hiding test belongs here.
+  // Users is hidden from the sidebar for everyone but superadmin (the account
+  // page lives at the dedicated /admin/account route, so this doesn't 404 the
+  // profile — an earlier removal of this predicate left Users leaking into the
+  // partner/tehnika/secretary sidebar).
+  it('Users sidebar is visible only to superadmin', () => {
+    const hidden = Users.admin?.hidden as ((args: { user: unknown }) => boolean) | undefined
+    expect(typeof hidden).toBe('function')
+    expect(hidden?.({ user: superadmin })).toBe(false)
+    expect(hidden?.({ user: admin })).toBe(true)
+    expect(hidden?.({ user: tehnika })).toBe(true)
+    expect(hidden?.({ user: partner })).toBe(true)
+    expect(hidden?.({ user: anon })).toBe(true)
+  })
 
   it('role options include partner', () => {
     const roleField = Users.fields.find(
