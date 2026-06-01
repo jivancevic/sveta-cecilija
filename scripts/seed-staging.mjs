@@ -23,13 +23,23 @@
 // point of the staging env is a place awkward fixtures can live; this guard is
 // what keeps them there.
 //
+// PER-PERSON TICKET MODEL (ADR-0007)
+// ----------------------------------
+// Tickets are one-per-person: the table is `tickets` (renamed from qr_tokens),
+// each row is one admission with its own `type` (adult|child) and lifecycle
+// `status` (active|cancelled). Seats sold for a show = COUNT(active tickets)
+// for that show's orders (the old shows.online_sold column is RETIRED as the
+// source of truth — see src/lib/shows.ts), so this script creates real
+// per-person ticket rows rather than bumping a counter. A sold-out show is
+// modelled with in_person_sold, which still counts against capacity.
+//
 // IDEMPOTENCY
 // -----------
 // Safe to run repeatedly. Every seed row carries a recognizable marker:
-//   - orders:    stripe_payment_intent_id LIKE 'pi_TEST_seed_%'
-//   - qr_tokens: token       LIKE 'TEST_seed_%'
-//   - shows:     time = SEED_TIME_MARKER ('00:01', a sentinel no real show uses)
-// On each run we delete those marked rows first (qr_tokens → orders → shows,
+//   - orders:  stripe_payment_intent_id LIKE 'pi_TEST_seed_%'
+//   - tickets: token                    LIKE 'TEST_seed_%'
+//   - shows:   time = SEED_TIME_MARKER ('00:01', a sentinel no real show uses)
+// On each run we delete those marked rows first (tickets → orders → shows,
 // child-before-parent to respect FKs), then re-insert from scratch. Real shows
 // seeded by db/schema/seed-shows.sql and any admin-entered rows are untouched
 // because they never carry these markers. No TRUNCATE is used, so the
@@ -40,23 +50,23 @@
 //
 // ─── Fixtures and what each one exercises ─────────────────────────────────
 //
-//   SHOWS
-//   • "today" show        — date = today, time field still '00:01' marker but
-//                           a real future-ish datetime so getNextShow() /
-//                           door-flow + /scan testing has a live target.
-//   • cancelled show      — status='cancelled'; must be hidden from /tickets.
-//   • sold-out show       — online_sold + in_person_sold == VENUE_CAPACITY
-//                           (zimsko-kino = 250); remaining seats = 0, hidden
-//                           from /tickets, visible in /admin.
+//   SHOWS (all carry time = SEED_TIME_MARKER so they're recognizably ours)
+//   • "today" show   — date = today; getNextShow() + door-flow + /scan have a
+//                      live target. Holds the per-person tickets below.
+//   • cancelled show — status='cancelled'; must be hidden from /tickets.
+//   • sold-out show  — in_person_sold == VENUE_CAPACITY (zimsko-kino = 250);
+//                      remaining = 0, hidden from /tickets, visible in /admin.
 //
-//   ORDERS (+ one qr_token each so /scan/[token] is testable)
-//   • adults-only order   — child_count = 0; PDF/email + counts must handle
-//                           an order with no child tickets.
-//   • refunded order      — refund_status='refunded'; refund UI + stats must
-//                           treat it as refunded (idempotent re-refund guard).
-//   • door / scan order   — attached to the "today" show with online_sold
-//                           bumped so /admin shows non-zero stats and the
-//                           qr_token can be scanned VALID → ALREADY_SCANNED.
+//   ORDERS + per-person TICKETS (so /scan/[token] is testable in every state)
+//   • adults-only order (A) — child_count = 0; 3 active adult tickets, all
+//                             unscanned → /scan VALID.
+//   • refunded order (B)    — refund_status='refunded'; its tickets are
+//                             status='cancelled', cancel_reason='refund' →
+//                             /scan CANCELLED. Cancelled tickets free their
+//                             seats (excluded from the active COUNT).
+//   • door order (C)        — 6 active tickets on the today show; the first is
+//                             pre-scanned → /scan ALREADY_SCANNED, the rest
+//                             unscanned → VALID.
 //
 // Buyer names/emails (Test Buyer A, test-a@example.invalid) and Stripe ids
 // (pi_TEST_seed_<n>) are obviously fake by construction.
@@ -70,6 +80,8 @@ const SEED_TIME_MARKER = '00:01' // sentinel time; no real show is scheduled her
 const PI_PREFIX = 'pi_TEST_seed_'
 const TOKEN_PREFIX = 'TEST_seed_'
 const VENUE_CAPACITY = { 'ljetno-kino': 320, 'zimsko-kino': 250 }
+const ADULT_CENTS = 2000 // €20
+const CHILD_CENTS = 1000 // €10
 
 /** Extract the database name from a postgres connection string. */
 function dbNameFromUrl(url) {
@@ -89,6 +101,69 @@ function todayAt(hours, minutes) {
   const d = new Date()
   d.setHours(hours, minutes, 0, 0)
   return d.toISOString()
+}
+
+/**
+ * Insert one ticket row per person for an order.
+ *
+ * `adults` adult tickets then `children` child tickets, tokens
+ * `TEST_seed_<letter><n>` (1-based). `status`/`cancelReason` apply to every
+ * ticket (used for the refunded order). The first `scannedCount` tickets are
+ * marked scanned (for the ALREADY_SCANNED branch). Returns the count created.
+ */
+async function insertPersonTickets(
+  client,
+  { orderId, letter, adults, children, status = 'active', cancelReason = null, scannedCount = 0 },
+) {
+  const types = [
+    ...Array.from({ length: adults }, () => 'adult'),
+    ...Array.from({ length: children }, () => 'child'),
+  ]
+  let n = 0
+  for (const type of types) {
+    n += 1
+    const scanned = n <= scannedCount
+    await client.query(
+      `INSERT INTO tickets (token, order_id, scanned, scanned_at, type, status, cancel_reason)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [
+        `${TOKEN_PREFIX}${letter}${n}`,
+        orderId,
+        scanned,
+        scanned ? new Date().toISOString() : null,
+        type,
+        status,
+        cancelReason,
+      ],
+    )
+  }
+  return n
+}
+
+/** Insert a synthetic order and return its id. */
+async function insertOrder(
+  client,
+  { name, email, adults, children, refundStatus, piSuffix, showId, locale },
+) {
+  const res = await client.query(
+    `INSERT INTO orders
+       (buyer_name, email, adult_count, child_count, total,
+        stripe_payment_intent_id, refund_status, show_id, locale, channel)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'online')
+     RETURNING id`,
+    [
+      name,
+      email,
+      adults,
+      children,
+      adults * ADULT_CENTS + children * CHILD_CENTS,
+      `${PI_PREFIX}${piSuffix}`,
+      refundStatus,
+      showId,
+      locale,
+    ],
+  )
+  return res.rows[0].id
 }
 
 async function main() {
@@ -121,33 +196,32 @@ async function main() {
     await client.query('BEGIN')
 
     // ─── 1. Clean out prior seed rows (child → parent for FKs) ────────────
-    const delTokens = await client.query(
-      `DELETE FROM qr_tokens WHERE token LIKE $1`,
-      [`${TOKEN_PREFIX}%`],
-    )
+    // tickets.order_id is ON DELETE SET NULL, so tickets must go before orders
+    // or we'd orphan them; orders.show_id forces orders before shows.
+    const delTickets = await client.query(`DELETE FROM tickets WHERE token LIKE $1`, [
+      `${TOKEN_PREFIX}%`,
+    ])
     const delOrders = await client.query(
       `DELETE FROM orders WHERE stripe_payment_intent_id LIKE $1`,
       [`${PI_PREFIX}%`],
     )
-    const delShows = await client.query(
-      `DELETE FROM shows WHERE time = $1`,
-      [SEED_TIME_MARKER],
-    )
+    const delShows = await client.query(`DELETE FROM shows WHERE time = $1`, [SEED_TIME_MARKER])
     console.log(
-      `[seed-staging] cleared prior seed rows: ${delTokens.rowCount} qr_tokens, ` +
+      `[seed-staging] cleared prior seed rows: ${delTickets.rowCount} tickets, ` +
         `${delOrders.rowCount} orders, ${delShows.rowCount} shows.`,
     )
 
     // ─── 2. Awkward shows ─────────────────────────────────────────────────
     // All carry time = SEED_TIME_MARKER so they're recognizably ours on the
     // next run. The "today" show's date is genuinely today so getNextShow()
-    // and the door flow have a live target.
+    // and the door flow have a live target. online_sold is left 0 — seats now
+    // come from active ticket rows, not this retired counter.
 
     const todayShow = await client.query(
       `INSERT INTO shows (date, time, venue, online_sold, in_person_sold, status)
        VALUES ($1, $2, 'ljetno-kino', 0, 0, 'active')
        RETURNING id`,
-      [todayAt(12, 0), SEED_TIME_MARKER],
+      [todayAt(21, 0), SEED_TIME_MARKER],
     )
     const todayShowId = todayShow.rows[0].id
 
@@ -159,140 +233,107 @@ async function main() {
     )
     const cancelledShowId = cancelledShow.rows[0].id
 
-    // Sold-out: online_sold + in_person_sold === VENUE_CAPACITY[venue].
-    // Use zimsko-kino (250) and split the capacity across both channels.
+    // Sold-out: remaining = capacity − COUNT(active tickets) − in_person_sold
+    // − legacy_reserved (src/lib/shows.ts). With no tickets, in_person_sold ==
+    // capacity drives remaining to 0. Future date so it would otherwise list.
     const soldOutCap = VENUE_CAPACITY['zimsko-kino']
-    const soldOutOnline = 200
-    const soldOutInPerson = soldOutCap - soldOutOnline // 50
-    // Future date (7 days out) so it would otherwise show on /tickets but for
-    // being sold out.
     const soldOutDate = new Date()
     soldOutDate.setDate(soldOutDate.getDate() + 7)
-    soldOutDate.setHours(12, 0, 0, 0)
+    soldOutDate.setHours(21, 0, 0, 0)
     const soldOutShow = await client.query(
       `INSERT INTO shows (date, time, venue, online_sold, in_person_sold, status)
-       VALUES ($1, $2, 'zimsko-kino', $3, $4, 'active')
+       VALUES ($1, $2, 'zimsko-kino', 0, $3, 'active')
        RETURNING id`,
-      [soldOutDate.toISOString(), SEED_TIME_MARKER, soldOutOnline, soldOutInPerson],
+      [soldOutDate.toISOString(), SEED_TIME_MARKER, soldOutCap],
     )
     const soldOutShowId = soldOutShow.rows[0].id
 
     console.log(
       `[seed-staging] shows: today=${todayShowId} (active), ` +
         `cancelled=${cancelledShowId}, sold-out=${soldOutShowId} ` +
-        `(${soldOutOnline}+${soldOutInPerson}/${soldOutCap}).`,
+        `(in_person_sold=${soldOutCap}/${soldOutCap}).`,
     )
 
-    // ─── 3. Awkward orders (+ a qr_token each) ────────────────────────────
-    // total is EUR cents: adult €20 = 2000, child €10 = 1000.
+    // ─── 3. Awkward orders + per-person tickets ───────────────────────────
 
-    // (a) Adults-only order against the today show. Also bumps online_sold so
-    //     /admin shows non-zero stats and the door flow has live numbers.
-    const adultCountA = 3
-    const childCountA = 0
-    const orderA = await client.query(
-      `INSERT INTO orders
-         (buyer_name, email, adult_count, child_count, total,
-          stripe_payment_intent_id, refund_status, show_id, locale)
-       VALUES ($1, $2, $3, $4, $5, $6, 'none', $7, 'en')
-       RETURNING id`,
-      [
-        'Test Buyer A',
-        'test-a@example.invalid',
-        adultCountA,
-        childCountA,
-        adultCountA * 2000 + childCountA * 1000,
-        `${PI_PREFIX}1`,
-        todayShowId,
-      ],
-    )
-    const orderAId = orderA.rows[0].id
-    await client.query(
-      `INSERT INTO qr_tokens (token, order_id, scanned) VALUES ($1, $2, false)`,
-      [`${TOKEN_PREFIX}A`, orderAId],
-    )
-    // Reflect this order's seats in the today show's online_sold so /admin and
-    // the scan-stats surfaces read non-zero.
-    await client.query(
-      `UPDATE shows SET online_sold = COALESCE(online_sold, 0) + $1, updated_at = NOW()
-       WHERE id = $2`,
-      [adultCountA + childCountA, todayShowId],
-    )
+    // (a) Adults-only order on the today show → 3 active adult tickets, all
+    //     unscanned (VALID).
+    const orderAId = await insertOrder(client, {
+      name: 'Test Buyer A',
+      email: 'test-a@example.invalid',
+      adults: 3,
+      children: 0,
+      refundStatus: 'none',
+      piSuffix: '1',
+      showId: todayShowId,
+      locale: 'en',
+    })
+    const ticketsA = await insertPersonTickets(client, {
+      orderId: orderAId,
+      letter: 'A',
+      adults: 3,
+      children: 0,
+    })
 
-    // (b) Refunded order against the today show (mix of adult + child).
-    const adultCountB = 2
-    const childCountB = 1
-    const orderB = await client.query(
-      `INSERT INTO orders
-         (buyer_name, email, adult_count, child_count, total,
-          stripe_payment_intent_id, refund_status, show_id, locale)
-       VALUES ($1, $2, $3, $4, $5, $6, 'refunded', $7, 'hr')
-       RETURNING id`,
-      [
-        'Test Buyer B',
-        'test-b@example.invalid',
-        adultCountB,
-        childCountB,
-        adultCountB * 2000 + childCountB * 1000,
-        `${PI_PREFIX}2`,
-        todayShowId,
-      ],
-    )
-    const orderBId = orderB.rows[0].id
-    await client.query(
-      `INSERT INTO qr_tokens (token, order_id, scanned) VALUES ($1, $2, false)`,
-      [`${TOKEN_PREFIX}B`, orderBId],
-    )
-    // A refunded order's seats are NOT counted toward online_sold (they were
-    // released), so no online_sold bump here.
+    // (b) Refunded order on the today show (2 adult + 1 child) → all tickets
+    //     cancelled with reason 'refund' (CANCELLED on scan; seats freed).
+    const orderBId = await insertOrder(client, {
+      name: 'Test Buyer B',
+      email: 'test-b@example.invalid',
+      adults: 2,
+      children: 1,
+      refundStatus: 'refunded',
+      piSuffix: '2',
+      showId: todayShowId,
+      locale: 'hr',
+    })
+    const ticketsB = await insertPersonTickets(client, {
+      orderId: orderBId,
+      letter: 'B',
+      adults: 2,
+      children: 1,
+      status: 'cancelled',
+      cancelReason: 'refund',
+    })
 
-    // (c) Door / scan order — attached to the today show, already scanned so
-    //     /scan/[token] exercises the ALREADY_SCANNED branch out of the box,
-    //     while tokens A and B above stay unscanned for the VALID branch.
-    const adultCountC = 4
-    const childCountC = 2
-    const orderC = await client.query(
-      `INSERT INTO orders
-         (buyer_name, email, adult_count, child_count, total,
-          stripe_payment_intent_id, refund_status, show_id, locale)
-       VALUES ($1, $2, $3, $4, $5, $6, 'none', $7, 'en')
-       RETURNING id`,
-      [
-        'Test Buyer C',
-        'test-c@example.invalid',
-        adultCountC,
-        childCountC,
-        adultCountC * 2000 + childCountC * 1000,
-        `${PI_PREFIX}3`,
-        todayShowId,
-      ],
-    )
-    const orderCId = orderC.rows[0].id
-    await client.query(
-      `INSERT INTO qr_tokens (token, order_id, scanned, scanned_at)
-       VALUES ($1, $2, true, NOW())`,
-      [`${TOKEN_PREFIX}C`, orderCId],
-    )
-    await client.query(
-      `UPDATE shows SET online_sold = COALESCE(online_sold, 0) + $1, updated_at = NOW()
-       WHERE id = $2`,
-      [adultCountC + childCountC, todayShowId],
-    )
+    // (c) Door order on the today show (4 adult + 2 child) → 6 active tickets,
+    //     first pre-scanned (ALREADY_SCANNED), rest unscanned (VALID).
+    const orderCId = await insertOrder(client, {
+      name: 'Test Buyer C',
+      email: 'test-c@example.invalid',
+      adults: 4,
+      children: 2,
+      refundStatus: 'none',
+      piSuffix: '3',
+      showId: todayShowId,
+      locale: 'en',
+    })
+    const ticketsC = await insertPersonTickets(client, {
+      orderId: orderCId,
+      letter: 'C',
+      adults: 4,
+      children: 2,
+      scannedCount: 1,
+    })
 
     await client.query('COMMIT')
 
-    console.log('[seed-staging] orders + qr_tokens:')
+    console.log('[seed-staging] orders + per-person tickets:')
     console.log(
-      `[seed-staging]   A order=${orderAId} adults-only (${adultCountA}+0), ` +
-        `token=${TOKEN_PREFIX}A (unscanned → /scan VALID)`,
+      `[seed-staging]   A order=${orderAId} adults-only, ${ticketsA} active tickets ` +
+        `(${TOKEN_PREFIX}A1..A${ticketsA}) → /scan VALID`,
     )
     console.log(
-      `[seed-staging]   B order=${orderBId} refunded (${adultCountB}+${childCountB}), ` +
-        `token=${TOKEN_PREFIX}B (unscanned → /scan VALID)`,
+      `[seed-staging]   B order=${orderBId} refunded, ${ticketsB} cancelled tickets ` +
+        `(${TOKEN_PREFIX}B1..B${ticketsB}) → /scan CANCELLED`,
     )
     console.log(
-      `[seed-staging]   C order=${orderCId} door (${adultCountC}+${childCountC}), ` +
-        `token=${TOKEN_PREFIX}C (scanned → /scan ALREADY_SCANNED)`,
+      `[seed-staging]   C order=${orderCId} door, ${ticketsC} active tickets ` +
+        `(${TOKEN_PREFIX}C1 scanned → ALREADY_SCANNED, C2..C${ticketsC} → VALID)`,
+    )
+    console.log(
+      `[seed-staging] today show active seats = ${ticketsA + ticketsC} ` +
+        `(A ${ticketsA} + C ${ticketsC}; B's ${ticketsB} cancelled are excluded).`,
     )
     console.log('[seed-staging] done. Re-run any time to reset staging fixtures.')
   } catch (err) {
