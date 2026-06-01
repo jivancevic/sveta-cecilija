@@ -12,6 +12,13 @@ export const dynamic = 'force-dynamic'
 // ticket of the scanned token's order as scanned in one tap. Race-safe: the
 // UPDATE's `scanned = false` filter means N parallel taps each admit a person
 // at most once. Redirects back to the scan screen with the count admitted.
+//
+// By design this does NOT re-validate the triggering token's own state (it
+// resolves the order from any existing token and admits that order's active
+// siblings). The UI only surfaces the button on a VALID scan, but safety does
+// not depend on that gate: the endpoint is staff-only, the per-ticket
+// `status='active'` filter excludes cancelled tickets, and there's no buyer
+// path to it. Party-admit is an explicit staff judgment call (ADR-0007).
 export async function POST(req: NextRequest, { params }: { params: Promise<{ token: string }> }) {
   const payload = await getPayload({ config })
   const { user } = await payload.auth({ headers: req.headers })

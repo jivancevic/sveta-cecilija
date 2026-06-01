@@ -248,13 +248,17 @@ function UndoForm({ token }: { token: string }) {
   )
 }
 
-function PartyAdmitForm({ token, partySize }: { token: string; partySize: number }) {
+function PartyAdmitForm({ token }: { token: string }) {
   return (
     <form
       method="post"
       action={`/api/scan/${encodeURIComponent(token)}/admit-party`}
       style={{ marginTop: '1.5rem', width: '100%', maxWidth: '24rem' }}
     >
+      {/* No count in the label: this person is already admitted by the scan
+          that surfaced this screen, and the page doesn't know how many other
+          siblings are already in. The post-admit banner reports the true
+          number newly admitted. */}
       <button
         type="submit"
         style={{
@@ -270,7 +274,7 @@ function PartyAdmitForm({ token, partySize }: { token: string; partySize: number
           minHeight: '48px',
         }}
       >
-        Admit entire party ({partySize})
+        Admit rest of party
       </button>
     </form>
   )
@@ -354,9 +358,7 @@ function ResultView({
         </div>
         <ShowLine showDate={result.showDate} showTime={result.showTime} venue={result.venue} />
         {/* Each scan admits one person; offer to walk in the rest of the party. */}
-        {viewer === 'staff' && partySize > 1 && (
-          <PartyAdmitForm token={token} partySize={partySize} />
-        )}
+        {viewer === 'staff' && partySize > 1 && <PartyAdmitForm token={token} />}
         {viewer === 'staff' && <StaffActions />}
       </main>
     )
