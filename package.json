@@ -10,6 +10,7 @@
     "build": "next build",
     "start": "node scripts/bootstrap-db.mjs && next start",
     "db:bootstrap": "node scripts/bootstrap-db.mjs",
+    "seed:staging": "node scripts/seed-staging.mjs",
     "lint": "eslint",
     "db": "docker compose up -d",
     "db:stop": "docker compose down",
