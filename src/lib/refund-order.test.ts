@@ -29,6 +29,7 @@ function makeDeps(order: OrderRecord | null, overrides: Partial<RefundOrderDeps>
     getOrder: vi.fn().mockResolvedValue(order),
     refundViaStripe: vi.fn().mockResolvedValue({ id: 're_123' }),
     markRefunded: vi.fn().mockResolvedValue(undefined),
+    voidTickets: vi.fn().mockResolvedValue(0),
     sendRefundEmail: vi.fn().mockResolvedValue(undefined),
     ...overrides,
   }
@@ -53,7 +54,22 @@ describe('refundOrder', () => {
     )
   })
 
-  it('is idempotent: a second refund call does not hit Stripe or re-email the buyer', async () => {
+  it('cascade-voids the order tickets (freeing seats) after marking refunded', async () => {
+    const order = makeOrder()
+    const calls: string[] = []
+    const deps = makeDeps(order, {
+      markRefunded: vi.fn(async () => { calls.push('mark') }),
+      voidTickets: vi.fn(async () => { calls.push('void'); return 3 }),
+    })
+
+    await refundOrder({ orderId: 'order_1' }, deps)
+
+    expect(deps.voidTickets).toHaveBeenCalledWith('order_1')
+    // Tickets are voided after the order is marked refunded.
+    expect(calls).toEqual(['mark', 'void'])
+  })
+
+  it('is idempotent: a second refund call does not hit Stripe, re-void, or re-email', async () => {
     const order = makeOrder({ refundStatus: 'refunded' })
     const deps = makeDeps(order)
 
@@ -62,6 +78,7 @@ describe('refundOrder', () => {
     expect(result).toEqual({ refunded: false, amountCents: 4000 })
     expect(deps.refundViaStripe).not.toHaveBeenCalled()
     expect(deps.markRefunded).not.toHaveBeenCalled()
+    expect(deps.voidTickets).not.toHaveBeenCalled()
     expect(deps.sendRefundEmail).not.toHaveBeenCalled()
   })
 
@@ -85,6 +102,7 @@ describe('refundOrder', () => {
     })
     await expect(refundOrder({ orderId: 'order_1' }, deps)).rejects.toThrow(/Stripe down/)
     expect(deps.markRefunded).not.toHaveBeenCalled()
+    expect(deps.voidTickets).not.toHaveBeenCalled()
     expect(deps.sendRefundEmail).not.toHaveBeenCalled()
   })
 })

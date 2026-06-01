@@ -25,6 +25,9 @@ export interface RefundOrderDeps {
   getOrder: (orderId: string) => Promise<RefundOrderRecord | null>
   refundViaStripe: (args: { paymentIntentId: string; amountCents: number }) => Promise<{ id: string }>
   markRefunded: (orderId: string) => Promise<void>
+  // Cascade-voids the order's active tickets (reason=refund) so refunded seats
+  // free themselves (seats derive from active tickets, ADR-0008). Idempotent.
+  voidTickets: (orderId: string) => Promise<number>
   sendRefundEmail: (input: SendRefundEmailInput) => Promise<void>
 }
 
@@ -49,6 +52,8 @@ export async function refundOrder(
     amountCents: order.total,
   })
   await deps.markRefunded(order.id)
+  // Free the seats: void all of the order's active tickets (reason=refund).
+  await deps.voidTickets(order.id)
   await deps.sendRefundEmail({
     orderId: order.id,
     buyer: { name: order.buyerName, email: order.email },
