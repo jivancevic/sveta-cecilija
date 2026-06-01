@@ -10,6 +10,7 @@ import {
   renderToBuffer,
 } from '@react-pdf/renderer'
 import type { Venue } from '../venues'
+import { ADULT_PRICE_EUR, CHILD_PRICE_EUR } from '../pricing'
 
 const FONT_DIR = path.join(process.cwd(), 'assets', 'fonts', 'email')
 const LOGO_PATH = path.join(process.cwd(), 'assets', 'images', 'cecilija-logo.png')
@@ -57,11 +58,10 @@ const COPY = {
     time: 'Time',
     venue: 'Venue',
     order: 'Order',
+    adult: 'Adult',
+    child: 'Child',
     scanAtDoor: 'Scan this code at the door',
-    doNotShare: 'Do not share this QR. One scan admits the entire party.',
-    ticketsWord: (n: number) => (n === 1 ? 'ticket' : 'tickets'),
-    adultsWord: (n: number) => (n === 1 ? 'adult' : 'adults'),
-    childrenWord: (n: number) => (n === 1 ? 'child' : 'children'),
+    perPerson: 'One ticket per person. This QR admits one person.',
   },
   hr: {
     org: 'HGD SVETA CECILIJA',
@@ -71,18 +71,14 @@ const COPY = {
     time: 'Vrijeme',
     venue: 'Mjesto',
     order: 'Narudžba',
+    adult: 'Odrasli',
+    child: 'Dijete',
     scanAtDoor: 'Skenirajte ovaj kod na ulazu',
-    doNotShare: 'Ne dijelite QR kod. Jedno skeniranje pušta cijelu skupinu.',
-    ticketsWord: (n: number) => {
-      // hr: 1 = ulaznica, 2-4 = ulaznice, else ulaznica (gen.pl)
-      if (n === 1) return 'ulaznica'
-      if (n >= 2 && n <= 4) return 'ulaznice'
-      return 'ulaznica'
-    },
-    adultsWord: (n: number) => (n === 1 ? 'odrasli' : 'odraslih'),
-    childrenWord: (n: number) => (n === 1 ? 'dijete' : 'djece'),
+    perPerson: 'Jedna ulaznica po osobi. Ovaj QR pušta jednu osobu.',
   },
 } as const
+
+export type TicketType = 'adult' | 'child'
 
 function formatDate(iso: string, locale: 'en' | 'hr'): string {
   const d = new Date(`${iso}T00:00:00Z`)
@@ -95,16 +91,22 @@ function formatDate(iso: string, locale: 'en' | 'hr'): string {
   })
 }
 
-function ticketCountLabel(
-  adults: number,
-  children: number,
-  c: (typeof COPY)['en'] | (typeof COPY)['hr'],
-): string {
-  const total = adults + children
-  const head = `${total} ${c.ticketsWord(total)}`
-  if (children === 0) return `${head}: ${adults} ${c.adultsWord(adults)}`
-  if (adults === 0) return `${head}: ${children} ${c.childrenWord(children)}`
-  return `${head}: ${adults} ${c.adultsWord(adults)}, ${children} ${c.childrenWord(children)}`
+function priceEur(type: TicketType): number {
+  return type === 'adult' ? ADULT_PRICE_EUR : CHILD_PRICE_EUR
+}
+
+/** "Adult · €20" / "Dijete · €10" — the per-ticket type + face price line. */
+function typePriceLabel(type: TicketType, locale: 'en' | 'hr'): string {
+  const c = COPY[locale]
+  const word = type === 'adult' ? c.adult : c.child
+  return `${word} · €${priceEur(type)}`
+}
+
+/** Split tickets into pages of two (the 2-up A5 layout). */
+function chunkPairs<T>(items: T[]): T[][] {
+  const pages: T[][] = []
+  for (let i = 0; i < items.length; i += 2) pages.push(items.slice(i, i + 2))
+  return pages
 }
 
 const styles = StyleSheet.create({
@@ -113,14 +115,24 @@ const styles = StyleSheet.create({
     color: INK,
     fontFamily: 'Inter',
     fontSize: 11,
-    padding: 48,
     flexDirection: 'column',
+  },
+  // Each ticket block is one A5 half of the A4 page. The dashed bottom border
+  // on the top block is the guillotine cut line.
+  block: {
+    height: '50%',
+    paddingVertical: 30,
+    paddingHorizontal: 46,
+    flexDirection: 'column',
+  },
+  blockTop: {
+    borderBottom: `1pt dashed ${MUTED}`,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingBottom: 14,
+    paddingBottom: 10,
     borderBottom: `1pt solid ${GOLD}`,
   },
   headerLeft: {
@@ -128,111 +140,130 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logo: {
-    // Source is 4488×5669 (portrait, ratio ~0.792). 36×46 preserves it.
-    width: 36,
-    height: 46,
-    marginRight: 12,
+    // Source is 4488×5669 (portrait, ratio ~0.792). 28×35 preserves it.
+    width: 28,
+    height: 35,
+    marginRight: 10,
   },
   headerOrg: {
     fontFamily: 'IBMPlexMono',
-    fontSize: 9,
+    fontSize: 8,
     letterSpacing: 2,
     color: MUTED,
   },
-  headerOrgRight: {
+  headerRight: {
+    flexDirection: 'column',
+    alignItems: 'flex-end',
+  },
+  headerOrder: {
     fontFamily: 'IBMPlexMono',
     fontSize: 9,
     letterSpacing: 1,
     color: MUTED,
   },
+  headerRef: {
+    fontFamily: 'IBMPlexMono',
+    fontSize: 11,
+    fontWeight: 700,
+    letterSpacing: 1,
+    color: INK,
+    marginTop: 2,
+  },
+  body: {
+    flexDirection: 'row',
+    flex: 1,
+    marginTop: 14,
+  },
+  details: {
+    flex: 1,
+    flexDirection: 'column',
+    justifyContent: 'center',
+    paddingRight: 16,
+  },
   title: {
     fontFamily: 'BodoniModaSC',
-    fontSize: 56,
-    letterSpacing: 4,
+    fontSize: 30,
+    letterSpacing: 3,
     color: INK,
-    marginTop: 30,
-    textAlign: 'center',
-  },
-  showCard: {
-    marginTop: 28,
-    paddingTop: 18,
-    paddingBottom: 18,
-    paddingHorizontal: 4,
-    borderTop: `0.5pt solid ${MUTED}`,
-    borderBottom: `0.5pt solid ${MUTED}`,
+    marginBottom: 12,
   },
   fieldRow: {
     flexDirection: 'row',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   fieldLabel: {
     fontFamily: 'IBMPlexMono',
-    fontSize: 9,
+    fontSize: 8,
     letterSpacing: 1.5,
     color: MUTED,
-    width: 80,
-    paddingTop: 3,
+    width: 56,
+    paddingTop: 2,
   },
   fieldValue: {
     fontFamily: 'Inter',
-    fontSize: 13,
+    fontSize: 11,
     color: INK,
     flex: 1,
   },
   fieldValueBig: {
     fontFamily: 'BodoniModaSC',
-    fontSize: 16,
-    letterSpacing: 1,
+    fontSize: 13,
+    letterSpacing: 0.5,
     color: INK,
     flex: 1,
   },
-  qrWrap: {
-    alignItems: 'center',
-    marginTop: 28,
-    marginBottom: 14,
-  },
-  qr: {
-    // ~80mm at 72dpi: 80mm = 226.77pt. Slight inset for white margin around the symbol.
-    width: 227,
-    height: 227,
-  },
-  ticketCount: {
+  typePrice: {
     fontFamily: 'IBMPlexMono',
     fontSize: 12,
-    letterSpacing: 1.5,
-    color: INK,
-    textAlign: 'center',
-    marginTop: 4,
-    marginBottom: 6,
+    fontWeight: 700,
+    letterSpacing: 1,
+    color: GOLD,
+    marginTop: 10,
+  },
+  qrCol: {
+    width: 150,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  qr: {
+    width: 140,
+    height: 140,
   },
   scanHint: {
     fontFamily: 'Inter',
-    fontSize: 10,
+    fontSize: 8,
     color: MUTED,
     textAlign: 'center',
-    marginBottom: 6,
+    marginTop: 6,
+    maxWidth: 150,
   },
   footer: {
-    marginTop: 'auto',
-    paddingTop: 14,
-    borderTop: `0.5pt solid ${MUTED}`,
     flexDirection: 'row',
     justifyContent: 'space-between',
+    paddingTop: 8,
   },
   footerText: {
     fontFamily: 'IBMPlexMono',
-    fontSize: 8,
+    fontSize: 7,
     letterSpacing: 1,
     color: MUTED,
   },
 })
 
+export interface RenderTicketsPdfTicket {
+  token: string
+  type: TicketType
+  /** Human per-ticket reference, e.g. "AB23-1". */
+  ref: string
+}
+
 export interface RenderTicketsPdfInput {
   buyer: { name: string }
   show: { date: string; time: string; venue: Venue }
-  order: { adultCount: number; childCount: number }
-  token: string
+  /** One entry per person (ADR-0007). */
+  tickets: RenderTicketsPdfTicket[]
   locale: 'en' | 'hr'
+  /** Order code shown in each block's header (e.g. "AB23"). */
   orderRef: string
 }
 
@@ -250,33 +281,42 @@ export async function renderTicketsPdf(
 ): Promise<Buffer> {
   registerFontsOnce()
 
-  const qrPng = await deps.generateQrPng(`https://moreska.eu/scan/${input.token}`)
-
   const c = COPY[input.locale]
   const venueLabel = VENUE_LABEL[input.locale][input.show.venue]
   const dateLabel = formatDate(input.show.date, input.locale)
-  const countLabel = ticketCountLabel(input.order.adultCount, input.order.childCount, c)
 
-  const doc = (
-    <Document
-      title={`Moreška - ${input.show.date}`}
-      author="HGD Sveta Cecilija"
-      subject={`Tickets for ${input.show.date}`}
-    >
-      <Page size="A4" style={styles.page}>
-        <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <Image style={styles.logo} src={LOGO_PATH} />
-            <Text style={styles.headerOrg}>{c.org}</Text>
-          </View>
-          <Text style={styles.headerOrgRight}>
+  // One QR per ticket, rendered in issuance order.
+  const qrUris = await Promise.all(
+    input.tickets.map(async (t) =>
+      pngDataUri(await deps.generateQrPng(`https://moreska.eu/scan/${t.token}`)),
+    ),
+  )
+
+  const blocks = input.tickets.map((t, i) => ({ ticket: t, qrUri: qrUris[i] }))
+  const pages = chunkPairs(blocks)
+
+  const renderBlock = (
+    { ticket, qrUri }: { ticket: RenderTicketsPdfTicket; qrUri: string },
+    isTop: boolean,
+    key: number,
+  ) => (
+    <View key={key} style={isTop ? [styles.block, styles.blockTop] : styles.block}>
+      <View style={styles.header}>
+        <View style={styles.headerLeft}>
+          <Image style={styles.logo} src={LOGO_PATH} />
+          <Text style={styles.headerOrg}>{c.org}</Text>
+        </View>
+        <View style={styles.headerRight}>
+          <Text style={styles.headerOrder}>
             {c.order} #{input.orderRef}
           </Text>
+          <Text style={styles.headerRef}>{ticket.ref}</Text>
         </View>
+      </View>
 
-        <Text style={styles.title}>{c.title}</Text>
-
-        <View style={styles.showCard}>
+      <View style={styles.body}>
+        <View style={styles.details}>
+          <Text style={styles.title}>{c.title}</Text>
           <View style={styles.fieldRow}>
             <Text style={styles.fieldLabel}>{c.date.toUpperCase()}</Text>
             <Text style={styles.fieldValueBig}>{dateLabel}</Text>
@@ -293,23 +333,37 @@ export async function renderTicketsPdf(
             <Text style={styles.fieldLabel}>{c.holder.toUpperCase()}</Text>
             <Text style={styles.fieldValue}>{input.buyer.name}</Text>
           </View>
+          <Text style={styles.typePrice}>{typePriceLabel(ticket.type, input.locale)}</Text>
         </View>
 
-        <View style={styles.qrWrap}>
-          <Image style={styles.qr} src={pngDataUri(qrPng)} />
+        <View style={styles.qrCol}>
+          <Image style={styles.qr} src={qrUri} />
+          <Text style={styles.scanHint}>{c.scanAtDoor}</Text>
         </View>
-        <Text style={styles.ticketCount}>{countLabel}</Text>
-        <Text style={styles.scanHint}>{c.scanAtDoor}</Text>
+      </View>
 
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>{c.doNotShare}</Text>
-          <Text style={styles.footerText}>moreska.eu</Text>
-        </View>
-      </Page>
+      <View style={styles.footer}>
+        <Text style={styles.footerText}>{c.perPerson}</Text>
+        <Text style={styles.footerText}>moreska.eu</Text>
+      </View>
+    </View>
+  )
+
+  const doc = (
+    <Document
+      title={`Moreška - ${input.show.date}`}
+      author="HGD Sveta Cecilija"
+      subject={`Tickets for ${input.show.date}`}
+    >
+      {pages.map((pair, pageIdx) => (
+        <Page key={pageIdx} size="A4" style={styles.page}>
+          {pair.map((block, i) => renderBlock(block, i === 0 && pair.length === 2, pageIdx * 2 + i))}
+        </Page>
+      ))}
     </Document>
   )
 
   return renderToBuffer(doc)
 }
 
-export const __test__ = { formatDate, ticketCountLabel, COPY, VENUE_LABEL }
+export const __test__ = { formatDate, typePriceLabel, chunkPairs, priceEur, COPY, VENUE_LABEL }

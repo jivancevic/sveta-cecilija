@@ -95,21 +95,27 @@ describe('handlePaymentSucceeded', () => {
     expect(deps.notifyBuyer).not.toHaveBeenCalled()
   })
 
-  it('notifies the buyer with the first ticket token after order creation', async () => {
+  it('notifies the buyer with the full ticket list + order code after order creation', async () => {
     const deps = makeDeps()
     await handlePaymentSucceeded(event({ locale: 'hr' }), deps)
     expect(deps.notifyBuyer).toHaveBeenCalledTimes(1)
-    expect(deps.notifyBuyer).toHaveBeenCalledWith({
+    const arg = (deps.notifyBuyer as ReturnType<typeof vi.fn>).mock.calls[0][0]
+    expect(arg).toMatchObject({
       orderId: 'order_1',
       showId: 'show_1',
       buyer: { name: 'Ana', email: 'a@b.co' },
       order: { adultCount: 2, childCount: 1, total: 5000 },
-      token: 'tok_1',
+      orderCode: 'AB23',
       locale: 'hr',
     })
-    // The representative token matches the first persisted ticket.
+    // Every person's ticket (token + type + CODE-N ref) is forwarded for the PDF.
+    expect(arg.tickets.map((t: { type: string }) => t.type)).toEqual(['adult', 'adult', 'child'])
+    expect(arg.tickets.map((t: { ref: string }) => t.ref)).toEqual(['AB23-1', 'AB23-2', 'AB23-3'])
+    // The forwarded tickets match what was persisted.
     const { tickets } = (deps.createTickets as ReturnType<typeof vi.fn>).mock.calls[0][0]
-    expect(tickets[0].token).toBe('tok_1')
+    expect(arg.tickets.map((t: { token: string }) => t.token)).toEqual(
+      tickets.map((t: { token: string }) => t.token),
+    )
   })
 
   it('defaults locale to en when metadata omits it', async () => {

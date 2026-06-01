@@ -51,20 +51,24 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   }
 
   // One ticket row per person since ADR-0007 — this find may return N rows.
-  // For #139 keep the single-QR PDF behavior: use the first ticket's token.
-  // (The multi-ticket 2-up PDF is a future issue, #140.)
-  const tokensRes = await payload.find({
+  // One ticket row per person (ADR-0007). Fetch them all, in issuance order, so
+  // the 2-up A5 PDF renders one block per person with its CODE-N reference.
+  const ticketsRes = await payload.find({
     collection: 'tickets',
     where: { order: { equals: order.id } },
-    limit: 1,
+    limit: 500,
     depth: 0,
     sort: 'createdAt',
   })
-  const tokenRow = tokensRes.docs[0]
-  if (!tokenRow) {
-    return NextResponse.json({ error: 'No ticket for this order' }, { status: 404 })
+  if (ticketsRes.docs.length === 0) {
+    return NextResponse.json({ error: 'No tickets for this order' }, { status: 404 })
   }
-  const token = tokenRow.token as string
+  const code = (order.code as string) || String(order.id)
+  const tickets = ticketsRes.docs.map((d, i) => ({
+    token: d.token as string,
+    type: ((d.type as string) === 'child' ? 'child' : 'adult') as 'adult' | 'child',
+    ref: `${code}-${i + 1}`,
+  }))
 
   const isoDate = show.date as string
   const date = typeof isoDate === 'string' ? isoDate.slice(0, 10) : ''
@@ -75,15 +79,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
   const pdfBuffer = await renderTicketsPdf(
     {
-      buyer: { name: order.buyerName as string },
+      buyer: { name: (order.buyerName as string) ?? '' },
       show: { date, time: show.time, venue: show.venue },
-      order: {
-        adultCount: (order.adultCount as number) ?? 0,
-        childCount: (order.childCount as number) ?? 0,
-      },
-      token,
+      tickets,
       locale,
-      orderRef: String(order.id),
+      orderRef: code,
     },
     { generateQrPng },
   )

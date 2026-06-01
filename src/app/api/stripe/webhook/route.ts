@@ -121,7 +121,7 @@ export async function POST(req: Request) {
             },
             randomInt: (max) => randomInt(max),
           }),
-        notifyBuyer: async ({ orderId, showId, buyer, order, token, locale }) => {
+        notifyBuyer: async ({ orderId, showId, buyer, order, tickets, orderCode, locale }) => {
           // Wrapped here (not just in sendTicketEmail) because the show lookup
           // itself can throw — webhook must still return 200 either way so
           // Stripe never retries and double-creates the order.
@@ -140,7 +140,8 @@ export async function POST(req: Request) {
                   venue: showDoc.venue as Venue,
                 },
                 order,
-                token,
+                tickets,
+                orderCode,
                 locale,
               },
               {
