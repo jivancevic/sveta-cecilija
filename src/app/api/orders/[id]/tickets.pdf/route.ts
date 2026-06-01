@@ -58,7 +58,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     where: { order: { equals: order.id } },
     limit: 500,
     depth: 0,
-    sort: 'createdAt',
+    // Sort by the serial id (insertion order from the webhook's sequential
+    // createTickets) so CODE-N refs are deterministic. created_at can tie at
+    // millisecond precision and Payload omits its id tiebreaker when the sort
+    // already names created_at — that would permute the re-downloaded refs
+    // relative to the emailed PDF.
+    sort: 'id',
   })
   if (ticketsRes.docs.length === 0) {
     return NextResponse.json({ error: 'No tickets for this order' }, { status: 404 })

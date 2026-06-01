@@ -331,7 +331,9 @@ export async function renderTicketsPdf(
           </View>
           <View style={styles.fieldRow}>
             <Text style={styles.fieldLabel}>{c.holder.toUpperCase()}</Text>
-            <Text style={styles.fieldValue}>{input.buyer.name}</Text>
+            {/* textOverflow keeps a very long name from growing the fixed-height
+                block; the block height is the real 2-up guarantee. */}
+            <Text style={[styles.fieldValue, { textOverflow: 'ellipsis' }]}>{input.buyer.name}</Text>
           </View>
           <Text style={styles.typePrice}>{typePriceLabel(ticket.type, input.locale)}</Text>
         </View>
