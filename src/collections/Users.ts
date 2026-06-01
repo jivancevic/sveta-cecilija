@@ -81,5 +81,17 @@ export const Users: CollectionConfig = {
         create: ({ req }) => isAdminTier(req.user as ReqUser),
       },
     },
+    // Log out action on the account view (/admin/account). A `ui` field stores
+    // nothing; its component renders a Log out button, scoped to the viewer's
+    // own record. Logout was moved here off the dashboards (#167).
+    {
+      name: 'logout',
+      type: 'ui',
+      admin: {
+        components: {
+          Field: '@/components/payload/AccountLogout#AccountLogout',
+        },
+      },
+    },
   ],
 }

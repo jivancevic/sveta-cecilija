@@ -58,7 +58,9 @@ export async function AdminDashboardView() {
       <h2 style={{ fontSize: 16, margin: '24px 0 8px' }}>Shows (last 7 days + upcoming)</h2>
       <ShowsTable rows={rows} />
 
-      <SignedInFooter role={role} />
+      <p style={{ fontSize: 11, color: 'var(--theme-elevation-400)', marginTop: 24 }}>
+        Signed in as {role}.
+      </p>
     </div>
   )
 }
@@ -145,7 +147,9 @@ async function TehnikaDashboard({ role }: { role?: string }) {
         </Link>
       </div>
 
-      <SignedInFooter role={role} />
+      <p style={{ fontSize: 11, color: 'var(--theme-elevation-400)', marginTop: 24 }}>
+        Signed in as {role}.
+      </p>
     </div>
   )
 }
@@ -251,46 +255,9 @@ async function PartnerDashboard({
         </div>
       </div>
 
-      <SignedInFooter role="partner" />
-    </div>
-  )
-}
-
-// Footer for the stripped-down scoped dashboards (tehnika, partner). Payload's
-// only logout is a small icon at the bottom of the left nav drawer, which reads
-// as "missing" on these near-empty views (#167) — so surface an explicit Log
-// out action. Plain <a> (full navigation) so /admin/logout clears the session
-// server-side rather than a client-side route transition.
-function SignedInFooter({ role }: { role?: string }) {
-  return (
-    <div
-      style={{
-        display: 'flex',
-        alignItems: 'center',
-        gap: 12,
-        marginTop: 24,
-        flexWrap: 'wrap',
-      }}
-    >
-      <Link
-        href="/admin/logout"
-        style={{
-          display: 'inline-block',
-          padding: '8px 14px',
-          background: 'var(--theme-elevation-50)',
-          border: '1px solid var(--theme-elevation-150)',
-          borderRadius: 6,
-          color: 'var(--theme-text)',
-          fontWeight: 600,
-          fontSize: 13,
-          textDecoration: 'none',
-        }}
-      >
-        Log out
-      </Link>
-      <span style={{ fontSize: 11, color: 'var(--theme-elevation-400)' }}>
-        Signed in as {role}.
-      </span>
+      <p style={{ fontSize: 11, color: 'var(--theme-elevation-400)', marginTop: 24 }}>
+        Signed in as partner.
+      </p>
     </div>
   )
 }
