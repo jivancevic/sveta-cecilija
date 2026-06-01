@@ -44,10 +44,10 @@ export function AccountLogout() {
         style={{
           display: 'inline-block',
           padding: '8px 14px',
-          background: 'var(--theme-elevation-50)',
-          border: '1px solid var(--theme-elevation-150)',
+          background: 'var(--theme-error-500, #c0392b)',
+          border: '1px solid var(--theme-error-600, #a93226)',
           borderRadius: 6,
-          color: 'var(--theme-text)',
+          color: '#fff',
           fontWeight: 600,
           fontSize: 13,
           cursor: 'pointer',
