@@ -44,6 +44,32 @@ async function buildDeps(): Promise<ScanDeps> {
             : ''
       return { orderId: String(row.order_id), scannedAt }
     },
+    findTicket: async (token) => {
+      const res: any = await drizzle.execute(sql`
+        SELECT order_id, scanned, scanned_at, status, cancel_reason
+        FROM tickets
+        WHERE token = ${token}
+        LIMIT 1
+      `)
+      const row = (res.rows ?? res)[0]
+      if (!row) return null
+      const scannedAt =
+        row.scanned_at instanceof Date
+          ? row.scanned_at.toISOString()
+          : row.scanned_at
+            ? String(row.scanned_at)
+            : ''
+      return {
+        orderId: String(row.order_id),
+        scanned: Boolean(row.scanned),
+        scannedAt,
+        status: row.status === 'cancelled' ? 'cancelled' : 'active',
+        cancelReason:
+          row.cancel_reason === 'storno' || row.cancel_reason === 'refund'
+            ? row.cancel_reason
+            : null,
+      }
+    },
     findOrderDetails: async (orderId) => {
       try {
         const doc = await payload.findByID({ collection: 'orders', id: orderId, depth: 0 })
