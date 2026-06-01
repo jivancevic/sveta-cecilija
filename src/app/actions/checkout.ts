@@ -5,10 +5,12 @@ import config from '@payload-config'
 import { createCheckoutSession, type CheckoutInput } from '@/lib/checkout/create-checkout-session'
 import { getStripe } from '@/lib/stripe'
 import type { PurchasableShow } from '@/lib/capacity'
+import { getActiveTicketCountForShow, type PoolQuery } from '@/lib/tickets/sold-seats'
 
 export async function startCheckout(input: CheckoutInput) {
   const payload = await getPayload({ config })
   const stripe = getStripe()
+  const pool = (payload.db as unknown as { pool: { query: PoolQuery } }).pool
 
   try {
     const session = await createCheckoutSession(input, {
@@ -19,7 +21,8 @@ export async function startCheckout(input: CheckoutInput) {
             id: String(doc.id),
             date: doc.date as string,
             venue: doc.venue as PurchasableShow['venue'],
-            onlineSold: (doc.onlineSold as number) ?? 0,
+            // Sold seats = active tickets (online_sold column retired).
+            onlineSold: await getActiveTicketCountForShow((sql, params) => pool.query(sql, params), doc.id as number),
             inPersonSold: (doc.inPersonSold as number) ?? 0,
             legacyReserved: (doc.legacyReserved as number) ?? 0,
             status: doc.status as 'active' | 'cancelled',

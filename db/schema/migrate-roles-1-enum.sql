@@ -12,3 +12,6 @@
 
 ALTER TYPE enum_users_role ADD VALUE IF NOT EXISTS 'superadmin';
 ALTER TYPE enum_users_role ADD VALUE IF NOT EXISTS 'tehnika';
+-- Partner sales channel (ADR-0008). Value only; partner accounts + scoped
+-- access land in #143. No data migration references it, so it stays here.
+ALTER TYPE enum_users_role ADD VALUE IF NOT EXISTS 'partner';

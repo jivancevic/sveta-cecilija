@@ -6,7 +6,7 @@ import { fileURLToPath } from 'url'
 import { Users } from './collections/Users'
 import { Shows } from './collections/Shows'
 import { Orders } from './collections/Orders'
-import { QRTokens } from './collections/QRTokens'
+import { Tickets } from './collections/Tickets'
 import { ContactSubmissions } from './collections/ContactSubmissions'
 import { Posts } from './collections/Posts'
 import { OrderLookups } from './collections/OrderLookups'
@@ -65,7 +65,7 @@ export default buildConfig({
       },
     },
   },
-  collections: [Users, Shows, Orders, QRTokens, ContactSubmissions, Posts, OrderLookups],
+  collections: [Users, Shows, Orders, Tickets, ContactSubmissions, Posts, OrderLookups],
   editor: lexicalEditor(),
   secret: (() => {
     const s = process.env.PAYLOAD_SECRET

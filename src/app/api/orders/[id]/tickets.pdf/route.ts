@@ -50,9 +50,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: 'Order missing show' }, { status: 500 })
   }
 
-  // One QR token per order since #93 — fetch the single token row.
+  // One ticket row per person since ADR-0007 — this find may return N rows.
+  // For #139 keep the single-QR PDF behavior: use the first ticket's token.
+  // (The multi-ticket 2-up PDF is a future issue, #140.)
   const tokensRes = await payload.find({
-    collection: 'qr-tokens',
+    collection: 'tickets',
     where: { order: { equals: order.id } },
     limit: 1,
     depth: 0,

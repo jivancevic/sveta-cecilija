@@ -4,6 +4,7 @@ import config from '@payload-config'
 import { getLocale } from '@/lib/locale'
 import { getDictionary } from '@/lib/i18n'
 import { VENUE_CAPACITY, type Venue } from '@/lib/venues'
+import { getActiveTicketCountForShow, type PoolQuery } from '@/lib/tickets/sold-seats'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
 import CheckoutForm from '@/components/CheckoutForm'
@@ -51,9 +52,12 @@ export default async function CheckoutRoute({ params, searchParams }: RouteProps
   if (!showDoc || showDoc.status === 'cancelled') notFound()
 
   const venue = (showDoc.venue as Venue) ?? 'ljetno-kino'
+  // Sold seats = active tickets (online_sold column retired, ADR-0007/0008).
+  const pool = (payload.db as unknown as { pool: { query: PoolQuery } }).pool
+  const sold = await getActiveTicketCountForShow((sql, params) => pool.query(sql, params), showDoc.id as number)
   const remaining =
     VENUE_CAPACITY[venue] -
-    ((showDoc.onlineSold as number) ?? 0) -
+    sold -
     ((showDoc.inPersonSold as number) ?? 0) -
     ((showDoc.legacyReserved as number) ?? 0)
 

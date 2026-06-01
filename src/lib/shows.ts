@@ -1,6 +1,7 @@
 import { getPayload } from 'payload'
 import config from '@payload-config'
 import { VENUE_CAPACITY, type Venue } from './venues'
+import { getActiveTicketCountsByShow, getActiveTicketCountForShow } from './tickets/sold-seats'
 
 export { VENUE_CAPACITY, type Venue }
 
@@ -48,20 +49,25 @@ export async function getNextShow(): Promise<NextShow | null> {
   const doc = result.docs[0]
   if (!doc) return null
 
+  const pool = (payload.db as unknown as { pool: { query: PoolQuery } }).pool
+  // `onlineSold` is now the active ticket count, not the retired column.
+  const onlineSold = await getActiveTicketCountForShow((sql, params) => pool.query(sql, params), doc.id as number)
+
   return {
     id: String(doc.id),
     date: new Date(doc.date as string).toISOString().slice(0, 10),
     time: (doc.time as string) ?? '',
     venue: (doc.venue as Venue) ?? 'ljetno-kino',
-    onlineSold: Number(doc.onlineSold ?? 0),
+    onlineSold,
     inPersonSold: Number(doc.inPersonSold ?? 0),
   }
 }
 
 /**
- * Sum of people (adult_count + child_count) for orders whose QR token
- * has been scanned for the given show. "People through the door", not
- * token count. Apples-to-apples with onlineSold.
+ * Number of people scanned in for the given show. Under the per-person ticket
+ * model (ADR-0007) each active ticket is one person, so this is a plain COUNT
+ * of scanned active tickets — not a SUM of party sizes. Cancelled tickets are
+ * excluded.
  */
 export async function getScannedPeopleForShow(showId: number | string): Promise<number> {
   const payload = await getPayload({ config })
@@ -69,10 +75,10 @@ export async function getScannedPeopleForShow(showId: number | string): Promise<
   const numericId = Number(showId)
   if (!Number.isFinite(numericId)) return 0
   const res = await pool.query(
-    `SELECT COALESCE(SUM(o.adult_count + o.child_count), 0)::int AS people
-     FROM orders o
-     JOIN qr_tokens q ON q.order_id = o.id
-     WHERE o.show_id = $1 AND q.scanned = true`,
+    `SELECT COUNT(*)::int AS people
+     FROM tickets t
+     JOIN orders o ON o.id = t.order_id
+     WHERE o.show_id = $1 AND t.scanned = true AND t.status = 'active'`,
     [numericId],
   )
   return Number(res.rows[0]?.people ?? 0)
@@ -96,9 +102,14 @@ export async function getUpcomingShows(limit?: number): Promise<Show[]> {
     depth: 0,
   })
 
+  // Sold seats come from active ticket rows, not the retired online_sold column.
+  const pool = (payload.db as unknown as { pool: { query: PoolQuery } }).pool
+  const soldByShow = await getActiveTicketCountsByShow((sql, params) => pool.query(sql, params))
+
   return result.docs.map((show) => {
     const venue = (show.venue as Venue) ?? 'ljetno-kino'
     const capacity = VENUE_CAPACITY[venue]
+    const sold = soldByShow.get(String(show.id)) ?? 0
     return {
       id: String(show.id),
       date: new Date(show.date as string).toISOString().slice(0, 10),
@@ -106,7 +117,7 @@ export async function getUpcomingShows(limit?: number): Promise<Show[]> {
       venue,
       remaining:
         capacity -
-        ((show.onlineSold as number) ?? 0) -
+        sold -
         ((show.inPersonSold as number) ?? 0) -
         ((show.legacyReserved as number) ?? 0),
     }
