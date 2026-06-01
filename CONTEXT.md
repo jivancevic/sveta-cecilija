@@ -64,6 +64,16 @@ Tickets sold on the previous site (`korcula-moreska.com`) before the moreska.eu 
 
 The field is write-once-per-show in normal use; after the old site is frozen, the count for a given show only changes if a legacy buyer is refunded by the old-site operator.
 
+### Seats sold / remaining capacity
+Source of truth for sold seats is the **`tickets` table**, not maintained counters. Each active ticket = one seat. The `onlineSold` counter (and any per-partner counter) is **retired**:
+
+`remaining = VENUE_CAPACITY[venue] − COUNT(active tickets for show) − inPersonSold − legacyReserved`
+
+- `inPersonSold` stays a counter — it is the artifact-less door tally that produces no `tickets` rows.
+- `legacyReserved` stays a counter — old-site seats with no rows here.
+- A **cancelled** ticket (partner storno, or an online refund) is excluded from the active count, so the seat frees itself with no counter to decrement. This requires a ticket lifecycle state (see Ticket) — voiding is the single mechanism behind both storno and refund.
+- Consequence: the Stripe refund route must now **void the order's tickets** (previously it only set `order.refund_status`), and the webhook no longer increments `onlineSold`. Stats reads that summed `onlineSold` switch to counting tickets.
+
 ### Free-ticket discount
 Every 5th ticket in a single order is free. The free ticket's type matches the most expensive category present in the order: adult (€20) if any adult tickets were purchased, otherwise child (€10).
 
@@ -80,12 +90,41 @@ The discount is calculated per order (resets with each new purchase — no cross
 1. At 4 tickets (one short of threshold): nudge — "Add 1 more and get one free!"
 2. At a multiple of 5: celebrate — "You've unlocked a free ticket!" + update total visually.
 
-### One QR per order
-Each order gets exactly **one** `QRTokens` row, regardless of how many tickets the buyer purchased. The buyer receives one A4 PDF page in their confirmation email; the PDF shows the ticket count ("4 tickets — 3 adults, 1 child") as a label. Adult vs child is not tracked per-token; it is an order-level breakdown derived from `orders.adult_count` / `orders.child_count`.
+### One QR per person (system-wide)
+Each **person** gets their own `Tickets` row — applies to **both** online and partner channels. A party of 4 produces 4 tickets, all linked to the same `Order`. The buyer/partner receives **one PDF** containing all tickets, laid out **2 tickets per A4 page** (each ticket is A5; the partner cuts them apart with a guillotine; A4-per-ticket was too large). Each ticket carries its own `type` (adult/child) and scan state.
 
-Reasons: simpler buyer artefact (one page, not four), simpler door-staff workflow (one scan admits the entire party), and the dashboard's "Scanned" metric maps cleanly to "orders walked in" without needing a per-seat denominator. Supersedes the original "N tokens per order, first M = Adult" model from ADR-0005 — see that ADR's Amendment section.
+This **re-reverses** the earlier "one QR per order" amendment to ADR-0005 (which had collapsed N tokens to 1). Reason for the re-reversal: the partner channel hands a physical paper slip to each guest, who may arrive individually, so per-person scanning is the physical reality; applying it system-wide keeps door semantics uniform across channels and the "scanned" metric becomes a clean per-ticket count.
 
-Schema is unchanged (`QRTokens` still keys on `token` and links to one order); only the write loop in `handle-payment-succeeded.ts` collapses from `for (let i = 0; i < total; i++)` to a single insert.
+**Door scan — each QR = 1 person, with an optional party-admit:**
+- Default: tehnika scans each person's ticket individually; each VALID scan admits exactly 1 person.
+- Convenience: on a VALID scan, the result screen shows the order's party size and offers an **"Admit entire party (N)"** action that atomically marks all sibling tickets of the same `Order` scanned in one tap. The choice is the door staff's, per group.
+- "Scanned (people)" on the dashboard becomes `COUNT(*)` of scanned tickets for the show (each ticket = 1 person) — no longer a `SUM(adult_count + child_count)` over scanned orders.
+
+The write path in `handle-payment-succeeded.ts` re-expands to create one ticket per person; the partner sell-flow creates the same per-person tickets.
+
+### One QR per order (SUPERSEDED)
+The prior model — exactly one `QRTokens` row per order, one A4 page, one scan admits the whole party — is **superseded** by "One QR per person" above. Kept here as a pointer; the rationale (simpler artefact, one-scan party admit) is partly preserved via the optional party-admit action.
+
+### Ticket claim (partner tickets)
+Partners sell without collecting buyer PII, but the **end guest can optionally claim** their ticket to get a digital copy + show comms. The claim lives in the existing **unauthenticated** `/scan/[token]` buyer-view branch (scanning never auto-writes; claiming is a deliberate form submit). When an unauthenticated visitor opens a ticket's QR page, the page branches on whether the parent order already has an email:
+
+- **Order has an email** (online order, or a partner order already claimed): read-only info — order **code**, which show, party size, and the on-page QR to show at the door. Also shows **who claimed it**, with the email **masked** (`j***@gmail.com`) so a lost slip doesn't leak a full address. No write.
+- **Partner order with no email yet** (unclaimed): a **claim form** (name + email). On submit it is **order-level, first-claimer-wins** — sets `order.email`/`buyerName`, emails the claimer the order's digital ticket PDF, and (with explicit opt-in) enrolls the order in pre-show info + post-show emails. Subsequent scans of sibling tickets fall into the read-only branch above.
+
+Claiming is orthogonal to money and seats — the ticket was already sold, counted, and invoiced to the partner; claim only attaches contact info. Tehnika (authenticated) scanning an unclaimed partner ticket still just admits — no claim form for staff.
+
+### Buyer comms & consent
+Three message classes, one lawful basis each. Same rules for **online buyers and claimed partner buyers** (consistency is a requirement).
+
+| Class | Examples | Basis | Mechanism |
+|---|---|---|---|
+| Transactional | Digital ticket PDF on purchase/claim | Contract | Always sent |
+| Operational | Show cancelled, venue changed | Contract / legitimate interest | Sent to **any order with an email** (online or claimed); no opt-in needed |
+| Post-show follow-up | T+24h review request | **Soft opt-in** | No checkbox; collection-time notice + unsubscribe link |
+
+There is **no** separate "info about the show" marketing email — the captured email is for the ticket, operational show-change notices, and the one post-show review request only.
+
+**Soft opt-in implementation (closes a pre-existing gap):** today the review email (`src/lib/review-email/dispatch-review-emails.ts`) has **no unsubscribe link** and checkout collects **no consent notice** — online buyers already receive it with neither. The fix, applied to both checkout and the claim form: (1) a one-line collection notice ("we'll email your ticket, any show changes, and one post-show follow-up — opt out anytime"), and (2) an unsubscribe/opt-out link in the review email backed by a per-order opt-out flag + token. The review dispatcher skips opted-out orders.
 
 ### Ticket scan authorization
 The `/scan/[token]` URL is **shared by buyers and door staff** — same URL, different behaviour based on auth:
@@ -137,6 +176,41 @@ One real mailbox (`info@moreska.eu`) read by Josip and the secretary; everything
 | `tehnika@moreska.eu` | Payload login string | Shared tehnika `/admin` login in production. No inbox; nothing sent to it. Renamed from `door-staff@moreska.eu`. |
 
 Transactional mail sends from root `moreska.eu` via Brevo. Future bulk post-show mail will send from subdomain `bilten.moreska.eu` (separate DKIM, isolated reputation) once Brevo Starter (~€9/mo) is activated. See [ADR-0004](../docs/adr/0004-email-infrastructure.md).
+
+### Channel
+Every `Order` records the **channel** it came from: `online` (buyer paid via Stripe on moreska.eu) or `partner` (a reseller sold it on their own POS). When `channel = partner`, the order also references **which partner** (see Partner). The legacy bare-counter `inPersonSold` on `Shows` is a separate, artifact-less tally and is not an `Order` channel.
+
+### Partner (reseller)
+A first-class entity (Payload `Partners` collection). A **partner** is a travel agency / reseller (first: **Kaleta**) that sells Moreška tickets through **their own POS at full face value** (€20 adult / €10 child). Chosen over "agency" as the domain term because it covers any reseller, not only travel agencies. Each partner has a name, billing/OIB details, a **commission percent** (Kaleta = **10%**), an active flag, and one or more linked login users (role `partner`).
+
+A **partner sale** is the third sales channel: the buyer pays the partner directly — **no Stripe payment exists on our side**. We issue the ticket artifact (QR + printable PDF); the money is reconciled **monthly** — at month-end Cecilija issues the partner a single invoice for `(tickets sold − cancelled) × face value − commission`. So a partner sale is a ticket we *issue but are not paid for at issue time*; it sits between online (paid, full PII) and in-person (no artifact, no PII).
+
+### Order code & ticket reference
+Every `Order` carries a short **code** — a **human reference only, not a secret** (the per-ticket `token` remains the security boundary for admission and claiming). Format: **4 characters** from an **unambiguous uppercase alphabet** (excludes confusable `0/O`, `1/I/L`) ≈ 920k codes. Uniqueness enforced by a DB unique constraint on `orders.code`; generate-random-and-regenerate on the rare collision. Not derived from the order id (that would leak sales volume and be enumerable).
+
+Each ticket has a human reference `<CODE>-<n>` (`A7K9-1`, `A7K9-2`, …), `n` being its 1-based position in the order. Numbering is **stable**: a storno/refund cancels ticket `-2` but does not renumber `-3`; gaps are intentional and informative. Printed on each A5 slip and shown in lists. Knowing a code/ticket-ref grants nothing — only the `token` admits or claims.
+
+### Ticket (formerly QR token)
+A `Ticket` (Payload `Tickets` collection, table `tickets` — renamed from `qr_tokens`) is **one admission for one person**. Fields: a unique `token` (encodes `/scan/[token]`), a `type` (`adult | child`), `scanned` / `scannedAt`, a lifecycle `status` (`active | cancelled`) with `cancelledAt` + `cancelReason` (`storno | refund`), and a link to its parent `Order`. One per person system-wide (see "One QR per person"). The rename retires the implementation-flavoured "QR token" name; the QR is just how a ticket is presented.
+
+**Voiding (single mechanism, two callers):** a cancelled ticket is excluded from the active seat count, stats, and invoices.
+- **Online refund** cascades: void **all** the order's tickets (`reason = refund`) + Stripe refund + `order.refundStatus = refunded`.
+- **Partner storno** voids the specific ticket(s) (`reason = storno`), same-day-only, no money movement.
+A cancelled ticket still exists, so a printed-but-voided slip scans to a clear INVALID/CANCELLED state rather than vanishing.
+
+### Partner sell flow
+A `partner`-role user, from their scoped `/admin` dashboard: picks an **active upcoming show**, enters **adult** and **child** counts, and gets a **combined PDF** (2-up A5, all tickets) to print on the spot. **No buyer PII, no Stripe, no email** at sell time. Seats are guarded against the **live remaining capacity** (`remaining = capacity − active tickets − inPersonSold − legacyReserved`) — the sell is rejected if it would oversell, and the dashboard shows remaining per show. The partner sells at **flat face value** (no 5th-free; see Free-ticket discount). Each sale = one `Order` (`channel = partner`, `partner = X`, `total` = face value owed, no `email`/`buyerName`), with one `adult|child` ticket per person.
+
+### Partner monthly reconciliation
+The app produces a **per-partner monthly reconciliation statement** — NOT a fiscal invoice. The legal `račun` is issued by the secretary in their own accounting/fiscal tool (avoids fiskalizacija liability). The statement, viewable/exportable by admin and the partner, breaks down for the calendar month: tickets sold by show and type, cancelled (storno) count, **gross** (`sold × face value`), **commission** (gross × partner `commissionPercent`, Kaleta 10%), and **net payable**. Period is bucketed by **sold date** (`order.created_at`); because storno is same-day-only, the month-end active-ticket count is already final.
+
+### Partner stats
+The partner's scoped dashboard shows only **their own** sales: season total tickets sold, per-show counts, and the **last few sales** (recent list). No other partner's data, no PII beyond their own sales, no org-wide revenue. Reuses the stats query layer, filtered by `orders.partner = <self>`.
+
+### Storno (partner cancellation)
+A partner can cancel a ticket it sold, but only **on the same calendar day it was sold** (NOT the show day), in **Europe/Zagreb** local time. Example: Kaleta sells on 3 June a ticket for the 7 June show — they may storno it on 3 June only. This bounds cancellations to the same business day, before monthly settlement; it removes the ticket from the invoice count and frees the seat. After that day the sale is final for invoicing.
+
+**Actor & granularity:** **partner self-service** from their dashboard — they may void an **individual ticket** or the **whole sale** (the order's tickets), same-day-only and **server-enforced** against `order.created_at` (never client-trusted). An **admin can storno anytime** (not bound to the same-day window) for corrections. Voiding uses the soft-cancel mechanism (`tickets.status = cancelled`, `reason = storno`).
 
 ### Stats dashboard
 Lives at `/admin` (the route is the admin landing page itself; the old `/admin/stats` URL is collapsed into it). Visible to `tehnika`, `admin`, and `superadmin`. See [ADR-0006](../docs/adr/0006-three-tier-admin-roles.md). Role-aware — different layouts:
