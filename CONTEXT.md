@@ -148,14 +148,14 @@ Three Payload user roles, see [ADR-0006](../docs/adr/0006-three-tier-admin-roles
 |---|---|---|
 | `superadmin` | Developer (Josip) | Everything, including user management (create/delete users, change roles). |
 | `admin` | HGD secretaries | Everything except user management. Add/cancel shows, view orders, issue refunds, read inquiries, record in-person sales. Sees own profile only; cannot see or promote other users. The `role` field is field-level locked to `superadmin` so secretaries can edit name/email/password but not their own tier. |
-| `tehnika` | Shared door-staff account (`tehnika@moreska.eu`) | Authenticate `/scan/[token]` for atomic mark-as-scanned. View `/admin` stats dashboard with non-PII counts only. Cannot see customer emails, order details, or issue refunds. |
+| `tehnika` | Shared door-staff account (username **`tehnika`**, no email — ADR-0011) | Authenticate `/scan/[token]` for atomic mark-as-scanned. View `/admin` stats dashboard with non-PII counts only. Cannot see customer emails, order details, or issue refunds. |
 
 Per-role sidebar visibility: superadmin sees all collections; admin sees everything except Users (Shows, Orders, QRTokens, ContactSubmissions, Posts); tehnika sees an empty sidebar. The `/admin` landing route is a custom dashboard component that branches on role (stats-only for tehnika, full task dashboard for admin/superadmin).
 
 Session length: `Users.auth.tokenExpiration` is 30 days for all tiers so the shared tehnika device stays logged in across long stretches, and secretaries aren't re-logging daily. Password rotation invalidates if a device is lost.
 
 ### Tehnika role
-Renamed from `door-staff` to match the shared login string `tehnika@moreska.eu`. Permissions are as listed in the Admin tiers table above; rotation policy: one-off Payload admin edit when leaked, no per-volunteer accounts (HGD is too small to justify the onboarding overhead).
+Renamed from `door-staff`; the shared account logs in with **username `tehnika`** (no email — hybrid username login, ADR-0011). Permissions are as listed in the Admin tiers table above; rotation policy: one-off Payload admin edit when leaked, no per-volunteer accounts (HGD is too small to justify the onboarding overhead).
 
 The tehnika dashboard includes a **"Scan a ticket"** button that opens a live camera viewfinder in-page (lazy-loaded `html5-qrcode`). Detected QRs navigate to `/scan/[token]`. This avoids the 4-tap dance of native-camera → notification → Safari for every ticket. The native camera flow still works as a fallback for any device that fails the camera-permission flow.
 
@@ -173,7 +173,7 @@ One real mailbox (`info@moreska.eu`) read by Josip and the secretary; everything
 | `bookings@moreska.eu` | Alias → `info@` | Tour operator + group/charter inquiries. |
 | `press@moreska.eu` | Alias → `info@` | Journalist contact published on site. |
 | `dev@moreska.eu` | Alias → `info@` | Technical-admin contact for SaaS accounts (Stripe, Brevo, Coolify, Hetzner, Cloudflare, GitHub org, ImprovMX). Survives developer turnover. |
-| `tehnika@moreska.eu` | Payload login string | Shared tehnika `/admin` login in production. No inbox; nothing sent to it. Renamed from `door-staff@moreska.eu`. |
+| ~~`tehnika@moreska.eu`~~ | retired | The shared tehnika `/admin` login is now **username `tehnika`** with no email (ADR-0011). No inbox ever existed; this fake-email login string is gone. |
 
 Transactional mail sends from root `moreska.eu` via Brevo. Future bulk post-show mail will send from subdomain `bilten.moreska.eu` (separate DKIM, isolated reputation) once Brevo Starter (~€9/mo) is activated. See [ADR-0004](../docs/adr/0004-email-infrastructure.md).
 
