@@ -13,6 +13,8 @@ import { TicketLookupPanel } from './TicketLookupPanel'
 import { PartnerSellForm, type SellShow } from './PartnerSellForm'
 import { PartnerStornoList } from './PartnerStornoList'
 import { getPartnerTodaySales } from '@/lib/partner/today-sales'
+import { PartnerSalesPanel } from './PartnerSalesPanel'
+import { getPartnerSeasonStats, getPartnerRecentSales } from '@/lib/partner/partner-data'
 import type { PoolQuery } from '@/lib/tickets/sold-seats'
 
 export const dynamic = 'force-dynamic'
@@ -227,11 +229,16 @@ async function PartnerDashboard({
     remaining: s.remaining,
   }))
 
-  // Today's sales (Europe/Zagreb) — still within the same-day storno window (#145).
+  // Same-day storno window (#145) plus own-scoped season stats + recent sales
+  // (#146). All queries are scoped to this partner's id.
   const pool = (payload.db as unknown as { pool: { query: PoolQuery } }).pool
-  const todaySales = await getPartnerTodaySales(partner.id, {
-    query: (sql, params) => pool.query(sql, params),
-  })
+  const poolQuery: PoolQuery = (sql, params) => pool.query(sql, params)
+  const numericPartnerId = Number(partner.id)
+  const [todaySales, seasonStats, recentSales] = await Promise.all([
+    getPartnerTodaySales(partner.id, { query: poolQuery }),
+    getPartnerSeasonStats(poolQuery, numericPartnerId),
+    getPartnerRecentSales(poolQuery, numericPartnerId, 5),
+  ])
 
   return (
     <div style={wrap}>
@@ -246,66 +253,15 @@ async function PartnerDashboard({
         <PartnerStornoList sales={todaySales} />
       </div>
 
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-          gap: 16,
-        }}
-      >
-        <ComingSoonCard
-          title="Your sales"
-          desc="Tickets sold this season, per show, and your recent sales."
-        />
-        <ComingSoonCard
-          title="Monthly statement"
-          desc={`A monthly breakdown of sales, cancellations, and the ${partner.commissionPercent ?? 10}% commission.`}
-        />
-      </div>
+      <PartnerSalesPanel
+        stats={seasonStats}
+        recent={recentSales}
+        commissionPercent={partner.commissionPercent ?? 10}
+      />
 
       <p style={{ fontSize: 11, color: 'var(--theme-elevation-400)', marginTop: 24 }}>
         Signed in as partner.
       </p>
-    </div>
-  )
-}
-
-// Placeholder tile for a partner feature that isn't built yet (sell flow #144,
-// stats/statement #146). Deliberately non-interactive — a dashed, muted card
-// with a "Coming soon" badge and a not-allowed cursor — so it reads as "not yet
-// available" rather than a broken clickable card.
-function ComingSoonCard({ title, desc }: { title: string; desc: string }) {
-  return (
-    <div
-      aria-disabled
-      style={{
-        background: 'var(--theme-elevation-50)',
-        border: '1px dashed var(--theme-elevation-200)',
-        borderRadius: 8,
-        padding: 20,
-        opacity: 0.72,
-        cursor: 'not-allowed',
-      }}
-    >
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flexWrap: 'wrap' }}>
-        <h2 style={{ fontSize: 16, margin: 0 }}>{title}</h2>
-        <span
-          style={{
-            fontSize: 10,
-            fontWeight: 700,
-            textTransform: 'uppercase',
-            letterSpacing: 0.5,
-            color: 'var(--theme-elevation-500)',
-            background: 'var(--theme-elevation-100)',
-            border: '1px solid var(--theme-elevation-200)',
-            borderRadius: 999,
-            padding: '2px 8px',
-          }}
-        >
-          Coming soon
-        </span>
-      </div>
-      <p style={{ color: 'var(--theme-elevation-500)', fontSize: 13, margin: 0 }}>{desc}</p>
     </div>
   )
 }
