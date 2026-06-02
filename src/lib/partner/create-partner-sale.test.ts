@@ -1,5 +1,14 @@
 import { describe, it, expect, vi } from 'vitest'
-import { createPartnerSale, PartnerSaleError, type PartnerSaleDeps, type PartnerSaleShow } from './create-partner-sale'
+import {
+  createPartnerSale,
+  PartnerSaleError,
+  type PartnerSaleDeps,
+  type PartnerSaleShow,
+  type PersistTicket,
+} from './create-partner-sale'
+import type { IssuedOrder } from '../tickets/ticket-issuance'
+
+type PersistArgs = { order: IssuedOrder; tickets: PersistTicket[] }
 
 const SHOW: PartnerSaleShow = {
   id: 42,
@@ -42,7 +51,9 @@ describe('createPartnerSale — happy path', () => {
   })
 
   it('persists a partner-channel order with no PII / no Stripe, total = face value', async () => {
-    const persist = vi.fn(async () => ({ orderId: '1001' }))
+    const persist = vi.fn<(args: PersistArgs) => Promise<{ orderId: string }>>(
+      async () => ({ orderId: '1001' }),
+    )
     await createPartnerSale(base, deps({ persist }))
     const { order, tickets } = persist.mock.calls[0][0]
     expect(order.channel).toBe('partner')
@@ -98,7 +109,7 @@ describe('createPartnerSale — validation', () => {
 
   it('rejects a cancelled show', async () => {
     await expect(
-      createPartnerSale(base, deps({ loadShow: vi.fn(async () => ({ ...SHOW, status: 'cancelled' })) })),
+      createPartnerSale(base, deps({ loadShow: vi.fn(async () => ({ ...SHOW, status: 'cancelled' as const })) })),
     ).rejects.toMatchObject({ code: 'SHOW_INACTIVE' })
   })
 

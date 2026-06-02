@@ -4,7 +4,7 @@ import config from '@payload-config'
 import { renderTicketsPdf } from '@/lib/email/render-tickets-pdf'
 import { generateQrPng } from '@/lib/email/qr'
 import { verifyTicketLink } from '@/lib/ticket-link'
-import { isAuthed } from '@/lib/access/roles'
+import { isAuthed, isPartner, partnerIdOf } from '@/lib/access/roles'
 import type { Venue } from '@/lib/venues'
 
 export const runtime = 'nodejs'
@@ -36,7 +36,18 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   }
   if (!authorized) {
     const { user } = await payload.auth({ headers: req.headers })
+    // Internal staff (admin/tehnika) can download any order's tickets.
     if (isAuthed(user as { role?: string } | null)) authorized = true
+    // A partner can download the PDF for an order it sold (its own slips to
+    // reprint), but no other partner's. order.partner is populated at depth 1.
+    if (!authorized && isPartner(user as { role?: string } | null)) {
+      const op = order.partner as { id?: number | string } | number | string | null | undefined
+      const orderPartnerId = op != null && typeof op === 'object' ? op.id : op
+      const self = partnerIdOf(user as { role?: string; partner?: unknown } | null)
+      if (orderPartnerId != null && self != null && String(orderPartnerId) === String(self)) {
+        authorized = true
+      }
+    }
   }
   if (!authorized) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
