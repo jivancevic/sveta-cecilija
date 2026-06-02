@@ -171,6 +171,7 @@
     "legal": "© 2026 HGD Sveta Cecilija",
     "privacyPolicy": "Privacy Policy",
     "cookiePolicy": "Cookie Policy",
+    "refundPolicy": "Refund Policy",
     "blog": "Blog"
   },
   "aboutPage": {
@@ -284,6 +285,37 @@
       }
     ]
   },
+  "refundPage": {
+    "heroHeadline": "Refund Policy",
+    "heroSubtitle": "When tickets can and cannot be refunded",
+    "lastUpdated": "Last updated: June 2026",
+    "sections": [
+      {
+        "heading": "Customer Cancellation",
+        "body": "Tickets are non-refundable if you change your mind or cannot attend. Please buy only once your plans are confirmed. If you bought the wrong show or made an honest mistake at checkout, email info@moreska.eu and we will help where we reasonably can."
+      },
+      {
+        "heading": "If We Cancel the Performance",
+        "body": "If HGD Sveta Cecilija cancels a performance entirely, every buyer receives a full refund to the original card. No action is needed on your part: we process these automatically and email you when the refund is sent. Funds typically appear within 5 to 10 business days."
+      },
+      {
+        "heading": "Bad Weather and Venue Changes",
+        "body": "Our summer performances are held at the Summer Cinema (Ljetno kino). In bad weather a performance may be moved to the indoor Cultural Center Korčula (Centar za kulturu) rather than cancelled. A venue change is not a cancellation and is not an automatic refund trigger: the performance still goes ahead. We notify affected buyers by email with the new venue and a map link. If the new venue genuinely does not work for you, reply to that email and we will review your case individually."
+      },
+      {
+        "heading": "Lost or Stolen Tickets",
+        "body": "Lost or stolen tickets are not refunded. Your tickets and QR codes are tied to your booking, so you can re-download your PDF tickets at any time from the link in your confirmation email. If you cannot find that email, contact info@moreska.eu and we will resend your tickets."
+      },
+      {
+        "heading": "How Refunds Are Processed",
+        "body": "All refunds are returned to the original payment card through Stripe, our payment processor. We cannot refund to a different card or by another method. Once we issue a refund, your bank decides exactly when it posts, usually within 5 to 10 business days. You will receive a confirmation email from us when the refund is sent."
+      },
+      {
+        "heading": "Questions and Case-by-Case Requests",
+        "body": "For anything not covered here, including case-by-case requests after a venue change, email info@moreska.eu. We read every message and aim to reply within two business days."
+      }
+    ]
+  },
   "servicePages": {
     "backLink": "← Private Experiences",
     "formTitle": "Make an Enquiry",
@@ -348,6 +380,7 @@
     "emailPlaceholder": "you@example.com",
     "emailHelp": "We'll send your tickets and QR codes here.",
     "refundLabel": "I understand tickets are non-refundable by customer choice, but 100% refundable if the performance is cancelled.",
+    "refundLinkLabel": "Refund Policy",
     "privacyLinkLabel": "Privacy Policy",
     "privacyLabel": "I agree to the Privacy Policy.",
     "paymentHeading": "PAYMENT",

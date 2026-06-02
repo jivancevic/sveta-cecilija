@@ -206,7 +206,12 @@ export default function CheckoutForm({
             onChange={(e) => setRefundOk(e.target.checked)}
             disabled={!!clientSecret}
           />
-          <span>{t.refundLabel}</span>
+          <span>
+            {t.refundLabel}{' '}
+            <Link href="/refund-policy" target="_blank" rel="noopener noreferrer">
+              {t.refundLinkLabel}
+            </Link>
+          </span>
         </label>
         <label className="checkout__check">
           <input
