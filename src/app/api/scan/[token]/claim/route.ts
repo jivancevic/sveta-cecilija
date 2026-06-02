@@ -17,7 +17,13 @@ export const dynamic = 'force-dynamic'
 // POST /api/scan/[token]/claim — UNAUTHENTICATED. A guest holding a partner
 // paper slip attaches their email to the order (first-claimer-wins) and is sent
 // the digital ticket PDF. Access control is possession of the (unguessable) QR
-// token; only an unclaimed order (email IS NULL) can be claimed, and only once.
+// token; only an unclaimed order (email IS NULL) with an ACTIVE ticket can be
+// claimed, and only once.
+//
+// Accepted risk (ADR-0008): "token possession = auth" + first-claimer-wins means
+// whoever sees the QR first can attach THEIR email. There is no rate limit here
+// yet — a leaked token could be pre-emptively claimed. A per-token/IP throttle
+// is the eventual hardening; low impact at current partner volume.
 export async function POST(req: NextRequest, { params }: { params: Promise<{ token: string }> }) {
   const { token } = await params
   const back = (q = '') => NextResponse.redirect(new URL(`/scan/${encodeURIComponent(token)}${q}`, req.url), { status: 303 })
@@ -35,10 +41,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tok
   const payload = await getPayload({ config })
   const drizzle: any = (payload.db as any).drizzle
 
-  // Resolve the order from the token.
-  const ord: any = await drizzle.execute(sql`SELECT order_id FROM tickets WHERE token = ${token} LIMIT 1`)
+  // Resolve the order from the token — only via an ACTIVE ticket. A cancelled
+  // (storno/refund) slip must not be claimable (it would attach PII to a dead
+  // order and email a zero-ticket PDF). Unknown/voided token → bounce back.
+  const ord: any = await drizzle.execute(
+    sql`SELECT order_id FROM tickets WHERE token = ${token} AND status = 'active' LIMIT 1`,
+  )
   const orderRow = (ord.rows ?? ord)[0]
-  if (!orderRow) return back() // unknown token → buyer view will render INVALID
+  if (!orderRow) return back()
   const orderId = String(orderRow.order_id)
 
   try {
@@ -76,6 +86,12 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tok
               ORDER BY id ASC
             `)
             const rows = (ticketsRes.rows ?? ticketsRes) as { token: string; type: string }[]
+            if (rows.length === 0) {
+              // Order has no active tickets (fully voided after attach): never
+              // send an empty-ticket PDF. The claim itself already committed.
+              console.error(`[claim] no active tickets to email orderId=${order.orderId} code=${order.code}`)
+              return
+            }
             const tickets = rows.map((r, i) => ({
               token: String(r.token),
               type: (r.type === 'child' ? 'child' : 'adult') as 'adult' | 'child',
