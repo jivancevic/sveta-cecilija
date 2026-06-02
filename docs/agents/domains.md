@@ -46,15 +46,43 @@ and `@gmail.com` addresses below are **not** in #107's text — found via `docs/
 
 | Address | Where it lives | Public / in use? | Action |
 |---|---|---|---|
-| `sv.cecilija@korcula-moreska.com` | Old-site `/contacts/` + homepage footer; cited as media contact on third-party pages | **Yes — actively published.** The canonical public address of the old site. | **Highest priority.** Needs a real forward → `info@moreska.eu` that survives cutover. See §4 — the #11 301 is HTTP-only and does NOT carry email. |
-| `klapa@korcula-moreska.com` | `docs/migrations/README.md` (tested as Google acct in #37) | Exists; **not** found on current live pages — likely a section address / old flyers | Decide: forward → `info@` or retire. Bundle with the domain's mail decision (§4). |
-| `glazba@korcula-moreska.com` | `docs/migrations/README.md` (tested in #37) | Exists; **not** found on current live pages | Same as `klapa@`. |
-| `sv.cecilija@hi.t-com.hr` | `Pass internet.doc` (#107); inbox accessible (searched in #37) | **Not public** (not on live site or fininfo) but **mailbox receives mail** | HT auto-reply → `info@moreska.eu` if still live; else let lapse with the ADSL line. |
-| `h.g.d.sv.cecilija@du.t-com.hr` | `Pass internet.doc` (#107) | Not found in public sweep | Same as above. |
-| `sv.cecilija@hi.ht.hr` | `Pass internet.doc` (#107) | Not found in public sweep | Same as above. |
+| `sv.cecilija@korcula-moreska.com` | Old-site `/contacts/` + homepage footer; cited as media contact on third-party pages | **Yes — actively published.** The canonical public address of the old site. | ✅ **DONE (2026-06-02).** cPanel forwarder → `info@moreska.eu`, tested working. See §2.1 for the Email Routing gotcha that had to be fixed first. |
+| `klapa@korcula-moreska.com` | `docs/migrations/README.md` (tested as Google acct in #37) | Exists; **not** found on current live pages — likely a section address / old flyers | ✅ **DONE (2026-06-02).** cPanel forwarder → `info@moreska.eu` (forwarded rather than retired, to catch stragglers on old flyers/listings). |
+| `glazba@korcula-moreska.com` | `docs/migrations/README.md` (tested in #37) | Exists; **not** found on current live pages | ✅ **DONE (2026-06-02).** cPanel forwarder → `info@moreska.eu`. |
+| `sv.cecilija@hi.ht.hr` | `Pass internet.doc` (#107) | **Yes — the society's CURRENT MAIN inbox.** Actively used; the two `t-com.hr` aliases below already forward *into* this mailbox. | **Hub for all HT mail.** Plan: add a forward `hi.ht.hr` → `info@moreska.eu` via the Moj Telekom portal, keep-a-copy ON during transition. Forwarding only this one address captures all three. See §2.1. |
+| `sv.cecilija@hi.t-com.hr` | `Pass internet.doc` (#107); inbox accessible (searched in #37) | Receives mail, but **already forwards into `sv.cecilija@hi.ht.hr`** (the main inbox) | No separate action — cascades to `info@` once the `hi.ht.hr` forward is live. |
+| `h.g.d.sv.cecilija@du.t-com.hr` | `Pass internet.doc` (#107) | **Already forwards into `sv.cecilija@hi.ht.hr`** | No separate action — cascades via `hi.ht.hr`. |
 | `moreska.cecilija@gmail.com` | `docs/todo.md`; owns YouTube channel `@hgdsv.cecilija6051`; Josip has access | **Active org Gmail** (not legacy-to-retire) | Add `pr@moreska.eu` as recovery email for bus-factor (already a `docs/todo.md` TODO). |
 | `info.nero3d@gmail.com` | Previous webmaster's personal Gmail (memory `project_legacy_webmaster_contact`) | Personal, not an org address | Out of scope — contact only. |
 | `info@moreska.com` | `docs/marketing.md` | **Hypothetical** — only if HGD buys `moreska.com` (deferred to 2027) | Not a current address. Ignore for #107. |
+
+### 2.1 Wiring as built (2026-06-02)
+
+**`@korcula-moreska.com` — cPanel forwarders, live + tested.** All three (`sv.cecilija@`,
+`klapa@`, `glazba@`) now forward to `info@moreska.eu` via Totohost cPanel → Email → Forwarders.
+
+> **Gotcha that blocked it first:** `moreska.eu` is itself a domain *inside the same Totohost
+> cPanel account* (registered at Totohost), and its mail was set to **Local Mail Exchanger**.
+> So cPanel tried to deliver `info@moreska.eu` locally (where no `info@` mailbox exists) and
+> refused the forwarder with *"already sends that email to the default address."* Fix: cPanel →
+> Email → **Email Routing** → `moreska.eu` → set to **Remote Mail Exchanger** (so the server
+> honours moreska.eu's real MX = ImprovMX). After that the forwarders save and reach the real
+> inbox. If you ever add another `@korcula-moreska.com` forwarder, this stays fixed — it's a
+> one-time per-domain setting.
+
+**HT mail (`@hi.ht.hr` / `@t-com.hr`) — different system, handled via Moj Telekom portal.**
+`sv.cecilija@hi.ht.hr` is the society's **current main inbox**; `sv.cecilija@hi.t-com.hr` and
+`h.g.d.sv.cecilija@du.t-com.hr` already forward *into* it. So a single forward on `hi.ht.hr`
+captures everything. Path: **Moj Telekom portal → Internet → Postavke za e-mail → Preusmjeravanje**
+→ add `info@moreska.eu`, **keep-a-copy ON** during transition → Spremi/Save.
+
+> **Interim caveat (ties to #173):** `info@moreska.eu` is currently just an ImprovMX forward to a
+> personal inbox — it is *not* a real shared mailbox yet, and has no reply-as. So forwarding the
+> society's main inbox there dumps all org mail into one personal inbox and replies won't come
+> *from* the org identity. That's acceptable as a "don't lose inquiries" stopgap, but it's exactly
+> the gap #173 (Google Workspace shared `info@`) closes. Keep-a-copy ON in HT so nothing is lost
+> while Workspace is provisioned; watch the destination spam folder (chained forwards can trip
+> spam filters).
 
 ### Sweep status (Task 2)
 
@@ -75,9 +103,10 @@ and `@gmail.com` addresses below are **not** in #107's text — found via `docs/
   SELECT * FROM wpbp_postmeta   WHERE meta_value   LIKE '%t-com.hr%' OR meta_value   LIKE '%ht.hr%';
   ```
   Replace any hits with `info@moreska.eu`.
-- ☐ **HT mailbox check (needs human):** confirm whether mail to the three aliases still lands; if
-  so, set an auto-reply pointing to `info@moreska.eu`. (HT business account access is in the
-  password folder.)
+- ✅ **HT mailbox check (2026-06-02):** `sv.cecilija@hi.ht.hr` is the society's **active main inbox**
+  (not dead, as earlier assumed); the two `t-com.hr` aliases forward into it. Plan is to forward
+  `hi.ht.hr` → `info@moreska.eu` via Moj Telekom (§2.1), not auto-reply/lapse. ☐ Forward not yet
+  confirmed live + tested.
 
 ---
 
@@ -86,7 +115,8 @@ and `@gmail.com` addresses below are **not** in #107's text — found via `docs/
 These can't be done by an agent — they need logins held only by Josip:
 
 1. **Log into Regica**, list every domain, fill §1 table, decide keep/lapse/renew per domain.
-2. **HT mailbox**: check if the t-com aliases still receive mail; add auto-reply → `info@moreska.eu`.
+2. **HT mailbox**: ☐ add the forward `sv.cecilija@hi.ht.hr` (the active main inbox) → `info@moreska.eu`
+   via Moj Telekom portal, keep-a-copy ON (§2.1). The two `t-com.hr` aliases already cascade into it.
 3. **(Optional) Legacy WP DB grep** per the SQL above — low value if the site is being 301'd.
 4. **One-off chore (no ticket):** move `cecilija-passes/` into a password manager and secure-delete
    the Desktop folder. As of 2026-06-02 the folder is **still on the Desktop** — passwords sitting
@@ -94,9 +124,16 @@ These can't be done by an agent — they need logins held only by Josip:
 
 ---
 
-## 4. GAP: post-launch handling of `sv.cecilija@korcula-moreska.com` (no issue owns this)
+## 4. Post-launch handling of legacy email — RESOLVED by #166
 
-As of 2026-06-02 **no issue covers what happens to mail sent to the old addresses after cutover.**
+> **Status (2026-06-02):** This gap is now owned by **#166** and largely executed. The three
+> `@korcula-moreska.com` forwarders are live + tested (§2.1); the HT main inbox `hi.ht.hr` →
+> `info@moreska.eu` forward is the last remaining step. The original analysis is kept below for
+> context. The one hard sequencing constraint still stands: **do not decommission any legacy
+> mailbox/MX until its forward is live and tested.**
+
+The original gap analysis:
+
 What exists:
 
 - **#53 (closed)** — provisioned the *new* `moreska.eu` aliases (`tickets@`, `pr@`, `bookings@`,
