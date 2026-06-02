@@ -7,9 +7,10 @@ import config from '@payload-config'
 import { getStatsInput } from '@/lib/stats-data'
 import { computeStats } from '@/lib/stats'
 import { isAdminTier, isAuthed, isPartner, partnerIdOf } from '@/lib/access/roles'
-import { getNextShow, getScannedPeopleForShow, type NextShow } from '@/lib/shows'
+import { getNextShow, getScannedPeopleForShow, getUpcomingShows, type NextShow } from '@/lib/shows'
 import { HeaderBlock, ShowsTable } from './stats-blocks'
 import { TicketLookupPanel } from './TicketLookupPanel'
+import { PartnerSellForm, type SellShow } from './PartnerSellForm'
 
 export const dynamic = 'force-dynamic'
 
@@ -215,10 +216,22 @@ async function PartnerDashboard({
     )
   }
 
+  // Active upcoming shows the partner can sell, with live remaining capacity.
+  const upcoming = await getUpcomingShows()
+  const sellShows: SellShow[] = upcoming.map((s) => ({
+    id: String(s.id),
+    label: `${formatShowDate(s.date)} · ${s.time} · ${VENUE_LABEL[s.venue] ?? s.venue}`,
+    remaining: s.remaining,
+  }))
+
   return (
     <div style={wrap}>
       <h1 style={{ marginBottom: 6, fontSize: 24 }}>{partner.name}</h1>
       <p style={{ color: 'var(--theme-elevation-600)', marginBottom: 24 }}>Partner dashboard</p>
+
+      <div style={{ marginBottom: 24 }}>
+        <PartnerSellForm shows={sellShows} />
+      </div>
 
       <div
         style={{
@@ -227,10 +240,6 @@ async function PartnerDashboard({
           gap: 16,
         }}
       >
-        <ComingSoonCard
-          title="Sell tickets"
-          desc="Pick a show, enter adult and child counts, and print a combined ticket PDF."
-        />
         <ComingSoonCard
           title="Your sales"
           desc="Tickets sold this season, per show, and your recent sales."
