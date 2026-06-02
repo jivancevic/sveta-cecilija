@@ -141,4 +141,29 @@ describe('handlePaymentSucceeded', () => {
       handlePaymentSucceeded(event({ adults: '0', children: '0' }), deps),
     ).rejects.toMatchObject({ name: 'UnrecoverableWebhookError' })
   })
+
+  it('creates the order + tickets inside withSeatLock, keyed on the show id (#179)', async () => {
+    const events: string[] = []
+    const deps = makeDeps({
+      createOrder: vi.fn(async () => {
+        events.push('createOrder')
+        return { id: 'order_1' }
+      }),
+      createTickets: vi.fn(async () => {
+        events.push('createTickets')
+      }),
+      withSeatLock: vi.fn(async <T,>(showId: number, critical: () => Promise<T>) => {
+        events.push(`lock:${showId}`)
+        const r = await critical()
+        events.push('unlock')
+        return r
+      }),
+    })
+
+    await handlePaymentSucceeded(event({ showId: '7' }), deps)
+
+    expect(deps.withSeatLock).toHaveBeenCalledWith(7, expect.any(Function))
+    // Both inserts happen strictly inside the lock; notifyBuyer runs after unlock.
+    expect(events).toEqual(['lock:7', 'createOrder', 'createTickets', 'unlock'])
+  })
 })
