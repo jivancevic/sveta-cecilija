@@ -11,6 +11,9 @@ import { getNextShow, getScannedPeopleForShow, getUpcomingShows, type NextShow }
 import { HeaderBlock, ShowsTable } from './stats-blocks'
 import { TicketLookupPanel } from './TicketLookupPanel'
 import { PartnerSellForm, type SellShow } from './PartnerSellForm'
+import { PartnerSalesPanel } from './PartnerSalesPanel'
+import { getPartnerSeasonStats, getPartnerRecentSales } from '@/lib/partner/partner-data'
+import type { PoolQuery } from '@/lib/tickets/sold-seats'
 
 export const dynamic = 'force-dynamic'
 
@@ -224,6 +227,15 @@ async function PartnerDashboard({
     remaining: s.remaining,
   }))
 
+  // Own-scoped sales data (#146). Queries are scoped to this partner's id.
+  const pool = (payload.db as unknown as { pool: { query: PoolQuery } }).pool
+  const poolQuery: PoolQuery = (sql, params) => pool.query(sql, params)
+  const numericPartnerId = Number(partner.id)
+  const [seasonStats, recentSales] = await Promise.all([
+    getPartnerSeasonStats(poolQuery, numericPartnerId),
+    getPartnerRecentSales(poolQuery, numericPartnerId, 5),
+  ])
+
   return (
     <div style={wrap}>
       <h1 style={{ marginBottom: 6, fontSize: 24 }}>{partner.name}</h1>
@@ -233,22 +245,11 @@ async function PartnerDashboard({
         <PartnerSellForm shows={sellShows} />
       </div>
 
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-          gap: 16,
-        }}
-      >
-        <ComingSoonCard
-          title="Your sales"
-          desc="Tickets sold this season, per show, and your recent sales."
-        />
-        <ComingSoonCard
-          title="Monthly statement"
-          desc={`A monthly breakdown of sales, cancellations, and the ${partner.commissionPercent ?? 10}% commission.`}
-        />
-      </div>
+      <PartnerSalesPanel
+        stats={seasonStats}
+        recent={recentSales}
+        commissionPercent={partner.commissionPercent ?? 10}
+      />
 
       <p style={{ fontSize: 11, color: 'var(--theme-elevation-400)', marginTop: 24 }}>
         Signed in as partner.
