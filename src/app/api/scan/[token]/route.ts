@@ -78,6 +78,8 @@ async function buildDeps(): Promise<ScanDeps> {
           adultCount: (doc.adultCount as number) ?? 0,
           childCount: (doc.childCount as number) ?? 0,
           showId: String(doc.show),
+          email: (doc.email as string | null) ?? null,
+          code: (doc.code as string | null) ?? null,
         }
       } catch {
         return null

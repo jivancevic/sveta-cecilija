@@ -10,6 +10,7 @@ import {
   type ScanResult,
   type ScanViewer,
 } from '@/lib/scan-token'
+import { maskEmail } from '@/lib/claim/claim-order'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -93,6 +94,8 @@ async function buildDeps(): Promise<ScanDeps> {
           adultCount: (doc.adultCount as number) ?? 0,
           childCount: (doc.childCount as number) ?? 0,
           showId: String(doc.show),
+          email: (doc.email as string | null) ?? null,
+          code: (doc.code as string | null) ?? null,
         }
       } catch {
         return null
@@ -157,11 +160,14 @@ function ShowLine({
 function BuyerView({
   result,
   qrDataUrl,
+  claimState,
 }: {
   result: Extract<ScanResult, { status: 'BUYER_VIEW' }>
   qrDataUrl: string
+  claimState?: 'success' | 'error'
 }) {
   const totalTickets = result.adultCount + result.childCount
+  const claimed = result.email != null
   return (
     <main
       style={{
@@ -176,12 +182,27 @@ function BuyerView({
         fontFamily: 'system-ui, -apple-system, sans-serif',
       }}
     >
+      {claimState === 'success' && (
+        <div style={{ ...claimBanner, background: '#0f7a3a' }}>
+          Ticket sent. Check your email for the PDF.
+        </div>
+      )}
+      {claimState === 'error' && (
+        <div style={{ ...claimBanner, background: '#b46a00' }}>
+          Sorry, we couldn’t send your ticket. Please check your details and try again.
+        </div>
+      )}
       <div style={{ fontSize: '0.875rem', letterSpacing: '0.1em', opacity: 0.7, textTransform: 'uppercase' }}>
         Your ticket
       </div>
-      <div style={{ fontSize: '1.75rem', fontWeight: 700, marginTop: '0.5rem' }}>
-        {result.buyerName}
-      </div>
+      {result.code && (
+        <div style={{ fontFamily: 'ui-monospace, monospace', fontSize: '1.25rem', letterSpacing: '0.15em', marginTop: '0.5rem' }}>
+          {result.code}
+        </div>
+      )}
+      {claimed && result.buyerName && (
+        <div style={{ fontSize: '1.5rem', fontWeight: 700, marginTop: '0.5rem' }}>{result.buyerName}</div>
+      )}
       <div style={{ fontSize: '1.125rem', marginTop: '0.25rem', opacity: 0.92 }}>
         {totalTickets} ticket{totalTickets === 1 ? '' : 's'}
         {result.childCount > 0
@@ -201,22 +222,87 @@ function BuyerView({
           borderRadius: '0.5rem',
         }}
       />
-      <div
+      {claimed ? (
+        <div
+          style={{
+            marginTop: '1.5rem',
+            padding: '1rem 1.25rem',
+            background: 'rgba(255,255,255,0.08)',
+            border: '1px solid rgba(255,255,255,0.2)',
+            borderRadius: '0.5rem',
+            fontSize: '1rem',
+            lineHeight: 1.4,
+            maxWidth: '28rem',
+          }}
+        >
+          Show this screen at the door.<br />
+          <strong>Do not tap the QR again</strong>, it activates only when staff scans it.
+          <div style={{ marginTop: '0.75rem', opacity: 0.7, fontSize: '0.9rem' }}>
+            Claimed by {maskEmail(result.email as string)}
+          </div>
+        </div>
+      ) : (
+        <ClaimForm token={result.token} />
+      )}
+    </main>
+  )
+}
+
+const claimBanner: React.CSSProperties = {
+  width: '100%',
+  maxWidth: '28rem',
+  marginBottom: '1rem',
+  padding: '0.85rem 1rem',
+  borderRadius: '0.5rem',
+  fontSize: '1rem',
+  fontWeight: 600,
+}
+
+// Unclaimed partner ticket: the guest attaches their email to receive the PDF.
+// Plain server-rendered form POST (the scan page is a server component); the
+// claim route does the race-safe first-claimer-wins attach + emails the PDF.
+function ClaimForm({ token }: { token: string }) {
+  const input: React.CSSProperties = {
+    width: '100%',
+    padding: '0.75rem 0.9rem',
+    fontSize: '1rem',
+    borderRadius: '0.5rem',
+    border: '1px solid rgba(255,255,255,0.3)',
+    background: 'rgba(255,255,255,0.1)',
+    color: '#fff',
+    marginTop: '0.6rem',
+    boxSizing: 'border-box',
+  }
+  return (
+    <form
+      method="post"
+      action={`/api/scan/${encodeURIComponent(token)}/claim`}
+      style={{ marginTop: '1.75rem', width: '100%', maxWidth: '24rem' }}
+    >
+      <div style={{ fontSize: '1rem', opacity: 0.92, marginBottom: '0.25rem' }}>
+        Enter your details to get your ticket by email.
+      </div>
+      <input name="name" placeholder="Your name" required maxLength={120} style={input} />
+      <input name="email" type="email" placeholder="Your email" required maxLength={200} style={input} />
+      <button
+        type="submit"
         style={{
-          marginTop: '1.5rem',
-          padding: '1rem 1.25rem',
-          background: 'rgba(255,255,255,0.08)',
-          border: '1px solid rgba(255,255,255,0.2)',
+          width: '100%',
+          marginTop: '0.85rem',
+          background: '#fff',
+          color: '#111',
+          border: '2px solid #fff',
           borderRadius: '0.5rem',
-          fontSize: '1rem',
-          lineHeight: 1.4,
-          maxWidth: '28rem',
+          padding: '0.85rem 1.5rem',
+          fontSize: '1.0625rem',
+          fontWeight: 700,
+          cursor: 'pointer',
+          minHeight: '48px',
         }}
       >
-        Show this screen at the door.<br />
-        <strong>Do not tap the QR again</strong>, it activates only when staff scans it.
-      </div>
-    </main>
+        Get my ticket
+      </button>
+    </form>
   )
 }
 
@@ -330,6 +416,7 @@ function ResultView({
   viewer,
   undoRejected,
   partyAdmitted,
+  claimState,
 }: {
   result: ScanResult
   qrDataUrl?: string
@@ -337,9 +424,10 @@ function ResultView({
   viewer: ScanViewer
   undoRejected?: boolean
   partyAdmitted?: number
+  claimState?: 'success' | 'error'
 }) {
   if (result.status === 'BUYER_VIEW') {
-    return <BuyerView result={result} qrDataUrl={qrDataUrl ?? ''} />
+    return <BuyerView result={result} qrDataUrl={qrDataUrl ?? ''} claimState={claimState} />
   }
   if (result.status === 'VALID') {
     const partySize = result.adultCount + result.childCount
@@ -454,10 +542,10 @@ export default async function ScanPage({
   searchParams,
 }: {
   params: Promise<{ token: string }>
-  searchParams: Promise<{ undo?: string; party?: string }>
+  searchParams: Promise<{ undo?: string; party?: string; claimed?: string; claim?: string }>
 }) {
   const { token } = await params
-  const { undo, party } = await searchParams
+  const { undo, party, claimed, claim } = await searchParams
   const viewer = await resolveViewer()
   const deps = await buildDeps()
   const result = await scanToken(token, deps, { viewer })
@@ -467,6 +555,8 @@ export default async function ScanPage({
       : undefined
   const partyAdmitted =
     party !== undefined && /^\d+$/.test(party) ? Number(party) : undefined
+  const claimState: 'success' | 'error' | undefined =
+    claimed === '1' ? 'success' : claim === 'error' ? 'error' : undefined
   return (
     <ResultView
       result={result}
@@ -475,6 +565,7 @@ export default async function ScanPage({
       viewer={viewer}
       undoRejected={undo === 'rejected'}
       partyAdmitted={partyAdmitted}
+      claimState={claimState}
     />
   )
 }
