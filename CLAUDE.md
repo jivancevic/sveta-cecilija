@@ -214,19 +214,21 @@ Defined in `SERVICE_PAGE_META` in `data.ts`:
 | `Orders` | `buyerName`, `email`, `adultCount`, `childCount`, `total` (EUR cents), `stripePaymentIntentId`, `refundStatus` (none \| refunded), `show` → Shows |
 | `QRTokens` | `token` (unique, URL-safe), `order` → Orders, `scanned` (bool), `scannedAt` (DateTime) |
 | `ContactSubmissions` | `name`, `email`, `enquiryType`, `message`, `createdAt` |
-| `Users` | Payload auth + `role` (select: `admin` \| `door-staff`, default `admin`, required). Shared `tehnika@moreska.eu` user (role `door-staff`) is created manually via /admin — credentials live in Coolify/password manager, never in repo. Login string only; no inbox. |
+| `Users` | Payload auth + `role` (select: `superadmin` \| `admin` \| `tehnika` \| `partner`, default `admin`, required — read `src/lib/access/roles.ts`, not this stale enum). `partner` logins carry a `partner` relationship → Partners (read-open so it rides on `req.user` for scoping; write locked to admin-tier so a partner can't repoint itself). Shared `tehnika@moreska.eu` user created manually via /admin — credentials in Coolify/password manager, never in repo. |
+| `Partners` | Reseller channel (ADR-0008, #143). `name`, `oib`, `billingAddress`, `commissionPercent` (number, default 10), `active` (bool, default true), `users` (join → users.partner, read-only). Admin-tier CRUD; a `partner` login reads only its own record. |
 
 ### Role-based access controls
 
-Collection access is keyed off `user.role` via two predicates in `src/lib/access/roles.ts`: `isAdmin(user)` and `isAuthed(user)` (admin OR door-staff).
+Collection access is keyed off `user.role` via predicates in `src/lib/access/roles.ts`: `isSuperadmin`, `isAdminTier` (superadmin OR admin), `isAuthed` (any internal staff — superadmin/admin/tehnika, **not** partner), `isPartner`, and `partnerIdOf`. Partner ownership scoping (the `Where` clauses below) lives in `src/lib/access/partner.ts` and is shared by collection `access.read` and any partner-facing route (routes must re-derive it because the local API runs `overrideAccess: true`).
 
 | Collection | read | create/update/delete |
 |---|---|---|
-| `Orders` | admin | admin |
-| `ContactSubmissions` | admin | admin |
-| `Shows` | authed (admin + door-staff — door staff needs read for `/scan` + stats) | admin |
-| `QRTokens` | authed | admin |
-| `Users` | self-or-admin (door-staff sees only own record via `{ id: { equals: req.user.id } }`) | create+delete admin-only; update self-or-admin |
+| `Orders` | admin-tier; `partner` → only own (`orders.partner = self`) | admin-tier |
+| `ContactSubmissions` | admin-tier | admin-tier |
+| `Shows` | authed (admin-tier + tehnika — needs read for `/scan` + stats) | admin-tier |
+| `Tickets` | authed (full set, for door scanning); `partner` → only own (`tickets.order.partner = self`) | admin-tier |
+| `Partners` | admin-tier; `partner` → only own (`partners.id = self`) | admin-tier |
+| `Users` | self-or-superadmin | create+delete superadmin-only; update self-or-superadmin |
 
 The refund route `POST /api/orders/[id]/refund` re-checks `isAdmin(user)` and returns 403 otherwise. Payload's local API runs with `overrideAccess: true`, so collection-level `access.update` does not gate it on its own — any admin-only mutation route must re-check in the handler. The Stripe webhook and frontend show queries use the local API, so collection access does not affect them.
 

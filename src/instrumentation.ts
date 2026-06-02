@@ -82,6 +82,18 @@ export async function register() {
       CREATE UNIQUE INDEX IF NOT EXISTS "tickets_token_idx" ON "tickets" ("token");
       CREATE INDEX IF NOT EXISTS "tickets_created_at_idx" ON "tickets" ("created_at");
 
+      CREATE TABLE IF NOT EXISTS "partners" (
+        "id" serial PRIMARY KEY NOT NULL,
+        "name" varchar,
+        "oib" varchar,
+        "billing_address" varchar,
+        "commission_percent" numeric DEFAULT 10,
+        "active" boolean DEFAULT true,
+        "updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
+        "created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS "partners_created_at_idx" ON "partners" ("created_at");
+
       CREATE TABLE IF NOT EXISTS "contact_submissions" (
         "id" serial PRIMARY KEY NOT NULL,
         "name" varchar,
@@ -147,6 +159,7 @@ export async function register() {
         "contact_submissions_id" integer,
         "posts_id" integer,
         "order_lookups_id" integer,
+        "partners_id" integer,
         CONSTRAINT "payload_locked_documents_rels_parent_fk" FOREIGN KEY ("parent_id") REFERENCES "payload_locked_documents"("id") ON DELETE CASCADE,
         CONSTRAINT "payload_locked_documents_rels_users_fk" FOREIGN KEY ("users_id") REFERENCES "users"("id") ON DELETE CASCADE,
         CONSTRAINT "payload_locked_documents_rels_shows_fk" FOREIGN KEY ("shows_id") REFERENCES "shows"("id") ON DELETE CASCADE,
@@ -154,7 +167,8 @@ export async function register() {
         CONSTRAINT "payload_locked_documents_rels_tickets_fk" FOREIGN KEY ("tickets_id") REFERENCES "tickets"("id") ON DELETE CASCADE,
         CONSTRAINT "payload_locked_documents_rels_contact_submissions_fk" FOREIGN KEY ("contact_submissions_id") REFERENCES "contact_submissions"("id") ON DELETE CASCADE,
         CONSTRAINT "payload_locked_documents_rels_posts_fk" FOREIGN KEY ("posts_id") REFERENCES "posts"("id") ON DELETE CASCADE,
-        CONSTRAINT "payload_locked_documents_rels_order_lookups_fk" FOREIGN KEY ("order_lookups_id") REFERENCES "order_lookups"("id") ON DELETE CASCADE
+        CONSTRAINT "payload_locked_documents_rels_order_lookups_fk" FOREIGN KEY ("order_lookups_id") REFERENCES "order_lookups"("id") ON DELETE CASCADE,
+        CONSTRAINT "payload_locked_documents_rels_partners_fk" FOREIGN KEY ("partners_id") REFERENCES "partners"("id") ON DELETE CASCADE
       );
       CREATE INDEX IF NOT EXISTS "payload_locked_documents_rels_order_idx" ON "payload_locked_documents_rels" ("order");
       CREATE INDEX IF NOT EXISTS "payload_locked_documents_rels_parent_idx" ON "payload_locked_documents_rels" ("parent_id");

@@ -137,6 +137,47 @@ ALTER TABLE orders ADD COLUMN IF NOT EXISTS partner_id integer;
 ALTER TABLE orders ALTER COLUMN buyer_name DROP NOT NULL;
 ALTER TABLE orders ALTER COLUMN email      DROP NOT NULL;
 
+-- ─── partners (reseller channel) ──────────────────────────────────────
+-- First-class reseller entity (ADR-0008). A partner-role login links here via
+-- users.partner_id and may read only its own record/orders/tickets. Created
+-- here (idempotent) so the orders.partner_id FK below resolves; on a fresh DB
+-- instrumentation.ts creates it first instead.
+CREATE TABLE IF NOT EXISTS partners (
+  id                 serial PRIMARY KEY,
+  name               varchar NOT NULL,
+  oib                varchar,
+  billing_address    varchar,
+  commission_percent numeric NOT NULL DEFAULT 10,
+  active             boolean NOT NULL DEFAULT true,
+  updated_at         timestamptz NOT NULL DEFAULT now(),
+  created_at         timestamptz NOT NULL DEFAULT now()
+);
+
+-- orders.partner_id becomes a real relationship to partners (#143). The column
+-- already exists (added above as a plain integer); add the FK now that the
+-- partners table exists. Name matches Payload's drizzle convention so dev
+-- push doesn't add a second, redundant constraint.
+DO $$ BEGIN
+  ALTER TABLE orders
+    ADD CONSTRAINT orders_partner_id_partners_id_fk
+    FOREIGN KEY (partner_id) REFERENCES partners(id);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+CREATE INDEX IF NOT EXISTS orders_partner_id_idx ON orders (partner_id);
+
+-- users.partner_id: the authoritative link from a partner login to its partner
+-- record. Read-open (rides on req.user for ownership scoping), write locked to
+-- admin-tier in the collection config.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS partner_id integer;
+
+DO $$ BEGIN
+  ALTER TABLE users
+    ADD CONSTRAINT users_partner_id_partners_id_fk
+    FOREIGN KEY (partner_id) REFERENCES partners(id);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+CREATE INDEX IF NOT EXISTS users_partner_id_idx ON users (partner_id);
+
 -- ─── tickets (was qr_tokens; renamed above for existing DBs) ────────────
 -- One row per person (ADR-0007). On a fresh DB this CREATE makes the table;
 -- on an existing DB the rename above already produced it and this is a no-op,
@@ -249,4 +290,20 @@ DO $$ BEGIN
   ALTER TABLE payload_locked_documents_rels
     ADD CONSTRAINT payload_locked_documents_rels_order_lookups_fk
     FOREIGN KEY (order_lookups_id) REFERENCES order_lookups(id) ON DELETE CASCADE;
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+-- ─── payload_locked_documents_rels: partners_id ───────────────────────
+-- Same trap as posts_id / order_lookups_id: when Partners (#143) was added the
+-- rels-table create in src/instrumentation.ts was updated for fresh DBs, but
+-- existing prod DBs only run CREATE TABLE IF NOT EXISTS and never gained
+-- partners_id. Payload's session-lock query references it once Partners is a
+-- registered collection → any find/findByID 500s without it.
+
+ALTER TABLE payload_locked_documents_rels
+  ADD COLUMN IF NOT EXISTS partners_id integer;
+
+DO $$ BEGIN
+  ALTER TABLE payload_locked_documents_rels
+    ADD CONSTRAINT payload_locked_documents_rels_partners_fk
+    FOREIGN KEY (partners_id) REFERENCES partners(id) ON DELETE CASCADE;
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;

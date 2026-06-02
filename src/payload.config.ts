@@ -10,6 +10,7 @@ import { Tickets } from './collections/Tickets'
 import { ContactSubmissions } from './collections/ContactSubmissions'
 import { Posts } from './collections/Posts'
 import { OrderLookups } from './collections/OrderLookups'
+import { Partners } from './collections/Partners'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -65,7 +66,7 @@ export default buildConfig({
       },
     },
   },
-  collections: [Users, Shows, Orders, Tickets, ContactSubmissions, Posts, OrderLookups],
+  collections: [Users, Shows, Orders, Tickets, ContactSubmissions, Posts, OrderLookups, Partners],
   editor: lexicalEditor(),
   secret: (() => {
     const s = process.env.PAYLOAD_SECRET

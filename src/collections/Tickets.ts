@@ -1,10 +1,11 @@
 import type { CollectionConfig } from 'payload'
 import { isAdminTier, isAuthed } from '@/lib/access/roles'
+import { partnerOwnTicketsWhere } from '@/lib/access/partner'
+
+type ReqUser = { role?: string; partner?: unknown } | null | undefined
 
 const adminOnly = ({ req }: { req: { user: unknown } }) =>
-  isAdminTier(req.user as { role?: string } | null)
-const authedOnly = ({ req }: { req: { user: unknown } }) =>
-  isAuthed(req.user as { role?: string } | null)
+  isAdminTier(req.user as ReqUser)
 
 // One ticket per person (ADR-0007). Was `QRTokens` / `qr_tokens`; the QR is just
 // how a ticket is presented at the door. Each ticket is self-describing (adult/
@@ -13,7 +14,14 @@ const authedOnly = ({ req }: { req: { user: unknown } }) =>
 export const Tickets: CollectionConfig = {
   slug: 'tickets',
   access: {
-    read: authedOnly,
+    // Internal staff (superadmin/admin/tehnika) read every ticket — tehnika
+    // needs the full set for door scanning. A partner reads only tickets under
+    // its own orders (tickets.order.partner = self).
+    read: ({ req }) => {
+      const user = req.user as ReqUser
+      if (isAuthed(user)) return true
+      return partnerOwnTicketsWhere(user)
+    },
     create: adminOnly,
     update: adminOnly,
     delete: adminOnly,
