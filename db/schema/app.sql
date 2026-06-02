@@ -307,3 +307,16 @@ DO $$ BEGIN
     ADD CONSTRAINT payload_locked_documents_rels_partners_fk
     FOREIGN KEY (partners_id) REFERENCES partners(id) ON DELETE CASCADE;
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+-- ─── marketing_optouts (#57) ──────────────────────────────────────────
+-- Email-level opt-out for marketing-class mail (post-show review request).
+-- NOT a Payload collection: written by /api/unsubscribe (one-click) and read
+-- by the review-email dispatch SQL. Keyed by email so the preference persists
+-- across future shows (each show is a fresh Orders row). email is stored
+-- lowercased by every writer.
+
+CREATE TABLE IF NOT EXISTS marketing_optouts (
+  email         varchar PRIMARY KEY,
+  source        varchar,
+  opted_out_at  timestamptz NOT NULL DEFAULT now()
+);

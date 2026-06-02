@@ -95,7 +95,7 @@ export const Orders: CollectionConfig = {
       type: 'date',
       admin: {
         readOnly: true,
-        description: 'Timestamp the T+24h review-request email was sent. NULL = not yet sent.',
+        description: 'Timestamp the T+2h post-show review-request email was sent. NULL = not yet sent.',
         date: { pickerAppearance: 'dayAndTime' },
       },
     },
