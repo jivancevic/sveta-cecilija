@@ -43,6 +43,13 @@ export async function refundOrder(
   const order = await deps.getOrder(input.orderId)
   if (!order) throw new Error('Order not found')
   if (order.refundStatus === 'refunded') {
+    // Self-heal a stuck void (#169). A prior refund may have refunded at Stripe
+    // and marked the order refunded, then thrown before voiding the tickets —
+    // leaving refunded-but-active tickets that still occupy a seat and scan
+    // VALID at the door. Re-void here so a retry frees them. Idempotent: the
+    // void targets only active rows (0 when already cancelled). No Stripe call,
+    // no re-email — the money is already back and the buyer already notified.
+    await deps.voidTickets(order.id)
     return { refunded: false, amountCents: order.total }
   }
   if (!order.stripePaymentIntentId) throw new Error('Order has no Stripe payment intent')
