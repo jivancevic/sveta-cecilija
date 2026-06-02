@@ -12,9 +12,16 @@ not be world-readable by order id alone — order ids are small sequential integ
 trivially enumerable.
 
 The link is currently authorised by an **HMAC-signed token** (`?t=...`) bound to
-`orderId + buyer email` with a 30-day TTL (`src/lib/ticket-link.ts`,
+`orderId + buyer email` with a 7-day TTL (`src/lib/ticket-link.ts`,
 `TICKET_LINK_SECRET`). The endpoint also accepts an authenticated admin/tehnika
 cookie session as a second path (for door staff and support).
+
+The link is minted fresh on every render of the (force-dynamic) confirmation
+page, and the ticket email delivers the PDF as an *attachment* (no link in the
+body). So a legitimate download always uses a seconds-old link; the TTL only
+bounds how long a manually copied download URL stays live if it leaks. The TTL
+was therefore tightened from 30 to 7 days — short leak window, zero UX cost,
+since the link self-refreshes on each confirmation view.
 
 This choice was made implicitly when the email-send flow was first built, never
 weighed against alternatives. The question surfaced during grilling on a checkout
@@ -33,7 +40,7 @@ any, that code should play in **authorising the PDF download**.
 ## Options considered
 
 1. **Status quo — HMAC link only.** ~256-bit signature bound to order + email,
-   30-day TTL. Brute-force-resistant. Long ugly URL, needs a server secret.
+   7-day TTL. Brute-force-resistant. Long ugly URL, needs a server secret.
 2. **Short order code only.** Replace the signed token with `Orders.code` in the
    URL. The code's space is `31^4 ≈ 923k` — enumerable in minutes against an
    otherwise unauthed endpoint that returns the door QR. **Free tickets.** Rejected.

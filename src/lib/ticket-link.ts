@@ -1,6 +1,12 @@
 import { createHmac, timingSafeEqual } from 'node:crypto'
 
-const DEFAULT_TTL_DAYS = 30
+// The signed `?t=` link is minted fresh on every render of the (force-dynamic)
+// confirmation page, and the ticket email delivers the PDF as an attachment with
+// no link. So legitimate downloads always use a seconds-old link; the TTL only
+// bounds how long a manually copied download URL stays live if it leaks. 7 days
+// covers the post-purchase window while keeping that leak window short. See
+// ADR-0011.
+const DEFAULT_TTL_DAYS = 7
 
 function getSecret(): string {
   const s = process.env.TICKET_LINK_SECRET
