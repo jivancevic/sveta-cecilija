@@ -31,3 +31,24 @@ export async function voidOrderTickets(
   const voided = await deps.atomicVoidActiveTickets(orderId, reason)
   return { voided }
 }
+
+export interface VoidSingleTicketDeps {
+  /**
+   * Atomically flips one still-active ticket to cancelled with the given reason,
+   * returning how many rows it voided (1 on success, 0 if it was already
+   * cancelled or does not exist). Filtering on status='active' makes it
+   * idempotent and race-safe — the same single-ticket discipline as the order
+   * variant, scoped to one ticket id.
+   */
+  atomicVoidActiveTicket: (ticketId: string, reason: CancelReason) => Promise<number>
+}
+
+/** Void a single active ticket. Returns how many were newly cancelled (0 or 1). */
+export async function voidSingleTicket(
+  ticketId: string,
+  reason: CancelReason,
+  deps: VoidSingleTicketDeps,
+): Promise<VoidTicketsResult> {
+  const voided = await deps.atomicVoidActiveTicket(ticketId, reason)
+  return { voided }
+}

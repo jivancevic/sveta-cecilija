@@ -11,6 +11,9 @@ import { getNextShow, getScannedPeopleForShow, getUpcomingShows, type NextShow }
 import { HeaderBlock, ShowsTable } from './stats-blocks'
 import { TicketLookupPanel } from './TicketLookupPanel'
 import { PartnerSellForm, type SellShow } from './PartnerSellForm'
+import { PartnerStornoList } from './PartnerStornoList'
+import { getPartnerTodaySales } from '@/lib/partner/today-sales'
+import type { PoolQuery } from '@/lib/tickets/sold-seats'
 
 export const dynamic = 'force-dynamic'
 
@@ -224,6 +227,12 @@ async function PartnerDashboard({
     remaining: s.remaining,
   }))
 
+  // Today's sales (Europe/Zagreb) — still within the same-day storno window (#145).
+  const pool = (payload.db as unknown as { pool: { query: PoolQuery } }).pool
+  const todaySales = await getPartnerTodaySales(partner.id, {
+    query: (sql, params) => pool.query(sql, params),
+  })
+
   return (
     <div style={wrap}>
       <h1 style={{ marginBottom: 6, fontSize: 24 }}>{partner.name}</h1>
@@ -231,6 +240,10 @@ async function PartnerDashboard({
 
       <div style={{ marginBottom: 24 }}>
         <PartnerSellForm shows={sellShows} />
+      </div>
+
+      <div style={{ marginBottom: 24 }}>
+        <PartnerStornoList sales={todaySales} />
       </div>
 
       <div
