@@ -3,6 +3,11 @@ export interface OrderDetails {
   adultCount: number
   childCount: number
   showId: string
+  // Buyer email — null on an unclaimed partner order. Drives the claim vs
+  // read-only branch on the buyer view (ADR-0008).
+  email: string | null
+  // Human order code, shown on the buyer view. Null on legacy rows.
+  code: string | null
 }
 
 export interface ShowDetails {
@@ -61,6 +66,12 @@ export type ScanResult =
   | {
       status: 'BUYER_VIEW'
       token: string
+      orderId: string
+      // Order code + claim state for the buyer view. `email` is null on an
+      // unclaimed partner order → the page shows the claim form; otherwise it's
+      // the claimer/buyer email (masked for display) → read-only.
+      code: string | null
+      email: string | null
       buyerName: string
       adultCount: number
       childCount: number
@@ -118,6 +129,9 @@ export async function scanToken(
     return {
       status: 'BUYER_VIEW',
       token,
+      orderId: existing.orderId,
+      code: order.code,
+      email: order.email,
       buyerName: order.buyerName,
       adultCount: order.adultCount,
       childCount: order.childCount,

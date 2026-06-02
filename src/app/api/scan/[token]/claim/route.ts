@@ -1,0 +1,131 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { getPayload } from 'payload'
+import { sql } from '@payloadcms/db-postgres'
+import config from '@payload-config'
+import {
+  claimOrder,
+  ClaimValidationError,
+  type ClaimableOrder,
+} from '@/lib/claim/claim-order'
+import { sendTicketEmail } from '@/lib/email/send-ticket-email'
+import { generateQrPng } from '@/lib/email/qr'
+import type { Venue } from '@/lib/venues'
+
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+
+// POST /api/scan/[token]/claim — UNAUTHENTICATED. A guest holding a partner
+// paper slip attaches their email to the order (first-claimer-wins) and is sent
+// the digital ticket PDF. Access control is possession of the (unguessable) QR
+// token; only an unclaimed order (email IS NULL) with an ACTIVE ticket can be
+// claimed, and only once.
+//
+// Accepted risk (ADR-0008): "token possession = auth" + first-claimer-wins means
+// whoever sees the QR first can attach THEIR email. There is no rate limit here
+// yet — a leaked token could be pre-emptively claimed. A per-token/IP throttle
+// is the eventual hardening; low impact at current partner volume.
+export async function POST(req: NextRequest, { params }: { params: Promise<{ token: string }> }) {
+  const { token } = await params
+  const back = (q = '') => NextResponse.redirect(new URL(`/scan/${encodeURIComponent(token)}${q}`, req.url), { status: 303 })
+
+  let name = ''
+  let email = ''
+  try {
+    const form = await req.formData()
+    name = String(form.get('name') ?? '')
+    email = String(form.get('email') ?? '')
+  } catch {
+    return back('?claim=error')
+  }
+
+  const payload = await getPayload({ config })
+  const drizzle: any = (payload.db as any).drizzle
+
+  // Resolve the order from the token — only via an ACTIVE ticket. A cancelled
+  // (storno/refund) slip must not be claimable (it would attach PII to a dead
+  // order and email a zero-ticket PDF). Unknown/voided token → bounce back.
+  const ord: any = await drizzle.execute(
+    sql`SELECT order_id FROM tickets WHERE token = ${token} AND status = 'active' LIMIT 1`,
+  )
+  const orderRow = (ord.rows ?? ord)[0]
+  if (!orderRow) return back()
+  const orderId = String(orderRow.order_id)
+
+  try {
+    const result = await claimOrder(
+      { orderId, name, email },
+      {
+        // Race-safe first-claimer-wins: only attaches when email IS NULL.
+        attachBuyer: async (oid, nm, em): Promise<ClaimableOrder | null> => {
+          const res: any = await drizzle.execute(sql`
+            UPDATE orders
+            SET email = ${em}, buyer_name = ${nm}, updated_at = NOW()
+            WHERE id = ${Number(oid)} AND email IS NULL
+            RETURNING id, code, show_id, adult_count, child_count, total, locale
+          `)
+          const row = (res.rows ?? res)[0]
+          if (!row) return null
+          return {
+            orderId: String(row.id),
+            code: String(row.code ?? ''),
+            showId: String(row.show_id),
+            adultCount: Number(row.adult_count ?? 0),
+            childCount: Number(row.child_count ?? 0),
+            totalCents: Number(row.total ?? 0),
+            locale: row.locale === 'hr' ? 'hr' : 'en',
+          }
+        },
+        // Best-effort, mirroring the Stripe webhook's notifyBuyer: a send failure
+        // must not fail the (already-committed) claim. Logged for manual resend.
+        sendClaimedTickets: async (order, buyer) => {
+          try {
+            const showDoc = await payload.findByID({ collection: 'shows', id: Number(order.showId), depth: 0 })
+            const ticketsRes: any = await drizzle.execute(sql`
+              SELECT token, type FROM tickets
+              WHERE order_id = ${Number(order.orderId)} AND status = 'active'
+              ORDER BY id ASC
+            `)
+            const rows = (ticketsRes.rows ?? ticketsRes) as { token: string; type: string }[]
+            if (rows.length === 0) {
+              // Order has no active tickets (fully voided after attach): never
+              // send an empty-ticket PDF. The claim itself already committed.
+              console.error(`[claim] no active tickets to email orderId=${order.orderId} code=${order.code}`)
+              return
+            }
+            const tickets = rows.map((r, i) => ({
+              token: String(r.token),
+              type: (r.type === 'child' ? 'child' : 'adult') as 'adult' | 'child',
+              ref: `${order.code}-${i + 1}`,
+            }))
+            await sendTicketEmail(
+              {
+                orderId: order.orderId,
+                buyer,
+                show: {
+                  date: (showDoc.date as string).slice(0, 10),
+                  time: (showDoc.time as string) ?? '',
+                  venue: showDoc.venue as Venue,
+                },
+                order: { adultCount: order.adultCount, childCount: order.childCount, total: order.totalCents },
+                tickets,
+                orderCode: order.code,
+                locale: order.locale,
+              },
+              { fetch: globalThis.fetch, generateQrPng, brevoApiKey: process.env.BREVO_API_KEY ?? '' },
+            )
+          } catch (err) {
+            console.error(`[claim] sendClaimedTickets failed orderId=${order.orderId} code=${order.code}`, err)
+          }
+        },
+      },
+    )
+
+    // CLAIMED → success banner. ALREADY_CLAIMED → plain buyer view (now shows the
+    // read-only claimed state with the masked claimer email).
+    return back(result.status === 'CLAIMED' ? '?claimed=1' : '')
+  } catch (err) {
+    if (err instanceof ClaimValidationError) return back('?claim=error')
+    console.error('[claim] unexpected error', err)
+    return back('?claim=error')
+  }
+}

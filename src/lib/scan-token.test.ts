@@ -19,7 +19,7 @@ function makeDeps(overrides: Partial<ScanDeps> = {}): ScanDeps {
   }
 }
 
-const ORDER = { buyerName: 'Ana', adultCount: 2, childCount: 1, showId: 'show_1' }
+const ORDER = { buyerName: 'Ana', adultCount: 2, childCount: 1, showId: 'show_1', email: 'ana@example.com', code: 'AB23' }
 const SHOW = { date: '2026-07-01', time: '21:00', venue: 'ljetno-kino' }
 
 describe('scanToken', () => {
@@ -40,6 +40,8 @@ describe('scanToken', () => {
         adultCount: 2,
         childCount: 1,
         showId: 'show_1',
+        email: 'ana@example.com',
+        code: 'AB23',
       }),
       findShowDetails: vi.fn().mockResolvedValue({
         date: '2026-07-01',
@@ -51,6 +53,9 @@ describe('scanToken', () => {
     expect(result).toEqual({
       status: 'BUYER_VIEW',
       token: 'tok_abc',
+      orderId: 'ord_1',
+      code: 'AB23',
+      email: 'ana@example.com',
       buyerName: 'Ana',
       adultCount: 2,
       childCount: 1,
@@ -59,6 +64,23 @@ describe('scanToken', () => {
       venue: 'ljetno-kino',
     })
     expect(atomicMarkScanned).not.toHaveBeenCalled()
+  })
+
+  it('buyer view of an UNCLAIMED partner order exposes email=null (drives the claim form)', async () => {
+    const deps = makeDeps({
+      findScannedToken: vi.fn().mockResolvedValue({ orderId: 'ord_9', scannedAt: '' }),
+      findOrderDetails: vi.fn().mockResolvedValue({
+        buyerName: '',
+        adultCount: 1,
+        childCount: 0,
+        showId: 'show_1',
+        email: null,
+        code: 'KAL1',
+      }),
+      findShowDetails: vi.fn().mockResolvedValue({ date: '2026-07-01', time: '21:00', venue: 'ljetno-kino' }),
+    })
+    const result = await scanToken('tok_partner', deps, { viewer: 'buyer' })
+    expect(result).toMatchObject({ status: 'BUYER_VIEW', orderId: 'ord_9', code: 'KAL1', email: null })
   })
 
   it('buyer view of unknown token returns INVALID without marking', async () => {
@@ -79,6 +101,8 @@ describe('scanToken', () => {
         adultCount: 2,
         childCount: 1,
         showId: 'show_1',
+        email: 'ana@example.com',
+        code: 'AB23',
       }),
       findShowDetails: vi.fn().mockResolvedValue({
         date: '2026-07-01',
@@ -102,6 +126,8 @@ describe('scanToken', () => {
         adultCount: 2,
         childCount: 1,
         showId: 'show_1',
+        email: 'ana@example.com',
+        code: 'AB23',
       }),
       findShowDetails: vi.fn().mockResolvedValue({
         date: '2026-07-01',
