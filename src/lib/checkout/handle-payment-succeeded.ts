@@ -33,7 +33,10 @@ export interface NotifyBuyerInput {
   showId: string
   buyer: { name: string; email: string }
   order: { adultCount: number; childCount: number; total: number }
-  token: string
+  // One entry per person (ADR-0007); each gets its own QR in the PDF.
+  tickets: { token: string; type: TicketType; ref: string }[]
+  // Human order code printed on the tickets (e.g. "AB23").
+  orderCode: string
   locale: 'en' | 'hr'
 }
 
@@ -95,9 +98,13 @@ export async function handlePaymentSucceeded(
     locale,
   })
 
-  // One ticket per person, each with its own QR token. Seats are now counted
-  // as active ticket rows, so the webhook no longer bumps shows.online_sold.
-  const tickets = issued.tickets.map((t) => ({ token: deps.generateToken(), type: t.type }))
+  // One ticket per person, each with its own QR token and CODE-N ref. Seats are
+  // now counted as active ticket rows, so the webhook no longer bumps online_sold.
+  const tickets = issued.tickets.map((t) => ({
+    token: deps.generateToken(),
+    type: t.type,
+    ref: t.ref,
+  }))
   await deps.createTickets({ order: order.id, tickets })
 
   await deps.notifyBuyer({
@@ -105,9 +112,9 @@ export async function handlePaymentSucceeded(
     showId,
     buyer: { name: evt.metadata.buyerName ?? '', email: evt.metadata.email ?? '' },
     order: { adultCount: adults, childCount: children, total: evt.amountReceived },
-    // Representative QR for the current single-QR email/PDF; the per-person
-    // 2-up PDF that embeds every ticket's QR lands in #140.
-    token: tickets[0].token,
+    // Every ticket's QR goes into the 2-up A5 PDF (#140).
+    tickets,
+    orderCode: issued.code,
     locale,
   })
 

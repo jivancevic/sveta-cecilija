@@ -1,6 +1,7 @@
 // Brevo transactional sender for the T+24h post-show review-request email.
 // Same shape as send-ticket-email / send-refund-email — pure POST, EN+HR,
 // fire-and-forget with grep-able failure logs.
+import { postBrevoEmail } from './post-brevo-email'
 
 export interface SendReviewEmailInput {
   orderId: string
@@ -95,13 +96,9 @@ export async function sendReviewEmail(
     htmlContent: renderHtml(input, locale),
   }
   try {
-    const res = await deps.fetch('https://api.brevo.com/v3/smtp/email', {
-      method: 'POST',
-      headers: {
-        'api-key': deps.brevoApiKey,
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify(body),
+    const res = await postBrevoEmail(body, {
+      fetch: deps.fetch,
+      brevoApiKey: deps.brevoApiKey,
     })
     if (!res.ok) {
       const text = await res.text().catch(() => '')

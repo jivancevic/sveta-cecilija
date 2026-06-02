@@ -1,14 +1,19 @@
 import type { Venue } from '../venues'
 import { renderTicketEmail } from './render-ticket-email'
-import { renderTicketsPdf } from './render-tickets-pdf'
+import { renderTicketsPdf, type RenderTicketsPdfTicket } from './render-tickets-pdf'
 import { renderIcs, googleCalendarLink } from './render-ics'
+import { postBrevoEmail } from './post-brevo-email'
 
 export interface SendTicketEmailInput {
   orderId: string
   buyer: { name: string; email: string }
   show: { date: string; time: string; venue: Venue }
   order: { adultCount: number; childCount: number; total: number }
-  token: string
+  // One entry per person (ADR-0007); each gets its own QR in the PDF.
+  tickets: RenderTicketsPdfTicket[]
+  // Human order code printed on each ticket (e.g. "AB23"). Falls back to
+  // orderId only for legacy callers without a code.
+  orderCode?: string
   locale: 'en' | 'hr'
 }
 
@@ -60,10 +65,9 @@ export async function sendTicketEmail(
       {
         buyer: input.buyer,
         show: input.show,
-        order: input.order,
-        token: input.token,
+        tickets: input.tickets,
         locale: input.locale,
-        orderRef: input.orderId,
+        orderRef: input.orderCode ?? input.orderId,
       },
       { generateQrPng: deps.generateQrPng },
     )
@@ -86,25 +90,21 @@ export async function sendTicketEmail(
       ],
     }
 
-    const res = await deps.fetch('https://api.brevo.com/v3/smtp/email', {
-      method: 'POST',
-      headers: {
-        'api-key': deps.brevoApiKey,
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify(body),
+    const res = await postBrevoEmail(body, {
+      fetch: deps.fetch,
+      brevoApiKey: deps.brevoApiKey,
     })
     if (!res.ok) {
       const text = await res.text().catch(() => '')
       // Prefix fields so failures are grep-able (`orderId=`) for manual resend.
       console.error(
-        `[sendTicketEmail] Brevo error orderId=${input.orderId} email=${input.buyer.email} token=${input.token} status=${res.status} body=${text}`,
+        `[sendTicketEmail] Brevo error orderId=${input.orderId} email=${input.buyer.email} code=${input.orderCode ?? input.orderId} status=${res.status} body=${text}`,
       )
     }
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
     console.error(
-      `[sendTicketEmail] fetch failed orderId=${input.orderId} email=${input.buyer.email} token=${input.token} error=${msg}`,
+      `[sendTicketEmail] fetch failed orderId=${input.orderId} email=${input.buyer.email} code=${input.orderCode ?? input.orderId} error=${msg}`,
     )
   }
 }
