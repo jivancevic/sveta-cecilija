@@ -67,7 +67,7 @@ export default async function ConfirmationRoute({ params, searchParams }: RouteP
           <div>
             <dt>{dict.checkoutPage.orderRefLabel}</dt>
             <dd>:</dd>
-            <dd>{String(order.id)}</dd>
+            <dd>{(order.code as string) ?? String(order.id)}</dd>
           </div>
           <div>
             <dt>{dict.checkoutPage.ticketCountLabel}</dt>
