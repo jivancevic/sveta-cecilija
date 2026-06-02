@@ -19,15 +19,24 @@ export const dynamic = 'force-dynamic'
 
 type Pool = { query: (sql: string, params: unknown[]) => Promise<{ rows: unknown[] }> }
 
-async function recordOptOut(email: string, source: string): Promise<void> {
-  const payload = await getPayload({ config })
-  const pool = (payload.db as unknown as { pool: Pool }).pool
-  await pool.query(
-    `INSERT INTO marketing_optouts (email, source, opted_out_at)
-     VALUES (lower($1), $2, NOW())
-     ON CONFLICT (email) DO NOTHING`,
-    [email, source],
-  )
+// Idempotent opt-out write; returns false (and logs) on failure so both the
+// GET and POST handlers share one error path and differ only in their response
+// shape.
+async function tryRecordOptOut(email: string, source: string): Promise<boolean> {
+  try {
+    const payload = await getPayload({ config })
+    const pool = (payload.db as unknown as { pool: Pool }).pool
+    await pool.query(
+      `INSERT INTO marketing_optouts (email, source, opted_out_at)
+       VALUES (lower($1), $2, NOW())
+       ON CONFLICT (email) DO NOTHING`,
+      [email, source],
+    )
+    return true
+  } catch (err) {
+    console.error(`[unsubscribe] ${source} failed`, err instanceof Error ? err.message : err)
+    return false
+  }
 }
 
 function resolveEmail(req: NextRequest): string | null {
@@ -70,10 +79,7 @@ export async function GET(req: NextRequest) {
       headers: { 'content-type': 'text/plain; charset=utf-8' },
     })
   }
-  try {
-    await recordOptOut(email, 'review-email-link')
-  } catch (err) {
-    console.error('[unsubscribe] GET failed', err instanceof Error ? err.message : err)
+  if (!(await tryRecordOptOut(email, 'review-email-link'))) {
     return new NextResponse('Something went wrong. Email info@moreska.eu to be removed.', {
       status: 500,
       headers: { 'content-type': 'text/plain; charset=utf-8' },
@@ -90,10 +96,7 @@ export async function POST(req: NextRequest) {
   if (!email) {
     return NextResponse.json({ error: 'Invalid token' }, { status: 400 })
   }
-  try {
-    await recordOptOut(email, 'review-email-oneclick')
-  } catch (err) {
-    console.error('[unsubscribe] POST failed', err instanceof Error ? err.message : err)
+  if (!(await tryRecordOptOut(email, 'review-email-oneclick'))) {
     return NextResponse.json({ error: 'Internal error' }, { status: 500 })
   }
   return new NextResponse('OK', {

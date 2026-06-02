@@ -11,6 +11,11 @@ import type { Venue } from './venues'
 // Claim FIRST, then send mail — so two concurrent confirmations can never
 // double-notify buyers. A second call claims nothing → reported as already
 // moved, no mail.
+//
+// This notice is TRANSACTIONAL, not marketing: it concerns a ticket the buyer
+// already holds and a material change to it, so it deliberately does NOT honour
+// the marketing_optouts list (#57). Only the post-show review email — genuine
+// marketing — checks that list.
 
 export interface VenueChangeShow {
   id: string

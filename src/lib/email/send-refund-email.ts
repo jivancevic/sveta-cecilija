@@ -1,10 +1,6 @@
 import type { Venue } from '../venues'
+import { VENUE_LABEL } from '../venues'
 import { postBrevoEmail } from './post-brevo-email'
-
-const VENUE_LABEL: Record<'en' | 'hr', Record<Venue, string>> = {
-  en: { 'ljetno-kino': 'Summer Cinema', 'zimsko-kino': 'Cultural Center Korčula' },
-  hr: { 'ljetno-kino': 'Ljetno kino', 'zimsko-kino': 'Centar za kulturu' },
-}
 
 function formatEur(cents: number): string {
   return `€${(cents / 100).toFixed(2)}`

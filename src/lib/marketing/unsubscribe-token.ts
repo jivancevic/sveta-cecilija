@@ -12,22 +12,13 @@ import { createHmac, timingSafeEqual } from 'crypto'
 // The signing key is PAYLOAD_SECRET (already required to boot; see
 // payload.config.ts), injected here so the function stays pure + testable.
 
-function b64url(buf: Buffer): string {
-  return buf.toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
-}
-
-function fromB64url(s: string): Buffer {
-  const pad = s.length % 4 === 0 ? '' : '='.repeat(4 - (s.length % 4))
-  return Buffer.from(s.replace(/-/g, '+').replace(/_/g, '/') + pad, 'base64')
-}
-
 function sign(email: string, secret: string): Buffer {
   return createHmac('sha256', secret).update(email.toLowerCase()).digest()
 }
 
 export function signUnsubscribeToken(email: string, secret: string): string {
   const normalized = email.toLowerCase()
-  return `${b64url(Buffer.from(normalized, 'utf8'))}.${b64url(sign(normalized, secret))}`
+  return `${Buffer.from(normalized, 'utf8').toString('base64url')}.${sign(normalized, secret).toString('base64url')}`
 }
 
 /**
@@ -40,20 +31,10 @@ export function verifyUnsubscribeToken(token: string, secret: string): string | 
   if (dot <= 0) return null
   const emailPart = token.slice(0, dot)
   const sigPart = token.slice(dot + 1)
-  let email: string
-  try {
-    email = fromB64url(emailPart).toString('utf8')
-  } catch {
-    return null
-  }
+  const email = Buffer.from(emailPart, 'base64url').toString('utf8')
   if (!email) return null
 
-  let provided: Buffer
-  try {
-    provided = fromB64url(sigPart)
-  } catch {
-    return null
-  }
+  const provided = Buffer.from(sigPart, 'base64url')
   const expected = sign(email, secret)
   if (provided.length !== expected.length) return null
   if (!timingSafeEqual(provided, expected)) return null

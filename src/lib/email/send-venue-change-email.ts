@@ -3,20 +3,13 @@
 // One message per buyer in their own locale (no BCC — buyer emails must not
 // leak to each other). Same fire-and-forget + grep-able-log shape as the other
 // senders; all mail goes through postBrevoEmail so DEV_EMAIL_OVERRIDE applies.
+import { VENUE_LABEL } from '../venues'
 import { postBrevoEmail } from './post-brevo-email'
 
 const SENDER = { email: 'info@moreska.eu', name: 'Moreška by HGD Sveta Cecilija' }
 
-// Public venue names (ADR / CLAUDE.md): the DB value is the moved-to venue,
-// shown to buyers by its public name.
-const NEW_VENUE = {
-  en: 'Cultural Center Korčula',
-  hr: 'Centar za kulturu Korčula',
-}
-const OLD_VENUE = {
-  en: 'Summer Cinema',
-  hr: 'Ljetno kino',
-}
+// This action always moves Ljetno kino → the indoor Centar za kulturu, so the
+// from/to venue names come straight from the shared VENUE_LABEL source.
 const MAP_URL = 'https://www.google.com/maps/search/?api=1&query=Centar+za+kulturu+Kor%C4%8Dula'
 
 export interface SendVenueChangeEmailInput {
@@ -39,6 +32,8 @@ function renderSubject(locale: 'en' | 'hr'): string {
 
 function renderHtml(input: SendVenueChangeEmailInput, locale: 'en' | 'hr'): string {
   const { buyer, show } = input
+  const oldVenue = VENUE_LABEL[locale]['ljetno-kino']
+  const newVenue = VENUE_LABEL[locale]['zimsko-kino']
   const fontHeading = `"Bodoni Moda SC", "Bodoni Moda", Georgia, serif`
   const fontBody = `Inter, -apple-system, "Segoe UI", Arial, sans-serif`
   const gold = '#b48a3c'
@@ -53,7 +48,7 @@ function renderHtml(input: SendVenueChangeEmailInput, locale: 'en' | 'hr'): stri
     <tr><td style="padding:36px 32px 12px 32px;">
       <h1 style="font-family:${fontHeading};font-size:26px;line-height:1.2;margin:0 0 16px 0;color:${text};">Promjena lokacije nastupa</h1>
       <p style="margin:0 0 16px 0;font-size:16px;line-height:1.55;">Poštovani ${buyer.name},</p>
-      <p style="margin:0 0 16px 0;font-size:16px;line-height:1.55;">Zbog vremenskih uvjeta, nastup <strong>${show.date} u ${show.time}</strong> premješten je iz ${OLD_VENUE.hr} u <strong>${NEW_VENUE.hr}</strong>. Nastup se održava prema rasporedu, vaše ulaznice i dalje vrijede.</p>
+      <p style="margin:0 0 16px 0;font-size:16px;line-height:1.55;">Zbog vremenskih uvjeta, nastup <strong>${show.date} u ${show.time}</strong> premješten je iz ${oldVenue} u <strong>${newVenue}</strong>. Nastup se održava prema rasporedu, vaše ulaznice i dalje vrijede.</p>
     </td></tr>
     <tr><td align="center" style="padding:4px 32px 24px 32px;">
       <a href="${MAP_URL}" style="${buttonStyle}">Pogledaj novu lokaciju na karti</a>
@@ -78,7 +73,7 @@ function renderHtml(input: SendVenueChangeEmailInput, locale: 'en' | 'hr'): stri
     <tr><td style="padding:36px 32px 12px 32px;">
       <h1 style="font-family:${fontHeading};font-size:26px;line-height:1.2;margin:0 0 16px 0;color:${text};">Your performance has moved venue</h1>
       <p style="margin:0 0 16px 0;font-size:16px;line-height:1.55;">Hi ${buyer.name},</p>
-      <p style="margin:0 0 16px 0;font-size:16px;line-height:1.55;">Because of the weather, the performance on <strong>${show.date} at ${show.time}</strong> has moved from the ${OLD_VENUE.en} to the <strong>${NEW_VENUE.en}</strong>. The show goes ahead as scheduled and your tickets remain valid.</p>
+      <p style="margin:0 0 16px 0;font-size:16px;line-height:1.55;">Because of the weather, the performance on <strong>${show.date} at ${show.time}</strong> has moved from the ${oldVenue} to the <strong>${newVenue}</strong>. The show goes ahead as scheduled and your tickets remain valid.</p>
     </td></tr>
     <tr><td align="center" style="padding:4px 32px 24px 32px;">
       <a href="${MAP_URL}" style="${buttonStyle}">See the new venue on the map</a>
