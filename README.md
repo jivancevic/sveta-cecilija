@@ -1,36 +1,33 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# moreska.eu — HGD Sveta Cecilija
+
+Website and ticketing system for [HGD Sveta Cecilija](https://moreska.eu), a 143-year-old cultural organisation from Korčula, Croatia, home of the Moreška sword dance.
+
+Built with Next.js 16 (App Router) + Payload CMS v3 + PostgreSQL, with Stripe checkout and Brevo email. See [`CLAUDE.md`](./CLAUDE.md) for the full architecture, stack, and conventions.
 
 ## Getting Started
 
-First, run the development server:
+Copy the env template and fill in values:
+
+```bash
+cp .env.example .env.local
+```
+
+Then run the dev server (this also runs `scripts/bootstrap-db.mjs` to apply the schema):
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) for the public site, or `/admin` for the Payload CMS admin.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+> If bootstrap prints `DATABASE_URL is not set — skipping`, source env first:
+> `set -a && . .env.local && set +a && npm run dev`
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Deployment
+
+Production runs on **Coolify** (Hetzner Cloud, Nixpacks-built container) — not Vercel; Payload's long-lived Postgres pool and bootstrap-on-start don't fit a serverless model. `dev.moreska.eu` is a second Coolify app tracking `main` for staging. See the "Deployment" section of [`CLAUDE.md`](./CLAUDE.md) and [`docs/agents/deployment.md`](./docs/agents/deployment.md) for the build gotchas and debugging playbook.
 
 ## Learn More
 
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- [Next.js Documentation](https://nextjs.org/docs)
+- [Payload CMS Documentation](https://payloadcms.com/docs)
