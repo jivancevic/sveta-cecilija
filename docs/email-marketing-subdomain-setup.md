@@ -26,45 +26,45 @@ separate subdomain so a handful of spam complaints can't damage the sending
 reputation that delivers ticket-QR confirmations on root `moreska.eu`. See
 ADR-0004 §"Sending infrastructure".
 
-### Step 1 — add the domain in Brevo
+### Step 1 — add the domain in Brevo ✅ DONE (2026-06-03)
 
-1. Brevo dashboard → **Senders, Domains & Dedicated IPs** → **Domains** tab → **Add a domain**.
-2. Enter `bilten.moreska.eu`.
-3. Brevo shows a set of DNS records to add. **The exact DKIM target hostnames and
-   the Brevo-code value are generated per account — copy them from this screen.**
-   Newer Brevo accounts show DKIM as `mail._domainkey` / `mail2._domainkey`
-   CNAMEs; older accounts show `brevo1._domainkey` / `brevo2._domainkey`. Use
-   whatever the dashboard displays; the table below is the shape, not the literal
-   values.
+`bilten.moreska.eu` has already been added to the Brevo account via the API
+(domain id `6a1f7aaf742f9b45c608f953`). It currently shows **authenticated:
+false / verified: false** — it stays that way until the DNS records below are
+live and verification (Step 3) is triggered. The records in Step 2 are the
+**real, account-specific values Brevo returned**, not placeholders.
 
-### Step 2 — add the records in Hetzner DNS
+### Step 2 — add the records in Hetzner DNS  ← the remaining manual step
 
 Hetzner DNS console (`dns.hetzner.com`) → zone `moreska.eu` → **Add record**. In
 Hetzner the record **Name** is relative to the zone, so the `bilten` part is the
-subdomain. Fill the values from Brevo's screen:
+subdomain. Paste these exact values:
 
 | Purpose | Type | Name (Hetzner, relative to `moreska.eu`) | Value |
 |---|---|---|---|
-| Brevo verification code | `TXT` | `bilten` | `brevo-code:XXXXXXXXXXXX` (from Brevo) |
-| DKIM key 1 | `CNAME` | `mail._domainkey.bilten` *(or `brevo1._domainkey.bilten`)* | `<target shown by Brevo>` |
-| DKIM key 2 | `CNAME` | `mail2._domainkey.bilten` *(or `brevo2._domainkey.bilten`)* | `<target shown by Brevo>` |
-| SPF (alignment) | `TXT` | `bilten` | `v=spf1 include:spf.brevo.com -all` |
+| Brevo verification code | `TXT` | `bilten` | `brevo-code:c21d947d7c4cda25e4efd80581129fde` |
+| DKIM key 1 | `CNAME` | `brevo1._domainkey.bilten` | `b1.bilten-moreska-eu.dkim.brevo.com` |
+| DKIM key 2 | `CNAME` | `brevo2._domainkey.bilten` | `b2.bilten-moreska-eu.dkim.brevo.com` |
 | DMARC | `TXT` | `_dmarc.bilten` | `v=DMARC1; p=none; rua=mailto:rua@dmarc.brevo.com` |
-| Click-tracking *(optional)* | `CNAME` | `<host shown by Brevo, e.g. sbtrk.bilten>` | `<target shown by Brevo>` |
+| SPF (alignment, recommended) | `TXT` | `bilten` | `v=spf1 include:spf.brevo.com -all` |
 
 Notes:
 
-- The Brevo-code `TXT` and the SPF `TXT` both sit on host `bilten` — that's fine,
-  a host can hold multiple TXT records. The **one** rule you must not break: only
-  a single `v=spf1 …` TXT per host. `bilten` is a brand-new subdomain, so this is
-  the only SPF record there.
-- SPF is not strictly required for shared-IP sending (Brevo authenticates via the
-  Brevo-code + DKIM), but adding the aligned SPF record above improves DMARC
-  alignment and deliverability. Include it.
+- The first four rows are exactly what Brevo returned for this domain. The SPF
+  row is **not** returned by Brevo (SPF isn't required for shared-IP domain
+  auth) but is recommended for DMARC alignment / deliverability — add it.
+- Brevo already reports the **DMARC** record as satisfied (the org-level
+  `moreska.eu` DMARC covers the subdomain), so the `_dmarc.bilten` row is
+  belt-and-suspenders — harmless to add, fine to skip if your DNS UI fights it.
+- The Brevo-code `TXT` and the SPF `TXT` both sit on host `bilten` — fine, a host
+  can hold multiple TXT records. The one rule: only a single `v=spf1 …` TXT per
+  host; `bilten` is brand-new so this is the only one there.
+- The `brevo-code` value is a public DNS verification token (it lives in a TXT
+  record anyone can query) — not a secret.
 - DMARC `p=none` is the safe starting policy (monitor only). Tighten to
   `p=quarantine` later once `rua` reports show clean alignment for a few weeks.
-- Click-tracking CNAME only appears if you enable click-tracking in Brevo. Add it
-  if you want trackable links in the marketing mail.
+- Click-tracking is optional and not enabled; if you turn it on in Brevo later it
+  will hand you one more CNAME to add.
 
 ### Step 3 — verify in Brevo
 
