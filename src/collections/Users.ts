@@ -46,7 +46,7 @@ export const Users: CollectionConfig = {
     // action; in a non-request scope (e.g. a seed script calling payload.login)
     // next/headers throws, so we swallow and skip.
     afterLogin: [
-      async ({ user, req }) => {
+      async ({ user }) => {
         try {
           const { cookies } = await import('next/headers')
           const store = await cookies()
@@ -65,7 +65,6 @@ export const Users: CollectionConfig = {
         } catch {
           // No writable request scope — nothing to seed. The dashboard's own
           // resolveAdminLang() still applies the role default as a safety net.
-          void req
         }
         return user
       },
