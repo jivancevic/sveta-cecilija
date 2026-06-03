@@ -24,3 +24,23 @@ The parallel sessions share one `sveta_cecilija_dev` DB, so the DB often holds c
 ## `gh pr merge` is server-side; your local `origin/main` ref goes stale
 
 After merging a PR with `gh`, run `git fetch origin main` before you `git checkout -b new-branch origin/main` — otherwise the new branch is cut from the *pre-merge* main and silently lacks the just-merged work (and will look like it reverts it). Also: pushing a worktree branch that tracks a differently-named remote branch needs an explicit refspec — `git push origin HEAD:remote-branch-name`, not a bare `git push`. `gh pr merge --delete-branch` errors inside a worktree (main is checked out elsewhere) but the merge still lands; delete the remote branch manually.
+
+## Stacked PRs don't get CI, so the required `vitest` check never reports
+
+`.github/workflows/ci.yml` triggers only on `pull_request` to `main` (and push to `main`). A PR opened with a base branch other than `main` — a *stacked* PR — gets **zero CI runs**, so the required `vitest` check (branch protection) never reports and the PR sits `BLOCKED` ("waiting for status") even though it's `MERGEABLE`.
+
+Retargeting it (`gh pr edit <n> --base main`) doesn't help: that fires a `pull_request` `edited` event, which isn't in the default trigger set `[opened, synchronize, reopened]`. To fire CI without a code change, **close then reopen the PR** (`gh pr close <n> && gh pr reopen <n>` → `reopened` event).
+
+Also: GitHub auto-retargets a child PR's base only when the parent *branch* is deleted, not when the parent PR merges — so after merging the parent you must `gh pr edit <child> --base main` yourself.
+
+**Merge a stacked chain like this** (use merge commits, never squash — squashing the parent rewrites its commits so the child then conflicts):
+
+```sh
+gh pr merge <parent> --merge
+gh pr edit <child> --base main                # parent's changes are now in main
+gh pr close <child> && gh pr reopen <child>   # fire CI so vitest reports
+# wait for the vitest check to pass, then:
+gh pr merge <child> --merge
+```
+
+Prefer **not** stacking unless the PRs genuinely overlap files — independent PRs off `main` each get CI for free. Don't rely on `gh pr merge --admin` to skip the gate (it's blocked here anyway).
