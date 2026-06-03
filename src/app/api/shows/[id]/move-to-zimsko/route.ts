@@ -39,13 +39,17 @@ function buildDeps(pool: Pool, brevoApiKey: string): MoveToZimskoDeps {
       }
     },
     findBuyers: async (showId): Promise<VenueChangeBuyer[]> => {
+      // One notice per person, not per order: a buyer who placed several orders
+      // for the same show should get a single venue-change email. DISTINCT ON
+      // collapses by lowercased email, keeping the earliest order's name/locale.
       const res = await pool.query(
-        `SELECT id, buyer_name, email, locale
+        `SELECT DISTINCT ON (lower(email)) id, buyer_name, email, locale
          FROM orders
          WHERE show_id = $1
            AND channel = 'online'
            AND email IS NOT NULL
-           AND refund_status = 'none'`,
+           AND refund_status = 'none'
+         ORDER BY lower(email), id`,
         [Number(showId)],
       )
       return res.rows.map((r): VenueChangeBuyer => ({
