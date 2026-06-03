@@ -49,10 +49,10 @@ and `@gmail.com` addresses below are **not** in #107's text — found via `docs/
 | `sv.cecilija@korcula-moreska.com` | Old-site `/contacts/` + homepage footer; cited as media contact on third-party pages | **Yes — actively published.** The canonical public address of the old site. | ✅ **DONE (2026-06-02).** cPanel forwarder → `info@moreska.eu`, tested working. See §2.1 for the Email Routing gotcha that had to be fixed first. |
 | `klapa@korcula-moreska.com` | `docs/migrations/README.md` (tested as Google acct in #37) | Exists; **not** found on current live pages — likely a section address / old flyers | ✅ **DONE (2026-06-02).** cPanel forwarder → `info@moreska.eu` (forwarded rather than retired, to catch stragglers on old flyers/listings). |
 | `glazba@korcula-moreska.com` | `docs/migrations/README.md` (tested in #37) | Exists; **not** found on current live pages | ✅ **DONE (2026-06-02).** cPanel forwarder → `info@moreska.eu`. |
-| `sv.cecilija@hi.ht.hr` | `Pass internet.doc` (#107) | **Yes — active inbox, lots of mail.** On the **tportal.hr Roundcube** backend. | ☐ **BLOCKED — needs HT support call.** This Roundcube (1.4.8) has **no `managesieve` plugin** → no forwarding/filters UI, and the Moj Telekom portal's Internet card manages only the `du.ht.hr` mailbox, not this one. Call **HT Poslovni support** to add a server-side forward → `info@moreska.eu`, keep-a-copy ON. See §2.1. |
+| `sv.cecilija@hi.ht.hr` | `Pass internet.doc` (#107) | **Yes — active inbox, lots of mail.** On the **tportal.hr Roundcube** backend. | ⏳ **Awaiting HT (official email sent 2026-06-03).** This Roundcube (1.4.8) has **no `managesieve` plugin** → no forwarding/filters UI, and the Moj Telekom portal's Internet card manages only the `du.ht.hr` mailbox, not this one. Official request emailed to HT Poslovni asking for a server-side forward → `info@moreska.eu`, keep-a-copy ON (covers all three HT/t-com addresses + the alias question). Awaiting reply. See §2.1. |
 | `h.g.d.sv.cecilija@du.ht.hr` (= `@du.t-com.hr`) | `Pass internet.doc` (#107); shown as "e-mail korisnika" on the portal Internet service | **Yes — separate active mailbox** on the **webmail.ht.hr AXIGEN** backend (NOT an alias of `hi.ht.hr`, as earlier assumed) | ✅ **DONE (2026-06-03).** AXIGEN webmail → Postavke → Filteri → "Proslijedi za" → `info@moreska.eu`, no delete action so a copy stays. ☐ Test pending. See §2.1. |
-| `sv.cecilija@hi.t-com.hr` | `Pass internet.doc` (#107); inbox accessible (searched in #37) | Receives mail; **cascade into `hi.ht.hr` assumed but NOT verified** | If it cascades into `hi.ht.hr`, covered once that forward is live. If it's a separate mailbox, raise it on the same HT support call. |
-| `moreska.cecilija@gmail.com` | `docs/todo.md`; owns YouTube channel `@hgdsv.cecilija6051`; Josip has access | **Active org Gmail** (not legacy-to-retire) | Add `pr@moreska.eu` as recovery email for bus-factor (already a `docs/todo.md` TODO). |
+| `sv.cecilija@hi.t-com.hr` | `Pass internet.doc` (#107); inbox accessible (searched in #37) | Receives mail; **cascade into `hi.ht.hr` assumed but NOT verified** | ⏳ **Awaiting HT.** Included in the 2026-06-03 official email (forward → `info@moreska.eu` + the "separate mailbox or alias of `hi.ht.hr`?" question). |
+| `moreska.cecilija@gmail.com` | `docs/todo.md`; owns YouTube channel `@hgdsv.cecilija6051`; Josip has access | **Active org Gmail** (not legacy-to-retire) | ✅ **Forward set (2026-06-03)** → `info@moreska.eu` (Gmail keeps a copy by default; the account stays as YouTube owner). ☐ Test pending. Still add `pr@moreska.eu` as recovery email for bus-factor (`docs/todo.md` TODO). |
 | `info.nero3d@gmail.com` | Previous webmaster's personal Gmail (memory `project_legacy_webmaster_contact`) | Personal, not an org address | Out of scope — contact only. |
 | `info@moreska.com` | `docs/marketing.md` | **Hypothetical** — only if HGD buys `moreska.com` (deferred to 2027) | Not a current address. Ignore for #107. |
 
@@ -80,14 +80,16 @@ wrong):**
    → `info@moreska.eu`** with no move/delete action (so the original stays = keep-a-copy). ☐ Test from
    an outside inbox still pending.
 
-2. **`sv.cecilija@hi.ht.hr` — BLOCKED, needs an HT support call.** This is a busy active inbox but
+2. **`sv.cecilija@hi.ht.hr` — awaiting HT (official email sent 2026-06-03).** This is a busy active inbox but
    lives on the **tportal.hr Roundcube** webmail (`webmail.tportal.hr`), a *different* backend.
    That Roundcube is **v1.4.8 with no `managesieve` plugin** (installed dodaci: `filesystem_attachments`,
    `jqueryui`, `keycloak`, `multimap`) → it has **no Filteri / forwarding UI at all**. The Moj Telekom
    portal's Internet card only manages the `du.ht.hr` mailbox, not this one. So there is **no
-   self-service path** to forward `hi.ht.hr`. **Action: phone HT Poslovni support** and ask them to add
-   a server-side forward `sv.cecilija@hi.ht.hr` → `info@moreska.eu`, keep-a-copy ON. While on the call,
-   also ask whether `sv.cecilija@hi.t-com.hr` is a separate mailbox or an alias of `hi.ht.hr`.
+   self-service path** to forward `hi.ht.hr`. **An official request was emailed to HT Poslovni support on
+   2026-06-03** asking them to set server-side forwards for all three HT/t-com addresses (`hi.ht.hr`,
+   `hi.t-com.hr`, `du.t-com.hr`) → `info@moreska.eu`, keep-a-copy ON, plus the alias question for
+   `hi.t-com.hr`. Awaiting reply; test each forward once HT confirms. (Contact channels: Moj Telekom
+   Poslovni portal chat/ticket, or phone 0800 0005 / 0800 0900.)
 
 > **Interim caveat (ties to #173):** `info@moreska.eu` is currently just an ImprovMX forward to a
 > personal inbox — it is *not* a real shared mailbox yet, and has no reply-as. So forwarding the
@@ -118,8 +120,9 @@ wrong):**
   Replace any hits with `info@moreska.eu`.
 - ⚠️ **HT mailbox check — REVISED 2026-06-03:** there are **two** separate active HT mailboxes on
   two webmail backends (not one hub). `h.g.d.sv.cecilija@du.ht.hr` (AXIGEN) is **forwarded** ✅
-  (test pending); `sv.cecilija@hi.ht.hr` (tportal Roundcube, no managesieve) **cannot self-forward**
-  and needs an **HT Poslovni support call** ☐. See §2.1 for the full backend split.
+  (test pending); `sv.cecilija@hi.ht.hr` (tportal Roundcube, no managesieve) **cannot self-forward**,
+  so an **official email was sent to HT Poslovni support 2026-06-03** ⏳ (covers all three HT/t-com
+  addresses + the alias question; awaiting reply). See §2.1 for the full backend split.
 
 ---
 
@@ -130,9 +133,10 @@ These can't be done by an agent — they need logins held only by Josip:
 1. **Log into Regica**, list every domain, fill §1 table, decide keep/lapse/renew per domain.
 2. **HT mailboxes** (two backends — see §2.1):
    - `h.g.d.sv.cecilija@du.ht.hr` ✅ forwarded via AXIGEN webmail filter; ☐ test from outside inbox.
-   - `sv.cecilija@hi.ht.hr` ☐ **call HT Poslovni support** to add a server-side forward → `info@moreska.eu`,
-     keep-a-copy ON (tportal Roundcube has no managesieve, portal doesn't manage this mailbox). Ask on the
-     call whether `sv.cecilija@hi.t-com.hr` is separate or an alias.
+   - `sv.cecilija@hi.ht.hr` + `sv.cecilija@hi.t-com.hr` ⏳ **official email sent to HT Poslovni 2026-06-03**
+     requesting server-side forwards → `info@moreska.eu`, keep-a-copy ON, plus the "separate or alias?"
+     question. Awaiting reply; test each once HT confirms. (Self-service is impossible — tportal Roundcube
+     has no managesieve, and the portal doesn't manage these mailboxes.)
 3. **(Optional) Legacy WP DB grep** per the SQL above — low value if the site is being 301'd.
 4. **One-off chore (no ticket):** move `cecilija-passes/` into a password manager and secure-delete
    the Desktop folder. As of 2026-06-02 the folder is **still on the Desktop** — passwords sitting
@@ -143,11 +147,12 @@ These can't be done by an agent — they need logins held only by Josip:
 ## 4. Post-launch handling of legacy email — RESOLVED by #166
 
 > **Status (2026-06-03):** This gap is owned by **#166** and largely executed. The three
-> `@korcula-moreska.com` forwarders are live + tested, and `h.g.d.sv.cecilija@du.ht.hr` is forwarded
-> (test pending) (§2.1). **One step left: `sv.cecilija@hi.ht.hr` needs an HT Poslovni support call**
-> — its tportal Roundcube has no forwarding UI and the portal doesn't manage it. The original analysis
-> is kept below for context. The one hard sequencing constraint still stands: **do not decommission any
-> legacy mailbox/MX until its forward is live and tested.**
+> `@korcula-moreska.com` forwarders are live + tested; `h.g.d.sv.cecilija@du.ht.hr` and the org Gmail
+> `moreska.cecilija@gmail.com` are forwarded (tests pending) (§2.1). **Remaining: `sv.cecilija@hi.ht.hr`
+> + `sv.cecilija@hi.t-com.hr` — an official email was sent to HT Poslovni support 2026-06-03** (their
+> tportal Roundcube has no forwarding UI and the portal doesn't manage them); awaiting reply. The original
+> analysis is kept below for context. The one hard sequencing constraint still stands: **do not decommission
+> any legacy mailbox/MX until its forward is live and tested.**
 
 The original gap analysis:
 
