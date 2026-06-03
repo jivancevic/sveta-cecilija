@@ -103,18 +103,18 @@ describe('formatInquiriesBadge', () => {
 })
 
 describe('markEnquiryHandled (new → handled transition)', () => {
-  it('flips a new enquiry to handled via the injected update', async () => {
-    const update = vi.fn().mockResolvedValue({ id: 7, status: 'handled' })
-    const result = await markEnquiryHandled(7, { update })
-    expect(update).toHaveBeenCalledWith(7)
+  it('writes status=handled to the given row via the injected setter', async () => {
+    const setStatus = vi.fn().mockResolvedValue(undefined)
+    const result = await markEnquiryHandled(7, { setStatus })
+    // the target status is owned by the helper, not passed in by the caller
+    expect(setStatus).toHaveBeenCalledWith(7, 'handled')
     expect(result).toEqual({ id: 7, status: 'handled' })
   })
 
-  it('is idempotent: marking an already-handled enquiry handled is a safe no-op-shaped result', async () => {
-    // The injected update is responsible for the actual write; re-running it on an
-    // already-handled row still resolves to a handled row (the count simply won't drop again).
-    const update = vi.fn().mockResolvedValue({ id: 7, status: 'handled' })
-    const result = await markEnquiryHandled(7, { update })
+  it('is idempotent: re-running on an already-handled row still writes handled', async () => {
+    const setStatus = vi.fn().mockResolvedValue(undefined)
+    const result = await markEnquiryHandled('abc', { setStatus })
+    expect(setStatus).toHaveBeenCalledWith('abc', 'handled')
     expect(result.status).toBe('handled')
   })
 })

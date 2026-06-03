@@ -69,6 +69,7 @@ export async function AdminDashboardView() {
   const newEnquiries = await payload.find({
     collection: 'contact-submissions',
     where: { status: { equals: 'new' } },
+    select: { status: true, enquiryType: true },
     limit: 0,
     depth: 0,
     pagination: false,

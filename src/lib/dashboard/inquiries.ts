@@ -8,6 +8,8 @@
 // All the real logic lives here as pure functions so it is unit-testable away
 // from Payload/React; the badge component and the admin branch just call in.
 
+import type { AdminLang } from '@/lib/admin-i18n'
+
 // The enquiry types that count as booking enquiries (requests to *buy* a private
 // show or the experience), as opposed to general questions. Source of truth for
 // the badge's booking sub-count. Mirrors ContactSubmissions.enquiryType options.
@@ -48,8 +50,6 @@ export function countInquiries(rows: readonly InquiryRow[]): InquiryCounts {
   return { count, bookingCount }
 }
 
-import type { AdminLang } from '@/lib/admin-i18n'
-
 // Build the inquiries-badge copy for the active language. The headline is the
 // `new` count; when some of those are booking enquiries, a sub-clause calls them
 // out. No em-dashes (HARD RULE): the booking clause is comma-joined.
@@ -68,15 +68,16 @@ export function formatInquiriesBadge(lang: AdminLang, counts: InquiryCounts): st
   return `${head}, incl. ${bookingCount} ${noun}`
 }
 
-// Drive the new → handled transition. The actual write is injected so this stays
-// unit-testable: in the route it flips `status = 'handled'` on the given row via
-// Payload's update; here we only own the orchestration. The transition is
-// idempotent — re-running on an already-handled row leaves it handled.
+// Drive the new → handled transition. The target status is owned here (not by
+// the caller) so the lifecycle's end state lives in one place; the actual write
+// is injected so this stays unit-testable away from Payload. Idempotent:
+// re-running on an already-handled row writes 'handled' again, a harmless no-op.
 export type HandledResult = { id: number | string; status: InquiryStatus }
 
 export async function markEnquiryHandled(
   id: number | string,
-  deps: { update: (id: number | string) => Promise<HandledResult> },
+  deps: { setStatus: (id: number | string, status: InquiryStatus) => Promise<unknown> },
 ): Promise<HandledResult> {
-  return deps.update(id)
+  await deps.setStatus(id, 'handled')
+  return { id, status: 'handled' }
 }
