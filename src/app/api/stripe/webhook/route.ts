@@ -7,6 +7,7 @@ import {
   UnrecoverableWebhookError,
 } from '@/lib/checkout/handle-payment-succeeded'
 import { generateQrToken } from '@/lib/qr-token'
+import { withShowSellLock, type SellLockPool } from '@/lib/tickets/sell-lock'
 import { generateOrderCode as makeOrderCode } from '@/lib/tickets/order-code'
 import { randomInt } from 'node:crypto'
 import type { PurchasableShow } from '@/lib/capacity'
@@ -54,6 +55,7 @@ export async function POST(req: Request) {
   }
 
   const payload = await getPayload({ config })
+  const pool = (payload.db as unknown as { pool: SellLockPool }).pool
 
   try {
     await handlePaymentSucceeded(
@@ -108,6 +110,9 @@ export async function POST(req: Request) {
           }
         },
         generateToken: generateQrToken,
+        // Serialize the online insert against partner sells of the same show
+        // (#179) via the shared advisory lock.
+        withSeatLock: (showId, critical) => withShowSellLock(pool, showId, critical),
         generateOrderCode: () =>
           makeOrderCode({
             isUnique: async (code) => {

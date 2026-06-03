@@ -50,6 +50,15 @@ export interface PaymentSucceededDeps {
   // Yields a unique order code (order-code.ts wired to a DB uniqueness check).
   generateOrderCode: () => Promise<string>
   notifyBuyer: (input: NotifyBuyerInput) => Promise<void>
+  /**
+   * Serializes this order+ticket insert against partner sells of the same show
+   * (#179), via the same Postgres advisory lock keyed on the show id. Online is
+   * post-payment — we never reject here (the seat guard is pre-payment in
+   * checkout.ts), but holding the lock keeps the active-ticket count consistent
+   * so a concurrent partner sale can't miss these tickets. Defaults to a
+   * pass-through; the webhook route wires `withShowSellLock`.
+   */
+  withSeatLock?: <T>(showId: number, critical: () => Promise<T>) => Promise<T>
 }
 
 export async function handlePaymentSucceeded(
@@ -84,31 +93,40 @@ export async function handlePaymentSucceeded(
     { generateOrderCode: deps.generateOrderCode },
   )
 
-  const order = await deps.createOrder({
-    code: issued.code,
-    channel: 'online',
-    buyerName: evt.metadata.buyerName ?? '',
-    email: evt.metadata.email ?? '',
-    adultCount: adults,
-    childCount: children,
-    total: evt.amountReceived,
-    stripePaymentIntentId: evt.paymentIntentId,
-    refundStatus: 'none',
-    show: showId,
-    locale,
+  // Serialize the order+ticket insert against partner sells of the same show
+  // (#179) via the shared advisory lock. Post-payment, so we never reject here
+  // (the seat guard is pre-payment in checkout.ts); the lock only keeps the
+  // active-ticket count consistent across channels. notifyBuyer (slow email)
+  // stays outside the lock.
+  const withSeatLock = deps.withSeatLock ?? (<T>(_id: number, fn: () => Promise<T>) => fn())
+  const { orderId, tickets } = await withSeatLock(Number(showId), async () => {
+    const order = await deps.createOrder({
+      code: issued.code,
+      channel: 'online',
+      buyerName: evt.metadata.buyerName ?? '',
+      email: evt.metadata.email ?? '',
+      adultCount: adults,
+      childCount: children,
+      total: evt.amountReceived,
+      stripePaymentIntentId: evt.paymentIntentId,
+      refundStatus: 'none',
+      show: showId,
+      locale,
+    })
+
+    // One ticket per person, each with its own QR token and CODE-N ref. Seats are
+    // now counted as active ticket rows, so the webhook no longer bumps online_sold.
+    const tickets = issued.tickets.map((t) => ({
+      token: deps.generateToken(),
+      type: t.type,
+      ref: t.ref,
+    }))
+    await deps.createTickets({ order: order.id, tickets })
+    return { orderId: order.id, tickets }
   })
 
-  // One ticket per person, each with its own QR token and CODE-N ref. Seats are
-  // now counted as active ticket rows, so the webhook no longer bumps online_sold.
-  const tickets = issued.tickets.map((t) => ({
-    token: deps.generateToken(),
-    type: t.type,
-    ref: t.ref,
-  }))
-  await deps.createTickets({ order: order.id, tickets })
-
   await deps.notifyBuyer({
-    orderId: order.id,
+    orderId,
     showId,
     buyer: { name: evt.metadata.buyerName ?? '', email: evt.metadata.email ?? '' },
     order: { adultCount: adults, childCount: children, total: evt.amountReceived },
@@ -118,5 +136,5 @@ export async function handlePaymentSucceeded(
     locale,
   })
 
-  return { orderId: order.id, skipped: false }
+  return { orderId, skipped: false }
 }

@@ -74,6 +74,8 @@ Source of truth for sold seats is the **`tickets` table**, not maintained counte
 - A **cancelled** ticket (partner storno, or an online refund) is excluded from the active count, so the seat frees itself with no counter to decrement. This requires a ticket lifecycle state (see Ticket) — voiding is the single mechanism behind both storno and refund.
 - Consequence: the Stripe refund route must now **void the order's tickets** (previously it only set `order.refund_status`), and the webhook no longer increments `onlineSold`. Stats reads that summed `onlineSold` switch to counting tickets.
 
+**Oversell serialization (#179):** counting active tickets and then inserting are separate steps, so concurrent sells of the last seats could both pass the guard and oversell. The `count → capacity-check → insert` critical section is serialized per show by a **Postgres advisory lock** keyed on the show id (`src/lib/tickets/sell-lock.ts`, `withShowSellLock`), wired into both the **partner sell** (`createPartnerSale`, rejects cleanly on oversell) and the **online webhook** insert (`handlePaymentSucceeded` — post-payment, so it never rejects; the lock keeps the count consistent across channels, and the pre-payment guard in `checkout.ts` remains the online defense). Different shows use different lock keys → no contention, no deadlock. Proven under real concurrency by `scripts/probe-oversell.mjs` (20 sells racing for 3 seats → exactly 3 with the lock; oversells without it).
+
 ### Free-ticket discount
 Every 5th ticket in a single order is free. The free ticket's type matches the most expensive category present in the order: adult (€20) if any adult tickets were purchased, otherwise child (€10).
 

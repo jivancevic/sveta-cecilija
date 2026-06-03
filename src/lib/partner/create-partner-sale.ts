@@ -61,6 +61,14 @@ export interface PartnerSaleDeps {
   generateToken: () => string
   /** Persist the order + its tickets atomically; returns the new order id. */
   persist: (args: { order: IssuedOrder; tickets: PersistTicket[] }) => Promise<{ orderId: string }>
+  /**
+   * Serializes the count→capacity-check→insert critical section per show so two
+   * concurrent sells can't both pass the oversell guard and both insert (#179).
+   * Defaults to a pass-through; the route wires it to a Postgres advisory lock
+   * on the show id (`withShowSellLock`). MUST be the real lock in production —
+   * the pass-through is only safe for single-threaded unit tests.
+   */
+  withSeatLock?: <T>(showId: number, critical: () => Promise<T>) => Promise<T>
 }
 
 export interface PartnerSaleResult {
@@ -102,52 +110,60 @@ export async function createPartnerSale(
     throw new PartnerSaleError('SHOW_PAST', 'This show has already taken place')
   }
 
-  const activeTicketCount = await deps.countActiveTickets(showId)
-  try {
-    assertCanSell(
+  // Serialize the count→capacity-check→insert per show so two concurrent sells
+  // of the last seats can't both pass the guard and oversell (#179). The
+  // pass-through default keeps the pure unit path single-threaded; the route
+  // injects a Postgres advisory lock on the show id.
+  const withSeatLock = deps.withSeatLock ?? (<T>(_id: number, fn: () => Promise<T>) => fn())
+
+  return withSeatLock(showId, async () => {
+    const activeTicketCount = await deps.countActiveTickets(showId)
+    try {
+      assertCanSell(
+        {
+          capacity: show.capacity,
+          activeTicketCount,
+          inPersonSold: show.inPersonSold,
+          legacyReserved: show.legacyReserved,
+        },
+        adults + children,
+      )
+    } catch (e) {
+      throw new PartnerSaleError('OVERSELL', (e as Error).message)
+    }
+
+    // Flat face value + CODE-N refs handled inside issueTickets (channel 'partner').
+    const issued = await issueTickets(
       {
-        capacity: show.capacity,
-        activeTicketCount,
-        inPersonSold: show.inPersonSold,
-        legacyReserved: show.legacyReserved,
+        show: { id: show.id },
+        channel: 'partner',
+        adults,
+        children,
+        locale: input.locale ?? 'en',
+        partnerId,
+        buyer: null,
       },
-      adults + children,
+      { generateOrderCode: deps.generateOrderCode },
     )
-  } catch (e) {
-    throw new PartnerSaleError('OVERSELL', (e as Error).message)
-  }
 
-  // Flat face value + CODE-N refs handled inside issueTickets (channel 'partner').
-  const issued = await issueTickets(
-    {
-      show: { id: show.id },
-      channel: 'partner',
-      adults,
-      children,
-      locale: input.locale ?? 'en',
-      partnerId,
-      buyer: null,
-    },
-    { generateOrderCode: deps.generateOrderCode },
-  )
+    const tickets = issued.tickets.map((t) => ({
+      token: deps.generateToken(),
+      type: t.type,
+      ref: t.ref,
+    }))
 
-  const tickets = issued.tickets.map((t) => ({
-    token: deps.generateToken(),
-    type: t.type,
-    ref: t.ref,
-  }))
+    const { orderId } = await deps.persist({
+      order: issued,
+      tickets: tickets.map(({ token, type }) => ({ token, type })),
+    })
 
-  const { orderId } = await deps.persist({
-    order: issued,
-    tickets: tickets.map(({ token, type }) => ({ token, type })),
+    return {
+      orderId,
+      code: issued.code,
+      totalCents: issued.totalCents,
+      adultCount: adults,
+      childCount: children,
+      tickets,
+    }
   })
-
-  return {
-    orderId,
-    code: issued.code,
-    totalCents: issued.totalCents,
-    adultCount: adults,
-    childCount: children,
-    tickets,
-  }
 }

@@ -128,3 +128,43 @@ describe('createPartnerSale — validation', () => {
     expect(err.code).toBe('INVALID_QUANTITY')
   })
 })
+
+describe('createPartnerSale — seat lock serialization (#179)', () => {
+  it('runs the count→capacity-check→persist inside withSeatLock, keyed on the show id', async () => {
+    const events: string[] = []
+    const withSeatLock = vi.fn(async <T,>(showId: number, critical: () => Promise<T>) => {
+      events.push(`lock:${showId}`)
+      const r = await critical()
+      events.push('unlock')
+      return r
+    })
+    const d = deps({
+      countActiveTickets: vi.fn(async () => {
+        events.push('count')
+        return 0
+      }),
+      persist: vi.fn(async () => {
+        events.push('persist')
+        return { orderId: '1001' }
+      }),
+      withSeatLock,
+    })
+
+    await createPartnerSale(base, d)
+
+    expect(withSeatLock).toHaveBeenCalledWith(42, expect.any(Function))
+    // Count and persist happen strictly between acquiring and releasing the lock.
+    expect(events).toEqual(['lock:42', 'count', 'persist', 'unlock'])
+  })
+
+  it('does not persist when the lock-wrapped guard rejects (oversell)', async () => {
+    const persist = vi.fn(async () => ({ orderId: '1001' }))
+    const d = deps({
+      countActiveTickets: vi.fn(async () => 320), // full → assertCanSell throws
+      persist,
+      withSeatLock: async (_id, critical) => critical(),
+    })
+    await expect(createPartnerSale(base, d)).rejects.toMatchObject({ code: 'OVERSELL' })
+    expect(persist).not.toHaveBeenCalled()
+  })
+})
