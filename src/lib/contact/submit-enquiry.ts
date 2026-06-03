@@ -33,6 +33,10 @@ export interface SubmitEnquiryDeps {
   // Best-effort admin notification. Its rejection is swallowed (logged) — a
   // stored enquiry is already safe; a missed email is not data loss.
   notify?: (data: PersistedEnquiry) => Promise<void>
+  // Best-effort acknowledgement to the enquirer (#236): "we received your
+  // message". Independently swallowed so it neither blocks the org notification
+  // nor fails a stored enquiry. The caller binds the enquirer's locale here.
+  acknowledge?: (data: PersistedEnquiry) => Promise<void>
 }
 
 export type SubmitEnquiryResult = { ok: true } | { ok: false; error: string }
@@ -69,12 +73,21 @@ export async function submitEnquiry(
     return { ok: false, error: 'Could not save your message. Please try again.' }
   }
 
-  // Notification is best-effort — never fail a stored enquiry on a mail error.
+  // Both mails below are best-effort — never fail a stored enquiry on a mail
+  // error, and one failing must not skip the other.
   if (deps.notify) {
     try {
       await deps.notify(data)
     } catch (err) {
       console.error('[submitEnquiry] notify failed (enquiry was saved)', err)
+    }
+  }
+
+  if (deps.acknowledge) {
+    try {
+      await deps.acknowledge(data)
+    } catch (err) {
+      console.error('[submitEnquiry] acknowledge failed (enquiry was saved)', err)
     }
   }
 
