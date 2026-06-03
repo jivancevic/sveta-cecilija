@@ -261,6 +261,40 @@
       }
     ]
   },
+  "refundPage": {
+    "heroHeadline": "Politika povrata",
+    "heroSubtitle": "Kada se ulaznice mogu, a kada ne mogu vratiti",
+    "lastUpdated": "Posljednje ažuriranje: lipanj 2026.",
+    "sections": [
+      {
+        "heading": "Otkazivanje od strane kupca",
+        "body": "Ulaznice se ne vraćaju ako se predomislite ili ne možete doći. Molimo kupujte tek kada su vaši planovi potvrđeni. Ako ste kupili krivi nastup ili pogriješili pri plaćanju, javite nam se na info@moreska.eu i pomoći ćemo koliko je razumno moguće."
+      },
+      {
+        "heading": "Ako mi otkažemo nastup",
+        "body": "Ako HGD Sveta Cecilija u cijelosti otkaže nastup, svaki kupac dobiva potpuni povrat na izvornu karticu. S vaše strane nije potrebno ništa poduzimati: povrate obrađujemo automatski i šaljemo vam e-mail kada je povrat poslan. Sredstva se obično pojave u roku od 5 do 10 radnih dana."
+      },
+      {
+        "heading": "Loše vrijeme i promjena lokacije",
+        "body": "Naši ljetni nastupi održavaju se u Ljetnom kinu. Po lošem vremenu nastup se može premjestiti u zatvoreni prostor Centra za kulturu umjesto da bude otkazan. Promjena lokacije nije otkazivanje i ne predstavlja automatski razlog za povrat: nastup se i dalje održava. Pogođene kupce obavještavamo e-mailom s novom lokacijom i poveznicom na kartu. Ako vam nova lokacija doista ne odgovara, odgovorite na taj e-mail i razmotrit ćemo vaš slučaj pojedinačno."
+      },
+      {
+        "heading": "Izgubljene ili ukradene ulaznice",
+        "body": "Izgubljene ili ukradene ulaznice ne vraćamo. Vaše ulaznice i QR kodovi vezani su uz vašu rezervaciju pa svoje PDF ulaznice možete ponovno preuzeti u bilo kojem trenutku putem poveznice u potvrdnom e-mailu. Ako ne možete pronaći taj e-mail, javite se na info@moreska.eu i ponovno ćemo vam poslati ulaznice."
+      },
+      {
+        "heading": "Kako se obrađuju povrati",
+        "body": "Svi povrati vraćaju se na izvornu karticu putem Stripea, našeg pružatelja platnih usluga. Ne možemo izvršiti povrat na drugu karticu ni na drugi način. Nakon što izdamo povrat, vaša banka određuje točan trenutak knjiženja, obično u roku od 5 do 10 radnih dana. Po slanju povrata dobit ćete potvrdni e-mail."
+      },
+      {
+        "heading": "Pitanja i pojedinačni zahtjevi",
+        "body": "Za sve što ovdje nije obuhvaćeno, uključujući pojedinačne zahtjeve nakon promjene lokacije, javite se na info@moreska.eu. Čitamo svaku poruku i nastojimo odgovoriti u roku od dva radna dana."
+      }
+    ]
+  },
+  "consent": {
+    "notice": "Poslat ćemo Vam ulaznicu, sve promjene predstave i jednu kratku poruku nakon predstave. Možete se odjaviti u svakom trenutku."
+  },
   "servicePages": {
     "backLink": "← Privatne izvedbe",
     "formTitle": "Pošalji upit",
@@ -328,6 +362,7 @@
     "legal": "© 2026 HGD Sveta Cecilija",
     "privacyPolicy": "Politika privatnosti",
     "cookiePolicy": "Politika kolačića",
+    "refundPolicy": "Politika povrata",
     "blog": "Blog"
   },
   "checkoutPage": {
@@ -348,6 +383,7 @@
     "emailPlaceholder": "vi@primjer.com",
     "emailHelp": "Tu šaljemo vaše ulaznice i QR kodove.",
     "refundLabel": "Razumijem da su ulaznice nepovratne na zahtjev kupca, ali u potpunosti povratne ako se nastup otkaže.",
+    "refundLinkLabel": "Politika povrata",
     "privacyLinkLabel": "Politika privatnosti",
     "privacyLabel": "Slažem se s Politikom privatnosti.",
     "paymentHeading": "PLAĆANJE",

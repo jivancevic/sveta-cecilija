@@ -23,6 +23,7 @@ export const Shows: CollectionConfig = {
         editMenuItems: [
           '@/components/payload/InPersonSalesMenuItem#InPersonSalesMenuItem',
           '@/components/payload/ViewOrdersForShowMenuItem#ViewOrdersForShowMenuItem',
+          '@/components/payload/MarkMovedToZimskoMenuItem#MarkMovedToZimskoMenuItem',
           '@/components/payload/CancelShowMenuItem#CancelShowMenuItem',
         ],
       },
@@ -91,6 +92,28 @@ export const Shows: CollectionConfig = {
         { label: 'Active', value: 'active' },
         { label: 'Cancelled', value: 'cancelled' },
       ],
+    },
+    // Bad-weather venue-change audit (#94). Populated by the "Mark show as
+    // moved to Zimsko" action; read-only in the admin. NULL = never moved.
+    {
+      name: 'venueChangedAt',
+      type: 'date',
+      admin: {
+        readOnly: true,
+        description: 'When this show was moved Ljetno → Zimsko. NULL = not moved.',
+        date: { pickerAppearance: 'dayAndTime' },
+      },
+      access: { update: () => false },
+    },
+    {
+      name: 'venueChangedBy',
+      type: 'relationship',
+      relationTo: 'users',
+      admin: {
+        readOnly: true,
+        description: 'Admin who marked this show as moved to Zimsko.',
+      },
+      access: { update: () => false },
     },
   ],
 }

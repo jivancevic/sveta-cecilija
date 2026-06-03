@@ -57,7 +57,7 @@ Both are ImprovMX forwarding aliases (no real mailbox), so adding one is near-ze
 - **Target:** 3–5× velocity in 2026 season via active solicitation.
 - **Tactics:**
   - **QR card handed at exit by door staff:** front side "Loved the show? Review us →" + QR linking to TripAdvisor review form. Back side same QR linking to Google review form. Print ~500, give to door staff.
-  - **Follow-up email** 24h after performance (post-ticket-purchase, via Brevo) with two big buttons: "Review on TripAdvisor" / "Review on Google". Subject line "How was Moreška?"
+  - **Follow-up email** 2h after performance (post-ticket-purchase, via Brevo) with two big buttons: "Review on TripAdvisor" / "Review on Google". Subject line "How was Moreška?" One-click unsubscribe (List-Unsubscribe header) persists across future shows.
   - **Door staff script:** one-line ask at exit, "If you enjoyed the show, please scan this to leave a quick review." Requires staff buy-in — train at season start.
 - **Don't:** offer incentives for reviews (Google + TripAdvisor TOS violation, can get listings delisted).
 

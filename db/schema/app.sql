@@ -97,6 +97,17 @@ ALTER TABLE shows ADD COLUMN IF NOT EXISTS status         enum_shows_status NOT 
 -- post-cutover (only changes if a legacy buyer is refunded by the old operator).
 ALTER TABLE shows ADD COLUMN IF NOT EXISTS legacy_reserved integer NOT NULL DEFAULT 0 CHECK (legacy_reserved >= 0);
 
+-- Bad-weather venue-change audit (#94). Populated by the "Mark show as moved
+-- to Zimsko" admin action: venue_changed_at = when, venue_changed_by_id = which
+-- admin. NULL = the show was never moved.
+ALTER TABLE shows ADD COLUMN IF NOT EXISTS venue_changed_at    timestamptz;
+ALTER TABLE shows ADD COLUMN IF NOT EXISTS venue_changed_by_id integer;
+DO $$ BEGIN
+  ALTER TABLE shows
+    ADD CONSTRAINT shows_venue_changed_by_fk
+    FOREIGN KEY (venue_changed_by_id) REFERENCES users(id);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
 -- ─── orders ───────────────────────────────────────────────────────────
 
 CREATE TABLE IF NOT EXISTS orders (
@@ -307,3 +318,16 @@ DO $$ BEGIN
     ADD CONSTRAINT payload_locked_documents_rels_partners_fk
     FOREIGN KEY (partners_id) REFERENCES partners(id) ON DELETE CASCADE;
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+-- ─── marketing_optouts (#57) ──────────────────────────────────────────
+-- Email-level opt-out for marketing-class mail (post-show review request).
+-- NOT a Payload collection: written by /api/unsubscribe (one-click) and read
+-- by the review-email dispatch SQL. Keyed by email so the preference persists
+-- across future shows (each show is a fresh Orders row). email is stored
+-- lowercased by every writer.
+
+CREATE TABLE IF NOT EXISTS marketing_optouts (
+  email         varchar PRIMARY KEY,
+  source        varchar,
+  opted_out_at  timestamptz NOT NULL DEFAULT now()
+);

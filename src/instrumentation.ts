@@ -173,6 +173,12 @@ export async function register() {
       CREATE INDEX IF NOT EXISTS "payload_locked_documents_rels_order_idx" ON "payload_locked_documents_rels" ("order");
       CREATE INDEX IF NOT EXISTS "payload_locked_documents_rels_parent_idx" ON "payload_locked_documents_rels" ("parent_id");
       CREATE INDEX IF NOT EXISTS "payload_locked_documents_rels_path_idx" ON "payload_locked_documents_rels" ("path");
+
+      CREATE TABLE IF NOT EXISTS "marketing_optouts" (
+        "email" varchar PRIMARY KEY NOT NULL,
+        "source" varchar,
+        "opted_out_at" timestamp(3) with time zone DEFAULT now() NOT NULL
+      );
     `)
     console.log('[bootstrap] Database schema ready.')
   } catch (err) {

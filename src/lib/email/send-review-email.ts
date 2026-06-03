@@ -1,6 +1,11 @@
-// Brevo transactional sender for the T+24h post-show review-request email.
+// Brevo transactional sender for the post-show review-request email (T+2h).
 // Same shape as send-ticket-email / send-refund-email — pure POST, EN+HR,
 // fire-and-forget with grep-able failure logs.
+//
+// Marketing-class mail (#57): carries a one-click unsubscribe footer link plus
+// RFC 8058 List-Unsubscribe / List-Unsubscribe-Post headers so Gmail/Apple
+// Mail surface a native "Unsubscribe" affordance and Postmaster guidelines
+// for bulk senders are met.
 import { postBrevoEmail } from './post-brevo-email'
 
 export interface SendReviewEmailInput {
@@ -9,6 +14,10 @@ export interface SendReviewEmailInput {
   locale?: 'en' | 'hr'
   tripadvisorUrl: string
   googleReviewUrl: string
+  // Pre-signed one-click unsubscribe URL for this buyer's email. Omitted only
+  // if the caller could not build it (no PAYLOAD_SECRET) — the mail still
+  // sends, just without the List-Unsubscribe affordance.
+  unsubscribeUrl?: string
 }
 
 export interface SendReviewEmailDeps {
@@ -25,7 +34,14 @@ function renderSubject(locale: 'en' | 'hr'): string {
 }
 
 function renderHtml(input: SendReviewEmailInput, locale: 'en' | 'hr'): string {
-  const { buyer, tripadvisorUrl, googleReviewUrl } = input
+  const { buyer, tripadvisorUrl, googleReviewUrl, unsubscribeUrl } = input
+
+  const unsubHr = unsubscribeUrl
+    ? ` Ako se želite odjaviti od ovakvih poruka, <a href="${unsubscribeUrl}" style="color:#888;">odjavite se ovdje</a>.`
+    : ''
+  const unsubEn = unsubscribeUrl
+    ? ` To stop receiving these, <a href="${unsubscribeUrl}" style="color:#888;">unsubscribe here</a>.`
+    : ''
 
   // Brand fonts mirrored from globals.css. Inline because email clients
   // strip <link>/external CSS — keep tokens centralised here.
@@ -54,7 +70,7 @@ function renderHtml(input: SendReviewEmailInput, locale: 'en' | 'hr'): string {
       <p style="margin:0;font-size:14px;line-height:1.55;color:#555;">Srdačan pozdrav,<br/>Moreška by HGD Sveta Cecilija</p>
     </td></tr>
     <tr><td style="padding:16px 32px;border-top:1px solid #e6dfd1;font-size:11px;color:#888;line-height:1.5;">
-      Ovaj email je poslan jer ste kupili ulaznicu kod HGD Sveta Cecilija. Pravna osoba: HGD Sveta Cecilija, Korčula, Hrvatska. Ako ne želite primati ovakve poruke, javite nam na <a href="mailto:info@moreska.eu" style="color:#888;">info@moreska.eu</a>.
+      Ovaj email je poslan jer ste kupili ulaznicu kod HGD Sveta Cecilija. Pravna osoba: HGD Sveta Cecilija, Korčula, Hrvatska. Možete nam pisati na <a href="mailto:info@moreska.eu" style="color:#888;">info@moreska.eu</a>.${unsubHr}
     </td></tr>
   </table>
 </div>
@@ -77,7 +93,7 @@ function renderHtml(input: SendReviewEmailInput, locale: 'en' | 'hr'): string {
       <p style="margin:0;font-size:14px;line-height:1.55;color:#555;">With thanks,<br/>Moreška by HGD Sveta Cecilija</p>
     </td></tr>
     <tr><td style="padding:16px 32px;border-top:1px solid #e6dfd1;font-size:11px;color:#888;line-height:1.5;">
-      You're receiving this because you purchased a ticket from HGD Sveta Cecilija. Legal entity: HGD Sveta Cecilija, Korčula, Croatia. To stop receiving messages like this, email <a href="mailto:info@moreska.eu" style="color:#888;">info@moreska.eu</a>.
+      You're receiving this because you purchased a ticket from HGD Sveta Cecilija. Legal entity: HGD Sveta Cecilija, Korčula, Croatia. You can reach us at <a href="mailto:info@moreska.eu" style="color:#888;">info@moreska.eu</a>.${unsubEn}
     </td></tr>
   </table>
 </div>
@@ -89,11 +105,20 @@ export async function sendReviewEmail(
   deps: SendReviewEmailDeps,
 ): Promise<void> {
   const locale = input.locale ?? 'en'
+  // RFC 2369 / RFC 8058: a mailto fallback plus the one-click HTTPS endpoint.
+  // List-Unsubscribe-Post tells the client it may POST without confirmation.
+  const headers = input.unsubscribeUrl
+    ? {
+        'List-Unsubscribe': `<mailto:info@moreska.eu?subject=unsubscribe>, <${input.unsubscribeUrl}>`,
+        'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+      }
+    : undefined
   const body = {
     sender: SENDER,
     to: [{ email: input.buyer.email, name: input.buyer.name }],
     subject: renderSubject(locale),
     htmlContent: renderHtml(input, locale),
+    ...(headers ? { headers } : {}),
   }
   try {
     const res = await postBrevoEmail(body, {

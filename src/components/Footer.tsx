@@ -52,7 +52,7 @@ export default function Footer({ locale, t }: Props) {
 
       <div className="foot__bottom">
         <div className="foot__legal">
-          {t.legal} · <a href="/privacy-policy">{t.privacyPolicy}</a> · <a href="/cookie-policy">{t.cookiePolicy}</a> · Developed by: <a href="https://www.linkedin.com/in/josipivancevic" target="_blank" rel="noopener noreferrer">Josip Ivančević</a>
+          {t.legal} · <a href="/privacy-policy">{t.privacyPolicy}</a> · <a href="/cookie-policy">{t.cookiePolicy}</a> · <a href="/refund-policy">{t.refundPolicy}</a> · Developed by: <a href="https://www.linkedin.com/in/josipivancevic" target="_blank" rel="noopener noreferrer">Josip Ivančević</a>
         </div>
         <LangSwitcher locale={locale} className="foot__lang" />
       </div>
