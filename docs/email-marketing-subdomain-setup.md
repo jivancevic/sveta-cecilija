@@ -131,24 +131,22 @@ cap**. Same SDK, same DNS — a billing flip, not a migration.
 
 ---
 
-## 3. Code flip after #56 verifies (gated, one-liner)
+## 3. Code flip after #56 verifies ✅ DONE (2026-06-03)
 
-The review email (#57) currently sends `From: info@moreska.eu` because the bilten
-subdomain isn't authenticated yet — sending from an unverified domain would tank
-deliverability. **Once #56 is green:**
+The review email (#57) now sends `From: newsletter@bilten.moreska.eu` with
+`Reply-To: info@moreska.eu` (`src/lib/email/send-review-email.ts`), so the
+marketing-class mail rides the bilten subdomain's reputation while buyer replies
+still land in the real inbox.
 
-- In `src/lib/email/send-review-email.ts`, change `SENDER` from
-  `{ email: 'info@moreska.eu', … }` to
-  `{ email: 'newsletter@bilten.moreska.eu', name: 'Moreška by HGD Sveta Cecilija' }`.
-- Do the same for `src/lib/email/send-venue-change-email.ts` if you want the
-  bad-weather venue notice (#94) to ride the marketing subdomain too. (Arguably it
-  is transactional — it's about a ticket the buyer already holds — so leaving it on
-  root `moreska.eu` is also defensible. Decide per deliverability preference.)
-- Leave ticket confirmations and refund emails on root `moreska.eu` — those are
-  transactional and must keep the root reputation.
+Left on root `moreska.eu` deliberately:
 
-This is the only code change; the unsubscribe link, List-Unsubscribe headers, and
-T+2h timing already ship.
+- **`send-venue-change-email.ts`** — the bad-weather venue notice is transactional
+  (it's about a ticket the buyer already holds), so it stays on root.
+- **Ticket confirmations and refund emails** — transactional; must keep the root
+  reputation.
+
+This was the only code change; the unsubscribe link, List-Unsubscribe headers, and
+T+2h timing already shipped in #57.
 
 ---
 
