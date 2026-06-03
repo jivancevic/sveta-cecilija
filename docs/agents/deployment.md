@@ -1,6 +1,18 @@
 # Deployment (Coolify on Hetzner)
 
-`main` auto-deploys. Coolify pulls the commit, runs Nixpacks → Docker build → `npm ci --production` → `next build` → `npm start` (which is `node scripts/bootstrap-db.mjs && next start`). Build server is `hetzner-ubuntu-4gb-fsn1-1`.
+Two Coolify apps on one Hetzner box both track `main` ([ADR-0009](../adr/0009-staging-environment-on-coolify.md)): **`dev.moreska.eu` auto-deploys** every push to `main`; **`moreska.eu` (prod) has auto-deploy OFF** — promotion is a manual "Redeploy" click in the Coolify UI after testing the same commit on dev. Hotfixes are "merge to main, immediately Redeploy prod"; no special path. No `dev` git branch (single trunk). Don't use Vercel — Payload's long-lived Postgres pool + bootstrap-on-start fights serverless.
+
+Each deploy: Coolify pulls the commit, runs Nixpacks → Docker build → `npm ci --production` → `next build` → `npm start` (which is `node scripts/bootstrap-db.mjs && next start`).
+
+## Database topology
+
+One shared Postgres container (`postgres:18-alpine`, container id `tcrw531gbwikko09bvl9ssaz`, superuser `postgres`) holds both prod and staging DBs; identify it by env, not name. Verified on the box 2026-06-02:
+
+- **Local dev** → `sveta_cecilija_dev`
+- **Production** → the *default* `postgres` database (there is **no** DB literally named `sveta_cecilija`, despite older docs). A prod DB rename is a locked future decision — re-verify the name before asserting it.
+- **Staging** → `sveta_cecilija_staging` (owner `staging_user`)
+
+Coolify runs its *own* internal Postgres in a separate `coolify-db` container — never touch it.
 
 ## Pipeline cheat sheet
 

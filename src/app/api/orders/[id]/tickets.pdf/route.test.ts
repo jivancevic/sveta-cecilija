@@ -45,7 +45,7 @@ beforeEach(() => {
 })
 
 describe('GET /api/orders/[id]/tickets.pdf auth gate', () => {
-  // ADR-0011 invariant: the order code is a display/support reference only and
+  // ADR-0014 invariant: the order code is a display/support reference only and
   // must NEVER authorise the PDF endpoint. If a future change wires `?code=`
   // into auth, this test fails loudly.
   it('rejects a request authorised only by the order code', async () => {

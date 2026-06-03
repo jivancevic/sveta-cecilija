@@ -31,7 +31,7 @@ To verify Payload's actual column types/defaults for the SQL you're
 writing, dump from your local dev DB:
 
 ```sh
-PGPASSWORD=postgres psql -h localhost -U postgres -d sveta_cecilija -c "\d <table>"
+PGPASSWORD=postgres psql -h localhost -U postgres -d sveta_cecilija_dev -c "\d <table>"
 ```
 
 ## Why not `payload migrate`?
@@ -57,3 +57,46 @@ causes:
 - `DATABASE_URL not set` → log line `[bootstrap-db] DATABASE_URL is not set — skipping`, container starts anyway. Set it in Coolify env.
 - `relation "shows" does not exist` → the original Payload tables were never created. Run the very first Payload deploy's auto-push manually, or seed by running `\i db/schema/app.sql` from psql after creating `shows` by hand.
 - `column already exists` → not possible (the script uses `IF NOT EXISTS`); if you see this, a manual `ALTER TABLE` outside the script created a column with a different type. Reconcile manually.
+
+## A vitest guardrail protects the schema files
+
+`src/lib/db-schema-safety.test.ts` fails on any unguarded `UPDATE`/`DELETE`/`TRUNCATE` in `db/schema/*.sql` — added after PR #126 caught one zeroing the sold counters on every deploy. Keep destructive statements guarded (or out of the schema files entirely).
+
+`TRUNCATE` on any Payload collection table needs `CASCADE` — `payload_locked_documents_rels` FKs cause a prod 502 crashloop otherwise.
+
+## Enum migrations need ordering care AND a file split
+
+When you change a Payload `select` field's options, the underlying Postgres enum (`enum_<table>_<field>`) must be widened *before* any SQL UPDATE references the new values. Two gotchas stack:
+
+1. **`ALTER TYPE … ADD VALUE` cannot be used within the same transaction that references the new value** — Postgres errors with `unsafe use of new value of enum type`. `IF NOT EXISTS` doesn't help; that's about idempotency, not transaction scoping.
+2. **`bootstrap-db.mjs` sends each `.sql` file as a single `client.query(sql)` call** — pg's simple query protocol treats multi-statement strings as one implicit transaction. So `ALTER TYPE ADD VALUE` and a downstream `UPDATE` cannot share a file.
+
+Pattern: split into two files that run alphabetically. `migrate-roles-1-enum.sql` contains only `ALTER TYPE enum_users_role ADD VALUE IF NOT EXISTS 'newvalue';` (one statement per new value, no DO block). `migrate-roles-2-data.sql` contains the `UPDATE` statements. Each runs in its own implicit transaction; the new enum values are visible by the time step 2 runs. See `db/schema/migrate-roles-1-enum.sql` and `migrate-roles-2-data.sql` for the working pattern.
+
+In dev, Payload's `push: true` will subsequently rewrite the enum to match the field config and `ALTER COLUMN … USING <cast>` — the cast fails if any row still holds a value not in the new enum, so always migrate data *first*.
+
+**Defensive WHERE comparisons against removed enum values.** Once Payload's `push:true` rewrites the enum to drop an old label (e.g. `'door-staff'` → `'tehnika'`), any later run of the same data migration crashes with `invalid input value for enum enum_users_role: "door-staff"`. Postgres coerces the RHS literal of `WHERE role = 'door-staff'` to the column's enum type at *parse* time, so the script fails before it can check whether any row still needs migrating. Fix: cast the column to text — `WHERE role::text = 'door-staff'`. The migration stays idempotent on fresh DBs (no rows match, no-op) and still does the right thing on DBs that haven't been re-pushed yet.
+
+**`npm run dev` runs `bootstrap-db.mjs`**, but only if `DATABASE_URL` is in the shell env. `next dev` itself loads `.env.local`, but standalone node scripts don't. If bootstrap prints `DATABASE_URL is not set — skipping`, source env first: `set -a && . .env.local && set +a && npm run dev`. A fresh clone hitting an enum-change migration will 500 until this is done.
+
+## Atomic DB writes when a field accumulates
+
+When an API endpoint adds-to a numeric column (`inPersonSold`, `onlineSold`, etc.) instead of replacing it, **never** do `find` → compute → `update` — that read-modify-write loses updates under concurrent requests. Use a single SQL statement via the underlying pool:
+
+```ts
+const db = (payload.db as unknown as { pool: { query: (sql: string, params: unknown[]) => Promise<{ rows: any[] }> } }).pool
+const res = await db.query(
+  'UPDATE shows SET in_person_sold = COALESCE(in_person_sold, 0) + $1, updated_at = NOW() WHERE id = $2 RETURNING in_person_sold',
+  [delta, Number(showId)],
+)
+```
+
+Pattern proven in `src/app/api/shows/[id]/in-person-sales/route.ts`. The lib helper takes an `atomicIncrement` dep so unit tests can mock it; only the route wires the real SQL.
+
+## Raw SQL for race-sensitive ops (first-one-wins)
+
+Payload's `find`/`update` are read-then-write under the hood and not safe for "first-one-wins" semantics. For atomic mark-and-read (e.g. ticket scan), drop to drizzle: `const drizzle: any = (payload.db as any).drizzle` then `drizzle.execute(sql\`UPDATE ... WHERE cond=false RETURNING ...\`)` with `sql` imported from `@payloadcms/db-postgres`. Result rows live on `res.rows`. Verified race-safe end-to-end: 20 concurrent identical scans → exactly 1 VALID.
+
+## Advisory lock for a multi-step read-then-insert (seat sells, #179)
+
+When the race spans *separate* statements that a single atomic `UPDATE` can't cover — e.g. `COUNT active tickets` → capacity check → `INSERT` order + tickets — wrap the whole critical section in a **Postgres advisory lock** keyed on the entity id. `withShowSellLock(pool, showId, fn)` in `src/lib/tickets/sell-lock.ts` takes a dedicated pooled connection, `pg_advisory_lock(7799, showId)`, runs `fn` (which may insert via `payload.create` on other connections — they commit before the lock releases), then `pg_advisory_unlock`. Wired as an injectable `withSeatLock` dep into `createPartnerSale` and `handlePaymentSucceeded`; defaults to a pass-through in unit tests. Different ids → different keys → no deadlock. Proven by `scripts/probe-oversell.mjs` (20 concurrent sells for 3 seats → exactly 3 locked; oversells unlocked).
