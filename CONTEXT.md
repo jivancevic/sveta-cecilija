@@ -200,6 +200,8 @@ A `Ticket` (Payload `Tickets` collection, table `tickets` — renamed from `qr_t
 - **Partner storno** voids the specific ticket(s) (`reason = storno`), same-day-only, no money movement.
 A cancelled ticket still exists, so a printed-but-voided slip scans to a clear INVALID/CANCELLED state rather than vanishing.
 
+The online refund flow is **safely re-runnable end to end** (`src/lib/refund-order.ts`): the Stripe call carries a stable idempotency key (`refund:<paymentIntentId>`, `src/lib/refund/create-stripe-refund.ts`) so a retry returns the *original* refund instead of erroring or double-refunding; and a retry on an already-`refunded` order still re-voids its tickets (idempotent, no Stripe call, no re-email) so a void that failed mid-flow self-heals. The void SQL's seat-freeing is regression-checked by `scripts/probe-refund-void.mjs` (runs inside a transaction that always rolls back — safe against any DB, kept out of the offline unit suite).
+
 ### Partner sell flow
 A `partner`-role user, from their scoped `/admin` dashboard: picks an **active upcoming show**, enters **adult** and **child** counts, and gets a **combined PDF** (2-up A5, all tickets) to print on the spot. **No buyer PII, no Stripe, no email** at sell time. Seats are guarded against the **live remaining capacity** (`remaining = capacity − active tickets − inPersonSold − legacyReserved`) — the sell is rejected if it would oversell, and the dashboard shows remaining per show. The partner sells at **flat face value** (no 5th-free; see Free-ticket discount). Each sale = one `Order` (`channel = partner`, `partner = X`, `total` = face value owed, no `email`/`buyerName`), with one `adult|child` ticket per person.
 

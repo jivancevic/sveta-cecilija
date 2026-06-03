@@ -244,7 +244,7 @@ Remaining capacity per show = `VENUE_CAPACITY[venue] - onlineSold - inPersonSold
 - **Show types in `docs/performances.md`:** `Redovna` = public ticketed shows. `Gulliver` / `Adriatic DMC` = private tour operator (pre-booked, not publicly ticketed). `Crveni križ` = charity. Only `Redovna` shows appear on the public performances page.
 - **QR codes:** generated server-side at order creation, one per ticket. Each encodes `https://moreska.eu/scan/[token]`. Embedded as inline base64 in the Resend email.
 - **Pretix:** dropped from MVP. Door scanning uses the browser-based `/scan/[token]` page only — staff scan with any phone camera.
-- **Refunds:** admin-initiated only (no self-service). Idempotent — check `refundStatus` before calling Stripe to prevent double-refunds.
+- **Refunds:** admin-initiated only (no self-service). Idempotent and safely re-runnable: the route checks `refundStatus` before calling Stripe, the Stripe call carries a stable `refund:<paymentIntentId>` idempotency key (`src/lib/refund/create-stripe-refund.ts`), and a retry on an already-`refunded` order re-voids any still-active tickets (self-heal, no Stripe call, no re-email). Seat-freeing regression probe: `scripts/probe-refund-void.mjs` (transaction-rollback, safe against any DB).
 
 ### Payload CMS admin customization (v3.84)
 
