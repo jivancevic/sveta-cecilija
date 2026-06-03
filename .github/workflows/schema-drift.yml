@@ -8,12 +8,32 @@ name: Schema drift
 #   expected  — boot the app (next dev → Payload push) → the source-of-truth schema
 #   bootstrap — run scripts/bootstrap-db.mjs (db/schema/*.sql only, no push)
 # The gate asserts `bootstrap` is a superset of `expected` (scripts/schema-diff.mjs).
+#
+# Path-filtered: drift can only appear when the schema source, the collection
+# configs Payload push reads, or the bootstrap/diff machinery change. Docs-only
+# and unrelated code PRs skip this slow job (it boots `next dev` + installs the
+# pg client). Safe to skip because `drift` is NOT a required status check — a
+# skipped run can't wedge a PR the way a skipped required check would.
 
 on:
   pull_request:
     branches: [main]
+    paths:
+      - 'db/schema/**'
+      - 'src/collections/**'
+      - 'scripts/bootstrap-db.mjs'
+      - 'scripts/schema-diff.mjs'
+      - 'package-lock.json'
+      - '.github/workflows/schema-drift.yml'
   push:
     branches: [main]
+    paths:
+      - 'db/schema/**'
+      - 'src/collections/**'
+      - 'scripts/bootstrap-db.mjs'
+      - 'scripts/schema-diff.mjs'
+      - 'package-lock.json'
+      - '.github/workflows/schema-drift.yml'
 
 jobs:
   drift:
