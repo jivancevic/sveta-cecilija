@@ -1,7 +1,11 @@
 import { getPayload } from 'payload'
 import config from '@payload-config'
 import { VENUE_CAPACITY, type Venue } from './venues'
-import { getActiveTicketCountsByShow, getActiveTicketCountForShow } from './tickets/sold-seats'
+import {
+  getActiveTicketCountsByShow,
+  getActiveTicketCountForShow,
+  getScannedTicketCountForShow,
+} from './tickets/sold-seats'
 import { remainingSeats } from './tickets/seat-availability'
 
 export { VENUE_CAPACITY, type Venue }
@@ -73,16 +77,7 @@ export async function getNextShow(): Promise<NextShow | null> {
 export async function getScannedPeopleForShow(showId: number | string): Promise<number> {
   const payload = await getPayload({ config })
   const pool = (payload.db as unknown as { pool: { query: PoolQuery } }).pool
-  const numericId = Number(showId)
-  if (!Number.isFinite(numericId)) return 0
-  const res = await pool.query(
-    `SELECT COUNT(*)::int AS people
-     FROM tickets t
-     JOIN orders o ON o.id = t.order_id
-     WHERE o.show_id = $1 AND t.scanned = true AND t.status = 'active'`,
-    [numericId],
-  )
-  return Number(res.rows[0]?.people ?? 0)
+  return getScannedTicketCountForShow((sql, params) => pool.query(sql, params), showId)
 }
 
 export async function getUpcomingShows(limit?: number): Promise<Show[]> {

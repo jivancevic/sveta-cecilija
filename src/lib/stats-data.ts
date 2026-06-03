@@ -2,7 +2,7 @@ import { getPayload } from 'payload'
 import config from '@payload-config'
 import type { StatsInput, StatsShow } from './stats'
 import type { Venue } from './venues'
-import { getActiveTicketCountsByShow } from './tickets/sold-seats'
+import { getActiveTicketCountsByShow, getScannedTicketCountsByShow } from './tickets/sold-seats'
 
 type PoolQuery = (sql: string, params?: unknown[]) => Promise<{ rows: Record<string, unknown>[] }>
 
@@ -17,21 +17,8 @@ export async function getStatsInput(today: Date = new Date()): Promise<StatsInpu
     depth: 0,
   })
 
-  // Scanned-people count per show. Under the per-person ticket model there is
-  // one tickets row per person, so "scanned people" is a plain COUNT of scanned
-  // active tickets (each ticket = 1 person). Cancelled tickets are excluded.
-  const scannedRes = await pool.query(`
-    SELECT o.show_id AS show_id,
-           COUNT(*)::int AS scanned
-    FROM tickets t
-    JOIN orders o ON o.id = t.order_id
-    WHERE t.scanned = true AND t.status = 'active'
-    GROUP BY o.show_id
-  `)
-  const scannedByShow = new Map<string, number>()
-  for (const row of scannedRes.rows) {
-    scannedByShow.set(String(row.show_id), Number(row.scanned) || 0)
-  }
+  // Scanned-people count per show (each scanned active ticket = 1 person).
+  const scannedByShow = await getScannedTicketCountsByShow((sql, params) => pool.query(sql, params))
 
   // Total revenue across non-refunded orders (cents).
   const revenueRes = await pool.query(`
