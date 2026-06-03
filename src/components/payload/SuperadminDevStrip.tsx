@@ -65,15 +65,19 @@ const sectionTitle: React.CSSProperties = {
   margin: '18px 0 8px',
 }
 
+const listReset: React.CSSProperties = { listStyle: 'none', margin: 0, padding: 0 }
+
+// Env → banner palette. Prod is the dangerous one (red); staging amber; the rest
+// neutral. A lookup keeps it trivial to add a tier later.
+const ENV_PALETTE: Record<string, { bg: string; border: string; fg: string }> = {
+  production: { bg: 'var(--theme-error-100, #fde8e8)', border: 'var(--theme-error-500, #c0392b)', fg: 'var(--theme-error-800, #7a1f17)' },
+  staging: { bg: 'var(--theme-warning-100, #fef3cd)', border: 'var(--theme-warning-500, #c08a1e)', fg: 'var(--theme-warning-800, #6b4e09)' },
+  default: { bg: 'var(--theme-elevation-50)', border: 'var(--theme-elevation-150)', fg: 'var(--theme-elevation-700)' },
+}
+
 // ── Environment + DB banner ───────────────────────────────────────────
 function EnvBanner({ env }: { env: EnvInfo }) {
-  // Prod is the dangerous one (red); staging amber; dev neutral.
-  const palette =
-    env.environment === 'production'
-      ? { bg: 'var(--theme-error-100, #fde8e8)', border: 'var(--theme-error-500, #c0392b)', fg: 'var(--theme-error-800, #7a1f17)' }
-      : env.environment === 'staging'
-        ? { bg: 'var(--theme-warning-100, #fef3cd)', border: 'var(--theme-warning-500, #c08a1e)', fg: 'var(--theme-warning-800, #6b4e09)' }
-        : { bg: 'var(--theme-elevation-50)', border: 'var(--theme-elevation-150)', fg: 'var(--theme-elevation-700)' }
+  const palette = ENV_PALETTE[env.environment] ?? ENV_PALETTE.default
 
   return (
     <div
@@ -115,7 +119,7 @@ function DataIntegritySection({ integrity }: { integrity: DataIntegrity }) {
   return (
     <div>
       <p style={sectionTitle}>Data integrity</p>
-      <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+      <ul style={listReset}>
         {anomalies.map((a) => (
           <li
             key={a.label}
@@ -159,7 +163,7 @@ function IntegrationHealthSection({
   return (
     <div>
       <p style={sectionTitle}>Integration health</p>
-      <ul style={{ listStyle: 'none', margin: 0, padding: 0, fontSize: 12, color: 'var(--theme-elevation-600)' }}>
+      <ul style={{ ...listReset, fontSize: 12, color: 'var(--theme-elevation-600)' }}>
         <HealthRow label="last online order (≈ Stripe webhook)" value={formatAgo(health.lastOnlineOrderAt)} />
         <HealthRow label="last review email sent (≈ cron)" value={formatAgo(health.lastReviewEmailAt)} />
         <HealthRow
@@ -222,7 +226,7 @@ function CriticalEventsSection({ events }: { events: CriticalEventRow[] }) {
           No critical events recorded.
         </p>
       ) : (
-        <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+        <ul style={listReset}>
           {events.map((e) => (
             <li
               key={e.id}
