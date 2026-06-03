@@ -52,22 +52,23 @@ export async function AdminDashboardView() {
     return <TehnikaDashboard role={role} />
   }
 
-  const input = await getStatsInput()
-  const { header, rows } = computeStats(input)
-
   // Superadmin-only critical-events dev strip (#235). admin never sees it; the
   // tehnika/partner branches above already returned, so no need to re-check them.
-  let criticalEvents: Awaited<ReturnType<typeof listRecentCriticalEvents>> = []
-  if (isSuperadmin(user as { role?: string })) {
-    const pool = (payload.db as unknown as { pool: { query: PoolQuery } }).pool
-    try {
-      criticalEvents = await listRecentCriticalEvents((sql, params) => pool.query(sql, params), 20)
-    } catch (err) {
-      // The dev strip must never break the dashboard (e.g. table not yet
-      // bootstrapped on a stale DB). Render it empty instead.
-      console.error('[AdminDashboardView] failed to load critical events', err)
-    }
-  }
+  // Fetched in parallel with the stats input (independent queries). The dev strip
+  // must never break the dashboard (e.g. table not yet bootstrapped on a stale
+  // DB), so a read failure resolves to an empty list.
+  const superadmin = isSuperadmin(user as { role?: string })
+  const pool = (payload.db as unknown as { pool: { query: PoolQuery } }).pool
+  const [input, criticalEvents] = await Promise.all([
+    getStatsInput(),
+    superadmin
+      ? listRecentCriticalEvents((sql, params) => pool.query(sql, params), 20).catch((err) => {
+          console.error('[AdminDashboardView] failed to load critical events', err)
+          return []
+        })
+      : Promise.resolve([]),
+  ])
+  const { header, rows } = computeStats(input)
 
   return (
     <div style={{ padding: '24px clamp(16px, 4vw, 40px)', maxWidth: 1280, margin: '0 auto' }}>
@@ -80,7 +81,7 @@ export async function AdminDashboardView() {
       <h2 style={{ fontSize: 16, margin: '24px 0 8px' }}>Shows (last 7 days + upcoming)</h2>
       <ShowsTable rows={rows} />
 
-      {isSuperadmin(user as { role?: string }) && <CriticalEventsDevStrip events={criticalEvents} />}
+      {superadmin && <CriticalEventsDevStrip events={criticalEvents} />}
 
       <p style={{ fontSize: 11, color: 'var(--theme-elevation-400)', marginTop: 24 }}>
         Signed in as {role}.
