@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { sql } from '@payloadcms/db-postgres'
 import { isAdminTier, isPartner, partnerIdOf } from '@/lib/access/roles'
 import { requireRole } from '@/lib/access/route-guard'
 import { performStorno, StornoError, type StornoActor, type StornoTarget } from '@/lib/partner/storno'
-import { voidOrderTickets, voidSingleTicket } from '@/lib/tickets/ticket-void'
+import { voidOrderTickets, voidSingleTicket, type TicketVoidExecutor } from '@/lib/tickets/ticket-void'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -73,48 +72,14 @@ export async function POST(req: NextRequest) {
     : { kind: 'partner', partnerId: callerPartnerId! }
   const target: StornoTarget = ticketId ? { kind: 'ticket', ticketId } : { kind: 'order' }
 
-  const drizzle: { execute: (q: unknown) => Promise<{ rows?: unknown[] }> } = (
-    payload.db as unknown as { drizzle: { execute: (q: unknown) => Promise<{ rows?: unknown[] }> } }
-  ).drizzle
+  const drizzle = (payload.db as unknown as { drizzle: TicketVoidExecutor }).drizzle
 
   try {
     const { voided } = await performStorno(
       { orderCreatedAt, now: new Date(), actor, orderPartnerId, target },
       {
-        voidOrder: async () => {
-          const r = await voidOrderTickets(orderId, 'storno', {
-            atomicVoidActiveTickets: async (oid, reason) => {
-              const res = await drizzle.execute(sql`
-                UPDATE tickets
-                SET status = 'cancelled',
-                    cancelled_at = NOW(),
-                    cancel_reason = ${reason},
-                    updated_at = NOW()
-                WHERE order_id = ${Number(oid)} AND status = 'active'
-                RETURNING id
-              `)
-              return (res.rows ?? []).length
-            },
-          })
-          return r.voided
-        },
-        voidTicket: async (tid) => {
-          const r = await voidSingleTicket(tid, 'storno', {
-            atomicVoidActiveTicket: async (id, reason) => {
-              const res = await drizzle.execute(sql`
-                UPDATE tickets
-                SET status = 'cancelled',
-                    cancelled_at = NOW(),
-                    cancel_reason = ${reason},
-                    updated_at = NOW()
-                WHERE id = ${Number(id)} AND status = 'active'
-                RETURNING id
-              `)
-              return (res.rows ?? []).length
-            },
-          })
-          return r.voided
-        },
+        voidOrder: async () => (await voidOrderTickets(drizzle, orderId, 'storno')).voided,
+        voidTicket: async (tid) => (await voidSingleTicket(drizzle, tid, 'storno')).voided,
       },
     )
     return NextResponse.json({ voided })

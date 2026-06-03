@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { sql } from '@payloadcms/db-postgres'
 import { refundOrder, type RefundOrderRecord } from '@/lib/refund-order'
 import { createStripeRefund } from '@/lib/refund/create-stripe-refund'
-import { voidOrderTickets } from '@/lib/tickets/ticket-void'
+import { voidOrderTickets, type TicketVoidExecutor } from '@/lib/tickets/ticket-void'
 import { sendRefundEmail } from '@/lib/email/send-refund-email'
 import { getStripe } from '@/lib/stripe'
 import type { Venue } from '@/lib/venues'
@@ -57,21 +56,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
           })
         },
         voidTickets: async (orderId) => {
-          const drizzle: any = (payload.db as any).drizzle
-          const { voided } = await voidOrderTickets(orderId, 'refund', {
-            atomicVoidActiveTickets: async (oid, reason) => {
-              const res: any = await drizzle.execute(sql`
-                UPDATE tickets
-                SET status = 'cancelled',
-                    cancelled_at = NOW(),
-                    cancel_reason = ${reason},
-                    updated_at = NOW()
-                WHERE order_id = ${Number(oid)} AND status = 'active'
-                RETURNING id
-              `)
-              return (res.rows ?? res).length
-            },
-          })
+          const drizzle = (payload.db as unknown as { drizzle: TicketVoidExecutor }).drizzle
+          const { voided } = await voidOrderTickets(drizzle, orderId, 'refund')
           return voided
         },
         sendRefundEmail: async (input) => {
