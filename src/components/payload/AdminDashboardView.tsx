@@ -16,6 +16,9 @@ import { PartnerStornoList } from './PartnerStornoList'
 import { getPartnerTodaySales } from '@/lib/partner/today-sales'
 import { PartnerSalesPanel } from './PartnerSalesPanel'
 import { getPartnerSeasonStats, getPartnerRecentSales } from '@/lib/partner/partner-data'
+import { getPartnerMonthToDate } from '@/lib/partner/month-to-date'
+import { monthKeyInZagreb } from '@/lib/partner/partner-reconciliation'
+import { PartnerMonthToDateCard } from './PartnerMonthToDateCard'
 import type { PoolQuery } from '@/lib/tickets/sold-seats'
 
 export const dynamic = 'force-dynamic'
@@ -244,11 +247,26 @@ async function PartnerDashboard({
   const pool = (payload.db as unknown as { pool: { query: PoolQuery } }).pool
   const poolQuery: PoolQuery = (sql, params) => pool.query(sql, params)
   const numericPartnerId = Number(partner.id)
-  const [todaySales, seasonStats, recentSales] = await Promise.all([
+  const commissionPercent = partner.commissionPercent ?? 10
+
+  // Live month-to-date standing card (#241): the current Europe/Zagreb month,
+  // resolved here so the data layer takes no clock. monthKeyInZagreb buckets the
+  // sale date the same way the month-end statement does, so the two agree.
+  const now = new Date()
+  const { year, month } = monthKeyInZagreb(now.toISOString())
+
+  const [todaySales, seasonStats, recentSales, monthToDate] = await Promise.all([
     getPartnerTodaySales(partner.id, { query: poolQuery }),
     getPartnerSeasonStats(poolQuery, numericPartnerId),
     getPartnerRecentSales(poolQuery, numericPartnerId, 5),
+    getPartnerMonthToDate(poolQuery, { partnerId: numericPartnerId, commissionPercent, year, month }),
   ])
+
+  const monthLabel = now.toLocaleDateString(lang === 'hr' ? 'hr-HR' : 'en-GB', {
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'Europe/Zagreb',
+  })
 
   return (
     <div style={wrap}>
@@ -260,13 +278,17 @@ async function PartnerDashboard({
       </div>
 
       <div style={{ marginBottom: 24 }}>
+        <PartnerMonthToDateCard data={monthToDate} monthLabel={monthLabel} lang={lang} />
+      </div>
+
+      <div style={{ marginBottom: 24 }}>
         <PartnerStornoList sales={todaySales} />
       </div>
 
       <PartnerSalesPanel
         stats={seasonStats}
         recent={recentSales}
-        commissionPercent={partner.commissionPercent ?? 10}
+        commissionPercent={commissionPercent}
       />
 
       <p style={{ fontSize: 11, color: 'var(--theme-elevation-400)', marginTop: 24 }}>
