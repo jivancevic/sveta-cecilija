@@ -113,6 +113,8 @@ Partners sell without collecting buyer PII, but the **end guest can optionally c
 
 Claiming is orthogonal to money and seats — the ticket was already sold, counted, and invoiced to the partner; claim only attaches contact info. Tehnika (authenticated) scanning an unclaimed partner ticket still just admits — no claim form for staff.
 
+Because the claim endpoint is an open, unauthenticated write (token possession = auth, first-claimer-wins), `POST /api/scan/[token]/claim` is rate-limited per-token + per-IP (`src/lib/rate-limit/claim-rate-limit.ts`, defaults 5/token and 20/IP per minute → `429` with `Retry-After`). It raises the bar on pre-emptive claim of a leaked token and on hammering, without affecting a single legitimate claim. In-memory sliding window — fine on single-instance Coolify (ADR-0009); swap the store if it ever scales out. An admin "unclaim / re-issue" recovery path for a mis-claim is a deferred follow-up.
+
 ### Buyer comms & consent
 Three message classes, one lawful basis each. Same rules for **online buyers and claimed partner buyers** (consistency is a requirement).
 

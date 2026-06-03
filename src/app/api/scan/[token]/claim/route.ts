@@ -9,6 +9,7 @@ import {
 } from '@/lib/claim/claim-order'
 import { sendTicketEmail } from '@/lib/email/send-ticket-email'
 import { generateQrPng } from '@/lib/email/qr'
+import { claimRateLimiter, clientIpFromHeaders } from '@/lib/rate-limit/claim-rate-limit'
 import type { Venue } from '@/lib/venues'
 
 export const runtime = 'nodejs'
@@ -21,12 +22,22 @@ export const dynamic = 'force-dynamic'
 // claimed, and only once.
 //
 // Accepted risk (ADR-0008): "token possession = auth" + first-claimer-wins means
-// whoever sees the QR first can attach THEIR email. There is no rate limit here
-// yet — a leaked token could be pre-emptively claimed. A per-token/IP throttle
-// is the eventual hardening; low impact at current partner volume.
+// whoever sees the QR first can attach THEIR email. A per-token + per-IP throttle
+// (#184) raises the bar against pre-emptive claim of a leaked token and against
+// hammering this open public write endpoint, without affecting a single
+// legitimate claim. In-memory limiter — fine on single-instance Coolify.
 export async function POST(req: NextRequest, { params }: { params: Promise<{ token: string }> }) {
   const { token } = await params
   const back = (q = '') => NextResponse.redirect(new URL(`/scan/${encodeURIComponent(token)}${q}`, req.url), { status: 303 })
+
+  // Throttle before any parsing/DB work so a flood is cheap to reject.
+  const rate = claimRateLimiter.check(token, clientIpFromHeaders(req.headers))
+  if (!rate.allowed) {
+    return NextResponse.json(
+      { error: 'Too many claim attempts. Please try again shortly.' },
+      { status: 429, headers: { 'Retry-After': String(rate.retryAfterSec) } },
+    )
+  }
 
   let name = ''
   let email = ''
