@@ -44,21 +44,35 @@ async function main() {
   const client = new Client({ connectionString: url })
   await client.connect()
   try {
-    // `00-base.sql` (sorts first) creates the FULL Payload schema — including
-    // the base tables `users`/`shows`/`payload_*` — so this script builds a
-    // complete schema on a brand-new DB before the server starts, with no
-    // dependency on Payload `push` (which prod never runs). app.sql and the
-    // migrations then apply idempotently on top. See ADR-0013 and
-    // db/schema/README.md.
+    // `00-base.sql` (sorts first) is the FULL Payload schema — base tables
+    // `users`/`shows`/`payload_*`, every enum, constraint, sequence and index —
+    // so a brand-new DB gets a complete, reproducible schema before the server
+    // starts, with no dependency on Payload `push` (which prod never runs).
+    // See ADR-0013 and db/schema/README.md.
     //
-    // (Historically this script carried a "fresh-database guard" that SKIPPED
-    // all SQL when users/shows were absent — issue #122 — because app.sql
-    // ALTER-referenced base tables it didn't create. That deferred schema
-    // creation to instrumentation + push, which works in dev but leaves a
-    // fresh PROD DB broken. `00-base.sql` removed the need for the guard.)
+    // BUT the baseline is generated from a fresh Payload push, so it carries
+    // Payload's constraint/sequence NAMES (e.g. `tickets_pkey`,
+    // `tickets_id_seq`). Existing prod/staging DBs carry LEGACY names from the
+    // `qr_tokens`→`tickets` rename (`qr_tokens_pkey`, `qr_tokens_id_seq`).
+    // Re-applying the baseline to such a DB would crash ("multiple primary keys
+    // for table tickets") and, worse, repoint `tickets.id` to a fresh sequence.
+    // So `00-base.sql` runs ONLY on a fresh DB; existing DBs are evolved by the
+    // incremental, idempotent `app.sql` + `migrate-*.sql` (as before #205).
+    //
+    // (Earlier this script carried the inverse "#122 fresh-DB guard" that
+    // skipped ALL sql on a fresh DB and deferred to instrumentation + push —
+    // which left a fresh PROD DB broken. `00-base.sql` + this targeted guard
+    // replace it.)
+    const { rows } = await client.query("SELECT to_regclass('public.users') AS users")
+    const isFreshDb = !rows[0].users
+
     for (const file of files) {
+      if (file === '00-base.sql' && !isFreshDb) {
+        console.log('[bootstrap-db] existing database — skipping 00-base.sql (baseline is for fresh DBs only)')
+        continue
+      }
       const sql = readFileSync(path.join(schemaDir, file), 'utf-8')
-      console.log(`[bootstrap-db] applying ${file}`)
+      console.log(`[bootstrap-db] applying ${file}${file === '00-base.sql' ? ' (fresh database)' : ''}`)
       await client.query(sql)
     }
     console.log('[bootstrap-db] done.')
