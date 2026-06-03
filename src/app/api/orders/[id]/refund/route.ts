@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getPayload } from 'payload'
 import { sql } from '@payloadcms/db-postgres'
-import config from '@payload-config'
 import { refundOrder, type RefundOrderRecord } from '@/lib/refund-order'
 import { createStripeRefund } from '@/lib/refund/create-stripe-refund'
 import { voidOrderTickets } from '@/lib/tickets/ticket-void'
@@ -9,20 +7,15 @@ import { sendRefundEmail } from '@/lib/email/send-refund-email'
 import { getStripe } from '@/lib/stripe'
 import type { Venue } from '@/lib/venues'
 import { isAdminTier } from '@/lib/access/roles'
+import { requireRole } from '@/lib/access/route-guard'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const payload = await getPayload({ config })
-
-  const { user } = await payload.auth({ headers: req.headers })
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
-  if (!isAdminTier(user as { role?: string })) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-  }
+  const gate = await requireRole(req, isAdminTier)
+  if (gate.error) return gate.error
+  const { payload } = gate
 
   const { id } = await params
 

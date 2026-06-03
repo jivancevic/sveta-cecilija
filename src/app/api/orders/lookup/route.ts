@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getPayload, type Where } from 'payload'
-import config from '@payload-config'
+import { type Where } from 'payload'
 import { isAuthed } from '@/lib/access/roles'
+import { requireRole } from '@/lib/access/route-guard'
 import { getNextShow } from '@/lib/shows'
 
 export const runtime = 'nodejs'
@@ -14,12 +14,9 @@ interface LookupBody {
 }
 
 export async function POST(req: NextRequest) {
-  const payload = await getPayload({ config })
-  const { user } = await payload.auth({ headers: req.headers })
-
-  if (!isAuthed(user as { role?: string } | null)) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const gate = await requireRole(req, isAuthed)
+  if (gate.error) return gate.error
+  const { payload, user } = gate
 
   let body: LookupBody
   try {
@@ -117,7 +114,7 @@ export async function POST(req: NextRequest) {
     await payload.create({
       collection: 'order-lookups',
       data: {
-        user: user!.id as number | string,
+        user: user.id as number | string,
         show: showIdRef,
         query: query.toLowerCase(),
         mode: body.mode,

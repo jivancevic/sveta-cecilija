@@ -1,15 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getPayload } from 'payload'
-import config from '@payload-config'
+import { requireRole } from '@/lib/access/route-guard'
+import { isAdminTier } from '@/lib/access/roles'
 
 export async function POST(req: NextRequest) {
-  const payload = await getPayload({ config })
-
-  // Verify the user is authenticated
-  const { user } = await payload.auth({ headers: req.headers })
-  if (!user) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  const gate = await requireRole(req, isAdminTier)
+  if (gate.error) return gate.error
+  const { payload } = gate
 
   const body = await req.json()
   const { startDate, endDate, daysOfWeek, time, venue } = body

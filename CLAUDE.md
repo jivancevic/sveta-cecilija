@@ -25,7 +25,7 @@
 - **There is no `capacity` field on Shows and never add one** — capacity is fixed per venue (`VENUE_CAPACITY` in `src/lib/shows.ts`).
 - **Ticket prices are fixed: €20 adult, €10 child** — no dynamic pricing.
 - **Roles are `superadmin | admin | tehnika | partner`** — read predicates from `src/lib/access/roles.ts`, never hardcode the list elsewhere. (`door-staff` is a retired label.)
-- **Admin-only mutation routes must re-check the role in the handler** — Payload's local API runs `overrideAccess: true`, so collection `access` doesn't gate them.
+- **Admin-only mutation routes must re-check the role in the handler** — Payload's local API runs `overrideAccess: true`, so collection `access` doesn't gate them. Use `requireRole(req, predicate)` from `src/lib/access/route-guard.ts` (the single chokepoint); don't re-type `getPayload → auth → role check` inline. Token/signature routes (Stripe webhook, `/scan/[token]/claim`, unsubscribe, cron) are the only exceptions.
 - **Accumulating numeric columns must use atomic SQL** (`col = col + $1`), never read-modify-write. See `db-bootstrap.md`.
 - **Secrets (Stripe live keys, `BREVO_API_KEY`, `PAYLOAD_SECRET`) never appear in any committed file or chat** — runtime env only (Coolify); if one leaks, rotate it.
 - **`.gitignore` blocks every `.env*` except `.env.example`** (the committed template).

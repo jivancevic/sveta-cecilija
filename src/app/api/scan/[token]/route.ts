@@ -4,6 +4,7 @@ import { sql } from '@payloadcms/db-postgres'
 import config from '@payload-config'
 import { scanToken, canUndoScan, type ScanDeps } from '@/lib/scan-token'
 import { isAuthed } from '@/lib/access/roles'
+import { requireRole } from '@/lib/access/route-guard'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -101,12 +102,8 @@ async function buildDeps(): Promise<ScanDeps> {
 }
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ token: string }> }) {
-  const payload = await getPayload({ config })
-  const { user } = await payload.auth({ headers: req.headers })
-  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  if (!isAuthed(user as { role?: string })) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-  }
+  const gate = await requireRole(req, isAuthed)
+  if (gate.error) return gate.error
 
   const { token } = await params
   const deps = await buildDeps()
