@@ -63,6 +63,11 @@ FROM node:22-slim AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000
+# Next standalone's server.js binds to $HOSTNAME. Docker sets HOSTNAME to the
+# container id, which Next resolves to the container's IPv6 address and binds
+# ONLY there — so Traefik's IPv4 connection to <container-ip>:3000 fails and the
+# app is unreachable. Force binding to all IPv4 interfaces.
+ENV HOSTNAME=0.0.0.0
 
 # Standalone server: server.js + the Next-traced node_modules subset, copied to /app.
 COPY --from=build /app/.next/standalone ./
