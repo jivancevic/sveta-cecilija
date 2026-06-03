@@ -1,11 +1,12 @@
 import React from 'react'
 import Link from 'next/link'
-import { headers } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { getPayload } from 'payload'
 import config from '@payload-config'
 import { getStatsInput } from '@/lib/stats-data'
 import { computeStats } from '@/lib/stats'
+import { ADMIN_LANG_COOKIE, adminT, resolveAdminLang, type AdminLang } from '@/lib/admin-i18n'
 import { isAdminTier, isAuthed, isPartner, partnerIdOf } from '@/lib/access/roles'
 import { getNextShow, getScannedPeopleForShow, getUpcomingShows, type NextShow } from '@/lib/shows'
 import { HeaderBlock, ShowsTable } from './stats-blocks'
@@ -33,10 +34,17 @@ export async function AdminDashboardView() {
   const payload = await getPayload({ config })
   const { user } = await payload.auth({ headers: await headers() })
 
+  // Active admin language: the saved choice (payload-lng cookie, written by the
+  // native account-settings selector) wins; otherwise the role-based default.
+  // This mirrors how Payload's chrome resolves language, so switching in account
+  // settings flips both the chrome and this custom copy. (Issue #234, ADR-0015.)
+  const cookieLang = (await cookies()).get(ADMIN_LANG_COOKIE)?.value
+  const lang = resolveAdminLang({ cookieLang, role: (user as { role?: string } | null)?.role })
+
   // Partner is authenticated but is NOT internal staff (isAuthed excludes it),
   // so branch here before the staff-only login guard below.
   if (isPartner(user as { role?: string } | null)) {
-    return <PartnerDashboard payload={payload} user={user} />
+    return <PartnerDashboard payload={payload} user={user} lang={lang} />
   }
 
   if (!isAuthed(user as { role?: string } | null)) {
@@ -47,7 +55,7 @@ export async function AdminDashboardView() {
   const adminTier = isAdminTier(user as { role?: string })
 
   if (!adminTier) {
-    return <TehnikaDashboard role={role} />
+    return <TehnikaDashboard role={role} lang={lang} />
   }
 
   const input = await getStatsInput()
@@ -55,7 +63,7 @@ export async function AdminDashboardView() {
 
   return (
     <div style={{ padding: '24px clamp(16px, 4vw, 40px)', maxWidth: 1280, margin: '0 auto' }}>
-      <h1 style={{ marginBottom: 16, fontSize: 24 }}>Dashboard</h1>
+      <h1 style={{ marginBottom: 16, fontSize: 24 }}>{adminT(lang, 'dashboard')}</h1>
 
       <HeaderBlock header={header} />
 
@@ -65,7 +73,7 @@ export async function AdminDashboardView() {
       <ShowsTable rows={rows} />
 
       <p style={{ fontSize: 11, color: 'var(--theme-elevation-400)', marginTop: 24 }}>
-        Signed in as {role}.
+        {adminT(lang, 'signedInAs')} {role}.
       </p>
     </div>
   )
@@ -107,13 +115,13 @@ function AdminActions() {
   )
 }
 
-async function TehnikaDashboard({ role }: { role?: string }) {
+async function TehnikaDashboard({ role, lang }: { role?: string; lang: AdminLang }) {
   const next = await getNextShow()
   const scanned = next ? await getScannedPeopleForShow(next.id) : 0
 
   return (
     <div style={{ padding: '24px clamp(16px, 4vw, 40px)', maxWidth: 720, margin: '0 auto' }}>
-      <h1 style={{ marginBottom: 16, fontSize: 24 }}>Door scan</h1>
+      <h1 style={{ marginBottom: 16, fontSize: 24 }}>{adminT(lang, 'doorScan')}</h1>
 
       {next ? (
         <NextShowBlock next={next} scanned={scanned} />
@@ -154,7 +162,7 @@ async function TehnikaDashboard({ role }: { role?: string }) {
       </div>
 
       <p style={{ fontSize: 11, color: 'var(--theme-elevation-400)', marginTop: 24 }}>
-        Signed in as {role}.
+        {adminT(lang, 'signedInAs')} {role}.
       </p>
     </div>
   )
@@ -169,9 +177,11 @@ type PartnerRecord = { id: number | string; name?: string; active?: boolean; com
 async function PartnerDashboard({
   payload,
   user,
+  lang,
 }: {
   payload: Awaited<ReturnType<typeof getPayload>>
   user: unknown
+  lang: AdminLang
 }) {
   const partnerId = partnerIdOf(user as { role?: string; partner?: unknown } | null)
 
@@ -202,7 +212,7 @@ async function PartnerDashboard({
   if (!partner) {
     return (
       <div style={wrap}>
-        <h1 style={{ marginBottom: 16, fontSize: 24 }}>Partner dashboard</h1>
+        <h1 style={{ marginBottom: 16, fontSize: 24 }}>{adminT(lang, 'partnerDashboard')}</h1>
         <div style={notice}>
           This account isn’t linked to a partner yet. Please contact HGD Sveta Cecilija to finish setup.
         </div>
@@ -243,7 +253,7 @@ async function PartnerDashboard({
   return (
     <div style={wrap}>
       <h1 style={{ marginBottom: 6, fontSize: 24 }}>{partner.name}</h1>
-      <p style={{ color: 'var(--theme-elevation-600)', marginBottom: 24 }}>Partner dashboard</p>
+      <p style={{ color: 'var(--theme-elevation-600)', marginBottom: 24 }}>{adminT(lang, 'partnerDashboard')}</p>
 
       <div style={{ marginBottom: 24 }}>
         <PartnerSellForm shows={sellShows} />

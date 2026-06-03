@@ -1,6 +1,7 @@
 import { APIError, type CollectionConfig } from 'payload'
 import { isSuperadmin, isAdminTier } from '@/lib/access/roles'
 import { assertUserEmailPolicy, UserEmailRequiredError } from '@/lib/access/user-email-policy'
+import { ADMIN_LANG_COOKIE, seedAdminLangCookie } from '@/lib/admin-i18n'
 
 type ReqUser = { id?: string | number; role?: string } | null | undefined
 
@@ -35,6 +36,39 @@ export const Users: CollectionConfig = {
     },
   },
   hooks: {
+    // Seed the admin chrome language on login (issue #234, ADR-0015). A fresh
+    // staff login has no `payload-lng` cookie yet, so the chrome would otherwise
+    // fall back to Accept-Language / English. We seed it to the role-based
+    // default (Croatian for admin/tehnika/partner, English for superadmin) the
+    // first time, and leave any existing valid choice alone — the native
+    // account-settings selector writes the same cookie, so a user's saved
+    // choice always wins. cookies().set works inside the admin login server
+    // action; in a non-request scope (e.g. a seed script calling payload.login)
+    // next/headers throws, so we swallow and skip.
+    afterLogin: [
+      async ({ user }) => {
+        try {
+          const { cookies } = await import('next/headers')
+          const store = await cookies()
+          const next = seedAdminLangCookie({
+            existing: store.get(ADMIN_LANG_COOKIE)?.value,
+            role: (user as { role?: string })?.role,
+          })
+          if (next) {
+            store.set({
+              name: ADMIN_LANG_COOKIE,
+              value: next,
+              path: '/',
+              maxAge: 60 * 60 * 24 * 365,
+            })
+          }
+        } catch {
+          // No writable request scope — nothing to seed. The dashboard's own
+          // resolveAdminLang() still applies the role default as a safety net.
+        }
+        return user
+      },
+    ],
     // Conditional email requirement: superadmin/admin (real people) must have an
     // email; tehnika/partner may be username-only. Merge incoming data over the
     // existing doc so an update that touches only one field is judged on the
