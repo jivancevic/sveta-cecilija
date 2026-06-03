@@ -84,7 +84,12 @@ export default buildConfig({
     // disables push in NODE_ENV=production); schema is applied by
     // scripts/bootstrap-db.mjs from the start script before next start.
     // See docs/agents/db-bootstrap.md.
-    push: process.env.NODE_ENV !== 'production',
+    // `PAYLOAD_DISABLE_PUSH=1` forces push off even in dev — escape hatch for
+    // running/verifying the app in a worktree whose dev DB carries columns from
+    // *other* branches (push would otherwise hit an interactive DATA-LOSS prompt
+    // and `next dev` exits on stdin EOF). Schema is still applied by
+    // bootstrap-db.mjs / app.sql, so the app runs fine without push.
+    push: process.env.PAYLOAD_DISABLE_PUSH ? false : process.env.NODE_ENV !== 'production',
   }),
   serverURL: process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000',
   graphQL: {
