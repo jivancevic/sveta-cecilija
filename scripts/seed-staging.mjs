@@ -45,6 +45,19 @@
 // because they never carry these markers. No TRUNCATE is used, so the
 // payload_locked_documents_rels CASCADE trap (CLAUDE.md) does not apply.
 //
+// Users and the fixture partner are instead UPSERTED in place (keyed on user
+// email / partner name) rather than delete-then-reinsert — Payload's
+// payload_locked_documents_rels references both, so a blind delete could trip
+// the same CASCADE trap, and an upsert is the simplest race-free re-run.
+//
+// STAGING LOGINS + PARTNER (issue #197)
+// -------------------------------------
+// Seeds throwaway accounts so /admin, authed /scan + stats, and the partner
+// dashboard are exercisable (the staging DB otherwise has 0 users). One fixture
+// partner + a partner-role login bound to it. Emails, password and partner are
+// obviously fake; see the SEED_USERS / SEED_PARTNER block below for the exact
+// credentials and how to log in.
+//
 // Built on the same pg Client pattern as scripts/bootstrap-db.mjs — plain SQL
 // through `pg`, no Payload CLI bootstrapping required, runs on any Node.
 //
@@ -71,6 +84,7 @@
 // Buyer names/emails (Test Buyer A, test-a@example.invalid) and Stripe ids
 // (pi_TEST_seed_<n>) are obviously fake by construction.
 
+import crypto from 'node:crypto'
 import { fileURLToPath } from 'node:url'
 import pg from 'pg'
 
@@ -82,6 +96,48 @@ const TOKEN_PREFIX = 'TEST_seed_'
 const VENUE_CAPACITY = { 'ljetno-kino': 320, 'zimsko-kino': 250 }
 const ADULT_CENTS = 2000 // €20
 const CHILD_CENTS = 1000 // €10
+
+// ─── Staging logins (issue #197) ──────────────────────────────────────────
+// Throwaway accounts so /admin, authed /scan + stats, and the partner
+// dashboard are exercisable on dev.moreska.eu. ALL share one obviously-fake
+// dev password and `@staging.local` emails so they can never be mistaken for a
+// real account, and so the staging-only guard (db name must contain "staging")
+// keeps them off prod/local. Rotate is irrelevant — these only ever live on the
+// synthetic staging DB. To log in at https://dev.moreska.eu/admin :
+//
+//   admin@staging.local    / staging-dev-pw   role=admin    → full /admin
+//   tehnika@staging.local  / staging-dev-pw   role=tehnika  → authed /scan + stats
+//   partner@staging.local  / staging-dev-pw   role=partner  → partner dashboard
+//                                                              (linked to the
+//                                                               Kaleta fixture)
+const SEED_PASSWORD = 'staging-dev-pw'
+const SEED_USERS = [
+  { email: 'admin@staging.local', role: 'admin' },
+  { email: 'tehnika@staging.local', role: 'tehnika' },
+  { email: 'partner@staging.local', role: 'partner' }, // partner_id wired below
+]
+// Fixture reseller (ADR-0008). Idempotency key is the (recognizably-fake) name.
+const SEED_PARTNER = {
+  name: 'Kaleta (STAGING fixture)',
+  oib: '00000000000',
+  billingAddress: 'Trg sv. Marka 1, 20260 Korčula (STAGING fixture)',
+  commissionPercent: 10,
+  active: true,
+}
+
+/**
+ * Hash a password exactly the way Payload's local strategy does
+ * (node:crypto pbkdf2: 25000 iterations, 512 key length, sha256, hex), so a
+ * row inserted by raw SQL authenticates identically to one created through the
+ * admin UI. Mirrors payload/dist/auth/strategies/local/generatePasswordSaltHash.
+ * The script is pure `pg` (no Payload bootstrap), so we replicate the hash
+ * rather than pull in the local API.
+ */
+function payloadPasswordSaltHash(password) {
+  const salt = crypto.randomBytes(32).toString('hex')
+  const hash = crypto.pbkdf2Sync(password, salt, 25000, 512, 'sha256').toString('hex')
+  return { salt, hash }
+}
 
 /** Extract the database name from a postgres connection string. */
 function dbNameFromUrl(url) {
@@ -162,6 +218,68 @@ async function insertOrder(
       showId,
       locale,
     ],
+  )
+  return res.rows[0].id
+}
+
+/**
+ * Idempotently upsert the fixture partner, keyed on its (fake) name. Returns
+ * the partner id. Re-running refreshes the fixture's fields in place rather
+ * than stacking duplicate rows. The columns are snake_case per Payload's
+ * drizzle convention (see db/schema/app.sql `partners`).
+ */
+async function upsertPartner(client, p) {
+  const existing = await client.query(`SELECT id FROM partners WHERE name = $1`, [p.name])
+  if (existing.rows.length > 0) {
+    const id = existing.rows[0].id
+    await client.query(
+      `UPDATE partners
+         SET oib = $2, billing_address = $3, commission_percent = $4,
+             active = $5, updated_at = now()
+       WHERE id = $1`,
+      [id, p.oib, p.billingAddress, p.commissionPercent, p.active],
+    )
+    return id
+  }
+  const res = await client.query(
+    `INSERT INTO partners (name, oib, billing_address, commission_percent, active)
+     VALUES ($1, $2, $3, $4, $5)
+     RETURNING id`,
+    [p.name, p.oib, p.billingAddress, p.commissionPercent, p.active],
+  )
+  return res.rows[0].id
+}
+
+/**
+ * Idempotently upsert a Payload-auth user (raw SQL). `role` is the
+ * enum_users_role label (superadmin|admin|tehnika|partner — see
+ * src/lib/access/roles.ts; the app.sql DDL header is stale). `partnerId` links
+ * a partner-role login to its partners row via users.partner_id.
+ *
+ * Only the columns we're certain of are written: email, hash, salt, role,
+ * partner_id, updated_at, created_at. Payload's other auth columns
+ * (reset_password_*, login_attempts, lock_until) are nullable and left to their
+ * DB defaults. The password is re-hashed on every run so the documented dev
+ * credential always wins, even if someone changed it through /admin.
+ */
+async function upsertUser(client, { email, role, partnerId = null }) {
+  const { salt, hash } = payloadPasswordSaltHash(SEED_PASSWORD)
+  const existing = await client.query(`SELECT id FROM users WHERE email = $1`, [email])
+  if (existing.rows.length > 0) {
+    const id = existing.rows[0].id
+    await client.query(
+      `UPDATE users
+         SET hash = $2, salt = $3, role = $4, partner_id = $5, updated_at = now()
+       WHERE id = $1`,
+      [id, hash, salt, role, partnerId],
+    )
+    return id
+  }
+  const res = await client.query(
+    `INSERT INTO users (email, hash, salt, role, partner_id)
+     VALUES ($1, $2, $3, $4, $5)
+     RETURNING id`,
+    [email, hash, salt, role, partnerId],
   )
   return res.rows[0].id
 }
@@ -316,7 +434,36 @@ async function main() {
       scannedCount: 1,
     })
 
+    // ─── 4. Staging logins + fixture partner (issue #197) ─────────────────
+    // Without these the staging DB has 0 users, so /admin, authed /scan +
+    // stats, and the partner dashboard are all untestable. Upserts (keyed on
+    // partner name / user email) keep this idempotent alongside the
+    // delete-then-reinsert show/order fixtures above. All writes are inside the
+    // same staging-guarded transaction.
+    const partnerId = await upsertPartner(client, SEED_PARTNER)
+
+    const seededUsers = []
+    for (const u of SEED_USERS) {
+      const id = await upsertUser(client, {
+        email: u.email,
+        role: u.role,
+        // Only the partner-role login is bound to the fixture partner.
+        partnerId: u.role === 'partner' ? partnerId : null,
+      })
+      seededUsers.push({ ...u, id })
+    }
+
     await client.query('COMMIT')
+
+    console.log(
+      `[seed-staging] partner: id=${partnerId} "${SEED_PARTNER.name}" ` +
+        `(commission ${SEED_PARTNER.commissionPercent}%, active=${SEED_PARTNER.active}).`,
+    )
+    console.log('[seed-staging] logins (all password "' + SEED_PASSWORD + '"):')
+    for (const u of seededUsers) {
+      const link = u.role === 'partner' ? ` → partner_id=${partnerId}` : ''
+      console.log(`[seed-staging]   ${u.email}  role=${u.role}  id=${u.id}${link}`)
+    }
 
     console.log('[seed-staging] orders + per-person tickets:')
     console.log(
