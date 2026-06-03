@@ -5,7 +5,8 @@
 //   2. order.review_email_sent_at IS NULL
 //   3. order has at least one ticket (adult_count + child_count > 0)
 //   4. order.refund_status != 'refunded'
-//   5. buyer email is not in marketing_optouts (enforced in the caller's SQL)
+//   5. buyer email is not in marketing_optouts — pre-filtered in the caller's
+//      SQL; authoritatively gated in sendReviewEmail (src/lib/marketing/opt-out)
 //
 // Idempotency contract: deps.claimOrder MUST do an atomic
 // `UPDATE orders SET review_email_sent_at = NOW()

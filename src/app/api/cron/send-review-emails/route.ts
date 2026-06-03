@@ -7,6 +7,7 @@ import {
 } from '@/lib/review-email/dispatch-review-emails'
 import { sendReviewEmail } from '@/lib/email/send-review-email'
 import { signUnsubscribeToken } from '@/lib/marketing/unsubscribe-token'
+import { isEmailOptedOut } from '@/lib/marketing/opt-out'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -72,7 +73,9 @@ export async function POST(req: NextRequest) {
           // We INCLUDE refund_status='none' AND ticket count > 0 here so the
           // worker only sees orders worth claiming. Buyers who unsubscribed
           // (marketing_optouts, keyed by lowercased email) are excluded so the
-          // opt-out persists across every future show — #57.
+          // opt-out persists across every future show — #57. This NOT EXISTS is
+          // a pre-filter (don't claim opted-out orders); the authoritative
+          // consent gate lives in sendReviewEmail (deps.isOptedOut).
           const res = await pool.query(
             `SELECT o.id, o.buyer_name, o.email, o.locale
              FROM orders o
@@ -131,7 +134,12 @@ export async function POST(req: NextRequest) {
               googleReviewUrl,
               unsubscribeUrl,
             },
-            { fetch: globalThis.fetch, brevoApiKey },
+            {
+              fetch: globalThis.fetch,
+              brevoApiKey,
+              isOptedOut: (email) =>
+                isEmailOptedOut((sql, params) => pool.query(sql, params ?? []), email),
+            },
           )
         },
       },

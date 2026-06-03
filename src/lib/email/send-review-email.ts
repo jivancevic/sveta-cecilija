@@ -23,6 +23,16 @@ export interface SendReviewEmailInput {
 export interface SendReviewEmailDeps {
   fetch: typeof fetch
   brevoApiKey: string
+  /**
+   * Consent gate (#57). Returns true if this buyer opted out of marketing-class
+   * mail. Required — making it part of the send's interface means a post-show
+   * email cannot be sent without a consent check, even by a future caller that
+   * doesn't replicate the dispatcher's opt-out SQL pre-filter. Wire it to
+   * `isEmailOptedOut` from src/lib/marketing/opt-out.ts. If it throws (store
+   * unreachable) the send aborts and propagates, so the caller can retry rather
+   * than risk mailing an opted-out address.
+   */
+  isOptedOut: (email: string) => Promise<boolean>
 }
 
 // Brand layer per ADR-0003: "Moreška by HGD Sveta Cecilija" in sender name +
@@ -110,6 +120,17 @@ export async function sendReviewEmail(
   input: SendReviewEmailInput,
   deps: SendReviewEmailDeps,
 ): Promise<void> {
+  // Consent gate first — this is the authoritative opt-out check for the
+  // post-show class (#57). A store-read failure propagates (caller retries);
+  // an opted-out buyer is skipped, never mailed. The dispatcher also pre-filters
+  // opt-outs in SQL for efficiency, but this is what makes the *send* safe.
+  if (await deps.isOptedOut(input.buyer.email)) {
+    console.log(
+      `[sendReviewEmail] skipped opted-out buyer orderId=${input.orderId} email=${input.buyer.email}`,
+    )
+    return
+  }
+
   const locale = input.locale ?? 'en'
   // RFC 2369 / RFC 8058: a mailto fallback plus the one-click HTTPS endpoint.
   // List-Unsubscribe-Post tells the client it may POST without confirmation.
