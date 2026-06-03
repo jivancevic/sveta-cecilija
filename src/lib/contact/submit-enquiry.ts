@@ -33,7 +33,7 @@ export interface SubmitEnquiryDeps {
   // Best-effort admin notification. Its rejection is swallowed (logged) — a
   // stored enquiry is already safe; a missed email is not data loss.
   notify?: (data: PersistedEnquiry) => Promise<void>
-  // Best-effort critical-events sink (#235, ADR-0015). Records the previously-
+  // Best-effort critical-events sink (#235, ADR-0016). Records the previously-
   // silent "enquiry saved but nobody was notified" cases: a notify that throws
   // (Brevo down / mis-keyed) OR no notifier wired at all (the adapter omits it
   // when BREVO_API_KEY is missing). Must never throw; a record failure must not

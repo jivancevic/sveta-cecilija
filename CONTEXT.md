@@ -244,7 +244,7 @@ Computed via JOIN: `SELECT COALESCE(SUM(o.adult_count + o.child_count), 0) FROM 
 - For `admin` and `superadmin`: numbers (including revenue) + full order list (buyer name, email, ticket count, per-QR scanned/unscanned state). Used to find a specific buyer's order on demand.
 
 ### Critical-events log
-A small **curated sink** the app writes to at known failure seams that would otherwise be silent. It is **not** log aggregation — raw container/stdout logs are explicitly out of scope; this is a deliberately-recorded set of events worth a human's attention. Each row carries a timestamp, a machine `kind`, and an optional JSON `context`. See [ADR-0015](../docs/adr/0015-critical-events-log.md).
+A small **curated sink** the app writes to at known failure seams that would otherwise be silent. It is **not** log aggregation — raw container/stdout logs are explicitly out of scope; this is a deliberately-recorded set of events worth a human's attention. Each row carries a timestamp, a machine `kind`, and an optional JSON `context`. See [ADR-0016](../docs/adr/0016-critical-events-log.md).
 
 - **Table:** `critical_events` (`id`, `kind`, `context jsonb`, `created_at`). A raw table created by the bootstrap-SQL pattern ([ADR-0013](../docs/adr/0013-schema-management-bootstrap-sql-drift-gate.md)) — **not** a Payload collection, like `marketing_optouts`.
 - **Writer:** `src/lib/critical-events/record.ts` (`recordCriticalEvent`). **Best-effort by construction** — it swallows its own errors, so a writer can call it unguarded and a logging failure can never cascade into failing the operation that was trying to report a problem.

@@ -1,4 +1,4 @@
-// Read side of the critical-events sink (ADR-0015): the last N events for the
+// Read side of the critical-events sink (ADR-0016): the last N events for the
 // superadmin dev strip on /admin. Pure + DI (PoolQuery) like the writer.
 import type { PoolQuery } from '../tickets/sold-seats'
 

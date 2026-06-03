@@ -1,7 +1,7 @@
 import React from 'react'
 import type { CriticalEventRow } from '@/lib/critical-events/list'
 
-// Collapsed superadmin-only dev strip on /admin (#235, ADR-0015). Surfaces the
+// Collapsed superadmin-only dev strip on /admin (#235, ADR-0016). Surfaces the
 // last N curated critical events (timestamp, kind, short context) so a silent
 // failure seam — first wired: an enquiry email that never delivered — becomes
 // visible at a glance. Rendered ONLY for superadmin by AdminDashboardView;

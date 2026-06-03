@@ -1,4 +1,4 @@
-// Curated critical-events sink (ADR-0015). The app writes one row here at known
+// Curated critical-events sink (ADR-0016). The app writes one row here at known
 // failure seams that would otherwise be silent — e.g. an enquiry-notification
 // email that never delivers. This is NOT log aggregation: raw stdout/container
 // logs are out of scope; this table holds a small set of deliberately-recorded

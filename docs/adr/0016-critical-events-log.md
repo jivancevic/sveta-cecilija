@@ -1,4 +1,4 @@
-# ADR-0015: Critical-events log — a curated DB sink for silent failure seams
+# ADR-0016: Critical-events log — a curated DB sink for silent failure seams
 
 **Status:** Accepted
 **Date:** 2026-06-04
