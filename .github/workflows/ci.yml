@@ -1,0 +1,59 @@
+name: CI
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+jobs:
+  # Matches Coolify's `npm ci --omit=dev` on the node:22 image (npm 10).
+  # Catches lockfile / platform skew ("Missing <pkg> from lock file") that
+  # only surfaces in the real prod install, not in setup-node (npm 11).
+  prod-install:
+    name: prod-install
+    runs-on: ubuntu-latest
+    container: node:22
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm ci --omit=dev
+
+  lint-types:
+    name: lint-types
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run lint
+      - run: npx tsc --noEmit
+
+  vitest:
+    name: vitest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm test
+
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    env:
+      # Throwaway non-secrets: next build fail-fasts at module load on a
+      # missing PAYLOAD_SECRET and reads DATABASE_URL. No real DB is reached.
+      PAYLOAD_SECRET: dummy_ci_secret
+      DATABASE_URL: postgres://u:p@localhost:5432/db
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run build
