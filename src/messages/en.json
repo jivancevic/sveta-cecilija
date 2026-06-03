@@ -316,6 +316,9 @@
       }
     ]
   },
+  "consent": {
+    "notice": "We'll email your ticket, any changes to the show, and one short follow-up after the performance. You can opt out at any time."
+  },
   "servicePages": {
     "backLink": "← Private Experiences",
     "formTitle": "Make an Enquiry",

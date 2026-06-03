@@ -292,6 +292,9 @@
       }
     ]
   },
+  "consent": {
+    "notice": "Poslat ćemo Vam ulaznicu, sve promjene predstave i jednu kratku poruku nakon predstave. Možete se odjaviti u svakom trenutku."
+  },
   "servicePages": {
     "backLink": "← Privatne izvedbe",
     "formTitle": "Pošalji upit",

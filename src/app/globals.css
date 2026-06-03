@@ -1816,3 +1816,11 @@ a.perf-booking__confirm {
   .inner-page .blog-list { grid-template-columns: 1fr; gap: 24px; }
   .inner-page .post-body { font-size: 17px; }
 }
+
+/* Soft opt-in collection notice under the email field (#148). */
+.inner-page .checkout__consent {
+  margin: -2px 0 14px;
+  font-size: 12px;
+  line-height: 1.45;
+  opacity: 0.7;
+}

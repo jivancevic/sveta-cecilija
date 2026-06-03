@@ -284,6 +284,10 @@ function ClaimForm({ token }: { token: string }) {
       </div>
       <input name="name" placeholder="Your name" required maxLength={120} style={input} />
       <input name="email" type="email" placeholder="Your email" required maxLength={200} style={input} />
+      <div style={{ fontSize: '0.8125rem', opacity: 0.7, marginTop: '0.5rem', lineHeight: 1.45 }}>
+        We&rsquo;ll email your ticket, any changes to the show, and one short follow-up after the
+        performance. You can opt out at any time.
+      </div>
       <button
         type="submit"
         style={{
