@@ -9,7 +9,7 @@
 | Issue tracker (GitHub Issues) | `docs/agents/issue-tracker.md` |
 | Triage labels (five-role vocabulary) | `docs/agents/triage-labels.md` |
 | Schema + DB patterns — bootstrap, enum migrations, atomic & race-safe SQL, TRUNCATE CASCADE | `docs/agents/db-bootstrap.md` (+ `db/schema/README.md`) |
-| Deployment + DB topology — Coolify/Nixpacks, env promotion, dev/prod/staging DB names | `docs/agents/deployment.md` |
+| Deployment + DB topology — Coolify, Dockerfile/standalone build, env promotion, dev/prod/staging DB names | `docs/agents/deployment.md` |
 | Working in worktrees / parallel sessions — `.env.local`, devDeps, push-hang, `gh pr merge` | `docs/agents/worktree-dev.md` |
 | Payload admin customization (v3) — component paths, importMap, CSRF gate | `docs/agents/payload-admin.md` |
 | Frontend & CSS gotchas — specificity, `backdrop-filter`, hero loading, `next/image` | `docs/agents/frontend-css.md` |
