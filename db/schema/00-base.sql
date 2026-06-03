@@ -337,6 +337,8 @@ CREATE TABLE IF NOT EXISTS public.shows (
     in_person_sold numeric DEFAULT 0,
     legacy_reserved numeric DEFAULT 0,
     status public.enum_shows_status DEFAULT 'active'::public.enum_shows_status NOT NULL,
+    venue_changed_at timestamp(3) with time zone,
+    venue_changed_by_id integer,
     updated_at timestamp(3) with time zone DEFAULT now() NOT NULL,
     created_at timestamp(3) with time zone DEFAULT now() NOT NULL
 );
@@ -381,7 +383,8 @@ CREATE TABLE IF NOT EXISTS public.users (
     partner_id integer,
     updated_at timestamp(3) with time zone DEFAULT now() NOT NULL,
     created_at timestamp(3) with time zone DEFAULT now() NOT NULL,
-    email character varying NOT NULL,
+    email character varying,
+    username character varying NOT NULL,
     reset_password_token character varying,
     reset_password_expiration timestamp(3) with time zone,
     salt character varying,
@@ -625,6 +628,8 @@ CREATE INDEX IF NOT EXISTS shows_created_at_idx ON public.shows USING btree (cre
 
 CREATE INDEX IF NOT EXISTS shows_updated_at_idx ON public.shows USING btree (updated_at);
 
+CREATE INDEX IF NOT EXISTS shows_venue_changed_by_idx ON public.shows USING btree (venue_changed_by_id);
+
 CREATE INDEX IF NOT EXISTS tickets_created_at_idx ON public.tickets USING btree (created_at);
 
 CREATE INDEX IF NOT EXISTS tickets_order_idx ON public.tickets USING btree (order_id);
@@ -644,6 +649,8 @@ CREATE INDEX IF NOT EXISTS users_sessions_order_idx ON public.users_sessions USI
 CREATE INDEX IF NOT EXISTS users_sessions_parent_id_idx ON public.users_sessions USING btree (_parent_id);
 
 CREATE INDEX IF NOT EXISTS users_updated_at_idx ON public.users USING btree (updated_at);
+
+CREATE UNIQUE INDEX IF NOT EXISTS users_username_idx ON public.users USING btree (username);
 
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'order_lookups_show_id_shows_id_fk' AND conrelid = 'public.order_lookups'::regclass) THEN
@@ -747,6 +754,13 @@ DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'payload_preferences_rels_users_fk' AND conrelid = 'public.payload_preferences_rels'::regclass) THEN
     ALTER TABLE ONLY public.payload_preferences_rels
     ADD CONSTRAINT payload_preferences_rels_users_fk FOREIGN KEY (users_id) REFERENCES public.users(id) ON DELETE CASCADE;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'shows_venue_changed_by_id_users_id_fk' AND conrelid = 'public.shows'::regclass) THEN
+    ALTER TABLE ONLY public.shows
+    ADD CONSTRAINT shows_venue_changed_by_id_users_id_fk FOREIGN KEY (venue_changed_by_id) REFERENCES public.users(id) ON DELETE SET NULL;
   END IF;
 END $$;
 

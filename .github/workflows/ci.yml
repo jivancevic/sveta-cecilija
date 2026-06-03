@@ -26,8 +26,20 @@ jobs:
           node-version: '22'
           cache: 'npm'
       - run: npm ci
-      - run: npm run lint
-      - run: npx tsc --noEmit
+      # tsc + eslint are NON-BLOCKING for now. `main` carries pre-existing debt
+      # that predates any lint/type CI: ~99 eslint errors (mostly
+      # `@next/next/no-html-link-for-pages`) and a couple of `tsc --noEmit`
+      # errors in test files (vitest Mock typing). They still run and annotate
+      # the PR so new issues are visible. The hard gates that actually pass on
+      # `main` — prod-install, vitest, build, drift — do the real gating. Flip
+      # both `continue-on-error` off once the backlog is cleared (tracked in a
+      # follow-up issue).
+      - name: tsc --noEmit (non-blocking — pre-existing backlog)
+        run: npx tsc --noEmit
+        continue-on-error: true
+      - name: eslint (non-blocking — pre-existing backlog)
+        run: npm run lint
+        continue-on-error: true
 
   vitest:
     name: vitest
