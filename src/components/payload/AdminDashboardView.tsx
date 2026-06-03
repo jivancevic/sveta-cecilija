@@ -17,6 +17,8 @@ import { getPartnerTodaySales } from '@/lib/partner/today-sales'
 import { PartnerSalesPanel } from './PartnerSalesPanel'
 import { getPartnerSeasonStats, getPartnerRecentSales } from '@/lib/partner/partner-data'
 import type { PoolQuery } from '@/lib/tickets/sold-seats'
+import { countInquiries, type InquiryRow } from '@/lib/dashboard/inquiries'
+import { InquiriesBadge } from './InquiriesBadge'
 
 export const dynamic = 'force-dynamic'
 
@@ -61,11 +63,27 @@ export async function AdminDashboardView() {
   const input = await getStatsInput()
   const { header, rows } = computeStats(input)
 
+  // Live inquiries badge (#239): count `new` enquiries + the booking sub-count.
+  // Cheap query — one collection, `new` only — and force-dynamic already opts
+  // this page out of caching, so it refreshes on every load.
+  const newEnquiries = await payload.find({
+    collection: 'contact-submissions',
+    where: { status: { equals: 'new' } },
+    limit: 0,
+    depth: 0,
+    pagination: false,
+  })
+  const inquiries = countInquiries(newEnquiries.docs as InquiryRow[])
+
   return (
     <div style={{ padding: '24px clamp(16px, 4vw, 40px)', maxWidth: 1280, margin: '0 auto' }}>
       <h1 style={{ marginBottom: 16, fontSize: 24 }}>{adminT(lang, 'dashboard')}</h1>
 
       <HeaderBlock header={header} />
+
+      <div style={{ margin: '16px 0' }}>
+        <InquiriesBadge lang={lang} count={inquiries.count} bookingCount={inquiries.bookingCount} />
+      </div>
 
       <AdminActions />
 
@@ -107,9 +125,6 @@ function AdminActions() {
       </Link>
       <Link href="/admin/collections/orders" style={button}>
         Find order
-      </Link>
-      <Link href="/admin/collections/contact-submissions" style={button}>
-        Inquiries
       </Link>
     </div>
   )

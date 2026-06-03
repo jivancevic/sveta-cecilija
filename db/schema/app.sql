@@ -319,6 +319,27 @@ DO $$ BEGIN
     FOREIGN KEY (partners_id) REFERENCES partners(id) ON DELETE CASCADE;
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
+-- ─── contact_submissions.status (enquiry lifecycle #239) ──────────────
+-- Enquiry lifecycle (ADR-0015): new → handled. The dashboard inquiries badge
+-- counts `status = 'new'`; the secretary marks one handled to clear it.
+-- The enum is brand-new (CREATE TYPE, not ALTER TYPE ADD VALUE), so creating
+-- it and referencing it from the ADD COLUMN in the same file/transaction is
+-- safe — the "unsafe use of new enum value" trap only applies to ADD VALUE.
+-- Existing rows backfill to 'new' (the NOT NULL DEFAULT covers fresh inserts;
+-- the explicit UPDATE catches any pre-existing rows that predate the column).
+
+DO $$ BEGIN
+  CREATE TYPE enum_contact_submissions_status AS ENUM ('new', 'handled');
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+ALTER TABLE contact_submissions
+  ADD COLUMN IF NOT EXISTS status enum_contact_submissions_status NOT NULL DEFAULT 'new';
+
+-- Backfill: any row left NULL by an older column add is brought to 'new'.
+-- Guarded by `status IS NULL` so it never rewrites an admin-set 'handled' value
+-- (the db-schema-safety test requires destructive/UPDATE statements be guarded).
+UPDATE contact_submissions SET status = 'new' WHERE status IS NULL;
+
 -- ─── marketing_optouts (#57) ──────────────────────────────────────────
 -- Email-level opt-out for marketing-class mail (post-show review request).
 -- NOT a Payload collection: written by /api/unsubscribe (one-click) and read
