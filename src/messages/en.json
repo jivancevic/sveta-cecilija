@@ -148,7 +148,10 @@
     "messagePlaceholder": "Tell us about your enquiry…",
     "submit": "Send Message →",
     "successTitle": "Message sent",
-    "successBody": "Thank you for reaching out. We'll be in touch within 2 business days."
+    "successBody": "Thank you for reaching out. We'll be in touch within 2 business days.",
+    "sending": "Sending…",
+    "errorTitle": "Could not send",
+    "errorBody": "Something went wrong sending your message. Please try again, or email us directly at info@moreska.eu."
   },
   "footer": {
     "tagline": "Guardians of the Steel Dance\nsince 1883.",

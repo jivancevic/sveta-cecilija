@@ -148,7 +148,10 @@
     "messagePlaceholder": "Opišite nam vaš upit…",
     "submit": "Pošalji poruku →",
     "successTitle": "Poruka poslana",
-    "successBody": "Hvala što ste nam se obratili. Javit ćemo vam se unutar 2 radna dana."
+    "successBody": "Hvala što ste nam se obratili. Javit ćemo vam se unutar 2 radna dana.",
+    "sending": "Slanje…",
+    "errorTitle": "Slanje nije uspjelo",
+    "errorBody": "Došlo je do pogreške pri slanju poruke. Pokušajte ponovno ili nam pišite izravno na info@moreska.eu."
   },
   "aboutPage": {
     "heroHeadline": "Priča o HGD Sveta Cecilija",

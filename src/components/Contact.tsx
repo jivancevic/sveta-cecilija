@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import type { Dictionary } from '@/lib/i18n';
+import { submitContactEnquiry } from '@/app/actions/contact';
 
 interface Props {
   t: Dictionary['contact'];
@@ -10,10 +11,29 @@ interface Props {
 
 export default function Contact({ t }: Props) {
   const [submitted, setSubmitted] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [error, setError] = useState(false);
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    setSubmitted(true);
+    if (sending) return;
+    const fd = new FormData(e.currentTarget);
+    setSending(true);
+    setError(false);
+    try {
+      const res = await submitContactEnquiry({
+        name: String(fd.get('name') ?? ''),
+        email: String(fd.get('email') ?? ''),
+        message: String(fd.get('message') ?? ''),
+        enquiry: String(fd.get('enquiry') ?? ''),
+      });
+      if (res.ok) setSubmitted(true);
+      else setError(true);
+    } catch {
+      setError(true);
+    } finally {
+      setSending(false);
+    }
   }
 
   return (
@@ -37,20 +57,25 @@ export default function Contact({ t }: Props) {
           </div>
         ) : (
           <form className="form" onSubmit={handleSubmit}>
+            {error && (
+              <p className="form__error" role="alert">
+                {t.errorBody}
+              </p>
+            )}
             <div className="form__row">
               <div className="field">
                 <label htmlFor="contact-name">{t.name}</label>
-                <input id="contact-name" type="text" placeholder={t.namePlaceholder} required />
+                <input id="contact-name" name="name" type="text" placeholder={t.namePlaceholder} required />
               </div>
               <div className="field">
                 <label htmlFor="contact-email">{t.email}</label>
-                <input id="contact-email" type="email" placeholder={t.emailPlaceholder} required />
+                <input id="contact-email" name="email" type="email" placeholder={t.emailPlaceholder} required />
               </div>
             </div>
             <div className="form__row">
               <div className="field">
                 <label htmlFor="contact-enquiry">{t.enquiry}</label>
-                <select id="contact-enquiry" defaultValue="">
+                <select id="contact-enquiry" name="enquiry" defaultValue="">
                   <option value="" disabled>{t.enquirySelect}</option>
                   {t.enquiryOptions.map((opt) => (
                     <option key={opt} value={opt}>{opt}</option>
@@ -59,14 +84,14 @@ export default function Contact({ t }: Props) {
               </div>
               <div className="field">
                 <label aria-hidden="true">&nbsp;</label>
-                <button className="btn btn--primary form__submit" type="submit">
-                  {t.submit}
+                <button className="btn btn--primary form__submit" type="submit" disabled={sending}>
+                  {sending ? t.sending : t.submit}
                 </button>
               </div>
             </div>
             <div className="field">
               <label htmlFor="contact-message">{t.message}</label>
-              <textarea id="contact-message" placeholder={t.messagePlaceholder} />
+              <textarea id="contact-message" name="message" placeholder={t.messagePlaceholder} required />
             </div>
           </form>
         )}
