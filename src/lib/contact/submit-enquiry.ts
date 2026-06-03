@@ -33,6 +33,12 @@ export interface SubmitEnquiryDeps {
   // Best-effort admin notification. Its rejection is swallowed (logged) — a
   // stored enquiry is already safe; a missed email is not data loss.
   notify?: (data: PersistedEnquiry) => Promise<void>
+  // Best-effort critical-events sink (#235, ADR-0015). Records the previously-
+  // silent "enquiry saved but nobody was notified" cases: a notify that throws
+  // (Brevo down / mis-keyed) OR no notifier wired at all (the adapter omits it
+  // when BREVO_API_KEY is missing). Must never throw; a record failure must not
+  // turn a stored enquiry into a failure.
+  recordEvent?: (event: { kind: string; context?: Record<string, unknown> }) => Promise<void>
 }
 
 export type SubmitEnquiryResult = { ok: true } | { ok: false; error: string }
@@ -70,13 +76,49 @@ export async function submitEnquiry(
   }
 
   // Notification is best-effort — never fail a stored enquiry on a mail error.
+  // Both the "send failed" and the "no notifier wired" paths used to be silent;
+  // each now records a critical event (#235) so a superadmin can see that an
+  // enquiry was stored but the org was never emailed.
   if (deps.notify) {
     try {
       await deps.notify(data)
     } catch (err) {
       console.error('[submitEnquiry] notify failed (enquiry was saved)', err)
+      await recordSafely(deps.recordEvent, {
+        kind: 'enquiry_notification_failed',
+        context: {
+          email: data.email,
+          enquiryType: data.enquiryType,
+          error: err instanceof Error ? err.message : String(err),
+        },
+      })
     }
+  } else {
+    // No notifier wired: on this project the adapter omits it exactly when
+    // BREVO_API_KEY is missing, so the enquiry email silently won't deliver.
+    await recordSafely(deps.recordEvent, {
+      kind: 'enquiry_notification_skipped',
+      context: {
+        email: data.email,
+        enquiryType: data.enquiryType,
+        reason: 'no notifier configured (likely missing BREVO_API_KEY)',
+      },
+    })
   }
 
   return { ok: true }
+}
+
+// Calls the best-effort recorder, guaranteeing it can never surface as a failure
+// of the (already successful) enquiry submission.
+async function recordSafely(
+  recordEvent: SubmitEnquiryDeps['recordEvent'],
+  event: { kind: string; context?: Record<string, unknown> },
+): Promise<void> {
+  if (!recordEvent) return
+  try {
+    await recordEvent(event)
+  } catch (err) {
+    console.error('[submitEnquiry] recordEvent failed (enquiry was saved)', err)
+  }
 }

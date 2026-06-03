@@ -331,3 +331,23 @@ CREATE TABLE IF NOT EXISTS marketing_optouts (
   source        varchar,
   opted_out_at  timestamptz NOT NULL DEFAULT now()
 );
+
+-- ─── critical_events (#235, ADR-0015) ─────────────────────────────────
+-- Curated critical-events sink: the app writes one row at known failure seams
+-- that would otherwise be silent (first write-site: an enquiry-notification
+-- email that never delivers). NOT a Payload collection: written by
+-- src/lib/critical-events/record.ts (best-effort, swallows its own errors) and
+-- read by the superadmin dev strip on /admin. This is a small curated table,
+-- NOT log aggregation — raw container/stdout logs are out of scope.
+--   kind:    short machine label (e.g. enquiry_notification_failed)
+--   context: optional JSON detail (email, error message, …)
+
+CREATE TABLE IF NOT EXISTS critical_events (
+  id          serial PRIMARY KEY,
+  kind        varchar     NOT NULL,
+  context     jsonb,
+  created_at  timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS critical_events_created_at_idx
+  ON critical_events (created_at DESC);
