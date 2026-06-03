@@ -33,6 +33,10 @@ export interface SubmitEnquiryDeps {
   // Best-effort admin notification. Its rejection is swallowed (logged) — a
   // stored enquiry is already safe; a missed email is not data loss.
   notify?: (data: PersistedEnquiry) => Promise<void>
+  // Best-effort acknowledgement to the enquirer (#236): "we received your
+  // message". Independently swallowed so it neither blocks the org notification
+  // nor fails a stored enquiry. The caller binds the enquirer's locale here.
+  acknowledge?: (data: PersistedEnquiry) => Promise<void>
 }
 
 export type SubmitEnquiryResult = { ok: true } | { ok: false; error: string }
@@ -69,14 +73,24 @@ export async function submitEnquiry(
     return { ok: false, error: 'Could not save your message. Please try again.' }
   }
 
-  // Notification is best-effort — never fail a stored enquiry on a mail error.
-  if (deps.notify) {
-    try {
-      await deps.notify(data)
-    } catch (err) {
-      console.error('[submitEnquiry] notify failed (enquiry was saved)', err)
-    }
-  }
+  // Both mails are best-effort and independent: never fail a stored enquiry on a
+  // mail error, run them concurrently so neither adds the other's latency to the
+  // response the form is waiting on, and let one failing not skip the other.
+  const mails: Promise<void>[] = []
+  if (deps.notify) mails.push(bestEffort('notify', () => deps.notify!(data)))
+  if (deps.acknowledge) mails.push(bestEffort('acknowledge', () => deps.acknowledge!(data)))
+  await Promise.all(mails)
 
   return { ok: true }
+}
+
+// Runs a best-effort side-effect, swallowing+logging any rejection so it never
+// surfaces to the caller. Returning a never-rejecting promise keeps Promise.all
+// above from short-circuiting when one mail fails.
+async function bestEffort(label: string, fn: () => Promise<void>): Promise<void> {
+  try {
+    await fn()
+  } catch (err) {
+    console.error(`[submitEnquiry] ${label} failed (enquiry was saved)`, err)
+  }
 }
