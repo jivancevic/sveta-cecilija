@@ -74,12 +74,20 @@ export const dashboardStrings = {
     doorScan: 'Door scan',
     partnerDashboard: 'Partner dashboard',
     signedInAs: 'Signed in as',
+    // Tehnika door dashboard (#240)
+    scanTicket: 'Scan a ticket',
+    admittedLabel: 'admitted', // reads "X / Y admitted"
+    noShowTonight: 'No show tonight.',
   },
   hr: {
     dashboard: 'Nadzorna ploča',
     doorScan: 'Skeniranje na ulazu',
     partnerDashboard: 'Partnerska ploča',
     signedInAs: 'Prijavljeni kao',
+    // Tehnika door dashboard (#240)
+    scanTicket: 'Skeniraj kartu',
+    admittedLabel: 'ušlo', // reads "X / Y ušlo"
+    noShowTonight: 'Nema predstave večeras.',
   },
 } as const
 

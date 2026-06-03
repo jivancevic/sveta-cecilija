@@ -9,6 +9,7 @@ import { computeStats } from '@/lib/stats'
 import { ADMIN_LANG_COOKIE, adminT, resolveAdminLang, type AdminLang } from '@/lib/admin-i18n'
 import { isAdminTier, isAuthed, isPartner, partnerIdOf } from '@/lib/access/roles'
 import { getNextShow, getScannedPeopleForShow, getUpcomingShows, type NextShow } from '@/lib/shows'
+import { doorProgress } from '@/lib/dashboard/door-progress'
 import { HeaderBlock, ShowsTable } from './stats-blocks'
 import { TicketLookupPanel } from './TicketLookupPanel'
 import { PartnerSellForm, type SellShow } from './PartnerSellForm'
@@ -115,55 +116,161 @@ function AdminActions() {
   )
 }
 
+// Action-first door dashboard (#240, ADR-0015). A volunteer on a phone in a
+// queue leads with the action: a large live admitted/sold progress hero for the
+// active door show, then a dominant full-width scan button opening the in-page
+// html5-qrcode viewfinder (never a native-camera-first flow). No revenue, no PII.
 async function TehnikaDashboard({ role, lang }: { role?: string; lang: AdminLang }) {
   const next = await getNextShow()
   const scanned = next ? await getScannedPeopleForShow(next.id) : 0
+  const progress = doorProgress(next, scanned)
 
   return (
-    <div style={{ padding: '24px clamp(16px, 4vw, 40px)', maxWidth: 720, margin: '0 auto' }}>
-      <h1 style={{ marginBottom: 16, fontSize: 24 }}>{adminT(lang, 'doorScan')}</h1>
-
-      {next ? (
-        <NextShowBlock next={next} scanned={scanned} />
+    <div style={{ padding: '24px clamp(16px, 4vw, 40px)', maxWidth: 560, margin: '0 auto' }}>
+      {progress ? (
+        <DoorProgressHero next={next!} progress={progress} lang={lang} />
       ) : (
         <p
           style={{
             background: 'var(--theme-elevation-50)',
             border: '1px solid var(--theme-elevation-150)',
             borderRadius: 8,
-            padding: 20,
+            padding: '32px 20px',
             color: 'var(--theme-elevation-600)',
+            textAlign: 'center',
+            fontSize: 18,
             marginBottom: 24,
           }}
         >
-          No upcoming shows scheduled.
+          {adminT(lang, 'noShowTonight')}
         </p>
       )}
 
-      <div style={{ maxWidth: 480 }}>
-        <Link
-          href="/admin/scan"
-          style={{
-            display: 'block',
-            width: '100%',
-            padding: '20px 16px',
-            fontSize: 18,
-            fontWeight: 700,
-            background: 'var(--theme-success-500, #1f7a3a)',
-            color: 'white',
-            border: 'none',
-            borderRadius: 8,
-            textAlign: 'center',
-            textDecoration: 'none',
-          }}
-        >
-          Scan a ticket
-        </Link>
-      </div>
+      {/* Dominant full-width, thumb-height scan button → in-page viewfinder. */}
+      <Link
+        href="/admin/scan"
+        style={{
+          display: 'block',
+          width: '100%',
+          padding: '24px 16px',
+          fontSize: 22,
+          fontWeight: 700,
+          background: 'var(--theme-success-500, #1f7a3a)',
+          color: 'white',
+          border: 'none',
+          borderRadius: 12,
+          textAlign: 'center',
+          textDecoration: 'none',
+        }}
+      >
+        {adminT(lang, 'scanTicket')}
+      </Link>
+
+      {next ? (
+        <div style={{ marginTop: 20 }}>
+          <TicketLookupPanel showId={next.id} />
+        </div>
+      ) : null}
 
       <p style={{ fontSize: 11, color: 'var(--theme-elevation-400)', marginTop: 24 }}>
         {adminT(lang, 'signedInAs')} {role}.
       </p>
+    </div>
+  )
+}
+
+// The one number that matters at the door: admitted / sold, as a progress ring
+// with the live "X / Y ušlo" figure. Brand gold + Bodoni on the big number;
+// Payload theme tokens keep it dark-mode safe.
+function DoorProgressHero({
+  next,
+  progress,
+  lang,
+}: {
+  next: NextShow
+  progress: { admitted: number; sold: number; percent: number }
+  lang: AdminLang
+}) {
+  const ring = 200
+  const stroke = 16
+  const r = (ring - stroke) / 2
+  const circ = 2 * Math.PI * r
+  const dash = (progress.percent / 100) * circ
+
+  return (
+    <div
+      style={{
+        background: 'var(--theme-elevation-50)',
+        border: '1px solid var(--theme-elevation-150)',
+        borderRadius: 12,
+        padding: '24px 20px',
+        marginBottom: 20,
+        textAlign: 'center',
+      }}
+    >
+      <div
+        style={{
+          fontSize: 12,
+          color: 'var(--theme-elevation-500)',
+          textTransform: 'uppercase',
+          letterSpacing: 0.4,
+          marginBottom: 4,
+        }}
+      >
+        {formatShowDate(next.date)} · {next.time} · {VENUE_LABEL[next.venue] ?? next.venue}
+      </div>
+
+      <div style={{ display: 'flex', justifyContent: 'center', margin: '12px 0 4px' }}>
+        <svg width={ring} height={ring} viewBox={`0 0 ${ring} ${ring}`} role="img" aria-label={`${progress.admitted} / ${progress.sold} ${adminT(lang, 'admittedLabel')}`}>
+          <circle
+            cx={ring / 2}
+            cy={ring / 2}
+            r={r}
+            fill="none"
+            stroke="var(--theme-elevation-150)"
+            strokeWidth={stroke}
+          />
+          <circle
+            cx={ring / 2}
+            cy={ring / 2}
+            r={r}
+            fill="none"
+            stroke="var(--cecilija-gold, #c9a227)"
+            strokeWidth={stroke}
+            strokeLinecap="round"
+            strokeDasharray={`${dash} ${circ}`}
+            transform={`rotate(-90 ${ring / 2} ${ring / 2})`}
+          />
+          <text
+            x="50%"
+            y="46%"
+            textAnchor="middle"
+            dominantBaseline="middle"
+            style={{
+              fontFamily: 'var(--cecilija-bodoni, Georgia, serif)',
+              fontSize: 44,
+              fontWeight: 700,
+              fill: 'var(--theme-elevation-1000)',
+            }}
+          >
+            {progress.admitted} / {progress.sold}
+          </text>
+          <text
+            x="50%"
+            y="64%"
+            textAnchor="middle"
+            dominantBaseline="middle"
+            style={{
+              fontSize: 16,
+              textTransform: 'uppercase',
+              letterSpacing: 1,
+              fill: 'var(--theme-elevation-500)',
+            }}
+          >
+            {adminT(lang, 'admittedLabel')}
+          </text>
+        </svg>
+      </div>
     </div>
   )
 }
@@ -290,66 +397,3 @@ function formatShowDate(iso: string): string {
   })
 }
 
-function NextShowBlock({ next, scanned }: { next: NextShow; scanned: number }) {
-  return (
-    <div
-      style={{
-        background: 'var(--theme-elevation-50)',
-        border: '1px solid var(--theme-elevation-150)',
-        borderRadius: 8,
-        padding: 20,
-        marginBottom: 24,
-      }}
-    >
-      <div style={{ fontSize: 12, color: 'var(--theme-elevation-500)', textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 6 }}>
-        Next show
-      </div>
-      <div style={{ fontSize: 22, fontWeight: 700, marginBottom: 4 }}>
-        {formatShowDate(next.date)}
-      </div>
-      <div style={{ color: 'var(--theme-elevation-600)', marginBottom: 16 }}>
-        {next.time} · {VENUE_LABEL[next.venue] ?? next.venue}
-      </div>
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
-          gap: 12,
-        }}
-      >
-        <Stat label="Online sold" value={next.onlineSold} />
-        <Stat label="Scanned" value={scanned} />
-        <Stat label="In-person sold" value={next.inPersonSold} />
-      </div>
-      <div style={{ marginTop: 16 }}>
-        <TicketLookupPanel showId={next.id} />
-      </div>
-    </div>
-  )
-}
-
-function Stat({ label, value }: { label: string; value: React.ReactNode }) {
-  return (
-    <div
-      style={{
-        background: 'var(--theme-elevation-0)',
-        border: '1px solid var(--theme-elevation-150)',
-        borderRadius: 6,
-        padding: '12px 14px',
-      }}
-    >
-      <div
-        style={{
-          fontSize: 11,
-          color: 'var(--theme-elevation-500)',
-          textTransform: 'uppercase',
-          letterSpacing: 0.4,
-          marginBottom: 4,
-        }}
-      >
-        {label}
-      </div>
-      <div style={{ fontSize: 24, fontWeight: 700, lineHeight: 1.1 }}>{value}</div>
-    </div>
-  )
-}
