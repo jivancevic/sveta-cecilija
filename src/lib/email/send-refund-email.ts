@@ -51,8 +51,13 @@ export async function sendRefundEmail(
   const locale = input.locale ?? 'en'
   const amount = formatEur(input.amountCents)
   const body = {
-    sender: { email: 'info@moreska.eu', name: 'HGD Sveta Cecilija' },
+    // Transactional show stream: send from the Brevo-authenticated tickets@
+    // sender (same as confirmations), Reply-To info@ so buyer replies reach the
+    // human inbox. Keeps must-deliver show mail off the root info@ identity and
+    // the bilten marketing reputation. See send-ticket-email.ts.
+    sender: { email: 'tickets@moreska.eu', name: 'HGD Sveta Cecilija' },
     to: [{ email: input.buyer.email, name: input.buyer.name }],
+    replyTo: { email: 'info@moreska.eu', name: 'HGD Sveta Cecilija' },
     subject: renderSubject(locale, amount),
     htmlContent: renderHtml(input, locale),
   }
