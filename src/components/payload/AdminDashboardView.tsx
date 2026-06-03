@@ -7,7 +7,7 @@ import config from '@payload-config'
 import { getStatsInput } from '@/lib/stats-data'
 import { computeStats } from '@/lib/stats'
 import { ADMIN_LANG_COOKIE, adminT, resolveAdminLang, type AdminLang } from '@/lib/admin-i18n'
-import { isAdminTier, isAuthed, isPartner, isSuperadmin, partnerIdOf } from '@/lib/access/roles'
+import { isAdminTier, isAuthed, isPartner, partnerIdOf } from '@/lib/access/roles'
 import { getNextShow, getScannedPeopleForShow, getUpcomingShows, type NextShow } from '@/lib/shows'
 import { HeaderBlock, ShowsTable } from './stats-blocks'
 import { TicketLookupPanel } from './TicketLookupPanel'
@@ -17,8 +17,9 @@ import { getPartnerTodaySales } from '@/lib/partner/today-sales'
 import { PartnerSalesPanel } from './PartnerSalesPanel'
 import { getPartnerSeasonStats, getPartnerRecentSales } from '@/lib/partner/partner-data'
 import type { PoolQuery } from '@/lib/tickets/sold-seats'
-import { listRecentCriticalEvents } from '@/lib/critical-events/list'
-import { CriticalEventsDevStrip } from './CriticalEventsDevStrip'
+import { gatherDevDiagnostics } from '@/lib/dev-diagnostics/gather'
+import { getStripeBalanceSummary } from '@/lib/dev-diagnostics/stripe-balance'
+import { SuperadminDevStrip } from './SuperadminDevStrip'
 
 export const dynamic = 'force-dynamic'
 
@@ -60,21 +61,17 @@ export async function AdminDashboardView() {
     return <TehnikaDashboard role={role} lang={lang} />
   }
 
-  // Superadmin-only critical-events dev strip (#235). admin never sees it; the
-  // tehnika/partner branches above already returned, so no need to re-check them.
-  // Fetched in parallel with the stats input (independent queries). The dev strip
-  // must never break the dashboard (e.g. table not yet bootstrapped on a stale
-  // DB), so a read failure resolves to an empty list.
-  const superadmin = isSuperadmin(user as { role?: string })
+  // Superadmin-only dev strip (#235/#244). gatherDevDiagnostics is the gating
+  // chokepoint — it returns null (and runs no queries) for admin/tehnika/partner,
+  // so the work only happens for a superadmin. Fetched in parallel with the stats
+  // input; each probe inside is fail-soft so it can never break the dashboard.
   const pool = (payload.db as unknown as { pool: { query: PoolQuery } }).pool
-  const [input, criticalEvents] = await Promise.all([
+  const [input, diagnostics] = await Promise.all([
     getStatsInput(),
-    superadmin
-      ? listRecentCriticalEvents((sql, params) => pool.query(sql, params), 20).catch((err) => {
-          console.error('[AdminDashboardView] failed to load critical events', err)
-          return []
-        })
-      : Promise.resolve([]),
+    gatherDevDiagnostics(user as { role?: string } | null, {
+      query: (sql, params) => pool.query(sql, params),
+      stripeBalance: getStripeBalanceSummary,
+    }),
   ])
   const { header, rows } = computeStats(input)
 
@@ -89,7 +86,7 @@ export async function AdminDashboardView() {
       <h2 style={{ fontSize: 16, margin: '24px 0 8px' }}>Shows (last 7 days + upcoming)</h2>
       <ShowsTable rows={rows} />
 
-      {superadmin && <CriticalEventsDevStrip events={criticalEvents} />}
+      {diagnostics && <SuperadminDevStrip data={diagnostics} />}
 
       <p style={{ fontSize: 11, color: 'var(--theme-elevation-400)', marginTop: 24 }}>
         {adminT(lang, 'signedInAs')} {role}.
