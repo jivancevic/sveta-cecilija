@@ -1,5 +1,6 @@
-import type { CollectionConfig } from 'payload'
+import { APIError, type CollectionConfig } from 'payload'
 import { isSuperadmin, isAdminTier } from '@/lib/access/roles'
+import { assertUserEmailPolicy, UserEmailRequiredError } from '@/lib/access/user-email-policy'
 
 type ReqUser = { id?: string | number; role?: string } | null | undefined
 
@@ -21,6 +22,38 @@ export const Users: CollectionConfig = {
   slug: 'users',
   auth: {
     tokenExpiration: 60 * 60 * 24 * 30, // 30 days; covers the shared tehnika device
+    // Hybrid username login (ADR-0010, #175). `username` is the canonical
+    // identifier so non-email logins (the shared `tehnika` door account, partner
+    // POS logins, a dev `admin`) work without the email-format error Payload
+    // otherwise enforces on the login field. Users who have an email can still
+    // log in with it (`allowEmailLogin`); email is optional at the auth layer
+    // (`requireEmail: false`) — the beforeValidate hook below re-requires it for
+    // the human tiers only.
+    loginWithUsername: {
+      allowEmailLogin: true,
+      requireEmail: false,
+    },
+  },
+  hooks: {
+    // Conditional email requirement: superadmin/admin (real people) must have an
+    // email; tehnika/partner may be username-only. Merge incoming data over the
+    // existing doc so an update that touches only one field is judged on the
+    // resulting record — and an explicit `email: null` is honoured, not masked
+    // by the original value.
+    beforeValidate: [
+      ({ data, originalDoc }) => {
+        const role = data && 'role' in data ? data.role : originalDoc?.role
+        const email = data && 'email' in data ? data.email : originalDoc?.email
+        try {
+          assertUserEmailPolicy({ role, email })
+        } catch (e) {
+          // Surface as a clean 400 validation error in /admin, not a generic 500.
+          if (e instanceof UserEmailRequiredError) throw new APIError(e.message, 400)
+          throw e
+        }
+        return data
+      },
+    ],
   },
   access: {
     read: selfOrSuperadmin,

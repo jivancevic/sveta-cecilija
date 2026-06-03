@@ -11,7 +11,8 @@ export async function register() {
         "id" serial PRIMARY KEY NOT NULL,
         "updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
         "created_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
-        "email" varchar NOT NULL,
+        "username" varchar,
+        "email" varchar,
         "reset_password_token" varchar,
         "reset_password_expiration" timestamp(3) with time zone,
         "salt" varchar,
@@ -19,6 +20,7 @@ export async function register() {
         "login_attempts" numeric DEFAULT 0,
         "lock_until" timestamp(3) with time zone
       );
+      CREATE UNIQUE INDEX IF NOT EXISTS "users_username_idx" ON "users" ("username");
       CREATE UNIQUE INDEX IF NOT EXISTS "users_email_idx" ON "users" ("email");
       CREATE INDEX IF NOT EXISTS "users_created_at_idx" ON "users" ("created_at");
 

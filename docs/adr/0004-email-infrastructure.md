@@ -15,6 +15,8 @@ The org needs a public email layout before cutover from `korcula-moreska.com` to
 
 Door-staff currently authenticate to `/admin` via a shared Payload User with email `door-staff@moreska.eu`. The address is a login string only; nothing is sent to it.
 
+> **Superseded by [ADR-0011](./0011-hybrid-username-login.md):** the door account is now a **username** (`tehnika`) with no email, not an email login string. The fake-email approach below is no longer needed.
+
 ## Decision
 
 ### Real readable mailboxes (1)

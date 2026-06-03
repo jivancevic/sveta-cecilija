@@ -104,7 +104,7 @@ Popis svega što je napravljeno u sklopu pokretanja novog web sjedišta i sustav
 ## 9. Uloge i pristupi
 
 - Dvije uloge: `admin` i `door-staff`.
-- Door-staff dijeli zajednički račun `tehnika@moreska.eu` (lozinka u password manageru, nije u repou).
+- Door-staff dijeli zajednički račun, korisničko ime **`tehnika`** (bez emaila, ADR-0011; lozinka u password manageru, nije u repou).
 - Door-staff vidi: predstave, statistiku, vlastiti korisnički zapis. Ne vidi: kupce, narudžbe, kontakt forme.
 - Admin: puni pristup.
 
@@ -152,7 +152,7 @@ Popis svega što je napravljeno u sklopu pokretanja novog web sjedišta i sustav
 - Pisanje prvih 6 dugih blog postova (jedan mjesečno) (#47).
 - Stvaranje HGD-kontroliranog Google računa preko `info@moreska.eu` (#65).
 - Postavljanje e-mail aliasa (tickets@, pr@, bookings@, press@) (#53).
-- Preimenovanje door-staff login računa u `tehnika@moreska.eu` u produkciji (#55).
+- Door-staff login u produkciji koristi korisničko ime `tehnika` (bez emaila, ADR-0011).
 
 ### Nakon sezone (odgođeno)
 - Upravljanje sadržajem preko Payload CMS-a (O nama, stranice sekcija, Privacy Policy).
