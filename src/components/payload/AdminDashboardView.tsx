@@ -5,11 +5,15 @@ import { redirect } from 'next/navigation'
 import { getPayload } from 'payload'
 import config from '@payload-config'
 import { getStatsInput } from '@/lib/stats-data'
-import { computeStats } from '@/lib/stats'
 import { ADMIN_LANG_COOKIE, adminT, resolveAdminLang, type AdminLang } from '@/lib/admin-i18n'
 import { isAdminTier, isAuthed, isPartner, partnerIdOf } from '@/lib/access/roles'
 import { getNextShow, getScannedPeopleForShow, getUpcomingShows, type NextShow } from '@/lib/shows'
-import { HeaderBlock, ShowsTable } from './stats-blocks'
+import { toDashboardShows } from '@/lib/dashboard/from-stats'
+import { partitionShows } from '@/lib/dashboard/partition'
+import { seasonCapacity } from '@/lib/dashboard/capacity'
+import { SeasonBand } from './dashboard/SeasonBand'
+import { UpcomingHero } from './dashboard/UpcomingHero'
+import { PastShowsList } from './dashboard/PastShowsList'
 import { TicketLookupPanel } from './TicketLookupPanel'
 import { PartnerSellForm, type SellShow } from './PartnerSellForm'
 import { PartnerStornoList } from './PartnerStornoList'
@@ -58,19 +62,29 @@ export async function AdminDashboardView() {
     return <TehnikaDashboard role={role} lang={lang} />
   }
 
+  // Upcoming-show-first secretary dashboard (#238, ADR-0015). The whole season
+  // (un-windowed) is partitioned into upcoming vs past; the hero leads with the
+  // next show + fill bar + remaining seats, the season band persists on top.
   const input = await getStatsInput()
-  const { header, rows } = computeStats(input)
+  const dashboardShows = toDashboardShows(input.shows)
+  const { upcoming, past } = partitionShows({ today: input.today, shows: dashboardShows })
+  const season = seasonCapacity(dashboardShows)
 
   return (
     <div style={{ padding: '24px clamp(16px, 4vw, 40px)', maxWidth: 1280, margin: '0 auto' }}>
       <h1 style={{ marginBottom: 16, fontSize: 24 }}>{adminT(lang, 'dashboard')}</h1>
 
-      <HeaderBlock header={header} />
+      {/* Persistent season summary band — visible without scrolling.
+          Revenue + partner receivable come from MoneyFigures (the #237 seam);
+          today revenueCents is the existing online-gross total. */}
+      <SeasonBand lang={lang} season={season} revenueCents={input.totalRevenueCents} />
 
-      <AdminActions />
+      <AdminActions lang={lang} />
 
-      <h2 style={{ fontSize: 16, margin: '24px 0 8px' }}>Shows (last 7 days + upcoming)</h2>
-      <ShowsTable rows={rows} />
+      <div style={{ marginTop: 24 }}>
+        <UpcomingHero upcoming={upcoming} lang={lang} />
+        <PastShowsList past={past} lang={lang} />
+      </div>
 
       <p style={{ fontSize: 11, color: 'var(--theme-elevation-400)', marginTop: 24 }}>
         {adminT(lang, 'signedInAs')} {role}.
@@ -79,7 +93,7 @@ export async function AdminDashboardView() {
   )
 }
 
-function AdminActions() {
+function AdminActions({ lang }: { lang: AdminLang }) {
   const button: React.CSSProperties = {
     display: 'block',
     padding: '14px 16px',
@@ -100,16 +114,18 @@ function AdminActions() {
       }}
     >
       <Link href="/admin/collections/shows/create" style={button}>
-        + Add show
+        {adminT(lang, 'newShow')}
       </Link>
       <Link href="/admin/collections/shows" style={button}>
-        Record in-person sale
+        {adminT(lang, 'recordInPersonSale')}
       </Link>
       <Link href="/admin/collections/orders" style={button}>
-        Find order
+        {adminT(lang, 'findOrder')}
       </Link>
+      {/* inquiries badge (#239) graft here — replace this static link with the
+          live "<n> new" badge component; keep it in the action row. */}
       <Link href="/admin/collections/contact-submissions" style={button}>
-        Inquiries
+        {adminT(lang, 'inquiries')}
       </Link>
     </div>
   )
