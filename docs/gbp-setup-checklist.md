@@ -4,8 +4,6 @@ One-sitting checklist to configure the **existing** Google Business Profile for 
 
 Do everything from `https://business.google.com` while logged in as `info@moreska.eu`. Set the **category first** (some fields, like the booking link, only appear after the category is right).
 
-Field values are copy-paste exact. Where two values are listed (EN/HR) the profile is English-primary; keep the English value.
-
 ---
 
 ## Naming decision (read first)
