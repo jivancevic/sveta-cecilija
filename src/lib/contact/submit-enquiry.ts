@@ -33,11 +33,15 @@ export interface SubmitEnquiryDeps {
   // Best-effort admin notification. Its rejection is swallowed (logged) — a
   // stored enquiry is already safe; a missed email is not data loss.
   notify?: (data: PersistedEnquiry) => Promise<void>
+  // Best-effort acknowledgement to the enquirer (#236): "we received your
+  // message". Independently swallowed so it neither blocks the org notification
+  // nor fails a stored enquiry. The caller binds the enquirer's locale here.
+  acknowledge?: (data: PersistedEnquiry) => Promise<void>
   // Best-effort critical-events sink (#235, ADR-0016). Records the previously-
-  // silent "enquiry saved but nobody was notified" cases: a notify that throws
-  // (Brevo down / mis-keyed) OR no notifier wired at all (the adapter omits it
-  // when BREVO_API_KEY is missing). Must never throw; a record failure must not
-  // turn a stored enquiry into a failure.
+  // silent "enquiry saved but the org wasn't notified" cases: a notify that
+  // throws (Brevo down / mis-keyed) OR no notifier wired at all (the adapter
+  // omits it when BREVO_API_KEY is missing). Must never throw; a record failure
+  // must not turn a stored enquiry into a failure.
   recordEvent?: (event: { kind: string; context?: Record<string, unknown> }) => Promise<void>
 }
 
@@ -75,10 +79,24 @@ export async function submitEnquiry(
     return { ok: false, error: 'Could not save your message. Please try again.' }
   }
 
-  // Notification is best-effort — never fail a stored enquiry on a mail error.
-  // Both the "send failed" and the "no notifier wired" paths used to be silent;
-  // each now records a critical event (#235) so a superadmin can see that an
-  // enquiry was stored but the org was never emailed.
+  // Both mails are best-effort and independent: never fail a stored enquiry on a
+  // mail error, run them concurrently so neither adds the other's latency to the
+  // response the form is waiting on, and let one failing not skip the other. The
+  // org notification additionally records a critical event (#235) when it fails
+  // or isn't wired, so the previously-silent "saved but not emailed" case shows.
+  await Promise.all([
+    notifyWithRecording(deps, data),
+    deps.acknowledge ? bestEffort('acknowledge', () => deps.acknowledge!(data)) : Promise.resolve(),
+  ])
+
+  return { ok: true }
+}
+
+// Best-effort org notification with critical-events visibility (#235): records
+// enquiry_notification_failed when the send throws, or enquiry_notification_skipped
+// when no notifier is wired (the adapter omits it on a missing BREVO_API_KEY).
+// Never throws — a stored enquiry must not fail on a mail/record error.
+async function notifyWithRecording(deps: SubmitEnquiryDeps, data: PersistedEnquiry): Promise<void> {
   if (deps.notify) {
     try {
       await deps.notify(data)
@@ -94,8 +112,6 @@ export async function submitEnquiry(
       })
     }
   } else {
-    // No notifier wired: on this project the adapter omits it exactly when
-    // BREVO_API_KEY is missing, so the enquiry email silently won't deliver.
     await recordSafely(deps.recordEvent, {
       kind: 'enquiry_notification_skipped',
       context: {
@@ -105,8 +121,17 @@ export async function submitEnquiry(
       },
     })
   }
+}
 
-  return { ok: true }
+// Runs a best-effort side-effect, swallowing+logging any rejection so it never
+// surfaces to the caller. Returning a never-rejecting promise keeps Promise.all
+// above from short-circuiting when one mail fails.
+async function bestEffort(label: string, fn: () => Promise<void>): Promise<void> {
+  try {
+    await fn()
+  } catch (err) {
+    console.error(`[submitEnquiry] ${label} failed (enquiry was saved)`, err)
+  }
 }
 
 // Calls the best-effort recorder, guaranteeing it can never surface as a failure

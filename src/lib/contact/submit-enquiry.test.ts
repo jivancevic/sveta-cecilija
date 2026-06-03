@@ -68,6 +68,37 @@ describe('submitEnquiry', () => {
     expect(res).toEqual({ ok: true })
   })
 
+  it('fires the enquirer acknowledgement after a successful persist', async () => {
+    const persist = vi.fn().mockResolvedValue(undefined)
+    const acknowledge = vi.fn().mockResolvedValue(undefined)
+    await submitEnquiry(valid, { persist, acknowledge })
+    expect(acknowledge).toHaveBeenCalledOnce()
+    expect(acknowledge.mock.calls[0][0].email).toBe('ana@example.com')
+  })
+
+  it('does not acknowledge an unsaved enquiry', async () => {
+    const persist = vi.fn().mockRejectedValue(new Error('db down'))
+    const acknowledge = vi.fn()
+    await submitEnquiry(valid, { persist, acknowledge })
+    expect(acknowledge).not.toHaveBeenCalled()
+  })
+
+  it('still reports ok when the best-effort acknowledgement throws', async () => {
+    const persist = vi.fn().mockResolvedValue(undefined)
+    const acknowledge = vi.fn().mockRejectedValue(new Error('brevo 401'))
+    const res = await submitEnquiry(valid, { persist, acknowledge })
+    expect(res).toEqual({ ok: true })
+  })
+
+  it('a failing notification does not prevent the acknowledgement (both best-effort)', async () => {
+    const persist = vi.fn().mockResolvedValue(undefined)
+    const notify = vi.fn().mockRejectedValue(new Error('brevo 401'))
+    const acknowledge = vi.fn().mockResolvedValue(undefined)
+    const res = await submitEnquiry(valid, { persist, notify, acknowledge })
+    expect(res).toEqual({ ok: true })
+    expect(acknowledge).toHaveBeenCalledOnce()
+  })
+
   // #235 — the enquiry-notification failure is the first critical-events write
   // site. The previously-silent "email didn't deliver" cases must now be
   // recorded, without ever turning a stored enquiry into a failure.
