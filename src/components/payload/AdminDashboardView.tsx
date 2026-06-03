@@ -10,6 +10,8 @@ import { ADMIN_LANG_COOKIE, adminT, resolveAdminLang, type AdminLang } from '@/l
 import { isAdminTier, isAuthed, isPartner, partnerIdOf } from '@/lib/access/roles'
 import { getNextShow, getScannedPeopleForShow, getUpcomingShows, type NextShow } from '@/lib/shows'
 import { HeaderBlock, ShowsTable } from './stats-blocks'
+import { MoneyFigures } from './dashboard/MoneyFigures'
+import { getDashboardMoney } from '@/lib/dashboard/revenue-data'
 import { TicketLookupPanel } from './TicketLookupPanel'
 import { PartnerSellForm, type SellShow } from './PartnerSellForm'
 import { PartnerStornoList } from './PartnerStornoList'
@@ -61,9 +63,21 @@ export async function AdminDashboardView() {
   const input = await getStatsInput()
   const { header, rows } = computeStats(input)
 
+  // The two season money facts (#237): cash collected vs partner receivable,
+  // computed apart and rendered apart — never summed into a "profit". Shares the
+  // pg pool already opened for getStatsInput via the same Payload instance.
+  const moneyPool = (payload.db as unknown as { pool: { query: PoolQuery } }).pool
+  const money = await getDashboardMoney((sql, params) => moneyPool.query(sql, params))
+
   return (
     <div style={{ padding: '24px clamp(16px, 4vw, 40px)', maxWidth: 1280, margin: '0 auto' }}>
       <h1 style={{ marginBottom: 16, fontSize: 24 }}>{adminT(lang, 'dashboard')}</h1>
+
+      <MoneyFigures
+        lang={lang}
+        revenueCollectedCents={money.revenueCollectedCents}
+        partnerReceivableCents={money.partnerReceivableCents}
+      />
 
       <HeaderBlock header={header} />
 

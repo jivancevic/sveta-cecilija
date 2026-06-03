@@ -74,12 +74,18 @@ export const dashboardStrings = {
     doorScan: 'Door scan',
     partnerDashboard: 'Partner dashboard',
     signedInAs: 'Signed in as',
+    revenueCollected: 'Revenue collected',
+    partnerReceivable: 'Partner receivable',
+    invoicedMonthly: '(invoiced monthly)',
   },
   hr: {
     dashboard: 'Nadzorna ploča',
     doorScan: 'Skeniranje na ulazu',
     partnerDashboard: 'Partnerska ploča',
     signedInAs: 'Prijavljeni kao',
+    revenueCollected: 'Prihod',
+    partnerReceivable: 'Potraživanje od partnera',
+    invoicedMonthly: '(fakturirano mjesečno)',
   },
 } as const
 

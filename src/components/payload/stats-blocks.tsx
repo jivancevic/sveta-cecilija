@@ -45,10 +45,8 @@ export function HeaderBlock({ header }: { header: StatsHeader }) {
         <div style={labelStyle}>Scanned</div>
         <div style={numStyle}>{header.totalScanned}</div>
       </div>
-      <div style={cardStyle}>
-        <div style={labelStyle}>Revenue</div>
-        <div style={numStyle}>{eur(header.totalRevenueCents)}</div>
-      </div>
+      {/* The single "Revenue" card (online gross only) is superseded by the two
+          honest, separately-labelled money facts in <MoneyFigures> (#237). */}
       <div style={cardStyle}>
         <div style={labelStyle}>Ljetno kino</div>
         <div style={numStyle}>{header.byVenue['ljetno-kino'].sold}</div>
