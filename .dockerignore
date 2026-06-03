@@ -1,7 +1,16 @@
 node_modules
 .next
 .git
-assets/
+# Exclude the bulky photo originals, but keep the two asset trees the ticket-PDF
+# renderer reads at runtime (render-tickets-pdf.tsx: email fonts + PNG logo).
+# Exclude by contents (assets/*) not the dir itself, so the !re-includes apply.
+assets/*
+!assets/fonts
+assets/fonts/*
+!assets/fonts/email
+!assets/images
+assets/images/*
+!assets/images/cecilija-logo.png
 Sveta Cecilija/
 docs/
 *.ods
