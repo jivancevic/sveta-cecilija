@@ -49,7 +49,7 @@ Both are ImprovMX forwarding aliases (no real mailbox), so adding one is near-ze
 - **Status:** claimed via the TripAdvisor Owners portal under `pr@moreska.eu` (#35 closed). Hours, photos, and description set in the Management Center. Ongoing review responses / photo curation belong to the HGD campaign manager (re-point the `pr@` alias to hand off).
 - **Name kept generic on purpose:** "Moreska Sword Dance" (ASCII spelling; "Sword Dance" not "Sword Dancing"). Do NOT rebrand to "HGD Sveta Cecilija": the ~200 reviews are shared with the competitor's performances (tourists don't distinguish groups), so a generic name we control captures all that equity, and an org-rebrand would invite a misrepresentation dispute. The "Moreška" diacritic lives in the description/prose, not the name (the name doubles as a search hook and matches the ASCII domain).
 - **Deferred:** swap the listed website from korcula-moreska.com to moreska.eu only after the DNS cutover (#11) is live and stable. Tracked there, not on #35.
-- **Follow-up:** mine the ~200 reviews for experience improvements, see #124.
+- **Follow-up:** the ~200 reviews were mined for experience improvements (#124, done) — see the experience findings under §3 and the full write-up in `docs/research/tripadvisor-review-themes.md` (Croatian board PDFs alongside it).
 
 ### 3. Reviews velocity (highest-ROI ongoing activity)
 
@@ -60,6 +60,22 @@ Both are ImprovMX forwarding aliases (no real mailbox), so adding one is near-ze
   - **Follow-up email** 2h after performance (post-ticket-purchase, via Brevo) with two big buttons: "Review on TripAdvisor" / "Review on Google". Subject line "How was Moreška?" One-click unsubscribe (List-Unsubscribe header) persists across future shows.
   - **Door staff script:** one-line ask at exit, "If you enjoyed the show, please scan this to leave a quick review." Requires staff buy-in — train at season start.
 - **Don't:** offer incentives for reviews (Google + TripAdvisor TOS violation, can get listings delisted).
+
+#### Experience findings (#124 — done; full doc `docs/research/tripadvisor-review-themes.md`)
+
+Velocity amplifies whatever the current experience is, so close the cheap gaps before pushing volume — otherwise we just speed up the accrual of 3-star reviews. All 161 reviews (2011–2025, 4.3★) were mined; the 0.7-star gap is driven by a short list of recurring, fixable complaints, not by the show itself.
+
+- **Protect (the 5★ drivers):** the live sword combat (real swords, sparks, occasional blood), authenticity / living tradition, costumes, the old-town night setting. Don't touch these when fixing the rest.
+- **Top recurring complaints (ranked):**
+  - **Pacing** — show "drags" / feels repetitive, and the *opening* (klapa singing + long intro) is where people disengage. The combat is NOT the problem; the front of the show is.
+  - **Story comprehension** — long multilingual narration is both too long and leaves non-speakers lost; the program/crib-sheet aid exists but isn't reliably handed out.
+  - **Seating** — "arrive early for a good seat" is the single most-repeated tip → a constraint we don't communicate at point of sale.
+  - **Front-row safety**, **venue hard to find**, and **"overpriced"** (which almost always rides along with "too long", so it's an expectations problem, not a pricing one).
+- **Cheap comms fixes that lift the star average (ship pre-season; feed the §2 listing copy too):**
+  1. Set expectations on `/tickets` + confirmation: runtime (~1h), 3-part structure (choir/orchestra → narration → combat), "arrive early for best seating".
+  2. Multilingual digital program behind a QR (reuse the `/scan` plumbing): plot + per-act guide + history, so the spoken intro can be shortened.
+  3. "How to find us + what to expect" block in the confirmation email (map, directions, start time, friendly front-row safety note).
+- **Operational (HGD show-ops, not dev):** tighten the opening, not the combat; surface that child tickets are €10 wherever value/family comes up.
 
 ### 4. Google Ads — paid search (largest paid channel)
 
