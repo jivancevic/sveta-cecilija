@@ -23,29 +23,31 @@ export interface DashboardMoney {
  * - Partner receivable: per-partner reconciliation net, aggregated across partners.
  */
 export async function getDashboardMoney(query: PoolQuery): Promise<DashboardMoney> {
-  // Online orders: total + refund status (the pure fn drops only 'refunded').
-  const orderRes = await query(`SELECT total, refund_status FROM orders`)
+  // Three independent reads — fire them concurrently.
+  const [orderRes, inPersonRes, partnerRes] = await Promise.all([
+    // Online orders: total + refund status (the pure fn drops only 'refunded').
+    query(`SELECT total, refund_status FROM orders`),
+    // In-person cash: a flat per-show headcount summed across the season.
+    query(`SELECT COALESCE(SUM(in_person_sold), 0)::bigint AS count FROM shows`),
+    // Partner receivable: every partner-channel ticket with its partner's rate.
+    query(
+      `SELECT p.id AS partner_id,
+              p.commission_percent AS commission_percent,
+              t.type AS type,
+              t.status AS status
+       FROM tickets t
+       JOIN orders o ON o.id = t.order_id
+       JOIN partners p ON p.id = o.partner_id`,
+    ),
+  ])
+
   const orders: CollectedOrderRow[] = orderRes.rows.map((r) => ({
     totalCents: Number(r.total) || 0,
     refundStatus: (r.refund_status as RefundStatus) ?? 'none',
   }))
 
-  // In-person cash: a flat per-show headcount summed across the season.
-  const inPersonRes = await query(
-    `SELECT COALESCE(SUM(in_person_sold), 0)::bigint AS count FROM shows`,
-  )
   const inPersonCount = Number(inPersonRes.rows[0]?.count ?? 0)
 
-  // Partner receivable: every partner-channel ticket with its partner's rate.
-  const partnerRes = await query(
-    `SELECT p.id AS partner_id,
-            p.commission_percent AS commission_percent,
-            t.type AS type,
-            t.status AS status
-     FROM tickets t
-     JOIN orders o ON o.id = t.order_id
-     JOIN partners p ON p.id = o.partner_id`,
-  )
   const byPartner = new Map<string, PartnerReceivableInput>()
   for (const r of partnerRes.rows) {
     const id = String(r.partner_id)
