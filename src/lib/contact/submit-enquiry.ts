@@ -73,23 +73,24 @@ export async function submitEnquiry(
     return { ok: false, error: 'Could not save your message. Please try again.' }
   }
 
-  // Both mails below are best-effort — never fail a stored enquiry on a mail
-  // error, and one failing must not skip the other.
-  if (deps.notify) {
-    try {
-      await deps.notify(data)
-    } catch (err) {
-      console.error('[submitEnquiry] notify failed (enquiry was saved)', err)
-    }
-  }
-
-  if (deps.acknowledge) {
-    try {
-      await deps.acknowledge(data)
-    } catch (err) {
-      console.error('[submitEnquiry] acknowledge failed (enquiry was saved)', err)
-    }
-  }
+  // Both mails are best-effort and independent: never fail a stored enquiry on a
+  // mail error, run them concurrently so neither adds the other's latency to the
+  // response the form is waiting on, and let one failing not skip the other.
+  const mails: Promise<void>[] = []
+  if (deps.notify) mails.push(bestEffort('notify', () => deps.notify!(data)))
+  if (deps.acknowledge) mails.push(bestEffort('acknowledge', () => deps.acknowledge!(data)))
+  await Promise.all(mails)
 
   return { ok: true }
+}
+
+// Runs a best-effort side-effect, swallowing+logging any rejection so it never
+// surfaces to the caller. Returning a never-rejecting promise keeps Promise.all
+// above from short-circuiting when one mail fails.
+async function bestEffort(label: string, fn: () => Promise<void>): Promise<void> {
+  try {
+    await fn()
+  } catch (err) {
+    console.error(`[submitEnquiry] ${label} failed (enquiry was saved)`, err)
+  }
 }
