@@ -27,7 +27,13 @@ export interface SendReviewEmailDeps {
 
 // Brand layer per ADR-0003: "Moreška by HGD Sveta Cecilija" in sender name +
 // subject; legal entity "HGD Sveta Cecilija" preserved in footer.
-const SENDER = { email: 'info@moreska.eu', name: 'Moreška by HGD Sveta Cecilija' }
+//
+// Marketing-class mail sends from the authenticated bilten.moreska.eu subdomain
+// (ADR-0004, #56) to isolate its reputation from transactional ticket mail on
+// root moreska.eu. Reply-To stays info@moreska.eu so buyer replies reach the
+// real inbox (the From mailbox is send-only).
+const SENDER = { email: 'newsletter@bilten.moreska.eu', name: 'Moreška by HGD Sveta Cecilija' }
+const REPLY_TO = { email: 'info@moreska.eu', name: 'HGD Sveta Cecilija' }
 
 function renderSubject(locale: 'en' | 'hr'): string {
   return locale === 'hr' ? 'Kako Vam se svidjela Moreška?' : 'How was Moreška?'
@@ -115,6 +121,7 @@ export async function sendReviewEmail(
     : undefined
   const body = {
     sender: SENDER,
+    replyTo: REPLY_TO,
     to: [{ email: input.buyer.email, name: input.buyer.name }],
     subject: renderSubject(locale),
     htmlContent: renderHtml(input, locale),
