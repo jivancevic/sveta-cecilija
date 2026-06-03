@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation'
+import Link from 'next/link'
 import { getLocale } from '@/lib/locale'
 import { getDictionary } from '@/lib/i18n'
 import Nav from '@/components/Nav'
@@ -77,7 +78,7 @@ export default async function BlogPostPage({
         }}
       >
         <div style={{ maxWidth: '720px', margin: '0 auto' }}>
-          <a href="/blog" className="sp-back">{t.backToBlog}</a>
+          <Link href="/blog" className="sp-back">{t.backToBlog}</Link>
 
           <p className="post-meta">
             <time dateTime={post.publishedAt}>
@@ -98,8 +99,8 @@ export default async function BlogPostPage({
           <nav className="post-footer-links" aria-label={t.footerLinksHeadline}>
             <h3 className="post-footer-links__h serif">{t.footerLinksHeadline}</h3>
             <ul>
-              <li><a href="/tickets">{t.footerLinkTickets}</a></li>
-              <li><a href="/about">{t.footerLinkAbout}</a></li>
+              <li><Link href="/tickets">{t.footerLinkTickets}</Link></li>
+              <li><Link href="/about">{t.footerLinkAbout}</Link></li>
             </ul>
           </nav>
         </div>

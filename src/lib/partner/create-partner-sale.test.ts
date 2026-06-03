@@ -147,7 +147,10 @@ describe('createPartnerSale — seat lock serialization (#179)', () => {
         events.push('persist')
         return { orderId: '1001' }
       }),
-      withSeatLock,
+      withSeatLock: withSeatLock as unknown as <T>(
+        showId: number,
+        critical: () => Promise<T>,
+      ) => Promise<T>,
     })
 
     await createPartnerSale(base, d)

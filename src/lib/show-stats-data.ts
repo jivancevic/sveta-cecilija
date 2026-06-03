@@ -45,7 +45,7 @@ export async function getShowStatsInput(showId: string): Promise<ShowStatsInput 
   )
 
   const orderIds = ordersRes.rows.map((r) => Number(r.id))
-  let tokensByOrder = new Map<number, ShowStatsToken[]>()
+  const tokensByOrder = new Map<number, ShowStatsToken[]>()
   if (orderIds.length > 0) {
     const tokensRes = await pool.query(
       `SELECT order_id, token, scanned, scanned_at
