@@ -6,7 +6,10 @@
 import { VENUE_LABEL } from '../venues'
 import { postBrevoEmail } from './post-brevo-email'
 
-const SENDER = { email: 'info@moreska.eu', name: 'Moreška by HGD Sveta Cecilija' }
+// Transactional show stream: same Brevo-authenticated tickets@ sender as ticket
+// confirmations + refunds, Reply-To info@ (set on the send body below). One
+// coherent show-mail identity, kept off the bilten marketing subdomain.
+const SENDER = { email: 'tickets@moreska.eu', name: 'HGD Sveta Cecilija' }
 
 // This action always moves Ljetno kino → the indoor Centar za kulturu, so the
 // from/to venue names come straight from the shared VENUE_LABEL source.
