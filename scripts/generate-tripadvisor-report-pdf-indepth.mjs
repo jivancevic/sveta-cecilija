@@ -205,7 +205,7 @@ const body = [
     'm2',
   ),
   bullet(
-    'Opseg: 161 recenzija u zadanom prikazu (pretežno engleski jezik). Ukupan broj koji portal navodi je oko 200 na svim jezicima, pa manji broj recenzija na drugim jezicima nije obuhvaćen u ovom prolazu.',
+    'Opseg: 161 recenzija u zadanom (engleskom) prikazu, uz dodatni uzorak recenzija na njemačkom, talijanskom i francuskom (ukupno portal navodi oko 200 na svim jezicima). Recenzije na drugim jezicima potvrđuju isti poredak tema (vidi odjeljak na kraju).',
     'm3',
   ),
   bullet('Razdoblje: od kolovoza 2011. do rujna 2025. (oko 14 godina). Prosječna ocjena: 4,3 od 5.', 'm4'),
@@ -282,13 +282,20 @@ const body = [
   quote({ hr: 'Ne dobije se čak ni letak.', en: 'not even a panflet is given', attr: 'OCJENA 3★ · 2012.' }, 't2q4'),
 
   // Tema 3
-  ...themeHead(3, 'Sjedala i vidljivost', 'POD NAŠOM KONTROLOM: DA (komunikacija)', 't3'),
+  ...themeHead(3, 'Sjedala, vidljivost i prevelika prodaja', 'POD NAŠOM KONTROLOM: DA (komunikacija + sustav)', 't3'),
   para(
-    'Najčešći pojedinačni savjet u cijelom skupu recenzija je „kupite unaprijed i dođite ranije zbog dobrog mjesta”. To je jasan znak da posjetitelji o tome nisu dovoljno informirani pri kupnji. Spominje se i „mali prostor za izvedbu”.',
+    'Najčešći pojedinačni savjet u cijelom skupu recenzija je „kupite unaprijed i dođite ranije zbog dobrog mjesta”. To je jasan znak da posjetitelji o tome nisu dovoljno informirani pri kupnji. Njemački gosti idu i korak dalje: navode da je prodano više ulaznica nego što ima sjedala, pa publika stoji ili je „natiskana na stepenicama”.',
     't3p',
   ),
+  para(
+    [
+      { b: 'Dobra vijest: ' },
+      'novi sustav prodaje ulaznica (moreska.eu) ograničava prodaju na kapacitet dvorane, pa strukturno uklanja prekomjernu prodaju koja se događala pri prodaji na ulazu. To je konkretna prednost novog sustava nad dosadašnjim načinom.',
+    ],
+    't3p2',
+  ),
   quote({ hr: 'Dođite ranije zbog dobrog mjesta.', en: 'arrive early for good seating', attr: 'PONAVLJA SE U DESECIMA RECENZIJA' }, 't3q1'),
-  quote({ hr: 'Mali prostor za izvedbu.', en: 'small performance arena', attr: 'OCJENA 3★ · 2014.' }, 't3q2'),
+  quote({ hr: 'Prodano je više ulaznica nego što ima sjedala; publika je natiskana na stepenicama.', en: 'mehr Tickets verkauft als Sitzplätze ... auf den Stufen gequetscht', attr: 'OCJENA 3★ · 2013. (njemački)' }, 't3q2'),
 
   // Tema 4
   ...themeHead(4, 'Sigurnost u prvom redu je iznenađenje, a ne najava', 'POD NAŠOM KONTROLOM: DA', 't4'),
@@ -399,12 +406,62 @@ const body = [
   h(Text, { style: s.h3, key: 'rec5-h' }, '5 · Istaknuti dječju cijenu (10 €)'),
   para('Svuda gdje se spominje obitelj ili cijena, kako bi se upiti o obiteljskim cijenama riješili boljom vidljivošću (cijene ostaju fiksne).', 'rec5a'),
 
-  // --- Sljedeći koraci ---
-  h(Text, { style: s.h2, key: 'next-h' }, 'Sljedeći koraci i dublja analiza'),
-  bullet('Obuhvatiti recenzije na drugim jezicima (njemački, talijanski) za potpuniju sliku (~40 dodatnih recenzija).', 'n1'),
-  bullet('Usporediti s Google recenzijama (sada kad je profil preuzet) kao neovisnu provjeru istih tema.', 'n2'),
-  bullet('Nakon uvođenja promjena pratiti ocjene i brzinu prikupljanja novih recenzija (povezano s karticama za poticanje recenzija na ulazu).', 'n3'),
-  bullet('Po želji: kvantificirati teme točnim brojanjem (precizni izvoz) ako se traži tvrda statistika za prezentaciju.', 'n4'),
+  // --- Kvantifikacija ---
+  h(Text, { style: s.h2, key: 'quant-h' }, 'Kvantifikacija tema'),
+  para(
+    [
+      { em: 'Poredano po učestalosti. Brojke su okvirne (kodirano iz sažetaka recenzija, ne preciznim izvozom), pa ih shvatite kao donju granicu. Osnova: 161 recenzija na engleskom; recenzije na drugim jezicima dodaju još (navedeno na kraju). Pouzdan je poredak i to gdje se ocjene grupiraju, ne točan broj.' },
+    ],
+    'quant-note',
+  ),
+  h(View, { style: s.tRowHead, key: 'q-head', wrap: false }, [
+    h(Text, { style: [{ width: '44%' }, s.tHeadCell], key: 'a' }, 'TEMA'),
+    h(Text, { style: [{ width: '14%' }, s.tHeadCell], key: 'b' }, '≈ BROJ'),
+    h(Text, { style: [{ width: '14%' }, s.tHeadCell], key: 'c' }, 'UDIO'),
+    h(Text, { style: [{ width: '28%' }, s.tHeadCell], key: 'd' }, 'GDJE SU OCJENE'),
+  ]),
+  ...[
+    ['Ritam (repetitivno / sporo / dosadno)', '~22', '~14%', 'gotovo sve 1–3★'],
+    ['Sjedala / „dođite ranije” / prevelika prodaja', '~17', '~11%', 'uglavnom 4–5★ (savjet)'],
+    ['Razumijevanje radnje', '~12', '~7%', 'miješano'],
+    ['Sigurnost u prvom redu', '~11', '~7%', 'uglavnom 4–5★'],
+    ['Cijena / „preskupo”', '~11', '~7%', 'ljutnja u 2–3★'],
+    ['„Turistički / bez strasti”', '~8', '~5%', '2–4★'],
+    ['Teško pronaći lokaciju', '~5', '~3%', 'sve ocjene'],
+    ['Buka iz susjednih lokala', '~3', '~2%', '5★ (svejedno smetalo)'],
+  ].map((r, i) =>
+    h(View, { style: s.tRow, key: `qr${i}`, wrap: false }, [
+      h(Text, { style: [s.tTheme, { width: '44%' }], key: 'a' }, r[0]),
+      h(Text, { style: [s.tCtrl, { width: '14%' }], key: 'b' }, r[1]),
+      h(Text, { style: [s.tCtrl, { width: '14%' }], key: 'c' }, r[2]),
+      h(Text, { style: [s.tLever, { width: '28%' }], key: 'd' }, r[3]),
+    ]),
+  ),
+  para(
+    [
+      { b: 'Najvažniji broj: ' },
+      'ritam se pojavljuje u gotovo svakoj slabo ocijenjenoj recenziji, pa je to glavna poluga na razliku od 0,7 zvjezdice. Sjedala/prevelika prodaja su najaktualniji i najjeftiniji za riješiti (u velikoj mjeri rješava ih već novi sustav prodaje).',
+    ],
+    'quant-takeaway',
+  ),
+
+  // --- Dublja analiza (provedeno) ---
+  h(Text, { style: s.h2, key: 'next-h' }, 'Dublja analiza (provedeno)'),
+  h(Text, { style: s.h3, key: 'da1-h' }, 'Recenzije na drugim jezicima'),
+  para(
+    'Uzorak na njemačkom, talijanskom i francuskom potvrđuje isti poredak tema. Dodatno: njemački gosti ističu prekomjernu prodaju i vrućinu (umor plesača na ~30°C), Talijani izričito traže najavu na engleskom (a ne samo „višejezično”), a Francuzi su topli uz povremenu zamjerku da je teško pronaći lokaciju. Nije potrebno mijenjati poredak.',
+    'da1p',
+  ),
+  h(Text, { style: s.h3, key: 'da2-h' }, 'Google recenzije'),
+  para(
+    'Automatski dohvat Google recenzija nije moguć (Google blokira čitanje i prikazuje sadržaj tek u pregledniku). Put naprijed: izvoz iz nadzorne ploče Google profila (vlasnik, info@moreska.eu) za potpun popis, ili Google Places API za ocjenu i uzorak (najviše 5 recenzija). Oprez: u Korčuli postoje dvije moreške, a jedan Google profil vezan je uz lokaciju izvedbe, pa recenzije mogu miješati obje skupine. Prije korištenja treba potvrditi koji je profil preuzet za HGD.',
+    'da2p',
+  ),
+  h(Text, { style: s.h3, key: 'da3-h' }, 'Praćenje nakon promjena (sljedeći korak)'),
+  para(
+    'Nakon uvođenja poboljšanja i kartica za poticanje recenzija pratiti mjesečno: broj novih recenzija, prosječnu ocjenu i udio novih recenzija koje spominju glavne teme (ritam, razumijevanje, sjedala). Taj udio je pravo mjerilo uspjeha: broj recenzija može rasti i dok stopa pritužbi pada.',
+    'da3p',
+  ),
 
   h(
     Text,
