@@ -1,44 +1,42 @@
 import { describe, it, expect, vi } from 'vitest'
 import { voidOrderTickets, voidSingleTicket } from './ticket-void'
 
+// The module owns the SQL now; tests inject a fake executor and assert the
+// voided count + that the statement was run. The SQL's actual seat-freeing is
+// regression-checked against a real DB by scripts/probe-refund-void.mjs.
+const fakeDb = (result: { rows?: unknown[] } | unknown[]) => ({
+  execute: vi.fn().mockResolvedValue(result),
+})
+
 describe('voidOrderTickets', () => {
-  it('voids all active tickets with the given reason and returns the count', async () => {
-    const atomicVoidActiveTickets = vi.fn().mockResolvedValue(3)
-    const result = await voidOrderTickets('ord_1', 'refund', { atomicVoidActiveTickets })
+  it('returns the count of rows the UPDATE voided ({ rows } shape)', async () => {
+    const db = fakeDb({ rows: [{ id: 1 }, { id: 2 }, { id: 3 }] })
+    const result = await voidOrderTickets(db, 'ord_1', 'refund')
     expect(result).toEqual({ voided: 3 })
-    expect(atomicVoidActiveTickets).toHaveBeenCalledWith('ord_1', 'refund')
+    expect(db.execute).toHaveBeenCalledOnce()
+  })
+
+  it('handles a bare-array driver result', async () => {
+    const db = fakeDb([{ id: 1 }])
+    expect(await voidOrderTickets(db, 'ord_1', 'storno')).toEqual({ voided: 1 })
   })
 
   it('is idempotent: voiding an already-cancelled order is a no-op (0 voided)', async () => {
-    const atomicVoidActiveTickets = vi.fn().mockResolvedValue(0)
-    const result = await voidOrderTickets('ord_1', 'refund', { atomicVoidActiveTickets })
-    expect(result).toEqual({ voided: 0 })
-  })
-
-  it('passes the storno reason through', async () => {
-    const atomicVoidActiveTickets = vi.fn().mockResolvedValue(1)
-    await voidOrderTickets('ord_1', 'storno', { atomicVoidActiveTickets })
-    expect(atomicVoidActiveTickets).toHaveBeenCalledWith('ord_1', 'storno')
+    const db = fakeDb({ rows: [] })
+    expect(await voidOrderTickets(db, 'ord_1', 'refund')).toEqual({ voided: 0 })
   })
 })
 
 describe('voidSingleTicket', () => {
-  it('voids one active ticket with the given reason and returns 1', async () => {
-    const atomicVoidActiveTicket = vi.fn().mockResolvedValue(1)
-    const result = await voidSingleTicket('tk_1', 'storno', { atomicVoidActiveTicket })
+  it('returns 1 when one active ticket is voided', async () => {
+    const db = fakeDb({ rows: [{ id: 7 }] })
+    const result = await voidSingleTicket(db, 'tk_1', 'storno')
     expect(result).toEqual({ voided: 1 })
-    expect(atomicVoidActiveTicket).toHaveBeenCalledWith('tk_1', 'storno')
+    expect(db.execute).toHaveBeenCalledOnce()
   })
 
   it('is idempotent: voiding an already-cancelled ticket is a no-op (0 voided)', async () => {
-    const atomicVoidActiveTicket = vi.fn().mockResolvedValue(0)
-    const result = await voidSingleTicket('tk_1', 'storno', { atomicVoidActiveTicket })
-    expect(result).toEqual({ voided: 0 })
-  })
-
-  it('passes the refund reason through', async () => {
-    const atomicVoidActiveTicket = vi.fn().mockResolvedValue(1)
-    await voidSingleTicket('tk_1', 'refund', { atomicVoidActiveTicket })
-    expect(atomicVoidActiveTicket).toHaveBeenCalledWith('tk_1', 'refund')
+    const db = fakeDb({ rows: [] })
+    expect(await voidSingleTicket(db, 'tk_1', 'refund')).toEqual({ voided: 0 })
   })
 })
