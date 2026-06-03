@@ -169,7 +169,7 @@ const Header = h(View, { style: s.header, fixed: true }, [
     h(Image, { style: s.logo, src: LOGO_PATH, key: 'logo' }),
     h(Text, { style: s.org, key: 'org' }, 'HGD SVETA CECILIJA'),
   ]),
-  h(Text, { style: s.headerRight, key: 'r' }, 'INTERNI DOKUMENT · DETALJNA ANALIZA\nZA VODITELJA I UPRAVU'),
+  h(Text, { style: s.headerRight, key: 'r' }, 'INTERNI DOKUMENT · DETALJNA ANALIZA\nZA VODITELJA I UPRAVU\nPRIPREMIO: JOSIP IVANČEVIĆ'),
 ])
 
 const Footer = h(View, { style: s.footer, fixed: true }, [
