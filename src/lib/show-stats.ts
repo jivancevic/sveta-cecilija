@@ -1,4 +1,5 @@
 import { VENUE_CAPACITY, type Venue } from './venues'
+import { remainingSeats } from './tickets/seat-availability'
 import type { StatsShow } from './stats'
 
 export interface ShowStatsToken {
@@ -73,13 +74,20 @@ export function computeShowStats(input: ShowStatsInput): ShowStatsOutput {
       time: show.time,
       venue: show.venue,
       status: show.status,
-      onlineSold: show.onlineSold,
+      // `onlineSold` is the admin-facing display column; its value is the live
+      // active-ticket count.
+      onlineSold: show.activeTicketCount,
       inPersonSold: show.inPersonSold,
       legacyReserved: show.legacyReserved,
-      totalSold: show.onlineSold + show.inPersonSold,
+      totalSold: show.activeTicketCount + show.inPersonSold,
       scanned,
       capacity,
-      remaining: capacity - show.onlineSold - show.inPersonSold - show.legacyReserved,
+      remaining: remainingSeats({
+        capacity,
+        activeTicketCount: show.activeTicketCount,
+        inPersonSold: show.inPersonSold,
+        legacyReserved: show.legacyReserved,
+      }),
       revenueCents,
     },
     orders: orders.map((o) => ({

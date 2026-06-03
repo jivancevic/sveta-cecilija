@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { assertPurchasable, type PurchasableShow } from './capacity'
+import { assertPurchasable, type PurchasableShow } from './purchasability'
 
 const today = new Date()
 const tomorrow = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1).toISOString()
@@ -9,7 +9,7 @@ function baseShow(overrides: Partial<PurchasableShow> = {}): PurchasableShow {
     id: 'show_1',
     date: tomorrow,
     venue: 'ljetno-kino',
-    onlineSold: 0,
+    activeTicketCount: 0,
     inPersonSold: 0,
     status: 'active',
     ...overrides,
@@ -35,28 +35,28 @@ describe('assertPurchasable', () => {
   })
 
   it('rejects when requested quantity exceeds remaining capacity', () => {
-    // ljetno-kino capacity = 320, onlineSold = 319 → remaining 1
+    // ljetno-kino capacity = 320, activeTicketCount = 319 → remaining 1
     expect(() =>
-      assertPurchasable(baseShow({ onlineSold: 319 }), { adults: 2, children: 0 }),
+      assertPurchasable(baseShow({ activeTicketCount: 319 }), { adults: 2, children: 0 }),
     ).toThrow(/capacity|remaining/i)
   })
 
   it('rejects when sold out', () => {
     expect(() =>
-      assertPurchasable(baseShow({ onlineSold: 320 }), { adults: 1, children: 0 }),
+      assertPurchasable(baseShow({ activeTicketCount: 320 }), { adults: 1, children: 0 }),
     ).toThrow(/sold out|capacity|remaining/i)
   })
 
   it('counts both online and in-person sales against capacity', () => {
     expect(() =>
-      assertPurchasable(baseShow({ onlineSold: 200, inPersonSold: 121 }), { adults: 1, children: 0 }),
+      assertPurchasable(baseShow({ activeTicketCount: 200, inPersonSold: 121 }), { adults: 1, children: 0 }),
     ).toThrow()
   })
 
   it('defaults legacyReserved to 0 when omitted (back-compat with pre-#60 callers)', () => {
     // ljetno-kino capacity = 320; sold = 319; legacy unset → remaining 1, 1 ticket allowed
     expect(() =>
-      assertPurchasable(baseShow({ onlineSold: 319 }), { adults: 1, children: 0 }),
+      assertPurchasable(baseShow({ activeTicketCount: 319 }), { adults: 1, children: 0 }),
     ).not.toThrow()
   })
 
@@ -73,7 +73,7 @@ describe('assertPurchasable', () => {
   it('treats legacy + online + in-person == capacity as sold out', () => {
     expect(() =>
       assertPurchasable(
-        baseShow({ onlineSold: 100, inPersonSold: 20, legacyReserved: 200 }),
+        baseShow({ activeTicketCount: 100, inPersonSold: 20, legacyReserved: 200 }),
         { adults: 1, children: 0 },
       ),
     ).toThrow(/capacity|remaining|sold out/i)

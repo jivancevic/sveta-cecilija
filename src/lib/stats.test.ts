@@ -7,7 +7,7 @@ function makeShow(overrides: Partial<StatsShow> = {}): StatsShow {
     date: '2026-07-01',
     time: '21:00',
     venue: 'ljetno-kino',
-    onlineSold: 0,
+    activeTicketCount: 0,
     inPersonSold: 0,
     legacyReserved: 0,
     scannedCount: 0,
@@ -30,8 +30,8 @@ describe('computeStats — season header', () => {
     const input = makeInput({
       totalRevenueCents: 123_45,
       shows: [
-        makeShow({ id: 'a', venue: 'ljetno-kino', onlineSold: 100, inPersonSold: 20, scannedCount: 80 }),
-        makeShow({ id: 'b', venue: 'zimsko-kino', onlineSold: 50, inPersonSold: 10, scannedCount: 30 }),
+        makeShow({ id: 'a', venue: 'ljetno-kino', activeTicketCount: 100, inPersonSold: 20, scannedCount: 80 }),
+        makeShow({ id: 'b', venue: 'zimsko-kino', activeTicketCount: 50, inPersonSold: 10, scannedCount: 30 }),
       ],
     })
 
@@ -45,9 +45,9 @@ describe('computeStats — season header', () => {
   it('breaks header totals down by venue', () => {
     const input = makeInput({
       shows: [
-        makeShow({ id: 'a', venue: 'ljetno-kino', onlineSold: 100, inPersonSold: 20, scannedCount: 80 }),
-        makeShow({ id: 'b', venue: 'ljetno-kino', onlineSold: 10, inPersonSold: 0, scannedCount: 5 }),
-        makeShow({ id: 'c', venue: 'zimsko-kino', onlineSold: 50, inPersonSold: 10, scannedCount: 30 }),
+        makeShow({ id: 'a', venue: 'ljetno-kino', activeTicketCount: 100, inPersonSold: 20, scannedCount: 80 }),
+        makeShow({ id: 'b', venue: 'ljetno-kino', activeTicketCount: 10, inPersonSold: 0, scannedCount: 5 }),
+        makeShow({ id: 'c', venue: 'zimsko-kino', activeTicketCount: 50, inPersonSold: 10, scannedCount: 30 }),
       ],
     })
 
@@ -74,12 +74,12 @@ describe('computeStats — season header', () => {
     expect(out.rows.map((r) => r.id)).toEqual(['edge', 'past-recent', 'today', 'future'])
   })
 
-  it('derives row capacity per venue and computes remaining = capacity − onlineSold − inPersonSold', () => {
+  it('derives row capacity per venue and computes remaining = capacity − activeTicketCount − inPersonSold', () => {
     const input = makeInput({
       today: new Date('2026-07-10T12:00:00Z'),
       shows: [
-        makeShow({ id: 'ljetno', date: '2026-07-12', venue: 'ljetno-kino', onlineSold: 100, inPersonSold: 20, scannedCount: 80 }),
-        makeShow({ id: 'zimsko', date: '2026-07-13', venue: 'zimsko-kino', onlineSold: 50, inPersonSold: 0, scannedCount: 0 }),
+        makeShow({ id: 'ljetno', date: '2026-07-12', venue: 'ljetno-kino', activeTicketCount: 100, inPersonSold: 20, scannedCount: 80 }),
+        makeShow({ id: 'zimsko', date: '2026-07-13', venue: 'zimsko-kino', activeTicketCount: 50, inPersonSold: 0, scannedCount: 0 }),
       ],
     })
 
@@ -97,7 +97,7 @@ describe('computeStats — season header', () => {
   it('counts cancelled shows in the season header (they still represent activity)', () => {
     const input = makeInput({
       shows: [
-        makeShow({ id: 'a', onlineSold: 10, inPersonSold: 0, scannedCount: 0, status: 'cancelled' }),
+        makeShow({ id: 'a', activeTicketCount: 10, inPersonSold: 0, scannedCount: 0, status: 'cancelled' }),
       ],
     })
 

@@ -30,7 +30,7 @@ export async function getShowStatsInput(showId: string): Promise<ShowStatsInput 
     date: new Date(showDoc.date as string).toISOString().slice(0, 10),
     time: (showDoc.time as string) ?? '',
     venue: (showDoc.venue as Venue) ?? 'ljetno-kino',
-    onlineSold: 0, // active ticket count, computed from the ticket list below
+    activeTicketCount: 0, // computed from the ticket list below
     inPersonSold: Number(showDoc.inPersonSold ?? 0),
     legacyReserved: Number(showDoc.legacyReserved ?? 0),
     scannedCount: 0, // recomputed below from tokens, unused in show-stats
@@ -66,7 +66,7 @@ export async function getShowStatsInput(showId: string): Promise<ShowStatsInput 
   }
 
   // Sold seats = active tickets (one per person). online_sold column is retired.
-  show.onlineSold = [...tokensByOrder.values()].reduce((n, list) => n + list.length, 0)
+  show.activeTicketCount = [...tokensByOrder.values()].reduce((n, list) => n + list.length, 0)
 
   const orders: ShowStatsOrder[] = ordersRes.rows.map((r) => {
     const id = Number(r.id)

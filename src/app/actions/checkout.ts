@@ -4,7 +4,7 @@ import { getPayload } from 'payload'
 import config from '@payload-config'
 import { createCheckoutSession, type CheckoutInput } from '@/lib/checkout/create-checkout-session'
 import { getStripe } from '@/lib/stripe'
-import type { PurchasableShow } from '@/lib/capacity'
+import type { PurchasableShow } from '@/lib/checkout/purchasability'
 import { getActiveTicketCountForShow, type PoolQuery } from '@/lib/tickets/sold-seats'
 
 export async function startCheckout(input: CheckoutInput) {
@@ -22,7 +22,7 @@ export async function startCheckout(input: CheckoutInput) {
             date: doc.date as string,
             venue: doc.venue as PurchasableShow['venue'],
             // Sold seats = active tickets (online_sold column retired).
-            onlineSold: await getActiveTicketCountForShow((sql, params) => pool.query(sql, params), doc.id as number),
+            activeTicketCount: await getActiveTicketCountForShow((sql, params) => pool.query(sql, params), doc.id as number),
             inPersonSold: (doc.inPersonSold as number) ?? 0,
             legacyReserved: (doc.legacyReserved as number) ?? 0,
             status: doc.status as 'active' | 'cancelled',

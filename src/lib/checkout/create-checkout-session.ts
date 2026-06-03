@@ -1,4 +1,4 @@
-import { assertPurchasable, type PurchasableShow } from '../capacity'
+import { assertPurchasable, type PurchasableShow } from './purchasability'
 import { calculateOrderTotal } from '../pricing'
 
 export interface CheckoutInput {

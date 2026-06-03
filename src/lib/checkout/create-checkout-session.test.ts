@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest'
 import { createCheckoutSession } from './create-checkout-session'
-import type { PurchasableShow } from '../capacity'
+import type { PurchasableShow } from './purchasability'
 
 const futureDate = new Date(Date.now() + 7 * 86400000).toISOString()
 
@@ -8,7 +8,7 @@ const baseShow: PurchasableShow = {
   id: '1',
   date: futureDate,
   venue: 'ljetno-kino',
-  onlineSold: 0,
+  activeTicketCount: 0,
   inPersonSold: 0,
   status: 'active',
 }
@@ -80,7 +80,7 @@ describe('createCheckoutSession', () => {
     await expect(
       createCheckoutSession(
         { showId: '1', adults: 5, children: 0, buyer: { name: 'X', email: 'x@y.z' } },
-        makeDeps({ show: { ...baseShow, onlineSold: 318 } }),
+        makeDeps({ show: { ...baseShow, activeTicketCount: 318 } }),
       ),
     ).rejects.toThrow(/2 seats remaining/i)
   })
