@@ -60,3 +60,7 @@ next start                      # the actual app
 ```
 
 If bootstrap fails, the container exits — `next start` never runs. Logs will show `[bootstrap-db] failed: <reason>`. The script also handles `DATABASE_URL not set` gracefully (logs and skips, so the app can start in degraded mode for debugging).
+
+## Deploy triggers
+
+Both apps connect to the repo via the same Coolify **GitHub App** (no per-repo deploy webhook — its hook lives at the App/installation level, so `gh api repos/.../hooks` is empty by design). Whether a push to `main` deploys is governed by each app's **Automatic Deployment** toggle: **staging (`dev.moreska.eu`) = ON**, **prod (`moreska.eu`) = OFF**. If staging stops auto-deploying, check that per-app toggle first.
