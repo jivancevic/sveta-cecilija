@@ -74,6 +74,11 @@ export const dashboardStrings = {
     doorScan: 'Door scan',
     partnerDashboard: 'Partner dashboard',
     signedInAs: 'Signed in as',
+    // Tehnika door dashboard (#240)
+    scanTicket: 'Scan a ticket',
+    admittedLabel: 'admitted', // reads "X / Y admitted"
+    noShowTonight: 'No show tonight.',
+    // Partner month-to-date card (#241)
     mtdThisMonth: 'This month',
     mtdTicketsSold: 'Tickets sold',
     mtdOwed: 'You owe HGD',
@@ -86,6 +91,11 @@ export const dashboardStrings = {
     doorScan: 'Skeniranje na ulazu',
     partnerDashboard: 'Partnerska ploča',
     signedInAs: 'Prijavljeni kao',
+    // Tehnika door dashboard (#240)
+    scanTicket: 'Skeniraj kartu',
+    admittedLabel: 'ušlo', // reads "X / Y ušlo"
+    noShowTonight: 'Nema predstave večeras.',
+    // Partner month-to-date card (#241)
     mtdThisMonth: 'Ovaj mjesec',
     mtdTicketsSold: 'Prodanih ulaznica',
     mtdOwed: 'Za platiti HGD-u',
