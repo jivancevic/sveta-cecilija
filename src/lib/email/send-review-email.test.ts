@@ -16,6 +16,7 @@ function makeDeps(overrides: Partial<SendReviewEmailDeps> = {}): SendReviewEmail
   return {
     fetch: vi.fn().mockResolvedValue(new Response('{}', { status: 201 })),
     brevoApiKey: 'test-key',
+    isOptedOut: vi.fn().mockResolvedValue(false),
     ...overrides,
   }
 }
@@ -90,5 +91,26 @@ describe('sendReviewEmail', () => {
     expect(logged).toContain('orderId=order_77')
     expect(logged).toContain('status=503')
     errSpy.mockRestore()
+  })
+
+  it('does NOT send when the buyer has opted out — consent gate (#57)', async () => {
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {})
+    const deps = makeDeps({ isOptedOut: vi.fn().mockResolvedValue(true) })
+    await sendReviewEmail(makeInput(), deps)
+    expect(deps.isOptedOut).toHaveBeenCalledWith('ana@example.com')
+    expect(deps.fetch).not.toHaveBeenCalled()
+    logSpy.mockRestore()
+  })
+
+  it('sends when the buyer has not opted out', async () => {
+    const deps = makeDeps({ isOptedOut: vi.fn().mockResolvedValue(false) })
+    await sendReviewEmail(makeInput(), deps)
+    expect(deps.fetch).toHaveBeenCalledOnce()
+  })
+
+  it('propagates a consent-store failure (so the caller retries, never mails blind)', async () => {
+    const deps = makeDeps({ isOptedOut: vi.fn().mockRejectedValue(new Error('db down')) })
+    await expect(sendReviewEmail(makeInput(), deps)).rejects.toThrow(/db down/)
+    expect(deps.fetch).not.toHaveBeenCalled()
   })
 })
