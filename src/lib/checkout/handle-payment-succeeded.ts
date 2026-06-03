@@ -1,4 +1,3 @@
-import type { PurchasableShow } from '../capacity'
 import { issueTickets, type TicketType } from '../tickets/ticket-issuance'
 
 // Errors of this type indicate a structurally malformed event that no number
@@ -42,7 +41,6 @@ export interface NotifyBuyerInput {
 
 export interface PaymentSucceededDeps {
   findOrderByPaymentIntent: (id: string) => Promise<{ id: string } | null>
-  findShow: (id: string) => Promise<PurchasableShow | null>
   createOrder: (input: CreateOrderInput) => Promise<{ id: string }>
   // One ticket per person (ADR-0007). No longer one token per order.
   createTickets: (input: { order: string; tickets: { token: string; type: TicketType }[] }) => Promise<void>

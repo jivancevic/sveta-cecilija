@@ -10,7 +10,6 @@ import { generateQrToken } from '@/lib/qr-token'
 import { withShowSellLock, type SellLockPool } from '@/lib/tickets/sell-lock'
 import { generateOrderCode as makeOrderCode } from '@/lib/tickets/order-code'
 import { randomInt } from 'node:crypto'
-import type { PurchasableShow } from '@/lib/capacity'
 import { sendTicketEmail } from '@/lib/email/send-ticket-email'
 import { generateQrPng } from '@/lib/email/qr'
 import type { Venue } from '@/lib/venues'
@@ -73,22 +72,6 @@ export async function POST(req: Request) {
             depth: 0,
           })
           return r.docs[0] ? { id: String(r.docs[0].id) } : null
-        },
-        findShow: async (id): Promise<PurchasableShow | null> => {
-          try {
-            const doc = await payload.findByID({ collection: 'shows', id, depth: 0 })
-            return {
-              id: String(doc.id),
-              date: doc.date as string,
-              venue: doc.venue as PurchasableShow['venue'],
-              onlineSold: (doc.onlineSold as number) ?? 0,
-              inPersonSold: (doc.inPersonSold as number) ?? 0,
-              legacyReserved: (doc.legacyReserved as number) ?? 0,
-              status: doc.status as 'active' | 'cancelled',
-            }
-          } catch {
-            return null
-          }
         },
         createOrder: async (input) => {
           const showRef = Number.isFinite(Number(input.show)) ? Number(input.show) : input.show

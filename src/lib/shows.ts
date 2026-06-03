@@ -2,6 +2,7 @@ import { getPayload } from 'payload'
 import config from '@payload-config'
 import { VENUE_CAPACITY, type Venue } from './venues'
 import { getActiveTicketCountsByShow, getActiveTicketCountForShow } from './tickets/sold-seats'
+import { remainingSeats } from './tickets/seat-availability'
 
 export { VENUE_CAPACITY, type Venue }
 
@@ -115,11 +116,12 @@ export async function getUpcomingShows(limit?: number): Promise<Show[]> {
       date: new Date(show.date as string).toISOString().slice(0, 10),
       time: show.time as string,
       venue,
-      remaining:
-        capacity -
-        sold -
-        ((show.inPersonSold as number) ?? 0) -
-        ((show.legacyReserved as number) ?? 0),
+      remaining: remainingSeats({
+        capacity,
+        activeTicketCount: sold,
+        inPersonSold: (show.inPersonSold as number) ?? 0,
+        legacyReserved: (show.legacyReserved as number) ?? 0,
+      }),
     }
   })
 }

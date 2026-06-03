@@ -12,7 +12,7 @@ function makeShow(overrides: Partial<StatsShow> = {}): StatsShow {
     date: '2026-07-01',
     time: '21:00',
     venue: 'ljetno-kino',
-    onlineSold: 0,
+    activeTicketCount: 0,
     inPersonSold: 0,
     legacyReserved: 0,
     scannedCount: 0,
@@ -65,7 +65,7 @@ describe('computeShowStats — header big numbers', () => {
   it('passes through onlineSold, inPersonSold and computes totalSold', () => {
     const out = computeShowStats(
       makeInput({
-        show: makeShow({ onlineSold: 100, inPersonSold: 20 }),
+        show: makeShow({ activeTicketCount: 100, inPersonSold: 20 }),
       }),
     )
 
@@ -121,7 +121,7 @@ describe('computeShowStats — header big numbers', () => {
       makeInput({
         show: makeShow({
           venue: 'ljetno-kino',
-          onlineSold: 100,
+          activeTicketCount: 100,
           inPersonSold: 20,
           legacyReserved: 50,
         }),
@@ -138,7 +138,7 @@ describe('computeShowStats — header big numbers', () => {
       makeInput({
         show: makeShow({
           venue: 'ljetno-kino',
-          onlineSold: 100,
+          activeTicketCount: 100,
           inPersonSold: 20,
           legacyReserved: 200,
         }),
@@ -150,10 +150,10 @@ describe('computeShowStats — header big numbers', () => {
 
   it('derives capacity per venue and remaining = capacity − onlineSold − inPersonSold', () => {
     const ljetno = computeShowStats(
-      makeInput({ show: makeShow({ venue: 'ljetno-kino', onlineSold: 100, inPersonSold: 20 }) }),
+      makeInput({ show: makeShow({ venue: 'ljetno-kino', activeTicketCount: 100, inPersonSold: 20 }) }),
     )
     const zimsko = computeShowStats(
-      makeInput({ show: makeShow({ venue: 'zimsko-kino', onlineSold: 50, inPersonSold: 0 }) }),
+      makeInput({ show: makeShow({ venue: 'zimsko-kino', activeTicketCount: 50, inPersonSold: 0 }) }),
     )
 
     expect(ljetno.header.capacity).toBe(320)

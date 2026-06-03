@@ -1,11 +1,13 @@
 import { VENUE_CAPACITY, type Venue } from './venues'
+import { remainingSeats } from './tickets/seat-availability'
 
 export interface StatsShow {
   id: string
   date: string // ISO date (YYYY-MM-DD or full ISO)
   time: string
   venue: Venue
-  onlineSold: number
+  /** Live COUNT of active tickets (the shows.online_sold counter is retired). */
+  activeTicketCount: number
   inPersonSold: number
   legacyReserved: number
   scannedCount: number
@@ -58,7 +60,7 @@ export function computeStats(input: StatsInput): StatsOutput {
   let totalScanned = 0
 
   for (const s of input.shows) {
-    const sold = s.onlineSold + s.inPersonSold
+    const sold = s.activeTicketCount + s.inPersonSold
     totalSold += sold
     totalScanned += s.scannedCount
     byVenue[s.venue].sold += sold
@@ -78,11 +80,18 @@ export function computeStats(input: StatsInput): StatsOutput {
       time: s.time,
       venue: s.venue,
       capacity: VENUE_CAPACITY[s.venue],
-      onlineSold: s.onlineSold,
+      // `onlineSold` is the admin-facing display column; its value is the live
+      // active-ticket count.
+      onlineSold: s.activeTicketCount,
       inPersonSold: s.inPersonSold,
       legacyReserved: s.legacyReserved,
       scanned: s.scannedCount,
-      remaining: VENUE_CAPACITY[s.venue] - s.onlineSold - s.inPersonSold - s.legacyReserved,
+      remaining: remainingSeats({
+        capacity: VENUE_CAPACITY[s.venue],
+        activeTicketCount: s.activeTicketCount,
+        inPersonSold: s.inPersonSold,
+        legacyReserved: s.legacyReserved,
+      }),
       status: s.status,
     }))
 

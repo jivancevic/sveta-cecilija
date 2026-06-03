@@ -41,8 +41,8 @@ export async function getStatsInput(today: Date = new Date()): Promise<StatsInpu
   `)
   const totalRevenueCents = Number(revenueRes.rows[0]?.total ?? 0)
 
-  // Sold seats per show = active ticket count (the online_sold column is
-  // retired). No partner channel exists yet (#144), so active == online.
+  // Sold seats per show = active ticket count across all channels (the
+  // online_sold column is retired); includes partner-channel tickets.
   const soldByShow = await getActiveTicketCountsByShow((sql, params) => pool.query(sql, params))
 
   const shows: StatsShow[] = showsResult.docs.map((s) => {
@@ -52,7 +52,7 @@ export async function getStatsInput(today: Date = new Date()): Promise<StatsInpu
       date: new Date(s.date as string).toISOString().slice(0, 10),
       time: (s.time as string) ?? '',
       venue: (s.venue as Venue) ?? 'ljetno-kino',
-      onlineSold: soldByShow.get(id) ?? 0,
+      activeTicketCount: soldByShow.get(id) ?? 0,
       inPersonSold: Number(s.inPersonSold ?? 0),
       legacyReserved: Number(s.legacyReserved ?? 0),
       scannedCount: scannedByShow.get(id) ?? 0,

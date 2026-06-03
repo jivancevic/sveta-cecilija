@@ -1,21 +1,10 @@
 import { describe, it, expect, vi } from 'vitest'
 import { handlePaymentSucceeded, type PaymentSucceededDeps } from './handle-payment-succeeded'
 
-const FUTURE = new Date(Date.now() + 1000 * 60 * 60 * 24 * 7).toISOString()
-
 function makeDeps(overrides: Partial<PaymentSucceededDeps> = {}) {
-  const show = {
-    id: 'show_1',
-    date: FUTURE,
-    venue: 'ljetno-kino' as const,
-    onlineSold: 5,
-    inPersonSold: 2,
-    status: 'active' as const,
-  }
   let n = 0
   const deps: PaymentSucceededDeps = {
     findOrderByPaymentIntent: vi.fn().mockResolvedValue(null),
-    findShow: vi.fn().mockResolvedValue(show),
     createOrder: vi.fn().mockResolvedValue({ id: 'order_1' }),
     createTickets: vi.fn().mockResolvedValue(undefined),
     generateToken: vi.fn(() => `tok_${++n}`),
