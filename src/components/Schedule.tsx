@@ -1,4 +1,5 @@
 import Image from 'next/image';
+import Link from 'next/link';
 import type { Dictionary } from '@/lib/i18n';
 import type { Show } from '@/lib/shows';
 import type { Locale } from '@/proxy';
@@ -51,7 +52,7 @@ export default function Schedule({ t, shows, locale }: Props) {
           const pillText = soldOut ? t.soldOut : isNext ? t.fewLeft : t.available;
 
           return (
-            <a key={show.id} href={`/tickets?date=${show.date}`} className="opera__card" data-reveal data-delay={i + 1}>
+            <Link key={show.id} href={`/tickets?date=${show.date}`} className="opera__card" data-reveal data-delay={i + 1}>
               <div className="opera__photo">
                 <Image src={image} alt="" fill sizes="(min-width: 1280px) 25vw, (min-width: 768px) 33vw, 50vw" />
                 <div className="opera__photo-overlay" />
@@ -74,13 +75,13 @@ export default function Schedule({ t, shows, locale }: Props) {
                   <span className="opera__buy">{t.buyTickets}</span>
                 </div>
               </div>
-            </a>
+            </Link>
           );
         })}
       </div>
 
       <div className="opera__foot" data-reveal>
-        <a href="/tickets" className="opera__viewall">{t.viewAll}</a>
+        <Link href="/tickets" className="opera__viewall">{t.viewAll}</Link>
         <span className="opera__price-note">{t.priceNote}</span>
       </div>
     </section>

@@ -1,6 +1,7 @@
 import { getPayload } from 'payload'
 import { sql } from '@payloadcms/db-postgres'
 import { headers } from 'next/headers'
+import Link from 'next/link'
 import QRCode from 'qrcode'
 import config from '@payload-config'
 import {
@@ -407,8 +408,8 @@ function StaffActions() {
         gap: '0.75rem',
       }}
     >
-      <a href="/admin/scan" style={primary}>Scan new</a>
-      <a href="/admin" style={secondary}>Back</a>
+      <Link href="/admin/scan" prefetch={false} style={primary}>Scan new</Link>
+      <Link href="/admin" prefetch={false} style={secondary}>Back</Link>
     </div>
   )
 }

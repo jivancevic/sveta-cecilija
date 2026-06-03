@@ -44,37 +44,35 @@ async function main() {
   const client = new Client({ connectionString: url })
   await client.connect()
   try {
-    // Fresh-database guard.
+    // `00-base.sql` (sorts first) is the FULL Payload schema — base tables
+    // `users`/`shows`/`payload_*`, every enum, constraint, sequence and index —
+    // so a brand-new DB gets a complete, reproducible schema before the server
+    // starts, with no dependency on Payload `push` (which prod never runs).
+    // See ADR-0013 and db/schema/README.md.
     //
-    // app.sql (and the role migrations / seed) ALTER and FK-reference
-    // Payload-owned base tables — `users`, `shows` — that this script does
-    // NOT create. Those tables are created by Next.js's instrumentation hook
-    // (src/instrumentation.ts `register()`) and, in dev, by Payload's
-    // `push: true`. Both run *inside* `next dev` / `next start`, i.e. AFTER
-    // this script in the `bootstrap-db && next` chain.
+    // BUT the baseline is generated from a fresh Payload push, so it carries
+    // Payload's constraint/sequence NAMES (e.g. `tickets_pkey`,
+    // `tickets_id_seq`). Existing prod/staging DBs carry LEGACY names from the
+    // `qr_tokens`→`tickets` rename (`qr_tokens_pkey`, `qr_tokens_id_seq`).
+    // Re-applying the baseline to such a DB would crash ("multiple primary keys
+    // for table tickets") and, worse, repoint `tickets.id` to a fresh sequence.
+    // So `00-base.sql` runs ONLY on a fresh DB; existing DBs are evolved by the
+    // incremental, idempotent `app.sql` + `migrate-*.sql` (as before #205).
     //
-    // On an existing DB (prod, or any dev DB booted at least once) the tables
-    // are present and every statement applies idempotently. On a brand new DB
-    // they don't exist yet, so a fresh `npm run dev` used to abort here with
-    // `relation "users" does not exist` before the server could create them.
-    // Skip this round when the DB is virgin: instrumentation + push build the
-    // full schema on first boot, and these migrations apply harmlessly on the
-    // next start. See issue #122.
-    const { rows } = await client.query(
-      "SELECT to_regclass('public.users') AS users, to_regclass('public.shows') AS shows",
-    )
-    if (!rows[0].users || !rows[0].shows) {
-      console.log(
-        '[bootstrap-db] Base Payload tables (users/shows) not found — looks like a fresh database. ' +
-          'Skipping app-managed SQL; Next.js instrumentation + Payload push will create the schema on ' +
-          'first boot, and these migrations apply on the next start.',
-      )
-      return
-    }
+    // (Earlier this script carried the inverse "#122 fresh-DB guard" that
+    // skipped ALL sql on a fresh DB and deferred to instrumentation + push —
+    // which left a fresh PROD DB broken. `00-base.sql` + this targeted guard
+    // replace it.)
+    const { rows } = await client.query("SELECT to_regclass('public.users') AS users")
+    const isFreshDb = !rows[0].users
 
     for (const file of files) {
+      if (file === '00-base.sql' && !isFreshDb) {
+        console.log('[bootstrap-db] existing database — skipping 00-base.sql (baseline is for fresh DBs only)')
+        continue
+      }
       const sql = readFileSync(path.join(schemaDir, file), 'utf-8')
-      console.log(`[bootstrap-db] applying ${file}`)
+      console.log(`[bootstrap-db] applying ${file}${file === '00-base.sql' ? ' (fresh database)' : ''}`)
       await client.query(sql)
     }
     console.log('[bootstrap-db] done.')

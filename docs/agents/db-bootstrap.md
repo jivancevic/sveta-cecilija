@@ -96,3 +96,7 @@ Pattern proven in `src/app/api/shows/[id]/in-person-sales/route.ts`. The lib hel
 ## Raw SQL for race-sensitive ops (first-one-wins)
 
 Payload's `find`/`update` are read-then-write under the hood and not safe for "first-one-wins" semantics. For atomic mark-and-read (e.g. ticket scan), drop to drizzle: `const drizzle: any = (payload.db as any).drizzle` then `drizzle.execute(sql\`UPDATE ... WHERE cond=false RETURNING ...\`)` with `sql` imported from `@payloadcms/db-postgres`. Result rows live on `res.rows`. Verified race-safe end-to-end: 20 concurrent identical scans → exactly 1 VALID.
+
+## Advisory lock for a multi-step read-then-insert (seat sells, #179)
+
+When the race spans *separate* statements that a single atomic `UPDATE` can't cover — e.g. `COUNT active tickets` → capacity check → `INSERT` order + tickets — wrap the whole critical section in a **Postgres advisory lock** keyed on the entity id. `withShowSellLock(pool, showId, fn)` in `src/lib/tickets/sell-lock.ts` takes a dedicated pooled connection, `pg_advisory_lock(7799, showId)`, runs `fn` (which may insert via `payload.create` on other connections — they commit before the lock releases), then `pg_advisory_unlock`. Wired as an injectable `withSeatLock` dep into `createPartnerSale` and `handlePaymentSucceeded`; defaults to a pass-through in unit tests. Different ids → different keys → no deadlock. Proven by `scripts/probe-oversell.mjs` (20 concurrent sells for 3 seats → exactly 3 locked; oversells unlocked).

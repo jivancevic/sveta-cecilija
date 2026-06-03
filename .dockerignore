@@ -1,0 +1,10 @@
+node_modules
+.next
+.git
+assets/
+Sveta Cecilija/
+docs/
+*.ods
+.env*
+.claude/
+npm-debug.log*

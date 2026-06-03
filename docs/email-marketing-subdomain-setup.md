@@ -150,13 +150,28 @@ T+2h timing already shipped in #57.
 
 ---
 
-## 4. Stripe refund-policy URL (follow-up from #94)
+## 4. Stripe refund policy + public details (follow-up from #94) ✅ DONE (2026-06-03)
 
-The `/refund-policy` page now exists (#94). Add its URL to Stripe so it appears in
-disputes and reduces chargeback loss rate:
+Note: Stripe has **no single "Refund policy URL" setting**, and the return/refund
+policy display on Checkout only applies to Stripe-hosted Checkout / Payment Links
+— this site uses the **embedded Payment Element**, so that display never shows.
+The `/refund-policy` page (#94) is surfaced where it matters: linked from the
+checkout form, and submitted as **dispute evidence** (Stripe's dispute-response
+form has a "Refund policy" field — point it at `https://moreska.eu/refund-policy`
+when countering a dispute).
 
-- Stripe Dashboard → **Settings** → **Business / Public details** (or the
-  "Refund policy URL" field) → set to **`https://moreska.eu/refund-policy`**.
+What was actually actionable, and is now done — **Settings → Business → Business
+details / Public details** (`https://dashboard.stripe.com/settings/public`):
+
+- **Business website** updated from the stale `korcula-moreska.com` → `https://moreska.eu`.
+- **Customer support email** set to `info@moreska.eu`.
+- **Privacy policy URL** set to `https://moreska.eu/privacy-policy`.
+- Terms of service URL left blank (no ToS page exists); support URL left blank
+  (support is the email). Statement descriptor `HGD SV.CECILIJA-KORCURA` already set.
+
+Verifying over the API needs the **live** key — the test key in `.env.local`
+returns `business_profile` as all-`None` regardless (it's mode-specific), so it
+can't confirm these; the Dashboard is the source of truth.
 
 ---
 

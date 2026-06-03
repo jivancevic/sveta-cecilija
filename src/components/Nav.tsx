@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import type { Locale } from '@/proxy';
 import type { Dictionary } from '@/lib/i18n';
 import LangSwitcher from './LangSwitcher';
@@ -52,25 +53,25 @@ export default function Nav({ locale, t, variant = 'homepage' }: Props) {
   return (
     <>
       <nav className={navClass}>
-        <a href="/" className="nav__logo">
+        <Link href="/" className="nav__logo">
           <Image src="/cecilija-logo.webp" alt="" width={80} height={100} priority />
           <span className="nav__wordmark">
             <span className="top">{t.wordmarkTop}</span>
             <span className="bot">{t.wordmarkBot}</span>
           </span>
-        </a>
+        </Link>
 
         <div className="nav__links">
-          <a href="/tickets">{t.performances}</a>
-          <a href="/#about">{t.about}</a>
-          <a href="/#history">{t.history}</a>
-          <a href="/#secs">{t.sections}</a>
-          <a href="/#svcs">{t.services}</a>
-          <a href="/#contact">{t.contact}</a>
+          <Link href="/tickets">{t.performances}</Link>
+          <Link href="/#about">{t.about}</Link>
+          <Link href="/#history">{t.history}</Link>
+          <Link href="/#secs">{t.sections}</Link>
+          <Link href="/#svcs">{t.services}</Link>
+          <Link href="/#contact">{t.contact}</Link>
           <LangSwitcher locale={locale} className="nav__lang" />
-          <a className="btn btn--primary btn--small nav__cta" href="/tickets">
+          <Link className="btn btn--primary btn--small nav__cta" href="/tickets">
             {t.buyTickets}
-          </a>
+          </Link>
         </div>
 
         <div className="nav__mobile-right">
@@ -91,22 +92,22 @@ export default function Nav({ locale, t, variant = 'homepage' }: Props) {
         <div className="nav__overlay">
           <button className="nav__overlay-close" onClick={close} aria-label="Close menu">✕</button>
 
-          <a href="/" className="nav__overlay-logo" onClick={close}>
+          <Link href="/" className="nav__overlay-logo" onClick={close}>
             <Image src="/cecilija-logo.webp" alt="HGD Sveta Cecilija" width={160} height={200} />
-          </a>
+          </Link>
 
           <div className="nav__overlay-links">
-            <a href="/tickets" onClick={close}>{t.performances}</a>
-            <a href="/#about" onClick={close}>{t.about}</a>
-            <a href="/#history" onClick={close}>{t.history}</a>
-            <a href="/#secs" onClick={close}>{t.sections}</a>
-            <a href="/#svcs" onClick={close}>{t.services}</a>
-            <a href="/#contact" onClick={close}>{t.contact}</a>
+            <Link href="/tickets" onClick={close}>{t.performances}</Link>
+            <Link href="/#about" onClick={close}>{t.about}</Link>
+            <Link href="/#history" onClick={close}>{t.history}</Link>
+            <Link href="/#secs" onClick={close}>{t.sections}</Link>
+            <Link href="/#svcs" onClick={close}>{t.services}</Link>
+            <Link href="/#contact" onClick={close}>{t.contact}</Link>
           </div>
 
-          <a className="btn btn--primary" href="/tickets" onClick={close}>
+          <Link className="btn btn--primary" href="/tickets" onClick={close}>
             {t.buyTickets}
-          </a>
+          </Link>
 
           <div className="nav__overlay-lang">
             <LangSwitcher locale={locale} className="nav__overlay-lang-switcher" />

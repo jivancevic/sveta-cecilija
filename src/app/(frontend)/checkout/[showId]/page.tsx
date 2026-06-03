@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation'
+import Link from 'next/link'
 import { getPayload } from 'payload'
 import config from '@payload-config'
 import { getLocale } from '@/lib/locale'
@@ -94,7 +95,7 @@ export default async function CheckoutRoute({ params, searchParams }: RouteProps
           stripePublishableKey={publishableKey}
           consentNotice={dict.consent.notice}
         />
-        <a href="/tickets" className="checkout-page__back">{dict.checkoutPage.pageBack}</a>
+        <Link href="/tickets" className="checkout-page__back">{dict.checkoutPage.pageBack}</Link>
       </main>
       <Footer locale={locale} t={dict.footer} />
     </div>

@@ -10,6 +10,7 @@ import {
 } from '@/lib/partner/create-partner-sale'
 import { VENUE_CAPACITY, type Venue } from '@/lib/venues'
 import { getActiveTicketCountForShow, type PoolQuery } from '@/lib/tickets/sold-seats'
+import { withShowSellLock, type SellLockPool } from '@/lib/tickets/sell-lock'
 import { generateQrToken } from '@/lib/qr-token'
 import { generateOrderCode as makeOrderCode } from '@/lib/tickets/order-code'
 
@@ -52,7 +53,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Invalid show' }, { status: 400 })
   }
 
-  const pool = (payload.db as unknown as { pool: { query: PoolQuery } }).pool
+  const pool = (payload.db as unknown as { pool: { query: PoolQuery } & SellLockPool }).pool
   // Today's date in the venue's timezone for the upcoming-show guard.
   const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Zagreb' })
 
@@ -75,6 +76,9 @@ export async function POST(req: NextRequest) {
         },
         countActiveTickets: (id) =>
           getActiveTicketCountForShow((sql, params) => pool.query(sql, params), id),
+        // Serialize count→check→insert per show via a Postgres advisory lock so
+        // concurrent partner sells (and online webhook inserts) can't oversell.
+        withSeatLock: (showId, critical) => withShowSellLock(pool, showId, critical),
         generateOrderCode: () =>
           makeOrderCode({
             isUnique: async (code) => {

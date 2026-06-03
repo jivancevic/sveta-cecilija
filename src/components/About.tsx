@@ -1,4 +1,5 @@
 import Image from 'next/image';
+import Link from 'next/link';
 import type { Dictionary } from '@/lib/i18n';
 
 interface Props {
@@ -16,7 +17,7 @@ export default function About({ t }: Props) {
         </div>
         <h2 className="about__h serif" data-reveal data-delay="1">{t.headline}</h2>
         <p className="about__body" data-reveal data-delay="2">{t.body}</p>
-        <a href="/about" className="about__cta" data-reveal data-delay="3">{t.cta}</a>
+        <Link href="/about" className="about__cta" data-reveal data-delay="3">{t.cta}</Link>
       </div>
 
       <div className="about__collage">

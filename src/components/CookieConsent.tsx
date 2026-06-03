@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
+import Link from 'next/link';
 import type { Dictionary } from '@/lib/i18n';
 
 declare global {
@@ -76,7 +77,7 @@ function injectMetaPixel() {
   const w = window as any;
   if (!w.fbq) {
     const n: any = function (...args: unknown[]) {
-      n.callMethod ? n.callMethod.apply(n, args) : n.queue.push(args);
+      n.callMethod ? n.callMethod(...args) : n.queue.push(args);
     };
     w.fbq = n;
     if (!w._fbq) w._fbq = n;
@@ -149,7 +150,7 @@ export default function CookieConsent({ t }: Props) {
       <div className="cookie-banner__inner">
         <p className="cookie-banner__text">
           {t.body}{' '}
-          <a href="/cookie-policy" className="cookie-banner__link">{t.learnMore}</a>
+          <Link href="/cookie-policy" className="cookie-banner__link">{t.learnMore}</Link>
         </p>
         <div className="cookie-banner__actions">
           <button className="btn btn--ghost btn--small" onClick={decline}>{t.decline}</button>
