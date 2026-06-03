@@ -9,7 +9,7 @@ import { computeStats } from '@/lib/stats'
 import { ADMIN_LANG_COOKIE, adminT, resolveAdminLang, type AdminLang } from '@/lib/admin-i18n'
 import { isAdminTier, isAuthed, isPartner, partnerIdOf } from '@/lib/access/roles'
 import { getNextShow, getScannedPeopleForShow, getUpcomingShows, type NextShow } from '@/lib/shows'
-import { doorProgress } from '@/lib/dashboard/door-progress'
+import { doorProgress, type DoorProgress } from '@/lib/dashboard/door-progress'
 import { HeaderBlock, ShowsTable } from './stats-blocks'
 import { TicketLookupPanel } from './TicketLookupPanel'
 import { PartnerSellForm, type SellShow } from './PartnerSellForm'
@@ -188,7 +188,7 @@ function DoorProgressHero({
   lang,
 }: {
   next: NextShow
-  progress: { admitted: number; sold: number; percent: number }
+  progress: DoorProgress
   lang: AdminLang
 }) {
   const ring = 200
@@ -235,7 +235,7 @@ function DoorProgressHero({
             cy={ring / 2}
             r={r}
             fill="none"
-            stroke="var(--cecilija-gold, #c9a227)"
+            stroke="var(--cecilija-gold, #B8881A)"
             strokeWidth={stroke}
             strokeLinecap="round"
             strokeDasharray={`${dash} ${circ}`}
