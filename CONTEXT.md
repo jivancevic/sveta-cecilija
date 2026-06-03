@@ -161,6 +161,11 @@ Per-role sidebar visibility: superadmin sees all collections; admin sees everyth
 
 Session length: `Users.auth.tokenExpiration` is 30 days for all tiers so the shared tehnika device stays logged in across long stretches, and secretaries aren't re-logging daily. Password rotation invalidates if a device is lost.
 
+### Admin language (Payload-native i18n)
+The admin panel is bilingual EN+HR ([ADR-0015](../docs/adr/0015-role-shaped-admin-dashboards.md)). `i18n.supportedLanguages = { en, hr }` (Croatian ships in `@payloadcms/translations`) localizes the whole Payload chrome and shows a native language selector in account settings. The active language is the `payload-lng` cookie (written by that selector) → `Accept-Language` → `fallbackLanguage: 'en'`.
+
+Per-role default: a fresh login is seeded once (a `Users` `afterLogin` hook) to **Croatian for `admin`/`tehnika`/`partner`, English for `superadmin`** — the cookie is the persistence layer, so a user's saved choice always wins and the seed never overwrites an existing valid value. The custom `/admin` dashboard reads the same active language and renders its copy from a small HR/EN map (`adminT`/`dashboardStrings`), so switching in account settings flips both the chrome and the custom copy. Persistence is per-browser (a shared-browser cross-user edge is accepted; no real per-user language field — the native selector wouldn't write to it). All of it lives in `src/lib/admin-i18n.ts`. This `adminT` map is the pattern every later dashboard slice reuses.
+
 ### Tehnika role
 Renamed from `door-staff`; the shared account logs in with **username `tehnika`** (no email — hybrid username login, ADR-0011). Permissions are as listed in the Admin tiers table above; rotation policy: one-off Payload admin edit when leaked, no per-volunteer accounts (HGD is too small to justify the onboarding overhead).
 

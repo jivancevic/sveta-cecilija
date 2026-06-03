@@ -1,6 +1,8 @@
 import { buildConfig } from 'payload'
 import { postgresAdapter } from '@payloadcms/db-postgres'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
+import { en } from '@payloadcms/translations/languages/en'
+import { hr } from '@payloadcms/translations/languages/hr'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import { Users } from './collections/Users'
@@ -67,6 +69,16 @@ export default buildConfig({
     },
   },
   collections: [Users, Shows, Orders, Tickets, ContactSubmissions, Posts, OrderLookups, Partners],
+  // Admin-panel i18n (issue #234, ADR-0015). Restricting supportedLanguages to
+  // en + hr localizes the whole Payload chrome and makes the native account
+  // language selector show exactly these two. fallbackLanguage is English (the
+  // developer/superadmin default); a new staff login is seeded to Croatian via
+  // the Users afterLogin hook (see src/lib/admin-i18n.ts + Users.ts). Croatian
+  // ships in @payloadcms/translations.
+  i18n: {
+    supportedLanguages: { en, hr },
+    fallbackLanguage: 'en',
+  },
   editor: lexicalEditor(),
   secret: (() => {
     const s = process.env.PAYLOAD_SECRET
