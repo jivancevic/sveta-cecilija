@@ -61,7 +61,7 @@ export default async function ServicePage({
             <div className="svc-page__form-wrap">
               <h2 className="svc-page__form-title serif">{t.formTitle}</h2>
               <p className="svc-page__form-body">{t.formBody}</p>
-              <ServiceEnquiryForm t={dict.contact} defaultEnquiry={card.name} />
+              <ServiceEnquiryForm t={dict.contact} defaultEnquiry={slug} />
             </div>
           </div>
         </div>

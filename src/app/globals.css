@@ -1167,6 +1167,12 @@ html, body { overflow-x: hidden; }
 .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--goldBright); }
 .field textarea { resize: none; min-height: 70px; }
 .form__submit { width: 100%; padding: 11px 22px; }
+.form__error {
+  margin: 0; padding: 10px 14px; font-size: 13px; line-height: 1.4;
+  color: #f3d6c9; background: rgba(180,60,40,0.18);
+  border: 1px solid rgba(220,90,70,0.45); border-radius: 3px;
+}
+.form button[disabled] { opacity: 0.55; cursor: progress; }
 .contact__success { text-align: center; padding: 48px 0; }
 .contact__success h3 {
   font-family: var(--font-bodoni, 'Bodoni Moda SC'), serif;
