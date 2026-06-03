@@ -165,7 +165,7 @@ Do not begin until **every box above is checked** and you have ~2 hours of monit
 ## C3. Announce + brief staff
 
 - [ ] 24h notice sent to HGD staff (email + WhatsApp group) with cutover date/time.
-- [ ] `tehnika@moreska.eu` (role: `tehnika`) login confirmed working on a phone.
+- [ ] Door account login confirmed working on a phone — username **`tehnika`** (role: `tehnika`; the old `tehnika@moreska.eu` email string is retired, see [ADR-0011](./adr/0011-hybrid-username-login.md)).
 - [ ] Walk-through done: `/admin/stats`, `/scan/<token>` from camera, refund flow.
 
 ## C4. DNS + legacy site redirect (day-of)

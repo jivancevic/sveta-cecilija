@@ -5,7 +5,7 @@ Cilj ovog dokumenta je da sutra možete u 15 minuta proći kroz cijeli ciklus: k
 **Što vam treba:**
 - Računalo (za kupnju) i mobitel (za skeniranje). Može i sve s mobitela ako otvorite dva preglednika.
 - Pristup admin računu (admin uloga).
-- Pristup door-staff računu (`tehnika@moreska.eu` ili sl.).
+- Pristup door-staff računu (korisničko ime `tehnika`).
 - Stripe test kartica (vidi korak 2).
 
 **Važno:** Test se izvodi na **produkcijskoj domeni** `https://moreska.eu`, ali na Stripeu se može pokrenuti u **test modu**. U test modu nema stvarnih naplata. Prije testa provjerite s Josipom da je Stripe u test modu (ili da na produkciji koristite Stripe Test Cards koje će sustav odbiti tek u live modu).
@@ -76,7 +76,7 @@ Ako e-mail ne dolazi, provjerite spam folder. Ako i tamo nije, idite na korak 5 
 
 ### 4b. Sad test "door-staff skenira" (prijavljeni)
 
-1. Na door-staff telefonu (ili u drugom inkognito prozoru) otvorite `https://moreska.eu/admin` i prijavite se kao `tehnika@moreska.eu` (ili koji god je door-staff račun).
+1. Na door-staff telefonu (ili u drugom inkognito prozoru) otvorite `https://moreska.eu/admin` i prijavite se korisničkim imenom `tehnika` (door-staff račun).
 2. **Bez odjave** otvorite isti QR URL u istom prozoru.
 3. Sad biste trebali vidjeti **zeleni ekran VALID** s podacima o ulaznici i imenom kupca skrivenim (ili djelomično).
 4. Skrolajte malo dolje, vidite link **Undo scan** (vrijedi 2 minute).

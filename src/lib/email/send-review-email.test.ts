@@ -21,14 +21,16 @@ function makeDeps(overrides: Partial<SendReviewEmailDeps> = {}): SendReviewEmail
 }
 
 describe('sendReviewEmail', () => {
-  it('POSTs to Brevo with brand-layer sender ("Moreška by HGD Sveta Cecilija")', async () => {
+  it('POSTs to Brevo from the bilten marketing subdomain, Reply-To info@', async () => {
     const deps = makeDeps()
     await sendReviewEmail(makeInput(), deps)
     const [url, init] = (deps.fetch as ReturnType<typeof vi.fn>).mock.calls[0]
     expect(url).toBe('https://api.brevo.com/v3/smtp/email')
     const body = JSON.parse(init.body)
-    expect(body.sender.email).toBe('info@moreska.eu')
+    // Marketing-class mail sends from bilten.moreska.eu (#56), replies route to info@.
+    expect(body.sender.email).toBe('newsletter@bilten.moreska.eu')
     expect(body.sender.name).toMatch(/Moreška by HGD Sveta Cecilija/)
+    expect(body.replyTo.email).toBe('info@moreska.eu')
   })
 
   it('English subject and copy include both review CTAs', async () => {

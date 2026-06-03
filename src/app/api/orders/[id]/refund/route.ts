@@ -3,6 +3,7 @@ import { getPayload } from 'payload'
 import { sql } from '@payloadcms/db-postgres'
 import config from '@payload-config'
 import { refundOrder, type RefundOrderRecord } from '@/lib/refund-order'
+import { createStripeRefund } from '@/lib/refund/create-stripe-refund'
 import { voidOrderTickets } from '@/lib/tickets/ticket-void'
 import { sendRefundEmail } from '@/lib/email/send-refund-email'
 import { getStripe } from '@/lib/stripe'
@@ -53,14 +54,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
             },
           }
         },
-        refundViaStripe: async ({ paymentIntentId, amountCents }) => {
-          const stripe = getStripe()
-          const refund = await stripe.refunds.create({
-            payment_intent: paymentIntentId,
-            amount: amountCents,
-          })
-          return { id: refund.id }
-        },
+        refundViaStripe: ({ paymentIntentId, amountCents }) =>
+          createStripeRefund(getStripe(), { paymentIntentId, amountCents }),
         markRefunded: async (orderId) => {
           await payload.update({
             collection: 'orders',

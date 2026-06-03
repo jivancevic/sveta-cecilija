@@ -115,6 +115,8 @@ Partners sell without collecting buyer PII, but the **end guest can optionally c
 
 Claiming is orthogonal to money and seats — the ticket was already sold, counted, and invoiced to the partner; claim only attaches contact info. Tehnika (authenticated) scanning an unclaimed partner ticket still just admits — no claim form for staff.
 
+Because the claim endpoint is an open, unauthenticated write (token possession = auth, first-claimer-wins), `POST /api/scan/[token]/claim` is rate-limited per-token + per-IP (`src/lib/rate-limit/claim-rate-limit.ts`, defaults 5/token and 20/IP per minute → `429` with `Retry-After`). It raises the bar on pre-emptive claim of a leaked token and on hammering, without affecting a single legitimate claim. In-memory sliding window — fine on single-instance Coolify (ADR-0009); swap the store if it ever scales out. An admin "unclaim / re-issue" recovery path for a mis-claim is a deferred follow-up.
+
 ### Buyer comms & consent
 Three message classes, one lawful basis each. Same rules for **online buyers and claimed partner buyers** (consistency is a requirement).
 
@@ -150,14 +152,14 @@ Three Payload user roles, see [ADR-0006](../docs/adr/0006-three-tier-admin-roles
 |---|---|---|
 | `superadmin` | Developer (Josip) | Everything, including user management (create/delete users, change roles). |
 | `admin` | HGD secretaries | Everything except user management. Add/cancel shows, view orders, issue refunds, read inquiries, record in-person sales. Sees own profile only; cannot see or promote other users. The `role` field is field-level locked to `superadmin` so secretaries can edit name/email/password but not their own tier. |
-| `tehnika` | Shared door-staff account (`tehnika@moreska.eu`) | Authenticate `/scan/[token]` for atomic mark-as-scanned. View `/admin` stats dashboard with non-PII counts only. Cannot see customer emails, order details, or issue refunds. |
+| `tehnika` | Shared door-staff account (username **`tehnika`**, no email — ADR-0011) | Authenticate `/scan/[token]` for atomic mark-as-scanned. View `/admin` stats dashboard with non-PII counts only. Cannot see customer emails, order details, or issue refunds. |
 
 Per-role sidebar visibility: superadmin sees all collections; admin sees everything except Users (Shows, Orders, QRTokens, ContactSubmissions, Posts); tehnika sees an empty sidebar. The `/admin` landing route is a custom dashboard component that branches on role (stats-only for tehnika, full task dashboard for admin/superadmin).
 
 Session length: `Users.auth.tokenExpiration` is 30 days for all tiers so the shared tehnika device stays logged in across long stretches, and secretaries aren't re-logging daily. Password rotation invalidates if a device is lost.
 
 ### Tehnika role
-Renamed from `door-staff` to match the shared login string `tehnika@moreska.eu`. Permissions are as listed in the Admin tiers table above; rotation policy: one-off Payload admin edit when leaked, no per-volunteer accounts (HGD is too small to justify the onboarding overhead).
+Renamed from `door-staff`; the shared account logs in with **username `tehnika`** (no email — hybrid username login, ADR-0011). Permissions are as listed in the Admin tiers table above; rotation policy: one-off Payload admin edit when leaked, no per-volunteer accounts (HGD is too small to justify the onboarding overhead).
 
 The tehnika dashboard includes a **"Scan a ticket"** button that opens a live camera viewfinder in-page (lazy-loaded `html5-qrcode`). Detected QRs navigate to `/scan/[token]`. This avoids the 4-tap dance of native-camera → notification → Safari for every ticket. The native camera flow still works as a fallback for any device that fails the camera-permission flow.
 
@@ -175,7 +177,7 @@ One real mailbox (`info@moreska.eu`) read by Josip and the secretary; everything
 | `bookings@moreska.eu` | Alias → `info@` | Tour operator + group/charter inquiries. |
 | `press@moreska.eu` | Alias → `info@` | Journalist contact published on site. |
 | `dev@moreska.eu` | Alias → `info@` | Technical-admin contact for SaaS accounts (Stripe, Brevo, Coolify, Hetzner, Cloudflare, GitHub org, ImprovMX). Survives developer turnover. |
-| `tehnika@moreska.eu` | Payload login string | Shared tehnika `/admin` login in production. No inbox; nothing sent to it. Renamed from `door-staff@moreska.eu`. |
+| ~~`tehnika@moreska.eu`~~ | retired | The shared tehnika `/admin` login is now **username `tehnika`** with no email (ADR-0011). No inbox ever existed; this fake-email login string is gone. |
 
 Transactional mail sends from root `moreska.eu` via Brevo. Future bulk post-show mail will send from subdomain `bilten.moreska.eu` (separate DKIM, isolated reputation) once Brevo Starter (~€9/mo) is activated. See [ADR-0004](../docs/adr/0004-email-infrastructure.md).
 
@@ -199,6 +201,8 @@ A `Ticket` (Payload `Tickets` collection, table `tickets` — renamed from `qr_t
 - **Online refund** cascades: void **all** the order's tickets (`reason = refund`) + Stripe refund + `order.refundStatus = refunded`.
 - **Partner storno** voids the specific ticket(s) (`reason = storno`), same-day-only, no money movement.
 A cancelled ticket still exists, so a printed-but-voided slip scans to a clear INVALID/CANCELLED state rather than vanishing.
+
+The online refund flow is **safely re-runnable end to end** (`src/lib/refund-order.ts`): the Stripe call carries a stable idempotency key (`refund:<paymentIntentId>`, `src/lib/refund/create-stripe-refund.ts`) so a retry returns the *original* refund instead of erroring or double-refunding; and a retry on an already-`refunded` order still re-voids its tickets (idempotent, no Stripe call, no re-email) so a void that failed mid-flow self-heals. The void SQL's seat-freeing is regression-checked by `scripts/probe-refund-void.mjs` (runs inside a transaction that always rolls back — safe against any DB, kept out of the offline unit suite).
 
 ### Partner sell flow
 A `partner`-role user, from their scoped `/admin` dashboard: picks an **active upcoming show**, enters **adult** and **child** counts, and gets a **combined PDF** (2-up A5, all tickets) to print on the spot. **No buyer PII, no Stripe, no email** at sell time. Seats are guarded against the **live remaining capacity** (`remaining = capacity − active tickets − inPersonSold − legacyReserved`) — the sell is rejected if it would oversell, and the dashboard shows remaining per show. The partner sells at **flat face value** (no 5th-free; see Free-ticket discount). Each sale = one `Order` (`channel = partner`, `partner = X`, `total` = face value owed, no `email`/`buyerName`), with one `adult|child` ticket per person.

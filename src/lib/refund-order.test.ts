@@ -69,7 +69,7 @@ describe('refundOrder', () => {
     expect(calls).toEqual(['mark', 'void'])
   })
 
-  it('is idempotent: a second refund call does not hit Stripe, re-void, or re-email', async () => {
+  it('is idempotent on money + email: a second refund call does not hit Stripe, re-mark, or re-email', async () => {
     const order = makeOrder({ refundStatus: 'refunded' })
     const deps = makeDeps(order)
 
@@ -78,7 +78,37 @@ describe('refundOrder', () => {
     expect(result).toEqual({ refunded: false, amountCents: 4000 })
     expect(deps.refundViaStripe).not.toHaveBeenCalled()
     expect(deps.markRefunded).not.toHaveBeenCalled()
-    expect(deps.voidTickets).not.toHaveBeenCalled()
+    expect(deps.sendRefundEmail).not.toHaveBeenCalled()
+  })
+
+  it('self-heals a stuck void: a retry on an already-refunded order re-voids its tickets (#169)', async () => {
+    // Money already back + buyer already emailed, but a prior void threw, so the
+    // tickets are still active (occupying a seat, scanning VALID). Re-voiding on
+    // retry frees them — with no Stripe call and no second email.
+    const order = makeOrder({ refundStatus: 'refunded' })
+    const deps = makeDeps(order, {
+      voidTickets: vi.fn().mockResolvedValue(3),
+    })
+
+    const result = await refundOrder({ orderId: 'order_1' }, deps)
+
+    expect(result).toEqual({ refunded: false, amountCents: 4000 })
+    expect(deps.voidTickets).toHaveBeenCalledWith('order_1')
+    expect(deps.refundViaStripe).not.toHaveBeenCalled()
+    expect(deps.sendRefundEmail).not.toHaveBeenCalled()
+  })
+
+  it('retry on a fully-voided refunded order is a clean no-op (voids 0)', async () => {
+    const order = makeOrder({ refundStatus: 'refunded' })
+    const deps = makeDeps(order, {
+      voidTickets: vi.fn().mockResolvedValue(0),
+    })
+
+    const result = await refundOrder({ orderId: 'order_1' }, deps)
+
+    expect(result).toEqual({ refunded: false, amountCents: 4000 })
+    expect(deps.voidTickets).toHaveBeenCalledWith('order_1')
+    expect(deps.refundViaStripe).not.toHaveBeenCalled()
     expect(deps.sendRefundEmail).not.toHaveBeenCalled()
   })
 

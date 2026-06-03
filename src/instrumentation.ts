@@ -11,7 +11,8 @@ export async function register() {
         "id" serial PRIMARY KEY NOT NULL,
         "updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
         "created_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
-        "email" varchar NOT NULL,
+        "username" varchar,
+        "email" varchar,
         "reset_password_token" varchar,
         "reset_password_expiration" timestamp(3) with time zone,
         "salt" varchar,
@@ -19,6 +20,7 @@ export async function register() {
         "login_attempts" numeric DEFAULT 0,
         "lock_until" timestamp(3) with time zone
       );
+      CREATE UNIQUE INDEX IF NOT EXISTS "users_username_idx" ON "users" ("username");
       CREATE UNIQUE INDEX IF NOT EXISTS "users_email_idx" ON "users" ("email");
       CREATE INDEX IF NOT EXISTS "users_created_at_idx" ON "users" ("created_at");
 
@@ -173,6 +175,12 @@ export async function register() {
       CREATE INDEX IF NOT EXISTS "payload_locked_documents_rels_order_idx" ON "payload_locked_documents_rels" ("order");
       CREATE INDEX IF NOT EXISTS "payload_locked_documents_rels_parent_idx" ON "payload_locked_documents_rels" ("parent_id");
       CREATE INDEX IF NOT EXISTS "payload_locked_documents_rels_path_idx" ON "payload_locked_documents_rels" ("path");
+
+      CREATE TABLE IF NOT EXISTS "marketing_optouts" (
+        "email" varchar PRIMARY KEY NOT NULL,
+        "source" varchar,
+        "opted_out_at" timestamp(3) with time zone DEFAULT now() NOT NULL
+      );
     `)
     console.log('[bootstrap] Database schema ready.')
   } catch (err) {

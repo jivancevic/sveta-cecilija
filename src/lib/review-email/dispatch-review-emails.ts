@@ -1,10 +1,11 @@
-// Pure orchestration for the T+24h post-show review email.
+// Pure orchestration for the post-show review email (sent T+2h after the show).
 //
 // Eligibility (all required):
-//   1. Show date+time was >= 24h ago (i.e. now - showStart >= 24h)
+//   1. Show date+time was >= 2h ago (i.e. now - showStart >= 2h)
 //   2. order.review_email_sent_at IS NULL
 //   3. order has at least one ticket (adult_count + child_count > 0)
 //   4. order.refund_status != 'refunded'
+//   5. buyer email is not in marketing_optouts (enforced in the caller's SQL)
 //
 // Idempotency contract: deps.claimOrder MUST do an atomic
 // `UPDATE orders SET review_email_sent_at = NOW()
@@ -26,10 +27,10 @@ export interface DispatchInput {
 
 export interface DispatchDeps {
   /**
-   * Returns every order whose show's local date+time is at least 24h before
-   * `cutoff` AND not already marked sent AND has tickets AND not refunded.
-   * Show date+time is treated as Europe/Zagreb wall clock and converted by
-   * the caller's SQL (see route).
+   * Returns every order whose show's local date+time is at least 2h before
+   * `cutoff` AND not already marked sent AND has tickets AND not refunded AND
+   * the buyer email is not opted out. Show date+time is treated as
+   * Europe/Zagreb wall clock and converted by the caller's SQL (see route).
    */
   findEligibleOrders: (cutoff: Date) => Promise<EligibleOrder[]>
   /**
@@ -50,13 +51,13 @@ export interface DispatchResult {
   failed: number
 }
 
-const T_PLUS_24H_MS = 24 * 60 * 60 * 1000
+const T_PLUS_2H_MS = 2 * 60 * 60 * 1000
 
 export async function dispatchReviewEmails(
   input: DispatchInput,
   deps: DispatchDeps,
 ): Promise<DispatchResult> {
-  const cutoff = new Date(input.now.getTime() - T_PLUS_24H_MS)
+  const cutoff = new Date(input.now.getTime() - T_PLUS_2H_MS)
   const eligible = await deps.findEligibleOrders(cutoff)
 
   let sent = 0
