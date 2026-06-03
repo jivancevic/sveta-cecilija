@@ -1,4 +1,4 @@
-# ADR-0013: Ticket PDF download auth model
+# ADR-0014: Ticket PDF download auth model
 
 **Status:** Accepted
 **Date:** 2026-06-03

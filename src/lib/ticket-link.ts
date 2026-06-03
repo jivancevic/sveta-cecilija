@@ -5,7 +5,7 @@ import { createHmac, timingSafeEqual } from 'node:crypto'
 // no link. So legitimate downloads always use a seconds-old link; the TTL only
 // bounds how long a manually copied download URL stays live if it leaks. 7 days
 // covers the post-purchase window while keeping that leak window short. See
-// ADR-0013.
+// ADR-0014.
 const DEFAULT_TTL_DAYS = 7
 
 function getSecret(): string {
