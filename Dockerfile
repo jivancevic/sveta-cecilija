@@ -74,6 +74,11 @@ COPY --from=build /app/.next/standalone ./
 # Static assets and public files are not part of the standalone bundle.
 COPY --from=build /app/.next/static ./.next/static
 COPY --from=build /app/public ./public
+# Ticket-PDF assets read at runtime via process.cwd() (render-tickets-pdf.tsx):
+# email fonts + PNG logo. Next's standalone trace misses them (read dynamically,
+# not imported), so copy explicitly. The .dockerignore re-includes only these
+# two trees from the otherwise-excluded assets/.
+COPY --from=build /app/assets ./assets
 
 # Schema bootstrap: the script, its SQL, and pg (its only non-builtin import).
 COPY --from=build /app/db/schema ./db/schema
