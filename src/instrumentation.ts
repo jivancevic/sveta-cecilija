@@ -59,11 +59,14 @@ export async function register() {
         "stripe_payment_intent_id" varchar,
         "refund_status" varchar DEFAULT 'none',
         "show_id" integer,
+        "review_opt_out" boolean DEFAULT false NOT NULL,
+        "review_opt_out_token" varchar,
         "updated_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
         "created_at" timestamp(3) with time zone DEFAULT now() NOT NULL,
         CONSTRAINT "orders_show_fk" FOREIGN KEY ("show_id") REFERENCES "shows"("id")
       );
       CREATE INDEX IF NOT EXISTS "orders_created_at_idx" ON "orders" ("created_at");
+      CREATE UNIQUE INDEX IF NOT EXISTS "orders_review_opt_out_token_idx" ON "orders" ("review_opt_out_token");
 
       CREATE TABLE IF NOT EXISTS "tickets" (
         "id" serial PRIMARY KEY NOT NULL,

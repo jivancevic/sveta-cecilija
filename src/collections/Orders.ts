@@ -99,5 +99,23 @@ export const Orders: CollectionConfig = {
         date: { pickerAppearance: 'dayAndTime' },
       },
     },
+    {
+      name: 'reviewOptOut',
+      type: 'checkbox',
+      defaultValue: false,
+      admin: {
+        readOnly: true,
+        description: 'Buyer unsubscribed from the post-show review email (#148). When true, the review dispatcher skips this order.',
+      },
+    },
+    {
+      name: 'reviewOptOutToken',
+      type: 'text',
+      unique: true,
+      admin: {
+        readOnly: true,
+        description: 'Per-order unsubscribe token, generated when the review email is sent. Backs /unsubscribe/[token].',
+      },
+    },
   ],
 }

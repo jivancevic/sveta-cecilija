@@ -31,6 +31,8 @@ interface Props {
   initialAdults: number
   initialChildren: number
   stripePublishableKey: string
+  /** Soft opt-in collection notice (#148). */
+  consentNotice: string
 }
 
 const stripePromiseCache = new Map<string, Promise<Stripe | null>>()
@@ -63,6 +65,7 @@ export default function CheckoutForm({
   initialAdults,
   initialChildren,
   stripePublishableKey,
+  consentNotice,
 }: Props) {
   const stripePromise = stripePublishableKey ? getStripePromise(stripePublishableKey) : null
   const [adults, setAdults] = useState(initialAdults || (initialChildren ? 0 : 2))
@@ -198,6 +201,8 @@ export default function CheckoutForm({
           />
           <small>{t.emailHelp}</small>
         </label>
+
+        <p className="checkout__consent">{consentNotice}</p>
 
         <label className="checkout__check">
           <input

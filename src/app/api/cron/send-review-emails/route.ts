@@ -6,6 +6,8 @@ import {
   type EligibleOrder,
 } from '@/lib/review-email/dispatch-review-emails'
 import { sendReviewEmail } from '@/lib/email/send-review-email'
+import { ensureOptOutToken } from '@/lib/review-consent/review-consent'
+import { generateQrToken } from '@/lib/qr-token'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -69,6 +71,7 @@ export async function POST(req: NextRequest) {
              FROM orders o
              JOIN shows s ON s.id = o.show_id
              WHERE o.review_email_sent_at IS NULL
+               AND o.review_opt_out IS NOT TRUE
                AND o.refund_status = 'none'
                AND (COALESCE(o.adult_count, 0) + COALESCE(o.child_count, 0)) > 0
                AND ((s.date::date)::text || ' ' || s.time)::timestamp AT TIME ZONE 'Europe/Zagreb' <= $1`,
@@ -100,6 +103,28 @@ export async function POST(req: NextRequest) {
           )
         },
         sendEmail: async (order) => {
+          // Ensure a per-order unsubscribe token exists, then build the opt-out
+          // link the email footer renders (#148).
+          const token = await ensureOptOutToken(order.id, {
+            getExistingToken: async (orderId) => {
+              const r = await pool.query(
+                `SELECT review_opt_out_token FROM orders WHERE id = $1`,
+                [Number(orderId)],
+              )
+              return (r.rows[0]?.review_opt_out_token as string | null) ?? null
+            },
+            setTokenIfAbsent: async (orderId, t) => {
+              const r = await pool.query(
+                `UPDATE orders SET review_opt_out_token = $2, updated_at = NOW()
+                 WHERE id = $1 AND review_opt_out_token IS NULL
+                 RETURNING review_opt_out_token`,
+                [Number(orderId), t],
+              )
+              return (r.rows[0]?.review_opt_out_token as string | undefined) ?? null
+            },
+            generateToken: generateQrToken,
+          })
+          const baseUrl = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://moreska.eu'
           await sendReviewEmail(
             {
               orderId: order.id,
@@ -107,6 +132,7 @@ export async function POST(req: NextRequest) {
               locale: order.locale ?? 'en',
               tripadvisorUrl,
               googleReviewUrl,
+              unsubscribeUrl: `${baseUrl}/unsubscribe/${encodeURIComponent(token)}`,
             },
             { fetch: globalThis.fetch, brevoApiKey },
           )

@@ -380,5 +380,14 @@
     "publishedOn": "Objavljeno",
     "updatedOn": "Ažurirano",
     "dateLocale": "hr-HR"
+  },
+  "unsubscribePage": {
+    "okTitle": "Odjavljeni ste",
+    "okBody": "Više nećete primati email s molbom za recenziju od HGD Sveta Cecilija. I dalje ćete primati važne poruke o kupljenim ulaznicama, primjerice ako se predstava otkaže ili premjesti.",
+    "notFoundTitle": "Poveznica nije prepoznata",
+    "notFoundBody": "Nismo mogli pronaći ovu poveznicu za odjavu. Možda je već iskorištena ili je nepotpuna. Ako i dalje primate neželjene poruke, javite nam na info@moreska.eu i uklonit ćemo Vas."
+  },
+  "consent": {
+    "notice": "Poslat ćemo Vam ulaznicu, sve promjene predstave i jednu kratku poruku nakon predstave. Možete se odjaviti u svakom trenutku."
   }
 }

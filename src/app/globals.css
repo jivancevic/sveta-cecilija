@@ -1564,6 +1564,13 @@ html, body { overflow-x: hidden; }
 }
 .inner-page .checkout__check input { margin-top: 3px; }
 .inner-page .checkout__check a { color: var(--gold, #b08d57); }
+/* Soft opt-in collection notice under the email field (#148). */
+.inner-page .checkout__consent {
+  margin: -2px 0 14px;
+  font-size: 12px;
+  line-height: 1.45;
+  opacity: 0.7;
+}
 .inner-page .checkout__error {
   margin: 12px 0;
   padding: 10px 12px;

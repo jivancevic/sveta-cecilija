@@ -92,6 +92,7 @@ export default async function CheckoutRoute({ params, searchParams }: RouteProps
           initialAdults={parseQty(adultsStr, 1)}
           initialChildren={parseQty(childrenStr, 0)}
           stripePublishableKey={publishableKey}
+          consentNotice={dict.consent.notice}
         />
         <a href="/tickets" className="checkout-page__back">{dict.checkoutPage.pageBack}</a>
       </main>

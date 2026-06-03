@@ -380,5 +380,14 @@
     "publishedOn": "Published",
     "updatedOn": "Updated",
     "dateLocale": "en-GB"
+  },
+  "unsubscribePage": {
+    "okTitle": "You're unsubscribed",
+    "okBody": "You won't receive the post-show review email from HGD Sveta Cecilija any more. You'll still get essential messages about tickets you've bought, such as a show being cancelled or moved.",
+    "notFoundTitle": "Link not recognised",
+    "notFoundBody": "We couldn't find this unsubscribe link. It may have already been used or may be incomplete. If you keep receiving emails you don't want, write to info@moreska.eu and we'll remove you."
+  },
+  "consent": {
+    "notice": "We'll email your ticket, any changes to the show, and one short follow-up after the performance. You can opt out at any time."
   }
 }

@@ -8,6 +8,7 @@ function makeInput(overrides: Record<string, unknown> = {}) {
     locale: 'en' as const,
     tripadvisorUrl: 'https://tripadvisor.example/review',
     googleReviewUrl: 'https://google.example/review',
+    unsubscribeUrl: 'https://moreska.eu/unsubscribe/tok_xyz',
     ...overrides,
   }
 }
@@ -67,6 +68,24 @@ describe('sendReviewEmail', () => {
     const [, init] = (deps.fetch as ReturnType<typeof vi.fn>).mock.calls[0]
     const body = JSON.parse(init.body)
     expect(body.htmlContent).toMatch(/Legal entity: HGD Sveta Cecilija/)
+  })
+
+  it('footer carries a working unsubscribe link backed by the per-order token (#148)', async () => {
+    const deps = makeDeps()
+    await sendReviewEmail(makeInput({ unsubscribeUrl: 'https://moreska.eu/unsubscribe/tok_42' }), deps)
+    const [, init] = (deps.fetch as ReturnType<typeof vi.fn>).mock.calls[0]
+    const body = JSON.parse(init.body)
+    expect(body.htmlContent).toContain('href="https://moreska.eu/unsubscribe/tok_42"')
+    expect(body.htmlContent).toMatch(/unsubscribe/i)
+  })
+
+  it('Croatian footer also carries the unsubscribe link', async () => {
+    const deps = makeDeps()
+    await sendReviewEmail(makeInput({ locale: 'hr', unsubscribeUrl: 'https://moreska.eu/unsubscribe/tok_hr' }), deps)
+    const [, init] = (deps.fetch as ReturnType<typeof vi.fn>).mock.calls[0]
+    const body = JSON.parse(init.body)
+    expect(body.htmlContent).toContain('href="https://moreska.eu/unsubscribe/tok_hr"')
+    expect(body.htmlContent).toMatch(/odjav/i)
   })
 
   it('resolves (does not throw) when Brevo returns an error response', async () => {

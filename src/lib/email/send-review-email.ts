@@ -9,6 +9,8 @@ export interface SendReviewEmailInput {
   locale?: 'en' | 'hr'
   tripadvisorUrl: string
   googleReviewUrl: string
+  /** Per-order unsubscribe URL (#148). Backs the footer opt-out link. */
+  unsubscribeUrl: string
 }
 
 export interface SendReviewEmailDeps {
@@ -25,7 +27,7 @@ function renderSubject(locale: 'en' | 'hr'): string {
 }
 
 function renderHtml(input: SendReviewEmailInput, locale: 'en' | 'hr'): string {
-  const { buyer, tripadvisorUrl, googleReviewUrl } = input
+  const { buyer, tripadvisorUrl, googleReviewUrl, unsubscribeUrl } = input
 
   // Brand fonts mirrored from globals.css. Inline because email clients
   // strip <link>/external CSS — keep tokens centralised here.
@@ -54,7 +56,7 @@ function renderHtml(input: SendReviewEmailInput, locale: 'en' | 'hr'): string {
       <p style="margin:0;font-size:14px;line-height:1.55;color:#555;">Srdačan pozdrav,<br/>Moreška by HGD Sveta Cecilija</p>
     </td></tr>
     <tr><td style="padding:16px 32px;border-top:1px solid #e6dfd1;font-size:11px;color:#888;line-height:1.5;">
-      Ovaj email je poslan jer ste kupili ulaznicu kod HGD Sveta Cecilija. Pravna osoba: HGD Sveta Cecilija, Korčula, Hrvatska. Ako ne želite primati ovakve poruke, javite nam na <a href="mailto:info@moreska.eu" style="color:#888;">info@moreska.eu</a>.
+      Ovaj email je poslan jer ste kupili ulaznicu kod HGD Sveta Cecilija. Pravna osoba: HGD Sveta Cecilija, Korčula, Hrvatska. Ako ne želite primati ovakve poruke, <a href="${unsubscribeUrl}" style="color:#888;">odjavite se ovdje</a>.
     </td></tr>
   </table>
 </div>
@@ -77,7 +79,7 @@ function renderHtml(input: SendReviewEmailInput, locale: 'en' | 'hr'): string {
       <p style="margin:0;font-size:14px;line-height:1.55;color:#555;">With thanks,<br/>Moreška by HGD Sveta Cecilija</p>
     </td></tr>
     <tr><td style="padding:16px 32px;border-top:1px solid #e6dfd1;font-size:11px;color:#888;line-height:1.5;">
-      You're receiving this because you purchased a ticket from HGD Sveta Cecilija. Legal entity: HGD Sveta Cecilija, Korčula, Croatia. To stop receiving messages like this, email <a href="mailto:info@moreska.eu" style="color:#888;">info@moreska.eu</a>.
+      You're receiving this because you purchased a ticket from HGD Sveta Cecilija. Legal entity: HGD Sveta Cecilija, Korčula, Croatia. To stop receiving messages like this, <a href="${unsubscribeUrl}" style="color:#888;">unsubscribe here</a>.
     </td></tr>
   </table>
 </div>
