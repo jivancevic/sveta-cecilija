@@ -157,7 +157,7 @@ describe('handlePaymentSucceeded', () => {
         const r = await critical()
         events.push('unlock')
         return r
-      }),
+      }) as unknown as <T>(showId: number, critical: () => Promise<T>) => Promise<T>,
     })
 
     await handlePaymentSucceeded(event({ showId: '7' }), deps)

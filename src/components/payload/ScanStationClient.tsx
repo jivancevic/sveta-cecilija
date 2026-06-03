@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import Link from 'next/link'
 import type { ScanResult } from '@/lib/scan-token'
 
 type Phase = 'idle' | 'starting' | 'live' | 'showing' | 'error'
@@ -266,8 +267,9 @@ function IdleStart({ onStart }: { onStart: () => void }) {
       >
         Scan a ticket
       </button>
-      <a
+      <Link
         href="/admin"
+        prefetch={false}
         style={{
           marginTop: 24,
           color: '#888',
@@ -276,7 +278,7 @@ function IdleStart({ onStart }: { onStart: () => void }) {
         }}
       >
         Back to dashboard
-      </a>
+      </Link>
     </div>
   )
 }

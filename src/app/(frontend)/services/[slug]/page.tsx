@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import Link from 'next/link';
 import { getLocale } from '@/lib/locale';
 import { getDictionary } from '@/lib/i18n';
 import { SERVICE_PAGE_META } from '@/lib/data';
@@ -58,7 +59,7 @@ export default async function ServicePage({
 
       <section className="svc-page__content">
         <div className="svc-page__inner">
-          <a href="/#svcs" className="sp-back">{t.backLink}</a>
+          <Link href="/#svcs" className="sp-back">{t.backLink}</Link>
 
           <div className="svc-page__body">
             <div className="svc-page__info">
@@ -86,7 +87,7 @@ export default async function ServicePage({
       <div className="ip-cta">
         <h2 className="ip-cta__h serif">{t.ctaHeadline}</h2>
         <p className="ip-cta__body">{t.ctaBody}</p>
-        <a href="/tickets" className="btn btn--primary">{t.ctaButton}</a>
+        <Link href="/tickets" className="btn btn--primary">{t.ctaButton}</Link>
       </div>
 
       <Footer locale={locale} t={dict.footer} />

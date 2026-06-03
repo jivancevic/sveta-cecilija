@@ -1,4 +1,5 @@
 import Image from 'next/image';
+import Link from 'next/link';
 import { getLocale } from '@/lib/locale';
 import { getDictionary } from '@/lib/i18n';
 import Nav from '@/components/Nav';
@@ -54,7 +55,7 @@ export default async function AboutPage() {
       <div className="ip-cta">
         <h2 className="ip-cta__h serif">{t.ctaHeadline}</h2>
         <p className="ip-cta__body">{t.ctaBody}</p>
-        <a href="/tickets" className="btn btn--primary">{t.ctaButton}</a>
+        <Link href="/tickets" className="btn btn--primary">{t.ctaButton}</Link>
       </div>
 
       <Footer locale={locale} t={dict.footer} />

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import type { Dictionary } from '@/lib/i18n';
 
 interface Props {
@@ -46,7 +47,7 @@ export default function Hero({ t }: Props) {
       </div>
 
       <div className="hero__ctas">
-        <a className="btn btn--primary btn--hero-cta" href="/tickets">{t.buyTickets}</a>
+        <Link className="btn btn--primary btn--hero-cta" href="/tickets">{t.buyTickets}</Link>
       </div>
 
       <div className="hero__scroll">{t.scroll}</div>

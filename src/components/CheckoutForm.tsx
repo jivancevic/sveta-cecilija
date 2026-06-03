@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { loadStripe, type Stripe } from '@stripe/stripe-js'
 import {
   Elements,
@@ -283,11 +283,10 @@ function PaymentStep({
   const elements = useElements()
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [ready, setReady] = useState(false)
-
-  useEffect(() => {
-    if (stripe && elements) setReady(true)
-  }, [stripe, elements])
+  const [elementReady, setElementReady] = useState(false)
+  // `ready` is derived, not mirrored into state: it's true once Stripe has
+  // initialised (stripe + elements) or once the Payment Element reports ready.
+  const ready = elementReady || Boolean(stripe && elements)
 
   async function onPay() {
     if (!stripe || !elements) return
@@ -309,7 +308,7 @@ function PaymentStep({
   return (
     <>
       {!ready && <p>{t.loadingPayment}</p>}
-      <PaymentElement onReady={() => setReady(true)} />
+      <PaymentElement onReady={() => setElementReady(true)} />
       {error && <div className="checkout__error">{error}</div>}
       <button
         type="button"

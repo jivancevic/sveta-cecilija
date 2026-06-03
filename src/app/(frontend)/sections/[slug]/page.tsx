@@ -1,4 +1,5 @@
 import Image from 'next/image';
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getLocale } from '@/lib/locale';
 import { getDictionary } from '@/lib/i18n';
@@ -59,7 +60,7 @@ export default async function SectionPage({
 
       <section style={{ background: 'var(--light)', padding: 'var(--pad) var(--sectionPadX)' }}>
         <div style={{ maxWidth: 'var(--maxW)', margin: '0 auto' }}>
-          <a href="/#secs" className="sp-back">{t.backLink}</a>
+          <Link href="/#secs" className="sp-back">{t.backLink}</Link>
 
           {meta.sectionKey === 'moreska' && (
             <MoreskaContent t={section} />
@@ -86,7 +87,7 @@ export default async function SectionPage({
       >
         <h2 className="ip-cta__h serif">{t.ctaHeadline}</h2>
         <p className="ip-cta__body">{t.ctaBody}</p>
-        <a href="/#sched" className="btn btn--primary">{t.ctaButton}</a>
+        <Link href="/#sched" className="btn btn--primary">{t.ctaButton}</Link>
       </div>
 
       <Footer locale={locale} t={dict.footer} />

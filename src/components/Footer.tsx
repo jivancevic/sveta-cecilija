@@ -1,4 +1,5 @@
 import Image from 'next/image';
+import Link from 'next/link';
 import type { Locale } from '@/proxy';
 import type { Dictionary } from '@/lib/i18n';
 import LangSwitcher from './LangSwitcher';
@@ -23,19 +24,19 @@ export default function Footer({ locale, t }: Props) {
         <div className="foot__cols">
           <div className="foot__col">
             <h3 className="foot__col-h">{t.visitLabel}</h3>
-            <a href="/tickets">{t.performances}</a>
-            <a href="/about">{t.about}</a>
-            <a href="/about">{t.history}</a>
-            <a href="/blog">{t.blog}</a>
-            <a href="/#secs">{t.sections}</a>
-            <a href="/#svcs">{t.services}</a>
+            <Link href="/tickets">{t.performances}</Link>
+            <Link href="/about">{t.about}</Link>
+            <Link href="/about">{t.history}</Link>
+            <Link href="/blog">{t.blog}</Link>
+            <Link href="/#secs">{t.sections}</Link>
+            <Link href="/#svcs">{t.services}</Link>
           </div>
           <div className="foot__col">
             <h3 className="foot__col-h">{t.sectionsLabel}</h3>
-            <a href="/sections/moreska">{t.moreska}</a>
-            <a href="/sections/wind-orchestra">{t.windOrchestra}</a>
-            <a href="/sections/klapa">{t.klapa}</a>
-            <a href="/sections/choir">{t.choir}</a>
+            <Link href="/sections/moreska">{t.moreska}</Link>
+            <Link href="/sections/wind-orchestra">{t.windOrchestra}</Link>
+            <Link href="/sections/klapa">{t.klapa}</Link>
+            <Link href="/sections/choir">{t.choir}</Link>
           </div>
           <div className="foot__col">
             <h3 className="foot__col-h">{t.contactLabel}</h3>
@@ -52,7 +53,7 @@ export default function Footer({ locale, t }: Props) {
 
       <div className="foot__bottom">
         <div className="foot__legal">
-          {t.legal} · <a href="/privacy-policy">{t.privacyPolicy}</a> · <a href="/cookie-policy">{t.cookiePolicy}</a> · <a href="/refund-policy">{t.refundPolicy}</a> · Developed by: <a href="https://www.linkedin.com/in/josipivancevic" target="_blank" rel="noopener noreferrer">Josip Ivančević</a>
+          {t.legal} · <Link href="/privacy-policy">{t.privacyPolicy}</Link> · <Link href="/cookie-policy">{t.cookiePolicy}</Link> · <Link href="/refund-policy">{t.refundPolicy}</Link> · Developed by: <a href="https://www.linkedin.com/in/josipivancevic" target="_blank" rel="noopener noreferrer">Josip Ivančević</a>
         </div>
         <LangSwitcher locale={locale} className="foot__lang" />
       </div>
