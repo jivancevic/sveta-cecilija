@@ -64,19 +64,19 @@ Time budget: ~45 min for smoke test, ~30 min for cutover.
 
 1. Stripe Dashboard → Developers → Events → top event should be `payment_intent.succeeded`, webhook delivery **200 OK**.
 2. Check the buyer inbox — email from `info@moreska.eu` arrives within ~30 s.
-3. Email contains **2 inline QR codes** (one per ticket), each pointing to `https://moreska.eu/scan/<token>`.
+3. Email contains one PDF with **2 QR codes** (one per person, ADR-0007), laid out 2-up on an A5/A4 page, each ticket admitting one person and pointing to `https://moreska.eu/scan/<token>`.
 
 - [ ] Stripe webhook delivery 200.
-- [ ] Email received with 2 distinct QR codes.
+- [ ] Email received; PDF has 2 distinct QR codes (one per person).
 
 ## 5. Admin verification (2 min)
 
 1. `https://moreska.eu/admin/collections/orders` — top row is the test order, `total: 3000`, `refundStatus: none`, linked to the test show.
-2. `https://moreska.eu/admin/collections/qr-tokens?where[order][equals]=<orderId>` — 2 rows, `scanned: false` on both. Copy both `token` values.
-3. Reopen the test show in admin — `onlineSold` is now **1** (since 1 order = 1 record; if your incrementer adds ticket count instead, it will be 2 — note actual behaviour).
+2. `https://moreska.eu/admin/collections/tickets?where[order][equals]=<orderId>`: **2 rows** (one per person: 1 `type: adult`, 1 `type: child`), `scanned: false` on both. Copy both `token` values.
+3. Seats are counted as active ticket rows (ADR-0007): the webhook does NOT bump `onlineSold`. Confirm `remaining` on `/tickets` has dropped by **2** (the 2 people in this order), i.e. **318** for ljetno-kino.
 
-- [ ] Order + 2 QRTokens visible in admin.
-- [ ] Show's `onlineSold` incremented.
+- [ ] Order + 2 Tickets (1 adult, 1 child) visible in admin.
+- [ ] `/tickets` remaining dropped by the order's person count (320 → 318).
 
 ## 6. QR scan flow (5 min)
 
@@ -86,7 +86,7 @@ Test **buyer view** (unauthenticated) AND **staff view** (authenticated). Cookie
 1. Open one QR URL in incognito: `https://moreska.eu/scan/<token1>`.
 2. Should render buyer ticket view with on-page QR + "do not tap again" notice. **No DB write.**
 
-- [ ] QRToken `scanned` still `false` in admin after viewing.
+- [ ] Ticket `scanned` still `false` in admin after viewing.
 
 ### 6b. Staff view (logged in as superadmin / admin / tehnika)
 1. In your admin/tehnika browser, type into address bar: `https://moreska.eu/scan/<token1>`. Press Enter.
@@ -97,13 +97,13 @@ Test **buyer view** (unauthenticated) AND **staff view** (authenticated). Cookie
 - [ ] Token1: VALID → ALREADY_SCANNED on refresh.
 - [ ] Token2: VALID first time.
 - [ ] Invalid token: INVALID state.
-- [ ] `scannedAt` populated in `qr-tokens` admin for both used tokens.
+- [ ] `scannedAt` populated in `tickets` admin for both used tokens.
 
 ## 7. In-person sales (2 min)
 
 1. Open the test show edit view in admin.
 2. Use the **in-person sales** action (edit-menu item or custom button) to add `5` in-person tickets. If wired as direct field edit instead, set `inPersonSold: 5` and save.
-3. Reload `/tickets` (incognito) → remaining capacity now **320 − 1 − 5 = 314**.
+3. Reload `/tickets` (incognito) → remaining capacity now **320 − 2 − 5 = 313** (2 active online tickets + 5 in-person).
 
 - [ ] Remaining count updates on public page.
 
@@ -120,7 +120,7 @@ Test **buyer view** (unauthenticated) AND **staff view** (authenticated). Cookie
 ## 9. Stats view sanity (1 min)
 
 1. `https://moreska.eu/admin/stats` — season aggregate shows the test show in the table.
-2. `https://moreska.eu/admin/stats/<showId>` — per-show drill-down: online sold 1, in-person 5, scanned 2, revenue calculated.
+2. `https://moreska.eu/admin/stats/<showId>`: per-show drill-down showing online sold 2 (active tickets), in-person 5, scanned 2 (people), revenue calculated.
 
 - [ ] Stats numbers match expectation.
 
@@ -136,7 +136,7 @@ Test **buyer view** (unauthenticated) AND **staff view** (authenticated). Cookie
 ## 11. Cleanup before live cutover
 
 - [ ] Delete the test show OR set `status: cancelled` so it never appears publicly.
-- [ ] Delete the test order + its QRTokens (or leave with a "TEST" note — they're already refunded).
+- [ ] Delete the test order + its Tickets (or leave with a "TEST" note; they're already refunded).
 - [ ] Stripe test-mode events stay — they're isolated from live mode.
 
 ---
