@@ -1,0 +1,107 @@
+name: Schema drift
+
+# Fails a PR when db/schema/*.sql (the prod/DR/cutover schema source, applied by
+# scripts/bootstrap-db.mjs — prod never runs Payload push) stops reproducing the
+# schema Payload `push` would create from the collection configs. See ADR-0013.
+#
+# Two throwaway DBs on one Postgres:
+#   expected  — boot the app (next dev → Payload push) → the source-of-truth schema
+#   bootstrap — run scripts/bootstrap-db.mjs (db/schema/*.sql only, no push)
+# The gate asserts `bootstrap` is a superset of `expected` (scripts/schema-diff.mjs).
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PAYLOAD_SECRET: dummy_ci_secret_for_schema_drift
+      PGPASSWORD: postgres
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      # Match the Postgres 16 server so pg_dump doesn't refuse on a version skew.
+      - name: Install postgresql-client-16
+        run: |
+          sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+          curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/pgdg.gpg
+          sudo apt-get update
+          sudo apt-get install -y postgresql-client-16
+          echo "/usr/lib/postgresql/16/bin" >> "$GITHUB_PATH"
+
+      - run: npm ci
+
+      - name: Create throwaway databases
+        run: |
+          psql -h localhost -U postgres -c "CREATE DATABASE expected"
+          psql -h localhost -U postgres -c "CREATE DATABASE bootstrap"
+
+      # expected = what Payload push produces. Boot `next dev` DIRECTLY (not
+      # `npm run dev`, which would also run bootstrap-db.mjs and pollute this DB).
+      # instrumentation.ts seeds base tables, then the first /admin request makes
+      # Payload init + push, reconciling the schema to the collection configs.
+      - name: Capture Payload-push schema (expected)
+        run: |
+          DATABASE_URL=postgres://postgres:postgres@localhost:5432/expected \
+            node_modules/.bin/next dev -p 3000 > nextdev.log 2>&1 &
+          echo $! > nextdev.pid
+
+          ok=
+          for i in $(seq 1 90); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/admin || true)
+            if [ "$code" = "200" ]; then ok=1; break; fi
+            sleep 2
+          done
+          [ -n "$ok" ] || { echo "next dev never served /admin"; tail -50 nextdev.log; exit 1; }
+
+          # Wait for push to settle (tickets table + an enum type present).
+          for i in $(seq 1 30); do
+            t=$(psql -h localhost -U postgres -d expected -tAc "select to_regclass('public.tickets')")
+            e=$(psql -h localhost -U postgres -d expected -tAc "select 1 from pg_type where typname='enum_tickets_type'")
+            if [ "$t" = "tickets" ] && [ "$e" = "1" ]; then break; fi
+            sleep 2
+          done
+
+          kill "$(cat nextdev.pid)" 2>/dev/null || true
+
+      # bootstrap = what a fresh prod/DR DB gets: db/schema/*.sql via bootstrap-db.mjs.
+      - name: Apply db/schema via bootstrap-db.mjs (bootstrap)
+        run: DATABASE_URL=postgres://postgres:postgres@localhost:5432/bootstrap node scripts/bootstrap-db.mjs
+
+      - name: Dump both schemas
+        run: |
+          pg_dump -h localhost -U postgres -d expected  --schema-only --no-owner --no-privileges > expected.sql
+          pg_dump -h localhost -U postgres -d bootstrap --schema-only --no-owner --no-privileges > bootstrap.sql
+
+      - name: Assert no drift
+        run: node scripts/schema-diff.mjs expected.sql bootstrap.sql
+
+      - name: Upload schema dumps on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: schema-dumps
+          path: |
+            expected.sql
+            bootstrap.sql
+            nextdev.log
