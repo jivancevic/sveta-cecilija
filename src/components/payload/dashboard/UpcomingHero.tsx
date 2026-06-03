@@ -91,13 +91,13 @@ export function UpcomingHero({
                 letterSpacing: 0.4,
               }}
             >
-              {adminT(lang, 'remainingSeats')}
+              {adminT(lang, 'remainingSeats')} · {fill.percent}%
             </div>
           </div>
         </div>
 
-        {/* Large fill bar */}
-        <ShowFillBar show={next} lang={lang} />
+        {/* Large fill bar (header suppressed — date/venue shown above). */}
+        <ShowFillBar show={next} lang={lang} showHeader={false} />
 
         {/* in-person sale (record per-show) graft here (#238 follow-up: inline
             on the card per ADR-0015); inquiries badge (#239) graft near actions. */}

@@ -5,18 +5,21 @@ import { showFill, type DashboardShow } from '@/lib/dashboard/capacity'
 import { GOLD, formatShowDate, venueLabel } from './format'
 
 // Capacity fill bar for one show. Used in two sizes:
-//   - the next-show hero (UpcomingHero) renders it large
-//   - the following 2-3 shows render it small ("compact")
+//   - the next-show hero (UpcomingHero) renders it large, with showHeader=false
+//     because the hero already shows the date/venue prominently above the bar
+//   - the following 2-3 shows render it small ("compact") with their own header
 // Dark-mode safe via --theme-elevation-*; the fill track uses brand gold so the
 // "how full is this show" signal reads at a glance without a full reskin.
 export function ShowFillBar({
   show,
   lang,
   compact = false,
+  showHeader = true,
 }: {
   show: DashboardShow
   lang: AdminLang
   compact?: boolean
+  showHeader?: boolean
 }) {
   const fill = showFill(show)
   const cancelled = show.status === 'cancelled'
@@ -24,6 +27,7 @@ export function ShowFillBar({
 
   return (
     <div style={{ minWidth: 0 }}>
+      {showHeader && (
       <div
         style={{
           display: 'flex',
@@ -57,6 +61,7 @@ export function ShowFillBar({
           </span>
         </div>
       </div>
+      )}
 
       <div
         style={{
