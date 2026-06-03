@@ -7,7 +7,7 @@ import config from '@payload-config'
 import { getStatsInput } from '@/lib/stats-data'
 import { computeStats } from '@/lib/stats'
 import { ADMIN_LANG_COOKIE, adminT, resolveAdminLang, type AdminLang } from '@/lib/admin-i18n'
-import { isAdminTier, isAuthed, isPartner, partnerIdOf } from '@/lib/access/roles'
+import { isAdminTier, isAuthed, isPartner, isSuperadmin, partnerIdOf } from '@/lib/access/roles'
 import { getNextShow, getScannedPeopleForShow, getUpcomingShows, type NextShow } from '@/lib/shows'
 import { doorProgress, type DoorProgress } from '@/lib/dashboard/door-progress'
 import { HeaderBlock, ShowsTable } from './stats-blocks'
@@ -17,7 +17,12 @@ import { PartnerStornoList } from './PartnerStornoList'
 import { getPartnerTodaySales } from '@/lib/partner/today-sales'
 import { PartnerSalesPanel } from './PartnerSalesPanel'
 import { getPartnerSeasonStats, getPartnerRecentSales } from '@/lib/partner/partner-data'
+import { getPartnerMonthToDate } from '@/lib/partner/month-to-date'
+import { monthKeyInZagreb } from '@/lib/partner/partner-reconciliation'
+import { PartnerMonthToDateCard } from './PartnerMonthToDateCard'
 import type { PoolQuery } from '@/lib/tickets/sold-seats'
+import { listRecentCriticalEvents } from '@/lib/critical-events/list'
+import { CriticalEventsDevStrip } from './CriticalEventsDevStrip'
 
 export const dynamic = 'force-dynamic'
 
@@ -59,7 +64,22 @@ export async function AdminDashboardView() {
     return <TehnikaDashboard role={role} lang={lang} />
   }
 
-  const input = await getStatsInput()
+  // Superadmin-only critical-events dev strip (#235). admin never sees it; the
+  // tehnika/partner branches above already returned, so no need to re-check them.
+  // Fetched in parallel with the stats input (independent queries). The dev strip
+  // must never break the dashboard (e.g. table not yet bootstrapped on a stale
+  // DB), so a read failure resolves to an empty list.
+  const superadmin = isSuperadmin(user as { role?: string })
+  const pool = (payload.db as unknown as { pool: { query: PoolQuery } }).pool
+  const [input, criticalEvents] = await Promise.all([
+    getStatsInput(),
+    superadmin
+      ? listRecentCriticalEvents((sql, params) => pool.query(sql, params), 20).catch((err) => {
+          console.error('[AdminDashboardView] failed to load critical events', err)
+          return []
+        })
+      : Promise.resolve([]),
+  ])
   const { header, rows } = computeStats(input)
 
   return (
@@ -72,6 +92,8 @@ export async function AdminDashboardView() {
 
       <h2 style={{ fontSize: 16, margin: '24px 0 8px' }}>Shows (last 7 days + upcoming)</h2>
       <ShowsTable rows={rows} />
+
+      {superadmin && <CriticalEventsDevStrip events={criticalEvents} />}
 
       <p style={{ fontSize: 11, color: 'var(--theme-elevation-400)', marginTop: 24 }}>
         {adminT(lang, 'signedInAs')} {role}.
@@ -351,11 +373,26 @@ async function PartnerDashboard({
   const pool = (payload.db as unknown as { pool: { query: PoolQuery } }).pool
   const poolQuery: PoolQuery = (sql, params) => pool.query(sql, params)
   const numericPartnerId = Number(partner.id)
-  const [todaySales, seasonStats, recentSales] = await Promise.all([
+  const commissionPercent = partner.commissionPercent ?? 10
+
+  // Live month-to-date standing card (#241): the current Europe/Zagreb month,
+  // resolved here so the data layer takes no clock. monthKeyInZagreb buckets the
+  // sale date the same way the month-end statement does, so the two agree.
+  const now = new Date()
+  const { year, month } = monthKeyInZagreb(now.toISOString())
+
+  const [todaySales, seasonStats, recentSales, monthToDate] = await Promise.all([
     getPartnerTodaySales(partner.id, { query: poolQuery }),
     getPartnerSeasonStats(poolQuery, numericPartnerId),
     getPartnerRecentSales(poolQuery, numericPartnerId, 5),
+    getPartnerMonthToDate(poolQuery, { partnerId: numericPartnerId, commissionPercent, year, month }),
   ])
+
+  const monthLabel = now.toLocaleDateString(lang === 'hr' ? 'hr-HR' : 'en-GB', {
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'Europe/Zagreb',
+  })
 
   return (
     <div style={wrap}>
@@ -367,13 +404,17 @@ async function PartnerDashboard({
       </div>
 
       <div style={{ marginBottom: 24 }}>
+        <PartnerMonthToDateCard data={monthToDate} monthLabel={monthLabel} lang={lang} />
+      </div>
+
+      <div style={{ marginBottom: 24 }}>
         <PartnerStornoList sales={todaySales} />
       </div>
 
       <PartnerSalesPanel
         stats={seasonStats}
         recent={recentSales}
-        commissionPercent={partner.commissionPercent ?? 10}
+        commissionPercent={commissionPercent}
       />
 
       <p style={{ fontSize: 11, color: 'var(--theme-elevation-400)', marginTop: 24 }}>

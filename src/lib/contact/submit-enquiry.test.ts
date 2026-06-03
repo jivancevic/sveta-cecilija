@@ -67,4 +67,76 @@ describe('submitEnquiry', () => {
     const res = await submitEnquiry(valid, { persist, notify })
     expect(res).toEqual({ ok: true })
   })
+
+  it('fires the enquirer acknowledgement after a successful persist', async () => {
+    const persist = vi.fn().mockResolvedValue(undefined)
+    const acknowledge = vi.fn().mockResolvedValue(undefined)
+    await submitEnquiry(valid, { persist, acknowledge })
+    expect(acknowledge).toHaveBeenCalledOnce()
+    expect(acknowledge.mock.calls[0][0].email).toBe('ana@example.com')
+  })
+
+  it('does not acknowledge an unsaved enquiry', async () => {
+    const persist = vi.fn().mockRejectedValue(new Error('db down'))
+    const acknowledge = vi.fn()
+    await submitEnquiry(valid, { persist, acknowledge })
+    expect(acknowledge).not.toHaveBeenCalled()
+  })
+
+  it('still reports ok when the best-effort acknowledgement throws', async () => {
+    const persist = vi.fn().mockResolvedValue(undefined)
+    const acknowledge = vi.fn().mockRejectedValue(new Error('brevo 401'))
+    const res = await submitEnquiry(valid, { persist, acknowledge })
+    expect(res).toEqual({ ok: true })
+  })
+
+  it('a failing notification does not prevent the acknowledgement (both best-effort)', async () => {
+    const persist = vi.fn().mockResolvedValue(undefined)
+    const notify = vi.fn().mockRejectedValue(new Error('brevo 401'))
+    const acknowledge = vi.fn().mockResolvedValue(undefined)
+    const res = await submitEnquiry(valid, { persist, notify, acknowledge })
+    expect(res).toEqual({ ok: true })
+    expect(acknowledge).toHaveBeenCalledOnce()
+  })
+
+  // #235 — the enquiry-notification failure is the first critical-events write
+  // site. The previously-silent "email didn't deliver" cases must now be
+  // recorded, without ever turning a stored enquiry into a failure.
+  it('records a critical event when the notification send fails', async () => {
+    const persist = vi.fn().mockResolvedValue(undefined)
+    const notify = vi.fn().mockRejectedValue(new Error('brevo 401'))
+    const recordEvent = vi.fn().mockResolvedValue(undefined)
+    const res = await submitEnquiry(valid, { persist, notify, recordEvent })
+    expect(res).toEqual({ ok: true })
+    expect(recordEvent).toHaveBeenCalledOnce()
+    const event = recordEvent.mock.calls[0][0]
+    expect(event.kind).toBe('enquiry_notification_failed')
+    expect(event.context.email).toBe('ana@example.com')
+  })
+
+  it('records a critical event when notification is skipped (no notifier wired)', async () => {
+    const persist = vi.fn().mockResolvedValue(undefined)
+    const recordEvent = vi.fn().mockResolvedValue(undefined)
+    const res = await submitEnquiry(valid, { persist, recordEvent })
+    expect(res).toEqual({ ok: true })
+    expect(recordEvent).toHaveBeenCalledOnce()
+    expect(recordEvent.mock.calls[0][0].kind).toBe('enquiry_notification_skipped')
+  })
+
+  it('records no critical event when the notification succeeds', async () => {
+    const persist = vi.fn().mockResolvedValue(undefined)
+    const notify = vi.fn().mockResolvedValue(undefined)
+    const recordEvent = vi.fn().mockResolvedValue(undefined)
+    const res = await submitEnquiry(valid, { persist, notify, recordEvent })
+    expect(res).toEqual({ ok: true })
+    expect(recordEvent).not.toHaveBeenCalled()
+  })
+
+  it('still reports ok when recording the critical event itself throws', async () => {
+    const persist = vi.fn().mockResolvedValue(undefined)
+    const notify = vi.fn().mockRejectedValue(new Error('brevo 401'))
+    const recordEvent = vi.fn().mockRejectedValue(new Error('events table missing'))
+    const res = await submitEnquiry(valid, { persist, notify, recordEvent })
+    expect(res).toEqual({ ok: true })
+  })
 })
