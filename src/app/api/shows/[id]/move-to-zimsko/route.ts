@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getPayload } from 'payload'
-import config from '@payload-config'
 import { isAdminTier } from '@/lib/access/roles'
+import { requireRole } from '@/lib/access/route-guard'
 import {
   moveShowToZimsko,
   previewVenueMove,
@@ -82,19 +81,10 @@ function buildDeps(pool: Pool, brevoApiKey: string): MoveToZimskoDeps {
   }
 }
 
-async function authAdmin(req: NextRequest) {
-  const payload = await getPayload({ config })
-  const { user } = await payload.auth({ headers: req.headers })
-  if (!user) return { payload, user: null as null, error: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) }
-  if (!isAdminTier(user as { role?: string })) {
-    return { payload, user: null as null, error: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) }
-  }
-  return { payload, user, error: null }
-}
-
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { payload, error } = await authAdmin(req)
-  if (error) return error
+  const gate = await requireRole(req, isAdminTier)
+  if (gate.error) return gate.error
+  const { payload } = gate
   const { id } = await params
   const pool = (payload.db as unknown as { pool: Pool }).pool
   const deps = buildDeps(pool, process.env.BREVO_API_KEY ?? '')
@@ -108,8 +98,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 }
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { payload, user, error } = await authAdmin(req)
-  if (error) return error
+  const gate = await requireRole(req, isAdminTier)
+  if (gate.error) return gate.error
+  const { payload, user } = gate
   const { id } = await params
 
   const brevoApiKey = process.env.BREVO_API_KEY
@@ -120,7 +111,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const pool = (payload.db as unknown as { pool: Pool }).pool
   const deps = buildDeps(pool, brevoApiKey)
   try {
-    const result = await moveShowToZimsko({ showId: id, userId: String((user as { id: string | number }).id) }, deps)
+    const result = await moveShowToZimsko({ showId: id, userId: String(user.id) }, deps)
     return NextResponse.json(result)
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Move failed'

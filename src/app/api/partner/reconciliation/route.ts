@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getPayload } from 'payload'
-import config from '@payload-config'
 import { isAdminTier, isPartner, partnerIdOf } from '@/lib/access/roles'
+import { requireRole } from '@/lib/access/route-guard'
 import { type PoolQuery } from '@/lib/tickets/sold-seats'
 import { getPartnerReconciliation } from '@/lib/partner/partner-data'
 import { reconciliationToCsv } from '@/lib/partner/reconciliation-csv'
@@ -17,14 +16,11 @@ export const dynamic = 'force-dynamic'
 // Anyone else is 403. Defaults to CSV download (text/csv attachment); pass
 // ?format=json for the structured statement.
 export async function GET(req: NextRequest) {
-  const payload = await getPayload({ config })
-  const { user } = await payload.auth({ headers: req.headers })
+  const gate = await requireRole(req, (u) => isAdminTier(u) || isPartner(u))
+  if (gate.error) return gate.error
+  const { payload, user } = gate
 
-  const admin = isAdminTier(user as { role?: string } | null)
-  const partner = isPartner(user as { role?: string } | null)
-  if (!admin && !partner) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-  }
+  const partner = isPartner(user as { role?: string })
 
   const url = new URL(req.url)
   const year = Number(url.searchParams.get('year'))

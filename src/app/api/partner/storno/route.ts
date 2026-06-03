@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { getPayload } from 'payload'
 import { sql } from '@payloadcms/db-postgres'
-import config from '@payload-config'
 import { isAdminTier, isPartner, partnerIdOf } from '@/lib/access/roles'
+import { requireRole } from '@/lib/access/route-guard'
 import { performStorno, StornoError, type StornoActor, type StornoTarget } from '@/lib/partner/storno'
 import { voidOrderTickets, voidSingleTicket } from '@/lib/tickets/ticket-void'
 
@@ -18,14 +17,12 @@ export const dynamic = 'force-dynamic'
 // pure storno module with an injected clock. The actual void is idempotent and
 // race-safe (WHERE status='active'); seats free automatically.
 export async function POST(req: NextRequest) {
-  const payload = await getPayload({ config })
-  const { user } = await payload.auth({ headers: req.headers })
+  const gate = await requireRole(req, (u) => isAdminTier(u) || isPartner(u))
+  if (gate.error) return gate.error
+  const { payload, user } = gate
 
-  const admin = isAdminTier(user as { role?: string } | null)
-  const partner = isPartner(user as { role?: string } | null)
-  if (!admin && !partner) {
-    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-  }
+  const admin = isAdminTier(user as { role?: string })
+  const partner = isPartner(user as { role?: string })
 
   // A partner login must be bound to a partner record; otherwise it owns nothing.
   const callerPartnerId = partner
