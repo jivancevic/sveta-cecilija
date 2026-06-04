@@ -36,6 +36,7 @@ export const OrderLookups: CollectionConfig = {
       options: [
         { label: 'Email', value: 'email' },
         { label: 'Name', value: 'name' },
+        { label: 'Order code', value: 'code' },
       ],
     },
     {

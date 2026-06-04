@@ -26,12 +26,19 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tok
   const { token } = await params
   const drizzle: any = (payload.db as any).drizzle
 
+  // The scan page POSTs a form and wants a 303 back to itself; the tehnika
+  // lookup panel fetches with Accept: application/json and wants the count.
+  const wantsJson = (req.headers.get('accept') ?? '').includes('application/json')
+
   // Resolve the order from the scanned token.
   const orderRes: any = await drizzle.execute(sql`
     SELECT order_id FROM tickets WHERE token = ${token} LIMIT 1
   `)
   const orderRow = (orderRes.rows ?? orderRes)[0]
   if (!orderRow) {
+    if (wantsJson) {
+      return NextResponse.json({ error: 'Unknown token' }, { status: 404 })
+    }
     // Unknown token — bounce back to the scan screen, which renders INVALID.
     return NextResponse.redirect(new URL(`/scan/${encodeURIComponent(token)}`, req.url), {
       status: 303,
@@ -54,6 +61,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tok
       return (res.rows ?? res).length
     },
   })
+
+  if (wantsJson) {
+    return NextResponse.json({ admitted })
+  }
 
   const url = new URL(`/scan/${encodeURIComponent(token)}`, req.url)
   url.searchParams.set('party', String(admitted))
