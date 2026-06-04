@@ -4,18 +4,18 @@ These must be completed alongside development — all have waiting periods (veri
 
 ---
 
-## 0. Coordinate with old-site WordPress dev (korcula-moreska.com)
+## 0. Retire the legacy sites (korcula-moreska.com + tickets.korcula-moreska.com)
 
-Old WordPress site stays up read-only through end of 2026 season so `checkinera` keeps scanning legacy QRs. Ask the dev who built `korcula-moreska.com` to, on cutover day:
+**Simplified 2026-06-04 — no old-site-dev coordination needed.** Investigation found the legacy stack is WordPress + Tickera + WooCommerce, and only ~9 legacy tickets are for future shows (7 on 2026-06-08, 2 on 2026-06-22). Decision: admit those 9 manually at the door, so the old scanner can be retired and both old domains redirected immediately. Josip has cPanel + wp-admin access, so he does this himself.
 
-1. **Disable all new ticket purchases** (remove/short-circuit checkout, hide "Buy tickets" CTAs). Keep the rest of the site reachable so `checkinera` and any QR-scan back-ends stay functional.
-2. **Replace homepage hero (or add a top-of-page banner) with a notice — in both HR and EN:**
-   - HR: *"Prodaja ulaznica preselila se na **moreska.eu**. Vaša postojeća ulaznica i dalje vrijedi — pokažite QR kod na ulazu kao i obično."*
-   - EN: *"Ticket sales have moved to **moreska.eu**. Your existing ticket is still valid — show your QR code at the door as usual."*
-3. **Confirm `checkinera` is independent** of the WordPress site's checkout — i.e. disabling checkout does not break door scanning. If `checkinera` reads from the WP database, document which tables must stay populated.
-4. **After 2026 season ends** (~end of October): 301-redirect whole domain to `moreska.eu`, then let domain expire at next renewal.
+Steps (tracked as sub-issues #256–#261 under #11):
 
-Also ask them for: per-show count of legacy tickets sold (to populate `legacyReserved`).
+1. **Export the future legacy holders** (name + ticket code + show) from Tickera's Attendees & Tickets list, for the manual door list and to set `legacyReserved`. (#257)
+2. **Redirect both old domains** via `.htaccess` 301 — `korcula-moreska.com` → `https://moreska.eu/`, `tickets.korcula-moreska.com` → `https://moreska.eu/tickets`. The redirect on the ticket subdomain is itself the sales freeze (storefront becomes unreachable); keep `/wp-admin` reachable there for legacy lookups. (#258)
+3. **Set `legacyReserved`** on moreska.eu Shows: 7 on 2026-06-08, 2 on 2026-06-22, 0 elsewhere. (#256)
+4. **After 2026 season ends** (~end of October): the redirects can stay; let the old domains expire at next renewal. Per-page SEO redirect map is #37.
+
+No banner (a 301 is better for SEO and for old bookmarks); no `checkinera`/dual-scanner; no mass email to legacy buyers (they hold their QR PDFs and are admitted manually).
 
 ---
 

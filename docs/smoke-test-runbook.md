@@ -168,16 +168,20 @@ Do not begin until **every box above is checked** and you have ~2 hours of monit
 - [ ] Door account login confirmed working on a phone — username **`tehnika`** (role: `tehnika`; the old `tehnika@moreska.eu` email string is retired, see [ADR-0011](./adr/0011-hybrid-username-login.md)).
 - [ ] Walk-through done: `/admin/stats`, `/scan/<token>` from camera, refund flow.
 
-## C4. DNS + legacy site redirect (day-of)
+## C4. Legacy site freeze + redirect (day-of)
 
-1. Hetzner DNS — confirm `moreska.eu` A record points to the Coolify host. SSL provisions on first HTTPS request after propagation (Traefik + Let's Encrypt automatic).
-2. Totohost cPanel for `korcula-moreska.com`:
-   - Option A (preferred): edit `.htaccess` to 301 to `https://moreska.eu/$1`.
-   - Option B (fallback): edit the WordPress `wpbp_options` `siteurl`/`home`, or replace the landing page with a static notice + link.
-3. Test from a fresh device (not your browser cache): `https://korcula-moreska.com/` → lands on `moreska.eu`.
+`moreska.eu` DNS already points at the Coolify host and serves live over HTTPS, so there is no DNS move for the new domain. The "cutover" here is retiring the two legacy sites. With only ~9 future legacy tickets (admitted manually), both old domains are simply 301-redirected — the redirect on the ticket subdomain is also the sales freeze. No banner, no `checkinera`. See sub-issues #257/#258.
 
-- [ ] Old domain redirects or shows notice.
-- [ ] New domain serves over HTTPS with valid cert (browser padlock).
+1. **Export the future legacy holders first** (name + ticket code + show) from Tickera's Attendees & Tickets list, for the manual door list. Set `legacyReserved` on moreska.eu Shows accordingly (currently 7 on 2026-06-08, 2 on 2026-06-22 — re-pull at freeze time).
+2. Totohost cPanel — add a 301 `.htaccess` at the top of each docroot:
+   - `korcula-moreska.com` → `https://moreska.eu/`
+   - `tickets.korcula-moreska.com` → `https://moreska.eu/tickets` (keep `/wp-admin` + `/wp-login.php` reachable as back-office insurance for legacy lookups)
+3. Test from a fresh device (not browser cache): both old URLs land on moreska.eu, and the Tickera storefront can no longer take an order.
+
+- [ ] Both old domains 301-redirect; legacy storefront can no longer sell.
+- [ ] `tickets.korcula-moreska.com/wp-admin` still reachable (unless a total kill was chosen).
+- [ ] `moreska.eu` serves over HTTPS with valid cert (browser padlock).
+- [ ] `legacyReserved` reconciled with the frozen legacy count.
 
 ## C5. First-live monitoring (first 3 real purchases)
 
