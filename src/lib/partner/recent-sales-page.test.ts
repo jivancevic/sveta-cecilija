@@ -158,4 +158,16 @@ describe('getPartnerRecentSalesPage', () => {
     const res = await getPartnerRecentSalesPage(query, 7, { page: 1, pageSize: 5 })
     expect(res.sales[0].createdAt).toBe('2026-06-04T12:30:00.000Z')
   })
+
+  it('formats a Date show_date (the real pg shape) into a clean label', async () => {
+    // pg returns the shows.date column as a JS Date (noon-UTC timestamp), not a
+    // string — String(date) would leak the full toString() into the label.
+    const query = fakeQuery(
+      [orderRow({ show_date: new Date('2026-07-12T12:00:00.000Z'), is_today: false })],
+      [],
+    )
+    const res = await getPartnerRecentSalesPage(query, 7, { page: 1, pageSize: 5 })
+    expect(res.sales[0].showLabel).toBe('Sun 12 Jul · 21:00 · Ljetno kino')
+    expect(res.sales[0].showLabel).not.toContain('GMT')
+  })
 })

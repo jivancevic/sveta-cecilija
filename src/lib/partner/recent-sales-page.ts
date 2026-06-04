@@ -43,6 +43,16 @@ const VENUE_LABEL: Record<string, string> = {
   'zimsko-kino': 'Centar za kulturu',
 }
 
+// shows.date comes back from the pg pool as a JS Date (timestamp at noon UTC),
+// not a string — `String(date)` would yield the full toString() and break the
+// YYYY-MM-DD parse below. Normalise both shapes to an ISO calendar date.
+function toIsoDate(value: unknown): string {
+  if (value == null) return ''
+  if (typeof value === 'string') return value.slice(0, 10)
+  if (value instanceof Date) return value.toISOString().slice(0, 10)
+  return String(value).slice(0, 10)
+}
+
 function showLabel(show: { date: string; time: string; venue: string }): string {
   const [y, m, d] = show.date.slice(0, 10).split('-').map(Number)
   const dt = y && m && d ? new Date(Date.UTC(y, m - 1, d)) : null
@@ -106,7 +116,7 @@ export async function getPartnerRecentSalesPage(
     createdAt: row.created_at ? new Date(row.created_at as string).toISOString() : '',
     soldAt: String(row.sold_at ?? ''),
     showLabel: showLabel({
-      date: String(row.show_date ?? ''),
+      date: toIsoDate(row.show_date),
       time: String(row.show_time ?? ''),
       venue: String(row.show_venue ?? ''),
     }),

@@ -27,7 +27,14 @@ const VENUE_LABEL: Record<string, string> = {
 }
 
 function showLabel(date: unknown, venue: unknown): string {
-  const iso = typeof date === 'string' ? date.slice(0, 10) : ''
+  // pg hands back shows.date as a JS Date (noon-UTC timestamp), not a string —
+  // handle both so the date isn't dropped (which left a bare "· venue").
+  const iso =
+    typeof date === 'string'
+      ? date.slice(0, 10)
+      : date instanceof Date
+        ? date.toISOString().slice(0, 10)
+        : ''
   const venueLabel = VENUE_LABEL[String(venue)] ?? String(venue ?? '')
   return venueLabel ? `${iso} · ${venueLabel}` : iso
 }
