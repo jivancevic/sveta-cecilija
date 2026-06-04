@@ -20,19 +20,18 @@ export type NormalizedQuery =
   | { mode: 'name'; terms: string[] }
   | { mode: 'code'; code: string }
 
-// A raw order row from the data layer. Carries fields the door must NOT see
-// (email/total/refundStatus) so the PII boundary is enforced here, in one place,
-// rather than trusting every caller to omit them.
+// A matched order from the data layer. The PII boundary lives in the data
+// contract itself: the door never even loads email/total/refund, so there is no
+// sensitive field for a downstream caller to leak by accident. Tokens are
+// fetched separately (loadTokens), and only for the single confirmed match.
 export interface MatchedOrder {
   id: string
   buyerName: string
-  email: string | null
   adultCount: number
   childCount: number
-  total: number
-  refundStatus: 'none' | 'refunded'
-  tokens: Array<{ token: string; scanned: boolean }>
 }
+
+export type OrderToken = { token: string; scanned: boolean }
 
 export interface LookupShow {
   date: string
@@ -51,7 +50,7 @@ export interface OrderLookupView {
   partySize: number
   scannedCount: number
   show: LookupShow
-  tokens: Array<{ token: string; scanned: boolean }>
+  tokens: OrderToken[]
 }
 
 export type LookupResult =
@@ -62,6 +61,9 @@ export type LookupResult =
 
 export interface OrderLookupDeps {
   findMatches: (q: NormalizedQuery, showId: string) => Promise<MatchedOrder[]>
+  // Active tickets of one order — only ever called for the single confirmed
+  // match, so an ambiguous/no-match probe does no ticket I/O.
+  loadTokens: (orderId: string) => Promise<OrderToken[]>
   loadShow: (showId: string) => Promise<LookupShow | null>
   recordAudit: (entry: {
     mode: LookupMode
@@ -92,18 +94,16 @@ function normalize(mode: LookupMode, raw: string):
   return { ok: true, q: { mode: 'name', terms }, auditQuery: query.toLowerCase() }
 }
 
-function toView(order: MatchedOrder, show: LookupShow): OrderLookupView {
-  const partySize = order.adultCount + order.childCount
-  const scannedCount = order.tokens.filter((t) => t.scanned).length
+function toView(order: MatchedOrder, tokens: OrderToken[], show: LookupShow): OrderLookupView {
   return {
     id: order.id,
     buyerName: order.buyerName,
     adultCount: order.adultCount,
     childCount: order.childCount,
-    partySize,
-    scannedCount,
+    partySize: order.adultCount + order.childCount,
+    scannedCount: tokens.filter((t) => t.scanned).length,
     show,
-    tokens: order.tokens,
+    tokens,
   }
 }
 
@@ -129,7 +129,11 @@ export async function lookupOrder(
   // the volunteer to narrow (or read the order code), never a list of people.
   if (matches.length > 1) return { status: 'AMBIGUOUS', count: matches.length }
 
-  const show = await deps.loadShow(input.showId)
+  // Exactly one match: now (and only now) load its tickets + show details.
+  const [tokens, show] = await Promise.all([
+    deps.loadTokens(matches[0].id),
+    deps.loadShow(input.showId),
+  ])
   if (!show) return { status: 'NOT_FOUND' }
-  return { status: 'MATCH', order: toView(matches[0], show) }
+  return { status: 'MATCH', order: toView(matches[0], tokens, show) }
 }

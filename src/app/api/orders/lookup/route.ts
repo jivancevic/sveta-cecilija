@@ -70,43 +70,25 @@ export async function POST(req: NextRequest) {
         depth: 0,
         limit: 20,
       })
-
-      const matchedIds = found.docs.map((d) => d.id as number | string)
-      const tokens =
-        matchedIds.length === 0
-          ? { docs: [] as Array<Record<string, unknown>> }
-          : await payload.find({
-              collection: 'tickets',
-              where: { order: { in: matchedIds } },
-              depth: 0,
-              limit: 200,
-              sort: 'createdAt',
-            })
-
-      const tokensByOrder = new Map<string, Array<{ token: string; scanned: boolean }>>()
-      for (const t of tokens.docs) {
-        const oid =
-          typeof t.order === 'object' && t.order !== null
-            ? String((t.order as { id: string | number }).id)
-            : String(t.order)
-        const list = tokensByOrder.get(oid) ?? []
-        // Only active tickets are admittable; a cancelled ticket is not a real seat.
-        if (t.status !== 'cancelled') {
-          list.push({ token: t.token as string, scanned: !!t.scanned })
-        }
-        tokensByOrder.set(oid, list)
-      }
-
       return found.docs.map<MatchedOrder>((o) => ({
         id: String(o.id),
         buyerName: o.buyerName as string,
-        email: (o.email as string | null) ?? null,
         adultCount: (o.adultCount as number) ?? 0,
         childCount: (o.childCount as number) ?? 0,
-        total: (o.total as number) ?? 0,
-        refundStatus: (o.refundStatus as 'none' | 'refunded') ?? 'none',
-        tokens: tokensByOrder.get(String(o.id)) ?? [],
       }))
+    },
+    loadTokens: async (orderId) => {
+      const tickets = await payload.find({
+        collection: 'tickets',
+        where: { order: { equals: Number.isFinite(Number(orderId)) ? Number(orderId) : orderId } },
+        depth: 0,
+        limit: 200,
+        sort: 'createdAt',
+      })
+      // Only active tickets are admittable; a cancelled ticket is not a real seat.
+      return tickets.docs
+        .filter((t) => t.status !== 'cancelled')
+        .map((t) => ({ token: t.token as string, scanned: !!t.scanned }))
     },
     loadShow: async () => ({ date: next.date, time: next.time, venue: next.venue }),
     recordAudit: async (entry) => {

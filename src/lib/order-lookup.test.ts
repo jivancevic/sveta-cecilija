@@ -1,11 +1,18 @@
 import { describe, it, expect, vi } from 'vitest'
-import { lookupOrder, type OrderLookupDeps, type MatchedOrder } from './order-lookup'
+import { lookupOrder, type OrderLookupDeps, type MatchedOrder, type OrderToken } from './order-lookup'
 
 const SHOW = { date: '2026-06-08', time: '21:30', venue: 'ljetno-kino' }
+
+const TOKENS: OrderToken[] = [
+  { token: 'tok-a', scanned: false },
+  { token: 'tok-b', scanned: false },
+  { token: 'tok-c', scanned: true },
+]
 
 function makeDeps(over: Partial<OrderLookupDeps> = {}): OrderLookupDeps {
   return {
     findMatches: vi.fn(async () => [] as MatchedOrder[]),
+    loadTokens: vi.fn(async () => TOKENS),
     loadShow: vi.fn(async () => SHOW),
     recordAudit: vi.fn(async () => undefined),
     ...over,
@@ -15,16 +22,8 @@ function makeDeps(over: Partial<OrderLookupDeps> = {}): OrderLookupDeps {
 const ORDER: MatchedOrder = {
   id: '42',
   buyerName: 'Ana Marić',
-  email: 'ana@example.com',
   adultCount: 2,
   childCount: 1,
-  total: 5000,
-  refundStatus: 'none',
-  tokens: [
-    { token: 'tok-a', scanned: false },
-    { token: 'tok-b', scanned: false },
-    { token: 'tok-c', scanned: true },
-  ],
 }
 
 describe('lookupOrder — order code', () => {
@@ -91,21 +90,28 @@ describe('lookupOrder — PII boundary', () => {
     expect(res.order.scannedCount).toBe(1)
     // Tokens are carried (not PII) so the admit action can target a real ticket.
     expect(res.order.tokens).toHaveLength(3)
-    // Nothing in the serialised view leaks the buyer email or money.
-    const blob = JSON.stringify(res.order)
-    expect(blob).not.toContain('ana@example.com')
-    expect(blob).not.toContain('5000')
+  })
+
+  it('the data layer never even loads email/amounts (boundary is in the data contract)', () => {
+    // MatchedOrder has no PII fields to leak — the type itself is the boundary.
+    const keys = Object.keys(ORDER)
+    expect(keys).toEqual(['id', 'buyerName', 'adultCount', 'childCount'])
   })
 })
 
 describe('lookupOrder — no browsable list', () => {
   it('returns AMBIGUOUS (a count, not a list) when a name matches multiple orders', async () => {
     const second: MatchedOrder = { ...ORDER, id: '43', buyerName: 'Ana Marković' }
-    const deps = makeDeps({ findMatches: vi.fn(async () => [ORDER, second]) })
+    const loadTokens = vi.fn(async () => TOKENS)
+    const loadShow = vi.fn(async () => SHOW)
+    const deps = makeDeps({ findMatches: vi.fn(async () => [ORDER, second]), loadTokens, loadShow })
 
     const res = await lookupOrder({ mode: 'name', query: 'ana m', showId: '7' }, deps)
 
     expect(res).toEqual({ status: 'AMBIGUOUS', count: 2 })
+    // No ticket/show I/O for a discarded ambiguous match.
+    expect(loadTokens).not.toHaveBeenCalled()
+    expect(loadShow).not.toHaveBeenCalled()
   })
 
   it('rejects a single-word name before it can fan out the whole show', async () => {

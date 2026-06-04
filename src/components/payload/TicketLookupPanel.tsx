@@ -3,6 +3,7 @@
 import { useCallback, useState, useTransition } from 'react'
 import type { ScanResult } from '@/lib/scan-token'
 import type { LookupMode, OrderLookupView } from '@/lib/order-lookup'
+import { VENUE_LABEL, type Venue } from '@/lib/venues'
 
 // Door-side manual-admit fallback (#245). When a guest's QR won't scan, the
 // volunteer searches the active show by order code / email / name and admits the
@@ -10,9 +11,13 @@ import type { LookupMode, OrderLookupView } from '@/lib/order-lookup'
 // Croatian-speaking door role and this panel renders only in their dashboard, so
 // the copy is hard-coded Croatian rather than threaded through adminT.
 
-const VENUE_NAME: Record<string, string> = {
-  'ljetno-kino': 'Ljetno kino',
-  'zimsko-kino': 'Centar za kulturu',
+const venueName = (v: string) => VENUE_LABEL.hr[v as Venue] ?? v
+
+const MODE_LABEL: Record<LookupMode, string> = { code: 'Kod', email: 'E-pošta', name: 'Ime' }
+const MODE_PLACEHOLDER: Record<LookupMode, string> = {
+  code: 'npr. AB3K',
+  email: 'kupac@primjer.com',
+  name: 'Ime Prezime',
 }
 
 type LookupResponse =
@@ -216,7 +221,7 @@ export function TicketLookupPanel({ showId }: Props) {
                   checked={mode === m}
                   onChange={() => setMode(m)}
                 />
-                {m === 'code' ? 'Kod' : m === 'email' ? 'E-pošta' : 'Ime'}
+                {MODE_LABEL[m]}
               </label>
             ))}
           </div>
@@ -225,7 +230,7 @@ export function TicketLookupPanel({ showId }: Props) {
               type={mode === 'email' ? 'email' : 'text'}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder={mode === 'code' ? 'npr. AB3K' : mode === 'email' ? 'kupac@primjer.com' : 'Ime Prezime'}
+              placeholder={MODE_PLACEHOLDER[mode]}
               style={inputStyle}
               disabled={pending}
               autoComplete="off"
@@ -252,7 +257,7 @@ export function TicketLookupPanel({ showId }: Props) {
             </div>
             <div style={{ fontSize: 12, opacity: 0.75, marginTop: 4 }}>
               {formatShowDate(match.show.date)} · {match.show.time} ·{' '}
-              {VENUE_NAME[match.show.venue] ?? match.show.venue}
+              {venueName(match.show.venue)}
             </div>
             <div style={{ fontSize: 13, marginTop: 6, fontWeight: 600 }}>
               {match.scannedCount >= match.partySize
@@ -348,7 +353,7 @@ function ResultCard({
           <div style={{ fontSize: 18, fontWeight: 700, marginTop: 8 }}>{result.buyerName}</div>
           <div style={{ fontSize: 13, opacity: 0.9, marginTop: 2 }}>
             {formatShowDate(result.showDate)} · {result.showTime} ·{' '}
-            {VENUE_NAME[result.venue] ?? result.venue}
+            {venueName(result.venue)}
           </div>
         </>
       )}
