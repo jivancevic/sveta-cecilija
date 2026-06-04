@@ -59,8 +59,9 @@ export function formatInquiriesBadge(lang: AdminLang, counts: InquiryCounts): st
   if (lang === 'hr') {
     const head = `${count} ${count === 1 ? 'nova' : 'novih'}`
     if (bookingCount <= 0) return head
-    const noun = bookingCount === 1 ? 'rezervaciju' : 'rezervacija'
-    return `${head}, uklj. ${bookingCount} za ${noun}`
+    // "za" governs the accusative, so the noun stays "rezervaciju" (acc. sg.) for
+    // every count, treating "za rezervaciju" as the booking category, not a plural.
+    return `${head}, uklj. ${bookingCount} za rezervaciju`
   }
   const head = `${count} new`
   if (bookingCount <= 0) return head
