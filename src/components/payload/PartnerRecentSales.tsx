@@ -5,19 +5,45 @@ import { useRouter } from 'next/navigation'
 import { adminT, type AdminLang } from '@/lib/admin-i18n'
 import type { RecentSalePageRow } from '@/lib/partner/recent-sales-page'
 
-// Merged "Recent sales" for the partner dashboard (revamp). Collapses the old
-// split of a separate same-day "Today's sales" storno panel and a read-only
-// recent list into ONE list: the newest 5, with "Show more" paging the rest
-// from /api/partner/sales. A sale made today (Europe/Zagreb) is expandable to
-// its per-person tickets, each cancellable, plus "Cancel whole sale"; older
-// sales are flat read-only rows (outside the same-day storno window). Every
-// cancel carries an inline "Sure? Yes/No" confirm — voiding frees a seat and
-// drops the ticket from the monthly invoice. Cancels reuse /api/partner/storno
-// (server re-checks ownership + the same-day window); on success we mark the
-// row locally and router.refresh() so the month-to-date / season cards resync.
+// Merged "Recent orders" for the partner dashboard (revamp). One list of the
+// partner's orders (newest 5 + "Show more" paging /api/partner/sales). Each order
+// is a dense row: code, when sold (clock), show date (calendar), people, money,
+// a download-tickets action, and — for same-day orders only — a cancel action.
+// A today order has a chevron and expands to its per-person tickets, each
+// individually cancellable; older orders are flat, download-only (outside the
+// same-day storno window). Cancel = red trash icon → inline "Otkazati narudžbu? /
+// ulaznicu?" confirm; on confirm the order (or its last active ticket) drops from
+// the list (server query also excludes orders with zero active tickets). The
+// user-facing verb is "otkazati"; the mechanism is still storno (same-day void).
 type Page = { sales: RecentSalePageRow[]; hasMore: boolean }
 
 const eur = (cents: number) => `€${(cents / 100).toFixed(2)}`
+
+function localeOf(lang: AdminLang): string {
+  return lang === 'hr' ? 'hr-HR' : 'en-GB'
+}
+
+/** order.created_at ISO → "8. lip 14:20" / "8 Jun, 14:20" (Europe/Zagreb). */
+function formatSold(iso: string, lang: AdminLang): string {
+  if (!iso) return ''
+  return new Date(iso).toLocaleString(localeOf(lang), {
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZone: 'Europe/Zagreb',
+  })
+}
+
+/** show ISO date 'YYYY-MM-DD' → "8. lip" / "8 Jun" (rendered at noon UTC). */
+function formatShowDate(isoDate: string, lang: AdminLang): string {
+  if (!isoDate) return ''
+  return new Date(`${isoDate}T12:00:00Z`).toLocaleDateString(localeOf(lang), {
+    day: 'numeric',
+    month: 'short',
+    timeZone: 'UTC',
+  })
+}
 
 export function PartnerRecentSales({ initial, lang }: { initial: Page; lang: AdminLang }) {
   const router = useRouter()
@@ -30,11 +56,9 @@ export function PartnerRecentSales({ initial, lang }: { initial: Page; lang: Adm
   const [confirming, setConfirming] = React.useState<string | null>(null)
   const [error, setError] = React.useState<string | null>(null)
 
-  // Resync from the server whenever the dashboard re-renders (a new sale in the
-  // sell form, or a cancel here, triggers router.refresh()). Collapses back to
-  // the newest page, which is what the partner wants to see after either. Done
-  // via the "adjust state during render" pattern (React docs) rather than an
-  // effect, which the React Compiler lint disallows.
+  // Resync from the server whenever the dashboard re-renders (a new sale, or a
+  // cancel here, triggers router.refresh()). "Adjust state during render" pattern
+  // (React docs) rather than an effect, which the React Compiler lint disallows.
   const [lastInitial, setLastInitial] = React.useState(initial)
   if (initial !== lastInitial) {
     setLastInitial(initial)
@@ -50,6 +74,9 @@ export function PartnerRecentSales({ initial, lang }: { initial: Page; lang: Adm
       else next.add(orderId)
       return next
     })
+
+  const downloadTickets = (orderId: string) =>
+    window.open(`/api/orders/${orderId}/tickets.pdf`, '_blank', 'noopener')
 
   const loadMore = async () => {
     setLoadingMore(true)
@@ -88,11 +115,9 @@ export function PartnerRecentSales({ initial, lang }: { initial: Page; lang: Adm
         setError(adminT(lang, 'cancelFailed'))
         return
       }
-      // Optimistic update: mark the cancelled ticket(s), then drop the order
-      // entirely once it has no active tickets left (a whole-sale cancel, or the
-      // last per-ticket cancel) so a cancelled sale disappears from the list.
-      // router.refresh() resyncs the authoritative state (the server query also
-      // excludes orders with zero active tickets, so it stays gone).
+      // Mark the cancelled ticket(s), then drop the order once it has no active
+      // tickets left (whole-order cancel, or the last per-ticket cancel). The
+      // server query also excludes zero-active orders, so the refresh keeps it gone.
       setSales((prev) => {
         const mapped = prev.map((s) =>
           s.orderId !== orderId
@@ -125,13 +150,13 @@ export function PartnerRecentSales({ initial, lang }: { initial: Page; lang: Adm
       <div style={card}>
         <h2 style={{ fontSize: 16, marginBottom: 4 }}>{adminT(lang, 'recentSales')}</h2>
         <p style={{ color: 'var(--theme-elevation-500)', fontSize: 14, margin: 0 }}>
-          {adminT(lang, 'noSalesYet')}
+          {adminT(lang, 'noOrdersYet')}
         </p>
       </div>
     )
   }
 
-  // The "Earlier" divider sits before the first non-today (read-only) sale.
+  // The "Earlier" divider sits before the first non-today (read-only) order.
   const firstOlderIdx = sales.findIndex((s) => !s.isToday)
 
   return (
@@ -154,20 +179,17 @@ export function PartnerRecentSales({ initial, lang }: { initial: Page; lang: Adm
           return (
             <React.Fragment key={sale.orderId}>
               {divider}
-              {sale.isToday ? (
-                <TodaySaleRow
-                  sale={sale}
-                  lang={lang}
-                  open={expanded.has(sale.orderId)}
-                  onToggle={() => toggle(sale.orderId)}
-                  busy={busy}
-                  confirming={confirming}
-                  setConfirming={setConfirming}
-                  onCancel={cancel}
-                />
-              ) : (
-                <OlderSaleRow sale={sale} />
-              )}
+              <SaleRow
+                sale={sale}
+                lang={lang}
+                open={expanded.has(sale.orderId)}
+                onToggle={() => toggle(sale.orderId)}
+                onDownload={downloadTickets}
+                busy={busy}
+                confirming={confirming}
+                setConfirming={setConfirming}
+                onCancel={cancel}
+              />
             </React.Fragment>
           )
         })}
@@ -182,11 +204,12 @@ export function PartnerRecentSales({ initial, lang }: { initial: Page; lang: Adm
   )
 }
 
-function TodaySaleRow({
+function SaleRow({
   sale,
   lang,
   open,
   onToggle,
+  onDownload,
   busy,
   confirming,
   setConfirming,
@@ -196,43 +219,64 @@ function TodaySaleRow({
   lang: AdminLang
   open: boolean
   onToggle: () => void
+  onDownload: (orderId: string) => void
   busy: string | null
   confirming: string | null
   setConfirming: (key: string | null) => void
   onCancel: (orderId: string, ticketId?: string) => void
 }) {
-  const activeCount = sale.tickets.filter((t) => t.status === 'active').length
   const count = sale.adultCount + sale.childCount
-  const saleBusy = busy === sale.orderId
+  const activeCount = sale.tickets.filter((t) => t.status === 'active').length
+
+  const info = (
+    <>
+      {sale.isToday && <Chevron open={open} />}
+      <strong style={{ fontSize: 14 }}>{sale.code}</strong>
+      <MetaItem title={adminT(lang, 'soldLabel')} icon={<ClockIcon />} text={formatSold(sale.createdAt, lang)} />
+      <MetaItem title={adminT(lang, 'showWord')} icon={<ShowIcon />} text={formatShowDate(sale.showDate, lang)} />
+      <MetaItem title={adminT(lang, 'peopleLabel')} icon={<PersonIcon />} text={String(count)} />
+      <strong style={{ fontSize: 13 }}>{eur(sale.totalCents)}</strong>
+    </>
+  )
 
   return (
     <div style={saleRowBox}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
-        <button type="button" onClick={onToggle} style={expandBtn} aria-expanded={open}>
-          <span style={{ width: 12, display: 'inline-block' }}>{open ? '▾' : '▸'}</span>
-          <span style={{ fontWeight: 700 }}>{sale.code}</span>
-          <span style={{ color: 'var(--theme-elevation-500)', fontSize: 12 }}>
-            {sale.soldAt} · {sale.showLabel}
-          </span>
-        </button>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <span style={{ fontSize: 12, color: 'var(--theme-elevation-500)' }}>
-            {count} · {eur(sale.totalCents)}
-          </span>
-          <CancelControl
-            cKey={sale.orderId}
-            label={adminT(lang, 'cancelSale')}
-            disabled={activeCount === 0}
-            busy={saleBusy}
-            lang={lang}
-            confirming={confirming}
-            setConfirming={setConfirming}
-            onConfirm={() => onCancel(sale.orderId)}
-          />
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap' }}>
+        {sale.isToday ? (
+          <button type="button" onClick={onToggle} aria-expanded={open} style={infoToggle}>
+            {info}
+          </button>
+        ) : (
+          <span style={infoStatic}>{info}</span>
+        )}
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <button
+            type="button"
+            onClick={() => onDownload(sale.orderId)}
+            title={adminT(lang, 'downloadTickets')}
+            aria-label={adminT(lang, 'downloadTickets')}
+            style={iconBtn}
+          >
+            <DownloadIcon />
+          </button>
+          {sale.isToday && (
+            <CancelControl
+              cKey={sale.orderId}
+              confirmText={adminT(lang, 'confirmCancelOrder')}
+              ariaLabel={adminT(lang, 'cancelSale')}
+              disabled={activeCount === 0}
+              busy={busy === sale.orderId}
+              lang={lang}
+              confirming={confirming}
+              setConfirming={setConfirming}
+              onConfirm={() => onCancel(sale.orderId)}
+            />
+          )}
         </div>
       </div>
 
-      {open && (
+      {sale.isToday && open && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginTop: 10 }}>
           {sale.tickets.map((t) => {
             const cancelled = t.status !== 'active'
@@ -251,8 +295,8 @@ function TodaySaleRow({
                 {!cancelled && (
                   <CancelControl
                     cKey={`${sale.orderId}:${t.id}`}
-                    label={adminT(lang, 'cancelTicketAction')}
-                    link
+                    confirmText={adminT(lang, 'confirmCancelTicket')}
+                    ariaLabel={adminT(lang, 'cancelTicketAction')}
                     busy={busy === `${sale.orderId}:${t.id}`}
                     lang={lang}
                     confirming={confirming}
@@ -269,47 +313,36 @@ function TodaySaleRow({
   )
 }
 
-function OlderSaleRow({ sale }: { sale: RecentSalePageRow }) {
-  const count = sale.adultCount + sale.childCount
-  const date = sale.createdAt
-    ? new Date(sale.createdAt).toLocaleDateString('en-GB', {
-        day: 'numeric',
-        month: 'short',
-        timeZone: 'Europe/Zagreb',
-      })
-    : ''
+function MetaItem({ icon, text, title }: { icon: React.ReactNode; text: string; title: string }) {
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap', padding: '4px 2px' }}>
-      <span style={{ fontSize: 13 }}>
-        <span style={{ color: 'var(--theme-elevation-500)' }}>{date}</span>{' '}
-        <span style={{ fontWeight: 700 }}>{sale.code}</span>{' '}
-        <span style={{ color: 'var(--theme-elevation-500)', fontSize: 12 }}>· {sale.showLabel}</span>
-      </span>
-      <span style={{ fontSize: 12, color: 'var(--theme-elevation-500)' }}>
-        {count} · {eur(sale.totalCents)}
-      </span>
-    </div>
+    <span
+      title={title}
+      style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: 'var(--theme-elevation-500)', fontSize: 12 }}
+    >
+      {icon}
+      {text}
+    </span>
   )
 }
 
-// Inline-confirm cancel control: first click reveals "Sure? Yes / No"; only the
-// Yes actually voids. Shared by the whole-sale button and the per-ticket link.
+// Inline-confirm cancel: a red trash icon; tapping it swaps in the confirm
+// question + Yes/No. Shared by the whole-order action and the per-ticket action.
 function CancelControl({
   cKey,
-  label,
+  confirmText,
+  ariaLabel,
   disabled = false,
   busy,
-  link = false,
   lang,
   confirming,
   setConfirming,
   onConfirm,
 }: {
   cKey: string
-  label: string
+  confirmText: string
+  ariaLabel: string
   disabled?: boolean
   busy: boolean
-  link?: boolean
   lang: AdminLang
   confirming: string | null
   setConfirming: (key: string | null) => void
@@ -320,8 +353,8 @@ function CancelControl({
   }
   if (confirming === cKey) {
     return (
-      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-        <span style={{ fontSize: 12, color: 'var(--theme-elevation-600)' }}>{adminT(lang, 'confirmSure')}</span>
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+        <span style={{ fontSize: 12, color: 'var(--theme-elevation-700)' }}>{confirmText}</span>
         <button type="button" onClick={onConfirm} style={confirmYesBtn}>
           {adminT(lang, 'confirmYes')}
         </button>
@@ -336,10 +369,71 @@ function CancelControl({
       type="button"
       disabled={disabled}
       onClick={() => setConfirming(cKey)}
-      style={disabled ? dangerDisabled : link ? dangerLink : dangerBtn}
+      aria-label={ariaLabel}
+      title={ariaLabel}
+      style={disabled ? trashDisabled : trashBtn}
     >
-      {label}
+      <TrashIcon />
     </button>
+  )
+}
+
+// --- icons (inline SVG, currentColor — render consistently in the admin) ---
+const metaIcon: React.CSSProperties = { width: 13, height: 13, flex: '0 0 auto' }
+function ClockIcon() {
+  return (
+    <svg viewBox="0 0 24 24" style={metaIcon} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M12 7v5l3 2" />
+    </svg>
+  )
+}
+function ShowIcon() {
+  return (
+    <svg viewBox="0 0 24 24" style={metaIcon} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="3" y="4" width="18" height="17" rx="2" />
+      <path d="M3 9h18M8 2v4M16 2v4" />
+    </svg>
+  )
+}
+function PersonIcon() {
+  return (
+    <svg viewBox="0 0 24 24" style={metaIcon} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="12" cy="8" r="4" />
+      <path d="M4 21c0-4 4-6 8-6s8 2 8 6" />
+    </svg>
+  )
+}
+function DownloadIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width={18} height={18} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M12 3v12M7 10l5 5 5-5M5 21h14" />
+    </svg>
+  )
+}
+function TrashIcon() {
+  return (
+    <svg viewBox="0 0 24 24" width={18} height={18} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6" />
+    </svg>
+  )
+}
+function Chevron({ open }: { open: boolean }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      width={14}
+      height={14}
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      style={{ flex: '0 0 auto', transform: open ? 'rotate(90deg)' : 'none', transition: 'transform 120ms' }}
+      aria-hidden="true"
+    >
+      <path d="M9 6l6 6-6 6" />
+    </svg>
   )
 }
 
@@ -355,17 +449,50 @@ const saleRowBox: React.CSSProperties = {
   borderRadius: 6,
   padding: 12,
 }
-const expandBtn: React.CSSProperties = {
-  display: 'inline-flex',
+const infoToggle: React.CSSProperties = {
+  display: 'flex',
   alignItems: 'center',
   gap: 8,
+  flexWrap: 'wrap',
+  flex: '1 1 auto',
+  minWidth: 0,
   background: 'none',
   border: 'none',
   padding: 0,
   cursor: 'pointer',
   color: 'var(--theme-text)',
-  fontSize: 14,
   textAlign: 'left',
+}
+const infoStatic: React.CSSProperties = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: 8,
+  flexWrap: 'wrap',
+  flex: '1 1 auto',
+  minWidth: 0,
+  color: 'var(--theme-text)',
+}
+const iconBtn: React.CSSProperties = {
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  width: 34,
+  height: 34,
+  background: 'none',
+  border: '1px solid var(--theme-elevation-200)',
+  borderRadius: 6,
+  color: 'var(--theme-elevation-600)',
+  cursor: 'pointer',
+}
+const trashBtn: React.CSSProperties = {
+  ...iconBtn,
+  border: '1px solid var(--theme-error-200, #e6b8b2)',
+  color: 'var(--theme-error-500, #c0392b)',
+}
+const trashDisabled: React.CSSProperties = {
+  ...iconBtn,
+  color: 'var(--theme-elevation-300)',
+  cursor: 'not-allowed',
 }
 const ticketRow: React.CSSProperties = {
   display: 'flex',
@@ -393,31 +520,6 @@ const showMoreBtn: React.CSSProperties = {
   fontSize: 13,
   fontWeight: 600,
   cursor: 'pointer',
-}
-const dangerBtn: React.CSSProperties = {
-  padding: '6px 12px',
-  background: 'var(--theme-error-500, #c0392b)',
-  border: 'none',
-  borderRadius: 6,
-  color: '#fff',
-  fontWeight: 700,
-  fontSize: 12,
-  cursor: 'pointer',
-}
-const dangerDisabled: React.CSSProperties = {
-  ...dangerBtn,
-  background: 'var(--theme-elevation-150)',
-  color: 'var(--theme-elevation-400)',
-  cursor: 'not-allowed',
-}
-const dangerLink: React.CSSProperties = {
-  background: 'none',
-  border: 'none',
-  color: 'var(--theme-error-500, #c0392b)',
-  fontWeight: 600,
-  fontSize: 13,
-  cursor: 'pointer',
-  padding: '2px 4px',
 }
 const confirmYesBtn: React.CSSProperties = {
   padding: '4px 10px',

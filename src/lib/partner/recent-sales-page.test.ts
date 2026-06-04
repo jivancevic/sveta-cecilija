@@ -101,7 +101,7 @@ describe('getPartnerRecentSalesPage', () => {
     expect(res.sales[0].adultCount).toBe(2)
     expect(res.sales[0].childCount).toBe(1)
     expect(res.sales[0].totalCents).toBe(5000)
-    expect(res.sales[0].showLabel).toContain('Ljetno kino')
+    expect(res.sales[0].showDate).toBe('2026-07-12')
   })
 
   it('numbers refs per order independently when multiple today orders exist', async () => {
@@ -169,15 +169,19 @@ describe('getPartnerRecentSalesPage', () => {
     expect(ordersSql).toMatch(/EXISTS[\s\S]*FROM\s+tickets[\s\S]*status\s*=\s*'active'/i)
   })
 
-  it('formats a Date show_date (the real pg shape) into a clean label', async () => {
-    // pg returns the shows.date column as a JS Date (noon-UTC timestamp), not a
-    // string — String(date) would leak the full toString() into the label.
-    const query = fakeQuery(
+  it('exposes showDate as a YYYY-MM-DD calendar date for a Date and a string show_date', async () => {
+    // pg returns shows.date as a JS Date (noon-UTC); a raw string can also occur.
+    // Both must normalise to the same ISO calendar date, separate from showLabel.
+    const dateQuery = fakeQuery(
       [orderRow({ show_date: new Date('2026-07-12T12:00:00.000Z'), is_today: false })],
       [],
     )
-    const res = await getPartnerRecentSalesPage(query, 7, { page: 1, pageSize: 5 })
-    expect(res.sales[0].showLabel).toBe('Sun 12 Jul · 21:00 · Ljetno kino')
-    expect(res.sales[0].showLabel).not.toContain('GMT')
+    const dateRes = await getPartnerRecentSalesPage(dateQuery, 7, { page: 1, pageSize: 5 })
+    expect(dateRes.sales[0].showDate).toBe('2026-07-12')
+
+    const stringQuery = fakeQuery([orderRow({ show_date: '2026-07-12', is_today: false })], [])
+    const stringRes = await getPartnerRecentSalesPage(stringQuery, 7, { page: 1, pageSize: 5 })
+    expect(stringRes.sales[0].showDate).toBe('2026-07-12')
   })
+
 })

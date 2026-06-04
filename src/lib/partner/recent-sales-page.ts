@@ -24,11 +24,10 @@ export interface RecentSalePageTicket {
 export interface RecentSalePageRow {
   orderId: string
   code: string
-  /** order.created_at ISO. */
+  /** order.created_at ISO (the UI formats the sold date+time, localized). */
   createdAt: string
-  /** HH:MM Europe/Zagreb. */
-  soldAt: string
-  showLabel: string
+  /** The show's ISO calendar date 'YYYY-MM-DD' (Europe/Zagreb-agnostic; shows.date is stored at noon UTC). */
+  showDate: string
   adultCount: number
   childCount: number
   totalCents: number
@@ -38,33 +37,14 @@ export interface RecentSalePageRow {
   tickets: RecentSalePageTicket[]
 }
 
-const VENUE_LABEL: Record<string, string> = {
-  'ljetno-kino': 'Ljetno kino',
-  'zimsko-kino': 'Centar za kulturu',
-}
-
 // shows.date comes back from the pg pool as a JS Date (timestamp at noon UTC),
 // not a string — `String(date)` would yield the full toString() and break the
-// YYYY-MM-DD parse below. Normalise both shapes to an ISO calendar date.
+// YYYY-MM-DD slice below. Normalise both shapes to an ISO calendar date.
 function toIsoDate(value: unknown): string {
   if (value == null) return ''
   if (typeof value === 'string') return value.slice(0, 10)
   if (value instanceof Date) return value.toISOString().slice(0, 10)
   return String(value).slice(0, 10)
-}
-
-function showLabel(show: { date: string; time: string; venue: string }): string {
-  const [y, m, d] = show.date.slice(0, 10).split('-').map(Number)
-  const dt = y && m && d ? new Date(Date.UTC(y, m - 1, d)) : null
-  const datePart = dt
-    ? dt.toLocaleDateString('en-GB', {
-        weekday: 'short',
-        day: 'numeric',
-        month: 'short',
-        timeZone: 'UTC',
-      })
-    : show.date
-  return `${datePart} · ${show.time} · ${VENUE_LABEL[show.venue] ?? show.venue}`
 }
 
 /**
@@ -88,13 +68,10 @@ export async function getPartnerRecentSalesPage(
       o.id           AS order_id,
       o.code         AS code,
       o.created_at   AS created_at,
-      to_char(o.created_at AT TIME ZONE 'Europe/Zagreb', 'HH24:MI') AS sold_at,
       o.adult_count  AS adult_count,
       o.child_count  AS child_count,
       o.total        AS total,
       s.date         AS show_date,
-      s.time         AS show_time,
-      s.venue        AS show_venue,
       ((o.created_at AT TIME ZONE 'Europe/Zagreb')::date
         = (NOW() AT TIME ZONE 'Europe/Zagreb')::date) AS is_today
     FROM orders o
@@ -115,12 +92,7 @@ export async function getPartnerRecentSalesPage(
     orderId: String(row.order_id),
     code: String(row.code ?? ''),
     createdAt: row.created_at ? new Date(row.created_at as string).toISOString() : '',
-    soldAt: String(row.sold_at ?? ''),
-    showLabel: showLabel({
-      date: toIsoDate(row.show_date),
-      time: String(row.show_time ?? ''),
-      venue: String(row.show_venue ?? ''),
-    }),
+    showDate: toIsoDate(row.show_date),
     adultCount: Number(row.adult_count) || 0,
     childCount: Number(row.child_count) || 0,
     totalCents: Number(row.total) || 0,

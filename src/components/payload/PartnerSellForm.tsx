@@ -13,6 +13,9 @@ export interface SellShow {
 
 const ADULT_EUR = 20
 const CHILD_EUR = 10
+// Success-banner lifetime; the countdown bar drains over exactly this, and the
+// banner dismisses when the bar finishes (not on a separate, earlier timer).
+const BANNER_MS = 10000
 
 // Partner sell form (#144, revamped). Pick an active upcoming show, set
 // adult/child counts via the Stepper (no native number spinner), submit to
@@ -37,12 +40,10 @@ export function PartnerSellForm({ shows, lang }: { shows: SellShow[]; lang: Admi
   const overRemaining = !!selected && total > selected.remaining
   const canSubmit = !!showId && total > 0 && !overRemaining && !submitting
 
-  // Auto-dismiss the success banner after 10s (the countdown bar mirrors this).
-  React.useEffect(() => {
-    if (!banner) return
-    const t = setTimeout(() => setBanner(null), 10000)
-    return () => clearTimeout(t)
-  }, [banner])
+  // Stable dismiss so the banner's countdown effect doesn't restart on every
+  // parent re-render. The banner dismisses itself when its bar finishes draining
+  // (see SuccessBanner), so there is no parent timer racing the animation.
+  const dismissBanner = React.useCallback(() => setBanner(null), [])
 
   const openPdf = (orderId: string) =>
     window.open(`/api/orders/${orderId}/tickets.pdf`, '_blank', 'noopener')
@@ -85,7 +86,7 @@ export function PartnerSellForm({ shows, lang }: { shows: SellShow[]; lang: Admi
           code={banner.code}
           ticketCount={banner.ticketCount}
           onOpenPdf={() => openPdf(banner.orderId)}
-          onClose={() => setBanner(null)}
+          onClose={dismissBanner}
         />
       )}
 
@@ -182,9 +183,17 @@ function SuccessBanner({
 }) {
   const [width, setWidth] = React.useState(100)
   React.useEffect(() => {
-    const id = requestAnimationFrame(() => setWidth(0))
-    return () => cancelAnimationFrame(id)
-  }, [])
+    // Start the bar draining a frame after mount (so the transition runs); the
+    // banner dismisses when the bar finishes (onTransitionEnd below). A fallback
+    // timer covers the case where transitionEnd never fires (e.g. a backgrounded
+    // tab) — slightly longer than the bar so it never pre-empts the animation.
+    const raf = requestAnimationFrame(() => setWidth(0))
+    const fallback = setTimeout(onClose, BANNER_MS + 600)
+    return () => {
+      cancelAnimationFrame(raf)
+      clearTimeout(fallback)
+    }
+  }, [onClose])
 
   return (
     <div
@@ -215,11 +224,14 @@ function SuccessBanner({
       </button>
       <div style={{ height: 4, borderRadius: 4, background: 'rgba(255,255,255,0.3)', overflow: 'hidden', marginTop: 8 }}>
         <div
+          onTransitionEnd={(e) => {
+            if (e.propertyName === 'width') onClose()
+          }}
           style={{
             width: `${width}%`,
             height: '100%',
             background: '#fff',
-            transition: 'width 10000ms linear',
+            transition: `width ${BANNER_MS}ms linear`,
           }}
         />
       </div>

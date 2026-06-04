@@ -476,7 +476,18 @@ async function PartnerDashboard({
 
       <PartnerSalesPanel stats={seasonStats} lang={lang} />
 
-      <p style={{ fontSize: 11, color: 'var(--theme-elevation-400)', marginTop: 24 }}>
+      <p style={{ fontSize: 13, color: 'var(--theme-elevation-600)', marginTop: 24 }}>
+        {adminT(lang, 'helpHeading')}{' '}
+        <a
+          href={`mailto:admin@moreska.eu?subject=${encodeURIComponent(
+            `${adminT(lang, 'mailSubject')} (${partner.name})`,
+          )}`}
+          style={{ color: 'var(--theme-success-600, #1f7a3a)', fontWeight: 600 }}
+        >
+          {adminT(lang, 'helpContact')}
+        </a>
+      </p>
+      <p style={{ fontSize: 11, color: 'var(--theme-elevation-400)', marginTop: 8 }}>
         {adminT(lang, 'signedInAs')} {partner.name}.
       </p>
     </div>
