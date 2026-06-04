@@ -34,6 +34,10 @@ export interface ScanDeps {
   findTicket: (token: string) => Promise<TicketState | null>
   findOrderDetails: (orderId: string) => Promise<OrderDetails | null>
   findShowDetails: (showId: string) => Promise<ShowDetails | null>
+  // Returns COUNT of tickets for the order with status='active' AND
+  // scanned=false (i.e. people not yet admitted). Drives the accurate
+  // "Admit rest of party (N)" label on the VALID result.
+  countUnscannedActiveTickets: (orderId: string) => Promise<number>
 }
 
 export type ScanResult =
@@ -47,6 +51,9 @@ export type ScanResult =
       showDate: string
       showTime: string
       venue: string
+      // Accurate remaining-unscanned siblings after this scan; drives
+      // "Admit rest of party (N)". 0 = nobody left.
+      partyRemaining: number
     }
   | {
       status: 'ALREADY_SCANNED'
@@ -149,6 +156,7 @@ export async function scanToken(
     if (!order) return { status: 'INVALID' }
     const show = await deps.findShowDetails(order.showId)
     if (!show) return { status: 'INVALID' }
+    const partyRemaining = await deps.countUnscannedActiveTickets(marked.orderId)
     return {
       status: 'VALID',
       orderId: marked.orderId,
@@ -158,6 +166,7 @@ export async function scanToken(
       showDate: show.date,
       showTime: show.time,
       venue: show.venue,
+      partyRemaining,
     }
   }
 
