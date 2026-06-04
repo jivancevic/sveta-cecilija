@@ -270,7 +270,7 @@ EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 -- review.
 
 DO $$ BEGIN
-  CREATE TYPE enum_order_lookups_mode AS ENUM ('email', 'name');
+  CREATE TYPE enum_order_lookups_mode AS ENUM ('email', 'name', 'code');
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 CREATE TABLE IF NOT EXISTS order_lookups (

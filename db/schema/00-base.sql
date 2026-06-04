@@ -23,7 +23,8 @@ EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN
 CREATE TYPE public.enum_order_lookups_mode AS ENUM (
     'email',
-    'name'
+    'name',
+    'code'
 );
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
