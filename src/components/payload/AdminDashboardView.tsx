@@ -5,20 +5,29 @@ import { redirect } from 'next/navigation'
 import { getPayload } from 'payload'
 import config from '@payload-config'
 import { getStatsInput } from '@/lib/stats-data'
-import { computeStats } from '@/lib/stats'
 import { ADMIN_LANG_COOKIE, adminT, resolveAdminLang, type AdminLang } from '@/lib/admin-i18n'
-import { isAdminTier, isAuthed, isPartner, partnerIdOf } from '@/lib/access/roles'
+import { isAdminTier, isAuthed, isPartner, isSuperadmin, partnerIdOf } from '@/lib/access/roles'
 import { getNextShow, getScannedPeopleForShow, getUpcomingShows, type NextShow } from '@/lib/shows'
-import { HeaderBlock, ShowsTable } from './stats-blocks'
-import { MoneyFigures } from './dashboard/MoneyFigures'
+import { toDashboardShows } from '@/lib/dashboard/from-stats'
+import { partitionShows } from '@/lib/dashboard/partition'
+import { seasonCapacity } from '@/lib/dashboard/capacity'
+import { SeasonBand } from './dashboard/SeasonBand'
 import { getDashboardMoney } from '@/lib/dashboard/revenue-data'
+import { UpcomingHero } from './dashboard/UpcomingHero'
+import { PastShowsList } from './dashboard/PastShowsList'
+import { doorProgress, type DoorProgress } from '@/lib/dashboard/door-progress'
 import { TicketLookupPanel } from './TicketLookupPanel'
 import { PartnerSellForm, type SellShow } from './PartnerSellForm'
 import { PartnerStornoList } from './PartnerStornoList'
 import { getPartnerTodaySales } from '@/lib/partner/today-sales'
 import { PartnerSalesPanel } from './PartnerSalesPanel'
 import { getPartnerSeasonStats, getPartnerRecentSales } from '@/lib/partner/partner-data'
+import { getPartnerMonthToDate } from '@/lib/partner/month-to-date'
+import { monthKeyInZagreb } from '@/lib/partner/partner-reconciliation'
+import { PartnerMonthToDateCard } from './PartnerMonthToDateCard'
 import type { PoolQuery } from '@/lib/tickets/sold-seats'
+import { listRecentCriticalEvents } from '@/lib/critical-events/list'
+import { CriticalEventsDevStrip } from './CriticalEventsDevStrip'
 
 export const dynamic = 'force-dynamic'
 
@@ -60,31 +69,57 @@ export async function AdminDashboardView() {
     return <TehnikaDashboard role={role} lang={lang} />
   }
 
-  const input = await getStatsInput()
-  const { header, rows } = computeStats(input)
-
-  // The two season money facts (#237): cash collected vs partner receivable,
-  // computed apart and rendered apart — never summed into a "profit". Shares the
-  // pg pool already opened for getStatsInput via the same Payload instance.
-  const moneyPool = (payload.db as unknown as { pool: { query: PoolQuery } }).pool
-  const money = await getDashboardMoney((sql, params) => moneyPool.query(sql, params))
+  // Upcoming-show-first secretary dashboard (#238, ADR-0015). The whole season
+  // (un-windowed) is partitioned into upcoming vs past; the hero leads with the
+  // next show + fill bar + remaining seats, the season band persists on top.
+  //
+  // Superadmin-only critical-events dev strip (#235, ADR-0016): admin never sees
+  // it; the tehnika/partner branches above already returned. It is fetched in
+  // parallel with the stats input (independent queries), and must never break the
+  // dashboard (e.g. table not yet bootstrapped on a stale DB), so a read failure
+  // resolves to an empty list.
+  const superadmin = isSuperadmin(user as { role?: string })
+  const pool = (payload.db as unknown as { pool: { query: PoolQuery } }).pool
+  const poolQuery: PoolQuery = (sql, params) => pool.query(sql, params)
+  const [input, criticalEvents, money] = await Promise.all([
+    getStatsInput(),
+    superadmin
+      ? listRecentCriticalEvents(poolQuery, 20).catch((err) => {
+          console.error('[AdminDashboardView] failed to load critical events', err)
+          return []
+        })
+      : Promise.resolve([]),
+    // Two season money facts (#237): revenue collected (online net of refunds +
+    // in-person cash) and partner receivable, computed apart, never summed.
+    getDashboardMoney(poolQuery),
+  ])
+  const dashboardShows = toDashboardShows(input.shows)
+  const { upcoming, past } = partitionShows({ today: input.today, shows: dashboardShows })
+  const season = seasonCapacity(dashboardShows)
 
   return (
     <div style={{ padding: '24px clamp(16px, 4vw, 40px)', maxWidth: 1280, margin: '0 auto' }}>
       <h1 style={{ marginBottom: 16, fontSize: 24 }}>{adminT(lang, 'dashboard')}</h1>
 
-      <MoneyFigures
+      {/* Persistent season summary band — visible without scrolling. The two
+          money figures come from getDashboardMoney (#237): revenue collected
+          (online net of refunds + in-person cash) and partner receivable,
+          computed apart and never summed. */}
+      <SeasonBand
         lang={lang}
-        revenueCollectedCents={money.revenueCollectedCents}
+        season={season}
+        revenueCents={money.revenueCollectedCents}
         partnerReceivableCents={money.partnerReceivableCents}
       />
 
-      <HeaderBlock header={header} />
+      <AdminActions lang={lang} />
 
-      <AdminActions />
+      <div style={{ marginTop: 24 }}>
+        <UpcomingHero upcoming={upcoming} lang={lang} />
+        <PastShowsList past={past} lang={lang} />
+      </div>
 
-      <h2 style={{ fontSize: 16, margin: '24px 0 8px' }}>Shows (last 7 days + upcoming)</h2>
-      <ShowsTable rows={rows} />
+      {superadmin && <CriticalEventsDevStrip events={criticalEvents} />}
 
       <p style={{ fontSize: 11, color: 'var(--theme-elevation-400)', marginTop: 24 }}>
         {adminT(lang, 'signedInAs')} {role}.
@@ -93,7 +128,7 @@ export async function AdminDashboardView() {
   )
 }
 
-function AdminActions() {
+function AdminActions({ lang }: { lang: AdminLang }) {
   const button: React.CSSProperties = {
     display: 'block',
     padding: '14px 16px',
@@ -114,70 +149,178 @@ function AdminActions() {
       }}
     >
       <Link href="/admin/collections/shows/create" style={button}>
-        + Add show
+        {adminT(lang, 'newShow')}
       </Link>
       <Link href="/admin/collections/shows" style={button}>
-        Record in-person sale
+        {adminT(lang, 'recordInPersonSale')}
       </Link>
       <Link href="/admin/collections/orders" style={button}>
-        Find order
+        {adminT(lang, 'findOrder')}
       </Link>
+      {/* inquiries badge (#239) graft here — replace this static link with the
+          live "<n> new" badge component; keep it in the action row. */}
       <Link href="/admin/collections/contact-submissions" style={button}>
-        Inquiries
+        {adminT(lang, 'inquiries')}
       </Link>
     </div>
   )
 }
 
+// Action-first door dashboard (#240, ADR-0015). A volunteer on a phone in a
+// queue leads with the action: a large live admitted/sold progress hero for the
+// active door show, then a dominant full-width scan button opening the in-page
+// html5-qrcode viewfinder (never a native-camera-first flow). No revenue, no PII.
 async function TehnikaDashboard({ role, lang }: { role?: string; lang: AdminLang }) {
   const next = await getNextShow()
   const scanned = next ? await getScannedPeopleForShow(next.id) : 0
+  const progress = doorProgress(next, scanned)
 
   return (
-    <div style={{ padding: '24px clamp(16px, 4vw, 40px)', maxWidth: 720, margin: '0 auto' }}>
-      <h1 style={{ marginBottom: 16, fontSize: 24 }}>{adminT(lang, 'doorScan')}</h1>
-
-      {next ? (
-        <NextShowBlock next={next} scanned={scanned} />
+    <div style={{ padding: '24px clamp(16px, 4vw, 40px)', maxWidth: 560, margin: '0 auto' }}>
+      {progress ? (
+        <DoorProgressHero next={next!} progress={progress} lang={lang} />
       ) : (
         <p
           style={{
             background: 'var(--theme-elevation-50)',
             border: '1px solid var(--theme-elevation-150)',
             borderRadius: 8,
-            padding: 20,
+            padding: '32px 20px',
             color: 'var(--theme-elevation-600)',
+            textAlign: 'center',
+            fontSize: 18,
             marginBottom: 24,
           }}
         >
-          No upcoming shows scheduled.
+          {adminT(lang, 'noShowTonight')}
         </p>
       )}
 
-      <div style={{ maxWidth: 480 }}>
-        <Link
-          href="/admin/scan"
-          style={{
-            display: 'block',
-            width: '100%',
-            padding: '20px 16px',
-            fontSize: 18,
-            fontWeight: 700,
-            background: 'var(--theme-success-500, #1f7a3a)',
-            color: 'white',
-            border: 'none',
-            borderRadius: 8,
-            textAlign: 'center',
-            textDecoration: 'none',
-          }}
-        >
-          Scan a ticket
-        </Link>
-      </div>
+      {/* Dominant full-width, thumb-height scan button → in-page viewfinder. */}
+      <Link
+        href="/admin/scan"
+        style={{
+          display: 'block',
+          width: '100%',
+          padding: '24px 16px',
+          fontSize: 22,
+          fontWeight: 700,
+          background: 'var(--theme-success-500, #1f7a3a)',
+          color: 'white',
+          border: 'none',
+          borderRadius: 12,
+          textAlign: 'center',
+          textDecoration: 'none',
+        }}
+      >
+        {adminT(lang, 'scanTicket')}
+      </Link>
+
+      {next ? (
+        <div style={{ marginTop: 20 }}>
+          <TicketLookupPanel showId={next.id} />
+        </div>
+      ) : null}
 
       <p style={{ fontSize: 11, color: 'var(--theme-elevation-400)', marginTop: 24 }}>
         {adminT(lang, 'signedInAs')} {role}.
       </p>
+    </div>
+  )
+}
+
+// The one number that matters at the door: admitted / sold, as a progress ring
+// with the live "X / Y ušlo" figure. Brand gold + Bodoni on the big number;
+// Payload theme tokens keep it dark-mode safe.
+function DoorProgressHero({
+  next,
+  progress,
+  lang,
+}: {
+  next: NextShow
+  progress: DoorProgress
+  lang: AdminLang
+}) {
+  const ring = 200
+  const stroke = 16
+  const r = (ring - stroke) / 2
+  const circ = 2 * Math.PI * r
+  const dash = (progress.percent / 100) * circ
+
+  return (
+    <div
+      style={{
+        background: 'var(--theme-elevation-50)',
+        border: '1px solid var(--theme-elevation-150)',
+        borderRadius: 12,
+        padding: '24px 20px',
+        marginBottom: 20,
+        textAlign: 'center',
+      }}
+    >
+      <div
+        style={{
+          fontSize: 12,
+          color: 'var(--theme-elevation-500)',
+          textTransform: 'uppercase',
+          letterSpacing: 0.4,
+          marginBottom: 4,
+        }}
+      >
+        {formatShowDate(next.date)} · {next.time} · {VENUE_LABEL[next.venue] ?? next.venue}
+      </div>
+
+      <div style={{ display: 'flex', justifyContent: 'center', margin: '12px 0 4px' }}>
+        <svg width={ring} height={ring} viewBox={`0 0 ${ring} ${ring}`} role="img" aria-label={`${progress.admitted} / ${progress.sold} ${adminT(lang, 'admittedLabel')}`}>
+          <circle
+            cx={ring / 2}
+            cy={ring / 2}
+            r={r}
+            fill="none"
+            stroke="var(--theme-elevation-150)"
+            strokeWidth={stroke}
+          />
+          <circle
+            cx={ring / 2}
+            cy={ring / 2}
+            r={r}
+            fill="none"
+            stroke="var(--cecilija-gold, #B8881A)"
+            strokeWidth={stroke}
+            strokeLinecap="round"
+            strokeDasharray={`${dash} ${circ}`}
+            transform={`rotate(-90 ${ring / 2} ${ring / 2})`}
+          />
+          <text
+            x="50%"
+            y="46%"
+            textAnchor="middle"
+            dominantBaseline="middle"
+            style={{
+              fontFamily: 'var(--cecilija-bodoni, Georgia, serif)',
+              fontSize: 44,
+              fontWeight: 700,
+              fill: 'var(--theme-elevation-1000)',
+            }}
+          >
+            {progress.admitted} / {progress.sold}
+          </text>
+          <text
+            x="50%"
+            y="64%"
+            textAnchor="middle"
+            dominantBaseline="middle"
+            style={{
+              fontSize: 16,
+              textTransform: 'uppercase',
+              letterSpacing: 1,
+              fill: 'var(--theme-elevation-500)',
+            }}
+          >
+            {adminT(lang, 'admittedLabel')}
+          </text>
+        </svg>
+      </div>
     </div>
   )
 }
@@ -258,11 +401,26 @@ async function PartnerDashboard({
   const pool = (payload.db as unknown as { pool: { query: PoolQuery } }).pool
   const poolQuery: PoolQuery = (sql, params) => pool.query(sql, params)
   const numericPartnerId = Number(partner.id)
-  const [todaySales, seasonStats, recentSales] = await Promise.all([
+  const commissionPercent = partner.commissionPercent ?? 10
+
+  // Live month-to-date standing card (#241): the current Europe/Zagreb month,
+  // resolved here so the data layer takes no clock. monthKeyInZagreb buckets the
+  // sale date the same way the month-end statement does, so the two agree.
+  const now = new Date()
+  const { year, month } = monthKeyInZagreb(now.toISOString())
+
+  const [todaySales, seasonStats, recentSales, monthToDate] = await Promise.all([
     getPartnerTodaySales(partner.id, { query: poolQuery }),
     getPartnerSeasonStats(poolQuery, numericPartnerId),
     getPartnerRecentSales(poolQuery, numericPartnerId, 5),
+    getPartnerMonthToDate(poolQuery, { partnerId: numericPartnerId, commissionPercent, year, month }),
   ])
+
+  const monthLabel = now.toLocaleDateString(lang === 'hr' ? 'hr-HR' : 'en-GB', {
+    month: 'long',
+    year: 'numeric',
+    timeZone: 'Europe/Zagreb',
+  })
 
   return (
     <div style={wrap}>
@@ -274,13 +432,17 @@ async function PartnerDashboard({
       </div>
 
       <div style={{ marginBottom: 24 }}>
+        <PartnerMonthToDateCard data={monthToDate} monthLabel={monthLabel} lang={lang} />
+      </div>
+
+      <div style={{ marginBottom: 24 }}>
         <PartnerStornoList sales={todaySales} />
       </div>
 
       <PartnerSalesPanel
         stats={seasonStats}
         recent={recentSales}
-        commissionPercent={partner.commissionPercent ?? 10}
+        commissionPercent={commissionPercent}
       />
 
       <p style={{ fontSize: 11, color: 'var(--theme-elevation-400)', marginTop: 24 }}>
@@ -304,66 +466,3 @@ function formatShowDate(iso: string): string {
   })
 }
 
-function NextShowBlock({ next, scanned }: { next: NextShow; scanned: number }) {
-  return (
-    <div
-      style={{
-        background: 'var(--theme-elevation-50)',
-        border: '1px solid var(--theme-elevation-150)',
-        borderRadius: 8,
-        padding: 20,
-        marginBottom: 24,
-      }}
-    >
-      <div style={{ fontSize: 12, color: 'var(--theme-elevation-500)', textTransform: 'uppercase', letterSpacing: 0.4, marginBottom: 6 }}>
-        Next show
-      </div>
-      <div style={{ fontSize: 22, fontWeight: 700, marginBottom: 4 }}>
-        {formatShowDate(next.date)}
-      </div>
-      <div style={{ color: 'var(--theme-elevation-600)', marginBottom: 16 }}>
-        {next.time} · {VENUE_LABEL[next.venue] ?? next.venue}
-      </div>
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
-          gap: 12,
-        }}
-      >
-        <Stat label="Online sold" value={next.onlineSold} />
-        <Stat label="Scanned" value={scanned} />
-        <Stat label="In-person sold" value={next.inPersonSold} />
-      </div>
-      <div style={{ marginTop: 16 }}>
-        <TicketLookupPanel showId={next.id} />
-      </div>
-    </div>
-  )
-}
-
-function Stat({ label, value }: { label: string; value: React.ReactNode }) {
-  return (
-    <div
-      style={{
-        background: 'var(--theme-elevation-0)',
-        border: '1px solid var(--theme-elevation-150)',
-        borderRadius: 6,
-        padding: '12px 14px',
-      }}
-    >
-      <div
-        style={{
-          fontSize: 11,
-          color: 'var(--theme-elevation-500)',
-          textTransform: 'uppercase',
-          letterSpacing: 0.4,
-          marginBottom: 4,
-        }}
-      >
-        {label}
-      </div>
-      <div style={{ fontSize: 24, fontWeight: 700, lineHeight: 1.1 }}>{value}</div>
-    </div>
-  )
-}

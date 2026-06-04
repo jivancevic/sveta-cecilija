@@ -181,6 +181,14 @@ export async function register() {
         "source" varchar,
         "opted_out_at" timestamp(3) with time zone DEFAULT now() NOT NULL
       );
+
+      CREATE TABLE IF NOT EXISTS "critical_events" (
+        "id" serial PRIMARY KEY NOT NULL,
+        "kind" varchar NOT NULL,
+        "context" jsonb,
+        "created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS "critical_events_created_at_idx" ON "critical_events" ("created_at" DESC);
     `)
     console.log('[bootstrap] Database schema ready.')
   } catch (err) {
