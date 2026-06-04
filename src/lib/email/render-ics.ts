@@ -54,12 +54,12 @@ export interface RenderIcsInput {
 
 const SUMMARY: Record<'en' | 'hr', string> = {
   en: 'Moreška sword dance',
-  hr: 'Predstava moreške',
+  hr: 'Izvedba moreške',
 }
 
 const DESCRIPTION: Record<'en' | 'hr', string> = {
   en: 'Moreška sword dance performance by HGD Sveta Cecilija. Bring your ticket PDF; staff will scan one QR for your entire party.',
-  hr: 'Predstava moreške u izvedbi HGD Sveta Cecilija. Donesite PDF ulaznice; osoblje skenira jedan QR kod za cijelu vašu skupinu.',
+  hr: 'Moreška u izvedbi HGD Sveta Cecilija. Donesite PDF ulaznice; osoblje skenira jedan QR kod za cijelu vašu skupinu.',
 }
 
 export function renderIcs(input: RenderIcsInput): string {

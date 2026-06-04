@@ -29,7 +29,7 @@ const COPY = {
     hero: 'Your Moreška ticket is attached.',
     heroSub:
       'Open the attached PDF and present the QR code at the door. One scan admits your entire party.',
-    showHeading: 'Show details',
+    showHeading: 'Performance details',
     date: 'Date',
     time: 'Time',
     venue: 'Venue',
@@ -39,7 +39,7 @@ const COPY = {
     total: 'Total paid',
     orderRef: (ref: string) => `Order #${ref}`,
     refundNote:
-      'Tickets are non-refundable by customer choice but 100% refundable if the show is cancelled by the organiser.',
+      'Tickets are non-refundable by customer choice but 100% refundable if the performance is cancelled by the organiser.',
     addToGoogle: 'Add to Google Calendar',
     questions: 'Questions?',
     org: 'HGD Sveta Cecilija',
@@ -52,7 +52,7 @@ const COPY = {
     hero: 'Vaša ulaznica za morešku priložena je uz ovaj e-mail.',
     heroSub:
       'Otvorite priloženi PDF i pokažite QR kod na ulazu. Jedno skeniranje pušta cijelu vašu skupinu.',
-    showHeading: 'Detalji predstave',
+    showHeading: 'Detalji izvedbe',
     date: 'Datum',
     time: 'Vrijeme',
     venue: 'Mjesto',
@@ -62,7 +62,7 @@ const COPY = {
     total: 'Ukupno plaćeno',
     orderRef: (ref: string) => `Narudžba #${ref}`,
     refundNote:
-      'Povrat novca na zahtjev kupca nije moguć, no ulaznice su 100% povratne ako organizator otkaže predstavu.',
+      'Povrat novca na zahtjev kupca nije moguć, no ulaznice su 100% povratne ako organizator otkaže izvedbu.',
     addToGoogle: 'Dodaj u Google Calendar',
     questions: 'Imate pitanje?',
     org: 'HGD Sveta Cecilija',
