@@ -88,10 +88,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
   const isoDate = show.date as string
   const date = typeof isoDate === 'string' ? isoDate.slice(0, 10) : ''
-  const locale: 'en' | 'hr' =
-    req.headers.get('x-locale') === 'hr' || req.cookies.get('moreska_locale')?.value === 'hr'
-      ? 'hr'
-      : 'en'
+  // Printed tickets are ALWAYS English, regardless of who sold them (online or
+  // partner) or the viewer's locale — the physical slip is a fixed-language
+  // artifact handed to guests of any nationality at the door.
+  const locale: 'en' | 'hr' = 'en'
 
   // Partner slips carry a SOLD BY row, and an unclaimed one (no buyer email)
   // gets a claim-invitation note band. order.partner is populated at depth 1.

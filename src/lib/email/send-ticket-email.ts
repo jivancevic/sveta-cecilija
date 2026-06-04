@@ -66,7 +66,9 @@ export async function sendTicketEmail(
         buyer: input.buyer,
         show: input.show,
         tickets: input.tickets,
-        locale: input.locale,
+        // The printed ticket PDF is always English (fixed-language door artifact);
+        // the email body itself stays in the buyer's locale.
+        locale: 'en',
         orderRef: input.orderCode ?? input.orderId,
       },
       { generateQrPng: deps.generateQrPng },

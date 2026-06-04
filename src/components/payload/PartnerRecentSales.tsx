@@ -88,9 +88,13 @@ export function PartnerRecentSales({ initial, lang }: { initial: Page; lang: Adm
         setError(adminT(lang, 'cancelFailed'))
         return
       }
-      // Optimistic local mark; router.refresh() resyncs the authoritative state.
-      setSales((prev) =>
-        prev.map((s) =>
+      // Optimistic update: mark the cancelled ticket(s), then drop the order
+      // entirely once it has no active tickets left (a whole-sale cancel, or the
+      // last per-ticket cancel) so a cancelled sale disappears from the list.
+      // router.refresh() resyncs the authoritative state (the server query also
+      // excludes orders with zero active tickets, so it stays gone).
+      setSales((prev) => {
+        const mapped = prev.map((s) =>
           s.orderId !== orderId
             ? s
             : {
@@ -103,8 +107,11 @@ export function PartnerRecentSales({ initial, lang }: { initial: Page; lang: Adm
                     : { ...t, status: 'cancelled' },
                 ),
               },
-        ),
-      )
+        )
+        const target = mapped.find((s) => s.orderId === orderId)
+        const noneActive = !!target && target.tickets.every((t) => t.status !== 'active')
+        return noneActive ? mapped.filter((s) => s.orderId !== orderId) : mapped
+      })
       router.refresh()
     } catch {
       setError(adminT(lang, 'saleErrorNetwork'))

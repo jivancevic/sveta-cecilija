@@ -37,10 +37,10 @@ export function PartnerSellForm({ shows, lang }: { shows: SellShow[]; lang: Admi
   const overRemaining = !!selected && total > selected.remaining
   const canSubmit = !!showId && total > 0 && !overRemaining && !submitting
 
-  // Auto-dismiss the success banner after 5s (the countdown bar mirrors this).
+  // Auto-dismiss the success banner after 10s (the countdown bar mirrors this).
   React.useEffect(() => {
     if (!banner) return
-    const t = setTimeout(() => setBanner(null), 5000)
+    const t = setTimeout(() => setBanner(null), 10000)
     return () => clearTimeout(t)
   }, [banner])
 
@@ -190,17 +190,18 @@ function SuccessBanner({
     <div
       role="status"
       style={{
-        background: 'var(--theme-success-50, #e8f5ec)',
-        border: '1px solid var(--theme-success-200, #b6dcc3)',
+        background: '#1f7a3a',
+        border: '1px solid #19632f',
         borderRadius: 8,
         padding: '12px 14px',
         marginBottom: 16,
+        color: '#fff',
       }}
     >
       <div style={{ display: 'flex', justifyContent: 'space-between', gap: 12, alignItems: 'flex-start' }}>
-        <div style={{ fontSize: 14, color: 'var(--theme-text)' }}>
+        <div style={{ fontSize: 14, color: '#fff' }}>
           <strong>{adminT(lang, 'saleDoneTitle')}</strong>
-          <div style={{ color: 'var(--theme-elevation-600)', marginTop: 2 }}>
+          <div style={{ color: 'rgba(255,255,255,0.88)', marginTop: 2 }}>
             {ticketCount} · <span style={{ fontFamily: 'var(--font-mono, monospace)' }}>{code}</span> ·{' '}
             {adminT(lang, 'saleDonePdf')}
           </div>
@@ -212,13 +213,13 @@ function SuccessBanner({
       <button type="button" onClick={onOpenPdf} style={linkBtn}>
         {adminT(lang, 'openPdfAgain')}
       </button>
-      <div style={{ height: 4, borderRadius: 4, background: 'var(--theme-success-200, #b6dcc3)', overflow: 'hidden', marginTop: 8 }}>
+      <div style={{ height: 4, borderRadius: 4, background: 'rgba(255,255,255,0.3)', overflow: 'hidden', marginTop: 8 }}>
         <div
           style={{
             width: `${width}%`,
             height: '100%',
-            background: 'var(--theme-success-500, #1f7a3a)',
-            transition: 'width 5000ms linear',
+            background: '#fff',
+            transition: 'width 10000ms linear',
           }}
         />
       </div>
@@ -266,7 +267,7 @@ const disabledBtn: React.CSSProperties = {
 const closeBtn: React.CSSProperties = {
   background: 'none',
   border: 'none',
-  color: 'var(--theme-elevation-500)',
+  color: 'rgba(255,255,255,0.85)',
   fontSize: 18,
   lineHeight: 1,
   cursor: 'pointer',
@@ -275,9 +276,10 @@ const closeBtn: React.CSSProperties = {
 const linkBtn: React.CSSProperties = {
   background: 'none',
   border: 'none',
-  color: 'var(--theme-success-600, #1f7a3a)',
+  color: '#fff',
   fontWeight: 600,
   fontSize: 13,
+  textDecoration: 'underline',
   cursor: 'pointer',
   padding: '6px 0 0',
 }

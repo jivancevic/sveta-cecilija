@@ -100,7 +100,7 @@ describe('sendTicketEmail', () => {
     expect(body.htmlContent).toContain('Ana')
   })
 
-  it('passes locale through to both renderers; PDF uses the order code, email uses the order id', async () => {
+  it('localizes the email to the buyer but forces the PDF to English; PDF uses the order code, email uses the order id', async () => {
     const deps = makeDeps()
     await sendTicketEmail(makeInput({ locale: 'hr', orderId: '9001', orderCode: 'CD45' }), deps)
 
@@ -108,8 +108,9 @@ describe('sendTicketEmail', () => {
     expect(emailCall.locale).toBe('hr')
     expect(emailCall.orderRef).toBe('9001')
 
+    // The printed ticket PDF is always English regardless of the buyer's locale.
     const pdfCall = (deps.renderTicketsPdf as ReturnType<typeof vi.fn>).mock.calls[0][0]
-    expect(pdfCall.locale).toBe('hr')
+    expect(pdfCall.locale).toBe('en')
     expect(pdfCall.orderRef).toBe('CD45')
   })
 

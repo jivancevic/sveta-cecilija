@@ -100,6 +100,7 @@ export async function getPartnerRecentSalesPage(
     FROM orders o
     JOIN shows s ON s.id = o.show_id
     WHERE o.partner_id = $1
+      AND EXISTS (SELECT 1 FROM tickets t WHERE t.order_id = o.id AND t.status = 'active')
     ORDER BY o.created_at DESC, o.id DESC
     LIMIT $2 OFFSET $3
     `,

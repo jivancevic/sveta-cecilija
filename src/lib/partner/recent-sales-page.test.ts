@@ -5,12 +5,13 @@ function rows(rs: Record<string, unknown>[]) {
   return { rows: rs }
 }
 
-// A fake PoolQuery that routes by SQL text: the orders query selects FROM orders,
+// A fake PoolQuery that routes by SQL text: the orders query selects FROM orders
+// (it also references tickets in an EXISTS filter, so match FROM orders first),
 // the tickets-for-today query selects FROM tickets. Each returns its canned rows.
 function fakeQuery(orderRows: Record<string, unknown>[], ticketRows: Record<string, unknown>[]) {
   return vi.fn(async (sql: string, _params?: unknown[]) => {
-    if (/FROM\s+tickets/i.test(sql)) return rows(ticketRows)
-    return rows(orderRows)
+    if (/FROM\s+orders/i.test(sql)) return rows(orderRows)
+    return rows(ticketRows)
   })
 }
 
@@ -157,6 +158,15 @@ describe('getPartnerRecentSalesPage', () => {
     )
     const res = await getPartnerRecentSalesPage(query, 7, { page: 1, pageSize: 5 })
     expect(res.sales[0].createdAt).toBe('2026-06-04T12:30:00.000Z')
+  })
+
+  it('excludes orders with no active tickets via the SQL filter', async () => {
+    // A fully-cancelled order must drop out of recent sales — enforced in SQL so
+    // it stays gone across refresh/pagination, not just optimistically client-side.
+    const query = fakeQuery([orderRow({ is_today: false })], [])
+    await getPartnerRecentSalesPage(query, 7, { page: 1, pageSize: 5 })
+    const ordersSql = query.mock.calls[0][0] as string
+    expect(ordersSql).toMatch(/EXISTS[\s\S]*FROM\s+tickets[\s\S]*status\s*=\s*'active'/i)
   })
 
   it('formats a Date show_date (the real pg shape) into a clean label', async () => {
