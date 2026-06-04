@@ -3,6 +3,7 @@ import type { AdminLang } from '@/lib/admin-i18n'
 import { adminT } from '@/lib/admin-i18n'
 import { showFill, type DashboardShow } from '@/lib/dashboard/capacity'
 import { ShowFillBar } from './ShowFillBar'
+import { RecordSaleControl } from './RecordSaleControl'
 import { accentNumberStyle, formatShowDate, venueLabel } from './format'
 
 // Upcoming-show-first hero (#238): the NEXT show as a prominent card with a
@@ -99,8 +100,10 @@ export function UpcomingHero({
         {/* Large fill bar (header suppressed — date/venue shown above). */}
         <ShowFillBar show={next} lang={lang} showHeader={false} />
 
-        {/* in-person sale (record per-show) graft here (#238 follow-up: inline
-            on the card per ADR-0015); inquiries badge (#239) graft near actions. */}
+        {/* Inline per-show in-person sale (#243): records a count against THIS
+            show, replacing the old global list dead-end. The control hides
+            itself for cancelled shows. */}
+        <RecordSaleControl showId={next.id} lang={lang} cancelled={next.status === 'cancelled'} />
       </div>
 
       {/* Following 2-3 shows as smaller fill bars */}
@@ -135,6 +138,7 @@ export function UpcomingHero({
                 }}
               >
                 <ShowFillBar show={s} lang={lang} compact />
+                <RecordSaleControl showId={s.id} lang={lang} cancelled={s.status === 'cancelled'} />
               </div>
             ))}
           </div>
