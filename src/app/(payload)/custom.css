@@ -1,6 +1,17 @@
 /* HGD Sveta Cecilija — admin branding overrides.
    Written outside @layer so these beat @layer payload-default in the cascade. */
 
+/* Bodoni Moda SC for branded admin accents (e.g. the tehnika door hero number).
+   next/font/google only loads on the frontend, so pull the face in here so the
+   admin chrome has it too. */
+@import url('https://fonts.googleapis.com/css2?family=Bodoni+Moda+SC:wght@700&display=swap');
+
+:root {
+  /* Brand gold + Bodoni, exposed to the admin so dashboard accents resolve. */
+  --cecilija-gold: #B8881A;
+  --cecilija-bodoni: 'Bodoni Moda SC', Georgia, serif;
+}
+
 /* Primary button: gold instead of Payload's default gray */
 .btn--style-primary {
   --bg-color: #B8881A;
