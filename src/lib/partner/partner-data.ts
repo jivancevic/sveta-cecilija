@@ -18,7 +18,6 @@ import {
 import {
   computeSeasonStats,
   type PartnerSeasonStats,
-  type RecentSale,
   type StatsTicketRow,
 } from './partner-stats'
 
@@ -28,9 +27,24 @@ const VENUE_LABEL: Record<string, string> = {
 }
 
 function showLabel(date: unknown, venue: unknown): string {
-  const iso = typeof date === 'string' ? date.slice(0, 10) : ''
+  // pg hands back shows.date as a JS Date (noon-UTC timestamp), not a string —
+  // handle both so the date isn't dropped (which left a bare "· venue").
+  const iso =
+    typeof date === 'string'
+      ? date.slice(0, 10)
+      : date instanceof Date
+        ? date.toISOString().slice(0, 10)
+        : ''
   const venueLabel = VENUE_LABEL[String(venue)] ?? String(venue ?? '')
   return venueLabel ? `${iso} · ${venueLabel}` : iso
+}
+
+// shows.date comes back from the pg pool as a JS Date (noon UTC) or a string;
+// normalise to an ISO calendar date for the Statistika chart.
+function toIsoShowDate(date: unknown): string {
+  if (typeof date === 'string') return date.slice(0, 10)
+  if (date instanceof Date) return date.toISOString().slice(0, 10)
+  return ''
 }
 
 // All of a partner's ticket rows (any status), joined to their show for labels.
@@ -55,6 +69,7 @@ async function loadPartnerTicketRows(
   return res.rows.map((r) => ({
     showId: String(r.show_id),
     showLabel: showLabel(r.show_date, r.show_venue),
+    showDate: toIsoShowDate(r.show_date),
     type: r.type as TicketType,
     status: r.status as 'active' | 'cancelled',
     cancelReason: (r.cancel_reason ?? null) as 'storno' | 'refund' | null,
@@ -69,39 +84,6 @@ export async function getPartnerSeasonStats(
 ): Promise<PartnerSeasonStats> {
   const rows = await loadPartnerTicketRows(query, partnerId)
   return computeSeasonStats(rows)
-}
-
-/** The partner's most recent orders (newest first), capped at `limit`. */
-export async function getPartnerRecentSales(
-  query: PoolQuery,
-  partnerId: number,
-  limit = 5,
-): Promise<RecentSale[]> {
-  const res = await query(
-    `SELECT o.id AS id,
-            o.code AS code,
-            o.created_at AS created_at,
-            o.adult_count AS adult_count,
-            o.child_count AS child_count,
-            o.total AS total,
-            s.date AS show_date,
-            s.venue AS show_venue
-     FROM orders o
-     JOIN shows s ON s.id = o.show_id
-     WHERE o.partner_id = $1
-     ORDER BY o.created_at DESC
-     LIMIT $2`,
-    [partnerId, limit],
-  )
-  return res.rows.map((r) => ({
-    orderId: String(r.id),
-    code: (r.code ?? null) as string | null,
-    showLabel: showLabel(r.show_date, r.show_venue),
-    createdAt: r.created_at ? new Date(r.created_at as string).toISOString() : '',
-    adultCount: Number(r.adult_count) || 0,
-    childCount: Number(r.child_count) || 0,
-    totalCents: Number(r.total) || 0,
-  }))
 }
 
 /**

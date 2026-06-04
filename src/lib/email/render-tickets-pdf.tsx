@@ -42,6 +42,8 @@ const BG = '#F5F2EC'
 const INK = '#1A140C'
 const GOLD = '#B8881A'
 const MUTED = '#6B5E45'
+// Light fill derived from GOLD (#B8881A) for the partner claim note band.
+const GOLD_TINT = '#F0E6CC'
 
 // Mirrors VENUE_NAME in src/app/scan/[token]/page.tsx — admin slug → public name.
 const VENUE_LABEL: Record<'en' | 'hr', Record<Venue, string>> = {
@@ -58,10 +60,12 @@ const COPY = {
     time: 'Time',
     venue: 'Venue',
     order: 'Order',
+    soldBy: 'Sold by',
     adult: 'Adult',
     child: 'Child',
     scanAtDoor: 'Scan this code at the door',
     perPerson: 'One ticket per person. This QR admits one person.',
+    claimPrompt: 'Get a digital ticket and show updates. Scan this code and add your email.',
   },
   hr: {
     org: 'HGD SVETA CECILIJA',
@@ -71,10 +75,13 @@ const COPY = {
     time: 'Vrijeme',
     venue: 'Mjesto',
     order: 'Narudžba',
+    soldBy: 'Prodano putem',
     adult: 'Odrasli',
     child: 'Dijete',
     scanAtDoor: 'Skenirajte ovaj kod na ulazu',
     perPerson: 'Jedna ulaznica po osobi. Ovaj QR pušta jednu osobu.',
+    claimPrompt:
+      'Želite digitalnu ulaznicu i obavijesti o izvedbi? Skenirajte kod i upišite svoj email.',
   },
 } as const
 
@@ -100,6 +107,14 @@ function typePriceLabel(type: TicketType, locale: 'en' | 'hr'): string {
   const c = COPY[locale]
   const word = type === 'adult' ? c.adult : c.child
   return `${word} · €${priceEur(type)}`
+}
+
+/**
+ * The HOLDER row renders only when there is a buyer name. An unclaimed partner
+ * slip carries an empty buyer name and shows SOLD BY instead of HOLDER.
+ */
+function showHolderRow(buyerName: string): boolean {
+  return buyerName.trim().length > 0
 }
 
 /** Split tickets into pages of two (the 2-up A5 layout). */
@@ -248,6 +263,20 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     color: MUTED,
   },
+  // Partner-slip claim invitation: a compact gold-tinted band between the body
+  // and the footer. Kept short so the fixed 50%-height block never overflows.
+  claimNote: {
+    backgroundColor: GOLD_TINT,
+    borderRadius: 4,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    marginTop: 8,
+  },
+  claimNoteText: {
+    fontFamily: 'Inter',
+    fontSize: 8,
+    color: INK,
+  },
 })
 
 export interface RenderTicketsPdfTicket {
@@ -265,6 +294,10 @@ export interface RenderTicketsPdfInput {
   locale: 'en' | 'hr'
   /** Order code shown in each block's header (e.g. "AB23"). */
   orderRef: string
+  /** Present only on partner slips. Renders a SOLD BY detail row. */
+  seller?: { name: string }
+  /** Partner, unclaimed slips: render the claim-invitation note band. */
+  showClaimPrompt?: boolean
 }
 
 export interface RenderTicketsPdfDeps {
@@ -329,12 +362,24 @@ export async function renderTicketsPdf(
             <Text style={styles.fieldLabel}>{c.venue.toUpperCase()}</Text>
             <Text style={styles.fieldValue}>{venueLabel}</Text>
           </View>
-          <View style={styles.fieldRow}>
-            <Text style={styles.fieldLabel}>{c.holder.toUpperCase()}</Text>
-            {/* textOverflow keeps a very long name from growing the fixed-height
-                block; the block height is the real 2-up guarantee. */}
-            <Text style={[styles.fieldValue, { textOverflow: 'ellipsis' }]}>{input.buyer.name}</Text>
-          </View>
+          {showHolderRow(input.buyer.name) && (
+            <View style={styles.fieldRow}>
+              <Text style={styles.fieldLabel}>{c.holder.toUpperCase()}</Text>
+              {/* textOverflow keeps a very long name from growing the fixed-height
+                  block; the block height is the real 2-up guarantee. */}
+              <Text style={[styles.fieldValue, { textOverflow: 'ellipsis' }]}>
+                {input.buyer.name}
+              </Text>
+            </View>
+          )}
+          {input.seller && (
+            <View style={styles.fieldRow}>
+              <Text style={styles.fieldLabel}>{c.soldBy.toUpperCase()}</Text>
+              <Text style={[styles.fieldValue, { textOverflow: 'ellipsis' }]}>
+                {input.seller.name}
+              </Text>
+            </View>
+          )}
           <Text style={styles.typePrice}>{typePriceLabel(ticket.type, input.locale)}</Text>
         </View>
 
@@ -343,6 +388,12 @@ export async function renderTicketsPdf(
           <Text style={styles.scanHint}>{c.scanAtDoor}</Text>
         </View>
       </View>
+
+      {input.showClaimPrompt && (
+        <View style={styles.claimNote}>
+          <Text style={styles.claimNoteText}>{c.claimPrompt}</Text>
+        </View>
+      )}
 
       <View style={styles.footer}>
         <Text style={styles.footerText}>{c.perPerson}</Text>
@@ -368,4 +419,12 @@ export async function renderTicketsPdf(
   return renderToBuffer(doc)
 }
 
-export const __test__ = { formatDate, typePriceLabel, chunkPairs, priceEur, COPY, VENUE_LABEL }
+export const __test__ = {
+  formatDate,
+  typePriceLabel,
+  chunkPairs,
+  priceEur,
+  COPY,
+  VENUE_LABEL,
+  showHolderRow,
+}

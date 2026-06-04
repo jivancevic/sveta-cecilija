@@ -23,8 +23,8 @@
   },
   "schedule": {
     "eyebrow": "Doživite morešku",
-    "headline": "Nastupi sezone 2026.",
-    "subBefore": "Svaki nastup u",
+    "headline": "Izvedbe sezone 2026.",
+    "subBefore": "Svaka izvedba u",
     "venueName": "Ljetnom kinu, Korčula",
     "subAfter": "Početak u 21:00",
     "available": "Dostupno",
@@ -32,7 +32,7 @@
     "soldOut": "Rasprodano",
     "left": "Ostalo {count}",
     "buyTickets": "Kupi ulaznice →",
-    "viewAll": "Svi nastupi",
+    "viewAll": "Sve izvedbe",
     "priceNote": "Odrasli 20 € · Djeca do 14 godina 10 € · Grupe: svaka peta ulaznica gratis",
     "venueLjetno": "Ljetno kino",
     "venueZimsko": "Centar za kulturu"
@@ -50,7 +50,7 @@
       {
         "place": "Korčula, 7. ožujka",
         "title": "Dolazak na otok",
-        "body": "Korčulanski zapisi iz 1666. godine bilježe nastup moreške u vrijeme karnevala, otkrivajući da je običaj već tada bio dio otočkog identiteta. U stoljećima koja slijede, dok slične tradicije gasnu diljem Dalmacije, Korčula ostaje njezino sigurno utočište do danas."
+        "body": "Korčulanski zapisi iz 1666. godine bilježe izvedbu moreške u vrijeme karnevala, otkrivajući da je običaj već tada bio dio otočkog identiteta. U stoljećima koja slijede, dok slične tradicije gasnu diljem Dalmacije, Korčula ostaje njezino sigurno utočište do danas."
       },
       {
         "place": "Hrvatski narodni preporod",
@@ -163,12 +163,12 @@
       "U Korčuli postoji izreka: 'Nisi muški ako ne znaš moreški.' Dječaci počinju učiti korake već u osnovnoj školi. Uloge poput kraljeva i Bule prelaze s oca na sina kroz generacije. Ples se ne izvodi za turiste. Izvodi se jer se uvijek izvodio, jer grad koji je preživio Mlečane, Osmanlije, Habsburgovce i jugoslavenske komesare zna što znači čuvati nešto sveto. Svako ljeto, od svibnja do listopada, HGD Sveta Cecilija nastupa 24 puta u otvorenom Ljetnom kinu u starom gradu. Isti željezni mačevi. Isti arhaični korčulanski stihovi. Iste sedam borbi. Dođite svjedočiti."
     ],
     "ctaHeadline": "Svako ljeto u Ljetnom kinu, Korčula.",
-    "ctaBody": "Dvadeset i četiri nastupa od svibnja do listopada. Početak u 21:00.",
+    "ctaBody": "Dvadeset i četiri izvedbe od svibnja do listopada. Početak u 21:00.",
     "ctaButton": "Pogledaj raspored 2026."
   },
   "performancesPage": {
     "eyebrow": "Korčula · Sezona 2026.",
-    "headline": "Sezona 2026: svi nastupi",
+    "headline": "Sezona 2026: sve izvedbe",
     "subline": "Odaberi datum ispod i rezerviraj ulaznice.",
     "book": "Kupi ulaznice",
     "soldOutLabel": "Rasprodano",
@@ -184,15 +184,15 @@
     "venuePrimary": "Ljetno kino, Korčula",
     "venuePrimaryMapUrl": "https://maps.app.goo.gl/bVYpoQAHw6sixyYk9",
     "venueViewMap": "Otvori na karti →",
-    "venueDetailsLabel": "Svaki nastup",
+    "venueDetailsLabel": "Svaka izvedba",
     "venueDetails": "1 sat · nastup klape · moreška uz živi puhaći orkestar",
     "rainPlanLabel": "Ako pada kiša",
-    "rainPlanIntro": "Nastupi se sele u",
+    "rainPlanIntro": "Izvedbe se sele u",
     "rainPlanVenue": "Centar za kulturu, Korčula",
     "rainPlanMapUrl": "https://maps.app.goo.gl/T17ZXKywQoM9MAAC6",
     "freeTicketNudge": "Dodaj još jednu kartu, peta je besplatna!",
     "freeTicketUnlocked": "Besplatna karta uključena",
-    "noShows": "Trenutno nema zakazanih nastupa. Provjerite uskoro.",
+    "noShows": "Trenutno nema zakazanih izvedbi. Provjerite uskoro.",
     "venueLjetno": "Ljetno kino",
     "venueZimsko": "Centar za kulturu"
   },
@@ -271,15 +271,15 @@
     "sections": [
       {
         "heading": "Otkazivanje od strane kupca",
-        "body": "Ulaznice se ne vraćaju ako se predomislite ili ne možete doći. Molimo kupujte tek kada su vaši planovi potvrđeni. Ako ste kupili krivi nastup ili pogriješili pri plaćanju, javite nam se na info@moreska.eu i pomoći ćemo koliko je razumno moguće."
+        "body": "Ulaznice se ne vraćaju ako se predomislite ili ne možete doći. Molimo kupujte tek kada su vaši planovi potvrđeni. Ako ste kupili krivu izvedbu ili pogriješili pri plaćanju, javite nam se na info@moreska.eu i pomoći ćemo koliko je razumno moguće."
       },
       {
-        "heading": "Ako mi otkažemo nastup",
-        "body": "Ako HGD Sveta Cecilija u cijelosti otkaže nastup, svaki kupac dobiva potpuni povrat na izvornu karticu. S vaše strane nije potrebno ništa poduzimati: povrate obrađujemo automatski i šaljemo vam e-mail kada je povrat poslan. Sredstva se obično pojave u roku od 5 do 10 radnih dana."
+        "heading": "Ako mi otkažemo izvedbu",
+        "body": "Ako HGD Sveta Cecilija u cijelosti otkaže izvedbu, svaki kupac dobiva potpuni povrat na izvornu karticu. S vaše strane nije potrebno ništa poduzimati: povrate obrađujemo automatski i šaljemo vam e-mail kada je povrat poslan. Sredstva se obično pojave u roku od 5 do 10 radnih dana."
       },
       {
         "heading": "Loše vrijeme i promjena lokacije",
-        "body": "Naši ljetni nastupi održavaju se u Ljetnom kinu. Po lošem vremenu nastup se može premjestiti u zatvoreni prostor Centra za kulturu umjesto da bude otkazan. Promjena lokacije nije otkazivanje i ne predstavlja automatski razlog za povrat: nastup se i dalje održava. Pogođene kupce obavještavamo e-mailom s novom lokacijom i poveznicom na kartu. Ako vam nova lokacija doista ne odgovara, odgovorite na taj e-mail i razmotrit ćemo vaš slučaj pojedinačno."
+        "body": "Naše ljetne izvedbe održavaju se u Ljetnom kinu. Po lošem vremenu izvedba se može premjestiti u zatvoreni prostor Centra za kulturu umjesto da bude otkazana. Promjena lokacije nije otkazivanje i ne predstavlja automatski razlog za povrat: izvedba se i dalje održava. Pogođene kupce obavještavamo e-mailom s novom lokacijom i poveznicom na kartu. Ako vam nova lokacija doista ne odgovara, odgovorite na taj e-mail i razmotrit ćemo vaš slučaj pojedinačno."
       },
       {
         "heading": "Izgubljene ili ukradene ulaznice",
@@ -296,20 +296,20 @@
     ]
   },
   "consent": {
-    "notice": "Poslat ćemo Vam ulaznicu, sve promjene predstave i jednu kratku poruku nakon predstave. Možete se odjaviti u svakom trenutku."
+    "notice": "Poslat ćemo Vam ulaznicu, sve promjene izvedbe i jednu kratku poruku nakon izvedbe. Možete se odjaviti u svakom trenutku."
   },
   "servicePages": {
     "backLink": "← Privatne izvedbe",
     "formTitle": "Pošalji upit",
     "formBody": "Opišite svoju skupinu i javit ćemo vam se u roku dva radna dana.",
     "ctaHeadline": "Doživite morešku uživo.",
-    "ctaBody": "Dvadeset i četiri nastupa u Ljetnom kinu, Korčula. Svibanj–listopadu, 21:00.",
-    "ctaButton": "Pogledaj raspored nastupa"
+    "ctaBody": "Dvadeset i četiri izvedbe u Ljetnom kinu, Korčula. Svibanj–listopadu, 21:00.",
+    "ctaButton": "Pogledaj raspored izvedbi"
   },
   "sectionPages": {
     "backLink": "← Sve sekcije",
     "ctaHeadline": "Doživite uživo.",
-    "ctaBody": "Dvadeset i četiri nastupa u Ljetnom kinu, Korčula. Svibanj–listopadu, 21:00.",
+    "ctaBody": "Dvadeset i četiri izvedbe u Ljetnom kinu, Korčula. Svibanj–listopadu, 21:00.",
     "ctaButton": "Kupi ulaznice",
     "moreska": {
       "heroHeadline": "Iza sraza mačeva, pobjeđuje ljubav",
@@ -370,9 +370,9 @@
   },
   "checkoutPage": {
     "pageHeading": "Završi rezervaciju",
-    "pageBack": "← NATRAG NA NASTUPE",
+    "pageBack": "← NATRAG NA IZVEDBE",
     "summaryHeading": "Sažetak narudžbe",
-    "performanceLabel": "Nastup",
+    "performanceLabel": "Izvedba",
     "venueLabel": "Mjesto",
     "adultsLabel": "Odrasli",
     "childrenLabel": "Djeca",
@@ -385,7 +385,7 @@
     "emailLabel": "Email adresa",
     "emailPlaceholder": "vi@primjer.com",
     "emailHelp": "Tu šaljemo vaše ulaznice i QR kodove.",
-    "refundLabel": "Razumijem da su ulaznice nepovratne na zahtjev kupca, ali u potpunosti povratne ako se nastup otkaže.",
+    "refundLabel": "Razumijem da su ulaznice nepovratne na zahtjev kupca, ali u potpunosti povratne ako se izvedba otkaže.",
     "refundLinkLabel": "Politika povrata",
     "privacyLinkLabel": "Politika privatnosti",
     "privacyLabel": "Slažem se s Politikom privatnosti.",
@@ -396,10 +396,10 @@
     "errorName": "Molimo unesite vaše ime i prezime.",
     "errorEmail": "Molimo unesite ispravnu email adresu.",
     "errorAcknowledge": "Molimo prihvatite obje obavijesti za nastavak.",
-    "errorCapacity": "Nema dovoljno slobodnih mjesta za ovaj nastup.",
+    "errorCapacity": "Nema dovoljno slobodnih mjesta za ovu izvedbu.",
     "errorGeneric": "Plaćanje nije uspjelo. Pokušajte ponovno.",
     "thankYouHeading": "Hvala vam, vaše su ulaznice rezervirane",
-    "thankYouBody": "Poslali smo vaše ulaznice i QR kodove na vaš email. Pokažite QR kod na ulazu večer nastupa.",
+    "thankYouBody": "Poslali smo vaše ulaznice i QR kodove na vaš email. Pokažite QR kod na ulazu večer izvedbe.",
     "orderRefLabel": "Broj narudžbe",
     "ticketCountLabel": "Ulaznice",
     "ticketsAlsoSentTo": "Ulaznice šaljemo i na {email}. Ako ne stignu unutar 5 minuta, provjerite spam ili koristite gumb ispod.",
@@ -414,7 +414,7 @@
     "backToBlog": "← Sve objave",
     "empty": "Još nema objava. Vrati se uskoro.",
     "footerLinksHeadline": "Nastavi istraživati",
-    "footerLinkTickets": "Pogledaj nadolazeće nastupe",
+    "footerLinkTickets": "Pogledaj nadolazeće izvedbe",
     "footerLinkAbout": "O HGD Sveta Cecilija",
     "publishedOn": "Objavljeno",
     "updatedOn": "Ažurirano",

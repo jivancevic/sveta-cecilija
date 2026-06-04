@@ -21,10 +21,11 @@ import { getActiveTicketCountsByChannel } from '@/lib/tickets/sold-seats'
 import { doorProgress, type DoorProgress } from '@/lib/dashboard/door-progress'
 import { TicketLookupPanel } from './TicketLookupPanel'
 import { PartnerSellForm, type SellShow } from './PartnerSellForm'
-import { PartnerStornoList } from './PartnerStornoList'
-import { getPartnerTodaySales } from '@/lib/partner/today-sales'
+import { PartnerRecentSales } from './PartnerRecentSales'
+import { getPartnerRecentSalesPage } from '@/lib/partner/recent-sales-page'
 import { PartnerSalesPanel } from './PartnerSalesPanel'
-import { getPartnerSeasonStats, getPartnerRecentSales } from '@/lib/partner/partner-data'
+import { getPartnerSeasonStats } from '@/lib/partner/partner-data'
+import { buildStatistikaBars } from '@/lib/partner/partner-stats'
 import { getPartnerMonthToDate } from '@/lib/partner/month-to-date'
 import { monthKeyInZagreb } from '@/lib/partner/partner-reconciliation'
 import { PartnerMonthToDateCard } from './PartnerMonthToDateCard'
@@ -445,12 +446,23 @@ async function PartnerDashboard({
   const now = new Date()
   const { year, month } = monthKeyInZagreb(now.toISOString())
 
-  const [todaySales, seasonStats, recentSales, monthToDate] = await Promise.all([
-    getPartnerTodaySales(partner.id, { query: poolQuery }),
+  const [recentPage, seasonStats, monthToDate, allShowsRes] = await Promise.all([
+    getPartnerRecentSalesPage(poolQuery, numericPartnerId, { page: 1, pageSize: 3 }),
     getPartnerSeasonStats(poolQuery, numericPartnerId),
-    getPartnerRecentSales(poolQuery, numericPartnerId, 5),
     getPartnerMonthToDate(poolQuery, { partnerId: numericPartnerId, commissionPercent, year, month }),
+    // ALL active season performances (Statistika shows every izvedba, not only
+    // the ones this partner sold).
+    poolQuery(`SELECT id, date FROM shows WHERE status = 'active' ORDER BY date`, []),
   ])
+
+  const allShows = allShowsRes.rows.map((r) => {
+    const d = (r as { id: unknown; date: unknown }).date
+    return {
+      showId: String((r as { id: unknown }).id),
+      showDate: d instanceof Date ? d.toISOString().slice(0, 10) : String(d ?? '').slice(0, 10),
+    }
+  })
+  const statBars = buildStatistikaBars(allShows, seasonStats.perShow)
 
   const monthLabel = now.toLocaleDateString(lang === 'hr' ? 'hr-HR' : 'en-GB', {
     month: 'long',
@@ -464,25 +476,34 @@ async function PartnerDashboard({
       <p style={{ color: 'var(--theme-elevation-600)', marginBottom: 24 }}>{adminT(lang, 'partnerDashboard')}</p>
 
       <div style={{ marginBottom: 24 }}>
-        <PartnerSellForm shows={sellShows} />
+        <PartnerSellForm shows={sellShows} lang={lang} />
+      </div>
+
+      {/* Recent orders sit directly under the sell flow — selling + checking what
+          was just sold is the partner's everyday loop; the stats live below it. */}
+      <div style={{ marginBottom: 24 }}>
+        <PartnerRecentSales initial={recentPage} lang={lang} />
       </div>
 
       <div style={{ marginBottom: 24 }}>
         <PartnerMonthToDateCard data={monthToDate} monthLabel={monthLabel} lang={lang} />
       </div>
 
-      <div style={{ marginBottom: 24 }}>
-        <PartnerStornoList sales={todaySales} />
-      </div>
+      <PartnerSalesPanel stats={seasonStats} statBars={statBars} lang={lang} />
 
-      <PartnerSalesPanel
-        stats={seasonStats}
-        recent={recentSales}
-        commissionPercent={commissionPercent}
-      />
-
-      <p style={{ fontSize: 11, color: 'var(--theme-elevation-400)', marginTop: 24 }}>
-        Signed in as partner.
+      <p style={{ fontSize: 13, color: 'var(--theme-elevation-600)', marginTop: 24 }}>
+        {adminT(lang, 'helpHeading')}{' '}
+        <a
+          href={`mailto:admin@moreska.eu?subject=${encodeURIComponent(
+            `${adminT(lang, 'mailSubject')} (${partner.name})`,
+          )}`}
+          style={{ color: 'var(--theme-success-600, #1f7a3a)', fontWeight: 600 }}
+        >
+          {adminT(lang, 'helpContact')}
+        </a>
+      </p>
+      <p style={{ fontSize: 11, color: 'var(--theme-elevation-400)', marginTop: 8 }}>
+        {adminT(lang, 'signedInAs')} {partner.name}.
       </p>
     </div>
   )

@@ -40,11 +40,7 @@ export function PartnerMonthToDateCard({
           gap: 12,
         }}
       >
-        <Figure
-          label={adminT(lang, 'mtdTicketsSold')}
-          value={String(data.ticketsSold)}
-          sub={adminT(lang, 'mtdNetOfCancelled')}
-        />
+        <Figure label={adminT(lang, 'mtdTicketsSold')} value={String(data.ticketsSold)} />
         <Figure label={adminT(lang, 'mtdOwed')} value={eur(data.owedCents)} accent />
         <Figure label={adminT(lang, 'mtdCommission')} value={eur(data.commissionCents)} accent />
       </div>

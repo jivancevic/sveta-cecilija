@@ -1,16 +1,24 @@
 'use client'
 
 import React from 'react'
+import { adminT, type AdminLang } from '@/lib/admin-i18n'
 
 // Month picker + download link for the partner's own monthly reconciliation
 // (#146). The export route derives the partner id from the session, so no
 // partner id is sent from the client — a partner can only ever download its own
-// statement. Defaults to the current month (Europe/Zagreb).
+// statement. Defaults to the current month (Europe/Zagreb). Month names are
+// localized via Intl so we don't carry a 12-name translation table.
 
-const MONTHS = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
-]
+function monthNames(lang: AdminLang): string[] {
+  const locale = lang === 'hr' ? 'hr-HR' : 'en-GB'
+  return Array.from({ length: 12 }, (_, i) => {
+    const name = new Date(Date.UTC(2000, i, 1)).toLocaleDateString(locale, {
+      month: 'long',
+      timeZone: 'UTC',
+    })
+    return name.charAt(0).toUpperCase() + name.slice(1)
+  })
+}
 
 function zagrebNow(): { year: number; month: number } {
   const local = new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Zagreb' })
@@ -18,8 +26,9 @@ function zagrebNow(): { year: number; month: number } {
   return { year, month }
 }
 
-export function StatementDownload() {
+export function StatementDownload({ lang }: { lang: AdminLang }) {
   const now = zagrebNow()
+  const MONTHS = monthNames(lang)
   const [year, setYear] = React.useState(now.year)
   const [month, setMonth] = React.useState(now.month)
 
@@ -39,7 +48,7 @@ export function StatementDownload() {
   return (
     <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'flex-end' }}>
       <div>
-        <label htmlFor="stmt-month" style={smallLabel}>Month</label>
+        <label htmlFor="stmt-month" style={smallLabel}>{adminT(lang, 'stmtMonth')}</label>
         <select id="stmt-month" value={month} onChange={(e) => setMonth(Number(e.target.value))} style={field}>
           {MONTHS.map((name, i) => (
             <option key={i + 1} value={i + 1}>{name}</option>
@@ -47,7 +56,7 @@ export function StatementDownload() {
         </select>
       </div>
       <div>
-        <label htmlFor="stmt-year" style={smallLabel}>Year</label>
+        <label htmlFor="stmt-year" style={smallLabel}>{adminT(lang, 'stmtYear')}</label>
         <select id="stmt-year" value={year} onChange={(e) => setYear(Number(e.target.value))} style={field}>
           {years.map((y) => (
             <option key={y} value={y}>{y}</option>
@@ -68,7 +77,7 @@ export function StatementDownload() {
           display: 'inline-block',
         }}
       >
-        Download statement
+        {adminT(lang, 'stmtDownload')}
       </a>
     </div>
   )

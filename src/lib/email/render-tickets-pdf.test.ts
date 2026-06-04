@@ -1,7 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import { __test__, renderTicketsPdf, type RenderTicketsPdfTicket } from './render-tickets-pdf'
 
-const { formatDate, typePriceLabel, chunkPairs, priceEur, COPY, VENUE_LABEL } = __test__
+const { formatDate, typePriceLabel, chunkPairs, priceEur, COPY, VENUE_LABEL, showHolderRow } =
+  __test__
 
 // 1x1 transparent PNG, a stand-in QR so the renderer has a decodable image.
 const STUB_PNG = Buffer.from(
@@ -63,6 +64,32 @@ describe('copy + venue tables stay structurally parallel', () => {
   it('maps both venues in both locales', () => {
     expect(VENUE_LABEL.en['ljetno-kino']).toMatch(/Summer Cinema/)
     expect(VENUE_LABEL.hr['zimsko-kino']).toMatch(/Centar za kulturu/)
+  })
+})
+
+describe('partner-slip COPY (seller + claim prompt)', () => {
+  it('exposes soldBy and claimPrompt in both locales', () => {
+    expect(COPY.en.soldBy).toBe('Sold by')
+    expect(COPY.hr.soldBy).toBe('Prodano putem')
+    expect(COPY.en.claimPrompt).toBe(
+      'Get a digital ticket and show updates. Scan this code and add your email.',
+    )
+    expect(COPY.hr.claimPrompt).toBe(
+      'Želite digitalnu ulaznicu i obavijesti o izvedbi? Skenirajte kod i upišite svoj email.',
+    )
+  })
+  it('contains no em-dash anywhere in the COPY map (hard project rule)', () => {
+    const flat = JSON.stringify(COPY)
+    expect(flat).not.toContain('—')
+    expect(flat).not.toContain('—')
+  })
+})
+
+describe('showHolderRow', () => {
+  it('renders the holder row only when the buyer name is non-empty', () => {
+    expect(showHolderRow('Ana Anić')).toBe(true)
+    expect(showHolderRow('')).toBe(false)
+    expect(showHolderRow('   ')).toBe(false)
   })
 })
 
