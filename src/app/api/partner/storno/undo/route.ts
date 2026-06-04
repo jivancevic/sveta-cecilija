@@ -123,7 +123,7 @@ export async function POST(req: NextRequest) {
           withShowSellLock(pool, showId, async () => {
             // N = how many tickets this restore WOULD re-activate (storno-cancelled
             // rows of the order, or just the single ticket).
-            const n = await countRestorableTickets(pool.query, orderId, ticketId)
+            const n = await countRestorableTickets((sql, params) => pool.query(sql, params), orderId, ticketId)
             if (n === 0) return 0
 
             const activeCount = await getActiveTicketCountForShow(
