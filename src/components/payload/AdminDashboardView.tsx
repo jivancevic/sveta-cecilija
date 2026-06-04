@@ -21,10 +21,10 @@ import { getActiveTicketCountsByChannel } from '@/lib/tickets/sold-seats'
 import { doorProgress, type DoorProgress } from '@/lib/dashboard/door-progress'
 import { TicketLookupPanel } from './TicketLookupPanel'
 import { PartnerSellForm, type SellShow } from './PartnerSellForm'
-import { PartnerStornoList } from './PartnerStornoList'
-import { getPartnerTodaySales } from '@/lib/partner/today-sales'
+import { PartnerRecentSales } from './PartnerRecentSales'
+import { getPartnerRecentSalesPage } from '@/lib/partner/recent-sales-page'
 import { PartnerSalesPanel } from './PartnerSalesPanel'
-import { getPartnerSeasonStats, getPartnerRecentSales } from '@/lib/partner/partner-data'
+import { getPartnerSeasonStats } from '@/lib/partner/partner-data'
 import { getPartnerMonthToDate } from '@/lib/partner/month-to-date'
 import { monthKeyInZagreb } from '@/lib/partner/partner-reconciliation'
 import { PartnerMonthToDateCard } from './PartnerMonthToDateCard'
@@ -445,10 +445,9 @@ async function PartnerDashboard({
   const now = new Date()
   const { year, month } = monthKeyInZagreb(now.toISOString())
 
-  const [todaySales, seasonStats, recentSales, monthToDate] = await Promise.all([
-    getPartnerTodaySales(partner.id, { query: poolQuery }),
+  const [recentPage, seasonStats, monthToDate] = await Promise.all([
+    getPartnerRecentSalesPage(poolQuery, numericPartnerId, { page: 1, pageSize: 5 }),
     getPartnerSeasonStats(poolQuery, numericPartnerId),
-    getPartnerRecentSales(poolQuery, numericPartnerId, 5),
     getPartnerMonthToDate(poolQuery, { partnerId: numericPartnerId, commissionPercent, year, month }),
   ])
 
@@ -464,7 +463,7 @@ async function PartnerDashboard({
       <p style={{ color: 'var(--theme-elevation-600)', marginBottom: 24 }}>{adminT(lang, 'partnerDashboard')}</p>
 
       <div style={{ marginBottom: 24 }}>
-        <PartnerSellForm shows={sellShows} />
+        <PartnerSellForm shows={sellShows} lang={lang} />
       </div>
 
       <div style={{ marginBottom: 24 }}>
@@ -472,17 +471,13 @@ async function PartnerDashboard({
       </div>
 
       <div style={{ marginBottom: 24 }}>
-        <PartnerStornoList sales={todaySales} />
+        <PartnerRecentSales initial={recentPage} lang={lang} />
       </div>
 
-      <PartnerSalesPanel
-        stats={seasonStats}
-        recent={recentSales}
-        commissionPercent={commissionPercent}
-      />
+      <PartnerSalesPanel stats={seasonStats} lang={lang} />
 
       <p style={{ fontSize: 11, color: 'var(--theme-elevation-400)', marginTop: 24 }}>
-        Signed in as partner.
+        {adminT(lang, 'signedInAs')} {partner.name}.
       </p>
     </div>
   )

@@ -93,6 +93,25 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       ? 'hr'
       : 'en'
 
+  // Partner slips carry a SOLD BY row, and an unclaimed one (no buyer email)
+  // gets a claim-invitation note band. order.partner is populated at depth 1.
+  const isPartnerOrder = order.channel === 'partner'
+  let seller: { name: string } | undefined
+  if (isPartnerOrder) {
+    const op = order.partner as { id?: number | string; name?: string } | number | string | null | undefined
+    if (op != null && typeof op === 'object' && typeof op.name === 'string') {
+      seller = { name: op.name }
+    } else if (op != null) {
+      // Fallback: partner came back as a bare id, look up its name.
+      const partner = await payload
+        .findByID({ collection: 'partners', id: op as number, depth: 0 })
+        .catch(() => null)
+      seller = { name: (partner?.name as string) ?? '' }
+    }
+  }
+  const claimed = Boolean(order.email && String(order.email).length)
+  const showClaimPrompt = isPartnerOrder && !claimed
+
   const pdfBuffer = await renderTicketsPdf(
     {
       buyer: { name: (order.buyerName as string) ?? '' },
@@ -100,6 +119,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       tickets,
       locale,
       orderRef: code,
+      seller,
+      showClaimPrompt,
     },
     { generateQrPng },
   )

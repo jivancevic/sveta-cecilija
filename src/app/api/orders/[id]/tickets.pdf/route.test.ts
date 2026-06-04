@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 import { signTicketLink } from '@/lib/ticket-link'
+import { renderTicketsPdf } from '@/lib/email/render-tickets-pdf'
 
 // Mock Payload + the heavy PDF/QR renderers so the test exercises only the
 // auth gate. render-tickets-pdf otherwise pulls in @react-pdf/renderer and
@@ -68,5 +69,58 @@ describe('GET /api/orders/[id]/tickets.pdf auth gate', () => {
   it('rejects a forged token even when the code is also supplied', async () => {
     const res = await GET(req(`?t=not-a-real-token&code=${ORDER.code}`), { params })
     expect(res.status).toBe(401)
+  })
+})
+
+describe('GET /api/orders/[id]/tickets.pdf partner-slip wiring', () => {
+  const renderMock = vi.mocked(renderTicketsPdf)
+
+  it('passes seller + showClaimPrompt for a partner order with no email', async () => {
+    findByID.mockResolvedValue({
+      ...ORDER,
+      email: '',
+      buyerName: '',
+      channel: 'partner',
+      partner: { id: 7, name: 'Adriatic DMC' },
+    })
+    const t = signTicketLink({ orderId: '42', email: ORDER.email })
+    // No email on the order, so authorise via staff session instead.
+    auth.mockResolvedValue({ user: { role: 'admin' } })
+    const res = await GET(req(`?t=${t}`), { params })
+    expect(res.status).toBe(200)
+    const input = renderMock.mock.calls.at(-1)![0]
+    expect(input.seller).toEqual({ name: 'Adriatic DMC' })
+    expect(input.showClaimPrompt).toBe(true)
+    expect(input.buyer.name).toBe('')
+  })
+
+  it('passes no seller and falsy showClaimPrompt for an online order with email', async () => {
+    findByID.mockResolvedValue({ ...ORDER, channel: 'online' })
+    const t = signTicketLink({ orderId: '42', email: ORDER.email })
+    const res = await GET(req(`?t=${t}`), { params })
+    expect(res.status).toBe(200)
+    const input = renderMock.mock.calls.at(-1)![0]
+    expect(input.seller).toBeUndefined()
+    expect(input.showClaimPrompt).toBeFalsy()
+  })
+
+  it('falls back to fetching the partner name when partner is just an id', async () => {
+    findByID.mockReset()
+    // First call: the order (partner is a bare id). Second call: the partner lookup.
+    findByID
+      .mockResolvedValueOnce({
+        ...ORDER,
+        email: '',
+        buyerName: '',
+        channel: 'partner',
+        partner: 7,
+      })
+      .mockResolvedValueOnce({ id: 7, name: 'Gulliver Travel' })
+    auth.mockResolvedValue({ user: { role: 'admin' } })
+    const res = await GET(req(''), { params })
+    expect(res.status).toBe(200)
+    const input = renderMock.mock.calls.at(-1)![0]
+    expect(input.seller).toEqual({ name: 'Gulliver Travel' })
+    expect(input.showClaimPrompt).toBe(true)
   })
 })
