@@ -71,6 +71,33 @@ export async function getScannedTicketCountsByShow(query: PoolQuery): Promise<Ma
   return byShow
 }
 
+/**
+ * Active ticket counts split by order channel, across the whole season. Used by
+ * the dashboard channel-mix chart (#242). Only the online/partner split lives in
+ * `tickets` (in-person sales have no ticket rows — they're on shows.inPersonSold,
+ * folded in by the caller). The channel select only ever holds 'online'/'partner'
+ * (default 'online'), so any null/other value folds into `online`.
+ */
+export async function getActiveTicketCountsByChannel(
+  query: PoolQuery,
+): Promise<{ online: number; partner: number }> {
+  const res = await query(`
+    SELECT o.channel AS channel, COUNT(*)::int AS sold
+    FROM tickets t
+    JOIN orders o ON o.id = t.order_id
+    WHERE t.status = 'active'
+    GROUP BY o.channel
+  `)
+  let online = 0
+  let partner = 0
+  for (const row of res.rows) {
+    const count = Number(row.sold) || 0
+    if (String(row.channel) === 'partner') partner += count
+    else online += count
+  }
+  return { online, partner }
+}
+
 /** Scanned ticket count for a single show. Returns 0 for a non-numeric id. */
 export async function getScannedTicketCountForShow(
   query: PoolQuery,

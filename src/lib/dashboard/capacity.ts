@@ -18,8 +18,8 @@ export interface ShowFill {
   percent: number
 }
 
-/** Fill % of one show, clamped to 0..100 and guarded against zero capacity. */
-function fillPercent(sold: number, capacity: number): number {
+/** Fill % of sold against capacity, clamped to 0..100 and guarded against /0. */
+export function fillPercent(sold: number, capacity: number): number {
   if (capacity <= 0) return 0
   return Math.min(100, Math.max(0, Math.round((sold / capacity) * 100)))
 }
