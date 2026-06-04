@@ -104,6 +104,18 @@ describe('GET /api/orders/[id]/tickets.pdf partner-slip wiring', () => {
     expect(input.showClaimPrompt).toBeFalsy()
   })
 
+  it('always renders the PDF in English, even with an hr locale signal', async () => {
+    findByID.mockResolvedValue({ ...ORDER, channel: 'online' })
+    const t = signTicketLink({ orderId: '42', email: ORDER.email })
+    const r = new NextRequest(`http://localhost/api/orders/42/tickets.pdf?t=${t}`, {
+      headers: { 'x-locale': 'hr', cookie: 'moreska_locale=hr' },
+    })
+    const res = await GET(r, { params })
+    expect(res.status).toBe(200)
+    const input = renderMock.mock.calls.at(-1)![0]
+    expect(input.locale).toBe('en')
+  })
+
   it('falls back to fetching the partner name when partner is just an id', async () => {
     findByID.mockReset()
     // First call: the order (partner is a bare id). Second call: the partner lookup.
