@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { addInPersonSales } from '@/lib/in-person-sales'
+import { addInPersonSales, incrementInPersonSold } from '@/lib/in-person-sales'
 import { requireRole } from '@/lib/access/route-guard'
 import { isAdminTier } from '@/lib/access/roles'
+import type { PoolQuery } from '@/lib/tickets/sold-seats'
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const gate = await requireRole(req, isAdminTier)
@@ -16,23 +17,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   }
   const count = rawCount
 
+  // The payload-postgres adapter exposes its pg pool at `payload.db.pool`; the
+  // atomic UPDATE itself lives in the in-person-sales seam (unit-tested there).
+  const pool = (payload.db as unknown as { pool: { query: PoolQuery } }).pool
+  const poolQuery: PoolQuery = (sql, params) => pool.query(sql, params)
+
   try {
     const result = await addInPersonSales(
       { showId: id, count },
-      {
-        atomicIncrement: async (showId, delta) => {
-          // Single SQL statement — postgres serialises concurrent writes to
-          // the same row, so two parallel adds cannot lose updates.
-          // The payload-postgres adapter exposes its pool at `payload.db.pool`.
-          const db = (payload.db as unknown as { pool: { query: (sql: string, params: unknown[]) => Promise<{ rows: { in_person_sold: number }[] }> } }).pool
-          const res = await db.query(
-            'UPDATE shows SET in_person_sold = COALESCE(in_person_sold, 0) + $1, updated_at = NOW() WHERE id = $2 RETURNING in_person_sold',
-            [delta, Number(showId)],
-          )
-          if (res.rows.length === 0) return null
-          return { inPersonSold: Number(res.rows[0].in_person_sold) }
-        },
-      },
+      { atomicIncrement: (showId, delta) => incrementInPersonSold(poolQuery, showId, delta) },
     )
     return NextResponse.json({ inPersonSold: result.inPersonSold })
   } catch (err) {
