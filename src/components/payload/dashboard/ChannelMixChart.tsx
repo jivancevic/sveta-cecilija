@@ -2,7 +2,7 @@ import React from 'react'
 import type { AdminLang } from '@/lib/admin-i18n'
 import { adminT, type DashboardStringKey } from '@/lib/admin-i18n'
 import { channelMix, type ChannelKey } from '@/lib/dashboard/channel-mix'
-import { CHANNEL_COLORS } from './format'
+import { CHANNEL_COLORS, SECTION_LABEL_STYLE } from './format'
 
 // CHANNEL-MIX SPLIT (#242, ADR-0015). Where the season's seats came from —
 // online (Stripe) vs in-person (box office) vs partner (resellers) — as a single
@@ -28,17 +28,7 @@ export function ChannelMixChart({
 
   return (
     <section style={{ marginTop: 28 }}>
-      <div
-        style={{
-          fontSize: 12,
-          color: 'var(--theme-elevation-500)',
-          textTransform: 'uppercase',
-          letterSpacing: 0.4,
-          marginBottom: 12,
-        }}
-      >
-        {adminT(lang, 'salesChannels')}
-      </div>
+      <div style={SECTION_LABEL_STYLE}>{adminT(lang, 'salesChannels')}</div>
 
       {mix.total === 0 ? (
         <div style={{ fontSize: 14, color: 'var(--theme-elevation-500)' }}>

@@ -4,7 +4,7 @@ import type { AdminLang } from '@/lib/admin-i18n'
 import { adminT } from '@/lib/admin-i18n'
 import { seasonTrajectory, type TrajectoryBar } from '@/lib/dashboard/trajectory'
 import type { DashboardShow } from '@/lib/dashboard/partition'
-import { GOLD, formatShowDate, shortShowDate, venueLabel } from './format'
+import { GOLD, SECTION_LABEL_STYLE, formatShowDate, shortShowDate, venueLabel } from './format'
 
 // SEASON-TRAJECTORY BAR CHART (#242, ADR-0015). One bar per show across the whole
 // season, chronological: the gold fill is tickets sold, the faint track behind it
@@ -31,17 +31,7 @@ export function SeasonTrajectoryChart({
 
   return (
     <section style={{ marginTop: 28 }}>
-      <div
-        style={{
-          fontSize: 12,
-          color: 'var(--theme-elevation-500)',
-          textTransform: 'uppercase',
-          letterSpacing: 0.4,
-          marginBottom: 12,
-        }}
-      >
-        {adminT(lang, 'seasonTrajectory')}
-      </div>
+      <div style={SECTION_LABEL_STYLE}>{adminT(lang, 'seasonTrajectory')}</div>
 
       <div
         style={{

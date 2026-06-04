@@ -8,6 +8,7 @@
 // this module owns the testable series + the scale.
 
 import type { DashboardShow } from './partition'
+import { fillPercent } from './capacity'
 import type { Venue } from '../venues'
 
 export interface TrajectoryBar {
@@ -28,11 +29,6 @@ export interface SeasonTrajectory {
   bars: TrajectoryBar[]
   /** Tallest venue capacity in the season — the shared y-axis ceiling. */
   maxCapacity: number
-}
-
-function fillPercent(sold: number, capacity: number): number {
-  if (capacity <= 0) return 0
-  return Math.min(100, Math.max(0, Math.round((sold / capacity) * 100)))
 }
 
 export function seasonTrajectory(shows: DashboardShow[]): SeasonTrajectory {
