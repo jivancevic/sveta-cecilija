@@ -49,6 +49,7 @@ and `@gmail.com` addresses below are **not** in #107's text — found via `docs/
 | `sv.cecilija@korcula-moreska.com` | Old-site `/contacts/` + homepage footer; cited as media contact on third-party pages | **Yes — actively published.** The canonical public address of the old site. | ✅ **DONE (2026-06-02).** cPanel forwarder → `info@moreska.eu`, tested working. See §2.1 for the Email Routing gotcha that had to be fixed first. |
 | `klapa@korcula-moreska.com` | `docs/migrations/README.md` (tested as Google acct in #37) | Exists; **not** found on current live pages — likely a section address / old flyers | ✅ **DONE (2026-06-02).** cPanel forwarder → `info@moreska.eu` (forwarded rather than retired, to catch stragglers on old flyers/listings). |
 | `glazba@korcula-moreska.com` | `docs/migrations/README.md` (tested in #37) | Exists; **not** found on current live pages | ✅ **DONE (2026-06-02).** cPanel forwarder → `info@moreska.eu`. |
+| `tickets@korcula-moreska.com` | Old-site ticketing (Tickera/WooCommerce order + confirmation mail) | Legacy ticketing address; **not** found on current live pages | ☐ **TODO.** Add cPanel forwarder → `info@moreska.eu` (same one-time Email Routing fix as §2.1 already applies) to catch stragglers replying to old order confirmations. |
 | `sv.cecilija@hi.ht.hr` | `Pass internet.doc` (#107) | **Yes — active inbox, lots of mail.** On the **tportal.hr Roundcube** backend. | ⏳ **Awaiting HT (official email sent 2026-06-03).** This Roundcube (1.4.8) has **no `managesieve` plugin** → no forwarding/filters UI, and the Moj Telekom portal's Internet card manages only the `du.ht.hr` mailbox, not this one. Official request emailed to HT Poslovni asking for a server-side forward → `info@moreska.eu`, keep-a-copy ON (covers all three HT/t-com addresses + the alias question). Awaiting reply. See §2.1. |
 | `h.g.d.sv.cecilija@du.ht.hr` (= `@du.t-com.hr`) | `Pass internet.doc` (#107); shown as "e-mail korisnika" on the portal Internet service | **Yes — separate active mailbox** on the **webmail.ht.hr AXIGEN** backend (NOT an alias of `hi.ht.hr`, as earlier assumed) | ✅ **DONE + TESTED (2026-06-03).** AXIGEN webmail → Postavke → Filteri → "Proslijedi za" → `info@moreska.eu`, no delete action so a copy stays. Outside-inbox test passed: the forwarded copy arrived **in the Inbox** (not spam), "from `h.g.d.sv.cecilija@du.t-com.hr` via moreska.eu". See §2.1. |
 | `sv.cecilija@hi.t-com.hr` | `Pass internet.doc` (#107); inbox accessible (searched in #37) | Receives mail; **cascade into `hi.ht.hr` assumed but NOT verified** | ⏳ **Awaiting HT.** Included in the 2026-06-03 official email (forward → `info@moreska.eu` + the "separate mailbox or alias of `hi.ht.hr`?" question). |
@@ -58,8 +59,10 @@ and `@gmail.com` addresses below are **not** in #107's text — found via `docs/
 
 ### 2.1 Wiring as built (2026-06-02)
 
-**`@korcula-moreska.com` — cPanel forwarders, live + tested.** All three (`sv.cecilija@`,
+**`@korcula-moreska.com` — cPanel forwarders, live + tested.** Three (`sv.cecilija@`,
 `klapa@`, `glazba@`) now forward to `info@moreska.eu` via Totohost cPanel → Email → Forwarders.
+A fourth, `tickets@korcula-moreska.com` (old Tickera/WooCommerce ticketing address), is still
+**TODO** — add the same forwarder so replies to legacy order confirmations aren't lost.
 
 > **Gotcha that blocked it first:** `moreska.eu` is itself a domain *inside the same Totohost
 > cPanel account* (registered at Totohost), and its mail was set to **Local Mail Exchanger**.
