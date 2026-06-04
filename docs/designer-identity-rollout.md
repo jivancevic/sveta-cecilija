@@ -23,8 +23,10 @@ churn right before peak season.
   is Inter-700 (`.btn--hero-cta`, `globals.css:77`), Nav is Bodoni base (`.nav__cta`, smaller) —
   into one font family with a clear size hierarchy (top one smaller, same style). Align the
   secondary `.opera__buy` show-card buttons to the same font/corners/size.
-- **Corners:** unify to one treatment (radii scattered 2/3/4/6/8px today). Josip's lean: sharp
-  (moreška = blades). Designer owns the final call.
+- **Corners:** unify to **sharp (radius 0)** — Josip's decision (moreška = blades). Collapse the
+  scattered 2/3/4/6/8px radii to 0 across buttons, cards, photos, inputs. Pills (`border-radius:999px`,
+  the status dots) are a separate shape, not a corner — leave those. Flag to the designer for sign-off,
+  but the direction is set.
 - **Drop cap:** `.about__body::first-letter` (`globals.css:781`) — parked here. HR opens "HGD"
   (giant gold H, her complaint); EN opens "Since" (reads fine). Decide keep-EN-only vs remove-both
   alongside the new headline font.
@@ -35,7 +37,6 @@ churn right before peak season.
 ## Still owned by the designer (Josip is waiting on her)
 
 - Alternative color palette to prototype.
-- Corners: sharp vs rounded recommendation.
 - Headline font: prominent vs lowercase.
 - Drop cap on EN: keep or remove.
 - **Show-card photos:** she wants them removed (a different photo per card reads as
