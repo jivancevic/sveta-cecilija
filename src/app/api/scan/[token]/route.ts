@@ -98,6 +98,15 @@ async function buildDeps(): Promise<ScanDeps> {
         return null
       }
     },
+    countUnscannedActiveTickets: async (orderId) => {
+      const res: any = await drizzle.execute(sql`
+        SELECT COUNT(*)::int AS n
+        FROM tickets
+        WHERE order_id = ${Number(orderId)} AND status = 'active' AND scanned = false
+      `)
+      const row = (res.rows ?? res)[0]
+      return Number(row?.n ?? 0)
+    },
   }
 }
 

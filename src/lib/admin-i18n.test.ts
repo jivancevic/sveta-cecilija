@@ -14,8 +14,8 @@ describe('defaultLanguageForRole', () => {
     expect(defaultLanguageForRole('admin')).toBe('hr')
   })
 
-  it('defaults the door account (tehnika) to Croatian', () => {
-    expect(defaultLanguageForRole('tehnika')).toBe('hr')
+  it('defaults the door account (tehnika) to English', () => {
+    expect(defaultLanguageForRole('tehnika')).toBe('en')
   })
 
   it('defaults a partner login to Croatian', () => {
@@ -68,7 +68,7 @@ describe('resolveAdminLang', () => {
 describe('seedAdminLangCookie', () => {
   it('seeds the role default when no cookie is set yet', () => {
     expect(seedAdminLangCookie({ existing: null, role: 'admin' })).toBe('hr')
-    expect(seedAdminLangCookie({ existing: undefined, role: 'tehnika' })).toBe('hr')
+    expect(seedAdminLangCookie({ existing: undefined, role: 'tehnika' })).toBe('en')
     expect(seedAdminLangCookie({ existing: null, role: 'superadmin' })).toBe('en')
   })
 

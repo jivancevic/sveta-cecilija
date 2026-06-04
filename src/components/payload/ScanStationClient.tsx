@@ -11,13 +11,14 @@ const VENUE_NAME: Record<string, string> = {
   'zimsko-kino': 'Centar za kulturu',
 }
 
-const VALID_AUTO_DISMISS_MS = 3000
-
 interface ScanResponse {
   token: string
   result: ScanResult
   undoEligible: boolean
 }
+
+type UndoState = 'idle' | 'sending' | 'done' | 'rejected'
+type AdmitState = { status: 'idle' | 'sending' | 'done' | 'error'; admitted: number }
 
 async function loadScanner() {
   const mod = await import('html5-qrcode')
@@ -63,11 +64,24 @@ function formatShowDate(iso: string): string {
   })
 }
 
+function partyBreakdown(adultCount: number, childCount: number): string {
+  const total = adultCount + childCount
+  const base = `${total} ticket${total === 1 ? '' : 's'}`
+  if (childCount > 0 && adultCount > 0) {
+    return `${base} — ${adultCount} adult${adultCount === 1 ? '' : 's'}, ${childCount} child${childCount === 1 ? '' : 'ren'}`
+  }
+  if (childCount > 0) {
+    return `${base} — ${childCount} child${childCount === 1 ? '' : 'ren'}`
+  }
+  return `${base} — ${adultCount} adult${adultCount === 1 ? '' : 's'}`
+}
+
 export function ScanStationClient() {
-  const [phase, setPhase] = useState<Phase>('idle')
+  const [phase, setPhase] = useState<Phase>('starting')
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
   const [response, setResponse] = useState<ScanResponse | null>(null)
-  const [undoState, setUndoState] = useState<'idle' | 'sending' | 'done' | 'rejected'>('idle')
+  const [undoState, setUndoState] = useState<UndoState>('idle')
+  const [admitState, setAdmitState] = useState<AdmitState>({ status: 'idle', admitted: 0 })
 
   const scannerRef = useRef<{ stop: () => Promise<void>; clear: () => void } | null>(null)
   const elementId = 'tehnika-qr-scanner-region'
@@ -75,7 +89,9 @@ export function ScanStationClient() {
   // re-posting the same token repeatedly.
   const processingRef = useRef(false)
   const lastTokenRef = useRef<string | null>(null)
-  const autoDismissTimer = useRef<number | null>(null)
+  // Guards the one-shot auto-start attempt on mount so React strict-mode's
+  // double-invoke (or a re-render) can't open the camera twice.
+  const autoStartedRef = useRef(false)
 
   const stopCamera = useCallback(async () => {
     const inst = scannerRef.current
@@ -91,19 +107,9 @@ export function ScanStationClient() {
 
   useEffect(() => {
     return () => {
-      if (autoDismissTimer.current) window.clearTimeout(autoDismissTimer.current)
       void stopCamera()
     }
   }, [stopCamera])
-
-  // Warm the scanner chunk (html5-qrcode + zxing, ~108KB+ gzipped) on mount so
-  // it's already downloaded by the time staff tap "Scan a ticket". Without this
-  // the chunk only fetches on tap, putting a multi-second download (over venue
-  // wifi/cellular) on the critical path of the very first scan. Fire-and-forget;
-  // the result is the module cache, so startCamera's await resolves instantly.
-  useEffect(() => {
-    void loadScanner().catch(() => undefined)
-  }, [])
 
   useEffect(() => {
     if (phase !== 'live' && phase !== 'starting' && phase !== 'showing') return
@@ -114,13 +120,12 @@ export function ScanStationClient() {
     }
   }, [phase])
 
+  // "Scan more" / dismiss: results now persist until tapped (no auto-dismiss),
+  // so this only fires from an explicit button. Resumes the still-open camera.
   const dismissResult = useCallback(() => {
-    if (autoDismissTimer.current) {
-      window.clearTimeout(autoDismissTimer.current)
-      autoDismissTimer.current = null
-    }
     setResponse(null)
     setUndoState('idle')
+    setAdmitState({ status: 'idle', admitted: 0 })
     processingRef.current = false
     // Keep lastTokenRef set so the same QR still in frame at fps:10 doesn't
     // immediately re-trigger the API. A different QR entering frame replaces
@@ -146,39 +151,59 @@ export function ScanStationClient() {
       } else {
         const json = (await res.json()) as ScanResponse
         setResponse(json)
-        if (json.result.status === 'VALID') {
-          autoDismissTimer.current = window.setTimeout(dismissResult, VALID_AUTO_DISMISS_MS)
-        }
       }
     } catch {
       setResponse({ token, result: { status: 'INVALID' }, undoEligible: false })
     }
-  }, [dismissResult])
+  }, [])
 
-  const startCamera = useCallback(async () => {
-    setPhase('starting')
-    setErrorMsg(null)
-    try {
-      const Html5Qrcode = await loadScanner()
-      const instance = new Html5Qrcode(elementId)
-      scannerRef.current = instance as unknown as { stop: () => Promise<void>; clear: () => void }
-      const shorter = Math.min(window.innerWidth, window.innerHeight)
-      const boxSize = Math.min(Math.round(shorter * 0.6), 480)
-      await instance.start(
-        { facingMode: 'environment' },
-        { fps: 10, qrbox: { width: boxSize, height: boxSize } },
-        (decodedText: string) => {
-          void handleDecoded(decodedText)
-        },
-        () => undefined,
-      )
-      setPhase('live')
-    } catch (err) {
-      setPhase('error')
-      const message = err instanceof Error ? err.message : 'Camera unavailable'
-      setErrorMsg(message)
-    }
-  }, [handleDecoded])
+  // `auto` distinguishes the silent on-mount attempt (a block falls back to the
+  // friendly "Tap to scan" screen, since most blocks are just the missing user
+  // gesture, e.g. iOS Safari) from an explicit tap (a block is a real error).
+  const startCamera = useCallback(
+    async (auto = false) => {
+      setPhase('starting')
+      setErrorMsg(null)
+      try {
+        const Html5Qrcode = await loadScanner()
+        const instance = new Html5Qrcode(elementId)
+        scannerRef.current = instance as unknown as { stop: () => Promise<void>; clear: () => void }
+        const shorter = Math.min(window.innerWidth, window.innerHeight)
+        const boxSize = Math.min(Math.round(shorter * 0.6), 480)
+        await instance.start(
+          { facingMode: 'environment' },
+          { fps: 10, qrbox: { width: boxSize, height: boxSize } },
+          (decodedText: string) => {
+            void handleDecoded(decodedText)
+          },
+          () => undefined,
+        )
+        setPhase('live')
+      } catch (err) {
+        // The instance may have been created but failed to start; drop it so a
+        // retry builds a clean one.
+        scannerRef.current = null
+        if (auto) {
+          // Likely just needs a user gesture — show the one-tap fallback, not a
+          // scary error.
+          setPhase('idle')
+          return
+        }
+        setPhase('error')
+        const message = err instanceof Error ? err.message : 'Camera unavailable'
+        setErrorMsg(message)
+      }
+    },
+    [handleDecoded],
+  )
+
+  // One-tap entry: try to open the camera the moment the view mounts so the
+  // dashboard button lands straight in scanning. No "Door scan" intro screen.
+  useEffect(() => {
+    if (autoStartedRef.current) return
+    autoStartedRef.current = true
+    void startCamera(true)
+  }, [startCamera])
 
   const handleUndo = useCallback(async () => {
     if (!response) return
@@ -191,6 +216,26 @@ export function ScanStationClient() {
       setUndoState(res.ok ? 'done' : 'rejected')
     } catch {
       setUndoState('rejected')
+    }
+  }, [response])
+
+  const handleAdmitParty = useCallback(async () => {
+    if (!response) return
+    setAdmitState({ status: 'sending', admitted: 0 })
+    try {
+      const res = await fetch(`/api/scan/${encodeURIComponent(response.token)}/admit-party`, {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { Accept: 'application/json' },
+      })
+      if (!res.ok) {
+        setAdmitState({ status: 'error', admitted: 0 })
+        return
+      }
+      const json = (await res.json()) as { admitted: number }
+      setAdmitState({ status: 'done', admitted: json.admitted ?? 0 })
+    } catch {
+      setAdmitState({ status: 'error', admitted: 0 })
     }
   }, [response])
 
@@ -218,12 +263,14 @@ export function ScanStationClient() {
         }}
       />
 
-      {phase === 'idle' && <IdleStart onStart={startCamera} />}
-      {phase === 'error' && <ErrorView message={errorMsg} onRetry={startCamera} onExit={exitToAdmin} />}
+      {phase === 'idle' && <IdleStart onStart={() => startCamera(false)} />}
+      {phase === 'error' && (
+        <ErrorView message={errorMsg} onRetry={() => startCamera(false)} onExit={exitToAdmin} />
+      )}
       {(phase === 'live' || phase === 'starting' || phase === 'showing') && (
         <>
           <AimTarget />
-          <ExitButton onClick={exitToAdmin} />
+          {phase !== 'showing' && <ExitButton onClick={exitToAdmin} />}
           {phase === 'starting' && <StatusLine text="Starting camera…" />}
         </>
       )}
@@ -231,8 +278,11 @@ export function ScanStationClient() {
         <ResultOverlay
           response={response}
           undoState={undoState}
+          admitState={admitState}
           onUndo={handleUndo}
-          onScanNew={dismissResult}
+          onAdmitParty={handleAdmitParty}
+          onScanMore={dismissResult}
+          onExit={exitToAdmin}
         />
       )}
     </div>
@@ -255,9 +305,9 @@ function IdleStart({ onStart }: { onStart: () => void }) {
         textAlign: 'center',
       }}
     >
-      <h1 style={{ fontSize: 26, margin: '0 0 12px' }}>Door scan</h1>
+      <h1 style={{ fontSize: 26, margin: '0 0 12px' }}>Ready to scan</h1>
       <p style={{ fontSize: 14, color: '#bbb', maxWidth: 320, margin: '0 0 32px' }}>
-        Tap below to open the camera. Your phone will ask for permission once.
+        Tap below to open the camera. Your phone may ask for permission the first time.
       </p>
       <button
         type="button"
@@ -274,7 +324,7 @@ function IdleStart({ onStart }: { onStart: () => void }) {
           cursor: 'pointer',
         }}
       >
-        Scan a ticket
+        Tap to scan
       </button>
       <Link
         href="/admin"
@@ -417,16 +467,46 @@ function StatusLine({ text }: { text: string }) {
   )
 }
 
+const primaryBtnStyle: React.CSSProperties = {
+  width: 'min(80vw, 340px)',
+  background: '#fff',
+  color: '#111',
+  border: 'none',
+  borderRadius: 8,
+  padding: '0.95rem 1.5rem',
+  fontSize: '1.1rem',
+  fontWeight: 700,
+  cursor: 'pointer',
+}
+
+const secondaryBtnStyle: React.CSSProperties = {
+  width: 'min(80vw, 340px)',
+  background: 'rgba(255,255,255,0.15)',
+  color: '#fff',
+  border: '2px solid rgba(255,255,255,0.85)',
+  borderRadius: 8,
+  padding: '0.85rem 1.5rem',
+  fontSize: '1.05rem',
+  fontWeight: 600,
+  cursor: 'pointer',
+}
+
 function ResultOverlay({
   response,
   undoState,
+  admitState,
   onUndo,
-  onScanNew,
+  onAdmitParty,
+  onScanMore,
+  onExit,
 }: {
   response: ScanResponse
-  undoState: 'idle' | 'sending' | 'done' | 'rejected'
+  undoState: UndoState
+  admitState: AdmitState
   onUndo: () => void
-  onScanNew: () => void
+  onAdmitParty: () => void
+  onScanMore: () => void
+  onExit: () => void
 }) {
   const { result, undoEligible } = response
   const bg =
@@ -434,7 +514,18 @@ function ResultOverlay({
       ? '#0f7a3a'
       : result.status === 'ALREADY_SCANNED'
         ? '#b46a00'
-        : '#b00020'
+        : result.status === 'CANCELLED'
+          ? '#5a5a5a'
+          : '#b00020'
+
+  const heading =
+    result.status === 'VALID'
+      ? 'VALID'
+      : result.status === 'ALREADY_SCANNED'
+        ? 'ALREADY SCANNED'
+        : result.status === 'CANCELLED'
+          ? 'CANCELLED'
+          : 'INVALID'
 
   return (
     <div
@@ -450,6 +541,7 @@ function ResultOverlay({
         padding: '24px 20px',
         textAlign: 'center',
         fontFamily: 'system-ui, -apple-system, sans-serif',
+        overflowY: 'auto',
       }}
     >
       <div
@@ -463,11 +555,7 @@ function ResultOverlay({
           borderRadius: '0.75rem',
         }}
       >
-        {result.status === 'VALID'
-          ? 'VALID'
-          : result.status === 'ALREADY_SCANNED'
-            ? 'ALREADY SCANNED'
-            : 'INVALID'}
+        {heading}
       </div>
 
       {result.status === 'VALID' && (
@@ -476,36 +564,55 @@ function ResultOverlay({
             {result.buyerName}
           </div>
           <div style={{ fontSize: '1.25rem', marginTop: '0.5rem' }}>
-            {result.adultCount + result.childCount} ticket
-            {result.adultCount + result.childCount === 1 ? '' : 's'}
-            {result.childCount > 0
-              ? ` (${result.adultCount} adult${result.adultCount === 1 ? '' : 's'}, ${result.childCount} child${result.childCount === 1 ? '' : 'ren'})`
-              : ''}
+            {partyBreakdown(result.adultCount, result.childCount)}
           </div>
           <div style={{ fontSize: '1rem', marginTop: '0.75rem', opacity: 0.9 }}>
             {formatShowDate(result.showDate)} · {result.showTime} ·{' '}
             {VENUE_NAME[result.venue] ?? result.venue}
           </div>
-          <p style={{ marginTop: '1.5rem', fontSize: '0.95rem', opacity: 0.85 }}>
-            Resuming in a moment…
-          </p>
-          <button
-            type="button"
-            onClick={onScanNew}
+
+          <div
             style={{
-              marginTop: '0.5rem',
-              padding: '0.7rem 1.4rem',
-              background: 'rgba(255,255,255,0.15)',
-              color: '#fff',
-              border: '2px solid rgba(255,255,255,0.7)',
-              borderRadius: 8,
-              fontSize: '0.95rem',
-              fontWeight: 600,
-              cursor: 'pointer',
+              marginTop: '1.75rem',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '0.75rem',
             }}
           >
-            Scan new now
-          </button>
+            {admitState.status === 'done' ? (
+              <p style={{ fontWeight: 700, fontSize: '1.1rem', margin: 0 }}>
+                {admitState.admitted > 0
+                  ? `Admitted ${admitState.admitted} more ${admitState.admitted === 1 ? 'person' : 'people'}.`
+                  : 'No one left to admit.'}
+              </p>
+            ) : (
+              result.partyRemaining > 0 && (
+                <button
+                  type="button"
+                  onClick={onAdmitParty}
+                  disabled={admitState.status === 'sending'}
+                  style={{
+                    ...primaryBtnStyle,
+                    opacity: admitState.status === 'sending' ? 0.7 : 1,
+                  }}
+                >
+                  {admitState.status === 'sending'
+                    ? 'Admitting…'
+                    : `Admit rest of party (${result.partyRemaining})`}
+                </button>
+              )
+            )}
+            {admitState.status === 'error' && (
+              <p style={{ margin: 0, opacity: 0.9 }}>Could not admit the rest. Try again.</p>
+            )}
+            <button type="button" onClick={onScanMore} style={secondaryBtnStyle}>
+              Scan more
+            </button>
+            <button type="button" onClick={onExit} style={secondaryBtnStyle}>
+              Exit
+            </button>
+          </div>
         </>
       )}
 
@@ -518,53 +625,67 @@ function ResultOverlay({
             {formatShowDate(result.showDate)} · {result.showTime} ·{' '}
             {VENUE_NAME[result.venue] ?? result.venue}
           </div>
-          {undoEligible && undoState === 'idle' && (
-            <button
-              type="button"
-              onClick={onUndo}
-              style={{
-                marginTop: '1.25rem',
-                width: 'min(80vw, 320px)',
-                background: 'rgba(255,255,255,0.15)',
-                color: '#fff',
-                border: '2px solid rgba(255,255,255,0.85)',
-                borderRadius: 8,
-                padding: '0.85rem 1.5rem',
-                fontSize: '1.05rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-              }}
-            >
-              Undo scan
-            </button>
-          )}
-          {undoState === 'sending' && (
-            <p style={{ marginTop: '1rem', opacity: 0.85 }}>Undoing…</p>
-          )}
-          {undoState === 'done' && (
-            <p style={{ marginTop: '1rem', fontWeight: 600 }}>Scan undone.</p>
-          )}
-          {undoState === 'rejected' && (
-            <p style={{ marginTop: '1rem', opacity: 0.85 }}>Undo window expired (2 minutes).</p>
-          )}
-          <button
-            type="button"
-            onClick={onScanNew}
+
+          <div
             style={{
-              marginTop: '1.25rem',
-              width: 'min(80vw, 320px)',
-              background: '#fff',
-              color: '#111',
-              border: 'none',
-              borderRadius: 8,
-              padding: '0.85rem 1.5rem',
-              fontSize: '1.05rem',
-              fontWeight: 700,
-              cursor: 'pointer',
+              marginTop: '1.5rem',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '0.75rem',
             }}
           >
-            Scan new
-          </button>
+            {undoEligible && undoState === 'idle' && (
+              <button type="button" onClick={onUndo} style={secondaryBtnStyle}>
+                Undo scan
+              </button>
+            )}
+            {undoState === 'sending' && <p style={{ margin: 0, opacity: 0.85 }}>Undoing…</p>}
+            {undoState === 'done' && <p style={{ margin: 0, fontWeight: 600 }}>Scan undone.</p>}
+            {undoState === 'rejected' && (
+              <p style={{ margin: 0, opacity: 0.85 }}>Undo window expired (2 minutes).</p>
+            )}
+            <button type="button" onClick={onScanMore} style={primaryBtnStyle}>
+              Scan more
+            </button>
+            <button type="button" onClick={onExit} style={secondaryBtnStyle}>
+              Exit
+            </button>
+          </div>
+        </>
+      )}
+
+      {result.status === 'CANCELLED' && (
+        <>
+          <div style={{ fontSize: '1.15rem', marginTop: '1.25rem' }}>
+            This ticket has been voided
+            {result.cancelReason === 'refund'
+              ? ' (refunded)'
+              : result.cancelReason === 'storno'
+                ? ' (cancelled)'
+                : ''}
+            .
+          </div>
+          <div style={{ fontSize: '1rem', marginTop: '0.75rem', opacity: 0.9 }}>
+            {formatShowDate(result.showDate)} · {result.showTime} ·{' '}
+            {VENUE_NAME[result.venue] ?? result.venue}
+          </div>
+          <div
+            style={{
+              marginTop: '1.75rem',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '0.75rem',
+            }}
+          >
+            <button type="button" onClick={onScanMore} style={primaryBtnStyle}>
+              Scan more
+            </button>
+            <button type="button" onClick={onExit} style={secondaryBtnStyle}>
+              Exit
+            </button>
+          </div>
         </>
       )}
 
@@ -573,24 +694,22 @@ function ResultOverlay({
           <div style={{ fontSize: '1.15rem', marginTop: '1.25rem' }}>
             This ticket is not recognised.
           </div>
-          <button
-            type="button"
-            onClick={onScanNew}
+          <div
             style={{
-              marginTop: '1.5rem',
-              width: 'min(80vw, 320px)',
-              background: '#fff',
-              color: '#111',
-              border: 'none',
-              borderRadius: 8,
-              padding: '0.85rem 1.5rem',
-              fontSize: '1.05rem',
-              fontWeight: 700,
-              cursor: 'pointer',
+              marginTop: '1.75rem',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              gap: '0.75rem',
             }}
           >
-            Scan new
-          </button>
+            <button type="button" onClick={onScanMore} style={primaryBtnStyle}>
+              Scan more
+            </button>
+            <button type="button" onClick={onExit} style={secondaryBtnStyle}>
+              Exit
+            </button>
+          </div>
         </>
       )}
     </div>

@@ -15,6 +15,7 @@ function makeDeps(overrides: Partial<ScanDeps> = {}): ScanDeps {
     findTicket: vi.fn().mockResolvedValue(null),
     findOrderDetails: vi.fn().mockResolvedValue(null),
     findShowDetails: vi.fn().mockResolvedValue(null),
+    countUnscannedActiveTickets: vi.fn().mockResolvedValue(0),
     ...overrides,
   }
 }
@@ -145,7 +146,23 @@ describe('scanToken', () => {
       showDate: '2026-07-01',
       showTime: '21:00',
       venue: 'ljetno-kino',
+      partyRemaining: 0,
     })
+  })
+
+  it('VALID exposes partyRemaining = count of still-active, still-unscanned siblings after this scan', async () => {
+    const countUnscannedActiveTickets = vi.fn().mockResolvedValue(2)
+    const deps = makeDeps({
+      atomicMarkScanned: vi
+        .fn()
+        .mockResolvedValue({ orderId: 'ord_party', scannedAt: '2026-07-01T19:00:00.000Z' }),
+      findOrderDetails: vi.fn().mockResolvedValue(ORDER),
+      findShowDetails: vi.fn().mockResolvedValue(SHOW),
+      countUnscannedActiveTickets,
+    })
+    const result = await scanToken('tok_abc', deps)
+    expect(result).toMatchObject({ status: 'VALID', partyRemaining: 2 })
+    expect(countUnscannedActiveTickets).toHaveBeenCalledWith('ord_party')
   })
 
   it('canUndoScan: true when scannedAt is within the 2-minute window', () => {

@@ -16,12 +16,14 @@ export type AdminLang = 'en' | 'hr'
 export const ADMIN_LANGS: readonly AdminLang[] = ['en', 'hr'] as const
 
 // Role-based default language for a freshly created / first-logging-in user.
-// The secretary (`admin`), shared door account (`tehnika`) and reseller
-// (`partner`) work in Croatian; only the developer (`superadmin`) defaults to
-// English. Unknown/missing roles get Croatian — the safe default for the
-// Croatian-speaking staff this panel is built for.
+// The developer (`superadmin`) and the shared door account (`tehnika`) default
+// to English: the door account is shared by whoever is on the gate, and its
+// scan overlay shows guest-readable English to the ticket holder being admitted.
+// The secretary (`admin`) and reseller (`partner`) work in Croatian, as do
+// unknown/missing roles — the safe default for the Croatian-speaking staff this
+// panel is built for.
 export function defaultLanguageForRole(role: string | null | undefined): AdminLang {
-  return role === 'superadmin' ? 'en' : 'hr'
+  return role === 'superadmin' || role === 'tehnika' ? 'en' : 'hr'
 }
 
 // Narrow an arbitrary string (cookie value, header) to a supported admin
