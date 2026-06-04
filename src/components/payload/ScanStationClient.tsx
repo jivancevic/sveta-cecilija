@@ -96,6 +96,15 @@ export function ScanStationClient() {
     }
   }, [stopCamera])
 
+  // Warm the scanner chunk (html5-qrcode + zxing, ~108KB+ gzipped) on mount so
+  // it's already downloaded by the time staff tap "Scan a ticket". Without this
+  // the chunk only fetches on tap, putting a multi-second download (over venue
+  // wifi/cellular) on the critical path of the very first scan. Fire-and-forget;
+  // the result is the module cache, so startCamera's await resolves instantly.
+  useEffect(() => {
+    void loadScanner().catch(() => undefined)
+  }, [])
+
   useEffect(() => {
     if (phase !== 'live' && phase !== 'starting' && phase !== 'showing') return
     const prev = document.body.style.overflow
