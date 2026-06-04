@@ -93,6 +93,17 @@ export const dashboardStrings = {
     recordInPersonSale: 'Record in-person sale',
     inquiries: 'Inquiries',
     cancelled: 'Cancelled',
+    // Tehnika door dashboard (#240)
+    scanTicket: 'Scan a ticket',
+    admittedLabel: 'admitted', // reads "X / Y admitted"
+    noShowTonight: 'No show tonight.',
+    // Partner month-to-date card (#241)
+    mtdThisMonth: 'This month',
+    mtdTicketsSold: 'Tickets sold',
+    mtdOwed: 'You owe HGD',
+    mtdCommission: 'Your commission',
+    mtdNetOfCancelled: 'net of cancelled',
+    mtdLiveNote: 'Live so far this month. Same-day stornos still adjust it.',
   },
   hr: {
     dashboard: 'Nadzorna ploča',
@@ -118,6 +129,17 @@ export const dashboardStrings = {
     recordInPersonSale: 'Zabilježi prodaju na blagajni',
     inquiries: 'Upiti',
     cancelled: 'Otkazano',
+    // Tehnika door dashboard (#240)
+    scanTicket: 'Skeniraj kartu',
+    admittedLabel: 'ušlo', // reads "X / Y ušlo"
+    noShowTonight: 'Nema predstave večeras.',
+    // Partner month-to-date card (#241)
+    mtdThisMonth: 'Ovaj mjesec',
+    mtdTicketsSold: 'Prodanih ulaznica',
+    mtdOwed: 'Za platiti HGD-u',
+    mtdCommission: 'Vaša provizija',
+    mtdNetOfCancelled: 'bez storniranih',
+    mtdLiveNote: 'Uživo za tekući mjesec. Storno isti dan još može promijeniti iznos.',
   },
 } as const
 
