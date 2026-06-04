@@ -5,12 +5,16 @@ import { redirect } from 'next/navigation'
 import { getPayload } from 'payload'
 import config from '@payload-config'
 import { getStatsInput } from '@/lib/stats-data'
-import { computeStats } from '@/lib/stats'
 import { ADMIN_LANG_COOKIE, adminT, resolveAdminLang, type AdminLang } from '@/lib/admin-i18n'
 import { isAdminTier, isAuthed, isPartner, isSuperadmin, partnerIdOf } from '@/lib/access/roles'
 import { getNextShow, getScannedPeopleForShow, getUpcomingShows, type NextShow } from '@/lib/shows'
+import { toDashboardShows } from '@/lib/dashboard/from-stats'
+import { partitionShows } from '@/lib/dashboard/partition'
+import { seasonCapacity } from '@/lib/dashboard/capacity'
+import { SeasonBand } from './dashboard/SeasonBand'
+import { UpcomingHero } from './dashboard/UpcomingHero'
+import { PastShowsList } from './dashboard/PastShowsList'
 import { doorProgress, type DoorProgress } from '@/lib/dashboard/door-progress'
-import { HeaderBlock, ShowsTable } from './stats-blocks'
 import { TicketLookupPanel } from './TicketLookupPanel'
 import { PartnerSellForm, type SellShow } from './PartnerSellForm'
 import { PartnerStornoList } from './PartnerStornoList'
@@ -64,11 +68,15 @@ export async function AdminDashboardView() {
     return <TehnikaDashboard role={role} lang={lang} />
   }
 
-  // Superadmin-only critical-events dev strip (#235). admin never sees it; the
-  // tehnika/partner branches above already returned, so no need to re-check them.
-  // Fetched in parallel with the stats input (independent queries). The dev strip
-  // must never break the dashboard (e.g. table not yet bootstrapped on a stale
-  // DB), so a read failure resolves to an empty list.
+  // Upcoming-show-first secretary dashboard (#238, ADR-0015). The whole season
+  // (un-windowed) is partitioned into upcoming vs past; the hero leads with the
+  // next show + fill bar + remaining seats, the season band persists on top.
+  //
+  // Superadmin-only critical-events dev strip (#235, ADR-0016): admin never sees
+  // it; the tehnika/partner branches above already returned. It is fetched in
+  // parallel with the stats input (independent queries), and must never break the
+  // dashboard (e.g. table not yet bootstrapped on a stale DB), so a read failure
+  // resolves to an empty list.
   const superadmin = isSuperadmin(user as { role?: string })
   const pool = (payload.db as unknown as { pool: { query: PoolQuery } }).pool
   const [input, criticalEvents] = await Promise.all([
@@ -80,18 +88,25 @@ export async function AdminDashboardView() {
         })
       : Promise.resolve([]),
   ])
-  const { header, rows } = computeStats(input)
+  const dashboardShows = toDashboardShows(input.shows)
+  const { upcoming, past } = partitionShows({ today: input.today, shows: dashboardShows })
+  const season = seasonCapacity(dashboardShows)
 
   return (
     <div style={{ padding: '24px clamp(16px, 4vw, 40px)', maxWidth: 1280, margin: '0 auto' }}>
       <h1 style={{ marginBottom: 16, fontSize: 24 }}>{adminT(lang, 'dashboard')}</h1>
 
-      <HeaderBlock header={header} />
+      {/* Persistent season summary band — visible without scrolling.
+          Revenue + partner receivable come from MoneyFigures (the #237 seam);
+          today revenueCents is the existing online-gross total. */}
+      <SeasonBand lang={lang} season={season} revenueCents={input.totalRevenueCents} />
 
-      <AdminActions />
+      <AdminActions lang={lang} />
 
-      <h2 style={{ fontSize: 16, margin: '24px 0 8px' }}>Shows (last 7 days + upcoming)</h2>
-      <ShowsTable rows={rows} />
+      <div style={{ marginTop: 24 }}>
+        <UpcomingHero upcoming={upcoming} lang={lang} />
+        <PastShowsList past={past} lang={lang} />
+      </div>
 
       {superadmin && <CriticalEventsDevStrip events={criticalEvents} />}
 
@@ -102,7 +117,7 @@ export async function AdminDashboardView() {
   )
 }
 
-function AdminActions() {
+function AdminActions({ lang }: { lang: AdminLang }) {
   const button: React.CSSProperties = {
     display: 'block',
     padding: '14px 16px',
@@ -123,16 +138,18 @@ function AdminActions() {
       }}
     >
       <Link href="/admin/collections/shows/create" style={button}>
-        + Add show
+        {adminT(lang, 'newShow')}
       </Link>
       <Link href="/admin/collections/shows" style={button}>
-        Record in-person sale
+        {adminT(lang, 'recordInPersonSale')}
       </Link>
       <Link href="/admin/collections/orders" style={button}>
-        Find order
+        {adminT(lang, 'findOrder')}
       </Link>
+      {/* inquiries badge (#239) graft here — replace this static link with the
+          live "<n> new" badge component; keep it in the action row. */}
       <Link href="/admin/collections/contact-submissions" style={button}>
-        Inquiries
+        {adminT(lang, 'inquiries')}
       </Link>
     </div>
   )
