@@ -75,7 +75,7 @@ describe('partner-slip COPY (seller + claim prompt)', () => {
       'Get a digital ticket and show updates. Scan this code and add your email.',
     )
     expect(COPY.hr.claimPrompt).toBe(
-      'Želite digitalnu ulaznicu i obavijesti o predstavi? Skenirajte kod i upišite svoj email.',
+      'Želite digitalnu ulaznicu i obavijesti o izvedbi? Skenirajte kod i upišite svoj email.',
     )
   })
   it('contains no em-dash anywhere in the COPY map (hard project rule)', () => {

@@ -5,25 +5,26 @@ import { useRouter } from 'next/navigation'
 import { adminT, type AdminLang } from '@/lib/admin-i18n'
 import type { RecentSalePageRow } from '@/lib/partner/recent-sales-page'
 
-// Merged "Recent orders" for the partner dashboard (revamp). One list of the
-// partner's orders (newest 5 + "Show more" paging /api/partner/sales). Each order
-// is a dense row: code, when sold (clock), show date (calendar), people, money,
-// a download-tickets action, and — for same-day orders only — a cancel action.
-// A today order has a chevron and expands to its per-person tickets, each
-// individually cancellable; older orders are flat, download-only (outside the
-// same-day storno window). Cancel = red trash icon → inline "Otkazati narudžbu? /
-// ulaznicu?" confirm; on confirm the order (or its last active ticket) drops from
-// the list (server query also excludes orders with zero active tickets). The
-// user-facing verb is "otkazati"; the mechanism is still storno (same-day void).
+// "Nedavne narudžbe / Recent orders" for the partner dashboard. Shows the newest
+// 3 by default; "Prikaži više" opens a 10-per-page pager (‹ › through the whole
+// history), "Prikaži manje" collapses back to 3. Each order is a dense row: code,
+// clock = sold date+time, crossed-swords = the izvedba date, people, money, a
+// download-tickets icon, and (today only) a cancel icon. A today order expands to
+// its per-person tickets, each individually cancellable. Cancel is **delete-then-
+// undo** (no confirm, ADR-0017): the trash voids immediately and a muted banner
+// offers Undo for a few seconds (order 6s, ticket 4s) backed by the restore
+// endpoint; the user-facing verb is "otkazati", the mechanism is storno.
 type Page = { sales: RecentSalePageRow[]; hasMore: boolean }
+type View = { sales: RecentSalePageRow[]; hasMore: boolean; page: number; mode: 'collapsed' | 'pager' }
+
+const COLLAPSED_SIZE = 3
+const PAGER_SIZE = 10
+const ORDER_UNDO_MS = 6000
+const TICKET_UNDO_MS = 4000
 
 const eur = (cents: number) => `€${(cents / 100).toFixed(2)}`
+const localeOf = (lang: AdminLang) => (lang === 'hr' ? 'hr-HR' : 'en-GB')
 
-function localeOf(lang: AdminLang): string {
-  return lang === 'hr' ? 'hr-HR' : 'en-GB'
-}
-
-/** order.created_at ISO → "8. lip 14:20" / "8 Jun, 14:20" (Europe/Zagreb). */
 function formatSold(iso: string, lang: AdminLang): string {
   if (!iso) return ''
   return new Date(iso).toLocaleString(localeOf(lang), {
@@ -34,8 +35,6 @@ function formatSold(iso: string, lang: AdminLang): string {
     timeZone: 'Europe/Zagreb',
   })
 }
-
-/** show ISO date 'YYYY-MM-DD' → "8. lip" / "8 Jun" (rendered at noon UTC). */
 function formatShowDate(isoDate: string, lang: AdminLang): string {
   if (!isoDate) return ''
   return new Date(`${isoDate}T12:00:00Z`).toLocaleDateString(localeOf(lang), {
@@ -45,26 +44,25 @@ function formatShowDate(isoDate: string, lang: AdminLang): string {
   })
 }
 
+type UndoState = { kind: 'order' | 'ticket'; orderId: string; ticketId?: string; label: string; ms: number }
+
 export function PartnerRecentSales({ initial, lang }: { initial: Page; lang: AdminLang }) {
   const router = useRouter()
-  const [sales, setSales] = React.useState(initial.sales)
-  const [hasMore, setHasMore] = React.useState(initial.hasMore)
-  const [page, setPage] = React.useState(1)
+  const [view, setView] = React.useState<View>({ ...initial, page: 1, mode: 'collapsed' })
   const [expanded, setExpanded] = React.useState<Set<string>>(new Set())
-  const [loadingMore, setLoadingMore] = React.useState(false)
+  const [loading, setLoading] = React.useState(false)
   const [busy, setBusy] = React.useState<string | null>(null)
-  const [confirming, setConfirming] = React.useState<string | null>(null)
   const [error, setError] = React.useState<string | null>(null)
+  const [undo, setUndo] = React.useState<UndoState | null>(null)
 
-  // Resync from the server whenever the dashboard re-renders (a new sale, or a
-  // cancel here, triggers router.refresh()). "Adjust state during render" pattern
-  // (React docs) rather than an effect, which the React Compiler lint disallows.
+  // Resync the COLLAPSED view from the server after a router.refresh() (a new
+  // sale, a cancel, an undo) — but never yank the user out of the pager. "Adjust
+  // state during render" pattern (the React Compiler lint forbids setState in an
+  // effect here).
   const [lastInitial, setLastInitial] = React.useState(initial)
   if (initial !== lastInitial) {
     setLastInitial(initial)
-    setSales(initial.sales)
-    setHasMore(initial.hasMore)
-    setPage(1)
+    if (view.mode === 'collapsed') setView({ ...initial, page: 1, mode: 'collapsed' })
   }
 
   const toggle = (orderId: string) =>
@@ -78,32 +76,31 @@ export function PartnerRecentSales({ initial, lang }: { initial: Page; lang: Adm
   const downloadTickets = (orderId: string) =>
     window.open(`/api/orders/${orderId}/tickets.pdf`, '_blank', 'noopener')
 
-  const loadMore = async () => {
-    setLoadingMore(true)
+  const load = async (mode: View['mode'], page: number) => {
+    setLoading(true)
     setError(null)
     try {
-      const next = page + 1
-      const res = await fetch(`/api/partner/sales?page=${next}`)
+      const size = mode === 'collapsed' ? COLLAPSED_SIZE : PAGER_SIZE
+      const res = await fetch(`/api/partner/sales?page=${page}&size=${size}`)
       const data = await res.json().catch(() => ({}))
       if (!res.ok) {
         setError(adminT(lang, 'cancelFailed'))
         return
       }
-      setSales((prev) => [...prev, ...((data.sales as RecentSalePageRow[]) ?? [])])
-      setHasMore(Boolean(data.hasMore))
-      setPage(next)
+      setView({ sales: (data.sales as RecentSalePageRow[]) ?? [], hasMore: Boolean(data.hasMore), page, mode })
     } catch {
       setError(adminT(lang, 'saleErrorNetwork'))
     } finally {
-      setLoadingMore(false)
+      setLoading(false)
     }
   }
 
   const cancel = async (orderId: string, ticketId?: string) => {
     const key = ticketId ? `${orderId}:${ticketId}` : orderId
     setBusy(key)
-    setConfirming(null)
     setError(null)
+    const row = view.sales.find((s) => s.orderId === orderId)
+    const code = row?.code ?? ''
     try {
       const res = await fetch('/api/partner/storno', {
         method: 'POST',
@@ -115,11 +112,11 @@ export function PartnerRecentSales({ initial, lang }: { initial: Page; lang: Adm
         setError(adminT(lang, 'cancelFailed'))
         return
       }
-      // Mark the cancelled ticket(s), then drop the order once it has no active
-      // tickets left (whole-order cancel, or the last per-ticket cancel). The
-      // server query also excludes zero-active orders, so the refresh keeps it gone.
-      setSales((prev) => {
-        const mapped = prev.map((s) =>
+      // Optimistic: mark the cancelled ticket(s); drop the order once it has no
+      // active tickets. Show the undo banner; the void is already committed.
+      const ref = ticketId ? row?.tickets.find((t) => t.id === ticketId)?.ref ?? code : code
+      setView((v) => {
+        const mapped = v.sales.map((s) =>
           s.orderId !== orderId
             ? s
             : {
@@ -135,9 +132,14 @@ export function PartnerRecentSales({ initial, lang }: { initial: Page; lang: Adm
         )
         const target = mapped.find((s) => s.orderId === orderId)
         const noneActive = !!target && target.tickets.every((t) => t.status !== 'active')
-        return noneActive ? mapped.filter((s) => s.orderId !== orderId) : mapped
+        return { ...v, sales: noneActive ? mapped.filter((s) => s.orderId !== orderId) : mapped }
       })
-      router.refresh()
+      setUndo(
+        ticketId
+          ? { kind: 'ticket', orderId, ticketId, label: `${adminT(lang, 'ticketCancelled')} ${ref}`, ms: TICKET_UNDO_MS }
+          : { kind: 'order', orderId, label: `${adminT(lang, 'orderCancelled')} ${code}`, ms: ORDER_UNDO_MS },
+      )
+      router.refresh() // refresh the other cards (month-to-date, statistics)
     } catch {
       setError(adminT(lang, 'saleErrorNetwork'))
     } finally {
@@ -145,18 +147,30 @@ export function PartnerRecentSales({ initial, lang }: { initial: Page; lang: Adm
     }
   }
 
-  if (sales.length === 0) {
-    return (
-      <div style={card}>
-        <h2 style={{ fontSize: 16, marginBottom: 4 }}>{adminT(lang, 'recentSales')}</h2>
-        <p style={{ color: 'var(--theme-elevation-500)', fontSize: 14, margin: 0 }}>
-          {adminT(lang, 'noOrdersYet')}
-        </p>
-      </div>
-    )
+  const doUndo = async () => {
+    if (!undo) return
+    const { orderId, ticketId } = undo
+    setUndo(null)
+    setError(null)
+    try {
+      const res = await fetch('/api/partner/storno/undo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(ticketId ? { orderId, ticketId } : { orderId }),
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        setError(adminT(lang, data.code === 'SEAT_TAKEN' ? 'undoSeatTaken' : 'undoFailed'))
+        return
+      }
+      await load(view.mode, view.page) // bring the restored order/ticket back
+      router.refresh()
+    } catch {
+      setError(adminT(lang, 'undoFailed'))
+    }
   }
 
-  // The "Earlier" divider sits before the first non-today (read-only) order.
+  const sales = view.sales
   const firstOlderIdx = sales.findIndex((s) => !s.isToday)
 
   return (
@@ -166,19 +180,21 @@ export function PartnerRecentSales({ initial, lang }: { initial: Page; lang: Adm
         {adminT(lang, 'recentCancelNote')}
       </p>
 
+      {undo && <UndoBanner key={`${undo.orderId}:${undo.ticketId ?? ''}`} state={undo} lang={lang} onUndo={doUndo} onClose={() => setUndo(null)} />}
+
       {error && (
         <p style={{ color: 'var(--theme-error-500, #c0392b)', fontSize: 13, margin: '0 0 12px' }}>{error}</p>
       )}
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {sales.map((sale, idx) => {
-          const divider =
-            !sale.isToday && idx === firstOlderIdx ? (
-              <div style={earlierLabel}>{adminT(lang, 'earlierSales')}</div>
-            ) : null
-          return (
+      {sales.length === 0 ? (
+        <p style={{ color: 'var(--theme-elevation-500)', fontSize: 14, margin: 0 }}>{adminT(lang, 'noOrdersYet')}</p>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {sales.map((sale, idx) => (
             <React.Fragment key={sale.orderId}>
-              {divider}
+              {!sale.isToday && idx === firstOlderIdx ? (
+                <div style={earlierLabel}>{adminT(lang, 'earlierSales')}</div>
+              ) : null}
               <SaleRow
                 sale={sale}
                 lang={lang}
@@ -186,20 +202,86 @@ export function PartnerRecentSales({ initial, lang }: { initial: Page; lang: Adm
                 onToggle={() => toggle(sale.orderId)}
                 onDownload={downloadTickets}
                 busy={busy}
-                confirming={confirming}
-                setConfirming={setConfirming}
                 onCancel={cancel}
               />
             </React.Fragment>
-          )
-        })}
-      </div>
-
-      {hasMore && (
-        <button type="button" onClick={loadMore} disabled={loadingMore} style={showMoreBtn}>
-          {loadingMore ? adminT(lang, 'loadingMore') : adminT(lang, 'showMore')}
-        </button>
+          ))}
+        </div>
       )}
+
+      <Controls view={view} lang={lang} loading={loading} onMore={() => load('pager', 1)} onLess={() => load('collapsed', 1)} onPage={(p) => load('pager', p)} />
+    </div>
+  )
+}
+
+function Controls({
+  view,
+  lang,
+  loading,
+  onMore,
+  onLess,
+  onPage,
+}: {
+  view: View
+  lang: AdminLang
+  loading: boolean
+  onMore: () => void
+  onLess: () => void
+  onPage: (page: number) => void
+}) {
+  if (view.mode === 'collapsed') {
+    if (!view.hasMore) return null
+    return (
+      <button type="button" onClick={onMore} disabled={loading} style={pillBtn}>
+        {loading ? adminT(lang, 'loadingMore') : adminT(lang, 'showMore')}
+      </button>
+    )
+  }
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 14, flexWrap: 'wrap' }}>
+      <button type="button" onClick={() => onPage(view.page - 1)} disabled={loading || view.page <= 1} aria-label={adminT(lang, 'pagePrev')} style={view.page <= 1 ? pagerDisabled : pagerBtn}>
+        ‹
+      </button>
+      <span style={{ fontSize: 13, color: 'var(--theme-elevation-600)', minWidth: 20, textAlign: 'center' }}>{view.page}</span>
+      <button type="button" onClick={() => onPage(view.page + 1)} disabled={loading || !view.hasMore} aria-label={adminT(lang, 'pageNext')} style={!view.hasMore ? pagerDisabled : pagerBtn}>
+        ›
+      </button>
+      <button type="button" onClick={onLess} disabled={loading} style={{ ...pillBtn, marginTop: 0, marginLeft: 'auto' }}>
+        {adminT(lang, 'showLess')}
+      </button>
+    </div>
+  )
+}
+
+// Muted top-of-panel banner with a draining bar; dismisses when the bar finishes
+// (the void stands) or when Undo is tapped.
+function UndoBanner({ state, lang, onUndo, onClose }: { state: UndoState; lang: AdminLang; onUndo: () => void; onClose: () => void }) {
+  const [width, setWidth] = React.useState(100)
+  React.useEffect(() => {
+    const raf = requestAnimationFrame(() => setWidth(0))
+    const fallback = setTimeout(onClose, state.ms + 600)
+    return () => {
+      cancelAnimationFrame(raf)
+      clearTimeout(fallback)
+    }
+  }, [onClose, state.ms])
+
+  return (
+    <div role="status" style={undoBox}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+        <span style={{ fontSize: 14, color: 'var(--theme-text)' }}>{state.label}</span>
+        <button type="button" onClick={onUndo} style={undoBtn}>
+          {adminT(lang, 'undo')}
+        </button>
+      </div>
+      <div style={{ height: 4, borderRadius: 4, background: 'var(--theme-elevation-200)', overflow: 'hidden', marginTop: 8 }}>
+        <div
+          onTransitionEnd={(e) => {
+            if (e.propertyName === 'width') onClose()
+          }}
+          style={{ width: `${width}%`, height: '100%', background: 'var(--theme-elevation-450, #8a8a8a)', transition: `width ${state.ms}ms linear` }}
+        />
+      </div>
     </div>
   )
 }
@@ -211,8 +293,6 @@ function SaleRow({
   onToggle,
   onDownload,
   busy,
-  confirming,
-  setConfirming,
   onCancel,
 }: {
   sale: RecentSalePageRow
@@ -221,8 +301,6 @@ function SaleRow({
   onToggle: () => void
   onDownload: (orderId: string) => void
   busy: string | null
-  confirming: string | null
-  setConfirming: (key: string | null) => void
   onCancel: (orderId: string, ticketId?: string) => void
 }) {
   const count = sale.adultCount + sale.childCount
@@ -233,7 +311,7 @@ function SaleRow({
       {sale.isToday && <Chevron open={open} />}
       <strong style={{ fontSize: 14 }}>{sale.code}</strong>
       <MetaItem title={adminT(lang, 'soldLabel')} icon={<ClockIcon />} text={formatSold(sale.createdAt, lang)} />
-      <MetaItem title={adminT(lang, 'showWord')} icon={<ShowIcon />} text={formatShowDate(sale.showDate, lang)} />
+      <MetaItem title={adminT(lang, 'showWord')} icon={<SwordsIcon />} text={formatShowDate(sale.showDate, lang)} />
       <MetaItem title={adminT(lang, 'peopleLabel')} icon={<PersonIcon />} text={String(count)} />
       <strong style={{ fontSize: 13 }}>{eur(sale.totalCents)}</strong>
     </>
@@ -251,26 +329,16 @@ function SaleRow({
         )}
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <button
-            type="button"
-            onClick={() => onDownload(sale.orderId)}
-            title={adminT(lang, 'downloadTickets')}
-            aria-label={adminT(lang, 'downloadTickets')}
-            style={iconBtn}
-          >
+          <button type="button" onClick={() => onDownload(sale.orderId)} title={adminT(lang, 'downloadTickets')} aria-label={adminT(lang, 'downloadTickets')} style={iconBtn}>
             <DownloadIcon />
           </button>
           {sale.isToday && (
-            <CancelControl
-              cKey={sale.orderId}
-              confirmText={adminT(lang, 'confirmCancelOrder')}
-              ariaLabel={adminT(lang, 'cancelSale')}
+            <CancelButton
               disabled={activeCount === 0}
               busy={busy === sale.orderId}
+              label={adminT(lang, 'cancelSale')}
               lang={lang}
-              confirming={confirming}
-              setConfirming={setConfirming}
-              onConfirm={() => onCancel(sale.orderId)}
+              onClick={() => onCancel(sale.orderId)}
             />
           )}
         </div>
@@ -293,15 +361,11 @@ function SaleRow({
                   )}
                 </span>
                 {!cancelled && (
-                  <CancelControl
-                    cKey={`${sale.orderId}:${t.id}`}
-                    confirmText={adminT(lang, 'confirmCancelTicket')}
-                    ariaLabel={adminT(lang, 'cancelTicketAction')}
+                  <CancelButton
                     busy={busy === `${sale.orderId}:${t.id}`}
+                    label={adminT(lang, 'cancelTicketAction')}
                     lang={lang}
-                    confirming={confirming}
-                    setConfirming={setConfirming}
-                    onConfirm={() => onCancel(sale.orderId, t.id)}
+                    onClick={() => onCancel(sale.orderId, t.id)}
                   />
                 )}
               </div>
@@ -313,72 +377,29 @@ function SaleRow({
   )
 }
 
+// Trash-icon cancel: no confirm — tapping it voids immediately (the undo banner
+// is the safety net, ADR-0017).
+function CancelButton({ disabled = false, busy, label, lang, onClick }: { disabled?: boolean; busy: boolean; label: string; lang: AdminLang; onClick: () => void }) {
+  if (busy) {
+    return <span style={{ fontSize: 12, color: 'var(--theme-elevation-500)' }}>{adminT(lang, 'cancelling')}</span>
+  }
+  return (
+    <button type="button" disabled={disabled} onClick={onClick} aria-label={label} title={label} style={disabled ? trashDisabled : trashBtn}>
+      <TrashIcon />
+    </button>
+  )
+}
+
 function MetaItem({ icon, text, title }: { icon: React.ReactNode; text: string; title: string }) {
   return (
-    <span
-      title={title}
-      style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: 'var(--theme-elevation-500)', fontSize: 12 }}
-    >
+    <span title={title} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, color: 'var(--theme-elevation-500)', fontSize: 12 }}>
       {icon}
       {text}
     </span>
   )
 }
 
-// Inline-confirm cancel: a red trash icon; tapping it swaps in the confirm
-// question + Yes/No. Shared by the whole-order action and the per-ticket action.
-function CancelControl({
-  cKey,
-  confirmText,
-  ariaLabel,
-  disabled = false,
-  busy,
-  lang,
-  confirming,
-  setConfirming,
-  onConfirm,
-}: {
-  cKey: string
-  confirmText: string
-  ariaLabel: string
-  disabled?: boolean
-  busy: boolean
-  lang: AdminLang
-  confirming: string | null
-  setConfirming: (key: string | null) => void
-  onConfirm: () => void
-}) {
-  if (busy) {
-    return <span style={{ fontSize: 12, color: 'var(--theme-elevation-500)' }}>{adminT(lang, 'cancelling')}</span>
-  }
-  if (confirming === cKey) {
-    return (
-      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
-        <span style={{ fontSize: 12, color: 'var(--theme-elevation-700)' }}>{confirmText}</span>
-        <button type="button" onClick={onConfirm} style={confirmYesBtn}>
-          {adminT(lang, 'confirmYes')}
-        </button>
-        <button type="button" onClick={() => setConfirming(null)} style={confirmNoBtn}>
-          {adminT(lang, 'confirmNo')}
-        </button>
-      </span>
-    )
-  }
-  return (
-    <button
-      type="button"
-      disabled={disabled}
-      onClick={() => setConfirming(cKey)}
-      aria-label={ariaLabel}
-      title={ariaLabel}
-      style={disabled ? trashDisabled : trashBtn}
-    >
-      <TrashIcon />
-    </button>
-  )
-}
-
-// --- icons (inline SVG, currentColor — render consistently in the admin) ---
+// --- icons (inline SVG, currentColor) ---
 const metaIcon: React.CSSProperties = { width: 13, height: 13, flex: '0 0 auto' }
 function ClockIcon() {
   return (
@@ -388,11 +409,18 @@ function ClockIcon() {
     </svg>
   )
 }
-function ShowIcon() {
+// Crossed swords (moreška = sword dance → the izvedba). Lucide "swords".
+function SwordsIcon() {
   return (
     <svg viewBox="0 0 24 24" style={metaIcon} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <rect x="3" y="4" width="18" height="17" rx="2" />
-      <path d="M3 9h18M8 2v4M16 2v4" />
+      <polyline points="14.5 17.5 3 6 3 3 6 3 17.5 14.5" />
+      <line x1="13" y1="19" x2="19" y2="13" />
+      <line x1="16" y1="16" x2="20" y2="20" />
+      <line x1="19" y1="21" x2="21" y2="19" />
+      <polyline points="14.5 6.5 18 3 21 3 21 6 17.5 9.5" />
+      <line x1="5" y1="14" x2="9" y2="18" />
+      <line x1="7" y1="17" x2="4" y2="20" />
+      <line x1="3" y1="19" x2="5" y2="21" />
     </svg>
   )
 }
@@ -420,18 +448,7 @@ function TrashIcon() {
 }
 function Chevron({ open }: { open: boolean }) {
   return (
-    <svg
-      viewBox="0 0 24 24"
-      width={14}
-      height={14}
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      style={{ flex: '0 0 auto', transform: open ? 'rotate(90deg)' : 'none', transition: 'transform 120ms' }}
-      aria-hidden="true"
-    >
+    <svg viewBox="0 0 24 24" width={14} height={14} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" style={{ flex: '0 0 auto', transform: open ? 'rotate(90deg)' : 'none', transition: 'transform 120ms' }} aria-hidden="true">
       <path d="M9 6l6 6-6 6" />
     </svg>
   )
@@ -463,15 +480,7 @@ const infoToggle: React.CSSProperties = {
   color: 'var(--theme-text)',
   textAlign: 'left',
 }
-const infoStatic: React.CSSProperties = {
-  display: 'flex',
-  alignItems: 'center',
-  gap: 8,
-  flexWrap: 'wrap',
-  flex: '1 1 auto',
-  minWidth: 0,
-  color: 'var(--theme-text)',
-}
+const infoStatic: React.CSSProperties = { ...infoToggle, cursor: 'default' }
 const iconBtn: React.CSSProperties = {
   display: 'inline-flex',
   alignItems: 'center',
@@ -489,11 +498,7 @@ const trashBtn: React.CSSProperties = {
   border: '1px solid var(--theme-error-200, #e6b8b2)',
   color: 'var(--theme-error-500, #c0392b)',
 }
-const trashDisabled: React.CSSProperties = {
-  ...iconBtn,
-  color: 'var(--theme-elevation-300)',
-  cursor: 'not-allowed',
-}
+const trashDisabled: React.CSSProperties = { ...iconBtn, color: 'var(--theme-elevation-300)', cursor: 'not-allowed' }
 const ticketRow: React.CSSProperties = {
   display: 'flex',
   alignItems: 'center',
@@ -510,7 +515,7 @@ const earlierLabel: React.CSSProperties = {
   paddingTop: 10,
   marginTop: 2,
 }
-const showMoreBtn: React.CSSProperties = {
+const pillBtn: React.CSSProperties = {
   marginTop: 14,
   padding: '8px 14px',
   background: 'var(--theme-elevation-100)',
@@ -521,23 +526,34 @@ const showMoreBtn: React.CSSProperties = {
   fontWeight: 600,
   cursor: 'pointer',
 }
-const confirmYesBtn: React.CSSProperties = {
-  padding: '4px 10px',
-  background: 'var(--theme-error-500, #c0392b)',
-  border: 'none',
-  borderRadius: 6,
-  color: '#fff',
-  fontWeight: 700,
-  fontSize: 12,
-  cursor: 'pointer',
-}
-const confirmNoBtn: React.CSSProperties = {
-  padding: '4px 10px',
+const pagerBtn: React.CSSProperties = {
+  width: 32,
+  height: 32,
+  display: 'inline-flex',
+  alignItems: 'center',
+  justifyContent: 'center',
+  fontSize: 18,
   background: 'var(--theme-elevation-100)',
   border: '1px solid var(--theme-elevation-200)',
   borderRadius: 6,
   color: 'var(--theme-text)',
-  fontWeight: 600,
-  fontSize: 12,
   cursor: 'pointer',
+}
+const pagerDisabled: React.CSSProperties = { ...pagerBtn, color: 'var(--theme-elevation-300)', cursor: 'not-allowed' }
+const undoBox: React.CSSProperties = {
+  background: 'var(--theme-elevation-100)',
+  border: '1px solid var(--theme-elevation-200)',
+  borderRadius: 8,
+  padding: '10px 12px',
+  marginBottom: 14,
+}
+const undoBtn: React.CSSProperties = {
+  background: 'none',
+  border: 'none',
+  color: 'var(--theme-success-600, #1f7a3a)',
+  fontWeight: 700,
+  fontSize: 13,
+  textDecoration: 'underline',
+  cursor: 'pointer',
+  padding: 0,
 }

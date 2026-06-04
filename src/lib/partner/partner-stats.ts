@@ -12,6 +12,8 @@ import type { TicketType } from './partner-reconciliation'
 export interface StatsTicketRow {
   showId: string
   showLabel: string
+  /** ISO 'YYYY-MM-DD' show date, for the Statistika chart axis + chronological sort. */
+  showDate: string
   type: TicketType
   status: 'active' | 'cancelled'
 }
@@ -19,6 +21,7 @@ export interface StatsTicketRow {
 export interface PerShowCount {
   showId: string
   showLabel: string
+  showDate: string
   adults: number
   children: number
   total: number
@@ -53,7 +56,7 @@ export function computeSeasonStats(rows: StatsTicketRow[]): PartnerSeasonStats {
     if (row.status !== 'active') continue
     let line = byShow.get(row.showId)
     if (!line) {
-      line = { showId: row.showId, showLabel: row.showLabel, adults: 0, children: 0, total: 0 }
+      line = { showId: row.showId, showLabel: row.showLabel, showDate: row.showDate, adults: 0, children: 0, total: 0 }
       byShow.set(row.showId, line)
     }
     if (row.type === 'adult') line.adults += 1
@@ -62,8 +65,9 @@ export function computeSeasonStats(rows: StatsTicketRow[]): PartnerSeasonStats {
     totalActive += 1
   }
 
+  // Chronological (by show date) so the Statistika bars read left-to-right in time.
   const perShow = [...byShow.values()].sort((a, b) =>
-    a.showLabel.localeCompare(b.showLabel) || a.showId.localeCompare(b.showId),
+    a.showDate.localeCompare(b.showDate) || a.showId.localeCompare(b.showId),
   )
   return { totalActive, perShow }
 }

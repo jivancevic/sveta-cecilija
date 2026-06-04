@@ -120,7 +120,7 @@ export function TicketLookupPanel({ showId }: Props) {
         }
         const result = data.result
         if (!result || result.status === 'NOT_FOUND') {
-          setInfo('Nema naloga za ovu predstavu.')
+          setInfo('Nema naloga za ovu izvedbu.')
         } else if (result.status === 'AMBIGUOUS') {
           setInfo(`Pronađeno ${result.count} naloga. Suzite pretragu ili upišite kod naloga.`)
         } else {

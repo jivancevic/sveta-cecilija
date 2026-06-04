@@ -81,7 +81,7 @@ const COPY = {
     scanAtDoor: 'Skenirajte ovaj kod na ulazu',
     perPerson: 'Jedna ulaznica po osobi. Ovaj QR pušta jednu osobu.',
     claimPrompt:
-      'Želite digitalnu ulaznicu i obavijesti o predstavi? Skenirajte kod i upišite svoj email.',
+      'Želite digitalnu ulaznicu i obavijesti o izvedbi? Skenirajte kod i upišite svoj email.',
   },
 } as const
 

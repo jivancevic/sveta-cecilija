@@ -39,6 +39,14 @@ function showLabel(date: unknown, venue: unknown): string {
   return venueLabel ? `${iso} · ${venueLabel}` : iso
 }
 
+// shows.date comes back from the pg pool as a JS Date (noon UTC) or a string;
+// normalise to an ISO calendar date for the Statistika chart.
+function toIsoShowDate(date: unknown): string {
+  if (typeof date === 'string') return date.slice(0, 10)
+  if (date instanceof Date) return date.toISOString().slice(0, 10)
+  return ''
+}
+
 // All of a partner's ticket rows (any status), joined to their show for labels.
 async function loadPartnerTicketRows(
   query: PoolQuery,
@@ -61,6 +69,7 @@ async function loadPartnerTicketRows(
   return res.rows.map((r) => ({
     showId: String(r.show_id),
     showLabel: showLabel(r.show_date, r.show_venue),
+    showDate: toIsoShowDate(r.show_date),
     type: r.type as TicketType,
     status: r.status as 'active' | 'cancelled',
     cancelReason: (r.cancel_reason ?? null) as 'storno' | 'refund' | null,

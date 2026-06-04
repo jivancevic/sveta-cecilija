@@ -446,7 +446,7 @@ async function PartnerDashboard({
   const { year, month } = monthKeyInZagreb(now.toISOString())
 
   const [recentPage, seasonStats, monthToDate] = await Promise.all([
-    getPartnerRecentSalesPage(poolQuery, numericPartnerId, { page: 1, pageSize: 5 }),
+    getPartnerRecentSalesPage(poolQuery, numericPartnerId, { page: 1, pageSize: 3 }),
     getPartnerSeasonStats(poolQuery, numericPartnerId),
     getPartnerMonthToDate(poolQuery, { partnerId: numericPartnerId, commissionPercent, year, month }),
   ])

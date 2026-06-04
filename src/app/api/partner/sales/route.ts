@@ -7,11 +7,14 @@ import type { PoolQuery } from '@/lib/tickets/sold-seats'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-const PAGE_SIZE = 5
+const DEFAULT_SIZE = 10
+const MAX_SIZE = 50
 
-// GET /api/partner/sales?page=N — one page of the caller partner's recent sales,
-// newest first. Local API runs overrideAccess, so this re-checks the caller is a
-// partner and scopes to THEIR own partner id (never trusts a query-supplied one).
+// GET /api/partner/sales?page=N&size=M — one page of the caller partner's recent
+// orders, newest first. Local API runs overrideAccess, so this re-checks the
+// caller is a partner and scopes to THEIR own partner id (never trusts a
+// query-supplied one). The pager requests size=10; the dashboard server-renders
+// the first 3 directly without this route.
 export async function GET(req: NextRequest) {
   const gate = await requireRole(req, isPartner)
   if (gate.error) return gate.error
@@ -24,14 +27,16 @@ export async function GET(req: NextRequest) {
 
   const rawPage = Number(req.nextUrl.searchParams.get('page'))
   const page = Number.isFinite(rawPage) ? Math.max(1, Math.floor(rawPage)) : 1
+  const rawSize = Number(req.nextUrl.searchParams.get('size'))
+  const pageSize = Number.isFinite(rawSize) ? Math.min(MAX_SIZE, Math.max(1, Math.floor(rawSize))) : DEFAULT_SIZE
 
   const pool = (payload.db as unknown as { pool: { query: PoolQuery } }).pool
   const poolQuery: PoolQuery = (sql, params) => pool.query(sql, params)
 
   const { sales, hasMore } = await getPartnerRecentSalesPage(poolQuery, Number(partnerId), {
     page,
-    pageSize: PAGE_SIZE,
+    pageSize,
   })
 
-  return NextResponse.json({ sales, hasMore, page })
+  return NextResponse.json({ sales, hasMore, page, pageSize })
 }

@@ -2,7 +2,14 @@ import { describe, it, expect } from 'vitest'
 import { computeSeasonStats, type StatsTicketRow } from './partner-stats'
 
 function row(over: Partial<StatsTicketRow> = {}): StatsTicketRow {
-  return { showId: '1', showLabel: '2026-07-12 · Ljetno kino', type: 'adult', status: 'active', ...over }
+  return {
+    showId: '1',
+    showLabel: '2026-07-12 · Ljetno kino',
+    showDate: '2026-07-12',
+    type: 'adult',
+    status: 'active',
+    ...over,
+  }
 }
 
 describe('computeSeasonStats', () => {
@@ -10,7 +17,7 @@ describe('computeSeasonStats', () => {
     const rows = [
       row({ showId: '1', type: 'adult' }),
       row({ showId: '1', type: 'child' }),
-      row({ showId: '2', showLabel: '2026-08-01 · Centar za kulturu', type: 'adult' }),
+      row({ showId: '2', showLabel: '2026-08-01 · Centar za kulturu', showDate: '2026-08-01', type: 'adult' }),
     ]
     const s = computeSeasonStats(rows)
     expect(s.totalActive).toBe(3)
@@ -30,11 +37,11 @@ describe('computeSeasonStats', () => {
     expect(s.perShow[0].total).toBe(1)
   })
 
-  it('sorts per-show lines by label and is empty for no active rows', () => {
+  it('sorts per-show lines chronologically by show date and is empty for no active rows', () => {
     expect(computeSeasonStats([]).perShow).toHaveLength(0)
     const rows = [
-      row({ showId: '2', showLabel: 'B show' }),
-      row({ showId: '1', showLabel: 'A show' }),
+      row({ showId: '2', showLabel: 'B show', showDate: '2026-08-01' }),
+      row({ showId: '1', showLabel: 'A show', showDate: '2026-07-12' }),
     ]
     const s = computeSeasonStats(rows)
     expect(s.perShow.map((p) => p.showLabel)).toEqual(['A show', 'B show'])

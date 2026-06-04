@@ -28,6 +28,10 @@ export interface VoidTicketsResult {
   voided: number
 }
 
+export interface ReactivateResult {
+  restored: number
+}
+
 function rowsOf(res: { rows?: unknown[] } | unknown[]): unknown[] {
   return Array.isArray(res) ? res : (res.rows ?? [])
 }
@@ -66,4 +70,45 @@ export async function voidSingleTicket(
     RETURNING id
   `)
   return { voided: rowsOf(res).length }
+}
+
+// Un-void (restore) mirror (ADR-0017, #146). Restore re-activates tickets that a
+// storno just cancelled, so a partner's delete-then-undo can put seats back. Only
+// rows with cancel_reason='storno' are restorable — refund-voided tickets stay
+// permanently cancelled. Like the void SQL above, this module OWNS the statement;
+// the caller injects only the executor and serializes the capacity re-check under
+// the per-show sell lock so a concurrent sale can't be oversold by the restore.
+
+/** Reactivate all storno-cancelled tickets of an order. Returns how many were restored. */
+export async function reactivateOrderTickets(
+  db: TicketVoidExecutor,
+  orderId: string,
+): Promise<ReactivateResult> {
+  const res = await db.execute(sql`
+    UPDATE tickets
+    SET status = 'active',
+        cancelled_at = NULL,
+        cancel_reason = NULL,
+        updated_at = NOW()
+    WHERE order_id = ${Number(orderId)} AND status = 'cancelled' AND cancel_reason = 'storno'
+    RETURNING id
+  `)
+  return { restored: rowsOf(res).length }
+}
+
+/** Reactivate a single storno-cancelled ticket. Returns how many were restored (0 or 1). */
+export async function reactivateSingleTicket(
+  db: TicketVoidExecutor,
+  ticketId: string,
+): Promise<ReactivateResult> {
+  const res = await db.execute(sql`
+    UPDATE tickets
+    SET status = 'active',
+        cancelled_at = NULL,
+        cancel_reason = NULL,
+        updated_at = NOW()
+    WHERE id = ${Number(ticketId)} AND status = 'cancelled' AND cancel_reason = 'storno'
+    RETURNING id
+  `)
+  return { restored: rowsOf(res).length }
 }
