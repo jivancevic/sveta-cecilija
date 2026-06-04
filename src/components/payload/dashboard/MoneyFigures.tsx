@@ -27,7 +27,10 @@ export function MoneyFigures({
   return (
     <>
       <Figure label={adminT(lang, 'revenueCollected')} value={eur(revenueCents)} />
-      <Figure label={adminT(lang, 'partnerReceivable')} value={eur(partnerReceivableCents ?? 0)} />
+      <Figure
+        label={`${adminT(lang, 'partnerReceivable')} ${adminT(lang, 'invoicedMonthly')}`}
+        value={eur(partnerReceivableCents ?? 0)}
+      />
     </>
   )
 }

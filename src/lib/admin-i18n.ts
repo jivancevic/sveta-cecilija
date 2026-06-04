@@ -80,6 +80,7 @@ export const dashboardStrings = {
     seasonSummary: 'Season summary',
     revenueCollected: 'Revenue collected',
     partnerReceivable: 'Partner receivable',
+    invoicedMonthly: '(invoiced monthly)', // #237 receivable sub-label
     ticketsSold: 'Tickets sold',
     seasonCapacity: 'Season capacity filled',
     remainingSeats: 'Remaining seats',
@@ -116,6 +117,7 @@ export const dashboardStrings = {
     seasonSummary: 'Sažetak sezone',
     revenueCollected: 'Naplaćeni prihod',
     partnerReceivable: 'Potraživanje od partnera',
+    invoicedMonthly: '(fakturirano mjesečno)', // #237 receivable sub-label
     ticketsSold: 'Prodane ulaznice',
     seasonCapacity: 'Popunjenost sezone',
     remainingSeats: 'Preostala mjesta',

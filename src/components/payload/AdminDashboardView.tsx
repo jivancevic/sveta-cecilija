@@ -12,6 +12,7 @@ import { toDashboardShows } from '@/lib/dashboard/from-stats'
 import { partitionShows } from '@/lib/dashboard/partition'
 import { seasonCapacity } from '@/lib/dashboard/capacity'
 import { SeasonBand } from './dashboard/SeasonBand'
+import { getDashboardMoney } from '@/lib/dashboard/revenue-data'
 import { UpcomingHero } from './dashboard/UpcomingHero'
 import { PastShowsList } from './dashboard/PastShowsList'
 import { doorProgress, type DoorProgress } from '@/lib/dashboard/door-progress'
@@ -79,14 +80,18 @@ export async function AdminDashboardView() {
   // resolves to an empty list.
   const superadmin = isSuperadmin(user as { role?: string })
   const pool = (payload.db as unknown as { pool: { query: PoolQuery } }).pool
-  const [input, criticalEvents] = await Promise.all([
+  const poolQuery: PoolQuery = (sql, params) => pool.query(sql, params)
+  const [input, criticalEvents, money] = await Promise.all([
     getStatsInput(),
     superadmin
-      ? listRecentCriticalEvents((sql, params) => pool.query(sql, params), 20).catch((err) => {
+      ? listRecentCriticalEvents(poolQuery, 20).catch((err) => {
           console.error('[AdminDashboardView] failed to load critical events', err)
           return []
         })
       : Promise.resolve([]),
+    // Two season money facts (#237): revenue collected (online net of refunds +
+    // in-person cash) and partner receivable, computed apart, never summed.
+    getDashboardMoney(poolQuery),
   ])
   const dashboardShows = toDashboardShows(input.shows)
   const { upcoming, past } = partitionShows({ today: input.today, shows: dashboardShows })
@@ -96,10 +101,16 @@ export async function AdminDashboardView() {
     <div style={{ padding: '24px clamp(16px, 4vw, 40px)', maxWidth: 1280, margin: '0 auto' }}>
       <h1 style={{ marginBottom: 16, fontSize: 24 }}>{adminT(lang, 'dashboard')}</h1>
 
-      {/* Persistent season summary band — visible without scrolling.
-          Revenue + partner receivable come from MoneyFigures (the #237 seam);
-          today revenueCents is the existing online-gross total. */}
-      <SeasonBand lang={lang} season={season} revenueCents={input.totalRevenueCents} />
+      {/* Persistent season summary band — visible without scrolling. The two
+          money figures come from getDashboardMoney (#237): revenue collected
+          (online net of refunds + in-person cash) and partner receivable,
+          computed apart and never summed. */}
+      <SeasonBand
+        lang={lang}
+        season={season}
+        revenueCents={money.revenueCollectedCents}
+        partnerReceivableCents={money.partnerReceivableCents}
+      />
 
       <AdminActions lang={lang} />
 
