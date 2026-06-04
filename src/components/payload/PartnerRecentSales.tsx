@@ -54,15 +54,15 @@ export function PartnerRecentSales({ initial, lang }: { initial: Page; lang: Adm
   const [busy, setBusy] = React.useState<string | null>(null)
   const [error, setError] = React.useState<string | null>(null)
   const [undo, setUndo] = React.useState<UndoState | null>(null)
+  const [removing, setRemoving] = React.useState<string | null>(null)
 
   // Resync the COLLAPSED view from the server after a router.refresh() (a new
-  // sale, a cancel, an undo) — but never yank the user out of the pager. "Adjust
-  // state during render" pattern (the React Compiler lint forbids setState in an
-  // effect here).
+  // sale, a cancel, an undo) — but never yank the user out of the pager, or
+  // interrupt a row mid collapse-out. "Adjust state during render" pattern.
   const [lastInitial, setLastInitial] = React.useState(initial)
   if (initial !== lastInitial) {
     setLastInitial(initial)
-    if (view.mode === 'collapsed') setView({ ...initial, page: 1, mode: 'collapsed' })
+    if (view.mode === 'collapsed' && removing === null) setView({ ...initial, page: 1, mode: 'collapsed' })
   }
 
   const toggle = (orderId: string) =>
@@ -112,34 +112,38 @@ export function PartnerRecentSales({ initial, lang }: { initial: Page; lang: Adm
         setError(adminT(lang, 'cancelFailed'))
         return
       }
-      // Optimistic: mark the cancelled ticket(s); drop the order once it has no
-      // active tickets. Show the undo banner; the void is already committed.
+      // Optimistic: mark the cancelled ticket(s) in place (struck), then show the
+      // undo banner; the void is already committed.
       const ref = ticketId ? row?.tickets.find((t) => t.id === ticketId)?.ref ?? code : code
-      setView((v) => {
-        const mapped = v.sales.map((s) =>
+      const activeAfter = ticketId
+        ? (row?.tickets.filter((t) => t.status === 'active' && t.id !== ticketId).length ?? 0)
+        : 0
+      const empties = activeAfter === 0
+      setView((v) => ({
+        ...v,
+        sales: v.sales.map((s) =>
           s.orderId !== orderId
             ? s
             : {
                 ...s,
                 tickets: s.tickets.map((t) =>
-                  ticketId
-                    ? t.id === ticketId
-                      ? { ...t, status: 'cancelled' }
-                      : t
-                    : { ...t, status: 'cancelled' },
+                  ticketId ? (t.id === ticketId ? { ...t, status: 'cancelled' } : t) : { ...t, status: 'cancelled' },
                 ),
               },
-        )
-        const target = mapped.find((s) => s.orderId === orderId)
-        const noneActive = !!target && target.tickets.every((t) => t.status !== 'active')
-        return { ...v, sales: noneActive ? mapped.filter((s) => s.orderId !== orderId) : mapped }
-      })
+        ),
+      }))
       setUndo(
         ticketId
           ? { kind: 'ticket', orderId, ticketId, label: `${adminT(lang, 'ticketCancelled')} ${ref}`, ms: TICKET_UNDO_MS }
           : { kind: 'order', orderId, label: `${adminT(lang, 'orderCancelled')} ${code}`, ms: ORDER_UNDO_MS },
       )
-      router.refresh() // refresh the other cards (month-to-date, statistics)
+      if (empties) {
+        // The order has no active tickets left — collapse the row out, then drop
+        // it (finalizeRemoval defers the refresh until the animation completes).
+        setRemoving(orderId)
+      } else {
+        router.refresh() // a per-ticket cancel that keeps the order: refresh the other cards now
+      }
     } catch {
       setError(adminT(lang, 'saleErrorNetwork'))
     } finally {
@@ -147,10 +151,18 @@ export function PartnerRecentSales({ initial, lang }: { initial: Page; lang: Adm
     }
   }
 
+  // After a row's collapse-out animation ends: drop it and refresh the rest.
+  const finalizeRemoval = (orderId: string) => {
+    setRemoving((cur) => (cur === orderId ? null : cur))
+    setView((v) => ({ ...v, sales: v.sales.filter((s) => s.orderId !== orderId) }))
+    router.refresh()
+  }
+
   const doUndo = async () => {
     if (!undo) return
     const { orderId, ticketId } = undo
     setUndo(null)
+    setRemoving(null) // cancel any in-flight collapse so the restored row stays
     setError(null)
     try {
       const res = await fetch('/api/partner/storno/undo', {
@@ -195,15 +207,17 @@ export function PartnerRecentSales({ initial, lang }: { initial: Page; lang: Adm
               {!sale.isToday && idx === firstOlderIdx ? (
                 <div style={earlierLabel}>{adminT(lang, 'earlierSales')}</div>
               ) : null}
-              <SaleRow
-                sale={sale}
-                lang={lang}
-                open={expanded.has(sale.orderId)}
-                onToggle={() => toggle(sale.orderId)}
-                onDownload={downloadTickets}
-                busy={busy}
-                onCancel={cancel}
-              />
+              <RowWrap collapsing={removing === sale.orderId} onCollapsed={() => finalizeRemoval(sale.orderId)}>
+                <SaleRow
+                  sale={sale}
+                  lang={lang}
+                  open={expanded.has(sale.orderId)}
+                  onToggle={() => toggle(sale.orderId)}
+                  onDownload={downloadTickets}
+                  busy={busy}
+                  onCancel={cancel}
+                />
+              </RowWrap>
             </React.Fragment>
           ))}
         </div>
@@ -253,12 +267,52 @@ function Controls({
   )
 }
 
-// Muted top-of-panel banner with a draining bar; dismisses when the bar finishes
-// (the void stands) or when Undo is tapped.
+// Smoothly collapses a row out of the list before it's removed (delete), then
+// calls onCollapsed so the parent drops it from state. Measures the row's height
+// and animates max-height → 0 (the standard auto-height collapse).
+function RowWrap({ collapsing, onCollapsed, children }: { collapsing: boolean; onCollapsed: () => void; children: React.ReactNode }) {
+  const ref = React.useRef<HTMLDivElement>(null)
+  const [maxH, setMaxH] = React.useState<number | undefined>(undefined)
+  React.useEffect(() => {
+    if (!collapsing) return
+    const el = ref.current
+    if (!el) {
+      const id = requestAnimationFrame(onCollapsed)
+      return () => cancelAnimationFrame(id)
+    }
+    setMaxH(el.scrollHeight) // lock the measured height, then collapse next frame
+    // (eslint allows this read-then-set; it doesn't flag the measurement case)
+    const id = requestAnimationFrame(() => requestAnimationFrame(() => setMaxH(0)))
+    return () => cancelAnimationFrame(id)
+  }, [collapsing, onCollapsed])
+
+  return (
+    <div
+      ref={ref}
+      onTransitionEnd={(e) => {
+        if (collapsing && e.propertyName === 'max-height') onCollapsed()
+      }}
+      style={
+        collapsing
+          ? { overflow: 'hidden', maxHeight: maxH, opacity: maxH === 0 ? 0 : 1, transition: 'max-height 300ms ease, opacity 260ms ease' }
+          : undefined
+      }
+    >
+      {children}
+    </div>
+  )
+}
+
+// Muted top-of-panel banner with a draining bar; enters with a fade+slide,
+// dismisses when the bar finishes (the void stands) or when Undo is tapped.
 function UndoBanner({ state, lang, onUndo, onClose }: { state: UndoState; lang: AdminLang; onUndo: () => void; onClose: () => void }) {
   const [width, setWidth] = React.useState(100)
+  const [shown, setShown] = React.useState(false)
   React.useEffect(() => {
-    const raf = requestAnimationFrame(() => setWidth(0))
+    const raf = requestAnimationFrame(() => {
+      setShown(true) // enter: fade + slide in
+      setWidth(0) // start the countdown drain
+    })
     const fallback = setTimeout(onClose, state.ms + 600)
     return () => {
       cancelAnimationFrame(raf)
@@ -267,7 +321,15 @@ function UndoBanner({ state, lang, onUndo, onClose }: { state: UndoState; lang: 
   }, [onClose, state.ms])
 
   return (
-    <div role="status" style={undoBox}>
+    <div
+      role="status"
+      style={{
+        ...undoBox,
+        opacity: shown ? 1 : 0,
+        transform: shown ? 'translateY(0)' : 'translateY(-8px)',
+        transition: 'opacity 220ms ease, transform 220ms ease',
+      }}
+    >
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
         <span style={{ fontSize: 14, color: 'var(--theme-text)' }}>{state.label}</span>
         <button type="button" onClick={onUndo} style={undoBtn}>
@@ -492,6 +554,7 @@ const iconBtn: React.CSSProperties = {
   borderRadius: 6,
   color: 'var(--theme-elevation-600)',
   cursor: 'pointer',
+  transition: 'background 140ms ease, color 140ms ease, border-color 140ms ease',
 }
 const trashBtn: React.CSSProperties = {
   ...iconBtn,

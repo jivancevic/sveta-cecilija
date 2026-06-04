@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { computeSeasonStats, type StatsTicketRow } from './partner-stats'
+import { buildStatistikaBars, computeSeasonStats, type PerShowCount, type StatsTicketRow } from './partner-stats'
 
 function row(over: Partial<StatsTicketRow> = {}): StatsTicketRow {
   return {
@@ -45,5 +45,24 @@ describe('computeSeasonStats', () => {
     ]
     const s = computeSeasonStats(rows)
     expect(s.perShow.map((p) => p.showLabel)).toEqual(['A show', 'B show'])
+  })
+})
+
+describe('buildStatistikaBars', () => {
+  const sold: PerShowCount[] = [
+    { showId: '2', showLabel: '', showDate: '2026-08-01', adults: 3, children: 1, total: 4 },
+  ]
+
+  it('shows ALL season performances chronologically, 0 where none were sold', () => {
+    const allShows = [
+      { showId: '3', showDate: '2026-09-15' },
+      { showId: '1', showDate: '2026-07-12' },
+      { showId: '2', showDate: '2026-08-01' },
+    ]
+    const bars = buildStatistikaBars(allShows, sold)
+    expect(bars.map((b) => b.showId)).toEqual(['1', '2', '3']) // chronological
+    expect(bars[0]).toMatchObject({ showId: '1', adults: 0, children: 0, total: 0 })
+    expect(bars[1]).toMatchObject({ showId: '2', adults: 3, children: 1, total: 4 })
+    expect(bars[2]).toMatchObject({ showId: '3', adults: 0, children: 0, total: 0 })
   })
 })

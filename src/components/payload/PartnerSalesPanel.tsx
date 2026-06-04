@@ -1,5 +1,5 @@
 import React from 'react'
-import type { PartnerSeasonStats } from '@/lib/partner/partner-stats'
+import type { PartnerSeasonStats, StatBar } from '@/lib/partner/partner-stats'
 import { adminT, type AdminLang } from '@/lib/admin-i18n'
 import { StatementDownload } from './StatementDownload'
 import { StatistikaChart } from './StatistikaChart'
@@ -17,7 +17,15 @@ const card: React.CSSProperties = {
   padding: 20,
 }
 
-export function PartnerSalesPanel({ stats, lang }: { stats: PartnerSeasonStats; lang: AdminLang }) {
+export function PartnerSalesPanel({
+  stats,
+  statBars,
+  lang,
+}: {
+  stats: PartnerSeasonStats
+  statBars: StatBar[]
+  lang: AdminLang
+}) {
   return (
     <div style={{ display: 'grid', gap: 16 }}>
       <div style={card}>
@@ -28,10 +36,10 @@ export function PartnerSalesPanel({ stats, lang }: { stats: PartnerSeasonStats; 
           <span style={{ color: 'var(--theme-elevation-600)', fontSize: 14 }}>{adminT(lang, 'soldThisSeason')}</span>
         </div>
 
-        {stats.perShow.length === 0 ? (
+        {stats.totalActive === 0 ? (
           <p style={{ color: 'var(--theme-elevation-500)', fontSize: 14, margin: 0 }}>{adminT(lang, 'yourSalesEmpty')}</p>
         ) : (
-          <StatistikaChart perShow={stats.perShow} lang={lang} />
+          <StatistikaChart bars={statBars} lang={lang} />
         )}
       </div>
 

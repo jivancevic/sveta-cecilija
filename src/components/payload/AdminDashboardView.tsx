@@ -25,6 +25,7 @@ import { PartnerRecentSales } from './PartnerRecentSales'
 import { getPartnerRecentSalesPage } from '@/lib/partner/recent-sales-page'
 import { PartnerSalesPanel } from './PartnerSalesPanel'
 import { getPartnerSeasonStats } from '@/lib/partner/partner-data'
+import { buildStatistikaBars } from '@/lib/partner/partner-stats'
 import { getPartnerMonthToDate } from '@/lib/partner/month-to-date'
 import { monthKeyInZagreb } from '@/lib/partner/partner-reconciliation'
 import { PartnerMonthToDateCard } from './PartnerMonthToDateCard'
@@ -445,11 +446,23 @@ async function PartnerDashboard({
   const now = new Date()
   const { year, month } = monthKeyInZagreb(now.toISOString())
 
-  const [recentPage, seasonStats, monthToDate] = await Promise.all([
+  const [recentPage, seasonStats, monthToDate, allShowsRes] = await Promise.all([
     getPartnerRecentSalesPage(poolQuery, numericPartnerId, { page: 1, pageSize: 3 }),
     getPartnerSeasonStats(poolQuery, numericPartnerId),
     getPartnerMonthToDate(poolQuery, { partnerId: numericPartnerId, commissionPercent, year, month }),
+    // ALL active season performances (Statistika shows every izvedba, not only
+    // the ones this partner sold).
+    poolQuery(`SELECT id, date FROM shows WHERE status = 'active' ORDER BY date`, []),
   ])
+
+  const allShows = allShowsRes.rows.map((r) => {
+    const d = (r as { id: unknown; date: unknown }).date
+    return {
+      showId: String((r as { id: unknown }).id),
+      showDate: d instanceof Date ? d.toISOString().slice(0, 10) : String(d ?? '').slice(0, 10),
+    }
+  })
+  const statBars = buildStatistikaBars(allShows, seasonStats.perShow)
 
   const monthLabel = now.toLocaleDateString(lang === 'hr' ? 'hr-HR' : 'en-GB', {
     month: 'long',
@@ -466,15 +479,17 @@ async function PartnerDashboard({
         <PartnerSellForm shows={sellShows} lang={lang} />
       </div>
 
-      <div style={{ marginBottom: 24 }}>
-        <PartnerMonthToDateCard data={monthToDate} monthLabel={monthLabel} lang={lang} />
-      </div>
-
+      {/* Recent orders sit directly under the sell flow — selling + checking what
+          was just sold is the partner's everyday loop; the stats live below it. */}
       <div style={{ marginBottom: 24 }}>
         <PartnerRecentSales initial={recentPage} lang={lang} />
       </div>
 
-      <PartnerSalesPanel stats={seasonStats} lang={lang} />
+      <div style={{ marginBottom: 24 }}>
+        <PartnerMonthToDateCard data={monthToDate} monthLabel={monthLabel} lang={lang} />
+      </div>
+
+      <PartnerSalesPanel stats={seasonStats} statBars={statBars} lang={lang} />
 
       <p style={{ fontSize: 13, color: 'var(--theme-elevation-600)', marginTop: 24 }}>
         {adminT(lang, 'helpHeading')}{' '}
