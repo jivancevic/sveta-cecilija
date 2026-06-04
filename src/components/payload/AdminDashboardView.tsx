@@ -171,9 +171,10 @@ function AdminActions({ lang }: { lang: AdminLang }) {
       <Link href="/admin/collections/shows/create" style={button}>
         {adminT(lang, 'newShow')}
       </Link>
-      <Link href="/admin/collections/shows" style={button}>
-        {adminT(lang, 'recordInPersonSale')}
-      </Link>
+      {/* "Record in-person sale" used to live here and dead-ended on the raw
+          Shows list. It's now an inline per-show control on each upcoming-show
+          card (RecordSaleControl, #243). Global row is just New show + Find
+          order. */}
       <Link href="/admin/collections/orders" style={button}>
         {adminT(lang, 'findOrder')}
       </Link>

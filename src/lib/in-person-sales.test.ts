@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { addInPersonSales, type AddInPersonSalesDeps } from './in-person-sales'
+import { addInPersonSales, incrementInPersonSold, type AddInPersonSalesDeps } from './in-person-sales'
 
 function makeDeps(
   newTotal: number | null = 5,
@@ -35,5 +35,25 @@ describe('addInPersonSales', () => {
   it('throws when the show does not exist', async () => {
     const deps = makeDeps(null)
     await expect(addInPersonSales({ showId: 'missing', count: 1 }, deps)).rejects.toThrow(/not found/i)
+  })
+})
+
+describe('incrementInPersonSold', () => {
+  it('issues a single atomic UPDATE (col = col + $1) with [delta, showId] and returns the new total', async () => {
+    const query = vi.fn().mockResolvedValue({ rows: [{ in_person_sold: 17 }] })
+    const result = await incrementInPersonSold(query, '42', 5)
+
+    expect(result).toEqual({ inPersonSold: 17 })
+    expect(query).toHaveBeenCalledTimes(1)
+    const [sql, params] = query.mock.calls[0]
+    // Atomic increment — never read-modify-write (atomic-columns hard rule).
+    expect(sql).toMatch(/in_person_sold\s*=\s*COALESCE\(in_person_sold,\s*0\)\s*\+\s*\$1/i)
+    expect(sql).toMatch(/RETURNING in_person_sold/i)
+    expect(params).toEqual([5, 42]) // showId coerced to a number for the pk match
+  })
+
+  it('returns null when the show id matches no row', async () => {
+    const query = vi.fn().mockResolvedValue({ rows: [] })
+    expect(await incrementInPersonSold(query, '999', 3)).toBeNull()
   })
 })
