@@ -72,26 +72,23 @@ export default function Contact({ t }: Props) {
                 <input id="contact-email" name="email" type="email" placeholder={t.emailPlaceholder} required />
               </div>
             </div>
-            <div className="form__row">
-              <div className="field">
-                <label htmlFor="contact-enquiry">{t.enquiry}</label>
-                <select id="contact-enquiry" name="enquiry" defaultValue="">
-                  <option value="" disabled>{t.enquirySelect}</option>
-                  {t.enquiryOptions.map((opt) => (
-                    <option key={opt} value={opt}>{opt}</option>
-                  ))}
-                </select>
-              </div>
-              <div className="field">
-                <label aria-hidden="true">&nbsp;</label>
-                <button className="btn btn--primary form__submit" type="submit" disabled={sending}>
-                  {sending ? t.sending : t.submit}
-                </button>
-              </div>
+            <div className="field">
+              <label htmlFor="contact-enquiry">{t.enquiry}</label>
+              <select id="contact-enquiry" name="enquiry" defaultValue="">
+                <option value="" disabled>{t.enquirySelect}</option>
+                {t.enquiryOptions.map((opt) => (
+                  <option key={opt} value={opt}>{opt}</option>
+                ))}
+              </select>
             </div>
             <div className="field">
               <label htmlFor="contact-message">{t.message}</label>
               <textarea id="contact-message" name="message" placeholder={t.messagePlaceholder} required />
+            </div>
+            <div className="form__actions">
+              <button className="btn btn--primary form__submit" type="submit" disabled={sending}>
+                {sending ? t.sending : t.submit}
+              </button>
             </div>
           </form>
         )}

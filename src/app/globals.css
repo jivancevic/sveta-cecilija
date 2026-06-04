@@ -1166,7 +1166,8 @@ html, body { overflow-x: hidden; }
 .field input::placeholder, .field textarea::placeholder { color: rgba(241,231,214,0.35); }
 .field input:focus, .field select:focus, .field textarea:focus { border-color: var(--goldBright); }
 .field textarea { resize: none; min-height: 70px; }
-.form__submit { width: 100%; padding: 11px 22px; }
+.form__actions { display: flex; justify-content: center; margin-top: 4px; }
+.form__submit { min-width: 220px; padding: 13px 32px; }
 .form__error {
   margin: 0; padding: 10px 14px; font-size: 13px; line-height: 1.4;
   color: #f3d6c9; background: rgba(180,60,40,0.18);
