@@ -6,7 +6,7 @@ import { getPayload } from 'payload'
 import config from '@payload-config'
 import { getStatsInput } from '@/lib/stats-data'
 import { ADMIN_LANG_COOKIE, adminT, resolveAdminLang, type AdminLang } from '@/lib/admin-i18n'
-import { isAdminTier, isAuthed, isPartner, isSuperadmin, partnerIdOf } from '@/lib/access/roles'
+import { isAdminTier, isAuthed, isPartner, partnerIdOf } from '@/lib/access/roles'
 import { getNextShow, getScannedPeopleForShow, getUpcomingShows, type NextShow } from '@/lib/shows'
 import { toDashboardShows } from '@/lib/dashboard/from-stats'
 import { partitionShows } from '@/lib/dashboard/partition'
@@ -28,8 +28,9 @@ import { PartnerMonthToDateCard } from './PartnerMonthToDateCard'
 import type { PoolQuery } from '@/lib/tickets/sold-seats'
 import { countInquiries, type InquiryRow } from '@/lib/dashboard/inquiries'
 import { InquiriesBadge } from './InquiriesBadge'
-import { listRecentCriticalEvents } from '@/lib/critical-events/list'
-import { CriticalEventsDevStrip } from './CriticalEventsDevStrip'
+import { gatherDevDiagnostics } from '@/lib/dev-diagnostics/gather'
+import { getStripeBalanceSummary } from '@/lib/dev-diagnostics/stripe-balance'
+import { SuperadminDevStrip } from './SuperadminDevStrip'
 
 export const dynamic = 'force-dynamic'
 
@@ -75,22 +76,19 @@ export async function AdminDashboardView() {
   // (un-windowed) is partitioned into upcoming vs past; the hero leads with the
   // next show + fill bar + remaining seats, the season band persists on top.
   //
-  // Superadmin-only critical-events dev strip (#235, ADR-0016): admin never sees
-  // it; the tehnika/partner branches above already returned. It is fetched in
-  // parallel with the stats input (independent queries), and must never break the
-  // dashboard (e.g. table not yet bootstrapped on a stale DB), so a read failure
-  // resolves to an empty list.
-  const superadmin = isSuperadmin(user as { role?: string })
+  // Superadmin-only dev strip (#235/#244, ADR-0016): gatherDevDiagnostics is the
+  // gating chokepoint — it returns null (and runs no queries) for admin/tehnika/
+  // partner, so the work only happens for a superadmin, and each probe inside is
+  // fail-soft so it can never break the dashboard. Fetched in parallel with the
+  // stats input and the season money facts.
   const pool = (payload.db as unknown as { pool: { query: PoolQuery } }).pool
   const poolQuery: PoolQuery = (sql, params) => pool.query(sql, params)
-  const [input, criticalEvents, money] = await Promise.all([
+  const [input, diagnostics, money] = await Promise.all([
     getStatsInput(),
-    superadmin
-      ? listRecentCriticalEvents(poolQuery, 20).catch((err) => {
-          console.error('[AdminDashboardView] failed to load critical events', err)
-          return []
-        })
-      : Promise.resolve([]),
+    gatherDevDiagnostics(user as { role?: string } | null, {
+      query: poolQuery,
+      stripeBalance: getStripeBalanceSummary,
+    }),
     // Two season money facts (#237): revenue collected (online net of refunds +
     // in-person cash) and partner receivable, computed apart, never summed.
     getDashboardMoney(poolQuery),
@@ -141,7 +139,7 @@ export async function AdminDashboardView() {
         <PastShowsList past={past} lang={lang} />
       </div>
 
-      {superadmin && <CriticalEventsDevStrip events={criticalEvents} />}
+      {diagnostics && <SuperadminDevStrip data={diagnostics} />}
 
       <p style={{ fontSize: 11, color: 'var(--theme-elevation-400)', marginTop: 24 }}>
         {adminT(lang, 'signedInAs')} {role}.
