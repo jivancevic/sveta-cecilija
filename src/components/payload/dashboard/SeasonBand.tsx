@@ -10,6 +10,8 @@ import { MoneyFigures } from './MoneyFigures'
 // Sticky to the top of the scroll area so it stays in view as the secretary
 // scrolls the shows below. Payload-native surface, gold/Bodoni accents on the
 // figures only; dark-mode safe via --theme-elevation-*.
+// The `.season-band` class lets custom.css drop the sticky behaviour on phones
+// (it eats too much of a small viewport) — see the @media rule there.
 export function SeasonBand({
   lang,
   season,
@@ -23,6 +25,7 @@ export function SeasonBand({
 }) {
   return (
     <div
+      className="season-band"
       style={{
         position: 'sticky',
         top: 0,

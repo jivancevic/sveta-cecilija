@@ -42,3 +42,13 @@ input[type="checkbox"]:checked,
 input[type="radio"]:checked {
   accent-color: #B8881A;
 }
+
+/* Season summary band (#238) is sticky on desktop so the secretary keeps it in
+   view while scrolling shows. On phones the sticky band eats too much of the
+   small viewport, so let it scroll away normally. !important beats the inline
+   position: sticky in SeasonBand.tsx. */
+@media (max-width: 768px) {
+  .season-band {
+    position: static !important;
+  }
+}
