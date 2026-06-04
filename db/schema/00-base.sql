@@ -14,6 +14,13 @@ CREATE TYPE public.enum_contact_submissions_enquiry_type AS ENUM (
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 DO $$ BEGIN
+CREATE TYPE public.enum_contact_submissions_status AS ENUM (
+    'new',
+    'handled'
+);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
 CREATE TYPE public.enum_order_lookups_mode AS ENUM (
     'email',
     'name'
@@ -105,6 +112,7 @@ CREATE TABLE IF NOT EXISTS public.contact_submissions (
     email character varying NOT NULL,
     enquiry_type public.enum_contact_submissions_enquiry_type NOT NULL,
     message character varying NOT NULL,
+    status public.enum_contact_submissions_status DEFAULT 'new'::public.enum_contact_submissions_status NOT NULL,
     updated_at timestamp(3) with time zone DEFAULT now() NOT NULL,
     created_at timestamp(3) with time zone DEFAULT now() NOT NULL
 );
