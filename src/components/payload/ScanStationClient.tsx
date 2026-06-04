@@ -491,6 +491,54 @@ const secondaryBtnStyle: React.CSSProperties = {
   cursor: 'pointer',
 }
 
+const actionColStyle: React.CSSProperties = {
+  marginTop: '1.5rem',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  gap: '0.75rem',
+}
+
+// Result-screen chrome per status: backdrop colour + uppercase heading.
+const STATUS_META: Record<string, { bg: string; heading: string }> = {
+  VALID: { bg: '#0f7a3a', heading: 'VALID' },
+  ALREADY_SCANNED: { bg: '#b46a00', heading: 'ALREADY SCANNED' },
+  CANCELLED: { bg: '#5a5a5a', heading: 'CANCELLED' },
+  INVALID: { bg: '#b00020', heading: 'INVALID' },
+}
+
+// Bottom action stack shared by every result screen: any status-specific
+// content (admit / undo), then the always-present "Scan more" + "Exit" pair.
+// `scanMorePrimary` makes "Scan more" the prominent button when there's no
+// other primary action above it (i.e. everything but VALID).
+function ActionRow({
+  scanMorePrimary,
+  onScanMore,
+  onExit,
+  children,
+}: {
+  scanMorePrimary: boolean
+  onScanMore: () => void
+  onExit: () => void
+  children?: React.ReactNode
+}) {
+  return (
+    <div style={actionColStyle}>
+      {children}
+      <button
+        type="button"
+        onClick={onScanMore}
+        style={scanMorePrimary ? primaryBtnStyle : secondaryBtnStyle}
+      >
+        Scan more
+      </button>
+      <button type="button" onClick={onExit} style={secondaryBtnStyle}>
+        Exit
+      </button>
+    </div>
+  )
+}
+
 function ResultOverlay({
   response,
   undoState,
@@ -509,23 +557,7 @@ function ResultOverlay({
   onExit: () => void
 }) {
   const { result, undoEligible } = response
-  const bg =
-    result.status === 'VALID'
-      ? '#0f7a3a'
-      : result.status === 'ALREADY_SCANNED'
-        ? '#b46a00'
-        : result.status === 'CANCELLED'
-          ? '#5a5a5a'
-          : '#b00020'
-
-  const heading =
-    result.status === 'VALID'
-      ? 'VALID'
-      : result.status === 'ALREADY_SCANNED'
-        ? 'ALREADY SCANNED'
-        : result.status === 'CANCELLED'
-          ? 'CANCELLED'
-          : 'INVALID'
+  const { bg, heading } = STATUS_META[result.status] ?? STATUS_META.INVALID
 
   return (
     <div
@@ -571,15 +603,7 @@ function ResultOverlay({
             {VENUE_NAME[result.venue] ?? result.venue}
           </div>
 
-          <div
-            style={{
-              marginTop: '1.75rem',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: '0.75rem',
-            }}
-          >
+          <ActionRow scanMorePrimary={false} onScanMore={onScanMore} onExit={onExit}>
             {admitState.status === 'done' ? (
               <p style={{ fontWeight: 700, fontSize: '1.1rem', margin: 0 }}>
                 {admitState.admitted > 0
@@ -606,13 +630,7 @@ function ResultOverlay({
             {admitState.status === 'error' && (
               <p style={{ margin: 0, opacity: 0.9 }}>Could not admit the rest. Try again.</p>
             )}
-            <button type="button" onClick={onScanMore} style={secondaryBtnStyle}>
-              Scan more
-            </button>
-            <button type="button" onClick={onExit} style={secondaryBtnStyle}>
-              Exit
-            </button>
-          </div>
+          </ActionRow>
         </>
       )}
 
@@ -626,15 +644,7 @@ function ResultOverlay({
             {VENUE_NAME[result.venue] ?? result.venue}
           </div>
 
-          <div
-            style={{
-              marginTop: '1.5rem',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: '0.75rem',
-            }}
-          >
+          <ActionRow scanMorePrimary onScanMore={onScanMore} onExit={onExit}>
             {undoEligible && undoState === 'idle' && (
               <button type="button" onClick={onUndo} style={secondaryBtnStyle}>
                 Undo scan
@@ -645,13 +655,7 @@ function ResultOverlay({
             {undoState === 'rejected' && (
               <p style={{ margin: 0, opacity: 0.85 }}>Undo window expired (2 minutes).</p>
             )}
-            <button type="button" onClick={onScanMore} style={primaryBtnStyle}>
-              Scan more
-            </button>
-            <button type="button" onClick={onExit} style={secondaryBtnStyle}>
-              Exit
-            </button>
-          </div>
+          </ActionRow>
         </>
       )}
 
@@ -670,22 +674,7 @@ function ResultOverlay({
             {formatShowDate(result.showDate)} · {result.showTime} ·{' '}
             {VENUE_NAME[result.venue] ?? result.venue}
           </div>
-          <div
-            style={{
-              marginTop: '1.75rem',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: '0.75rem',
-            }}
-          >
-            <button type="button" onClick={onScanMore} style={primaryBtnStyle}>
-              Scan more
-            </button>
-            <button type="button" onClick={onExit} style={secondaryBtnStyle}>
-              Exit
-            </button>
-          </div>
+          <ActionRow scanMorePrimary onScanMore={onScanMore} onExit={onExit} />
         </>
       )}
 
@@ -694,22 +683,7 @@ function ResultOverlay({
           <div style={{ fontSize: '1.15rem', marginTop: '1.25rem' }}>
             This ticket is not recognised.
           </div>
-          <div
-            style={{
-              marginTop: '1.75rem',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: '0.75rem',
-            }}
-          >
-            <button type="button" onClick={onScanMore} style={primaryBtnStyle}>
-              Scan more
-            </button>
-            <button type="button" onClick={onExit} style={secondaryBtnStyle}>
-              Exit
-            </button>
-          </div>
+          <ActionRow scanMorePrimary onScanMore={onScanMore} onExit={onExit} />
         </>
       )}
     </div>
