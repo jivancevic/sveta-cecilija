@@ -15,6 +15,9 @@ import { SeasonBand } from './dashboard/SeasonBand'
 import { getDashboardMoney } from '@/lib/dashboard/revenue-data'
 import { UpcomingHero } from './dashboard/UpcomingHero'
 import { PastShowsList } from './dashboard/PastShowsList'
+import { SeasonTrajectoryChart } from './dashboard/SeasonTrajectoryChart'
+import { ChannelMixChart } from './dashboard/ChannelMixChart'
+import { getActiveTicketCountsByChannel } from '@/lib/tickets/sold-seats'
 import { doorProgress, type DoorProgress } from '@/lib/dashboard/door-progress'
 import { TicketLookupPanel } from './TicketLookupPanel'
 import { PartnerSellForm, type SellShow } from './PartnerSellForm'
@@ -83,7 +86,7 @@ export async function AdminDashboardView() {
   const superadmin = isSuperadmin(user as { role?: string })
   const pool = (payload.db as unknown as { pool: { query: PoolQuery } }).pool
   const poolQuery: PoolQuery = (sql, params) => pool.query(sql, params)
-  const [input, criticalEvents, money] = await Promise.all([
+  const [input, criticalEvents, money, channelTickets] = await Promise.all([
     getStatsInput(),
     superadmin
       ? listRecentCriticalEvents(poolQuery, 20).catch((err) => {
@@ -94,10 +97,21 @@ export async function AdminDashboardView() {
     // Two season money facts (#237): revenue collected (online net of refunds +
     // in-person cash) and partner receivable, computed apart, never summed.
     getDashboardMoney(poolQuery),
+    // Channel-mix chart (#242): online vs partner active-ticket counts. In-person
+    // sales have no ticket rows, so they come from shows.inPersonSold below.
+    getActiveTicketCountsByChannel(poolQuery),
   ])
   const dashboardShows = toDashboardShows(input.shows)
   const { upcoming, past } = partitionShows({ today: input.today, shows: dashboardShows })
   const season = seasonCapacity(dashboardShows)
+
+  // Season channel mix (#242): online + partner from tickets, in-person summed
+  // from the shows' box-office counters.
+  const channelCounts = {
+    online: channelTickets.online,
+    partner: channelTickets.partner,
+    inPerson: input.shows.reduce((sum, s) => sum + s.inPersonSold, 0),
+  }
 
   // Live inquiries badge (#239): count `new` enquiries + the booking sub-count.
   // Cheap query — one collection, `new` only — and force-dynamic already opts
@@ -140,6 +154,10 @@ export async function AdminDashboardView() {
         <UpcomingHero upcoming={upcoming} lang={lang} />
         <PastShowsList past={past} lang={lang} />
       </div>
+
+      {/* Season charts (#242): per-show sold trajectory + season channel mix. */}
+      <SeasonTrajectoryChart shows={dashboardShows} lang={lang} />
+      <ChannelMixChart counts={channelCounts} lang={lang} />
 
       {superadmin && <CriticalEventsDevStrip events={criticalEvents} />}
 

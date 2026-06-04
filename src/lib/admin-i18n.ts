@@ -106,6 +106,13 @@ export const dashboardStrings = {
     mtdCommission: 'Your commission',
     mtdNetOfCancelled: 'net of cancelled',
     mtdLiveNote: 'Live so far this month. Same-day stornos still adjust it.',
+    // Dashboard charts (#242)
+    seasonTrajectory: 'Season trajectory',
+    salesChannels: 'Sales channels',
+    channelOnline: 'Online',
+    channelInPerson: 'In person',
+    channelPartner: 'Partners',
+    noSalesYet: 'No sales yet.',
   },
   hr: {
     dashboard: 'Nadzorna ploča',
@@ -144,6 +151,13 @@ export const dashboardStrings = {
     mtdCommission: 'Vaša provizija',
     mtdNetOfCancelled: 'bez storniranih',
     mtdLiveNote: 'Uživo za tekući mjesec. Storno isti dan još može promijeniti iznos.',
+    // Dashboard charts (#242)
+    seasonTrajectory: 'Kretanje sezone',
+    salesChannels: 'Prodajni kanali',
+    channelOnline: 'Online',
+    channelInPerson: 'Na blagajni',
+    channelPartner: 'Partneri',
+    noSalesYet: 'Još nema prodaje.',
   },
 } as const
 

@@ -18,6 +18,17 @@ export const ACCENT_FONT = 'var(--font-bodoni), "Bodoni Moda SC", "Bodoni Moda",
 // light and dark Payload elevations the figures sit on).
 export const GOLD = '#b08d3e'
 
+// Channel-mix palette (#242): anchored on the brand gold (online — the primary
+// channel), with two muted earth tones drawn from the stone/heritage palette for
+// the supporting channels. All three are fixed brand colours chosen to stay
+// legible on both the light and dark Payload elevations (no theme token needed),
+// and distinct enough to read apart without relying on the legend alone.
+export const CHANNEL_COLORS = {
+  online: GOLD, // brand gold
+  inPerson: '#4a6670', // slate teal
+  partner: '#8c5a3c', // terracotta bronze
+} as const
+
 /** Style for a hero/figure number: gold + Bodoni accent. Numbers only. */
 export function accentNumberStyle(fontSize: number | string): React.CSSProperties {
   return {
@@ -53,6 +64,18 @@ export function formatShowDate(iso: string, lang: AdminLang): string {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
+    timeZone: 'UTC',
+  })
+}
+
+/** Compact axis label "12 Jul" (en) / "12. srp" (hr) from a YYYY-MM-DD string. */
+export function shortShowDate(iso: string, lang: AdminLang): string {
+  const [y, m, d] = iso.split('-').map(Number)
+  if (!y || !m || !d) return iso
+  const dt = new Date(Date.UTC(y, m - 1, d))
+  return dt.toLocaleDateString(lang === 'hr' ? 'hr-HR' : 'en-GB', {
+    day: 'numeric',
+    month: 'short',
     timeZone: 'UTC',
   })
 }
