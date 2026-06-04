@@ -65,7 +65,7 @@ function confirmationHtml(): string {
   <p>You will no longer receive post-show review emails from Moreška by HGD Sveta Cecilija. Your ticket confirmations are unaffected.</p>
   <div class="sep"></div>
   <h1>Odjavljeni ste</h1>
-  <p>Više nećete primati e-mailove s molbom za recenziju nakon nastupa. Vaše potvrde ulaznica nisu zahvaćene.</p>
+  <p>Više nećete primati e-mailove s molbom za recenziju nakon izvedbe. Vaše potvrde ulaznica nisu zahvaćene.</p>
   <div class="sep"></div>
   <p><a href="https://moreska.eu">moreska.eu</a></p>
 </div></body></html>`

@@ -29,7 +29,7 @@ export interface SendVenueChangeEmailDeps {
 
 function renderSubject(locale: 'en' | 'hr'): string {
   return locale === 'hr'
-    ? 'Promjena lokacije nastupa - HGD Sveta Cecilija'
+    ? 'Promjena lokacije izvedbe - HGD Sveta Cecilija'
     : 'Venue change for your performance - HGD Sveta Cecilija'
 }
 
@@ -49,9 +49,9 @@ function renderHtml(input: SendVenueChangeEmailInput, locale: 'en' | 'hr'): stri
 <div style="background:${bg};padding:32px 16px;font-family:${fontBody};color:${text};">
   <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:560px;margin:0 auto;background:#fff;border:1px solid #e6dfd1;">
     <tr><td style="padding:36px 32px 12px 32px;">
-      <h1 style="font-family:${fontHeading};font-size:26px;line-height:1.2;margin:0 0 16px 0;color:${text};">Promjena lokacije nastupa</h1>
+      <h1 style="font-family:${fontHeading};font-size:26px;line-height:1.2;margin:0 0 16px 0;color:${text};">Promjena lokacije izvedbe</h1>
       <p style="margin:0 0 16px 0;font-size:16px;line-height:1.55;">Poštovani ${buyer.name},</p>
-      <p style="margin:0 0 16px 0;font-size:16px;line-height:1.55;">Zbog vremenskih uvjeta, nastup <strong>${show.date} u ${show.time}</strong> premješten je iz ${oldVenue} u <strong>${newVenue}</strong>. Nastup se održava prema rasporedu, vaše ulaznice i dalje vrijede.</p>
+      <p style="margin:0 0 16px 0;font-size:16px;line-height:1.55;">Zbog vremenskih uvjeta, izvedba <strong>${show.date} u ${show.time}</strong> premještena je iz ${oldVenue} u <strong>${newVenue}</strong>. Izvedba se održava prema rasporedu, vaše ulaznice i dalje vrijede.</p>
     </td></tr>
     <tr><td align="center" style="padding:4px 32px 24px 32px;">
       <a href="${MAP_URL}" style="${buttonStyle}">Pogledaj novu lokaciju na karti</a>

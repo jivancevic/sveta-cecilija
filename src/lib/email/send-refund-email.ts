@@ -32,14 +32,14 @@ function renderHtml(input: SendRefundEmailInput, locale: 'en' | 'hr'): string {
     return `
       <p>Poštovani ${input.buyer.name},</p>
       <p>Vaš povrat u iznosu od <strong>${amount}</strong> je obrađen i pojavit će se na vašoj kartici za 5–10 radnih dana.</p>
-      <p>Predstava: ${input.show.date} u ${input.show.time}, ${venueLabel}.</p>
+      <p>Izvedba: ${input.show.date} u ${input.show.time}, ${venueLabel}.</p>
       <p>Hvala vam i ispričavamo se na neugodnosti.</p>
     `.trim()
   }
   return `
     <p>Hi ${input.buyer.name},</p>
     <p>Your refund of <strong>${amount}</strong> has been processed and will appear on your card in 5–10 business days.</p>
-    <p>Show: ${input.show.date} at ${input.show.time}, ${venueLabel}.</p>
+    <p>Performance: ${input.show.date} at ${input.show.time}, ${venueLabel}.</p>
     <p>Thank you, and we apologise for the inconvenience.</p>
   `.trim()
 }
