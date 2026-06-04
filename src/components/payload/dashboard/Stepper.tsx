@@ -27,11 +27,15 @@ export function Stepper({
 }) {
   // Local text mirrors the field so an in-progress empty edit shows the
   // placeholder; it re-syncs whenever the numeric value changes externally
-  // (the +/- buttons, or the form resetting to 0 after a sale).
+  // (the +/- buttons, or the form resetting to 0 after a sale). Sync is done by
+  // the "adjust state during render" pattern (React docs) rather than an effect,
+  // which the React Compiler lint disallows.
   const [text, setText] = React.useState(value === min ? '' : String(value))
-  React.useEffect(() => {
+  const [lastValue, setLastValue] = React.useState(value)
+  if (value !== lastValue) {
+    setLastValue(value)
     setText(value === min ? '' : String(value))
-  }, [value, min])
+  }
 
   const commit = (raw: string) => {
     const digits = raw.replace(/[^0-9]/g, '')

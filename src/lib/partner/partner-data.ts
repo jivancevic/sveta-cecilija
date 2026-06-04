@@ -18,7 +18,6 @@ import {
 import {
   computeSeasonStats,
   type PartnerSeasonStats,
-  type RecentSale,
   type StatsTicketRow,
 } from './partner-stats'
 
@@ -69,39 +68,6 @@ export async function getPartnerSeasonStats(
 ): Promise<PartnerSeasonStats> {
   const rows = await loadPartnerTicketRows(query, partnerId)
   return computeSeasonStats(rows)
-}
-
-/** The partner's most recent orders (newest first), capped at `limit`. */
-export async function getPartnerRecentSales(
-  query: PoolQuery,
-  partnerId: number,
-  limit = 5,
-): Promise<RecentSale[]> {
-  const res = await query(
-    `SELECT o.id AS id,
-            o.code AS code,
-            o.created_at AS created_at,
-            o.adult_count AS adult_count,
-            o.child_count AS child_count,
-            o.total AS total,
-            s.date AS show_date,
-            s.venue AS show_venue
-     FROM orders o
-     JOIN shows s ON s.id = o.show_id
-     WHERE o.partner_id = $1
-     ORDER BY o.created_at DESC
-     LIMIT $2`,
-    [partnerId, limit],
-  )
-  return res.rows.map((r) => ({
-    orderId: String(r.id),
-    code: (r.code ?? null) as string | null,
-    showLabel: showLabel(r.show_date, r.show_venue),
-    createdAt: r.created_at ? new Date(r.created_at as string).toISOString() : '',
-    adultCount: Number(r.adult_count) || 0,
-    childCount: Number(r.child_count) || 0,
-    totalCents: Number(r.total) || 0,
-  }))
 }
 
 /**

@@ -32,12 +32,16 @@ export function PartnerRecentSales({ initial, lang }: { initial: Page; lang: Adm
 
   // Resync from the server whenever the dashboard re-renders (a new sale in the
   // sell form, or a cancel here, triggers router.refresh()). Collapses back to
-  // the newest page, which is what the partner wants to see after either.
-  React.useEffect(() => {
+  // the newest page, which is what the partner wants to see after either. Done
+  // via the "adjust state during render" pattern (React docs) rather than an
+  // effect, which the React Compiler lint disallows.
+  const [lastInitial, setLastInitial] = React.useState(initial)
+  if (initial !== lastInitial) {
+    setLastInitial(initial)
     setSales(initial.sales)
     setHasMore(initial.hasMore)
     setPage(1)
-  }, [initial])
+  }
 
   const toggle = (orderId: string) =>
     setExpanded((prev) => {
@@ -120,7 +124,8 @@ export function PartnerRecentSales({ initial, lang }: { initial: Page; lang: Adm
     )
   }
 
-  let earlierMarked = false
+  // The "Earlier" divider sits before the first non-today (read-only) sale.
+  const firstOlderIdx = sales.findIndex((s) => !s.isToday)
 
   return (
     <div style={card}>
@@ -134,17 +139,11 @@ export function PartnerRecentSales({ initial, lang }: { initial: Page; lang: Adm
       )}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-        {sales.map((sale) => {
-          // A divider before the first non-today (read-only) sale.
-          let divider: React.ReactNode = null
-          if (!sale.isToday && !earlierMarked) {
-            earlierMarked = true
-            divider = (
-              <div key={`div-${sale.orderId}`} style={earlierLabel}>
-                {adminT(lang, 'earlierSales')}
-              </div>
-            )
-          }
+        {sales.map((sale, idx) => {
+          const divider =
+            !sale.isToday && idx === firstOlderIdx ? (
+              <div style={earlierLabel}>{adminT(lang, 'earlierSales')}</div>
+            ) : null
           return (
             <React.Fragment key={sale.orderId}>
               {divider}
@@ -160,7 +159,7 @@ export function PartnerRecentSales({ initial, lang }: { initial: Page; lang: Adm
                   onCancel={cancel}
                 />
               ) : (
-                <OlderSaleRow sale={sale} lang={lang} />
+                <OlderSaleRow sale={sale} />
               )}
             </React.Fragment>
           )
@@ -263,7 +262,7 @@ function TodaySaleRow({
   )
 }
 
-function OlderSaleRow({ sale, lang: _lang }: { sale: RecentSalePageRow; lang: AdminLang }) {
+function OlderSaleRow({ sale }: { sale: RecentSalePageRow }) {
   const count = sale.adultCount + sale.childCount
   const date = sale.createdAt
     ? new Date(sale.createdAt).toLocaleDateString('en-GB', {
