@@ -93,6 +93,7 @@ export const dashboardStrings = {
     findOrder: 'Find order',
     recordInPersonSale: 'Record in-person sale',
     inquiries: 'Inquiries',
+    inquiriesNone: 'No new inquiries',
     cancelled: 'Cancelled',
     // Tehnika door dashboard (#240)
     scanTicket: 'Scan a ticket',
@@ -130,6 +131,7 @@ export const dashboardStrings = {
     findOrder: 'Pronađi narudžbu',
     recordInPersonSale: 'Zabilježi prodaju na blagajni',
     inquiries: 'Upiti',
+    inquiriesNone: 'Nema novih upita',
     cancelled: 'Otkazano',
     // Tehnika door dashboard (#240)
     scanTicket: 'Skeniraj kartu',

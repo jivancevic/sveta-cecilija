@@ -26,6 +26,8 @@ import { getPartnerMonthToDate } from '@/lib/partner/month-to-date'
 import { monthKeyInZagreb } from '@/lib/partner/partner-reconciliation'
 import { PartnerMonthToDateCard } from './PartnerMonthToDateCard'
 import type { PoolQuery } from '@/lib/tickets/sold-seats'
+import { countInquiries, type InquiryRow } from '@/lib/dashboard/inquiries'
+import { InquiriesBadge } from './InquiriesBadge'
 import { listRecentCriticalEvents } from '@/lib/critical-events/list'
 import { CriticalEventsDevStrip } from './CriticalEventsDevStrip'
 
@@ -97,6 +99,19 @@ export async function AdminDashboardView() {
   const { upcoming, past } = partitionShows({ today: input.today, shows: dashboardShows })
   const season = seasonCapacity(dashboardShows)
 
+  // Live inquiries badge (#239): count `new` enquiries + the booking sub-count.
+  // Cheap query — one collection, `new` only — and force-dynamic already opts
+  // this page out of caching, so it refreshes on every load.
+  const newEnquiries = await payload.find({
+    collection: 'contact-submissions',
+    where: { status: { equals: 'new' } },
+    select: { status: true, enquiryType: true },
+    limit: 0,
+    depth: 0,
+    pagination: false,
+  })
+  const inquiries = countInquiries(newEnquiries.docs as InquiryRow[])
+
   return (
     <div style={{ padding: '24px clamp(16px, 4vw, 40px)', maxWidth: 1280, margin: '0 auto' }}>
       <h1 style={{ marginBottom: 16, fontSize: 24 }}>{adminT(lang, 'dashboard')}</h1>
@@ -111,6 +126,13 @@ export async function AdminDashboardView() {
         revenueCents={money.revenueCollectedCents}
         partnerReceivableCents={money.partnerReceivableCents}
       />
+
+      {/* Live inquiries badge (#239): "<n> new, incl. <m> booking enquiries",
+          linking into the filtered list. Rendered as its own strip above the
+          action row (it replaces the old static "Inquiries" action link). */}
+      <div style={{ margin: '16px 0' }}>
+        <InquiriesBadge lang={lang} count={inquiries.count} bookingCount={inquiries.bookingCount} />
+      </div>
 
       <AdminActions lang={lang} />
 
@@ -157,11 +179,8 @@ function AdminActions({ lang }: { lang: AdminLang }) {
       <Link href="/admin/collections/orders" style={button}>
         {adminT(lang, 'findOrder')}
       </Link>
-      {/* inquiries badge (#239) graft here — replace this static link with the
-          live "<n> new" badge component; keep it in the action row. */}
-      <Link href="/admin/collections/contact-submissions" style={button}>
-        {adminT(lang, 'inquiries')}
-      </Link>
+      {/* The "Inquiries" action link is replaced by the live InquiriesBadge
+          strip rendered above the action row (#239). */}
     </div>
   )
 }
