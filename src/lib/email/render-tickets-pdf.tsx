@@ -11,6 +11,7 @@ import {
 } from '@react-pdf/renderer'
 import type { Venue } from '../venues'
 import { ADULT_PRICE_EUR, CHILD_PRICE_EUR } from '../pricing'
+import { scanUrl } from '../site-url'
 
 const FONT_DIR = path.join(process.cwd(), 'assets', 'fonts', 'email')
 const LOGO_PATH = path.join(process.cwd(), 'assets', 'images', 'cecilija-logo.png')
@@ -318,10 +319,12 @@ export async function renderTicketsPdf(
   const venueLabel = VENUE_LABEL[input.locale][input.show.venue]
   const dateLabel = formatDate(input.show.date, input.locale)
 
-  // One QR per ticket, rendered in issuance order.
+  // One QR per ticket, rendered in issuance order. The scan URL must point at
+  // the deployment that issued the slip (staging vs prod) — a hardcoded
+  // moreska.eu made dev-issued partner slips scan to INVALID against the prod DB.
   const qrUris = await Promise.all(
     input.tickets.map(async (t) =>
-      pngDataUri(await deps.generateQrPng(`https://moreska.eu/scan/${t.token}`)),
+      pngDataUri(await deps.generateQrPng(scanUrl(t.token))),
     ),
   )
 
