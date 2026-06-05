@@ -8,6 +8,8 @@ assets/*
 !assets/fonts
 assets/fonts/*
 !assets/fonts/email
+# Brand fonts resolved by next/font/local at build time (prototype/fonts.ts).
+!assets/fonts/brand
 !assets/images
 assets/images/*
 !assets/images/cecilija-logo.png

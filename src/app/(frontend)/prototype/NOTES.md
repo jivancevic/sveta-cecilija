@@ -18,15 +18,17 @@ Reviewable on **dev.moreska.eu/prototype/option1** and **/option2** once merged 
 The whole design is driven by three CSS variables (`--font-bodoni` = titles,
 `--font-inter` = body, `--font-ibm-plex-mono` = accents). Each option just remaps
 those three via `next/font/local` on the page wrapper — no component or CSS edits.
-Fonts live in `assets/fonts/new-fonts/`.
+Fonts live in `assets/fonts/brand/` (permanent brand assets; the consuming
+prototype code here is the only throwaway part). `.dockerignore` re-includes
+that dir so `next/font/local` can resolve it during the Docker `npm run build`.
 
 ## When a winner is picked
 
 1. Fold the chosen three fonts into `src/app/(frontend)/layout.tsx` (replace the
    `next/font/google` Bodoni/IBM-Plex/Inter declarations, keep the same variable names).
 2. Delete this whole `prototype/` directory (page, fonts.ts, PrototypeBar, this file).
-3. Move the chosen font files into a permanent location (e.g. `assets/fonts/`) and
-   drop the unused ones.
+3. Keep the winning family in `assets/fonts/brand/` (already a permanent home) and
+   delete the losing option's font files. The `.dockerignore` re-include stays.
 
 ## Verdict
 

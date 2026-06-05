@@ -18,12 +18,12 @@ import localFont from 'next/font/local';
 
 export const o1Title = localFont({
   src: [
-    { path: '../../../../assets/fonts/new-fonts/Labrada-Regular.ttf', weight: '400', style: 'normal' },
-    { path: '../../../../assets/fonts/new-fonts/Labrada-Medium.ttf', weight: '500', style: 'normal' },
-    { path: '../../../../assets/fonts/new-fonts/Labrada-SemiBold.ttf', weight: '600', style: 'normal' },
-    { path: '../../../../assets/fonts/new-fonts/Labrada-Bold.ttf', weight: '700', style: 'normal' },
-    { path: '../../../../assets/fonts/new-fonts/Labrada-Italic.ttf', weight: '400', style: 'italic' },
-    { path: '../../../../assets/fonts/new-fonts/Labrada-SemiBoldItalic.ttf', weight: '600', style: 'italic' },
+    { path: '../../../../assets/fonts/brand/Labrada-Regular.ttf', weight: '400', style: 'normal' },
+    { path: '../../../../assets/fonts/brand/Labrada-Medium.ttf', weight: '500', style: 'normal' },
+    { path: '../../../../assets/fonts/brand/Labrada-SemiBold.ttf', weight: '600', style: 'normal' },
+    { path: '../../../../assets/fonts/brand/Labrada-Bold.ttf', weight: '700', style: 'normal' },
+    { path: '../../../../assets/fonts/brand/Labrada-Italic.ttf', weight: '400', style: 'italic' },
+    { path: '../../../../assets/fonts/brand/Labrada-SemiBoldItalic.ttf', weight: '600', style: 'italic' },
   ],
   variable: '--font-bodoni',
   display: 'swap',
@@ -31,11 +31,11 @@ export const o1Title = localFont({
 
 export const o1Body = localFont({
   src: [
-    { path: '../../../../assets/fonts/new-fonts/Labrada-Regular.ttf', weight: '400', style: 'normal' },
-    { path: '../../../../assets/fonts/new-fonts/Labrada-Medium.ttf', weight: '500', style: 'normal' },
-    { path: '../../../../assets/fonts/new-fonts/Labrada-SemiBold.ttf', weight: '600', style: 'normal' },
-    { path: '../../../../assets/fonts/new-fonts/Labrada-Bold.ttf', weight: '700', style: 'normal' },
-    { path: '../../../../assets/fonts/new-fonts/Labrada-Italic.ttf', weight: '400', style: 'italic' },
+    { path: '../../../../assets/fonts/brand/Labrada-Regular.ttf', weight: '400', style: 'normal' },
+    { path: '../../../../assets/fonts/brand/Labrada-Medium.ttf', weight: '500', style: 'normal' },
+    { path: '../../../../assets/fonts/brand/Labrada-SemiBold.ttf', weight: '600', style: 'normal' },
+    { path: '../../../../assets/fonts/brand/Labrada-Bold.ttf', weight: '700', style: 'normal' },
+    { path: '../../../../assets/fonts/brand/Labrada-Italic.ttf', weight: '400', style: 'italic' },
   ],
   variable: '--font-inter',
   display: 'swap',
@@ -43,9 +43,9 @@ export const o1Body = localFont({
 
 export const o1Accent = localFont({
   src: [
-    { path: '../../../../assets/fonts/new-fonts/NeueHaasDisplayRoman.ttf', weight: '400', style: 'normal' },
-    { path: '../../../../assets/fonts/new-fonts/NeueHaasDisplayMediu.ttf', weight: '500', style: 'normal' },
-    { path: '../../../../assets/fonts/new-fonts/NeueHaasDisplayBold.ttf', weight: '700', style: 'normal' },
+    { path: '../../../../assets/fonts/brand/NeueHaasDisplayRoman.ttf', weight: '400', style: 'normal' },
+    { path: '../../../../assets/fonts/brand/NeueHaasDisplayMediu.ttf', weight: '500', style: 'normal' },
+    { path: '../../../../assets/fonts/brand/NeueHaasDisplayBold.ttf', weight: '700', style: 'normal' },
   ],
   variable: '--font-ibm-plex-mono',
   display: 'swap',
@@ -55,17 +55,17 @@ export const o1Accent = localFont({
    Holise (titles) · Neue Haas Grotesk (body) · Neue Haas Grotesk Mono (accents) */
 
 export const o2Title = localFont({
-  src: [{ path: '../../../../assets/fonts/new-fonts/Holise.otf', weight: '400', style: 'normal' }],
+  src: [{ path: '../../../../assets/fonts/brand/Holise.otf', weight: '400', style: 'normal' }],
   variable: '--font-bodoni',
   display: 'swap',
 });
 
 export const o2Body = localFont({
   src: [
-    { path: '../../../../assets/fonts/new-fonts/NeueHaasDisplayRoman.ttf', weight: '400', style: 'normal' },
-    { path: '../../../../assets/fonts/new-fonts/NeueHaasDisplayMediu.ttf', weight: '500', style: 'normal' },
-    { path: '../../../../assets/fonts/new-fonts/NeueHaasDisplayBold.ttf', weight: '700', style: 'normal' },
-    { path: '../../../../assets/fonts/new-fonts/NeueHaasDisplayRomanItalic.ttf', weight: '400', style: 'italic' },
+    { path: '../../../../assets/fonts/brand/NeueHaasDisplayRoman.ttf', weight: '400', style: 'normal' },
+    { path: '../../../../assets/fonts/brand/NeueHaasDisplayMediu.ttf', weight: '500', style: 'normal' },
+    { path: '../../../../assets/fonts/brand/NeueHaasDisplayBold.ttf', weight: '700', style: 'normal' },
+    { path: '../../../../assets/fonts/brand/NeueHaasDisplayRomanItalic.ttf', weight: '400', style: 'italic' },
   ],
   variable: '--font-inter',
   display: 'swap',
@@ -73,9 +73,9 @@ export const o2Body = localFont({
 
 export const o2Accent = localFont({
   src: [
-    { path: '../../../../assets/fonts/new-fonts/NeueHaasGroteskTextMono-55Roman_trial.otf', weight: '400', style: 'normal' },
-    { path: '../../../../assets/fonts/new-fonts/NeueHaasGroteskTextMono-65Medium_trial.otf', weight: '500', style: 'normal' },
-    { path: '../../../../assets/fonts/new-fonts/NeueHaasGroteskTextMono-75Bold_trial.otf', weight: '700', style: 'normal' },
+    { path: '../../../../assets/fonts/brand/NeueHaasGroteskTextMono-55Roman_trial.otf', weight: '400', style: 'normal' },
+    { path: '../../../../assets/fonts/brand/NeueHaasGroteskTextMono-65Medium_trial.otf', weight: '500', style: 'normal' },
+    { path: '../../../../assets/fonts/brand/NeueHaasGroteskTextMono-75Bold_trial.otf', weight: '700', style: 'normal' },
   ],
   variable: '--font-ibm-plex-mono',
   display: 'swap',
