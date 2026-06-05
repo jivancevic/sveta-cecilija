@@ -5,6 +5,7 @@ import QRCode from 'qrcode'
 import config from '@payload-config'
 import { scanToken, canUndoScan, type ScanResult, type ScanViewer } from '@/lib/scan-token'
 import { buildScanDeps } from '@/lib/scan-deps'
+import { scanUrl } from '@/lib/site-url'
 import { maskEmail } from '@/lib/claim/claim-order'
 
 export const runtime = 'nodejs'
@@ -454,7 +455,7 @@ export default async function ScanPage({
   const result = await scanToken(token, deps, { viewer })
   const qrDataUrl =
     result.status === 'BUYER_VIEW'
-      ? await QRCode.toDataURL(`https://moreska.eu/scan/${token}`, { margin: 1, width: 320 })
+      ? await QRCode.toDataURL(scanUrl(token), { margin: 1, width: 320 })
       : undefined
   const partyAdmitted =
     party !== undefined && /^\d+$/.test(party) ? Number(party) : undefined
