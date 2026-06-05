@@ -80,7 +80,7 @@ export const HISTORY_VIGNETTES_META: HistoryVignetteMeta[] = [
   { year: '1883', image: '/cecilija-est.webp' },
   { year: '1937', image: '/glazba.webp' },
   { year: '1944', image: '/crni-kralj.webp' },
-  { year: '1991', image: '/bula.webp' },
+  { year: '1991', image: '/moreska-2001.webp' },
   { year: '∞',    image: '/moreska01.webp' },
 ];
 
