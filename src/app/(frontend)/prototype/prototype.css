@@ -1,12 +1,12 @@
 /* PROTOTYPE — font-only size bump for type evaluation (GENERATED).
  * Layout/spacing/images are untouched (no zoom). Every font-size from
  * globals.css is re-emitted here, scoped to .proto-scale and multiplied by
- * var(--pf): mobile (<=768px) +25%, laptop/desktop (>=769px) +40%. The
+ * var(--pf): mobile (<=768px) +15%, laptop/desktop (>=769px) +20%. The
  * design’s own breakpoint cascade is preserved (rules inside @media blocks
  * are re-emitted in the same @media). Regenerate from globals.css if type
  * sizes change. The switcher bar is outside .proto-scale, so unaffected. */
-.proto-scale { --pf: 1.25; }
-@media (min-width: 769px) { .proto-scale { --pf: 1.4; } }
+.proto-scale { --pf: 1.15; }
+@media (min-width: 769px) { .proto-scale { --pf: 1.2; } }
 
   .proto-scale { font-size: calc(16px * var(--pf)); }
   .proto-scale .btn { font-size: calc(13px * var(--pf)); }
