@@ -3,6 +3,7 @@ import { sql } from '@payloadcms/db-postgres'
 import { undoScan } from '@/lib/scan-token'
 import { isAuthed } from '@/lib/access/roles'
 import { requireRole } from '@/lib/access/route-guard'
+import { scanRedirectUrl } from '@/lib/site-url'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -37,12 +38,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tok
   })
 
   if (result.status === 'UNDONE') {
-    const url = new URL(`/scan/${token}`, req.url)
-    return NextResponse.redirect(url, { status: 303 })
+    return NextResponse.redirect(scanRedirectUrl(token), { status: 303 })
   }
 
-  const url = new URL(`/scan/${token}`, req.url)
-  url.searchParams.set('undo', 'rejected')
-  return NextResponse.redirect(url, { status: 303 })
+  return NextResponse.redirect(scanRedirectUrl(token, { undo: 'rejected' }), { status: 303 })
 }
 

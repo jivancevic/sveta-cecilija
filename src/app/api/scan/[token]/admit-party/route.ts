@@ -3,6 +3,7 @@ import { sql } from '@payloadcms/db-postgres'
 import { admitParty } from '@/lib/scan-token'
 import { isAuthed } from '@/lib/access/roles'
 import { requireRole } from '@/lib/access/route-guard'
+import { scanRedirectUrl } from '@/lib/site-url'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -40,9 +41,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tok
       return NextResponse.json({ error: 'Unknown token' }, { status: 404 })
     }
     // Unknown token — bounce back to the scan screen, which renders INVALID.
-    return NextResponse.redirect(new URL(`/scan/${encodeURIComponent(token)}`, req.url), {
-      status: 303,
-    })
+    return NextResponse.redirect(scanRedirectUrl(token), { status: 303 })
   }
   const orderId = String(orderRow.order_id)
 
@@ -66,7 +65,5 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tok
     return NextResponse.json({ admitted })
   }
 
-  const url = new URL(`/scan/${encodeURIComponent(token)}`, req.url)
-  url.searchParams.set('party', String(admitted))
-  return NextResponse.redirect(url, { status: 303 })
+  return NextResponse.redirect(scanRedirectUrl(token, { party: String(admitted) }), { status: 303 })
 }

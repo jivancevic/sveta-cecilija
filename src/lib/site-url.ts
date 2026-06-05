@@ -14,5 +14,15 @@ export function siteBaseUrl(): string {
 }
 
 export function scanUrl(token: string): string {
-  return `${siteBaseUrl()}/scan/${token}`
+  return `${siteBaseUrl()}/scan/${encodeURIComponent(token)}`
+}
+
+// Absolute redirect target back to the scan page. Built against siteBaseUrl(),
+// NOT `req.url`: behind Coolify/Traefik the request URL carries the internal
+// bind host, so `new URL(path, req.url)` produced a 303 Location of
+// http://0.0.0.0:3000/scan/... that the browser then followed to a dead host.
+export function scanRedirectUrl(token: string, params: Record<string, string> = {}): URL {
+  const url = new URL(`/scan/${encodeURIComponent(token)}`, siteBaseUrl())
+  for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value)
+  return url
 }

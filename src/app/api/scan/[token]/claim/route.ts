@@ -10,6 +10,7 @@ import {
 import { sendTicketEmail } from '@/lib/email/send-ticket-email'
 import { generateQrPng } from '@/lib/email/qr'
 import { claimRateLimiter, clientIpFromHeaders } from '@/lib/rate-limit/claim-rate-limit'
+import { scanRedirectUrl } from '@/lib/site-url'
 import type { Venue } from '@/lib/venues'
 
 export const runtime = 'nodejs'
@@ -28,7 +29,9 @@ export const dynamic = 'force-dynamic'
 // legitimate claim. In-memory limiter — fine on single-instance Coolify.
 export async function POST(req: NextRequest, { params }: { params: Promise<{ token: string }> }) {
   const { token } = await params
-  const back = (q = '') => NextResponse.redirect(new URL(`/scan/${encodeURIComponent(token)}${q}`, req.url), { status: 303 })
+  // Redirect against the public origin, not req.url — see scanRedirectUrl.
+  const back = (params: Record<string, string> = {}) =>
+    NextResponse.redirect(scanRedirectUrl(token, params), { status: 303 })
 
   // Throttle before any parsing/DB work so a flood is cheap to reject.
   const rate = claimRateLimiter.check(token, clientIpFromHeaders(req.headers))
@@ -46,7 +49,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tok
     name = String(form.get('name') ?? '')
     email = String(form.get('email') ?? '')
   } catch {
-    return back('?claim=error')
+    return back({ claim: 'error' })
   }
 
   const payload = await getPayload({ config })
@@ -133,10 +136,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tok
 
     // CLAIMED → success banner. ALREADY_CLAIMED → plain buyer view (now shows the
     // read-only claimed state with the masked claimer email).
-    return back(result.status === 'CLAIMED' ? '?claimed=1' : '')
+    return back(result.status === 'CLAIMED' ? { claimed: '1' } : {})
   } catch (err) {
-    if (err instanceof ClaimValidationError) return back('?claim=error')
+    if (err instanceof ClaimValidationError) return back({ claim: 'error' })
     console.error('[claim] unexpected error', err)
-    return back('?claim=error')
+    return back({ claim: 'error' })
   }
 }
