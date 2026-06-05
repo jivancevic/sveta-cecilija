@@ -1,0 +1,225 @@
+/* PROTOTYPE — font-only size bump for type evaluation (GENERATED).
+ * Layout/spacing/images are untouched (no zoom). Every font-size from
+ * globals.css is re-emitted here, scoped to .proto-scale and multiplied by
+ * var(--pf): mobile (<=768px) +25%, laptop/desktop (>=769px) +40%. The
+ * design’s own breakpoint cascade is preserved (rules inside @media blocks
+ * are re-emitted in the same @media). Regenerate from globals.css if type
+ * sizes change. The switcher bar is outside .proto-scale, so unaffected. */
+.proto-scale { --pf: 1.25; }
+@media (min-width: 769px) { .proto-scale { --pf: 1.4; } }
+
+  .proto-scale { font-size: calc(16px * var(--pf)); }
+  .proto-scale .btn { font-size: calc(13px * var(--pf)); }
+  .proto-scale .btn--small { font-size: calc(11px * var(--pf)); }
+  .proto-scale .btn--hero-cta { font-size: calc(15px * var(--pf)); }
+  .proto-scale .nav__wordmark .top { font-size: calc(18px * var(--pf)); }
+  .proto-scale .nav__wordmark .bot { font-size: calc(9px * var(--pf)); }
+  .proto-scale .nav__links a { font-size: calc(13px * var(--pf)); }
+  .proto-scale .nav__lang { font-size: calc(11px * var(--pf)); }
+  .proto-scale .nav__lang-mobile { font-size: calc(11px * var(--pf)); }
+  .proto-scale .nav__overlay-close { font-size: calc(22px * var(--pf)); }
+  .proto-scale .nav__overlay-links a { font-size: clamp(calc(28px * var(--pf)), calc(7vw * var(--pf)), calc(40px * var(--pf))); }
+  .proto-scale .nav__overlay-lang { font-size: calc(12px * var(--pf)); }
+  .proto-scale .hero__logo .name { font-size: calc(28px * var(--pf)); }
+  .proto-scale .hero__logo .est { font-size: calc(11px * var(--pf)); }
+  .proto-scale .hero__scroll { font-size: calc(9px * var(--pf)); }
+  .proto-scale .page-hero__h { font-size: clamp(calc(40px * var(--pf)), calc(5.5vw * var(--pf)), calc(72px * var(--pf))); }
+  .proto-scale .page-hero__sub { font-size: clamp(calc(14px * var(--pf)), calc(1.6vw * var(--pf)), calc(18px * var(--pf))); }
+  .proto-scale .ip-eyebrow { font-size: calc(11px * var(--pf)); }
+  .proto-scale .ip-h2 { font-size: clamp(calc(36px * var(--pf)), calc(4.5vw * var(--pf)), calc(64px * var(--pf))); }
+  .proto-scale .ip-intro p { font-size: calc(17px * var(--pf)); }
+  .proto-scale .ip-intro p:first-child::first-letter { font-size: calc(80px * var(--pf)); }
+  .proto-scale .ip-ens-intro { font-size: calc(17px * var(--pf)); }
+  .proto-scale .ip-ens-card__name { font-size: calc(24px * var(--pf)); }
+  .proto-scale .ip-ens-card__blurb { font-size: calc(14px * var(--pf)); }
+  .proto-scale .ip-ens-card__link { font-size: calc(12px * var(--pf)); }
+  .proto-scale .ip-cta__h { font-size: clamp(calc(28px * var(--pf)), calc(3.5vw * var(--pf)), calc(48px * var(--pf))); }
+  .proto-scale .ip-cta__body { font-size: calc(16px * var(--pf)); }
+  .proto-scale .sp-lead p { font-size: calc(19px * var(--pf)); }
+  .proto-scale .sp-block h3 { font-size: clamp(calc(22px * var(--pf)), calc(2.5vw * var(--pf)), calc(32px * var(--pf))); }
+  .proto-scale .sp-block p { font-size: calc(16px * var(--pf)); }
+  .proto-scale .sp-back { font-size: calc(12px * var(--pf)); }
+  .proto-scale .cookie-banner__text { font-size: calc(14px * var(--pf)); }
+  .proto-scale .legal-page__updated { font-size: calc(11px * var(--pf)); }
+  .proto-scale .legal-page__h { font-size: calc(22px * var(--pf)); }
+  .proto-scale .legal-page__p { font-size: calc(16px * var(--pf)); }
+  .proto-scale .svc-page__blurb { font-size: calc(18px * var(--pf)); }
+  .proto-scale .svc-page__bullets li { font-size: calc(15px * var(--pf)); }
+  .proto-scale .svc-page__meta { font-size: calc(12px * var(--pf)); }
+  .proto-scale .svc-page__form-title { font-size: calc(26px * var(--pf)); }
+  .proto-scale .svc-page__form-body { font-size: calc(15px * var(--pf)); }
+  .proto-scale .svc-form__success h3 { font-size: calc(22px * var(--pf)); }
+  .proto-scale .svc-form__success p { font-size: calc(15px * var(--pf)); }
+  .proto-scale .ab-block__para { font-size: calc(18px * var(--pf)); }
+  .proto-scale .ab-block__para::first-letter { font-size: calc(74px * var(--pf)); }
+  .proto-scale .perfs-eyebrow { font-size: calc(11px * var(--pf)); }
+  .proto-scale .perfs-h { font-size: clamp(calc(32px * var(--pf)), calc(4vw * var(--pf)), calc(56px * var(--pf))); }
+  .proto-scale .perfs-sub { font-size: calc(15px * var(--pf)); }
+  .proto-scale .perfs-venue__label { font-size: calc(10px * var(--pf)); }
+  .proto-scale .perfs-venue__name { font-size: clamp(calc(22px * var(--pf)), calc(2.4vw * var(--pf)), calc(30px * var(--pf))); }
+  .proto-scale .perfs-venue__map { font-size: calc(11px * var(--pf)); }
+  .proto-scale .perfs-venue__details { font-size: calc(13px * var(--pf)); }
+  .proto-scale .perfs-venue__details-label { font-size: calc(10px * var(--pf)); }
+  .proto-scale .perfs-venue__rain { font-size: calc(13px * var(--pf)); }
+  .proto-scale .perfs-venue__rain-label { font-size: calc(10px * var(--pf)); }
+  .proto-scale .perf-booking__nudge { font-size: calc(13px * var(--pf)); }
+  .proto-scale .perf-booking__celebrate { font-size: calc(13px * var(--pf)); }
+  .proto-scale .perf-card__day { font-size: calc(42px * var(--pf)); }
+  .proto-scale .perf-card__mo { font-size: calc(10px * var(--pf)); }
+  .proto-scale .perf-card__meta { font-size: calc(12px * var(--pf)); }
+  .proto-scale .perf-card__pill { font-size: calc(10px * var(--pf)); }
+  .proto-scale .perf-card__book { font-size: calc(11px * var(--pf)); }
+  .proto-scale .perf-booking__row { font-size: calc(14px * var(--pf)); }
+  .proto-scale .perf-booking__price { font-size: calc(11px * var(--pf)); }
+  .proto-scale .qty-btn { font-size: calc(16px * var(--pf)); }
+  .proto-scale .qty-val { font-size: calc(15px * var(--pf)); }
+  .proto-scale .perf-booking__total { font-size: calc(15px * var(--pf)); }
+  .proto-scale .perf-booking__total-amount { font-size: calc(22px * var(--pf)); }
+  .proto-scale .perf-booking__confirm { font-size: calc(12px * var(--pf)); }
+  .proto-scale .perf-success__title { font-size: calc(18px * var(--pf)); }
+  .proto-scale .perf-success__body { font-size: calc(13px * var(--pf)); }
+  .proto-scale .divider__star { font-size: calc(18px * var(--pf)); }
+  .proto-scale .about__h { font-size: calc(60px * var(--pf)); }
+  .proto-scale .about__body { font-size: calc(17px * var(--pf)); }
+  .proto-scale .about__body::first-letter { font-size: calc(84px * var(--pf)); }
+  .proto-scale .about__cta { font-size: calc(13px * var(--pf)); }
+  .proto-scale .opera__eyebrow { font-size: calc(11px * var(--pf)); }
+  .proto-scale .opera__h { font-size: calc(56px * var(--pf)); }
+  .proto-scale .opera__sub { font-size: calc(15px * var(--pf)); }
+  .proto-scale .opera__tag { font-size: calc(10px * var(--pf)); }
+  .proto-scale .opera__day { font-size: calc(56px * var(--pf)); }
+  .proto-scale .opera__mo { font-size: calc(11px * var(--pf)); }
+  .proto-scale .opera__title { font-size: calc(28px * var(--pf)); }
+  .proto-scale .opera__meta { font-size: calc(12px * var(--pf)); }
+  .proto-scale .opera__pill { font-size: calc(10px * var(--pf)); }
+  .proto-scale .opera__price { font-size: calc(11px * var(--pf)); }
+  .proto-scale .opera__buy { font-size: calc(12px * var(--pf)); }
+  .proto-scale .opera__viewall { font-size: calc(13px * var(--pf)); }
+  .proto-scale .opera__price-note { font-size: calc(13px * var(--pf)); }
+  .proto-scale .hist__eyebrow { font-size: calc(11px * var(--pf)); }
+  .proto-scale .hist__eyebrow::before, .proto-scale .hist__eyebrow::after { font-size: calc(10px * var(--pf)); }
+  .proto-scale .hist__h { font-size: calc(76px * var(--pf)); }
+  .proto-scale .hist__sub { font-size: calc(17px * var(--pf)); }
+  .proto-scale .hist__credit { font-size: calc(11px * var(--pf)); }
+  .proto-scale .hist__event-year { font-size: calc(40px * var(--pf)); }
+  .proto-scale .hist__event-place { font-size: calc(10px * var(--pf)); }
+  .proto-scale .hist__event-title { font-size: calc(19px * var(--pf)); }
+  .proto-scale .hist__event-body { font-size: calc(13px * var(--pf)); }
+  .proto-scale .vignette__year { font-size: calc(48px * var(--pf)); }
+  .proto-scale .vignette__place { font-size: calc(11px * var(--pf)); }
+  .proto-scale .vignette__title { font-size: calc(22px * var(--pf)); }
+  .proto-scale .vignette__text { font-size: calc(14px * var(--pf)); }
+  .proto-scale .secs__eyebrow { font-size: calc(11px * var(--pf)); }
+  .proto-scale .secs__h { font-size: calc(76px * var(--pf)); }
+  .proto-scale .card__name { font-size: calc(32px * var(--pf)); }
+  .proto-scale .card__blurb { font-size: calc(13px * var(--pf)); }
+  .proto-scale .card__cta { font-size: calc(11px * var(--pf)); }
+  .proto-scale .card--feature .card__name { font-size: calc(56px * var(--pf)); }
+  .proto-scale .card--feature .card__blurb { font-size: calc(15px * var(--pf)); }
+  .proto-scale .svcs__eyebrow { font-size: calc(11px * var(--pf)); }
+  .proto-scale .svcs__h { font-size: calc(76px * var(--pf)); }
+  .proto-scale .svcs__lede { font-size: calc(18px * var(--pf)); }
+  .proto-scale .svc__num { font-size: calc(11px * var(--pf)); }
+  .proto-scale .svc__tagline { font-size: calc(14px * var(--pf)); }
+  .proto-scale .svc__title { font-size: calc(36px * var(--pf)); }
+  .proto-scale .svc__blurb { font-size: calc(15px * var(--pf)); }
+  .proto-scale .svc__bullets li { font-size: calc(14px * var(--pf)); }
+  .proto-scale .svc__bullet-mark { font-size: calc(11px * var(--pf)); }
+  .proto-scale .svc__meta { font-size: calc(11px * var(--pf)); }
+  .proto-scale .contact__eyebrow { font-size: calc(10px * var(--pf)); }
+  .proto-scale .contact__h { font-size: calc(48px * var(--pf)); }
+  .proto-scale .contact__sub { font-size: calc(14px * var(--pf)); }
+  .proto-scale .field label { font-size: calc(10px * var(--pf)); }
+  .proto-scale .field input, .proto-scale .field select, .proto-scale .field textarea { font-size: calc(14px * var(--pf)); }
+  .proto-scale .form__error { font-size: calc(13px * var(--pf)); }
+  .proto-scale .contact__success h3 { font-size: calc(32px * var(--pf)); }
+  .proto-scale .contact__success p { font-size: calc(15px * var(--pf)); }
+  .proto-scale .foot__tag { font-size: calc(32px * var(--pf)); }
+  .proto-scale .foot__col-h { font-size: calc(11px * var(--pf)); }
+  .proto-scale .foot__col a { font-size: calc(14px * var(--pf)); }
+  .proto-scale .foot__legal { font-size: calc(12px * var(--pf)); }
+  .proto-scale .foot__lang { font-size: calc(11px * var(--pf)); }
+  .proto-scale .inner-page .checkout-page__back { font-size: calc(11px * var(--pf)); }
+  .proto-scale .inner-page .checkout-page__h { font-size: clamp(calc(28px * var(--pf)), calc(5vw * var(--pf)), calc(44px * var(--pf))); }
+  .proto-scale .inner-page .checkout__h { font-size: calc(12px * var(--pf)); }
+  .proto-scale .inner-page .checkout__row { font-size: calc(14px * var(--pf)); }
+  .proto-scale .inner-page .checkout__row--total { font-size: calc(16px * var(--pf)); }
+  .proto-scale .inner-page .checkout__qty-row em { font-size: calc(12px * var(--pf)); }
+  .proto-scale .inner-page .checkout__field > span { font-size: calc(11px * var(--pf)); }
+  .proto-scale .inner-page .checkout__field small { font-size: calc(12px * var(--pf)); }
+  .proto-scale .inner-page .checkout__check { font-size: calc(13px * var(--pf)); }
+  .proto-scale .inner-page .checkout__error { font-size: calc(13px * var(--pf)); }
+  .proto-scale .inner-page .checkout__pay-btn { font-size: calc(12px * var(--pf)); }
+  .proto-scale .inner-page .checkout-confirm__h { font-size: clamp(calc(28px * var(--pf)), calc(5vw * var(--pf)), calc(40px * var(--pf))); }
+  .proto-scale .inner-page .checkout-confirm__body { font-size: calc(15px * var(--pf)); }
+  .proto-scale .inner-page .checkout-confirm__refs dt { font-size: calc(11px * var(--pf)); }
+  .proto-scale .inner-page .checkout-confirm__refs dd { font-size: calc(16px * var(--pf)); }
+  .proto-scale .inner-page .checkout-confirm__pdfBody { font-size: calc(15px * var(--pf)); }
+  .proto-scale .inner-page .t-stone .blog-empty, .proto-scale .inner-page .blog-empty { font-size: calc(17px * var(--pf)); }
+  .proto-scale .inner-page .blog-card__date { font-size: calc(12px * var(--pf)); }
+  .proto-scale .inner-page .blog-card__title { font-size: calc(22px * var(--pf)); }
+  .proto-scale .inner-page .blog-card__excerpt { font-size: calc(15px * var(--pf)); }
+  .proto-scale .inner-page .blog-card__more { font-size: calc(14px * var(--pf)); }
+  .proto-scale .inner-page .post-meta { font-size: calc(12px * var(--pf)); }
+  .proto-scale .inner-page .post-body { font-size: calc(18px * var(--pf)); }
+  .proto-scale .inner-page .post-body h2 { font-size: calc(28px * var(--pf)); }
+  .proto-scale .inner-page .post-body h3 { font-size: calc(22px * var(--pf)); }
+  .proto-scale .inner-page .post-footer-links__h { font-size: calc(18px * var(--pf)); }
+  .proto-scale .inner-page .checkout__consent { font-size: calc(12px * var(--pf)); }
+
+@media (max-width: 1280px) {
+  .proto-scale .about__h { font-size: calc(50px * var(--pf)); }
+  .proto-scale .opera__h { font-size: calc(40px * var(--pf)); }
+  .proto-scale .opera__day { font-size: calc(36px * var(--pf)); }
+  .proto-scale .hist__h { font-size: calc(48px * var(--pf)); }
+  .proto-scale .hist__event-year { font-size: calc(32px * var(--pf)); }
+  .proto-scale .hist__event-title { font-size: calc(16px * var(--pf)); }
+  .proto-scale .hist__event-body { font-size: calc(12px * var(--pf)); }
+  .proto-scale .secs__h { font-size: calc(48px * var(--pf)); }
+  .proto-scale .vignette__year { font-size: calc(36px * var(--pf)); }
+  .proto-scale .svcs__h { font-size: calc(56px * var(--pf)); }
+  .proto-scale .svc__title { font-size: calc(28px * var(--pf)); }
+  .proto-scale .svc__blurb { font-size: calc(14px * var(--pf)); }
+  .proto-scale .ab-block__para { font-size: calc(16px * var(--pf)); }
+}
+
+@media (max-width: 1024px) {
+  .proto-scale .about__h { font-size: calc(48px * var(--pf)); }
+  .proto-scale .opera__h { font-size: calc(56px * var(--pf)); }
+  .proto-scale .hist__h { font-size: calc(52px * var(--pf)); }
+  .proto-scale .secs__h { font-size: calc(52px * var(--pf)); }
+  .proto-scale .svcs__h { font-size: calc(52px * var(--pf)); }
+}
+
+@media (max-width: 768px) {
+  .proto-scale .hero__logo .name { font-size: calc(28px * var(--pf)); }
+  .proto-scale .about__h { font-size: calc(38px * var(--pf)); }
+  .proto-scale .opera__day { font-size: calc(40px * var(--pf)); }
+  .proto-scale .opera__title { font-size: calc(17px * var(--pf)); }
+  .proto-scale .opera__h { font-size: calc(44px * var(--pf)); }
+  .proto-scale .hist__event-year { font-size: calc(26px * var(--pf)); }
+  .proto-scale .hist__event-title { font-size: calc(14px * var(--pf)); }
+  .proto-scale .hist__event-body { font-size: calc(12px * var(--pf)); }
+  .proto-scale .hist__h { font-size: calc(40px * var(--pf)); }
+  .proto-scale .secs__h { font-size: calc(40px * var(--pf)); }
+  .proto-scale .svcs__h { font-size: calc(40px * var(--pf)); }
+  .proto-scale .ab-block__para { font-size: calc(16px * var(--pf)); }
+  .proto-scale .ab-block__para::first-letter { font-size: calc(56px * var(--pf)); }
+  .proto-scale .contact__h { font-size: calc(36px * var(--pf)); }
+  .proto-scale .foot__tag { font-size: calc(24px * var(--pf)); }
+  .proto-scale .inner-page .post-body { font-size: calc(17px * var(--pf)); }
+}
+
+@media (max-width: 480px) {
+  .proto-scale .hero__logo .name { font-size: calc(22px * var(--pf)); }
+  .proto-scale .hero__ctas .btn { font-size: calc(14px * var(--pf)); }
+  .proto-scale .about__h { font-size: calc(30px * var(--pf)); }
+  .proto-scale .about__body { font-size: calc(15px * var(--pf)); }
+  .proto-scale .about__body::first-letter { font-size: calc(64px * var(--pf)); }
+  .proto-scale .opera__h { font-size: calc(36px * var(--pf)); }
+  .proto-scale .hist__h { font-size: calc(32px * var(--pf)); }
+  .proto-scale .secs__h { font-size: calc(32px * var(--pf)); }
+  .proto-scale .svcs__h { font-size: calc(32px * var(--pf)); }
+  .proto-scale .card--feature .card__name { font-size: calc(36px * var(--pf)); }
+  .proto-scale .btn { font-size: calc(11px * var(--pf)); }
+}

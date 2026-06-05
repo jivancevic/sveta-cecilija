@@ -30,6 +30,14 @@ that dir so `next/font/local` can resolve it during the Docker `npm run build`.
 3. Keep the winning family in `assets/fonts/brand/` (already a permanent home) and
    delete the losing option's font files. The `.dockerignore` re-include stays.
 
+## Note on the enlarged type
+
+`prototype.css` bumps every font-size by **+25% (mobile) / +40% (laptop)** via a
+generated `.proto-scale` override (layout untouched — no `zoom`). This is a
+**legibility aid for evaluating the fonts on screen, not a design spec** — don't
+read it as "the real site should be 40% bigger." It's regenerated from
+`globals.css` font-sizes; discard it entirely when folding the winner in.
+
 ## Verdict
 
 _(pending team review — fill in which option won and why before deleting)_
