@@ -24,6 +24,7 @@ import Footer from '@/components/Footer';
 import ScrollReveal from '@/components/ScrollReveal';
 import { PROTOTYPE_FONTS, type PrototypeOption } from '../fonts';
 import PrototypeBar from '../PrototypeBar';
+import '../prototype.css';
 
 export const dynamic = 'force-dynamic';
 
@@ -45,16 +46,18 @@ export default async function PrototypeHomePage({
 
   return (
     <div className={`${recipe.classes.join(' ')} hp t-stone`}>
-      <Nav locale={locale} t={dict.nav} variant="homepage" />
-      <Hero t={dict.hero} />
-      <About t={dict.about} />
-      <Schedule t={dict.schedule} shows={upcoming} locale={locale} />
-      <History t={dict.history} vignettes={HISTORY_VIGNETTES_HOME} />
-      <Sections t={dict.sections} cards={SECTION_CARDS_META} />
-      <Services t={dict.services} cards={SERVICE_CARDS_META} />
-      <Contact t={dict.contact} />
-      <Footer locale={locale} t={dict.footer} />
-      <ScrollReveal />
+      <div className="proto-scale">
+        <Nav locale={locale} t={dict.nav} variant="homepage" />
+        <Hero t={dict.hero} />
+        <About t={dict.about} />
+        <Schedule t={dict.schedule} shows={upcoming} locale={locale} />
+        <History t={dict.history} vignettes={HISTORY_VIGNETTES_HOME} />
+        <Sections t={dict.sections} cards={SECTION_CARDS_META} />
+        <Services t={dict.services} cards={SERVICE_CARDS_META} />
+        <Contact t={dict.contact} />
+        <Footer locale={locale} t={dict.footer} />
+        <ScrollReveal />
+      </div>
       <PrototypeBar current={opt} recipe={recipe} />
     </div>
   );
