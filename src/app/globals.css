@@ -43,6 +43,10 @@ html, body { overflow-x: hidden; }
   --sectionPadX: 64px;
   --maxW: 1480px;
   --headlineWeight: 600;
+  /* Sharp corners (moreška = blades) — locked decision, designer sign-off pending.
+     Box corners (buttons, cards, photos, inputs) read this token; flip it to revert.
+     Pills (border-radius:999px) and dots/circles (50%) are separate shapes, not corners. */
+  --radius: 0px;
 }
 
 /* ─────────────────────────────────────────────
@@ -62,7 +66,7 @@ html, body { overflow-x: hidden; }
 ───────────────────────────────────────────── */
 .btn {
   display: inline-flex; align-items: center; justify-content: center;
-  padding: 14px 26px; border-radius: 4px; font-weight: 500;
+  padding: 14px 26px; border-radius: var(--radius); font-weight: 500;
   letter-spacing: 0.08em; font-size: 13px; text-transform: uppercase;
   cursor: pointer; transition: all 0.2s ease; border: 1px solid transparent;
   white-space: nowrap;
@@ -386,7 +390,7 @@ html, body { overflow-x: hidden; }
 .sp-zz { display: grid; grid-template-columns: 1fr 1fr; gap: 56px; align-items: center; }
 .sp-zz__photo {
   position: relative; aspect-ratio: 4 / 3; overflow: hidden;
-  border-radius: 2px; background: var(--lightAlt);
+  border-radius: var(--radius); background: var(--lightAlt);
 }
 .sp-zz__photo img { object-fit: cover; object-position: center 30%; }
 /* Near-square frame for photos whose key content runs top-to-bottom (e.g. younglings:
@@ -471,7 +475,7 @@ html, body { overflow-x: hidden; }
 .svc-page__meta { font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; opacity: 0.5; }
 .svc-page__form-wrap {
   background: var(--bg); border: 1px solid rgba(0,0,0,0.08);
-  border-radius: 6px; padding: 40px; position: sticky; top: 100px;
+  border-radius: var(--radius); padding: 40px; position: sticky; top: 100px;
 }
 .svc-page__form-title { font-size: 26px; margin: 0 0 10px; }
 .svc-page__form-body { font-size: 15px; opacity: 0.65; margin: 0 0 28px; line-height: 1.5; }
@@ -599,12 +603,12 @@ html, body { overflow-x: hidden; }
 
 .perf-booking__nudge {
   font-size: 13px; color: var(--goldBright); background: rgba(212,175,55,0.1);
-  border: 1px solid rgba(212,175,55,0.3); border-radius: 4px;
+  border: 1px solid rgba(212,175,55,0.3); border-radius: var(--radius);
   padding: 8px 12px; margin: 4px 0; text-align: center;
 }
 .perf-booking__celebrate {
   font-size: 13px; color: #5cb85c; background: rgba(92,184,92,0.08);
-  border: 1px solid rgba(92,184,92,0.3); border-radius: 4px;
+  border: 1px solid rgba(92,184,92,0.3); border-radius: var(--radius);
   padding: 8px 12px; margin: 4px 0; text-align: center;
   display: flex; justify-content: center; align-items: center; gap: 6px;
 }
@@ -1171,7 +1175,7 @@ html, body { overflow-x: hidden; }
 .form__error {
   margin: 0; padding: 10px 14px; font-size: 13px; line-height: 1.4;
   color: #f3d6c9; background: rgba(180,60,40,0.18);
-  border: 1px solid rgba(220,90,70,0.45); border-radius: 3px;
+  border: 1px solid rgba(220,90,70,0.45); border-radius: var(--radius);
 }
 .form button[disabled] { opacity: 0.55; cursor: progress; }
 .contact__success { text-align: center; padding: 48px 0; }
@@ -1501,7 +1505,7 @@ html, body { overflow-x: hidden; }
   background: #fff;
   border: 1px solid rgba(0, 0, 0, 0.08);
   padding: 24px;
-  border-radius: 4px;
+  border-radius: var(--radius);
 }
 .inner-page .checkout__row {
   display: flex;
@@ -1542,7 +1546,7 @@ html, body { overflow-x: hidden; }
   width: 100%;
   padding: 12px 14px;
   border: 1px solid rgba(0, 0, 0, 0.18);
-  border-radius: 3px;
+  border-radius: var(--radius);
   font: inherit;
   background: #fafafa;
 }
@@ -1590,7 +1594,7 @@ html, body { overflow-x: hidden; }
   font-size: 12px;
   letter-spacing: 0.16em;
   cursor: pointer;
-  border-radius: 3px;
+  border-radius: var(--radius);
 }
 .inner-page .checkout__pay-btn:hover:not(:disabled) { background: var(--gold, #b08d57); }
 .inner-page .checkout__pay-btn:disabled { opacity: 0.45; cursor: not-allowed; }
@@ -1640,7 +1644,7 @@ html, body { overflow-x: hidden; }
   margin: 24px 0 16px;
   padding: 16px;
   border: 1px solid color-mix(in oklab, var(--ink, #1a140c) 12%, transparent);
-  border-radius: 8px;
+  border-radius: var(--radius);
   display: flex;
   flex-direction: column;
   gap: 12px;
