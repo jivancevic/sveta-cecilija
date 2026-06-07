@@ -33,10 +33,23 @@ function icsFilename(date: string): string {
   return `moreska-${date}.ics`
 }
 
+/**
+ * Sends the per-person ticket PDF + ICS to the buyer via Brevo.
+ *
+ * Returns `true` only when Brevo accepted the send (2xx); `false` on any
+ * failure (Brevo non-2xx such as a 401 bad key, or a thrown error while
+ * rendering/posting). Never throws — every error is logged with grep-able
+ * `orderId=`/`code=` fields for manual resend.
+ *
+ * Best-effort callers (the Stripe webhook, where the order is already committed
+ * and money has moved) can ignore the result. Interactive callers (the buyer
+ * claim flow, where the guest is actively waiting and we show them a "sent"
+ * banner) MUST honour it — a `false` means no email left, so don't claim success.
+ */
 export async function sendTicketEmail(
   input: SendTicketEmailInput,
   deps: SendTicketEmailDeps,
-): Promise<void> {
+): Promise<boolean> {
   const renderPdf = deps.renderTicketsPdf ?? renderTicketsPdf
   const renderEmail = deps.renderTicketEmail ?? renderTicketEmail
 
@@ -102,11 +115,14 @@ export async function sendTicketEmail(
       console.error(
         `[sendTicketEmail] Brevo error orderId=${input.orderId} email=${input.buyer.email} code=${input.orderCode ?? input.orderId} status=${res.status} body=${text}`,
       )
+      return false
     }
+    return true
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
     console.error(
       `[sendTicketEmail] fetch failed orderId=${input.orderId} email=${input.buyer.email} code=${input.orderCode ?? input.orderId} error=${msg}`,
     )
+    return false
   }
 }

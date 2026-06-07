@@ -114,28 +114,48 @@ describe('sendTicketEmail', () => {
     expect(pdfCall.orderRef).toBe('CD45')
   })
 
-  it('resolves (does not throw) when Brevo returns an error response', async () => {
+  it('returns true when Brevo accepts the send', async () => {
+    const deps = makeDeps()
+    await expect(sendTicketEmail(makeInput(), deps)).resolves.toBe(true)
+  })
+
+  it('returns false (does not throw) when Brevo returns an error response', async () => {
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     const deps = makeDeps({
       fetch: vi
         .fn()
         .mockResolvedValue(new Response('{"message":"invalid"}', { status: 400 })),
     })
-    await expect(sendTicketEmail(makeInput(), deps)).resolves.toBeUndefined()
+    await expect(sendTicketEmail(makeInput(), deps)).resolves.toBe(false)
+    errSpy.mockRestore()
   })
 
-  it('resolves (does not throw) when fetch itself rejects', async () => {
+  it('returns false on a 401 (bad/missing Brevo key) — the silent-failure case', async () => {
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const deps = makeDeps({
+      fetch: vi.fn().mockResolvedValue(new Response('{"code":"unauthorized"}', { status: 401 })),
+    })
+    await expect(sendTicketEmail(makeInput(), deps)).resolves.toBe(false)
+    errSpy.mockRestore()
+  })
+
+  it('returns false (does not throw) when fetch itself rejects', async () => {
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     const deps = makeDeps({
       fetch: vi.fn().mockRejectedValue(new Error('network down')),
     })
-    await expect(sendTicketEmail(makeInput(), deps)).resolves.toBeUndefined()
+    await expect(sendTicketEmail(makeInput(), deps)).resolves.toBe(false)
+    errSpy.mockRestore()
   })
 
-  it('resolves (does not throw) when PDF rendering throws', async () => {
+  it('returns false (does not throw) when PDF rendering throws', async () => {
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     const deps = makeDeps({
       renderTicketsPdf: vi.fn().mockRejectedValue(new Error('font load failed')),
     })
-    await expect(sendTicketEmail(makeInput(), deps)).resolves.toBeUndefined()
+    await expect(sendTicketEmail(makeInput(), deps)).resolves.toBe(false)
     expect(deps.fetch).not.toHaveBeenCalled()
+    errSpy.mockRestore()
   })
 
   it('failure logs include orderId, buyer email and order code for manual recovery', async () => {

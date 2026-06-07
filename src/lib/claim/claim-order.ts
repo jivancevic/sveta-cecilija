@@ -7,6 +7,14 @@
 // and never overwrites. On a winning claim, the digital ticket PDF is emailed
 // exactly once. Claiming is orthogonal to money + seats — the ticket was
 // already sold, counted, and invoiced.
+//
+// SEND RESULT IS HONEST: the guest is actively waiting and the scan page shows
+// them a "Ticket sent. Check your email." banner. The attach commits BEFORE the
+// email is sent, so a send failure (e.g. a 401 bad Brevo key) would otherwise
+// leave the order claimed but no email delivered, AND the page would still claim
+// success. So `claimOrder` reports whether the email actually left (`emailed`),
+// and an already-claimed re-submit RE-SENDS to the on-file email (self-heal) so
+// a guest who hit a transient failure can simply tap "Get my ticket" again.
 
 export type Locale = 'en' | 'hr'
 
@@ -37,15 +45,31 @@ export interface ClaimDeps {
   // unclaimed order. MUST be a single atomic statement
   // (`UPDATE … WHERE id = $1 AND email IS NULL RETURNING …`).
   attachBuyer: (orderId: string, name: string, email: string) => Promise<ClaimableOrder | null>
-  // Emails the digital ticket PDF to the freshly-claimed buyer. Called at most
-  // once per order (only on the winning claim).
+  // Loads an ALREADY-claimed order plus its on-file buyer (email + name) so a
+  // re-submit can re-send the ticket to the address that won the claim — never
+  // to the re-submitter's input (would let a passer-by spam a different inbox).
+  // Returns null if the order doesn't exist or isn't actually claimed yet.
+  loadClaimedOrder: (
+    orderId: string,
+  ) => Promise<{ order: ClaimableOrder; buyer: { name: string; email: string } } | null>
+  // Emails the digital ticket PDF to the buyer. Returns true only if the email
+  // actually left (Brevo accepted it); false on any send failure. Idempotent at
+  // the domain level: sending the same ticket twice is harmless.
   sendClaimedTickets: (
     order: ClaimableOrder,
     buyer: { name: string; email: string },
-  ) => Promise<void>
+  ) => Promise<boolean>
 }
 
-export type ClaimResult = { status: 'CLAIMED' } | { status: 'ALREADY_CLAIMED' }
+// `emailed` is the honest signal the scan page keys its banner off:
+//   CLAIMED + emailed:true   → green "Ticket sent. Check your email."
+//   CLAIMED + emailed:false  → amber "couldn't send, try again" (attach DID
+//                              commit, but no email left — retry re-sends).
+//   ALREADY_CLAIMED          → re-send to the on-file email; `emailed` reflects
+//                              whether that re-send succeeded.
+export type ClaimResult =
+  | { status: 'CLAIMED'; emailed: boolean }
+  | { status: 'ALREADY_CLAIMED'; emailed: boolean }
 
 export async function claimOrder(input: ClaimInput, deps: ClaimDeps): Promise<ClaimResult> {
   const name = (input.name ?? '').trim()
@@ -54,11 +78,19 @@ export async function claimOrder(input: ClaimInput, deps: ClaimDeps): Promise<Cl
   if (!isPlausibleEmail(email)) throw new ClaimValidationError('A valid email is required')
 
   const won = await deps.attachBuyer(input.orderId, name, email)
-  if (!won) return { status: 'ALREADY_CLAIMED' }
+  if (won) {
+    // This caller won the claim — send to the email they just attached.
+    const emailed = await deps.sendClaimedTickets(won, { name, email })
+    return { status: 'CLAIMED', emailed }
+  }
 
-  // Only the winner reaches here, so the ticket email fires exactly once.
-  await deps.sendClaimedTickets(won, { name, email })
-  return { status: 'CLAIMED' }
+  // Already claimed by someone (possibly this same guest on an earlier attempt
+  // whose send failed). Self-heal: re-send to the ON-FILE buyer, not the new
+  // input, so a transient Brevo failure doesn't permanently strand the ticket.
+  const claimed = await deps.loadClaimedOrder(input.orderId)
+  if (!claimed) return { status: 'ALREADY_CLAIMED', emailed: false }
+  const emailed = await deps.sendClaimedTickets(claimed.order, claimed.buyer)
+  return { status: 'ALREADY_CLAIMED', emailed }
 }
 
 // Deliberately lenient: blocks obvious garbage without rejecting valid-but-odd
