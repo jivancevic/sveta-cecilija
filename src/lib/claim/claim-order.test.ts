@@ -18,10 +18,13 @@ const ORDER: ClaimableOrder = {
   locale: 'en',
 }
 
+const ON_FILE = { name: 'Ana Anić', email: 'ana@example.com' }
+
 function makeDeps(overrides: Partial<ClaimDeps> = {}): ClaimDeps {
   return {
     attachBuyer: vi.fn().mockResolvedValue(ORDER),
-    sendClaimedTickets: vi.fn().mockResolvedValue(undefined),
+    loadClaimedOrder: vi.fn().mockResolvedValue({ order: ORDER, buyer: ON_FILE }),
+    sendClaimedTickets: vi.fn().mockResolvedValue(true),
     ...overrides,
   }
 }
@@ -30,21 +33,51 @@ describe('claimOrder', () => {
   it('first claim wins: attaches the buyer and emails the tickets exactly once', async () => {
     const deps = makeDeps()
     const result = await claimOrder({ orderId: 'ord_1', name: 'Ana Anić', email: 'Ana@Example.com' }, deps)
-    expect(result).toEqual({ status: 'CLAIMED' })
+    expect(result).toEqual({ status: 'CLAIMED', emailed: true })
     // email is normalised (trimmed + lowercased) before attach
     expect(deps.attachBuyer).toHaveBeenCalledWith('ord_1', 'Ana Anić', 'ana@example.com')
     expect(deps.sendClaimedTickets).toHaveBeenCalledTimes(1)
     expect(deps.sendClaimedTickets).toHaveBeenCalledWith(ORDER, { name: 'Ana Anić', email: 'ana@example.com' })
   })
 
-  it('already claimed (attach returns null): no overwrite, no email', async () => {
+  it('winning claim but the send fails: reports CLAIMED + emailed:false (no false "sent")', async () => {
+    const deps = makeDeps({ sendClaimedTickets: vi.fn().mockResolvedValue(false) })
+    const result = await claimOrder({ orderId: 'ord_1', name: 'Ana', email: 'ana@example.com' }, deps)
+    expect(result).toEqual({ status: 'CLAIMED', emailed: false })
+  })
+
+  it('already claimed: re-sends to the ON-FILE buyer (self-heal), never the new input', async () => {
     const deps = makeDeps({ attachBuyer: vi.fn().mockResolvedValue(null) })
+    const result = await claimOrder({ orderId: 'ord_1', name: 'Mallory', email: 'mallory@evil.com' }, deps)
+    expect(result).toEqual({ status: 'ALREADY_CLAIMED', emailed: true })
+    // re-send targets the on-file buyer, NOT the re-submitter's address
+    expect(deps.sendClaimedTickets).toHaveBeenCalledWith(ORDER, ON_FILE)
+    expect(deps.sendClaimedTickets).not.toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ email: 'mallory@evil.com' }),
+    )
+  })
+
+  it('already claimed but the order can no longer be loaded: ALREADY_CLAIMED + emailed:false, no send', async () => {
+    const deps = makeDeps({
+      attachBuyer: vi.fn().mockResolvedValue(null),
+      loadClaimedOrder: vi.fn().mockResolvedValue(null),
+    })
     const result = await claimOrder({ orderId: 'ord_1', name: 'Bob', email: 'bob@example.com' }, deps)
-    expect(result).toEqual({ status: 'ALREADY_CLAIMED' })
+    expect(result).toEqual({ status: 'ALREADY_CLAIMED', emailed: false })
     expect(deps.sendClaimedTickets).not.toHaveBeenCalled()
   })
 
-  it('concurrent claims: only the winner emails (the loser is a no-op)', async () => {
+  it('already claimed and the re-send fails: ALREADY_CLAIMED + emailed:false', async () => {
+    const deps = makeDeps({
+      attachBuyer: vi.fn().mockResolvedValue(null),
+      sendClaimedTickets: vi.fn().mockResolvedValue(false),
+    })
+    const result = await claimOrder({ orderId: 'ord_1', name: 'Bob', email: 'bob@example.com' }, deps)
+    expect(result).toEqual({ status: 'ALREADY_CLAIMED', emailed: false })
+  })
+
+  it('concurrent claims: only the winner attaches; losers re-send to the on-file email', async () => {
     // Simulate the DB: the first attach wins, the rest see email already set.
     let claimed = false
     const attachBuyer = vi.fn(async () => {
@@ -52,7 +85,7 @@ describe('claimOrder', () => {
       claimed = true
       return ORDER
     })
-    const sendClaimedTickets = vi.fn().mockResolvedValue(undefined)
+    const sendClaimedTickets = vi.fn().mockResolvedValue(true)
     const deps = makeDeps({ attachBuyer, sendClaimedTickets })
     const results = await Promise.all([
       claimOrder({ orderId: 'ord_1', name: 'A', email: 'a@example.com' }, deps),
@@ -61,7 +94,9 @@ describe('claimOrder', () => {
     ])
     expect(results.filter((r) => r.status === 'CLAIMED')).toHaveLength(1)
     expect(results.filter((r) => r.status === 'ALREADY_CLAIMED')).toHaveLength(2)
-    expect(sendClaimedTickets).toHaveBeenCalledTimes(1)
+    // exactly one fresh attach; everyone who returns reports an honest emailed flag
+    expect(attachBuyer).toHaveBeenCalledTimes(3)
+    expect(results.every((r) => r.emailed === true)).toBe(true)
   })
 
   it('rejects a missing name', async () => {

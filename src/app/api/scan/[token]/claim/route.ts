@@ -65,6 +65,16 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tok
   if (!orderRow) return back()
   const orderId = String(orderRow.order_id)
 
+  const orderFromRow = (row: any): ClaimableOrder => ({
+    orderId: String(row.id),
+    code: String(row.code ?? ''),
+    showId: String(row.show_id),
+    adultCount: Number(row.adult_count ?? 0),
+    childCount: Number(row.child_count ?? 0),
+    totalCents: Number(row.total ?? 0),
+    locale: row.locale === 'hr' ? 'hr' : 'en',
+  })
+
   try {
     const result = await claimOrder(
       { orderId, name, email },
@@ -79,19 +89,28 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tok
           `)
           const row = (res.rows ?? res)[0]
           if (!row) return null
+          return orderFromRow(row)
+        },
+        // Re-load an already-claimed order with its ON-FILE buyer so a re-submit
+        // re-sends to the address that won the claim (self-heal for a transient
+        // send failure) and never to the re-submitter's input.
+        loadClaimedOrder: async (oid) => {
+          const res: any = await drizzle.execute(sql`
+            SELECT id, code, show_id, adult_count, child_count, total, locale, email, buyer_name
+            FROM orders WHERE id = ${Number(oid)} AND email IS NOT NULL LIMIT 1
+          `)
+          const row = (res.rows ?? res)[0]
+          if (!row) return null
           return {
-            orderId: String(row.id),
-            code: String(row.code ?? ''),
-            showId: String(row.show_id),
-            adultCount: Number(row.adult_count ?? 0),
-            childCount: Number(row.child_count ?? 0),
-            totalCents: Number(row.total ?? 0),
-            locale: row.locale === 'hr' ? 'hr' : 'en',
+            order: orderFromRow(row),
+            buyer: { name: String(row.buyer_name ?? ''), email: String(row.email) },
           }
         },
-        // Best-effort, mirroring the Stripe webhook's notifyBuyer: a send failure
-        // must not fail the (already-committed) claim. Logged for manual resend.
-        sendClaimedTickets: async (order, buyer) => {
+        // Returns whether the ticket email actually left (true) so claimOrder can
+        // tell the buyer honestly. A thrown error or a Brevo non-2xx is `false`,
+        // never a swallowed success. The claim attach has already committed; we
+        // only report on delivery here.
+        sendClaimedTickets: async (order, buyer): Promise<boolean> => {
           try {
             const showDoc = await payload.findByID({ collection: 'shows', id: Number(order.showId), depth: 0 })
             const ticketsRes: any = await drizzle.execute(sql`
@@ -104,14 +123,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tok
               // Order has no active tickets (fully voided after attach): never
               // send an empty-ticket PDF. The claim itself already committed.
               console.error(`[claim] no active tickets to email orderId=${order.orderId} code=${order.code}`)
-              return
+              return false
             }
             const tickets = rows.map((r, i) => ({
               token: String(r.token),
               type: (r.type === 'child' ? 'child' : 'adult') as 'adult' | 'child',
               ref: `${order.code}-${i + 1}`,
             }))
-            await sendTicketEmail(
+            return await sendTicketEmail(
               {
                 orderId: order.orderId,
                 buyer,
@@ -129,14 +148,17 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ tok
             )
           } catch (err) {
             console.error(`[claim] sendClaimedTickets failed orderId=${order.orderId} code=${order.code}`, err)
+            return false
           }
         },
       },
     )
 
-    // CLAIMED → success banner. ALREADY_CLAIMED → plain buyer view (now shows the
-    // read-only claimed state with the masked claimer email).
-    return back(result.status === 'CLAIMED' ? { claimed: '1' } : {})
+    // The banner is contingent on the email ACTUALLY leaving — never claim
+    // "sent" on a swallowed failure. CLAIMED/ALREADY_CLAIMED both re-send and
+    // report `emailed`; a false surfaces the honest "try again" banner so the
+    // guest can re-submit (which self-heals once the send path recovers).
+    return back(result.emailed ? { claimed: '1' } : { claim: 'error' })
   } catch (err) {
     if (err instanceof ClaimValidationError) return back({ claim: 'error' })
     console.error('[claim] unexpected error', err)
