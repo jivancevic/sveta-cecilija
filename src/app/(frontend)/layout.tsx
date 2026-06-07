@@ -1,31 +1,10 @@
 import type { Metadata } from 'next';
-import { Bodoni_Moda_SC, IBM_Plex_Mono, Inter } from 'next/font/google';
 import { getLocale } from '@/lib/locale';
 import { getDictionary } from '@/lib/i18n';
 import CookieConsent from '@/components/CookieConsent';
 import { BRAND_LAYER, ORG_LEGAL_NAME, SITE_URL, TAGLINE } from '@/lib/seo';
+import { bodoni, ibmPlexMono, inter } from './fonts';
 import '../globals.css';
-
-const bodoniModa = Bodoni_Moda_SC({
-  subsets: ['latin'],
-  weight: ['400', '600', '700'],
-  style: ['normal', 'italic'],
-  variable: '--font-bodoni',
-  display: 'swap',
-});
-
-const ibmPlexMono = IBM_Plex_Mono({
-  subsets: ['latin'],
-  weight: ['400', '500', '600'],
-  variable: '--font-ibm-plex-mono',
-  display: 'swap',
-});
-
-const inter = Inter({
-  subsets: ['latin'],
-  variable: '--font-inter',
-  display: 'swap',
-});
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -58,7 +37,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   return (
     <html
       lang={locale}
-      className={`${bodoniModa.variable} ${ibmPlexMono.variable} ${inter.variable}`}
+      className={`${bodoni.variable} ${ibmPlexMono.variable} ${inter.variable}`}
     >
       <body suppressHydrationWarning>
         <script
