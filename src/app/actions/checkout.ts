@@ -1,8 +1,10 @@
 'use server'
 
+import type Stripe from 'stripe'
 import { getPayload } from 'payload'
 import config from '@payload-config'
 import { createCheckoutSession, type CheckoutInput } from '@/lib/checkout/create-checkout-session'
+import { createPaymentIntentWithPmcFallback } from '@/lib/checkout/create-payment-intent'
 import { getStripe } from '@/lib/stripe'
 import type { PurchasableShow } from '@/lib/checkout/purchasability'
 import { getActiveTicketCountForShow, type PoolQuery } from '@/lib/tickets/sold-seats'
@@ -37,19 +39,21 @@ export async function startCheckout(input: CheckoutInput) {
         // "Your account" config (Card + Apple Pay + Google Pay), not whichever config
         // happens to be the account default. This account carries leftover
         // WooCommerce-owned configs from the legacy Tickera site whose default surfaces
-        // EU bank methods (iDEAL/Bancontact/EPS) and hides the wallets. pmc ids are
-        // mode-specific, so the value is env-driven (live id in Coolify, sandbox id locally).
-        // Unset → Stripe falls back to the account default (prior behaviour), so this is safe.
-        const pmcId = process.env.STRIPE_PMC_ID
-        const pi = await stripe.paymentIntents.create({
-          amount: amountCents,
-          currency,
-          metadata,
-          receipt_email: receiptEmail,
-          automatic_payment_methods: { enabled: true },
-          ...(pmcId ? { payment_method_configuration: pmcId } : {}),
-        })
-        return { id: pi.id, clientSecret: pi.client_secret ?? '' }
+        // EU bank methods (iDEAL/Bancontact/EPS) and hides the wallets. PMC ids are
+        // mode-specific, so the value is env-driven (live id in Coolify, sandbox id
+        // locally); a mode-mismatched id gracefully falls back to the account default
+        // rather than breaking checkout — see create-payment-intent.ts.
+        return createPaymentIntentWithPmcFallback(
+          (body) => stripe.paymentIntents.create(body as unknown as Stripe.PaymentIntentCreateParams),
+          {
+            amount: amountCents,
+            currency,
+            metadata,
+            receipt_email: receiptEmail,
+            automatic_payment_methods: { enabled: true },
+          },
+          process.env.STRIPE_PMC_ID,
+        )
       },
     })
     return { ok: true as const, ...session }
