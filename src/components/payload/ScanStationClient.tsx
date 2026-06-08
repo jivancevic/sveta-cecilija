@@ -21,6 +21,24 @@ type UndoState = 'idle' | 'sending' | 'done' | 'rejected'
 type AdmitState = { status: 'idle' | 'sending' | 'done' | 'error'; admitted: number }
 
 async function loadScanner() {
+  // iOS Safari ships no native `BarcodeDetector`, so html5-qrcode silently
+  // falls back to its bundled pure-JS ZXing port — markedly slower and less
+  // tolerant of angle/blur than a native decoder. Install a WASM-backed
+  // ponyfill (ZXing compiled to WebAssembly) so iOS gets the same fast path
+  // Android already has. The polyfill only assigns `globalThis.BarcodeDetector`
+  // when it's absent, so Android keeps its native detector and never downloads
+  // the WASM. Gated on the same `in window` check the ponyfill uses internally.
+  if (typeof window !== 'undefined' && !('BarcodeDetector' in window)) {
+    const { setZXingModuleOverrides } = await import('barcode-detector/polyfill')
+    // Self-host the WASM (committed at public/zxing/, copied from the pinned
+    // zxing-wasm build) so the door scanner never depends on a third-party CDN
+    // at runtime — venue wifi is often locked down. Must stay version-matched
+    // with the pinned `barcode-detector` dep; the default would fetch jsDelivr.
+    setZXingModuleOverrides({
+      locateFile: (path: string, prefix: string) =>
+        path.endsWith('.wasm') ? '/zxing/zxing_reader.wasm' : `${prefix}${path}`,
+    })
+  }
   const mod = await import('html5-qrcode')
   return mod.Html5Qrcode
 }
@@ -170,8 +188,28 @@ export function ScanStationClient() {
         scannerRef.current = instance as unknown as { stop: () => Promise<void>; clear: () => void }
         const shorter = Math.min(window.innerWidth, window.innerHeight)
         const boxSize = Math.min(Math.round(shorter * 0.6), 480)
+        // A blurry QR is undecodable no matter how good the decoder, so the
+        // single biggest reliability lever here is the camera, not the scan
+        // loop. The default `{ facingMode: 'environment' }` request gives no
+        // resolution hint (browsers often hand back ~640×480) and no focus
+        // mode, so the lens locks at whatever distance it saw on open. If the
+        // camera opens pointed across the room and a ticket is then brought in
+        // close, the near QR stays out of focus and decode stalls for tens of
+        // seconds. Requesting HD + continuous autofocus keeps the lens hunting
+        // and puts far more pixels on the code. `focusMode` is non-standard
+        // (honoured on Android Chrome via `advanced`, harmlessly ignored on
+        // iOS Safari, which already autofocuses continuously); `ideal` makes
+        // every hint best-effort so this never fails on a camera that can't
+        // meet it.
+        const cameraConstraints = {
+          facingMode: { ideal: 'environment' },
+          width: { ideal: 1920 },
+          height: { ideal: 1080 },
+          focusMode: 'continuous',
+          advanced: [{ focusMode: 'continuous' }],
+        } as unknown as MediaTrackConstraints
         await instance.start(
-          { facingMode: 'environment' },
+          cameraConstraints,
           { fps: 10, qrbox: { width: boxSize, height: boxSize } },
           (decodedText: string) => {
             void handleDecoded(decodedText)
