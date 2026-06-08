@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import type { ScanResult } from '@/lib/scan-token'
+import { buildScanStartArgs } from '@/lib/scan-camera'
 
 type Phase = 'idle' | 'starting' | 'live' | 'showing' | 'error'
 
@@ -188,29 +189,13 @@ export function ScanStationClient() {
         scannerRef.current = instance as unknown as { stop: () => Promise<void>; clear: () => void }
         const shorter = Math.min(window.innerWidth, window.innerHeight)
         const boxSize = Math.min(Math.round(shorter * 0.6), 480)
-        // A blurry QR is undecodable no matter how good the decoder, so the
-        // single biggest reliability lever here is the camera, not the scan
-        // loop. The default `{ facingMode: 'environment' }` request gives no
-        // resolution hint (browsers often hand back ~640×480) and no focus
-        // mode, so the lens locks at whatever distance it saw on open. If the
-        // camera opens pointed across the room and a ticket is then brought in
-        // close, the near QR stays out of focus and decode stalls for tens of
-        // seconds. Requesting HD + continuous autofocus keeps the lens hunting
-        // and puts far more pixels on the code. `focusMode` is non-standard
-        // (honoured on Android Chrome via `advanced`, harmlessly ignored on
-        // iOS Safari, which already autofocuses continuously); `ideal` makes
-        // every hint best-effort so this never fails on a camera that can't
-        // meet it.
-        const cameraConstraints = {
-          facingMode: { ideal: 'environment' },
-          width: { ideal: 1920 },
-          height: { ideal: 1080 },
-          focusMode: 'continuous',
-          advanced: [{ focusMode: 'continuous' }],
-        } as unknown as MediaTrackConstraints
+        // Arg shape is load-bearing: html5-qrcode rejects a multi-key first arg
+        // with a non-Error string ("Camera unavailable"). Built + unit-tested in
+        // src/lib/scan-camera.ts so that contract can't silently regress again.
+        const { cameraIdOrConfig, config } = buildScanStartArgs(boxSize)
         await instance.start(
-          cameraConstraints,
-          { fps: 10, qrbox: { width: boxSize, height: boxSize } },
+          cameraIdOrConfig,
+          config,
           (decodedText: string) => {
             void handleDecoded(decodedText)
           },
@@ -228,7 +213,16 @@ export function ScanStationClient() {
           return
         }
         setPhase('error')
-        const message = err instanceof Error ? err.message : 'Camera unavailable'
+        // html5-qrcode (and some getUserMedia paths) reject with a plain
+        // string, not an Error — surface it instead of a generic message so the
+        // real cause is visible (a generic "Camera unavailable" masked the
+        // PR #290 single-key regression for a whole deploy cycle).
+        const message =
+          err instanceof Error
+            ? err.message
+            : typeof err === 'string' && err.trim()
+              ? err
+              : 'Camera unavailable'
         setErrorMsg(message)
       }
     },
