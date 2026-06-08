@@ -139,19 +139,6 @@ export function ScanStationClient() {
     }
   }, [phase])
 
-  // "Scan more" / dismiss: results now persist until tapped (no auto-dismiss),
-  // so this only fires from an explicit button. Resumes the still-open camera.
-  const dismissResult = useCallback(() => {
-    setResponse(null)
-    setUndoState('idle')
-    setAdmitState({ status: 'idle', admitted: 0 })
-    processingRef.current = false
-    // Keep lastTokenRef set so the same QR still in frame at fps:10 doesn't
-    // immediately re-trigger the API. A different QR entering frame replaces
-    // it via the gate in handleDecoded.
-    setPhase('live')
-  }, [])
-
   const handleDecoded = useCallback(async (decodedText: string) => {
     if (processingRef.current) return
     const token = extractScanPath(decodedText)
@@ -228,6 +215,23 @@ export function ScanStationClient() {
     },
     [handleDecoded],
   )
+
+  // "Scan more": fully restart the camera instead of resuming the open stream.
+  // The decode loop runs fine across the result overlay (measured: constant
+  // scan rate while covered/uncovered), but a *resumed* continuous stream is
+  // slow to re-autofocus on the next close-up ticket, while a fresh
+  // getUserMedia does an immediate focus/exposure sweep — which is exactly why
+  // Exit→re-enter scans instantly. Mirror that path. lastTokenRef can reset
+  // since the restart gives a fresh stream before the next ticket arrives.
+  const dismissResult = useCallback(async () => {
+    setResponse(null)
+    setUndoState('idle')
+    setAdmitState({ status: 'idle', admitted: 0 })
+    processingRef.current = false
+    lastTokenRef.current = null
+    await stopCamera()
+    await startCamera(false)
+  }, [stopCamera, startCamera])
 
   // One-tap entry: try to open the camera the moment the view mounts so the
   // dashboard button lands straight in scanning. No "Door scan" intro screen.
