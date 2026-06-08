@@ -48,7 +48,9 @@ describe('assertPurchasable', () => {
     ).not.toThrow()
   })
 
-  it('rejects a same-day show whose start time has already passed', () => {
+  it('rejects a same-day show whose start (+1h grace) has already passed', () => {
+    // 00:01 local started just after midnight; well over an hour ago by any
+    // time of day, so even with the grace window it is past.
     const todayDay = new Date().toISOString().slice(0, 10)
     expect(() =>
       assertPurchasable(
