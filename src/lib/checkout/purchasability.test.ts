@@ -34,6 +34,30 @@ describe('assertPurchasable', () => {
     expect(() => assertPurchasable(baseShow({ date: past }), { adults: 1, children: 0 })).toThrow(/past/i)
   })
 
+  it('does not treat a same-day evening show as past from its UTC midnight', () => {
+    // Regression: `date` is a dayOnly value at midnight UTC. Earlier in the day
+    // (any tz where local time > 00:00 UTC) that midnight is already in the
+    // past, but the show's evening start time is still ahead. With `time` the
+    // check must compare against the real Europe/Zagreb start, not midnight.
+    const todayDay = new Date().toISOString().slice(0, 10)
+    expect(() =>
+      assertPurchasable(
+        baseShow({ date: `${todayDay}T00:00:00.000Z`, time: '23:59' }),
+        { adults: 1, children: 0 },
+      ),
+    ).not.toThrow()
+  })
+
+  it('rejects a same-day show whose start time has already passed', () => {
+    const todayDay = new Date().toISOString().slice(0, 10)
+    expect(() =>
+      assertPurchasable(
+        baseShow({ date: `${todayDay}T00:00:00.000Z`, time: '00:01' }),
+        { adults: 1, children: 0 },
+      ),
+    ).toThrow(/past/i)
+  })
+
   it('rejects when requested quantity exceeds remaining capacity', () => {
     // ljetno-kino capacity = 320, activeTicketCount = 319 → remaining 1
     expect(() =>

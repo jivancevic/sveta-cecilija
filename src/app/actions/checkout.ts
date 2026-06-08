@@ -20,6 +20,7 @@ export async function startCheckout(input: CheckoutInput) {
           return {
             id: String(doc.id),
             date: doc.date as string,
+            time: doc.time as string,
             venue: doc.venue as PurchasableShow['venue'],
             // Sold seats = active tickets (online_sold column retired).
             activeTicketCount: await getActiveTicketCountForShow((sql, params) => pool.query(sql, params), doc.id as number),
