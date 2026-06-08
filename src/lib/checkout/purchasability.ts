@@ -10,10 +10,19 @@
 // online-checkout-specific rules and their typed error modes.
 import { VENUE_CAPACITY, type Venue } from '../venues'
 import { assertCanSell, remainingSeats } from '../tickets/seat-availability'
+import { isPastShowCutoff } from '../show-time'
 
 export interface PurchasableShow {
   id: string
   date: string
+  /**
+   * Show start time as `HH:MM` (24h), Europe/Zagreb wall clock. The `date`
+   * field is a Payload `dayOnly` value stored at midnight UTC, so on its own it
+   * makes a show look "past" for the whole calendar day. We combine date+time
+   * to get the real start instant. Optional for back-compat with callers/tests
+   * that only assert capacity rules (they fall back to the bare date).
+   */
+  time?: string
   venue: Venue
   /**
    * Live COUNT of active (non-cancelled) tickets for the show. The
@@ -51,8 +60,14 @@ export function assertPurchasable(
   if (show.status === 'cancelled') {
     throw new CheckoutValidationError('CANCELLED', 'This show has been cancelled')
   }
-  const showStart = new Date(show.date)
-  if (showStart.getTime() < Date.now()) {
+  // A show stays purchasable until 1h after its Korčula (Europe/Zagreb) start —
+  // not from the previous UTC midnight (the bare dayOnly date) — so late
+  // walk-up buyers can still pay. See src/lib/show-time.ts. Callers without a
+  // `time` (older tests/paths) fall back to the bare-date comparison.
+  const past = show.time
+    ? isPastShowCutoff(show.date, show.time)
+    : new Date(show.date).getTime() < Date.now()
+  if (past) {
     throw new CheckoutValidationError('PAST', 'This show is in the past')
   }
 
