@@ -65,7 +65,7 @@ function buildDeps(pool: Pool, brevoApiKey: string): RescheduleDeps {
          SET date = ($2 || ' 12:00:00+00')::timestamptz,
              date_changed_at = NOW(),
              date_changed_by_id = $3,
-             original_date = COALESCE(original_date, date::date),
+             original_date = COALESCE(original_date, date),
              updated_at = NOW()
          WHERE id = $1 AND date::date = $4
          RETURNING id`,

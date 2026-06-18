@@ -350,7 +350,7 @@ CREATE TABLE IF NOT EXISTS public.shows (
     venue_changed_by_id integer,
     date_changed_at timestamp(3) with time zone,
     date_changed_by_id integer,
-    original_date date,
+    original_date timestamp(3) with time zone,
     updated_at timestamp(3) with time zone DEFAULT now() NOT NULL,
     created_at timestamp(3) with time zone DEFAULT now() NOT NULL
 );

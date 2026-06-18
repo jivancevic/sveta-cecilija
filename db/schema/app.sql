@@ -114,7 +114,7 @@ EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 -- COALESCE). NULL = the show was never rescheduled.
 ALTER TABLE shows ADD COLUMN IF NOT EXISTS date_changed_at    timestamptz;
 ALTER TABLE shows ADD COLUMN IF NOT EXISTS date_changed_by_id integer;
-ALTER TABLE shows ADD COLUMN IF NOT EXISTS original_date      date;
+ALTER TABLE shows ADD COLUMN IF NOT EXISTS original_date      timestamptz;
 DO $$ BEGIN
   ALTER TABLE shows
     ADD CONSTRAINT shows_date_changed_by_fk
