@@ -18,11 +18,15 @@
 // already holds and a material change to it, so it deliberately does NOT honour
 // the marketing_optouts list (#57), exactly like the venue-change notice.
 
+import type { Venue } from './venues'
+
 export interface RescheduleShow {
   id: string
   /** Current scheduled date, YYYY-MM-DD. */
   date: string
   time: string
+  /** Venue slug — stated in the notice so a forgetful buyer knows where to go (unchanged by a reschedule). */
+  venue: Venue
 }
 
 export interface RescheduleBuyer {
@@ -52,7 +56,7 @@ export interface RescheduleDeps {
   /** Best-effort send; returns true on success, false on failure (logged). */
   sendDateChangeEmail: (
     buyer: RescheduleBuyer,
-    show: { oldDate: string; newDate: string; time: string },
+    show: { oldDate: string; newDate: string; time: string; venue: Venue },
   ) => Promise<boolean>
 }
 
@@ -87,6 +91,7 @@ export async function rescheduleShow(
       oldDate: show.date,
       newDate: input.newDate,
       time: show.time,
+      venue: show.venue,
     })
     if (ok) sent++
     else failed++

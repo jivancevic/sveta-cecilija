@@ -8,7 +8,7 @@ import {
 } from './show-reschedule'
 
 function show(overrides: Partial<RescheduleShow> = {}): RescheduleShow {
-  return { id: '7', date: '2026-06-22', time: '21:00', ...overrides }
+  return { id: '7', date: '2026-06-22', time: '21:00', venue: 'ljetno-kino', ...overrides }
 }
 
 function buyer(overrides: Partial<RescheduleBuyer> = {}): RescheduleBuyer {
@@ -33,7 +33,7 @@ describe('rescheduleShow', () => {
     expect(deps.sendDateChangeEmail).toHaveBeenCalledTimes(2)
     expect(deps.sendDateChangeEmail).toHaveBeenCalledWith(
       expect.objectContaining({ orderId: '1' }),
-      { oldDate: '2026-06-22', newDate: '2026-06-23', time: '21:00' },
+      { oldDate: '2026-06-22', newDate: '2026-06-23', time: '21:00', venue: 'ljetno-kino' },
     )
     expect(result).toEqual({ status: 'rescheduled', oldDate: '2026-06-22', newDate: '2026-06-23', total: 2, sent: 2, failed: 0 })
   })
