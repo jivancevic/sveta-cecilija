@@ -45,7 +45,7 @@ Adult **€20** · Children under 14 **€10** · Groups: every 5th ticket free 
 | 25 May 2026 | Monday | 21:00 |
 | 8 June 2026 | Monday | 21:00 |
 | 10 June 2026 | Wednesday | 21:00 |
-| 22 June 2026 | Monday | 21:00 |
+| 23 June 2026 | Tuesday | 21:00 |
 | 24 June 2026 | Wednesday | 21:00 |
 | 6 July 2026 | Monday | 21:00 |
 | 8 July 2026 | Wednesday | 21:00 |

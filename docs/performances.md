@@ -5,7 +5,7 @@ Rbr.,Datum,Dan,Vrijeme,Organizator / Tip,Lokacija,Napomena
 4.,08.06.2026.,Ponedjeljak,21:00,Redovna,Ljetno kino,
 5.,10.06.2026.,Srijeda,21:00,Redovna,Ljetno kino,
 6.,16.06.2026.,Utorak,10:00,Adriatic DMC,Zimsko kino,Le Ponant
-7.,22.06.2026.,Ponedjeljak,21:00,Redovna,Ljetno kino,
+7.,23.06.2026.,Utorak,21:00,Redovna,Ljetno kino,
 8.,24.06.2026.,Srijeda,21:00,Redovna,Ljetno kino,
 9.,06.07.2026.,Ponedjeljak,21:00,Redovna,Ljetno kino,
 10.,09.07.2026.,Četvrtak,21:00,Redovna,Ljetno kino,

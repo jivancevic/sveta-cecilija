@@ -45,7 +45,7 @@ Odrasli **20 €** · Djeca do 14 godina **10 €** · Grupe: svaka 5. ulaznica 
 | 25. svibnja 2026. | Ponedjeljak | 21:00 |
 | 8. lipnja 2026. | Ponedjeljak | 21:00 |
 | 10. lipnja 2026. | Srijeda | 21:00 |
-| 22. lipnja 2026. | Ponedjeljak | 21:00 |
+| 23. lipnja 2026. | Utorak | 21:00 |
 | 24. lipnja 2026. | Srijeda | 21:00 |
 | 6. srpnja 2026. | Ponedjeljak | 21:00 |
 | 8. srpnja 2026. | Srijeda | 21:00 |

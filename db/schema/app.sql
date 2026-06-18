@@ -108,6 +108,19 @@ DO $$ BEGIN
     FOREIGN KEY (venue_changed_by_id) REFERENCES users(id);
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
+-- Reschedule audit. Populated by the "Reschedule show & notify buyers" admin
+-- action: date_changed_at = when, date_changed_by_id = which admin, original_date
+-- = the first scheduled date (preserved across repeated reschedules via
+-- COALESCE). NULL = the show was never rescheduled.
+ALTER TABLE shows ADD COLUMN IF NOT EXISTS date_changed_at    timestamptz;
+ALTER TABLE shows ADD COLUMN IF NOT EXISTS date_changed_by_id integer;
+ALTER TABLE shows ADD COLUMN IF NOT EXISTS original_date      timestamptz;
+DO $$ BEGIN
+  ALTER TABLE shows
+    ADD CONSTRAINT shows_date_changed_by_fk
+    FOREIGN KEY (date_changed_by_id) REFERENCES users(id);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
 -- ─── orders ───────────────────────────────────────────────────────────
 
 CREATE TABLE IF NOT EXISTS orders (

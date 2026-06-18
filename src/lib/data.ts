@@ -46,7 +46,7 @@ export const SCHEDULE_ALL: Performance[] = [
   { date: '2026-05-25',  capacity: 312, sold: 118, image: images[3],  tag: 'May' },
   { date: '2026-06-08',  capacity: 312, sold: 54,  image: images[4],  tag: 'June' },
   { date: '2026-06-10',  capacity: 312, sold: 24,  image: images[5],  tag: 'June' },
-  { date: '2026-06-22',  capacity: 312, sold: 0,   image: images[6],  tag: 'June' },
+  { date: '2026-06-23',  capacity: 312, sold: 0,   image: images[6],  tag: 'June' },
   { date: '2026-06-24',  capacity: 312, sold: 0,   image: images[7],  tag: 'June' },
   { date: '2026-07-06',  capacity: 312, sold: 0,   image: images[8],  tag: 'July' },
   { date: '2026-07-08',  capacity: 312, sold: 0,   image: images[9],  tag: 'July' },

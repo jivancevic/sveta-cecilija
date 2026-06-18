@@ -3,6 +3,7 @@ import { CancelShowMenuItem as CancelShowMenuItem_4b982f4a2c156b12ad67cf911e80ac
 import { RefundOrderMenuItem as RefundOrderMenuItem_aaa1 } from '@/components/payload/RefundOrderMenuItem'
 import { ViewOrdersForShowMenuItem as ViewOrdersForShowMenuItem_aaa2 } from '@/components/payload/ViewOrdersForShowMenuItem'
 import { MarkMovedToZimskoMenuItem as MarkMovedToZimskoMenuItem_aaa3 } from '@/components/payload/MarkMovedToZimskoMenuItem'
+import { RescheduleShowMenuItem as RescheduleShowMenuItem_aaa4 } from '@/components/payload/RescheduleShowMenuItem'
 import { BulkCreateLink as BulkCreateLink_c0042e8d6a09307a21db269238cce593 } from '@/components/payload/BulkCreateLink'
 import { AdminIcon as AdminIcon_7a969c861589af9322f5d573a708d2fb } from '@/components/payload/AdminIcon'
 import { AdminLogo as AdminLogo_313e964a7107ac39e31c5ff2e54b6ba9 } from '@/components/payload/AdminLogo'
@@ -19,6 +20,7 @@ export const importMap = {
   "@/components/payload/RefundOrderMenuItem#RefundOrderMenuItem": RefundOrderMenuItem_aaa1,
   "@/components/payload/ViewOrdersForShowMenuItem#ViewOrdersForShowMenuItem": ViewOrdersForShowMenuItem_aaa2,
   "@/components/payload/MarkMovedToZimskoMenuItem#MarkMovedToZimskoMenuItem": MarkMovedToZimskoMenuItem_aaa3,
+  "@/components/payload/RescheduleShowMenuItem#RescheduleShowMenuItem": RescheduleShowMenuItem_aaa4,
   "@/components/payload/BulkCreateLink#BulkCreateLink": BulkCreateLink_c0042e8d6a09307a21db269238cce593,
   "@/components/payload/AdminIcon#AdminIcon": AdminIcon_7a969c861589af9322f5d573a708d2fb,
   "@/components/payload/AdminLogo#AdminLogo": AdminLogo_313e964a7107ac39e31c5ff2e54b6ba9,

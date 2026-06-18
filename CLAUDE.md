@@ -14,7 +14,7 @@
 | Payload admin customization (v3) — component paths, importMap, CSRF gate | `docs/agents/payload-admin.md` |
 | Frontend & CSS gotchas — specificity, `backdrop-filter`, hero loading, `next/image` | `docs/agents/frontend-css.md` |
 | Assets pipeline — `public/` vs `assets/`, webp conversion | `docs/agents/assets.md` |
-| Feature design notes — #94 bad-weather venue change, #57 marketing opt-outs | `docs/agents/features.md` |
+| Feature design notes — #94 bad-weather venue change, show reschedule, #57 marketing opt-outs | `docs/agents/features.md` |
 | Domain glossary | `CONTEXT.md` (single context; see `docs/agents/domain.md`) |
 | Architecture decisions | `docs/adr/` |
 
