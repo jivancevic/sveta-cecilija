@@ -172,7 +172,7 @@ Do not begin until **every box above is checked** and you have ~2 hours of monit
 
 `moreska.eu` DNS already points at the Coolify host and serves live over HTTPS, so there is no DNS move for the new domain. The "cutover" here is retiring the two legacy sites. With only ~9 future legacy tickets (admitted manually), both old domains are simply 301-redirected — the redirect on the ticket subdomain is also the sales freeze. No banner, no `checkinera`. See sub-issues #257/#258.
 
-1. **Export the future legacy holders first** (name + ticket code + show) from Tickera's Attendees & Tickets list, for the manual door list. Set `legacyReserved` on moreska.eu Shows accordingly (currently 7 on 2026-06-08, 2 on 2026-06-22 — re-pull at freeze time).
+1. **Export the future legacy holders first** (name + ticket code + show) from Tickera's Attendees & Tickets list, for the manual door list. Set `legacyReserved` on moreska.eu Shows accordingly (currently 7 on 2026-06-08, 2 on 2026-06-23 (postponed from 22.06) — re-pull at freeze time).
 2. Totohost cPanel — add a 301 `.htaccess` at the top of each docroot:
    - `korcula-moreska.com` → `https://moreska.eu/`
    - `tickets.korcula-moreska.com` → `https://moreska.eu/tickets` (keep `/wp-admin` + `/wp-login.php` reachable as back-office insurance for legacy lookups)

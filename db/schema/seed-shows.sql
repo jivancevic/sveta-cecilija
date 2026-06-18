@@ -19,7 +19,7 @@ SELECT * FROM (VALUES
   ('2026-05-25 12:00:00+00'::timestamptz, '21:00', 'ljetno-kino'::enum_shows_venue, 'active'::enum_shows_status),
   ('2026-06-08 12:00:00+00'::timestamptz, '21:00', 'ljetno-kino'::enum_shows_venue, 'active'::enum_shows_status),
   ('2026-06-10 12:00:00+00'::timestamptz, '21:00', 'ljetno-kino'::enum_shows_venue, 'active'::enum_shows_status),
-  ('2026-06-22 12:00:00+00'::timestamptz, '21:00', 'ljetno-kino'::enum_shows_venue, 'active'::enum_shows_status),
+  ('2026-06-23 12:00:00+00'::timestamptz, '21:00', 'ljetno-kino'::enum_shows_venue, 'active'::enum_shows_status),
   ('2026-06-24 12:00:00+00'::timestamptz, '21:00', 'ljetno-kino'::enum_shows_venue, 'active'::enum_shows_status),
   ('2026-07-06 12:00:00+00'::timestamptz, '21:00', 'ljetno-kino'::enum_shows_venue, 'active'::enum_shows_status),
   ('2026-07-09 12:00:00+00'::timestamptz, '21:00', 'ljetno-kino'::enum_shows_venue, 'active'::enum_shows_status),
@@ -45,9 +45,11 @@ WHERE NOT EXISTS (SELECT 1 FROM shows);
 -- are already gone, so block them from online sale on the new site. Static,
 -- known set for the 2026 season (per the 2026-06-07 FINAL freeze-time export,
 -- taken after the .htaccess sales freeze went live):
--- 2026-06-08 → 15, 2026-06-22 → 2, 2026-06-24 → 3. (Earlier figures of 7/2 were
+-- 2026-06-08 → 15, 2026-06-23 → 2, 2026-06-24 → 3. (Earlier figures of 7/2 were
 -- a pre-freeze snapshot; the legacy site kept selling until the redirect, so
 -- these were reconciled upward against the final Tickera door list — 20 total.)
+-- The 2 holders originally booked 2026-06-22, which was postponed to 2026-06-23;
+-- their seats move with the show (Sankey order #5202 on the old site).
 --
 -- Restart-safe + reset-safe: these run on every bootstrap (unlike the INSERT
 -- above, which only fires on an empty table), AFTER the shows exist, so they
@@ -55,5 +57,5 @@ WHERE NOT EXISTS (SELECT 1 FROM shows);
 -- re-seeded. The `legacy_reserved = 0` guard makes them seed-once: an already
 -- non-zero value (e.g. a later manual admin adjustment) is left untouched.
 UPDATE shows SET legacy_reserved = 15 WHERE date::date = '2026-06-08' AND legacy_reserved = 0;
-UPDATE shows SET legacy_reserved = 2 WHERE date::date = '2026-06-22' AND legacy_reserved = 0;
+UPDATE shows SET legacy_reserved = 2 WHERE date::date = '2026-06-23' AND legacy_reserved = 0;
 UPDATE shows SET legacy_reserved = 3 WHERE date::date = '2026-06-24' AND legacy_reserved = 0;

@@ -24,6 +24,7 @@ export const Shows: CollectionConfig = {
           '@/components/payload/InPersonSalesMenuItem#InPersonSalesMenuItem',
           '@/components/payload/ViewOrdersForShowMenuItem#ViewOrdersForShowMenuItem',
           '@/components/payload/MarkMovedToZimskoMenuItem#MarkMovedToZimskoMenuItem',
+          '@/components/payload/RescheduleShowMenuItem#RescheduleShowMenuItem',
           '@/components/payload/CancelShowMenuItem#CancelShowMenuItem',
         ],
       },
@@ -112,6 +113,39 @@ export const Shows: CollectionConfig = {
       admin: {
         readOnly: true,
         description: 'Admin who marked this show as moved to Zimsko.',
+      },
+      access: { update: () => false },
+    },
+    // Reschedule audit. Populated by the "Reschedule show & notify buyers"
+    // action; read-only in the admin. NULL = never rescheduled. originalDate
+    // keeps the very first scheduled date across repeated reschedules.
+    {
+      name: 'dateChangedAt',
+      type: 'date',
+      admin: {
+        readOnly: true,
+        description: 'When this show was last rescheduled. NULL = never rescheduled.',
+        date: { pickerAppearance: 'dayAndTime' },
+      },
+      access: { update: () => false },
+    },
+    {
+      name: 'dateChangedBy',
+      type: 'relationship',
+      relationTo: 'users',
+      admin: {
+        readOnly: true,
+        description: 'Admin who last rescheduled this show.',
+      },
+      access: { update: () => false },
+    },
+    {
+      name: 'originalDate',
+      type: 'date',
+      admin: {
+        readOnly: true,
+        description: 'First scheduled date, before any reschedule. NULL = never rescheduled.',
+        date: { pickerAppearance: 'dayOnly', displayFormat: 'd MMM yyyy' },
       },
       access: { update: () => false },
     },

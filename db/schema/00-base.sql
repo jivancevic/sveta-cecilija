@@ -348,6 +348,9 @@ CREATE TABLE IF NOT EXISTS public.shows (
     status public.enum_shows_status DEFAULT 'active'::public.enum_shows_status NOT NULL,
     venue_changed_at timestamp(3) with time zone,
     venue_changed_by_id integer,
+    date_changed_at timestamp(3) with time zone,
+    date_changed_by_id integer,
+    original_date date,
     updated_at timestamp(3) with time zone DEFAULT now() NOT NULL,
     created_at timestamp(3) with time zone DEFAULT now() NOT NULL
 );
@@ -639,6 +642,8 @@ CREATE INDEX IF NOT EXISTS shows_updated_at_idx ON public.shows USING btree (upd
 
 CREATE INDEX IF NOT EXISTS shows_venue_changed_by_idx ON public.shows USING btree (venue_changed_by_id);
 
+CREATE INDEX IF NOT EXISTS shows_date_changed_by_idx ON public.shows USING btree (date_changed_by_id);
+
 CREATE INDEX IF NOT EXISTS tickets_created_at_idx ON public.tickets USING btree (created_at);
 
 CREATE INDEX IF NOT EXISTS tickets_order_idx ON public.tickets USING btree (order_id);
@@ -770,6 +775,13 @@ DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'shows_venue_changed_by_id_users_id_fk' AND conrelid = 'public.shows'::regclass) THEN
     ALTER TABLE ONLY public.shows
     ADD CONSTRAINT shows_venue_changed_by_id_users_id_fk FOREIGN KEY (venue_changed_by_id) REFERENCES public.users(id) ON DELETE SET NULL;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'shows_date_changed_by_id_users_id_fk' AND conrelid = 'public.shows'::regclass) THEN
+    ALTER TABLE ONLY public.shows
+    ADD CONSTRAINT shows_date_changed_by_id_users_id_fk FOREIGN KEY (date_changed_by_id) REFERENCES public.users(id) ON DELETE SET NULL;
   END IF;
 END $$;
 

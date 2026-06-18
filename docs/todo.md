@@ -12,7 +12,7 @@ Steps (tracked as sub-issues #256–#261 under #11):
 
 1. **Export the future legacy holders** (name + ticket code + show) from Tickera's Attendees & Tickets list, for the manual door list and to set `legacyReserved`. (#257)
 2. **Redirect both old domains** via `.htaccess` 301 — `korcula-moreska.com` → `https://moreska.eu/`, `tickets.korcula-moreska.com` → `https://moreska.eu/tickets`. The redirect on the ticket subdomain is itself the sales freeze (storefront becomes unreachable); keep `/wp-admin` reachable there for legacy lookups. (#258)
-3. **Set `legacyReserved`** on moreska.eu Shows: 7 on 2026-06-08, 2 on 2026-06-22, 0 elsewhere. (#256)
+3. **Set `legacyReserved`** on moreska.eu Shows: 7 on 2026-06-08, 2 on 2026-06-23 (postponed from 22.06), 0 elsewhere. (#256)
 4. **After 2026 season ends** (~end of October): the redirects can stay; let the old domains expire at next renewal. Per-page SEO redirect map is #37.
 
 No banner (a 301 is better for SEO and for old bookmarks); no `checkinera`/dual-scanner; no mass email to legacy buyers (they hold their QR PDFs and are admitted manually).
