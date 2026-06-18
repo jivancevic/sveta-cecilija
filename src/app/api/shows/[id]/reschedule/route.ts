@@ -25,13 +25,14 @@ type Pool = { query: (sql: string, params: unknown[]) => Promise<{ rows: Record<
 function buildDeps(pool: Pool, brevoApiKey: string): RescheduleDeps {
   return {
     getShow: async (showId): Promise<RescheduleShow | null> => {
-      const res = await pool.query(`SELECT id, date, time FROM shows WHERE id = $1`, [Number(showId)])
+      const res = await pool.query(`SELECT id, date, time, venue FROM shows WHERE id = $1`, [Number(showId)])
       const row = res.rows[0]
       if (!row) return null
       return {
         id: String(row.id),
         date: typeof row.date === 'string' ? row.date.slice(0, 10) : String(row.date ?? '').slice(0, 10),
         time: String(row.time ?? ''),
+        venue: row.venue === 'zimsko-kino' ? 'zimsko-kino' : 'ljetno-kino',
       }
     },
     findBuyers: async (showId): Promise<RescheduleBuyer[]> => {
@@ -133,7 +134,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       const show = await deps.getShow(id)
       if (!show) return NextResponse.json({ error: 'Show not found' }, { status: 404 })
       const sample = { orderId: 'TEST', buyer: { name: 'Ivan Horvat', email: adminEmail } }
-      const showDates = { oldDate: show.date, newDate, time: show.time }
+      const showDates = { oldDate: show.date, newDate, time: show.time, venue: show.venue }
       for (const locale of ['en', 'hr'] as const) {
         await sendDateChangeEmail({ ...sample, show: showDates, locale }, { fetch: globalThis.fetch, brevoApiKey })
       }
