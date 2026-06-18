@@ -9,6 +9,7 @@ import {
   type RescheduleDeps,
 } from '@/lib/show-reschedule'
 import { sendDateChangeEmail } from '@/lib/email/send-date-change-email'
+import { toIsoDate } from '@/lib/to-iso-date'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -30,7 +31,9 @@ function buildDeps(pool: Pool, brevoApiKey: string): RescheduleDeps {
       if (!row) return null
       return {
         id: String(row.id),
-        date: typeof row.date === 'string' ? row.date.slice(0, 10) : String(row.date ?? '').slice(0, 10),
+        // pg returns the timestamptz column as a JS Date — normalise to YYYY-MM-DD
+        // (a raw String(date).slice would yield "Mon Jun 22" → "Invalid Date").
+        date: toIsoDate(row.date),
         time: String(row.time ?? ''),
         venue: row.venue === 'zimsko-kino' ? 'zimsko-kino' : 'ljetno-kino',
       }
