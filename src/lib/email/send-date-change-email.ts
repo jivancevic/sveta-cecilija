@@ -13,8 +13,10 @@ const SENDER = { email: 'tickets@moreska.eu', name: 'HGD Sveta Cecilija' }
 
 // Buyers can independently confirm the new date on the official site — both
 // reassurance and a quiet anti-phishing cue (the change is verifiable, not just
-// asserted in an email).
+// asserted in an email). The link TEXT is the bare domain so the recipient sees
+// exactly where it goes (moreska.eu) rather than an opaque "click here" button.
 const TICKETS_URL = 'https://moreska.eu/tickets'
+const TICKETS_URL_DISPLAY = 'moreska.eu/tickets'
 
 export interface SendDateChangeEmailInput {
   orderId: string
@@ -39,7 +41,7 @@ const COPY = {
     greeting: (name: string) => `Hi ${name},`,
     intro:
       "We're sorry — we've had to reschedule this Moreška sword dance performance. Your tickets remain valid for the new date; there's nothing you need to do.",
-    verify: 'Confirm on the official website',
+    verify: 'You can confirm this change yourself on our official website:',
     closing:
       "If you saved the show to your calendar, please update it. If the new date no longer works for you, just reply to this email and we'll find a solution.",
     signoff: 'With thanks,',
@@ -52,7 +54,7 @@ const COPY = {
     greeting: (name: string) => `Poštovani ${name},`,
     intro:
       'Žao nam je — morali smo pomaknuti ovu izvedbu Moreške (mačevni ples) na novi datum. Vaše ulaznice i dalje vrijede; ne morate ništa poduzimati.',
-    verify: 'Provjerite na službenoj stranici',
+    verify: 'Ovu promjenu možete sami provjeriti na našoj službenoj stranici:',
     closing:
       'Ako ste izvedbu spremili u kalendar, ažurirajte datum. Ako vam novi datum ne odgovara, jednostavno odgovorite na ovaj e-mail i pronaći ćemo rješenje.',
     signoff: 'Srdačan pozdrav,',
@@ -101,7 +103,7 @@ function renderHtml(input: SendDateChangeEmailInput, locale: 'en' | 'hr'): strin
   // never have to share a line — robust on narrow mobile clients.
   const oldBox = `display:inline-block;padding:6px 14px;font-weight:600;font-size:15px;color:#9a9a9a;text-decoration:line-through;`
   const newBox = `display:inline-block;padding:8px 16px;background:#f1e9d8;border:1px solid #dcae5e;border-radius:2px;font-weight:700;font-size:17px;color:${text};`
-  const buttonStyle = `display:inline-block;padding:12px 24px;background:${gold};color:#fff;text-decoration:none;font-family:${fontBody};font-weight:600;font-size:15px;border-radius:2px;`
+  const linkStyle = `color:${gold};font-weight:700;text-decoration:underline;`
 
   return `
 <div style="background:${bg};padding:32px 16px;font-family:${fontBody};color:${text};">
@@ -117,8 +119,10 @@ function renderHtml(input: SendDateChangeEmailInput, locale: 'en' | 'hr'): strin
       <div style="${newBox}">${newLabel}</div>
       <div style="margin-top:12px;font-size:14px;line-height:1.5;color:#555;">${venueLine(show.venue, locale)}</div>
     </td></tr>
-    <tr><td align="center" style="padding:20px 32px 4px 32px;">
-      <a href="${TICKETS_URL}" style="${buttonStyle}">${c.verify}</a>
+    <tr><td align="center" style="padding:16px 32px 4px 32px;">
+      <p style="margin:0;font-size:15px;line-height:1.6;color:${text};">${c.verify}<br/>
+        <a href="${TICKETS_URL}" style="${linkStyle}">${TICKETS_URL_DISPLAY}</a>
+      </p>
     </td></tr>
     <tr><td style="padding:24px 32px 28px 32px;">
       <p style="margin:0;font-size:15px;line-height:1.55;">${c.closing}</p>
