@@ -93,6 +93,10 @@ const res = await db.query(
 
 Pattern proven in `src/app/api/shows/[id]/in-person-sales/route.ts`. The lib helper takes an `atomicIncrement` dep so unit tests can mock it; only the route wires the real SQL.
 
+## Reading date/timestamp columns via raw SQL → JS Date, not string
+
+node-postgres parses `date` / `timestamptz` columns into **JS `Date` objects**, not strings. `String(row.date).slice(0,10)` then yields `"Mon Jun 22"` (not `2026-06-22`), which renders as **"Invalid Date"** anywhere it's parsed downstream. Normalise with **`toIsoDate()`** (`src/lib/to-iso-date.ts`) when you need a `YYYY-MM-DD` from a raw `pool.query`/drizzle row. (Shows are stored at noon UTC, so the UTC calendar day is the intended day.) Bit the reschedule notice's struck-through old date before the fix.
+
 ## Raw SQL for race-sensitive ops (first-one-wins)
 
 Payload's `find`/`update` are read-then-write under the hood and not safe for "first-one-wins" semantics. For atomic mark-and-read (e.g. ticket scan), drop to drizzle: `const drizzle: any = (payload.db as any).drizzle` then `drizzle.execute(sql\`UPDATE ... WHERE cond=false RETURNING ...\`)` with `sql` imported from `@payloadcms/db-postgres`. Result rows live on `res.rows`. Verified race-safe end-to-end: 20 concurrent identical scans → exactly 1 VALID.
