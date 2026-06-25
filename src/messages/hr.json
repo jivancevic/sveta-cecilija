@@ -419,5 +419,21 @@
     "publishedOn": "Objavljeno",
     "updatedOn": "Ažurirano",
     "dateLocale": "hr-HR"
+  },
+  "faqPage": {
+    "heroHeadline": "Često postavljana pitanja",
+    "heroSubtitle": "Sve što posjetitelji pitaju o moreški, izvedbi i posjetu Korčuli.",
+    "metaTitle": "Česta pitanja",
+    "metaDescription": "Česta pitanja o moreški na Korčuli: što je, gdje i kada je gledati, ulaznice i što očekivati.",
+    "empty": "Pitanja i odgovori uskoro stižu. Vrati se ubrzo.",
+    "categories": {
+      "about": "O moreški",
+      "story": "Priča",
+      "dance": "Ples",
+      "music": "Glazba",
+      "visiting": "Posjet i ulaznice",
+      "dancers": "Plesači",
+      "history": "Povijest"
+    }
   }
 }

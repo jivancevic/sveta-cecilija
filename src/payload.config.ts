@@ -11,6 +11,7 @@ import { Orders } from './collections/Orders'
 import { Tickets } from './collections/Tickets'
 import { ContactSubmissions } from './collections/ContactSubmissions'
 import { Posts } from './collections/Posts'
+import { Faqs } from './collections/Faqs'
 import { OrderLookups } from './collections/OrderLookups'
 import { Partners } from './collections/Partners'
 
@@ -68,7 +69,7 @@ export default buildConfig({
       },
     },
   },
-  collections: [Users, Shows, Orders, Tickets, ContactSubmissions, Posts, OrderLookups, Partners],
+  collections: [Users, Shows, Orders, Tickets, ContactSubmissions, Posts, Faqs, OrderLookups, Partners],
   // Admin-panel i18n (issue #234, ADR-0015). Restricting supportedLanguages to
   // en + hr localizes the whole Payload chrome and makes the native account
   // language selector show exactly these two. fallbackLanguage is English (the

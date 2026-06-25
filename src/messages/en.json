@@ -419,5 +419,21 @@
     "publishedOn": "Published",
     "updatedOn": "Updated",
     "dateLocale": "en-GB"
+  },
+  "faqPage": {
+    "heroHeadline": "Frequently asked questions",
+    "heroSubtitle": "Everything visitors ask about the Moreška, the show, and your visit to Korčula.",
+    "metaTitle": "FAQ",
+    "metaDescription": "Frequently asked questions about the Moreška sword dance in Korčula: what it is, where and when to see it, tickets, and what to expect.",
+    "empty": "Questions and answers are coming soon. Check back shortly.",
+    "categories": {
+      "about": "About the Moreška",
+      "story": "The story",
+      "dance": "The dance",
+      "music": "The music",
+      "visiting": "Visiting & tickets",
+      "dancers": "The dancers",
+      "history": "History"
+    }
   }
 }
