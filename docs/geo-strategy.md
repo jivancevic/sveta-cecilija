@@ -81,6 +81,7 @@ Classic analytics (GA4, GSC, GBP) stay as in `marketing.md §"Measurement"`. GEO
 - **Sample prompts** (English, tourist intent): "What is the Moreška sword dance?" · "Where can I see the Moreška in Korčula and how do I get tickets?" · "Is the Moreška suitable for kids?" · "best things to do in Korčula in the evening" · "Moreška vs Kumpanjija" · "who performs the Moreška in Korčula?" · "are the swords in the Moreška real?"
 - **AI-referral watch:** monitor GA4 for referrals from AI domains (e.g. `chatgpt.com`, `perplexity.ai`) — increasingly appear as referrers when an LLM links a source.
 - **Cadence:** log a monthly snapshot; review quarterly whether the content moved the needle. No paid GEO-monitoring tool at this scale — manual testing is sufficient.
+- **Baseline:** the first snapshot (2026-06-25, pre-changes, same day as the 301 cutover) is `docs/research/geo-baseline-2026-06.md` — the "before" marker all later runs compare against.
 
 ## 7. Build phasing (what waits on verification)
 
