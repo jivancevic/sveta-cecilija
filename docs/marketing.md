@@ -113,6 +113,8 @@ Velocity amplifies whatever the current experience is, so close the cheap gaps b
 
 ### 7. Content / blog (slow but durable — 2027 payoff)
 
+> **GEO + FAQ:** the blog is one half of the content programme. See **`docs/geo-strategy.md`** for the Generative-Engine-Optimization plan (being surfaced by AI answer engines — a *near-term* 2026 channel, unlike classic organic), the Payload-backed `/faq` decision, the four GEO levers, and how the blog and FAQ interlock. Drafted FAQ answers (50 real tourist questions) live in `docs/faq-drafts/`.
+
 - **Cadence:** 1 long-form post/month (800–1,200 words), HGD-produced.
 - **Suggested first 6 posts** (target informational queries that ads can't profitably bid on):
   1. "What to expect at a Moreška performance in Korčula"
