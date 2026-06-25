@@ -44,14 +44,15 @@ const organizationJsonLd = {
   // Only verified, real profiles. Do NOT fabricate sameAs URLs — an LLM that
   // follows a dead link loses trust in the whole entity.
   // Found in the repo: TripAdvisor (already), Facebook + Instagram (Footer.tsx).
-  // TODO(geo): add sameAs — YouTube URL pending from HGD (Footer link is a "#" placeholder).
-  // TODO(geo): add sameAs — Google Business Profile (Maps place) URL pending from HGD.
   // TODO(geo): add sameAs — Wikipedia article URL pending (§4.3 off-site workstream).
   // TODO(geo): add sameAs — Wikidata item URL pending (§4.3 off-site workstream).
   sameAs: [
     'https://www.tripadvisor.com/Attraction_Review-g1007309-d1898279.html',
     'https://www.facebook.com/svcecilijamoreska',
     'https://www.instagram.com/hgdsvetacecilija/',
+    'https://www.youtube.com/@hgdsv.cecilija6051',
+    // Google Business Profile share permalink (Knowledge-Graph entity id /g/11h92z3db8).
+    'https://share.google/3YR3xhYehTSoGJFHR',
   ],
 };
 
