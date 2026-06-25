@@ -56,3 +56,6 @@ next-env.d.ts
 # NOTE: importMap.js is manually maintained (not auto-generated) — committed to git
 # so Coolify builds have it available. Do not add it back to gitignore.
 src/payload-types.ts
+
+# Sensitive Meta dispute documents (ID, registry extract) - never commit
+docs/meta-dispute/
