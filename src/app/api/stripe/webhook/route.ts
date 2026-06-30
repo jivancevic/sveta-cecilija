@@ -12,6 +12,7 @@ import { generateOrderCode as makeOrderCode } from '@/lib/tickets/order-code'
 import { randomInt } from 'node:crypto'
 import { sendTicketEmail } from '@/lib/email/send-ticket-email'
 import { generateQrPng } from '@/lib/email/qr'
+import { sendMetaPurchase } from '@/lib/meta/capi'
 import type { Venue } from '@/lib/venues'
 
 export const runtime = 'nodejs'
@@ -140,6 +141,32 @@ export async function POST(req: Request) {
             )
           } catch (err) {
             console.error('[stripe/webhook] notifyBuyer failed', err)
+          }
+        },
+        notifyMeta: async ({ orderId, valueCents, email }) => {
+          // Server-side Purchase to Meta. Best-effort: skip silently if the env
+          // isn't configured, and swallow any send error so the webhook still
+          // returns 200 (Stripe must never retry over a failed analytics ping).
+          const pixelId = process.env.NEXT_PUBLIC_META_PIXEL_ID
+          const accessToken = process.env.META_CAPI_ACCESS_TOKEN
+          if (!pixelId || !accessToken) return
+          try {
+            await sendMetaPurchase(
+              {
+                pixelId,
+                accessToken,
+                // Same dedup key the browser pixel sends (MetaPixelPurchase.tsx).
+                eventId: `order_${orderId}`,
+                value: valueCents / 100,
+                currency: 'EUR',
+                email,
+                orderId,
+                eventSourceUrl: 'https://moreska.eu',
+              },
+              { fetch: globalThis.fetch },
+            )
+          } catch (err) {
+            console.error('[stripe/webhook] meta capi failed', err)
           }
         },
       },
