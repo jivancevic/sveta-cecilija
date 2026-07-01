@@ -1,8 +1,26 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { assertPurchasable, type PurchasableShow } from './purchasability'
 
-const today = new Date()
-const tomorrow = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1).toISOString()
+// Pin the clock. Several cases build "today"/"tomorrow" shows and assert
+// whether they're past the online-sale cutoff (start +1h, Europe/Zagreb). Left
+// on the real wall clock those flip by time of day: a same-day 23:59 CEST show
+// starts at 21:59 UTC, so any run after ~23:00 UTC saw it as already past and
+// the suite went red (notably CI running at the midnight-UTC boundary). A fixed
+// mid-season noon keeps every same-day evening show comfortably in the future
+// and every early-morning show comfortably past, deterministically.
+const FIXED_NOW = new Date('2026-06-15T12:00:00.000Z')
+
+beforeEach(() => {
+  vi.useFakeTimers()
+  vi.setSystemTime(FIXED_NOW)
+})
+
+afterEach(() => {
+  vi.useRealTimers()
+})
+
+// Fixed day after FIXED_NOW — a bare future date (no time) for capacity-only cases.
+const tomorrow = '2026-06-16T00:00:00.000Z'
 
 function baseShow(overrides: Partial<PurchasableShow> = {}): PurchasableShow {
   return {

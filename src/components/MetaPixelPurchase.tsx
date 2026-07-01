@@ -18,6 +18,11 @@ interface Props {
  * exist on the first attempt. A one-shot guard would then drop the Purchase
  * permanently (observed: only PageView fired, never Purchase). Poll briefly
  * until fbq is ready instead.
+ *
+ * Passes `eventID: order_<orderId>` so this browser event dedupes against the
+ * server-side Conversions API Purchase fired from the Stripe webhook
+ * (`src/lib/meta/capi.ts`) — Meta merges the two into one rather than counting
+ * the purchase twice.
  */
 export default function MetaPixelPurchase({ value, currency = 'EUR', orderId }: Props) {
   useEffect(() => {
@@ -26,11 +31,16 @@ export default function MetaPixelPurchase({ value, currency = 'EUR', orderId }: 
     let done = false;
     const fire = () => {
       if (done || typeof window.fbq !== 'function') return false;
-      window.fbq('track', 'Purchase', {
-        value,
-        currency,
-        ...(orderId !== undefined ? { order_id: String(orderId) } : {}),
-      });
+      window.fbq(
+        'track',
+        'Purchase',
+        {
+          value,
+          currency,
+          ...(orderId !== undefined ? { order_id: String(orderId) } : {}),
+        },
+        orderId !== undefined ? { eventID: `order_${orderId}` } : undefined,
+      );
       done = true;
       return true;
     };
