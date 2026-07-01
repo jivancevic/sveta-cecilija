@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
 import type { Dictionary } from '@/lib/i18n';
+import { gtag } from '@/lib/analytics/gtag';
 
 declare global {
   interface Window {
@@ -21,16 +22,9 @@ declare global {
 
 const STORAGE_KEY = 'moreska_cookie_consent';
 
-// Must push the `arguments` object (not an Array) — gtag.js treats Array
-// pushes as data and silently ignores them as commands. See:
-// https://developers.google.com/tag-platform/security/guidance/consent-mode-v2
-// eslint-disable-next-line prefer-rest-params, @typescript-eslint/no-explicit-any
-function gtag(...args: any[]) {
-  void args;
-  window.dataLayer = window.dataLayer ?? [];
-  // eslint-disable-next-line prefer-rest-params
-  window.dataLayer.push(arguments);
-}
+// gtag() (pushes the `arguments` object, never a literal Array) lives in
+// src/lib/analytics/gtag.ts so PurchaseEvent and this component share one
+// implementation — a divergent copy is what dropped purchase conversions.
 
 // Consent Mode v2 default state. Must fire BEFORE any GA/Ads tag loads.
 // Idempotent — safe to call multiple times; gtag's consent system dedups.

@@ -1,12 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-
-declare global {
-  interface Window {
-    dataLayer?: unknown[];
-  }
-}
+import { gtag } from '@/lib/analytics/gtag';
 
 interface Props {
   transactionId: string;
@@ -34,17 +29,15 @@ export default function PurchaseEvent({ transactionId, value, quantity }: Props)
     if (firedRef.current === transactionId) return;
     firedRef.current = transactionId;
 
-    window.dataLayer = window.dataLayer ?? [];
-    window.dataLayer.push([
-      'event',
-      'purchase',
-      {
-        value,
-        currency: 'EUR',
-        transaction_id: transactionId,
-        items: [{ item_name: 'Ticket', quantity }],
-      },
-    ]);
+    // Must go through the gtag() helper (pushes the `arguments` object). A raw
+    // `dataLayer.push([...])` is silently ignored by gtag.js and the purchase
+    // never reaches GA4 or Google Ads. See src/lib/analytics/gtag.ts.
+    gtag('event', 'purchase', {
+      value,
+      currency: 'EUR',
+      transaction_id: transactionId,
+      items: [{ item_name: 'Ticket', quantity }],
+    });
   }, [transactionId, value, quantity]);
 
   return null;
