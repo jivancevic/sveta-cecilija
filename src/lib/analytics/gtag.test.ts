@@ -1,6 +1,11 @@
 // @vitest-environment happy-dom
-import { beforeEach, describe, expect, it } from 'vitest';
-import { gtag } from './gtag';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { gtag, isGaConfigured, runWhenGaConfigured } from './gtag';
+
+type W = Window & {
+  dataLayer?: unknown[];
+  google_tag_manager?: Record<string, unknown>;
+};
 
 describe('gtag', () => {
   beforeEach(() => {
@@ -29,5 +34,78 @@ describe('gtag', () => {
     delete (window as Window & { dataLayer?: unknown[] }).dataLayer;
     gtag('config', 'G-TEST');
     expect((window as Window & { dataLayer?: unknown[] }).dataLayer).toHaveLength(1);
+  });
+});
+
+describe('runWhenGaConfigured', () => {
+  const GA_ID = 'G-TEST';
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    delete (window as W).google_tag_manager;
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('does NOT fire while GA is unconfigured (the effect-order race that dropped purchases)', () => {
+    const cb = vi.fn();
+    runWhenGaConfigured(cb, { gaId: GA_ID });
+
+    // GA config hasn't run yet — firing now would queue the event ahead of
+    // gtag('config', …) and gtag would silently drop it.
+    vi.advanceTimersByTime(2000);
+    expect(cb).not.toHaveBeenCalled();
+  });
+
+  it('fires exactly once as soon as GA becomes configured', () => {
+    const cb = vi.fn();
+    runWhenGaConfigured(cb, { gaId: GA_ID });
+
+    expect(cb).not.toHaveBeenCalled();
+    // gtag('config', GA_ID) runs -> google_tag_manager[GA_ID] appears.
+    (window as W).google_tag_manager = { [GA_ID]: {} };
+    vi.advanceTimersByTime(200);
+    expect(cb).toHaveBeenCalledTimes(1);
+
+    // No double-fire on subsequent polls.
+    vi.advanceTimersByTime(2000);
+    expect(cb).toHaveBeenCalledTimes(1);
+  });
+
+  it('fires synchronously when GA is already configured', () => {
+    (window as W).google_tag_manager = { [GA_ID]: {} };
+    const cb = vi.fn();
+    runWhenGaConfigured(cb, { gaId: GA_ID });
+    expect(cb).toHaveBeenCalledTimes(1);
+  });
+
+  it('gives up after the timeout and never fires (e.g. consent declined, GA never injected)', () => {
+    const cb = vi.fn();
+    runWhenGaConfigured(cb, { gaId: GA_ID, timeoutMs: 8000 });
+
+    vi.advanceTimersByTime(8000);
+    // GA becomes configured only AFTER we gave up — must not fire late.
+    (window as W).google_tag_manager = { [GA_ID]: {} };
+    vi.advanceTimersByTime(2000);
+    expect(cb).not.toHaveBeenCalled();
+  });
+
+  it('cleanup cancels a pending poll', () => {
+    const cb = vi.fn();
+    const cleanup = runWhenGaConfigured(cb, { gaId: GA_ID });
+
+    cleanup();
+    (window as W).google_tag_manager = { [GA_ID]: {} };
+    vi.advanceTimersByTime(2000);
+    expect(cb).not.toHaveBeenCalled();
+  });
+
+  it('isGaConfigured reports ready immediately when no GA id is set', () => {
+    expect(isGaConfigured(undefined)).toBe(true);
+    expect(isGaConfigured(GA_ID)).toBe(false);
+    (window as W).google_tag_manager = { [GA_ID]: {} };
+    expect(isGaConfigured(GA_ID)).toBe(true);
   });
 });

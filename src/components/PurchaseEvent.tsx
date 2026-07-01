@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { gtag } from '@/lib/analytics/gtag';
+import { gtag, runWhenGaConfigured } from '@/lib/analytics/gtag';
 
 interface Props {
   transactionId: string;
@@ -19,24 +19,27 @@ interface Props {
  * Dedups per `transactionId` per page lifetime so a buyer reload does not
  * double-count. `transaction_id` also lets GA4 + Ads dedup server-side.
  *
- * Safe to render even when Consent Mode v2 has `ad_storage`/`analytics_storage`
- * denied — gtag buffers the event and discards it if consent never arrives.
+ * Waits for GA to be configured before firing — see runWhenGaConfigured(). This
+ * component's effect runs before CookieConsent (in the layout) injects/configs
+ * GA, so firing immediately would queue the event ahead of `gtag('config', …)`
+ * and gtag would silently drop it (observed live: it never reached GA4/Ads). If
+ * consent was declined GA is never configured and we correctly never fire.
  */
 export default function PurchaseEvent({ transactionId, value, quantity }: Props) {
   const firedRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (firedRef.current === transactionId) return;
-    firedRef.current = transactionId;
 
-    // Must go through the gtag() helper (pushes the `arguments` object). A raw
-    // `dataLayer.push([...])` is silently ignored by gtag.js and the purchase
-    // never reaches GA4 or Google Ads. See src/lib/analytics/gtag.ts.
-    gtag('event', 'purchase', {
-      value,
-      currency: 'EUR',
-      transaction_id: transactionId,
-      items: [{ item_name: 'Ticket', quantity }],
+    return runWhenGaConfigured(() => {
+      if (firedRef.current === transactionId) return;
+      firedRef.current = transactionId;
+      gtag('event', 'purchase', {
+        value,
+        currency: 'EUR',
+        transaction_id: transactionId,
+        items: [{ item_name: 'Ticket', quantity }],
+      });
     });
   }, [transactionId, value, quantity]);
 
