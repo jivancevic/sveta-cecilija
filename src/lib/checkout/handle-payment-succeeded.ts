@@ -39,6 +39,13 @@ export interface NotifyBuyerInput {
   locale: 'en' | 'hr'
 }
 
+export interface NotifyMetaInput {
+  orderId: string
+  /** Charged amount in cents (Stripe's `amount_received`). */
+  valueCents: number
+  email: string
+}
+
 export interface PaymentSucceededDeps {
   findOrderByPaymentIntent: (id: string) => Promise<{ id: string } | null>
   createOrder: (input: CreateOrderInput) => Promise<{ id: string }>
@@ -48,6 +55,13 @@ export interface PaymentSucceededDeps {
   // Yields a unique order code (order-code.ts wired to a DB uniqueness check).
   generateOrderCode: () => Promise<string>
   notifyBuyer: (input: NotifyBuyerInput) => Promise<void>
+  /**
+   * Server-side Meta Conversions API Purchase, deduped against the browser
+   * pixel via `order_<orderId>`. Optional + best-effort: only runs for a
+   * genuinely new order (after the idempotency check), and the route wiring
+   * swallows its own errors so the webhook still returns 200.
+   */
+  notifyMeta?: (input: NotifyMetaInput) => Promise<void>
   /**
    * Serializes this order+ticket insert against partner sells of the same show
    * (#179), via the same Postgres advisory lock keyed on the show id. Online is
@@ -133,6 +147,17 @@ export async function handlePaymentSucceeded(
     orderCode: issued.code,
     locale,
   })
+
+  // Server-side Purchase to Meta (deduped with the browser pixel). Best-effort;
+  // the route wiring already swallows errors, but only reached on a new order so
+  // a Stripe retry on an existing order can't double-fire it.
+  if (deps.notifyMeta) {
+    await deps.notifyMeta({
+      orderId,
+      valueCents: evt.amountReceived,
+      email: evt.metadata.email ?? '',
+    })
+  }
 
   return { orderId, skipped: false }
 }
