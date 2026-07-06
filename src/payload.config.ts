@@ -13,6 +13,7 @@ import { ContactSubmissions } from './collections/ContactSubmissions'
 import { Posts } from './collections/Posts'
 import { OrderLookups } from './collections/OrderLookups'
 import { Partners } from './collections/Partners'
+import { Members } from './collections/Members'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -68,7 +69,7 @@ export default buildConfig({
       },
     },
   },
-  collections: [Users, Shows, Orders, Tickets, ContactSubmissions, Posts, OrderLookups, Partners],
+  collections: [Users, Shows, Orders, Tickets, ContactSubmissions, Posts, OrderLookups, Partners, Members],
   // Admin-panel i18n (issue #234, ADR-0015). Restricting supportedLanguages to
   // en + hr localizes the whole Payload chrome and makes the native account
   // language selector show exactly these two. fallbackLanguage is English (the
