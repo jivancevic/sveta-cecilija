@@ -75,8 +75,10 @@ export async function getScannedTicketCountsByShow(query: PoolQuery): Promise<Ma
  * Active ticket counts split by order channel, across the whole season. Used by
  * the dashboard channel-mix chart (#242). Only the online/partner split lives in
  * `tickets` (in-person sales have no ticket rows — they're on shows.inPersonSold,
- * folded in by the caller). The channel select only ever holds 'online'/'partner'
- * (default 'online'), so any null/other value folds into `online`.
+ * folded in by the caller). `comp` orders (goodwill giveaways, ADR-0019) also
+ * have ticket rows but are NOT a sales channel and carry no revenue, so they are
+ * excluded from the mix rather than folded into `online`. Any other/null value
+ * (legacy rows default 'online') folds into `online`.
  */
 export async function getActiveTicketCountsByChannel(
   query: PoolQuery,
@@ -92,7 +94,9 @@ export async function getActiveTicketCountsByChannel(
   let partner = 0
   for (const row of res.rows) {
     const count = Number(row.sold) || 0
-    if (String(row.channel) === 'partner') partner += count
+    const channel = String(row.channel)
+    if (channel === 'partner') partner += count
+    else if (channel === 'comp') continue // goodwill, not a sales channel
     else online += count
   }
   return { online, partner }

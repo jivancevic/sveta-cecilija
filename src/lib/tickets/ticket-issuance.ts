@@ -5,7 +5,7 @@
 
 import { calculateOrderTotal, ADULT_PRICE_EUR, CHILD_PRICE_EUR } from '../pricing'
 
-export type Channel = 'online' | 'partner'
+export type Channel = 'online' | 'partner' | 'comp'
 export type TicketType = 'adult' | 'child'
 export type Locale = 'en' | 'hr'
 
@@ -17,6 +17,8 @@ export interface IssueTicketsInput {
   locale: Locale
   /** Set on partner-channel orders; null/omitted online. */
   partnerId?: number | null
+  /** Set on comp-channel orders (the member who received them); null otherwise. */
+  memberId?: number | null
   /** Buyer PII — present online, null for an anonymous partner POS sale. */
   buyer?: { name?: string | null; email?: string | null } | null
 }
@@ -32,12 +34,16 @@ export interface IssuedOrder {
   channel: Channel
   showId: number
   partnerId: number | null
+  memberId: number | null
   buyerName: string | null
   email: string | null
   locale: Locale
   adultCount: number
   childCount: number
-  /** EUR cents. Online applies the 5-for-4 promo; partner is flat face value. */
+  /**
+   * EUR cents. Online applies the 5-for-4 promo; partner is flat face value;
+   * comp is always 0 (goodwill giveaway, ADR-0019).
+   */
   totalCents: number
   tickets: IssuedTicket[]
 }
@@ -66,11 +72,14 @@ export async function issueTickets(
   }
 
   // Online: every 5th ticket free (calculateOrderTotal). Partner sells at flat
-  // face value — the promo is an online-only acquisition lever (ADR-0008).
+  // face value — the promo is an online-only acquisition lever (ADR-0008). Comp
+  // is a goodwill giveaway: always free (ADR-0019).
   const totalCents =
-    channel === 'online'
-      ? calculateOrderTotal({ adults, children }).totalCents
-      : (adults * ADULT_PRICE_EUR + children * CHILD_PRICE_EUR) * 100
+    channel === 'comp'
+      ? 0
+      : channel === 'online'
+        ? calculateOrderTotal({ adults, children }).totalCents
+        : (adults * ADULT_PRICE_EUR + children * CHILD_PRICE_EUR) * 100
 
   const code = await deps.generateOrderCode()
 
@@ -84,6 +93,7 @@ export async function issueTickets(
     channel,
     showId: input.show.id,
     partnerId: input.partnerId ?? null,
+    memberId: input.memberId ?? null,
     buyerName: input.buyer?.name ?? null,
     email: input.buyer?.email ?? null,
     locale: input.locale,

@@ -21,6 +21,8 @@ import { getActiveTicketCountsByChannel } from '@/lib/tickets/sold-seats'
 import { doorProgress, type DoorProgress } from '@/lib/dashboard/door-progress'
 import { TicketLookupPanel } from './TicketLookupPanel'
 import { PartnerSellForm, type SellShow } from './PartnerSellForm'
+import { CompIssuePanel } from './CompIssuePanel'
+import type { CompMember } from './CompIssueForm'
 import { PartnerRecentSales } from './PartnerRecentSales'
 import { getPartnerRecentSalesPage } from '@/lib/partner/recent-sales-page'
 import { PartnerSalesPanel } from './PartnerSalesPanel'
@@ -125,6 +127,29 @@ export async function AdminDashboardView() {
   })
   const inquiries = countInquiries(newEnquiries.docs as InquiryRow[])
 
+  // Comp-issue flow (#318, ADR-0019): active upcoming shows to give away seats
+  // for, plus the active members to attribute them to. Both feed the admin-only
+  // comp-issue action below.
+  const [compUpcoming, membersRes] = await Promise.all([
+    getUpcomingShows(),
+    payload.find({
+      collection: 'members',
+      where: { active: { equals: true } },
+      sort: 'name',
+      limit: 1000,
+      depth: 0,
+    }),
+  ])
+  const compShows: SellShow[] = compUpcoming.map((s) => ({
+    id: String(s.id),
+    label: `${formatShowDate(s.date)} · ${s.time} · ${VENUE_LABEL[s.venue] ?? s.venue}`,
+    remaining: s.remaining,
+  }))
+  const compMembers: CompMember[] = membersRes.docs.map((d) => ({
+    id: String(d.id),
+    name: (d.name as string) ?? '',
+  }))
+
   return (
     <div style={{ padding: '24px clamp(16px, 4vw, 40px)', maxWidth: 1280, margin: '0 auto' }}>
       <h1 style={{ marginBottom: 16, fontSize: 24 }}>{adminT(lang, 'dashboard')}</h1>
@@ -148,6 +173,12 @@ export async function AdminDashboardView() {
       </div>
 
       <AdminActions lang={lang} />
+
+      {/* Comp (goodwill) ticket issue — admin-only action that opens a
+          partner-style form (#318, ADR-0019). */}
+      <div style={{ marginTop: 12 }}>
+        <CompIssuePanel shows={compShows} members={compMembers} lang={lang} />
+      </div>
 
       <div style={{ marginTop: 24 }}>
         <UpcomingHero upcoming={upcoming} lang={lang} />

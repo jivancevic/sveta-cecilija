@@ -42,6 +42,13 @@ describe('typePriceLabel', () => {
     expect(typePriceLabel('adult', 'hr')).toBe('Odrasli · €20')
     expect(typePriceLabel('child', 'hr')).toBe('Dijete · €10')
   })
+
+  it('renders "Complimentary" / "Gratis" for comp slips regardless of type (ADR-0019)', () => {
+    expect(typePriceLabel('adult', 'en', true)).toBe('Complimentary')
+    expect(typePriceLabel('child', 'en', true)).toBe('Complimentary')
+    expect(typePriceLabel('adult', 'hr', true)).toBe('Gratis')
+    expect(typePriceLabel('child', 'hr', true)).toBe('Gratis')
+  })
 })
 
 describe('chunkPairs', () => {

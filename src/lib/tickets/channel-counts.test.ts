@@ -23,6 +23,18 @@ describe('getActiveTicketCountsByChannel', () => {
     expect(await getActiveTicketCountsByChannel(query)).toEqual({ online: 15, partner: 3 })
   })
 
+  it('excludes comp tickets from the mix (goodwill is not a sales channel, ADR-0019)', async () => {
+    const query = vi.fn().mockResolvedValue({
+      rows: [
+        { channel: 'online', sold: 100 },
+        { channel: 'partner', sold: 20 },
+        { channel: 'comp', sold: 7 },
+      ],
+    })
+    // comp is dropped, NOT folded into online
+    expect(await getActiveTicketCountsByChannel(query)).toEqual({ online: 100, partner: 20 })
+  })
+
   it('is all-zero when there are no active tickets', async () => {
     const query = vi.fn().mockResolvedValue({ rows: [] })
     expect(await getActiveTicketCountsByChannel(query)).toEqual({ online: 0, partner: 0 })
