@@ -162,6 +162,7 @@ CREATE TABLE IF NOT EXISTS public.orders (
     channel public.enum_orders_channel DEFAULT 'online'::public.enum_orders_channel NOT NULL,
     partner_id integer,
     member_id integer,
+    promo_code_id integer,
     buyer_name character varying,
     email character varying,
     adult_count numeric NOT NULL,
@@ -644,6 +645,8 @@ CREATE INDEX IF NOT EXISTS orders_partner_idx ON public.orders USING btree (part
 
 CREATE INDEX IF NOT EXISTS orders_member_idx ON public.orders USING btree (member_id);
 
+CREATE INDEX IF NOT EXISTS orders_promo_code_idx ON public.orders USING btree (promo_code_id);
+
 CREATE INDEX IF NOT EXISTS orders_show_idx ON public.orders USING btree (show_id);
 
 CREATE INDEX IF NOT EXISTS orders_updated_at_idx ON public.orders USING btree (updated_at);
@@ -777,6 +780,13 @@ DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'orders_member_id_members_id_fk' AND conrelid = 'public.orders'::regclass) THEN
     ALTER TABLE ONLY public.orders
     ADD CONSTRAINT orders_member_id_members_id_fk FOREIGN KEY (member_id) REFERENCES public.members(id) ON DELETE SET NULL;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'orders_promo_code_id_promo_codes_id_fk' AND conrelid = 'public.orders'::regclass) THEN
+    ALTER TABLE ONLY public.orders
+    ADD CONSTRAINT orders_promo_code_id_promo_codes_id_fk FOREIGN KEY (promo_code_id) REFERENCES public.promo_codes(id) ON DELETE SET NULL;
   END IF;
 END $$;
 

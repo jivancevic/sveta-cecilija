@@ -102,6 +102,74 @@ export async function getActiveTicketCountsByChannel(
   return { online, partner }
 }
 
+/**
+ * One row of the promo-code reporting panel (#325, ADR-0018): per promo code,
+ * the attributed member, the WHOLE-PARTY active-ticket count (adults + children
+ * on any order that used the code) and the revenue kept.
+ */
+export type PromoCodeSalesRow = {
+  promoCodeId: string
+  code: string
+  memberName: string
+  ticketsSold: number
+  revenueCents: number
+}
+
+/**
+ * Active-ticket counts + revenue grouped by promo code, across the whole season.
+ * The promo-code analogue of getActiveTicketCountsByChannel (#242): same
+ * tickets⋈orders active-only join, grouped by the order's promo_code_id instead
+ * of channel.
+ *
+ * "Tickets sold" is the whole party — every active ticket (adult AND child) on
+ * any order that applied the code, not just the discounted adult seats — so it
+ * measures the member's real draw. Cancelled/refunded tickets are excluded and
+ * the number self-heals via the active-ticket count exactly like the seat model
+ * (a fully-refunded order voids its tickets, dropping the count to 0). Revenue is
+ * the money kept: the sum of order totals for the code's orders, excluding
+ * refunded orders.
+ *
+ * The per-order subquery collapses each order to one row first, so joining the
+ * (one-to-many) tickets does not multiply the order total. Every code is listed
+ * (LEFT JOINs), including codes that have sold nothing yet, sorted by tickets
+ * sold desc then code asc so the panel leads with the top draws.
+ */
+export async function getActiveTicketCountsByPromoCode(
+  query: PoolQuery,
+): Promise<PromoCodeSalesRow[]> {
+  const res = await query(`
+    SELECT
+      pc.id AS promo_code_id,
+      pc.code AS code,
+      m.name AS member_name,
+      COALESCE(SUM(oa.active_tickets), 0)::int AS tickets_sold,
+      COALESCE(SUM(oa.revenue_cents) FILTER (WHERE oa.refund_status <> 'refunded'), 0)::bigint AS revenue_cents
+    FROM promo_codes pc
+    LEFT JOIN members m ON m.id = pc.member_id
+    LEFT JOIN (
+      SELECT o.id AS order_id,
+             o.promo_code_id AS promo_code_id,
+             o.total AS revenue_cents,
+             o.refund_status AS refund_status,
+             COUNT(t.id) FILTER (WHERE t.status = 'active') AS active_tickets
+      FROM orders o
+      LEFT JOIN tickets t ON t.order_id = o.id
+      WHERE o.promo_code_id IS NOT NULL
+      GROUP BY o.id
+    ) oa ON oa.promo_code_id = pc.id
+    GROUP BY pc.id, pc.code, m.name
+  `)
+  return res.rows
+    .map((row) => ({
+      promoCodeId: String(row.promo_code_id),
+      code: String(row.code ?? ''),
+      memberName: row.member_name == null ? '' : String(row.member_name),
+      ticketsSold: Number(row.tickets_sold) || 0,
+      revenueCents: Number(row.revenue_cents) || 0,
+    }))
+    .sort((a, b) => b.ticketsSold - a.ticketsSold || a.code.localeCompare(b.code))
+}
+
 /** Scanned ticket count for a single show. Returns 0 for a non-numeric id. */
 export async function getScannedTicketCountForShow(
   query: PoolQuery,

@@ -17,7 +17,8 @@ import { UpcomingHero } from './dashboard/UpcomingHero'
 import { PastShowsList } from './dashboard/PastShowsList'
 import { SeasonTrajectoryChart } from './dashboard/SeasonTrajectoryChart'
 import { ChannelMixChart } from './dashboard/ChannelMixChart'
-import { getActiveTicketCountsByChannel } from '@/lib/tickets/sold-seats'
+import { PromoCodeSalesPanel } from './dashboard/PromoCodeSalesPanel'
+import { getActiveTicketCountsByChannel, getActiveTicketCountsByPromoCode } from '@/lib/tickets/sold-seats'
 import { doorProgress, type DoorProgress } from '@/lib/dashboard/door-progress'
 import { TicketLookupPanel } from './TicketLookupPanel'
 import { PartnerSellForm, type SellShow } from './PartnerSellForm'
@@ -89,7 +90,7 @@ export async function AdminDashboardView() {
   // stats input and the season money facts.
   const pool = (payload.db as unknown as { pool: { query: PoolQuery } }).pool
   const poolQuery: PoolQuery = (sql, params) => pool.query(sql, params)
-  const [input, diagnostics, money, channelTickets] = await Promise.all([
+  const [input, diagnostics, money, channelTickets, promoCodeSales] = await Promise.all([
     getStatsInput(),
     gatherDevDiagnostics(user as { role?: string } | null, {
       query: poolQuery,
@@ -101,6 +102,9 @@ export async function AdminDashboardView() {
     // Channel-mix chart (#242): online vs partner active-ticket counts. In-person
     // sales have no ticket rows, so they come from shows.inPersonSold below.
     getActiveTicketCountsByChannel(poolQuery),
+    // Promo-code reporting panel (#325, ADR-0018): per-code whole-party active
+    // tickets + revenue, top draw first. Cancelled/refunded excluded upstream.
+    getActiveTicketCountsByPromoCode(poolQuery),
   ])
   const dashboardShows = toDashboardShows(input.shows)
   const { upcoming, past } = partitionShows({ today: input.today, shows: dashboardShows })
@@ -188,6 +192,10 @@ export async function AdminDashboardView() {
       {/* Season charts (#242): per-show sold trajectory + season channel mix. */}
       <SeasonTrajectoryChart shows={dashboardShows} lang={lang} />
       <ChannelMixChart counts={channelCounts} lang={lang} />
+
+      {/* Promo-code reporting (#325, ADR-0018): top codes by tickets sold, with
+          the partner "show 3 → show more" expand pattern. */}
+      <PromoCodeSalesPanel rows={promoCodeSales} lang={lang} />
 
       {diagnostics && <SuperadminDevStrip data={diagnostics} />}
 

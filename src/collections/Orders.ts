@@ -65,6 +65,16 @@ export const Orders: CollectionConfig = {
       relationTo: 'members',
       admin: { readOnly: true, description: 'Member that received this order (comp channel only)' },
     },
+    // Promo code applied to this online order (ADR-0018, #325). Null for
+    // partner/comp and for online orders with no code. Attribution + reporting
+    // only; `order.total` stays authoritative (Stripe amountReceived). The
+    // checkout/webhook wiring that sets it lands in #324. Column `promo_code_id`.
+    {
+      name: 'promoCode',
+      type: 'relationship',
+      relationTo: 'promo-codes',
+      admin: { readOnly: true, description: 'Promo code applied to this order (online channel only)' },
+    },
     // Buyer PII — present online, null for an anonymous partner POS sale.
     { name: 'buyerName', type: 'text' },
     { name: 'email', type: 'email' },

@@ -195,6 +195,13 @@ export const dashboardStrings = {
     helpHeading: 'Need help?',
     helpContact: 'Contact admin@moreska.eu',
     mailSubject: 'Partner dashboard: help',
+    // Promo codes reporting panel (#325, ADR-0018)
+    promoCodes: 'Promo codes',
+    promoCodesDesc: 'Top codes by tickets sold. Whole party per code, cancelled and refunded excluded.',
+    promoCodeMember: 'Member',
+    promoCodeTickets: 'Tickets sold',
+    promoCodeRevenue: 'Revenue',
+    noPromoCodes: 'No promo codes yet.',
   },
   hr: {
     dashboard: 'Nadzorna ploča',
@@ -320,6 +327,13 @@ export const dashboardStrings = {
     helpHeading: 'Trebate pomoć?',
     helpContact: 'Kontaktirajte admin@moreska.eu',
     mailSubject: 'Partnerska ploča: pomoć',
+    // Promo codes reporting panel (#325, ADR-0018)
+    promoCodes: 'Promo kodovi',
+    promoCodesDesc: 'Najkorišteniji kodovi po broju ulaznica. Cijela grupa po kodu, otkazane i vraćene isključene.',
+    promoCodeMember: 'Član',
+    promoCodeTickets: 'Prodano ulaznica',
+    promoCodeRevenue: 'Prihod',
+    noPromoCodes: 'Još nema promo kodova.',
   },
 } as const
 
