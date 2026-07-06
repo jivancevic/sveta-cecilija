@@ -205,6 +205,14 @@ export const dashboardStrings = {
     promoCodeTickets: 'Tickets sold',
     promoCodeRevenue: 'Revenue',
     noPromoCodes: 'No promo codes yet.',
+    // Comps-per-member report (#323, ADR-0019)
+    compsByMember: 'Comps by member',
+    compsByMemberDesc: 'Comp tickets issued per member this season. Cancelled excluded.',
+    compsMember: 'Member',
+    compsAdult: 'Adult',
+    compsChild: 'Child',
+    compsTotal: 'Total',
+    noComps: 'No comps issued yet.',
   },
   hr: {
     dashboard: 'Nadzorna ploča',
@@ -340,6 +348,14 @@ export const dashboardStrings = {
     promoCodeTickets: 'Prodano ulaznica',
     promoCodeRevenue: 'Prihod',
     noPromoCodes: 'Još nema promo kodova.',
+    // Comps-per-member report (#323, ADR-0019)
+    compsByMember: 'Besplatne po članu',
+    compsByMemberDesc: 'Besplatne ulaznice izdane po članu ove sezone. Otkazane isključene.',
+    compsMember: 'Član',
+    compsAdult: 'Odrasli',
+    compsChild: 'Djeca',
+    compsTotal: 'Ukupno',
+    noComps: 'Još nema izdanih besplatnih ulaznica.',
   },
 } as const
 

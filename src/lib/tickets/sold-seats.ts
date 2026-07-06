@@ -173,6 +173,67 @@ export async function getActiveTicketCountsByPromoCode(
     .sort((a, b) => b.ticketsSold - a.ticketsSold || a.code.localeCompare(b.code))
 }
 
+/**
+ * One row of the comps-per-member report (#323, ADR-0019): per member, the
+ * season's active comp tickets — the total and its adult/child split.
+ */
+export type CompMemberCountRow = {
+  memberId: string
+  memberName: string
+  adultTickets: number
+  childTickets: number
+  totalTickets: number
+}
+
+/**
+ * Active comp-ticket counts grouped by the attributed member, across the whole
+ * season. The member analogue of getActiveTicketCountsByPromoCode (#325): the
+ * same order⋈tickets active-only join, restricted to `comp` orders and grouped
+ * by the order's member_id.
+ *
+ * Counts ACTIVE tickets only (`t.status = 'active'`), so cancelled/voided comps
+ * drop out and the figures self-heal exactly like the seat model. The total is
+ * split into adult vs child by the per-ticket `type`.
+ *
+ * The per-order subquery collapses each comp order to one row first (mirroring
+ * the promo-code seam), then those per-order counts are summed per member; the
+ * member name is joined afterward, so a comp attributed to a since-deleted member
+ * still lists (with an empty name) rather than vanishing. Sorted by total comps
+ * desc then member name asc so the report leads with the biggest recipients.
+ */
+export async function getCompCountsByMember(query: PoolQuery): Promise<CompMemberCountRow[]> {
+  const res = await query(`
+    SELECT
+      oc.member_id AS member_id,
+      m.name AS member_name,
+      SUM(oc.adult_tickets)::int AS adult_tickets,
+      SUM(oc.child_tickets)::int AS child_tickets,
+      SUM(oc.total_tickets)::int AS total_tickets
+    FROM (
+      SELECT o.id AS order_id,
+             o.member_id AS member_id,
+             COUNT(t.id) FILTER (WHERE t.status = 'active' AND t.type = 'adult') AS adult_tickets,
+             COUNT(t.id) FILTER (WHERE t.status = 'active' AND t.type = 'child') AS child_tickets,
+             COUNT(t.id) FILTER (WHERE t.status = 'active') AS total_tickets
+      FROM orders o
+      LEFT JOIN tickets t ON t.order_id = o.id
+      WHERE o.channel = 'comp' AND o.member_id IS NOT NULL
+      GROUP BY o.id
+    ) oc
+    LEFT JOIN members m ON m.id = oc.member_id
+    GROUP BY oc.member_id, m.name
+  `)
+  return res.rows
+    .map((row) => ({
+      memberId: String(row.member_id),
+      memberName: row.member_name == null ? '' : String(row.member_name),
+      adultTickets: Number(row.adult_tickets) || 0,
+      childTickets: Number(row.child_tickets) || 0,
+      totalTickets: Number(row.total_tickets) || 0,
+    }))
+    .sort((a, b) => b.totalTickets - a.totalTickets || a.memberName.localeCompare(b.memberName))
+}
+
 /** Scanned ticket count for a single show. Returns 0 for a non-numeric id. */
 export async function getScannedTicketCountForShow(
   query: PoolQuery,
