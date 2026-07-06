@@ -5,6 +5,7 @@ import { Shows } from './Shows'
 import { Tickets } from './Tickets'
 import { Users } from './Users'
 import { Partners } from './Partners'
+import { PromoCodes } from './PromoCodes'
 
 const superadmin = { id: '1', role: 'superadmin' }
 const admin = { id: '2', role: 'admin' }
@@ -88,6 +89,61 @@ describe('Partners access', () => {
     expect(f?.defaultValue).toBe(10)
     expect(f?.min).toBe(0)
     expect(f?.max).toBe(100)
+  })
+})
+
+describe('PromoCodes access', () => {
+  it('only admin-tier can read + mutate (CRUD); tehnika + partner + anon cannot', () => {
+    for (const op of ['read', 'create', 'update', 'delete'] as const) {
+      expect(call(PromoCodes.access?.[op], superadmin)).toBe(true)
+      expect(call(PromoCodes.access?.[op], admin)).toBe(true)
+      expect(call(PromoCodes.access?.[op], tehnika)).toBe(false)
+      expect(call(PromoCodes.access?.[op], partner)).toBe(false)
+      expect(call(PromoCodes.access?.[op], anon)).toBe(false)
+    }
+  })
+
+  it('code is a unique, required text field', () => {
+    const f = PromoCodes.fields.find(
+      (x) => 'name' in x && x.name === 'code',
+    ) as { type?: string; unique?: boolean; required?: boolean } | undefined
+    expect(f?.type).toBe('text')
+    expect(f?.unique).toBe(true)
+    expect(f?.required).toBe(true)
+  })
+
+  it('member is a required relationship to members', () => {
+    const f = PromoCodes.fields.find(
+      (x) => 'name' in x && x.name === 'member',
+    ) as { type?: string; relationTo?: string; required?: boolean } | undefined
+    expect(f?.type).toBe('relationship')
+    expect(f?.relationTo).toBe('members')
+    expect(f?.required).toBe(true)
+  })
+
+  it('discountType select has exactly the one v1 value (adult-price-override)', () => {
+    const f = PromoCodes.fields.find(
+      (x) => 'name' in x && x.name === 'discountType',
+    ) as { type?: string; defaultValue?: string; options?: { value: string }[] } | undefined
+    expect(f?.type).toBe('select')
+    expect(f?.defaultValue).toBe('adult-price-override')
+    expect(f?.options?.map((o) => o.value)).toEqual(['adult-price-override'])
+  })
+
+  it('adultPriceEur defaults to 15 (min 0)', () => {
+    const f = PromoCodes.fields.find(
+      (x) => 'name' in x && x.name === 'adultPriceEur',
+    ) as { defaultValue?: number; min?: number } | undefined
+    expect(f?.defaultValue).toBe(15)
+    expect(f?.min).toBe(0)
+  })
+
+  it('active defaults to true', () => {
+    const f = PromoCodes.fields.find(
+      (x) => 'name' in x && x.name === 'active',
+    ) as { type?: string; defaultValue?: boolean } | undefined
+    expect(f?.type).toBe('checkbox')
+    expect(f?.defaultValue).toBe(true)
   })
 })
 
@@ -240,6 +296,7 @@ describe('Sidebar visibility (admin.hidden)', () => {
     ['Tickets', Tickets],
     ['ContactSubmissions', ContactSubmissions],
     ['Partners', Partners],
+    ['PromoCodes', PromoCodes],
   ] as const)('%s is visible to admin-tier, hidden from tehnika + partner', (_name, cfg) => {
     expect(callHidden(cfg, superadmin)).toBe(false)
     expect(callHidden(cfg, admin)).toBe(false)
