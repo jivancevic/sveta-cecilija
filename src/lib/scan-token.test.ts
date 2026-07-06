@@ -84,6 +84,26 @@ describe('scanToken', () => {
     expect(result).toMatchObject({ status: 'BUYER_VIEW', orderId: 'ord_9', code: 'KAL1', email: null })
   })
 
+  it('buyer view of an UNCLAIMED comp order (email=null) drives the claim form, member name unused', async () => {
+    // A comp slip is channel-agnostic here: scan-token gates the claim branch
+    // purely on email==null (ADR-0019, #320). buyerName holds the printed HOLDER
+    // (the member's name by default); the guest's claim overwrites it.
+    const deps = makeDeps({
+      findScannedToken: vi.fn().mockResolvedValue({ orderId: 'ord_comp', scannedAt: '' }),
+      findOrderDetails: vi.fn().mockResolvedValue({
+        buyerName: 'Ante Marić',
+        adultCount: 2,
+        childCount: 0,
+        showId: 'show_1',
+        email: null,
+        code: 'CMP7',
+      }),
+      findShowDetails: vi.fn().mockResolvedValue({ date: '2026-07-01', time: '21:00', venue: 'ljetno-kino' }),
+    })
+    const result = await scanToken('tok_comp', deps, { viewer: 'buyer' })
+    expect(result).toMatchObject({ status: 'BUYER_VIEW', orderId: 'ord_comp', code: 'CMP7', email: null })
+  })
+
   it('buyer view of unknown token returns INVALID without marking', async () => {
     const atomicMarkScanned = vi.fn().mockResolvedValue(null)
     const deps = makeDeps({ atomicMarkScanned })

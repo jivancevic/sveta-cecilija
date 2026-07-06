@@ -41,11 +41,15 @@ function buildDeps(pool: Pool, brevoApiKey: string): MoveToZimskoDeps {
       // One notice per person, not per order: a buyer who placed several orders
       // for the same show should get a single venue-change email. DISTINCT ON
       // collapses by lowercased email, keeping the earliest order's name/locale.
+      // Any channel with an email on file is an operational recipient (ADR-0019,
+      // #320): a comp guest who claimed their slip must hear the venue moved just
+      // like an online buyer. Unclaimed comp/partner slips carry no email and are
+      // filtered out by `email IS NOT NULL`.
       const res = await pool.query(
         `SELECT DISTINCT ON (lower(email)) id, buyer_name, email, locale
          FROM orders
          WHERE show_id = $1
-           AND channel = 'online'
+           AND channel IN ('online', 'comp')
            AND email IS NOT NULL
            AND refund_status = 'none'
          ORDER BY lower(email), id`,
