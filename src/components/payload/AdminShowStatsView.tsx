@@ -1,5 +1,6 @@
 import React from 'react'
 import Link from 'next/link'
+import { adminT, type AdminLang } from '@/lib/admin-i18n'
 import type { ShowStatsHeader, ShowStatsOrderRow } from '@/lib/show-stats'
 
 const VENUE_LABEL: Record<string, string> = {
@@ -38,7 +39,15 @@ function Stat({ label, value }: { label: string; value: React.ReactNode }) {
   )
 }
 
-function HeaderBlock({ header, showAdminBits }: { header: ShowStatsHeader; showAdminBits: boolean }) {
+function HeaderBlock({
+  header,
+  showAdminBits,
+  lang,
+}: {
+  header: ShowStatsHeader
+  showAdminBits: boolean
+  lang: AdminLang
+}) {
   return (
     <>
       <div style={{ marginBottom: 12, color: 'var(--theme-elevation-600)' }}>
@@ -70,6 +79,10 @@ function HeaderBlock({ header, showAdminBits }: { header: ShowStatsHeader; showA
       >
         <Stat label="Online sold" value={header.onlineSold} />
         <Stat label="In-person sold" value={header.inPersonSold} />
+        {/* Comp (goodwill) seats, #322 — a real-people count that keeps the seat
+            math reconciling (online + in-person + comp + legacy + remaining =
+            capacity) without ever touching a money figure. */}
+        <Stat label={adminT(lang, 'compSold')} value={header.compSold} />
         {showAdminBits ? <Stat label="Legacy reserved" value={header.legacyReserved} /> : null}
         <Stat label="Scanned" value={header.scanned} />
         <Stat label="Remaining" value={header.remaining} />
@@ -174,10 +187,12 @@ export function AdminShowStatsBody({
   header,
   orders,
   adminView,
+  lang,
 }: {
   header: ShowStatsHeader
   orders: ShowStatsOrderRow[]
   adminView: boolean
+  lang: AdminLang
 }) {
   return (
     <div style={{ padding: '24px clamp(16px, 4vw, 40px)', maxWidth: 1280 }}>
@@ -191,7 +206,7 @@ export function AdminShowStatsBody({
       </div>
       <h1 style={{ marginBottom: 12, fontSize: 24 }}>Show stats</h1>
 
-      <HeaderBlock header={header} showAdminBits={adminView} />
+      <HeaderBlock header={header} showAdminBits={adminView} lang={lang} />
 
       {adminView ? (
         <>

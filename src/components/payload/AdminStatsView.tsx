@@ -1,10 +1,11 @@
-import { headers } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 import { notFound, redirect } from 'next/navigation'
 import { getPayload } from 'payload'
 import config from '@payload-config'
 import { getShowStatsInput } from '@/lib/show-stats-data'
 import { computeShowStats } from '@/lib/show-stats'
 import { isAdminTier } from '@/lib/access/roles'
+import { ADMIN_LANG_COOKIE, resolveAdminLang } from '@/lib/admin-i18n'
 import { AdminShowStatsBody } from './AdminShowStatsView'
 
 export const dynamic = 'force-dynamic'
@@ -38,5 +39,7 @@ export async function AdminStatsView(props: AdminStatsViewProps = {}) {
   if (!input) notFound()
   const { header, orders } = computeShowStats(input)
   const adminView = isAdminTier(user as { role?: string })
-  return <AdminShowStatsBody header={header} orders={orders} adminView={adminView} />
+  const cookieLang = (await cookies()).get(ADMIN_LANG_COOKIE)?.value
+  const lang = resolveAdminLang({ cookieLang, role: (user as { role?: string }).role })
+  return <AdminShowStatsBody header={header} orders={orders} adminView={adminView} lang={lang} />
 }

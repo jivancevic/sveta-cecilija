@@ -167,6 +167,7 @@ export async function AdminDashboardView() {
         season={season}
         revenueCents={money.revenueCollectedCents}
         partnerReceivableCents={money.partnerReceivableCents}
+        compsIssued={channelTickets.comp}
       />
 
       {/* Live inquiries badge (#239): "<n> new, incl. <m> booking enquiries",

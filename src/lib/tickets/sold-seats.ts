@@ -73,16 +73,18 @@ export async function getScannedTicketCountsByShow(query: PoolQuery): Promise<Ma
 
 /**
  * Active ticket counts split by order channel, across the whole season. Used by
- * the dashboard channel-mix chart (#242). Only the online/partner split lives in
- * `tickets` (in-person sales have no ticket rows — they're on shows.inPersonSold,
- * folded in by the caller). `comp` orders (goodwill giveaways, ADR-0019) also
- * have ticket rows but are NOT a sales channel and carry no revenue, so they are
- * excluded from the mix rather than folded into `online`. Any other/null value
- * (legacy rows default 'online') folds into `online`.
+ * the dashboard channel-mix chart (#242) and the season "Comps issued" figure
+ * (#322). The online/partner split feeds the sales mix; in-person sales have no
+ * ticket rows (they're on shows.inPersonSold, folded in by the caller).
+ * `comp` orders (goodwill giveaways, ADR-0019) also have ticket rows but are NOT
+ * a sales channel and carry no revenue: they are returned as their own `comp`
+ * count so seat math reconciles and a "Comps issued" figure can render, but the
+ * caller must keep `comp` OUT of the sales-channel mix and every money total.
+ * Any other/null value (legacy rows default 'online') folds into `online`.
  */
 export async function getActiveTicketCountsByChannel(
   query: PoolQuery,
-): Promise<{ online: number; partner: number }> {
+): Promise<{ online: number; partner: number; comp: number }> {
   const res = await query(`
     SELECT o.channel AS channel, COUNT(*)::int AS sold
     FROM tickets t
@@ -92,14 +94,15 @@ export async function getActiveTicketCountsByChannel(
   `)
   let online = 0
   let partner = 0
+  let comp = 0
   for (const row of res.rows) {
     const count = Number(row.sold) || 0
     const channel = String(row.channel)
     if (channel === 'partner') partner += count
-    else if (channel === 'comp') continue // goodwill, not a sales channel
+    else if (channel === 'comp') comp += count // goodwill, not a sales channel
     else online += count
   }
-  return { online, partner }
+  return { online, partner, comp }
 }
 
 /**

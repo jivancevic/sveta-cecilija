@@ -74,6 +74,79 @@ describe('computeShowStats — header big numbers', () => {
     expect(out.header.totalSold).toBe(120)
   })
 
+  it('breaks out comp seats, subtracts them from onlineSold, and keeps them out of revenue (#322, ADR-0019)', () => {
+    const out = computeShowStats(
+      makeInput({
+        // 12 active tickets total (8 online + 4 comp), 3 in-person, 5 legacy.
+        show: makeShow({
+          venue: 'ljetno-kino',
+          activeTicketCount: 12,
+          inPersonSold: 3,
+          legacyReserved: 5,
+        }),
+        orders: [
+          makeOrder({
+            id: 'online1',
+            channel: 'online',
+            totalCents: 16_000,
+            tokens: [
+              { token: 'a1', scanned: true, scannedAt: '2026-07-01T20:00:00Z' },
+              { token: 'a2', scanned: true, scannedAt: '2026-07-01T20:01:00Z' },
+              { token: 'a3', scanned: false, scannedAt: null },
+              { token: 'a4', scanned: false, scannedAt: null },
+              { token: 'a5', scanned: false, scannedAt: null },
+              { token: 'a6', scanned: false, scannedAt: null },
+              { token: 'a7', scanned: false, scannedAt: null },
+              { token: 'a8', scanned: false, scannedAt: null },
+            ],
+          }),
+          makeOrder({
+            id: 'comp1',
+            channel: 'comp',
+            totalCents: 0,
+            tokens: [
+              { token: 'c1', scanned: true, scannedAt: '2026-07-01T20:05:00Z' },
+              { token: 'c2', scanned: false, scannedAt: null },
+              { token: 'c3', scanned: false, scannedAt: null },
+              { token: 'c4', scanned: false, scannedAt: null },
+            ],
+          }),
+        ],
+      }),
+    )
+
+    expect(out.header.compSold).toBe(4)
+    // onlineSold = activeTicketCount − comp = 12 − 4 = 8 (partner would stay folded in)
+    expect(out.header.onlineSold).toBe(8)
+    // Comps carry no money: revenue is the online order only.
+    expect(out.header.revenueCents).toBe(16_000)
+    // Comps are real people at the door: the scanned comp ticket counts.
+    expect(out.header.scanned).toBe(3)
+    // Seat math reconciles: online + inPerson + comp + legacy + remaining = capacity.
+    const { onlineSold, inPersonSold, compSold, legacyReserved, remaining, capacity } = out.header
+    expect(onlineSold + inPersonSold + compSold + legacyReserved + remaining).toBe(capacity)
+  })
+
+  it('treats an order with no channel as online (compSold stays 0)', () => {
+    const out = computeShowStats(
+      makeInput({
+        show: makeShow({ activeTicketCount: 2 }),
+        orders: [
+          makeOrder({
+            id: 'legacy',
+            tokens: [
+              { token: 'x1', scanned: false, scannedAt: null },
+              { token: 'x2', scanned: false, scannedAt: null },
+            ],
+          }),
+        ],
+      }),
+    )
+
+    expect(out.header.compSold).toBe(0)
+    expect(out.header.onlineSold).toBe(2)
+  })
+
   it('counts scanned tickets (one per person), ignoring refund status', () => {
     // Per-person model (ADR-0007): each ticket is one person, so scanned is a
     // COUNT of scanned tickets — not a sum of party sizes when "any" is scanned.

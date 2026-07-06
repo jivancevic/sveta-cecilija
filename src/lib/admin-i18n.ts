@@ -124,6 +124,9 @@ export const dashboardStrings = {
     channelInPerson: 'In person',
     channelPartner: 'Partners',
     noSalesYet: 'No sales yet.',
+    // Comps on the dashboards (#322, ADR-0019): a count, never a money figure.
+    compSold: 'Comp', // per-show seat-reconciliation column
+    compsIssued: 'Comps issued', // season-level count figure
     // Partner sell form + recent-orders list (revamp)
     sellTickets: 'Sell tickets',
     showWord: 'Performance',
@@ -256,6 +259,9 @@ export const dashboardStrings = {
     channelInPerson: 'Na blagajni',
     channelPartner: 'Partneri',
     noSalesYet: 'Još nema prodaje.',
+    // Comps on the dashboards (#322, ADR-0019): a count, never a money figure.
+    compSold: 'Gratis', // per-show seat-reconciliation column
+    compsIssued: 'Izdano gratis ulaznica', // season-level count figure
     // Partner sell form + recent-orders list (revamp)
     sellTickets: 'Prodaja ulaznica',
     showWord: 'Izvedba',
