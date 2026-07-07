@@ -42,7 +42,7 @@ Yes — the Moreška is regarded as the cultural symbol of Korčula and a symbol
 
 ## B. The story & characters
 
-> ⚠️ **King naming** applies across this section. The source treats **Osman** as the White King (who conventionally wears red) and **Moro** as the Black King and abductor, with **Otmanović** as Moro's father; the source doc is internally ambiguous about which of Moro/Otmanović is called "the Black King." Confirm the troupe's canonical usage before publishing (README flag 1).
+> **King naming — confirmed by HGD (2026-07).** **Osman** is the White King (wears **red**), **Moro** is the Black King and abductor (wears **black**), and **Otmanović** is Moro's father — *not* a king himself. The White (red) army always wins. Naming and army colours below are confirmed.
 
 ### Why do the kings fight in the Moreška?
 *Q8 — Zašto se u moreški sukobljavaju kraljevi?*
@@ -52,47 +52,47 @@ The two kings fight over a woman — the Bula, who has been abducted. Moro, the 
 ### Who is the Bula?
 *Q9 — Tko je Bula u moreški?*
 
-The Bula is the captured maiden at the centre of the Moreška — the betrothed of the White King, Osman. ⚠️ She is taken by force by Moro, the Black King, and the entire battle is fought to free her. She represents purity, loyalty, and the object of the hero's virtue. — *sc 54, 59–60, 72*
+The Bula is the captured maiden at the centre of the Moreška — the betrothed of the White King, Osman. She is taken by force by Moro, the Black King, and the entire battle is fought to free her. She represents purity, loyalty, and the object of the hero's virtue. — *sc 54, 59–60, 72*
 
 ### Why is the Bula important?
 *Q10 — Zašto je Bula u moreški važna?*
 
-The Bula is important because she is the reason for the entire conflict — the whole sword dance is fought over her. ⚠️ Her steadfast refusal to yield to her captor (*"far more pain for me is your unwanted love than the steel"*) sets the moral stakes: the battle is about honour and loyalty, not just possession. Her liberation at the end marks the triumph of virtue. — *sc 59–60, 72, 106*
+The Bula is important because she is the reason for the entire conflict — the whole sword dance is fought over her. Her steadfast refusal to yield to her captor (*"far more pain for me is your unwanted love than the steel"*) sets the moral stakes: the battle is about honour and loyalty, not just possession. Her liberation at the end marks the triumph of virtue. — *sc 59–60, 72, 106*
 
 ### Who is the Bula's fiancé?
 *Q11 — Tko je Bulin zaručnik u moreški?*
 
-The Bula's fiancé is Osman, the White King. ⚠️ He arrives to reclaim his betrothed from Moro, who has abducted her, and his army wins the battle that frees her. — *sc 54–55, 65; cw 111*
+The Bula's fiancé is Osman, the White King. He arrives to reclaim his betrothed from Moro, who has abducted her, and his army wins the battle that frees her. — *sc 54–55, 65; cw 111*
 
 ### Who is Moro?
 *Q12 — Tko je Moro u moreški?*
 
-Moro is the Black King and the abductor in the Moreška. ⚠️ He is the son of Otmanović, and he has taken the Bula by force and tries to win her affection. His army loses the seven battles, and he ends by surrendering his sword at the White King's feet. — *sc 54, 62–63, 106; cw 111*
+Moro is the Black King and the abductor in the Moreška. He is the son of Otmanović, and he has taken the Bula by force and tries to win her affection. His army loses the seven battles, and he ends by surrendering his sword at the White King's feet. — *sc 54, 62–63, 106; cw 111*
 
 ### Who is Otmanović?
 *Q13 — Tko je Otmanović u moreški?*
 
-Otmanović is Moro's father in the Moreška. ⚠️ The source describes him as a figure of dynastic authority — sometimes a "Balkan mediator" — representing the weight of the enemy army behind his son Moro. *(Confirm naming: the source doc applies "Black King" to both Moro and Otmanović in different places.)* — *sc 54, 68*
+Otmanović is Moro's father in the Moreška — a figure of dynastic authority who represents the weight of the enemy army behind his son. He is not himself the Black King; that is Moro. — *sc 54, 68*
 
 ### Who is Osman?
 *Q14 — Tko je Osman u moreški?*
 
-Osman is the White King and the hero of the Moreška. ⚠️ He is the Bula's betrothed and conventionally wears red; he represents justice and the rightful lover, and his army always wins, freeing the Bula. — *sc 55, 65; cw 111*
+Osman is the White King and the hero of the Moreška. He is the Bula's betrothed and wears red; he represents justice and the rightful lover, and his army always wins, freeing the Bula. — *sc 55, 65; cw 111*
 
 ### Why is the Bula in chains?
 *Q18 — Zašto je Bula u moreški u lancima?*
 
-The Bula is in chains because she has been abducted and held captive by Moro, the Black King. ⚠️ The performance opens with Moro dragging the chained Bula and trying to win her love, while she refuses; she is freed from her chains only at the end, after the White King's army wins. — *sc 72, 106*
+The Bula is in chains because she has been abducted and held captive by Moro, the Black King. The performance opens with Moro dragging the chained Bula and trying to win her love, while she refuses; she is freed from her chains only at the end, after the White King's army wins. — *sc 72, 106*
 
 ### Does the Moreška have main characters?
 *Q31 — Ima li moreška glavne likove?*
 
-Yes — the Moreška has four main characters: the **Bula** (the captured maiden), **Osman** (the White King, her betrothed), **Moro** (the Black King, her abductor), and **Otmanović** (Moro's father). ⚠️ Around them, two full armies — White and Black — fight the seven battles. — *sc 54, 58–69*
+Yes — the Moreška has four main characters: the **Bula** (the captured maiden), **Osman** (the White King, her betrothed), **Moro** (the Black King, her abductor), and **Otmanović** (Moro's father). Around them, two full armies — White and Black — fight the seven battles. — *sc 54, 58–69*
 
 ### Which king wins in the end?
 *Q43 — Koji kralj u moreški na kraju pobjeđuje?*
 
-The White King, Osman, always wins. ⚠️ The White army (which wears red) defeats the Black army; Moro surrenders his sword at Osman's feet, and the Bula is freed from her chains. The ending never changes — virtue always wins. — *sc 55, 106; cw 113*
+The White King, Osman, always wins. The White army (which wears red) defeats the Black army; Moro surrenders his sword at Osman's feet, and the Bula is freed from her chains. The ending never changes — virtue always wins. — *sc 55, 106; cw 113*
 
 ---
 
@@ -126,17 +126,17 @@ The Moreška has **seven** main figures, called *kolapi*, preceded by the openin
 ### What colours are the two opposing armies?
 *Q21 — Koje boje su sukobljene vojske u moreški?*
 
-The two armies are the "White" army and the "Black" army. ⚠️ Notably, the White army wears **red**, and the Black army wears **black**. The White (red) army represents justice and the rightful claimant, and always wins. — *sc 55, 75; cw 123*
+The two armies are the "White" army and the "Black" army. Notably, the White army wears **red**, and the Black army wears **black**. The White (red) army represents justice and the rightful claimant, and always wins. — *sc 55, 75; cw 123*
 
 ### Do dancers ever get injured performing the Moreška?
 *Q47 — Dali se plesači nekad ozlijede kad izvode morešku?*
 
-⚠️ *(Framing to confirm with HGD — README flag 7.)* The Moreška uses real iron swords, so there is genuine risk, but injuries are kept rare by training: dancers strike with enough precision to avoid harm while still clashing hard enough to satisfy a real war dance. That balance only comes from years of practice, which is exactly why the dancers train from childhood. — *sc 183*
+The Moreška uses real iron swords, so injuries can happen — the dancers accept that as part of a genuine war dance — but they are kept rare by training: dancers strike with enough precision to avoid serious harm while still clashing hard enough to satisfy a real war dance. That balance comes from months of disciplined practice. — *sc 183*
 
 ### Is the Moreška dangerous?
 *Q48 — Je li moreška opasna?*
 
-⚠️ *(Framing to confirm with HGD — README flag 7.)* The Moreška is performed with real iron swords and full-contact strikes, so it demands skill and discipline — but it is carefully controlled. The dancers are trained from a young age to strike precisely, so the danger is real yet managed; what looks like a fierce battle is a tightly rehearsed routine. — *sc 183*
+The Moreška is performed with real iron swords and full-contact strikes, so it demands skill and discipline — but it is carefully controlled. The dancers train for months to strike precisely, so the danger is real yet managed; what looks like a fierce battle is a tightly rehearsed routine. Injuries can occasionally happen and are accepted as part of the tradition. — *sc 183*
 
 ---
 
@@ -160,7 +160,7 @@ Yes — the music is played live by the Wind Orchestra of HGD Sveta Cecilija at 
 ### What language is the Moreška performed in?
 *Q37 — Na kojem jeziku se izvodi moreška?*
 
-⚠️ *(Confirm current tourist narration — README flag 5.)* The Moreška's scripted dialogue is spoken in an **archaic 17th-century Korčulan dialect** of Croatian, which connects the performance to its medieval roots. Much of the show is told through music, dance, and action, so it can be followed without understanding the words. *(HGD to confirm which languages the spoken introduction/summary is given in for visitors today.)* — *sc 52; mkt §3 line 71*
+The Moreška's scripted dialogue is spoken in an **archaic 17th-century Korčulan dialect** of Croatian, which connects the performance to its medieval roots. For visitors, a spoken introduction and summary are given in **Croatian and English**, and much of the show is told through music, dance, and action, so it can be followed without understanding every word. — *sc 52; mkt §3 line 71*
 
 ---
 
@@ -174,7 +174,7 @@ The Moreška is performed in Korčula's old town at the open-air **Summer Cinema
 ### How long is a Moreška performance?
 *Q15 — Koliko traje izvedba moreške?*
 
-⚠️ *(Confirm runtime — README flag 2.)* A Moreška performance lasts **about one hour**. It has three parts: an opening of Dalmatian *klapa* singing and orchestra, the spoken dramatic prologue, and then the seven sword battles. *(The historic St. Theodore performance could run up to two hours; the dance portion itself is up to ~30 minutes.)* — *mkt §3 line 75; sc 181, 191*
+A Moreška evening lasts **about one hour (roughly 60 minutes)** including the other sections' contributions. It has three parts: an opening of Dalmatian *klapa* singing and orchestra, the spoken dramatic prologue, and then the seven sword battles. *(The historic St. Theodore presentation could run up to two hours; the sword-dance portion itself is up to ~30 minutes.)* — *mkt §3 line 75; sc 181, 191*
 
 ### Do you buy tickets for the Moreška?
 *Q35 — Kupuju li se ulaznice za morešku?*
@@ -194,12 +194,12 @@ The public Moreška performances run through the warmer season — in 2026, from
 ### Can you meet the moreškanti after the performance?
 *Q41 — Mogu li se upoznati moreškanti nakon izvođenja moreške?*
 
-⚠️ *(HGD to confirm policy — README flag 8; not in any source doc.)* — *Placeholder: confirm whether visitors can meet the dancers after the show before publishing this answer.*
+Yes — visitors are welcome to meet the performers after the show. You can be photographed with the two kings and the Bula, and you're welcome to join the society for a drink at its premises. It's a relaxed way to round off the evening and hear a little more about the tradition.
 
 ### Can you take photos with the moreškanti after the performance?
 *Q42 — Mogu li se slikati sa moreškantima nakon izvođenja moreške?*
 
-⚠️ *(HGD to confirm policy — README flag 8; not in any source doc.)* — *Placeholder: confirm whether photos with the dancers (in costume, with swords) are allowed/encouraged after the show before publishing this answer.*
+Yes — after the performance you can take photos with the two kings and the Bula in costume. It's a popular way to remember the show, and the performers are happy to pose with visitors.
 
 ---
 
@@ -218,12 +218,12 @@ No — the moreškanti are not professional dancers. They are members of the Kor
 ### How much practice does it take to dance ("batit") the Moreška?
 *Q23 / Q33 / Q45 — Koliko vježbe treba da bi mogli plesat (batit) morešku?*
 
-⚠️ *(No specific figure in source — README flag 3.)* Performing the Moreška takes years of training. Dancers begin learning the steps as boys in elementary school and build up the swordsmanship, stamina, and precise timing the dance demands. The double-sword technique in particular — striking hard enough to spark while staying safe — can only be mastered through long, repeated practice. *(HGD can supply a specific number of years if they wish to state one.)* — *sc 177–183, 185*
+Learning to perform the Moreška ("batit") takes roughly **10 months to a year and a half** of training. In that time a newcomer builds up the swordsmanship, stamina, and precise timing the dance demands — especially the double-sword technique, striking hard enough to spark while staying safe. Many dancers grow up around the tradition and it is often passed from father to son, but the focused training to be stage-ready is measured in months, not years. — *sc 177–183, 185; HGD 2026-07*
 
 ### How many moreškanti take part in a performance?
 *Q29 / Q50 — Koliko moreškanata sudjeluje / koliko ljudi sudjeluje u izvedbi?*
 
-⚠️ *(Exact cast size not in source — README flag 4.)* The Moreška is performed by two opposing armies plus the lead characters (the two kings, Otmanović, and the Bula), accompanied by the live Wind Orchestra and opened by the Klapa Sveta Cecilija vocal ensemble. The society itself has around 80 members across its three sections. *(HGD to confirm the exact number of dancers and total cast per public performance.)* — *sc 123–129*
+The number varies with turnout, but each side typically fields between **6 and 12 pairs of dancers**, rising to as many as **15 per side for the grandest performances** — and the two kings and Otmanović are counted among those dancers. Add the Bula, the torchbearers, the live **Wind Orchestra (around 20 musicians)** and the **Klapa Sveta Cecilija vocal ensemble (usually 5–8 singers)**, and a full Moreška evening brings dozens of performers together on stage. The society itself has around 80 members across its three sections. — *sc 123–129; HGD 2026-07*
 
 ### How do young people learn the Moreška?
 *Q32 — Na koji način mladi uče morešku?*
@@ -233,7 +233,7 @@ Young people in Korčula learn the Moreška from childhood — boys begin learni
 ### Do children also perform the Moreška?
 *Q44 — Izvode li morešku i djeca?*
 
-⚠️ *(Confirm with HGD — README flag 6.)* Children are central to keeping the Moreška alive: boys begin learning the steps in elementary school, and the post-war revival of 1944 was itself built by training teenagers aged 12 to 17. *(HGD to confirm whether children appear in the public ticketed performances, or train separately before joining the adult troupe.)* — *sc 120, 185*
+Yes — the most prepared young dancers do step into public performances when they are ready and when the cast needs them. Children are central to keeping the Moreška alive: they begin learning the steps young, and the post-war revival of 1944 was itself built by training teenagers aged 12 to 17. Those who have mastered the choreography perform alongside the adults as required. — *sc 120, 185; HGD 2026-07*
 
 ---
 
@@ -257,7 +257,7 @@ The Moreška survived only in Korčula while it died out elsewhere in the Medite
 ### Which countries has HGD Sveta Cecilija toured with the Moreška?
 *Q49 — U kojim je zemljama HGD Sv. Cecilija gostovala s moreškom?*
 
-⚠️ *(Tour list not in source — README flag 9.)* The Moreška has represented Korčula on the international stage, including a performance at the **1947 World Youth Festival in Prague**. *(HGD to supply the full list of countries/cities toured — this is also the basis for a candidate 7th blog post, "Moreška around the world.")* — *sc 120*
+⚠️ *(Verified tour list still pending — being gathered in issue #340.)* The Moreška has represented Korčula on the international stage, including a performance at the **1947 World Youth Festival in Prague**. A guide member also mentioned appearances in Spain, France, Albania and Italy, but that list is unconfirmed — do not publish it until issue #340 returns a verified list (which will also seed a candidate 7th blog post, "Moreška around the world"). — *sc 120*
 
 ---
 
@@ -266,6 +266,7 @@ The Moreška survived only in Korčula while it died out elsewhere in the Medite
 - Show facts, prices, venue, voice: `docs/copywriting.md`.
 - Runtime / experience findings: `docs/marketing.md` §3.
 
-### ⚠️ Do not publish without
-- Resolving the 9 verification flags in `README.md` (king naming, runtime, training figure, cast size, narration language, children in shows, injury framing, meet/photo policy, tour list).
-- HGD review of every answer for accuracy — these describe a protected cultural tradition.
+### Verification status (updated 2026-07)
+- **Resolved by HGD (8 of 9 flags):** king naming & army colours, runtime (~60 min), training time (~10 months–1.5 years), cast size (6–12 pairs, up to 15/side; orchestra ~20; klapa 5–8), narration languages (Croatian + English), children in shows (most-prepared perform when needed), injury framing, and meet/photo policy (photos with the kings & Bula; drink at the society's premises).
+- **Still pending (1 flag):** the verified list of countries HGD has toured — tracked in **issue #340**. Q49 stays hedged until that returns.
+- HGD review of every answer for accuracy is still recommended — these describe a protected cultural tradition.

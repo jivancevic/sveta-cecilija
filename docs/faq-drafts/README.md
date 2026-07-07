@@ -72,14 +72,14 @@ Review-ready English answers to the **50 tourist questions** supplied by an HGD 
 
 **Net:** 50 questions → ~44 unique answers (6 are near-duplicates, consolidated). "king naming" is a single shared flag (blog README item 1).
 
-## ⚠️ Verification flags (consolidated — mirrors `geo-strategy.md` §8)
+## Verification flags — status (HGD answered 2026-07; 8 of 9 resolved)
 
-1. **King naming** — Osman = White King (wears red), Moro = Black King / abductor, Otmanović = Moro's father. Source doc is internally ambiguous about which of Moro/Otmanović is "the Black King." Confirm troupe usage. Affects Q9–Q14, Q21, Q31, Q43.
-2. **Show runtime (Q15)** — drafts say "about one hour" (`marketing.md` review themes); historic St. Theodore show ran up to two hours; the *dance* portion is up to ~30 min. Confirm current full-show runtime.
-3. **Practice/training figure (Q23/33/45)** — source says training is rigorous and starts in elementary school, but gives **no number of years**. Answer is qualitative; supply a figure if you want one stated.
-4. **Cast size (Q29/50)** — source gives ~80 society members across three sections, but **not** how many dancers / total cast appear in one public performance. Need the real number (dancers per army, + Bula + kings + orchestra + klapa).
-5. **Narration language (Q37)** — source says archaic 17th-c Korčulan dialect; `marketing.md` notes multilingual narration for tourists. Confirm what languages the spoken intro is delivered/summarized in today.
-6. **Children in public shows (Q44)** — boys learn from elementary school, but do children actually appear in the ticketed performance? Confirm.
-7. **Injury / danger framing (Q47/48)** — source: strikes are precise to avoid injury; TripAdvisor themes mention "occasional blood." Confirm honest framing — real risk, controlled, without overstating safety.
-8. **Meet & photos after the show (Q41/42)** — not in any source doc. Confirm HGD's actual policy before answering.
-9. **Tour countries (Q49)** — source documents only Prague 1947 + "the international stage." Need the real list before this becomes a confident FAQ answer or the candidate **7th blog post** ("Moreška around the world").
+1. ✅ **King naming** — CONFIRMED: Osman = White King (wears **red**), Moro = Black King / abductor (wears **black**), Otmanović = Moro's father (*not* a king). White (red) army wins. Applied to Q8–Q14, Q18, Q21, Q31, Q43.
+2. ✅ **Show runtime (Q15)** — CONFIRMED: the whole evening (incl. other sections) runs **~1 hour / ~60 min**. Historic St. Theodore presentation up to two hours; dance portion up to ~30 min.
+3. ✅ **Practice/training figure (Q23/33/45)** — CONFIRMED: **~10 months to 1.5 years** to become stage-ready. Corrected the earlier "years / from childhood" framing.
+4. ✅ **Cast size (Q29/50)** — CONFIRMED: **6–12 pairs of dancers per side** (up to **15/side** for the grandest shows; kings + Otmanović counted within the pairs), + Bula + torchbearers + **orchestra ~20** + **klapa 5–8**. Exact grand total not given.
+5. ✅ **Narration language (Q37)** — CONFIRMED: spoken intro/summary for visitors given in **Croatian and English** (dialogue itself in archaic Korčulan dialect).
+6. ✅ **Children in public shows (Q44)** — CONFIRMED: the **most-prepared young dancers perform when ready / when needed**.
+7. ✅ **Injury / danger framing (Q47/48)** — CONFIRMED: current framing approved; injuries **can happen and are accepted as part of the performance**, kept rare by training.
+8. ✅ **Meet & photos after the show (Q41/42)** — CONFIRMED: visitors **can be photographed with the two kings and the Bula**, and are welcome to **join the society for a drink at its premises**.
+9. ⚠️ **Tour countries (Q49)** — STILL PENDING → tracked in **issue #340**. Only Prague 1947 confirmed; a guide's Spain/France/Albania/Italy list is unconfirmed. Keep Q49 hedged and hold the candidate **7th blog post** ("Moreška around the world") until #340 returns a verified list.
