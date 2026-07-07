@@ -1,7 +1,14 @@
-# ADR-0018: B2C fiscalization of online ticket sales — SaaS vs in-house CIS
+# ADR-0020: B2C fiscalization of online ticket sales — SaaS vs in-house CIS
 
 **Status:** Proposed — contingent on the external "unblock" checklist below (FINA cert, VAT decision, ePorezna registration, interni akt)
-**Date:** 2026-06-25
+**Date:** 2026-06-25 (renumbered 0018 → 0020 on 2026-07-07; legal + vendor claims re-verified against current sources the same day — see the verification note under Context)
+
+> **Renumbered 0018 → 0020.** This ADR was originally merged as **ADR-0018**
+> (PR #304, 2026-06-25). A later change (PR #328) independently reused 0018/0019
+> for the member-promo-codes and comp-ticket ADRs, which are referenced across the
+> code, schema and docs far more widely. To resolve the duplicate-number collision
+> with the least churn, this document was moved to the next free number, **0020**.
+> Older references that say "ADR-0018" (issue #297 comments, PR #304) mean this ADR.
 
 ## Context
 
@@ -31,6 +38,24 @@ in the repo. This is a confirmed Croatian compliance gap (issue #297, surfaced
 So: every online B2C ticket sale must yield a **fiscalized račun carrying ZKI +
 JIR + the fiscalization QR**, delivered to the buyer alongside the ticket PDF.
 The acceptance criterion in #297 is exactly this.
+
+> **Verified 2026-07-07** (re-checked against current Porezna uprava, Narodne
+> novine, FINA and vendor sources). Every load-bearing claim above still holds:
+> NN 89/2025 is in force from 2025-09-01; Porezna states explicitly that *B2C
+> invoicing (Fiskalizacija 1.0) does not change* under 2.0 — consumer receipts
+> still get a **JIR + locally-computed ZKI + QR via the real-time CIS flow**, and
+> eRačun (B2B/B2G) carries no JIR/ZKI and does **not** cover consumer ticket
+> sales. The one genuinely new 2026 fact is the payment-method expansion noted
+> above: since **2026-01-01** B2C fiscalization applies to *all* payment methods
+> incl. transaction-account settlement (previously exempt), so an online Stripe
+> sale is squarely in scope. The obligor trigger is confirmed to be **porez na
+> dobit, independent of PDV status** (a non-PDV porez-na-dobit payer still
+> fiscalizes) — which is exactly why HGD's 2026-06-18 porez-na-dobit confirmation
+> settles our obligor status. The čl. 39 cultural-services exemption and the
+> **5%** reduced rate for cultural-event tickets (5% or 25%, *not* 13%) both
+> remain in force. The current CIS interface is **tech spec v2.6** (WSDL v1.8 from
+> 2025-09-01, **v1.9 from 2026-01-01**) — a moving target that reinforces the
+> "let a vendor track spec drift" decision below.
 
 **This ADR is a design spike, not shippable code.** Issuance is externally
 **blocked** until the checklist at the end is cleared (no FINA certificate yet;
@@ -95,7 +120,7 @@ critical-events log (ADR-0016) for out-of-band re-issue.
 | Dimension | **A — SaaS (Fiskalio / e-racuni.hr)** | **B — In-house CIS** |
 |---|---|---|
 | **Dev effort** | Low. Map Order → invoice payload, one authenticated POST, store JIR/ZKI/PDF ref. Days. | High. Port SOAP envelope + WS-Security signing + ZKI (RSA-SHA1→MD5) + JIR parse + error taxonomy + račun PDF, all against the v2.6 spec, no Node OSS base. Weeks, plus a long correctness tail. |
-| **Recurring cost** | ~€0–80/mo. Fiskalio: Free (3 inv/mo) → Starter €20 (200) → Basic €40 (500) → Pro €80 (1000, REST API). Our peak fits Starter/Basic. Plus FINA cert €39.82+VAT / 5 yr. | FINA cert only (€39.82+VAT / 5 yr). No SaaS fee — but real cost is dev + ongoing maintenance against spec changes. |
+| **Recurring cost** | ~€0–80/mo. Fiskalio (all prices **+ PDV/VAT**): Free (3 inv/mo) → Starter €19.99 (200) → Basic €39.99 (500) → Pro €79.99 (1000, REST API). Our peak fits Starter/Basic. Plus FINA cert €39.82+VAT / 5 yr. | FINA cert only (€39.82+VAT / 5 yr). No SaaS fee — but real cost is dev + ongoing maintenance against spec changes. |
 | **Who holds the FINA cert** | HGD obtains it; **uploaded to the SaaS**, which signs server-side. Private key lives at the vendor. (Legal liability stays with HGD either way.) | HGD obtains it; **private key lives in our runtime** (Coolify secret), we sign. |
 | **Failure modes** | Vendor downtime/outage; vendor lock-in on the JIR/PDF archive; a third party holds the signing key. Mitigated: JIR/ZKI are returned to us and stored locally; cert is re-uploadable elsewhere. | We own every failure: malformed ZKI, clock skew, cert expiry, CIS schema drift, SOAP faults. A wrong ZKI = invalid račun = compliance exposure. Highest-stakes surface in the app, maintained by one dev. |
 | **How the račun reaches the buyer** | SaaS can email a PDF račun directly (all Fiskalio tiers), **or** return the PDF/JIR/ZKI to us to attach to the existing ticket email. Prefer the latter — one branded email, our ADR-0005 artefact. | We render the račun PDF ourselves (reuse the `@react-pdf/renderer` stack from ADR-0005) and attach it to the existing ticket email. |
@@ -126,8 +151,14 @@ cert**, PDF račun on every tier, and a REST API on the Pro tier for the
 tighter "return JIR/PDF to us, we attach to our email" integration we prefer.
 **e-racuni.hr is the fallback** — it advertises a native Stripe connector
 (paste the Stripe secret key) and full Croatian accounting, heavier than we
-need but a proven escape hatch. (Solo / FiskalAPI are REST-only alternatives if
-we'd rather call an API from our own handler.)
+need but a proven escape hatch. **FiskalAPI (fiskalapi.hr) is a strong
+developer-first second fallback** if we'd rather call an API from our own
+handler: a REST fiscalization API (F1.0 + 2.0 + eRačun) with **webhooks**, a
+free 50-invoice/mo tier and €29/mo for 1000, no contract — it fits a
+webhook-driven Next.js app almost as directly as Fiskalio, minus the turnkey
+Stripe connector. (Solo has an API but **cannot talk to Stripe directly** — it
+needs middleware we'd build — so it is not a drop-in; FiskAI (fiskai.hr) is a
+newer 2026 webshop-B2C entrant worth a look if the above fall short.)
 
 **Integration style — prefer API-return over vendor-emails-buyer.** Both
 Fiskalio and e-racuni can email the buyer the račun *directly* off the Stripe
