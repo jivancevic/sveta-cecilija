@@ -1517,6 +1517,37 @@ html, body { overflow-x: hidden; }
 .inner-page .checkout__row:last-child { border-bottom: 0; }
 .inner-page .checkout__row--discount { color: var(--gold, #b08d57); }
 .inner-page .checkout__row--total { font-size: 16px; padding-top: 16px; }
+.inner-page .checkout__promo { margin-top: 14px; }
+.inner-page .checkout__promo .checkout__field { margin-bottom: 4px; }
+.inner-page .checkout__promo-row {
+  display: flex;
+  gap: 8px;
+}
+.inner-page .checkout__promo-row input { flex: 1 1 auto; }
+.inner-page .checkout__promo-btn {
+  flex: 0 0 auto;
+  padding: 12px 18px;
+  border: 1px solid var(--gold, #b08d57);
+  border-radius: var(--radius);
+  background: #fff;
+  color: var(--gold, #b08d57);
+  font: inherit;
+  cursor: pointer;
+}
+.inner-page .checkout__promo-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.inner-page .checkout__promo-ok {
+  display: block;
+  font-size: 12px;
+  color: var(--gold, #b08d57);
+}
+.inner-page .checkout__promo-err {
+  display: block;
+  font-size: 12px;
+  color: #be3232;
+}
 .inner-page .checkout__qty { margin: 14px 0; }
 .inner-page .checkout__qty-row {
   display: flex;
