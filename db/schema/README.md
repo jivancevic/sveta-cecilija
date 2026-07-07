@@ -9,6 +9,13 @@ file runs as one implicit Postgres transaction.
 **Every statement must be safe to re-run on a populated DB.** This is the only
 contract for files in this directory.
 
+> **Ordering caveat:** files run in filename order with no dependency
+> resolution. A migration that references another table (an FK, or a data
+> `UPDATE` joining it) must be *named* to sort **after** the file that creates
+> that table, or it dies with `relation "…" does not exist` on an existing DB
+> (fresh DBs are fine — `00-base.sql` builds everything first). This bit prod on
+> 2026-07-07. See "Cross-table FK migrations…" in `docs/agents/db-bootstrap.md`.
+
 Safe:
 - `CREATE TABLE IF NOT EXISTS …`
 - `ALTER TABLE … ADD COLUMN IF NOT EXISTS …`
