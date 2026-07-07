@@ -13,7 +13,9 @@
   },
   "hero": {
     "buyTickets": "Buy Tickets",
-    "scroll": "scroll ↓"
+    "scroll": "scroll ↓",
+    "soundOn": "Play sound",
+    "soundOff": "Mute sound"
   },
   "about": {
     "eyebrow": "Since 1883",
