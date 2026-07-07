@@ -131,6 +131,36 @@ describe('handlePaymentSucceeded', () => {
     ).rejects.toMatchObject({ name: 'UnrecoverableWebhookError' })
   })
 
+  it('resolves an applied promo code from metadata and links it to the order (ADR-0018)', async () => {
+    const resolvePromoCode = vi.fn().mockResolvedValue({ id: '42' })
+    const deps = makeDeps({ resolvePromoCode })
+    await handlePaymentSucceeded(event({ promoCode: 'ANA15' }), deps)
+    expect(resolvePromoCode).toHaveBeenCalledWith('ANA15')
+    expect(deps.createOrder).toHaveBeenCalledWith(
+      expect.objectContaining({ promoCode: '42', total: 5000 }),
+    )
+  })
+
+  it('leaves promoCode undefined when the metadata carries no code', async () => {
+    const resolvePromoCode = vi.fn()
+    const deps = makeDeps({ resolvePromoCode })
+    await handlePaymentSucceeded(event(), deps)
+    expect(resolvePromoCode).not.toHaveBeenCalled()
+    expect(deps.createOrder).toHaveBeenCalledWith(
+      expect.objectContaining({ promoCode: undefined }),
+    )
+  })
+
+  it('leaves the link null when the code no longer resolves (deleted)', async () => {
+    const resolvePromoCode = vi.fn().mockResolvedValue(null)
+    const deps = makeDeps({ resolvePromoCode })
+    await handlePaymentSucceeded(event({ promoCode: 'GONE' }), deps)
+    expect(resolvePromoCode).toHaveBeenCalledWith('GONE')
+    expect(deps.createOrder).toHaveBeenCalledWith(
+      expect.objectContaining({ promoCode: undefined }),
+    )
+  })
+
   it('creates the order + tickets inside withSeatLock, keyed on the show id (#179)', async () => {
     const events: string[] = []
     const deps = makeDeps({

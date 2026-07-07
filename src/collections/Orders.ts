@@ -45,6 +45,7 @@ export const Orders: CollectionConfig = {
       options: [
         { label: 'Online (Stripe)', value: 'online' },
         { label: 'Partner (POS)', value: 'partner' },
+        { label: 'Comp (goodwill)', value: 'comp' },
       ],
       admin: { description: 'Sales channel; drives pricing and invoicing' },
     },
@@ -55,6 +56,24 @@ export const Orders: CollectionConfig = {
       type: 'relationship',
       relationTo: 'partners',
       admin: { readOnly: true, description: 'Partner that sold this order (partner channel only)' },
+    },
+    // Society member who received these comps; null for online/partner (ADR-0019,
+    // #318). Attribution only, never printed on the slip. Column `member_id`.
+    {
+      name: 'member',
+      type: 'relationship',
+      relationTo: 'members',
+      admin: { readOnly: true, description: 'Member that received this order (comp channel only)' },
+    },
+    // Promo code applied to this online order (ADR-0018, #325). Null for
+    // partner/comp and for online orders with no code. Attribution + reporting
+    // only; `order.total` stays authoritative (Stripe amountReceived). The
+    // checkout/webhook wiring that sets it lands in #324. Column `promo_code_id`.
+    {
+      name: 'promoCode',
+      type: 'relationship',
+      relationTo: 'promo-codes',
+      admin: { readOnly: true, description: 'Promo code applied to this order (online channel only)' },
     },
     // Buyer PII — present online, null for an anonymous partner POS sale.
     { name: 'buyerName', type: 'text' },

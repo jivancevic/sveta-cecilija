@@ -109,8 +109,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       seller = { name: (partner?.name as string) ?? '' }
     }
   }
+  // Comp (goodwill) slips carry no price and no SOLD BY row; the price slot reads
+  // "Complimentary". Like partner slips, an unclaimed comp gets the claim band
+  // so the guest can attach an email (ADR-0019, #318).
+  const isCompOrder = order.channel === 'comp'
   const claimed = Boolean(order.email && String(order.email).length)
-  const showClaimPrompt = isPartnerOrder && !claimed
+  const showClaimPrompt = (isPartnerOrder || isCompOrder) && !claimed
 
   const pdfBuffer = await renderTicketsPdf(
     {
@@ -121,6 +125,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       orderRef: code,
       seller,
       showClaimPrompt,
+      free: isCompOrder,
     },
     { generateQrPng },
   )

@@ -40,6 +40,24 @@ describe('claimOrder', () => {
     expect(deps.sendClaimedTickets).toHaveBeenCalledWith(ORDER, { name: 'Ana Anić', email: 'ana@example.com' })
   })
 
+  it('comp (goodwill, total=0) claim wins and emails the digital ticket just like a paid slip', async () => {
+    // ADR-0019 #320: a family/friend claims a free comp slip. The claim flow is
+    // price-agnostic — totalCents=0 must still attach the buyer and send the PDF,
+    // overwriting the printed member name with the guest's name.
+    const COMP: ClaimableOrder = { ...ORDER, orderId: 'ord_comp', code: 'CMP7', totalCents: 0 }
+    const attachBuyer = vi.fn().mockResolvedValue(COMP)
+    const sendClaimedTickets = vi.fn().mockResolvedValue(true)
+    const deps = makeDeps({ attachBuyer, sendClaimedTickets })
+    const result = await claimOrder(
+      { orderId: 'ord_comp', name: 'Guest Gost', email: 'guest@example.com' },
+      deps,
+    )
+    expect(result).toEqual({ status: 'CLAIMED', emailed: true })
+    expect(attachBuyer).toHaveBeenCalledWith('ord_comp', 'Guest Gost', 'guest@example.com')
+    expect(sendClaimedTickets).toHaveBeenCalledTimes(1)
+    expect(sendClaimedTickets).toHaveBeenCalledWith(COMP, { name: 'Guest Gost', email: 'guest@example.com' })
+  })
+
   it('winning claim but the send fails: reports CLAIMED + emailed:false (no false "sent")', async () => {
     const deps = makeDeps({ sendClaimedTickets: vi.fn().mockResolvedValue(false) })
     const result = await claimOrder({ orderId: 'ord_1', name: 'Ana', email: 'ana@example.com' }, deps)

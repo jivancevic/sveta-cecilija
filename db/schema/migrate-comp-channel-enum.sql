@@ -1,0 +1,12 @@
+-- Comp ticket channel (#318, ADR-0019).
+--
+-- Widen orders.channel from online|partner to online|partner|comp so a comp
+-- (goodwill / free) order is a distinct channel, keeping comps out of revenue
+-- math by construction. On a fresh DB 00-base.sql already declares the enum
+-- with 'comp', so this is a no-op there; on an older prod DB it appends the
+-- value.
+--
+-- ALTER TYPE ... ADD VALUE must live in its OWN file: it cannot share a
+-- transaction with any statement that references the new value, and every
+-- db/schema file runs as one implicit transaction (see db/schema/README.md).
+ALTER TYPE public.enum_orders_channel ADD VALUE IF NOT EXISTS 'comp';

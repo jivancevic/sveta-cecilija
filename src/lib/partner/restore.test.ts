@@ -77,6 +77,25 @@ describe('performRestore — partner ownership', () => {
       ),
     ).rejects.toMatchObject({ code: 'NOT_OWNER' })
   })
+
+  it('a partner cannot restore a comp (partner-less) order — NOT_OWNER (ADR-0019, #321)', async () => {
+    // A comp voided by an admin must never be un-voided through the partner undo
+    // path; orderPartnerId is null so ownership fails before any restore runs.
+    const d = deps()
+    await expect(
+      performRestore(
+        {
+          orderCreatedAt: '2026-07-12T09:00:00Z',
+          now: '2026-07-12T10:00:00Z',
+          actor: { kind: 'partner', partnerId: 7 },
+          orderPartnerId: null,
+          target: { kind: 'ticket', ticketId: 't_comp' },
+        },
+        d,
+      ),
+    ).rejects.toMatchObject({ code: 'NOT_OWNER' })
+    expect(d.restore).not.toHaveBeenCalled()
+  })
 })
 
 describe('performRestore — partner same-day window', () => {

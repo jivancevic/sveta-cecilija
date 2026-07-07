@@ -76,9 +76,19 @@ export async function POST(req: Request) {
         },
         createOrder: async (input) => {
           const showRef = Number.isFinite(Number(input.show)) ? Number(input.show) : input.show
+          const { promoCode, ...rest } = input
+          const promoRef =
+            promoCode != null && Number.isFinite(Number(promoCode))
+              ? Number(promoCode)
+              : promoCode
           const doc = await payload.create({
             collection: 'orders',
-            data: { ...input, show: showRef as number },
+            data: {
+              ...rest,
+              show: showRef as number,
+              // Nullable relationship (ADR-0018); omit when no code was applied.
+              ...(promoRef != null ? { promoCode: promoRef as number } : {}),
+            },
           })
           return { id: String(doc.id) }
         },
@@ -94,6 +104,18 @@ export async function POST(req: Request) {
           }
         },
         generateToken: generateQrToken,
+        // Resolve an applied promo code (ADR-0018) from PI metadata to its
+        // PromoCodes record id for the Order's nullable `promoCode` link.
+        resolvePromoCode: async (code) => {
+          const r = await payload.find({
+            collection: 'promo-codes',
+            where: { code: { equals: code } },
+            limit: 1,
+            depth: 0,
+            overrideAccess: true,
+          })
+          return r.docs[0] ? { id: String(r.docs[0].id) } : null
+        },
         // Serialize the online insert against partner sells of the same show
         // (#179) via the shared advisory lock.
         withSeatLock: (showId, critical) => withShowSellLock(pool, showId, critical),

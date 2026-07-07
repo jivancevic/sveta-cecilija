@@ -25,6 +25,10 @@ export interface CreateOrderInput {
   refundStatus: 'none'
   show: string
   locale: 'en' | 'hr'
+  // Promo code applied at checkout (ADR-0018), resolved from PI metadata to a
+  // PromoCodes record id. Undefined for orders with no code. Attribution only;
+  // `total` stays the Stripe amount.
+  promoCode?: string
 }
 
 export interface NotifyBuyerInput {
@@ -54,6 +58,12 @@ export interface PaymentSucceededDeps {
   generateToken: () => string
   // Yields a unique order code (order-code.ts wired to a DB uniqueness check).
   generateOrderCode: () => Promise<string>
+  /**
+   * Resolves the promo code from PI metadata (ADR-0018) to its PromoCodes record
+   * id, or null if the code no longer exists. Optional: absent in contexts with
+   * no promo support; codeless orders never call it.
+   */
+  resolvePromoCode?: (code: string) => Promise<{ id: string } | null>
   notifyBuyer: (input: NotifyBuyerInput) => Promise<void>
   /**
    * Server-side Meta Conversions API Purchase, deduped against the browser
@@ -90,6 +100,18 @@ export async function handlePaymentSucceeded(
 
   const locale: 'en' | 'hr' = evt.metadata.locale === 'hr' ? 'hr' : 'en'
 
+  // Resolve an applied promo code (ADR-0018) to its record id for the Order's
+  // nullable `promoCode` relationship. The code only reaches metadata after a
+  // server-side validation in createCheckoutSession; if it has since been
+  // deleted we leave the link null (ON DELETE SET NULL semantics). `order.total`
+  // stays the Stripe amount either way.
+  const promoCodeStr = evt.metadata.promoCode
+  let promoCodeId: string | undefined
+  if (promoCodeStr && deps.resolvePromoCode) {
+    const resolved = await deps.resolvePromoCode(promoCodeStr)
+    if (resolved) promoCodeId = resolved.id
+  }
+
   // Derive the order code + one typed ticket per person (ADR-0007). The total is
   // authoritative from Stripe (evt.amountReceived) — issued.totalCents would be
   // the same online 5-for-4 figure, but we record what was actually charged.
@@ -124,6 +146,7 @@ export async function handlePaymentSucceeded(
       refundStatus: 'none',
       show: showId,
       locale,
+      promoCode: promoCodeId,
     })
 
     // One ticket per person, each with its own QR token and CODE-N ref. Seats are

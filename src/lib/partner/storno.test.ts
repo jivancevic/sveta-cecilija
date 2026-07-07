@@ -117,6 +117,25 @@ describe('performStorno — partner ownership', () => {
       ),
     ).rejects.toMatchObject({ code: 'NOT_OWNER' })
   })
+
+  it('a partner cannot storno a comp (partner-less) order — NOT_OWNER (ADR-0019, #321)', async () => {
+    // Comp orders carry member attribution, never a partner, so orderPartnerId is
+    // null: the partner self-service path can never reach a comp.
+    const d = deps()
+    await expect(
+      performStorno(
+        {
+          orderCreatedAt: '2026-07-12T09:00:00Z',
+          now: '2026-07-12T10:00:00Z',
+          actor: { kind: 'partner', partnerId: 7 },
+          orderPartnerId: null,
+          target: { kind: 'ticket', ticketId: 't_comp' },
+        },
+        d,
+      ),
+    ).rejects.toMatchObject({ code: 'NOT_OWNER' })
+    expect(d.voidTicket).not.toHaveBeenCalled()
+  })
 })
 
 describe('performStorno — partner same-day window', () => {
