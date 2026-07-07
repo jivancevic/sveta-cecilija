@@ -13,7 +13,9 @@
   },
   "hero": {
     "buyTickets": "Kupi ulaznice",
-    "scroll": "scroll ↓"
+    "scroll": "scroll ↓",
+    "soundOn": "Uključi zvuk",
+    "soundOff": "Isključi zvuk"
   },
   "about": {
     "eyebrow": "Od 1883.",
@@ -71,7 +73,7 @@
     "cards": [
       {
         "key": "moreska",
-        "name": "moreška",
+        "name": "Moreška",
         "blurb": "Posljednji autentični ratni ples Europe koji se izvodi od 1666."
       },
       {
@@ -113,7 +115,7 @@
       {
         "num": "02 / 02",
         "tagline": "Bliski susret s tradicijom",
-        "name": "moreška iskustvo",
+        "name": "Moreška iskustvo",
         "blurb": "Intimni edukativni susret s kostimima, mačevima i dijalogom. Min. 5 osoba.",
         "bullets": [
           "Baština i regalia: kostimi i željezni mačevi izbliza",
@@ -140,7 +142,7 @@
     "enquiryOptions": [
       "Općenito",
       "Privatna moreška",
-      "moreška iskustvo",
+      "Moreška iskustvo",
       "Tisak",
       "Ostalo"
     ],
