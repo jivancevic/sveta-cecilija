@@ -7,6 +7,12 @@
 -- them. This file references no enum value, so it is safe to keep separate
 -- from the ADD VALUE in migrate-comp-channel-enum.sql.
 --
+-- ORDERING: this FK references members(id), so it MUST run after
+-- migrate-members.sql. bootstrap-db applies db/schema/*.sql alphabetically,
+-- so the filename is "migrate-orders-member" (sorts after "migrate-members"),
+-- NOT "migrate-comp-orders-member" (would sort before "migrate-members" and
+-- crash an existing prod DB with "relation members does not exist").
+--
 -- All statements are guarded (IF NOT EXISTS / DO … EXCEPTION) and safe to
 -- re-run on every restart per db/schema/README.md.
 ALTER TABLE orders
