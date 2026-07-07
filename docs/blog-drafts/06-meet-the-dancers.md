@@ -2,7 +2,7 @@
 title: "Behind the Scenes: Meet the Moreška Dancers"
 slug: "behind-the-scenes-moreska-dancers"
 locale: "en"
-excerpt: "Who are the people behind Korčula's sword dance? Meet the moreškanti — the dancers who train for years, wield real iron, and carry a 400-year tradition forward."
+excerpt: "Who are the people behind Korčula's sword dance? Meet the moreškanti — the dancers who train intensively, wield real iron, and carry a 400-year tradition forward."
 heroImage: "/moreskanti-cool.webp"
 heroImageAlt: "Moreška dancers (moreškanti) in full costume in Korčula"
 targetKeyword: "moreska dancers"
@@ -12,7 +12,7 @@ status: "draft"
 
 # Behind the Scenes: Meet the Moreška Dancers
 
-When you watch the Moreška, you see two armies, fourteen flashing swords and a story of love and combat. What you don't see is everything behind it: the years of training, the family lines, and the quiet pride of a community that has handed this dance from one generation to the next for centuries. Meet the **moreškanti** — the people who keep Korčula's sword dance alive.
+When you watch the Moreška, you see two armies, fourteen flashing swords and a story of love and combat. What you don't see is everything behind it: the months of training, the family lines, and the quiet pride of a community that has handed this dance from one generation to the next for centuries. Meet the **moreškanti** — the people who keep Korčula's sword dance alive.
 
 ## Not actors — Korčulans
 
@@ -26,9 +26,9 @@ The Moreška looks thrilling because it genuinely is demanding. The training foc
 
 - **Swordsmanship.** Each dancer wields *two* iron blades — the right hand strikes, the left parries — in the double-sword technique that sets the Moreška apart from every other European sword dance. The swords are real, weighing about a kilogram each.
 - **Stamina.** The dance is an intense cardiovascular workout. Dancers sustain high-energy combat for the full sequence of seven escalating battles — physically grueling, especially in the summer heat.
-- **Timing and precision.** This is the part that separates a moreškant from someone simply swinging a sword. The blades have to clash *hard* — hard enough to spark and to satisfy the aesthetics of a real war dance — while striking precisely enough that no one gets hurt. That balance only comes from years of practice.
+- **Timing and precision.** This is the part that separates a moreškant from someone simply swinging a sword. The blades have to clash *hard* — hard enough to spark and to satisfy the aesthetics of a real war dance — while striking precisely enough that no one gets hurt. That balance comes from months of dedicated practice — roughly ten months to a year and a half to become stage-ready.
 
-It's why the *bam, bam, bam* of the swords sounds so convincing. It isn't choreography mimed at a safe distance; it's controlled, full-contact iron, performed by people who have trained for it since childhood.
+It's why the *bam, bam, bam* of the swords sounds so convincing. It isn't choreography mimed at a safe distance; it's controlled, full-contact iron, performed by people who have trained hard for it and grown up with the tradition.
 
 ## The people behind the dance — past and present
 

@@ -2,7 +2,7 @@
 title: "Iza kulisa: upoznajte moreškante"
 slug: "iza-kulisa-moreskanti"
 locale: "hr"
-excerpt: "Tko su ljudi iza korčulanskog plesa s mačevima? Upoznajte moreškante — plesače koji godinama vježbaju, nose pravo željezo i nose tradiciju staru 400 godina."
+excerpt: "Tko su ljudi iza korčulanskog plesa s mačevima? Upoznajte moreškante — plesače koji mjesecima vježbaju, nose pravo željezo i nose tradiciju staru 400 godina."
 heroImage: "/moreskanti-cool.webp"
 heroImageAlt: "Moreškanti u punoj nošnji u Korčuli"
 targetKeyword: "moreškanti"
@@ -14,7 +14,7 @@ status: "draft"
 
 > **HR-izdanje** posta *Behind the Scenes: Meet the Moreška Dancers*. Hrvatska se inačica objavljuje radi lokalne i dijasporske publike te dijeljenja na društvenim mrežama.
 
-Kada gledate Morešku, vidite dvije vojske, četrnaest bljeskajućih mačeva i priču o ljubavi i borbi. Ono što ne vidite jest sve iza toga: godine vježbe, obiteljske loze i tihi ponos zajednice koja ovaj ples stoljećima predaje s naraštaja na naraštaj. Upoznajte **moreškante** — ljude koji održavaju korčulanski ples s mačevima živim.
+Kada gledate Morešku, vidite dvije vojske, četrnaest bljeskajućih mačeva i priču o ljubavi i borbi. Ono što ne vidite jest sve iza toga: mjeseci vježbe, obiteljske loze i tihi ponos zajednice koja ovaj ples stoljećima predaje s naraštaja na naraštaj. Upoznajte **moreškante** — ljude koji održavaju korčulanski ples s mačevima živim.
 
 ## Nisu glumci — Korčulani su
 
@@ -28,9 +28,9 @@ Moreška izgleda uzbudljivo jer to uistinu i jest — zahtjevna. Uvježbavanje s
 
 - **Vještina mačevanja.** Svaki plesač barata s *dvama* željeznim oštricama — desna ruka udara, lijeva pariraju — u tehnici dvaju mačeva koja Morešku razlikuje od svakog drugog europskog plesa s mačevima. Mačevi su pravi, teški oko kilogram svaki.
 - **Izdržljivost.** Ples je intenzivan kardiovaskularni napor. Plesači održavaju borbu visoke energije kroz cijeli niz od sedam sve žešćih sukoba — fizički iscrpljujuće, osobito po ljetnoj vrućini.
-- **Vremenski sklad i preciznost.** Upravo to razlikuje moreškanta od nekoga tko tek maše mačem. Oštrice se moraju sudarati *snažno* — dovoljno da iskre i da zadovolje estetiku pravoga ratnog plesa — a opet dovoljno precizno da nitko ne strada. Ta ravnoteža dolazi tek s godinama vježbe.
+- **Vremenski sklad i preciznost.** Upravo to razlikuje moreškanta od nekoga tko tek maše mačem. Oštrice se moraju sudarati *snažno* — dovoljno da iskre i da zadovolje estetiku pravoga ratnog plesa — a opet dovoljno precizno da nitko ne strada. Ta ravnoteža dolazi s mjesecima predane vježbe — otprilike od deset mjeseci do godinu i pol dana da se izađe na pozornicu.
 
-Zato onaj *bam, bam, bam* mačeva zvuči toliko uvjerljivo. Nije to koreografija odglumljena na sigurnoj udaljenosti, nego kontrolirano željezo u punom dodiru, koje izvode ljudi vježbani za to od djetinjstva.
+Zato onaj *bam, bam, bam* mačeva zvuči toliko uvjerljivo. Nije to koreografija odglumljena na sigurnoj udaljenosti, nego kontrolirano željezo u punom dodiru, koje izvode ljudi koji su za to naporno vježbali i odrasli uz ovu tradiciju.
 
 ## Ljudi iza plesa — nekad i sad
 

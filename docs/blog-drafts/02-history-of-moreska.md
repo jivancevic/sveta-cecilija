@@ -71,6 +71,6 @@ The Moreška is now a **protected cultural good of the Republic of Croatia**. Ne
 - WWII loss; 1944 revival (Lozica, Jeričević, teens 12–17, Maroević/church-altar fabric); 1947 Prague festival; 1991 re-establishment — `docs/sveta-cecilija.md` lines 118–122, 131–153.
 - ~80 members, three sections; St. Theodore 29 July; 1997 Sword Dance Festival; protected cultural good — `docs/sveta-cecilija.md` lines 123–129, 190–196.
 
-### ⚠️ Verify before publishing
-- King naming convention — see README item 1.
+### Verify before publishing
+- ✅ King naming convention confirmed by HGD (2026-07): Osman = White King, Moro = Black King, Otmanović = Moro's father.
 - Hero image choice/licensing for `cecilija-est.webp` — see README item 6.

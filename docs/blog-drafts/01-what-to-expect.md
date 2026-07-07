@@ -75,7 +75,6 @@ Come for the swords. Stay for the realisation that you are watching something al
 - Double-sword technique, ~1kg iron, sparks, "bam bam bam", seven named kolapi — `docs/sveta-cecilija.md` lines 75–109; `docs/copywriting.md` lines 115–119.
 - Showtime 21:00, prices €20/€10, groups every 5th free — `docs/copywriting.md` lines 33–35.
 
-### ⚠️ Verify before publishing
-- Runtime figure ("roughly an hour") — see README item 5.
-- King naming (Osman = White, Moro = Black) — see README item 1.
+### Verify before publishing
+- ✅ Runtime (~1 hour) and king naming (Osman = White/red, Moro = Black) confirmed by HGD (2026-07).
 - Confirm `/blog/is-moreska-suitable-for-kids` slug matches post 3 once published.

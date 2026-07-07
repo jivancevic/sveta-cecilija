@@ -71,7 +71,7 @@ For curious, school-age children, the Moreška is close to ideal: a real story, 
 - Showtime 21:00; prices €20 adult / €10 under-14; every 5th ticket free; Summer Cinema venue — `docs/copywriting.md` lines 33–35; CLAUDE.md ticketing rules.
 - Founded 1883 — `docs/sveta-cecilija.md` line 41.
 
-### ⚠️ Verify before publishing
-- Runtime ("~1 hour") and any explicit child-suitability/age guidance HGD wants to stand behind publicly — see README item 5. Age bands above are framed as visitor guidance, not policy; confirm HGD is comfortable with them.
-- King naming — see README item 1.
+### Verify before publishing
+- ✅ Runtime (~1 hour) and king naming confirmed by HGD (2026-07).
+- ⚠️ Child-suitability/age guidance: the age bands above are the author's visitor guidance, not HGD policy — confirm HGD is comfortable standing behind them publicly. (Note: HGD confirmed the most-prepared young dancers *do* perform when ready.)
 - Confirm `/blog/what-to-expect-moreska-performance-korcula` slug matches post 1 once published.

@@ -62,16 +62,14 @@ For each approved draft, create a `posts` row with: `title`, `slug`, `locale`, `
 converted to rich text), `publishedAt`, `status: published`. The frontmatter block at the top
 of each draft already carries these values.
 
-## ⚠️ Needs verification (before publishing)
+## Needs verification (before publishing)
 
-Items I could **not** confirm from `docs/sveta-cecilija.md` and that an HGD member should
-confirm or correct:
+Verification status — HGD member answered the fact questions **2026-07**. Resolved items
+marked ✅; the rest still need an HGD/editor pass.
 
-1. **King naming (Osman = White, Moro = Black).** Followed from `docs/copywriting.md` and
-   `docs/sveta-cecilija.md` lines 54–69. The source doc is internally a little ambiguous about
-   which king the Bula is betrothed to; the website copy treats **Osman = White King** (the
-   rescuer, wears red) and **Moro = Black King** (the abductor). Drafts follow the website. Please
-   confirm this matches the troupe's own usage.
+1. ✅ **King naming — CONFIRMED.** Osman = White King (wears red), Moro = Black King /
+   abductor (wears black), Otmanović = Moro's father (not a king). White (red) army wins.
+   Applied across all posts; removed the inline king-naming flags.
 2. **Kumpanjija specifics (post 4).** `docs/sveta-cecilija.md` (line 193) only establishes that
    Kumpanjija and Moštra are *other* Korčula-island sword dances from Žrnovo, Blato and Vela Luka,
    performed at the 1997 Sword Dance Festival. Any claim in post 4 about *how* Kumpanjija differs
@@ -85,11 +83,13 @@ confirm or correct:
    `[[PLACEHOLDER]]` slots where HGD should drop in real dancer interviews, names and photos
    before publishing. Named historical figures (Lozica, Odak, Svoboda, Jeričević) are from the
    source doc.
-5. **Runtime "~1 hour."** From `docs/marketing.md` §3 experience findings (modern abbreviated
-   show). `docs/sveta-cecilija.md` line 181 says "up to 30 minutes" for the dance portion in
-   modern abbreviated versions and "up to two hours" for the historical St. Theodore presentation.
-   Drafts describe the *evening* as roughly an hour (choir + orchestra + narration + combat);
-   confirm the figure HGD wants quoted publicly.
+5. ✅ **Runtime — CONFIRMED ~1 hour (~60 min)** for the whole evening (incl. the other
+   sections), per HGD (2026-07). Historical St. Theodore presentation up to two hours; dance
+   portion up to ~30 min.
+7. ✅ **Training time — CONFIRMED ~10 months to 1.5 years** to become stage-ready (HGD
+   2026-07). Corrected the "years of training / since childhood" phrasing in post 6 (EN + HR).
+8. **Tour countries (post-6 candidate / "Moreška around the world").** Verified list still
+   pending → tracked in **issue #340**; only Prague 1947 is confirmed.
 6. **Hero image alt text & licensing.** All heroes reference webp files already in `public/`.
    Confirm each chosen photo is HGD-owned/cleared for web use (issue #47 acceptance criterion:
    "no generic stock") and tune the alt text.

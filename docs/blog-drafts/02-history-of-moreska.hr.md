@@ -67,7 +67,7 @@ Moreška je danas **zaštićeno kulturno dobro Republike Hrvatske**. Gotovo deve
 ### Izvori
 - Isti izvori kao i kod engleske inačice (`02-history-of-moreska.md`): `docs/sveta-cecilija.md` retci 4–48, 55, 112–153, 173–196; `docs/copywriting-hr.md` za hrvatsko nazivlje.
 
-### ⚠️ Provjeriti prije objave
-- Nazivlje kraljeva (vidi README, točka 1).
+### Provjeriti prije objave
+- ✅ Nazivlje kraljeva potvrdio HGD (2026-07): Osman = Bijeli kralj, Moro = Crni kralj, Otmanović = Morov otac.
 - Hrvatski prijevod uredski lektorirati prije objave; nazivi sekcija i veze usklađeni s `docs/copywriting-hr.md`.
 - Odabir/licenca naslovne slike (`cecilija-est.webp`) — README točka 6.
