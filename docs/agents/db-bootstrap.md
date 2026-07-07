@@ -79,6 +79,17 @@ In dev, Payload's `push: true` will subsequently rewrite the enum to match the f
 
 **`npm run dev` runs `bootstrap-db.mjs`**, but only if `DATABASE_URL` is in the shell env. `next dev` itself loads `.env.local`, but standalone node scripts don't. If bootstrap prints `DATABASE_URL is not set — skipping`, source env first: `set -a && . .env.local && set +a && npm run dev`. A fresh clone hitting an enum-change migration will 500 until this is done.
 
+## Cross-table FK migrations must sort AFTER the table they reference
+
+`bootstrap-db.mjs` applies `db/schema/*.sql` in pure alphabetical filename order (`readdirSync().sort()`), with no declared dependencies. A migration that adds a **foreign key to a table created by another migration** must have a filename that sorts *after* that table's file, or an existing prod/staging DB fails `relation "<table>" does not exist`, the container exits 1 and restart-loops, and Traefik serves a site-wide 503.
+
+Fresh DBs are immune — `00-base.sql` builds every object up front and all `migrate-*` files become idempotent no-ops — so **CI (fresh DB), `npm run build`, and the `drift` gate all pass while this bug ships**. It only bites the ordered application of deltas onto a DB that predates them. This is what happened to the comp/promo group (#328): `migrate-comp-orders-member.sql` (FK → `members`) and `migrate-orders-promo-code.sql` (FK → `promo_codes`) both sorted before the files creating those tables → prod outage, fixed by renames in #330/#331.
+
+Rules of thumb:
+- Name the dependent file so it sorts after its dependency, e.g. `migrate-members.sql` → `migrate-orders-member.sql` (not `migrate-comp-orders-member.sql`, which sorts *before* `migrate-members`).
+- **The dash trap:** `-` (0x2d) sorts before `.` (0x2e), so `foo-bar-x.sql` runs *before* `foo-bar.sql`. Never name a dependent file `<table>-<thing>.sql`.
+- Verify the sorted order by hand and add an `ORDERING:` note to the dependent file's header.
+
 ## Atomic DB writes when a field accumulates
 
 When an API endpoint adds-to a numeric column (`inPersonSold`, `onlineSold`, etc.) instead of replacing it, **never** do `find` → compute → `update` — that read-modify-write loses updates under concurrent requests. Use a single SQL statement via the underlying pool:

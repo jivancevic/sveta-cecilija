@@ -113,12 +113,14 @@ Field-level detail lives in `src/collections/*.ts` — this table is purpose + k
 | Collection (slug) | Purpose |
 |---|---|
 | `Shows` (`shows`) | Show schedule: date/time/venue, sold counters, `status`, bad-weather venue-move audit fields (#94). Capacity derived per venue, never stored. |
-| `Orders` (`orders`) | One purchase: buyer + counts + `total` (EUR cents) + `stripePaymentIntentId` + `refundStatus` → Shows; `partner` link for reseller scoping |
+| `Orders` (`orders`) | One purchase: buyer + counts + `total` (EUR cents) + `stripePaymentIntentId` + `refundStatus` → Shows. `channel` (`online \| partner \| comp`); `partner` link for reseller scoping; `member` link for comp attribution (ADR-0019); `promoCode` link for online promo orders (ADR-0018, still `channel=online`) |
 | `OrderLookups` (`order-lookups`) | Buyer-facing order lookup support |
 | `Tickets` (`tickets`) | **Per-person** ticket + QR token → Orders; `scanned`/`scannedAt`. Seats = COUNT of active tickets (`online_sold` retired). Renamed from `qr_tokens`. |
 | `ContactSubmissions` (`contact-submissions`) | Enquiry-form submissions |
 | `Users` (`users`) | Payload auth + `role` (see `roles.ts`). Hybrid username login (ADR-0011): unique `username`, email optional but required for superadmin/admin. Shared door account is username `tehnika` (no email). `partner` logins carry a `partner` → Partners relationship. |
 | `Partners` (`partners`) | Reseller channel (ADR-0008): `name`, `oib`, `commissionPercent`, `active`. Admin-tier CRUD; a partner reads only its own record. |
+| `Members` (`members`) | Society members (ADR-0019): `name`, `active`, `note`. Shared attribution target for comp tickets (`orders.member`) and promo codes (`promoCodes.member`). No email/login. Admin-tier CRUD; hidden from tehnika/partner. |
+| `PromoCodes` (`promo-codes`) | Member promo codes (ADR-0018): `code` (unique), `member` (→ Members), `discountType` (`adult-price-override`), `adultPriceEur` (default 15), `active`. Applied at online checkout, best-of-two vs 5-for-4. Admin-tier CRUD. |
 | `Posts` (`posts`) | Blog posts (heroImage may be a remote URL) |
 | `marketing_optouts` | **Raw table, NOT a Payload collection** (#57): `email` PK, `source`, `optedOutAt`. Created in `db/schema/app.sql`; see `docs/agents/features.md`. |
 
@@ -133,6 +135,8 @@ Access is keyed off `user.role` via the predicates in `src/lib/access/roles.ts` 
 | `Shows` | authed (for `/scan` + stats) | admin-tier |
 | `Tickets` | authed (door scanning); `partner` → only own | admin-tier |
 | `Partners` | admin-tier; `partner` → only own | admin-tier |
+| `Members` | admin-tier | admin-tier |
+| `PromoCodes` | admin-tier | admin-tier |
 | `Users` | self-or-superadmin | create/delete superadmin-only; update self-or-superadmin |
 
 `POST /api/orders/[id]/refund` re-checks the role in-handler and 403s otherwise (the local API's `overrideAccess: true` means collection access alone doesn't gate it). The Stripe webhook and frontend show queries use the local API, so collection access doesn't affect them.
@@ -144,6 +148,7 @@ Access is keyed off `user.role` via the predicates in `src/lib/access/roles.ts` 
 - **Public venue names differ from DB values** — EN "Summer Cinema" / "Cultural Center Korčula", HR "Ljetno kino" / "Centar za kulturu". Keys: `schedule.venue*`, `performancesPage.venue*`. Buyer-facing names come from `VENUE_LABEL` in `src/lib/venues.ts`. Venue shown on every show card; a bad-weather note tops the tickets page (zimsko is the fallback).
 - **Show types in `docs/performances.md`:** only `Redovna` (public ticketed) shows appear on `/tickets`; `Gulliver` / `Adriatic DMC` (private tour operator) and `Crveni križ` (charity) are scheduling context only, not in the DB.
 - **QR codes:** generated server-side at order creation, one per ticket, each encoding `https://moreska.eu/scan/[token]`. Door scanning is the browser-based `/scan/[token]` page only (Pretix dropped from MVP).
+- **Comp & promo:** admin-issued free tickets ride `channel='comp'` (`total=0`, `orders.member` attribution, kept out of revenue, capacity-guarded like a partner sell; ADR-0019). Member promo codes apply at online checkout (`adultPriceEur` override, best-of-two vs the automatic 5-for-4, never stacking; server recomputes; ADR-0018) and stay `channel='online'`.
 - **Refunds:** admin-initiated only, idempotent and safely re-runnable — the route checks `refundStatus` before calling Stripe, the Stripe call carries a stable `refund:<paymentIntentId>` idempotency key (`src/lib/refund/create-stripe-refund.ts`), and a retry on an already-`refunded` order re-voids any still-active tickets (self-heal). Regression probe: `scripts/probe-refund-void.mjs`.
 
 ### CSS architecture
