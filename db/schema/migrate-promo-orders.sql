@@ -10,6 +10,12 @@
 -- a no-op there; on an older prod DB it adds the join column + index + FK.
 -- All statements are guarded (IF NOT EXISTS / DO … EXCEPTION) and safe to re-run
 -- on every restart per db/schema/README.md.
+--
+-- ORDERING: this FK references promo_codes(id), so it MUST run after
+-- migrate-promo-codes.sql. bootstrap-db applies db/schema/*.sql alphabetically,
+-- so the filename is "migrate-promo-orders" (sorts after "migrate-promo-codes"),
+-- NOT "migrate-orders-promo-code" (would sort before "migrate-promo-codes" and
+-- crash an existing prod DB with "relation promo_codes does not exist").
 
 ALTER TABLE orders
   ADD COLUMN IF NOT EXISTS promo_code_id integer;
