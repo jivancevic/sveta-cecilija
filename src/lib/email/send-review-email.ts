@@ -1,4 +1,4 @@
-// Brevo transactional sender for the post-show review-request email (T+2h).
+// Brevo transactional sender for the post-show review-request email (T+1.5h).
 // Same shape as send-ticket-email / send-refund-email — pure POST, EN+HR,
 // fire-and-forget with grep-able failure logs.
 //
