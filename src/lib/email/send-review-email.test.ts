@@ -39,7 +39,7 @@ describe('sendReviewEmail', () => {
     await sendReviewEmail(makeInput(), deps)
     const [, init] = (deps.fetch as ReturnType<typeof vi.fn>).mock.calls[0]
     const body = JSON.parse(init.body)
-    expect(body.subject).toBe('How was Moreška?')
+    expect(body.subject).toBe('You were part of something centuries old')
     expect(body.htmlContent).toContain('https://tripadvisor.example/review')
     expect(body.htmlContent).toContain('https://google.example/review')
     expect(body.htmlContent).toMatch(/Review on TripAdvisor/i)
@@ -52,7 +52,7 @@ describe('sendReviewEmail', () => {
     await sendReviewEmail(makeInput({ locale: 'hr' }), deps)
     const [, init] = (deps.fetch as ReturnType<typeof vi.fn>).mock.calls[0]
     const body = JSON.parse(init.body)
-    expect(body.subject).toMatch(/Moreška/)
+    expect(body.subject).toBe('Bili ste dio priče duge stoljećima')
     expect(body.htmlContent).toMatch(/Recenzija/i)
   })
 
@@ -61,7 +61,7 @@ describe('sendReviewEmail', () => {
     await sendReviewEmail(makeInput({ locale: undefined }), deps)
     const [, init] = (deps.fetch as ReturnType<typeof vi.fn>).mock.calls[0]
     const body = JSON.parse(init.body)
-    expect(body.subject).toBe('How was Moreška?')
+    expect(body.subject).toBe('You were part of something centuries old')
   })
 
   it('footer references the legal entity name (HGD Sveta Cecilija) per ADR-0003', async () => {

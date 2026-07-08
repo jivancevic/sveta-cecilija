@@ -46,7 +46,9 @@ const SENDER = { email: 'newsletter@bilten.moreska.eu', name: 'Moreška by HGD S
 const REPLY_TO = { email: 'info@moreska.eu', name: 'HGD Sveta Cecilija' }
 
 function renderSubject(locale: 'en' | 'hr'): string {
-  return locale === 'hr' ? 'Kako Vam se svidjela Moreška?' : 'How was Moreška?'
+  return locale === 'hr'
+    ? 'Bili ste dio priče duge stoljećima'
+    : 'You were part of something centuries old'
 }
 
 // Public brand assets, served from prod. Email clients don't render webp
