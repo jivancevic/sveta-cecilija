@@ -55,7 +55,6 @@ const ASSET_BASE = 'https://moreska.eu/email'
 
 interface ReviewCopy {
   preheader: string
-  kicker: string
   heading: string
   greeting: (name: string) => string
   thanks: string[] // gratitude paragraphs — the focus of the email
@@ -70,7 +69,6 @@ interface ReviewCopy {
 const COPY: Record<'en' | 'hr', ReviewCopy> = {
   en: {
     preheader: 'Thank you for coming to the Moreška. It meant a lot to have you with us.',
-    kicker: 'HGD SVETA CECILIJA &middot; KORČULA',
     heading: 'Thank you for being here',
     greeting: (name) => `Dear ${name},`,
     thanks: [
@@ -81,7 +79,7 @@ const COPY: Record<'en' | 'hr', ReviewCopy> = {
       'If it stayed with you, a few words would mean the world to us. Your review helps other travellers find the real Moreška, in the town where it began.',
     tripadvisorLabel: 'Review on TripAdvisor',
     googleLabel: 'Review on Google',
-    signoff: 'With gratitude,<br/>The Moreška ensemble<br/>HGD Sveta Cecilija',
+    signoff: 'With gratitude,<br/>HGD Sveta Cecilija',
     footer:
       "You're receiving this because you bought a ticket from HGD Sveta Cecilija. Legal entity: HGD Sveta Cecilija, Korčula, Croatia. You can reach us any time at <a href=\"mailto:info@moreska.eu\" style=\"color:#b9b2a6;\">info@moreska.eu</a>.",
     unsub: (url) =>
@@ -89,18 +87,17 @@ const COPY: Record<'en' | 'hr', ReviewCopy> = {
   },
   hr: {
     preheader: 'Hvala Vam što ste došli na morešku. Bilo nam je drago što ste bili s nama.',
-    kicker: 'HGD SVETA CECILIJA &middot; KORČULA',
     heading: 'Hvala Vam što ste bili s nama',
     greeting: (name) => `Poštovani ${name},`,
     thanks: [
-      'Došli ste vidjeti morešku, viteški ples mačevima koji Korčula čuva već stoljećima: bubnjeve, dva kralja i Bulu zbog koje se sve zameće. Drago nam je što ste bili dio te priče.',
-      'Moreška živi jer je ljudi i dalje dolaze gledati. Svaka puna publika, svaki gost koji ostane do posljednjeg udarca mačeva, prenosi je novim naraštajima. Zato, iskreno: hvala Vam.',
+      'Došli ste vidjeti morešku, viteški mačevalački ples koji Korčula čuva već stoljećima: glazbu, dva kralja, vojske i Bulu. Drago nam je što ste bili dio te priče.',
+      'Moreška živi jer ju ljudi i dalje dolaze gledati. Svaka osoba koja ostane do posljednjeg udarca mačeva prenosi ju novim naraštajima. Zato, iskreno: hvala Vam.',
     ],
     reviewLead:
-      'Ako Vam je ostala u sjećanju, par riječi značilo bi nam jako puno. Vaša recenzija pomaže drugim posjetiteljima da pronađu pravu morešku, u gradu u kojem je nastala.',
+      'Ako Vam je ostala u sjećanju, par riječi značilo bi nam jako puno. Vaša recenzija pomaže drugim posjetiteljima da pronađu pravu morešku, u gradu u kojem je ostala.',
     tripadvisorLabel: 'Recenzija na TripAdvisoru',
     googleLabel: 'Recenzija na Googleu',
-    signoff: 'Sa zahvalnošću,<br/>Ansambl moreške<br/>HGD Sveta Cecilija',
+    signoff: 'Sa zahvalnošću,<br/>HGD Sveta Cecilija',
     footer:
       'Ovu poruku primate jer ste kupili ulaznicu kod HGD Sveta Cecilija. Pravna osoba: HGD Sveta Cecilija, Korčula, Hrvatska. Uvijek nam se možete javiti na <a href="mailto:info@moreska.eu" style="color:#b9b2a6;">info@moreska.eu</a>.',
     unsub: (url) =>
@@ -133,11 +130,14 @@ function renderHtml(input: SendReviewEmailInput, locale: 'en' | 'hr'): string {
     )
     .join('\n      ')
 
-  // Two-tone CTA pair: TripAdvisor filled gold, Google filled ink. Bulletproof
-  // padded anchors (no VML) — fine for the mobile Gmail/Apple Mail audience.
-  const btnBase = `display:inline-block;padding:15px 30px;margin:6px;text-decoration:none;font-family:${fontBody};font-weight:600;font-size:15px;letter-spacing:0.02em;border-radius:3px;`
-  const taButton = `<a href="${tripadvisorUrl}" style="${btnBase}background:${gold};color:#ffffff;">${c.tripadvisorLabel}</a>`
-  const googleButton = `<a href="${googleReviewUrl}" style="${btnBase}background:${ink};color:#ffffff;">${c.googleLabel}</a>`
+  // Two-tone CTA pair: TripAdvisor filled gold, Google filled ink, each led by
+  // a white platform glyph. Bulletproof padded anchors (no VML) — fine for the
+  // mobile Gmail/Apple Mail audience.
+  const btnBase = `display:inline-block;padding:14px 26px;margin:6px;text-decoration:none;font-family:${fontBody};font-weight:600;font-size:15px;letter-spacing:0.02em;border-radius:3px;`
+  const icon = (name: string) =>
+    `<img src="${ASSET_BASE}/icon-${name}.png" alt="" width="18" height="18" style="vertical-align:middle;margin:-2px 9px 0 0;" />`
+  const taButton = `<a href="${tripadvisorUrl}" style="${btnBase}background:${gold};color:#ffffff;">${icon('tripadvisor')}${c.tripadvisorLabel}</a>`
+  const googleButton = `<a href="${googleReviewUrl}" style="${btnBase}background:${ink};color:#ffffff;">${icon('google')}${c.googleLabel}</a>`
 
   const unsub = unsubscribeUrl ? c.unsub(unsubscribeUrl) : ''
 
@@ -151,10 +151,10 @@ function renderHtml(input: SendReviewEmailInput, locale: 'en' | 'hr'): string {
         <!-- gold top rule -->
         <tr><td style="height:4px;background:${gold};font-size:0;line-height:0;">&nbsp;</td></tr>
 
-        <!-- header: dark logo on cream -->
-        <tr><td align="center" style="background:${cream};padding:30px 32px 22px 32px;border-bottom:1px solid ${border};">
-          <img src="${ASSET_BASE}/logo.png" alt="HGD Sveta Cecilija" height="72" style="display:block;height:72px;width:auto;margin:0 auto 12px auto;" />
-          <div style="font-family:${fontBody};font-size:11px;letter-spacing:0.22em;color:${gold};text-transform:uppercase;">${c.kicker}</div>
+        <!-- header: full-colour crest on cream (the crest already carries the
+             HGD SV. CECILIJA · KORČULA wordmark, so no repeated text line) -->
+        <tr><td align="center" style="background:${cream};padding:28px 32px 26px 32px;border-bottom:1px solid ${border};">
+          <img src="${ASSET_BASE}/logo.png" alt="HGD Sveta Cecilija - Korčula" height="88" style="display:block;height:88px;width:auto;margin:0 auto;" />
         </td></tr>
 
         <!-- body: thank-you copy is the focus -->
@@ -164,9 +164,17 @@ function renderHtml(input: SendReviewEmailInput, locale: 'en' | 'hr'): string {
       ${paragraphs}
         </td></tr>
 
-        <!-- crossed-swords divider -->
-        <tr><td align="center" style="padding:6px 44px 14px 44px;background:#ffffff;">
-          <img src="${ASSET_BASE}/swords.png" alt="" width="46" style="display:block;width:46px;height:auto;margin:0 auto;opacity:0.9;" />
+        <!-- crossed-swords divider, flanked by gold hairlines -->
+        <tr><td style="padding:10px 44px 18px 44px;background:#ffffff;">
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+            <tr>
+              <td style="border-bottom:1px solid #e6dcc4;font-size:0;line-height:0;">&nbsp;</td>
+              <td width="72" style="padding:0 16px;">
+                <img src="${ASSET_BASE}/swords.png" alt="" width="40" style="display:block;width:40px;height:auto;margin:0 auto;" />
+              </td>
+              <td style="border-bottom:1px solid #e6dcc4;font-size:0;line-height:0;">&nbsp;</td>
+            </tr>
+          </table>
         </td></tr>
 
         <!-- the review ask, then the buttons, at the end -->
