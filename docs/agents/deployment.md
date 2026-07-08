@@ -11,7 +11,7 @@ Each deploy: Coolify pulls the commit and runs `docker build` against the repo-r
 One shared Postgres container (`postgres:18-alpine`, container id `tcrw531gbwikko09bvl9ssaz`, superuser `postgres`) holds both prod and staging DBs; identify it by env, not name. Verified on the box 2026-06-02:
 
 - **Local dev** → `sveta_cecilija_dev`
-- **Production** → the *default* `postgres` database (there is **no** DB literally named `sveta_cecilija`, despite older docs). A prod DB rename is a locked future decision — re-verify the name before asserting it.
+- **Production** → `sveta_cecilija` (renamed from the default `postgres` DB in #195; confirmed 2026-07-08 via the prod app container's `DATABASE_URL`). The default `postgres` DB is now empty — connecting to it gives `relation "…" does not exist`. Gold-standard check: read the prod app's `DATABASE_URL` (`docker exec <app> printenv DATABASE_URL`).
 - **Staging** → `sveta_cecilija_staging` (owner `staging_user`)
 
 Coolify runs its *own* internal Postgres in a separate `coolify-db` container — never touch it.
