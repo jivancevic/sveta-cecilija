@@ -1,4 +1,4 @@
-import type { CollectionConfig } from 'payload'
+import type { CollectionBeforeDeleteHook, CollectionConfig } from 'payload'
 import { isAdminTier } from '@/lib/access/roles'
 import { partnerOwnOrdersWhere } from '@/lib/access/partner'
 
@@ -6,6 +6,31 @@ type ReqUser = { role?: string; partner?: unknown } | null | undefined
 
 const adminOnly = ({ req }: { req: { user: unknown } }) =>
   isAdminTier(req.user as ReqUser)
+
+// Cascade a per-person ticket delete when its order is deleted.
+//
+// The `tickets.order_id` FK is `ON DELETE SET NULL` (Payload's generated
+// default for a relationship column) but the column is `NOT NULL`, so the DB
+// alone cannot delete an order that still has tickets — it errors with
+//   null value in column "order_id" of relation "tickets"
+//   violates not-null constraint
+// which is exactly the "delete order" failure in the admin UI. We can't flip
+// the FK to CASCADE in db/schema without diverging from Payload push (the
+// schema-drift gate mirrors it, and 00-base.sql is regenerated from a push, so
+// the change would be silently reverted). So we cascade here instead: delete
+// the order's tickets first, in the SAME transaction (pass `req`), so the
+// subsequent order delete has no referencing rows. Seats are COUNT(active
+// tickets), so removing them frees the seats correctly.
+//
+// Runs for every order delete (single or bulk; beforeDelete fires per-doc).
+export const cascadeOrderTicketsDelete: CollectionBeforeDeleteHook = async ({ req, id }) => {
+  await req.payload.delete({
+    collection: 'tickets',
+    where: { order: { equals: id } },
+    req,
+    overrideAccess: true,
+  })
+}
 
 export const Orders: CollectionConfig = {
   slug: 'orders',
@@ -21,6 +46,10 @@ export const Orders: CollectionConfig = {
     create: adminOnly,
     update: adminOnly,
     delete: adminOnly,
+  },
+  hooks: {
+    // Delete an order's tickets before the order itself (see hook comment).
+    beforeDelete: [cascadeOrderTicketsDelete],
   },
   admin: {
     useAsTitle: 'buyerName',
