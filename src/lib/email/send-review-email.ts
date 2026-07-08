@@ -135,7 +135,7 @@ function renderHtml(input: SendReviewEmailInput, locale: 'en' | 'hr'): string {
   // mobile Gmail/Apple Mail audience.
   const btnBase = `display:inline-block;padding:14px 26px;margin:6px;text-decoration:none;font-family:${fontBody};font-weight:600;font-size:15px;letter-spacing:0.02em;border-radius:3px;`
   const icon = (name: string) =>
-    `<img src="${ASSET_BASE}/icon-${name}.png" alt="" width="18" height="18" style="vertical-align:middle;margin:-2px 9px 0 0;" />`
+    `<img src="${ASSET_BASE}/icon-${name}.png" alt="" width="18" height="18" style="vertical-align:middle;margin-right:12px;" />`
   const taButton = `<a href="${tripadvisorUrl}" style="${btnBase}background:${gold};color:#ffffff;">${icon('tripadvisor')}${c.tripadvisorLabel}</a>`
   const googleButton = `<a href="${googleReviewUrl}" style="${btnBase}background:${ink};color:#ffffff;">${icon('google')}${c.googleLabel}</a>`
 
