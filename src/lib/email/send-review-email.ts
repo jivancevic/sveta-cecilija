@@ -166,15 +166,18 @@ function renderHtml(input: SendReviewEmailInput, locale: 'en' | 'hr'): string {
       ${paragraphs}
         </td></tr>
 
-        <!-- crossed-swords divider, flanked by gold hairlines -->
+        <!-- crossed-swords divider. The hairlines are 1px elements vertically
+             centred in the cell (vertical-align:middle), so they land at the
+             swords' mid-height — a cell border-bottom would paint at the row
+             bottom instead. -->
         <tr><td style="padding:10px 44px 18px 44px;background:#ffffff;">
           <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
             <tr>
-              <td style="border-bottom:1px solid #e6dcc4;font-size:0;line-height:0;">&nbsp;</td>
-              <td width="72" style="padding:0 16px;">
+              <td style="vertical-align:middle;"><div style="height:1px;line-height:1px;font-size:0;background:#e6dcc4;">&nbsp;</div></td>
+              <td width="72" style="padding:0 16px;vertical-align:middle;">
                 <img src="${ASSET_BASE}/swords.png" alt="" width="40" style="display:block;width:40px;height:auto;margin:0 auto;" />
               </td>
-              <td style="border-bottom:1px solid #e6dcc4;font-size:0;line-height:0;">&nbsp;</td>
+              <td style="vertical-align:middle;"><div style="height:1px;line-height:1px;font-size:0;background:#e6dcc4;">&nbsp;</div></td>
             </tr>
           </table>
         </td></tr>
