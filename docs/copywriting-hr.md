@@ -1,5 +1,7 @@
-# Sadržaj Stranice — HGD Sveta Cecilija / moreska.eu
+# Sadržaj Stranice: HGD Sveta Cecilija / moreska.eu
 # Jezik: Hrvatski
+
+> **Pravilo pisanja — bez „—" (em-dash).** Nikad ne koristi dugu crticu (—) u tekstovima za web; to je znak da je tekst pisao AI. Umjesto nje koristi zarez, dvotočku, zagrade ili točku, prema smislu rečenice. Vrijedi za sav ovdašnji tekst, blog/FAQ nacrte i rječnike stranice (`src/messages/*.json`). Rasponi brojeva koriste kraću crticu (npr. 5–8) i u redu su.
 
 ---
 

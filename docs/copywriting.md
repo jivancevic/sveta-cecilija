@@ -1,5 +1,7 @@
-# Website Copy — HGD Sveta Cecilija / moreska.eu
+# Website Copy: HGD Sveta Cecilija / moreska.eu
 # Language: English
+
+> **Writing rule — no em-dashes.** Never use the em-dash (—) in website copy; it reads as an AI-writing tell. Use a comma, colon, parentheses, or a full stop instead, whichever fits the sentence. Applies to all copy here, the blog/FAQ drafts, and the site dictionaries (`src/messages/*.json`). Numeric ranges use an en-dash (e.g. 5–8) and are fine.
 
 ---
 
