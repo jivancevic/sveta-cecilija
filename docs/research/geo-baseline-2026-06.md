@@ -1,5 +1,7 @@
 # GEO baseline — June 2026 (pre-changes)
 
+> **Monthly re-tests:** [`geo-retest-2026-07.md`](./geo-retest-2026-07.md) (first post-FAQ read).
+
 The "before" snapshot for the GEO programme in `docs/geo-strategy.md` (§6 measurement). Captured **2026-06-25**, *before* any GEO change shipped (FAQ, schema enrichment, llms.txt) and on the **same day as the 301 cutover** (`korcula-moreska.com` → `moreska.eu`). Re-run monthly against this.
 
 **Test prompt (all engines):** *"What is the Moreska sword dance and where can I see it in Korcula, and how do I get tickets?"* (ASCII spelling — how most tourists type it). Highest commercial intent: definition + venue + booking.
