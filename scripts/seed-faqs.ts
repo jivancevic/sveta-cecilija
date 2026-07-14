@@ -18,14 +18,21 @@
  */
 import { readFileSync } from 'fs'
 import path from 'path'
-import { parseFaqDrafts, lexicalPlainText } from '../src/lib/faq-seed'
+import { parseFaqDrafts, lexicalPlainText, toSeedSql } from '../src/lib/faq-seed'
 
 const DRY_RUN = process.argv.includes('--dry-run')
+const EMIT_SQL = process.argv.includes('--emit-sql')
 
 async function main() {
   const file = path.resolve(process.cwd(), 'docs/faq-drafts/faq-answers-en.md')
   const md = readFileSync(file, 'utf8')
   const entries = parseFaqDrafts(md)
+
+  // Emit the prod seed SQL to stdout (redirect to db/schema/seed-faqs.sql).
+  if (EMIT_SQL) {
+    process.stdout.write(toSeedSql(entries))
+    return
+  }
 
   const published = entries.filter((e) => e.status === 'published').length
   const draft = entries.filter((e) => e.status === 'draft').length
