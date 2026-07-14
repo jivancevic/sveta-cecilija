@@ -77,9 +77,12 @@ Review-ready English answers to the **50 tourist questions** supplied by an HGD 
 1. ✅ **King naming** — CONFIRMED: Osman = White King (wears **red**), Moro = Black King / abductor (wears **black**), Otmanović = Moro's father (*not* a king). White (red) army wins. Applied to Q8–Q14, Q18, Q21, Q31, Q43.
 2. ✅ **Show runtime (Q15)** — CONFIRMED: the whole evening (incl. other sections) runs **~1 hour / ~60 min**. Historic St. Theodore presentation up to two hours; dance portion up to ~30 min.
 3. ✅ **Practice/training figure (Q23/33/45)** — CONFIRMED: **~10 months to 1.5 years** to become stage-ready. Corrected the earlier "years / from childhood" framing.
-4. ✅ **Cast size (Q29/50)** — CONFIRMED: **6–12 pairs of dancers per side** (up to **15/side** for the grandest shows; kings + Otmanović counted within the pairs), + Bula + torchbearers + **orchestra ~20** + **klapa 5–8**. Exact grand total not given.
+4. ✅ **Cast size (Q29/50)** — CONFIRMED: **6–12 pairs of dancers per side** (up to **15/side** for the grandest shows; kings + Otmanović counted within the pairs), + Bula + torchbearers + **orchestra ~20** + **klapa 5–8**. Exact grand total not given. Society membership corrected to ~150 (was ~80), per HGD 2026-07.
 5. ✅ **Narration language (Q37)** — CONFIRMED: spoken intro/summary for visitors given in **Croatian and English** (dialogue itself in archaic Korčulan dialect).
 6. ✅ **Children in public shows (Q44)** — CONFIRMED: the **most-prepared young dancers perform when ready / when needed**.
 7. ✅ **Injury / danger framing (Q47/48)** — CONFIRMED: current framing approved; injuries **can happen and are accepted as part of the performance**, kept rare by training.
 8. ✅ **Meet & photos after the show (Q41/42)** — CONFIRMED: visitors **can be photographed with the two kings and the Bula**, and are welcome to **join the society for a drink at its premises**.
 9. ⚠️ **Tour countries (Q49)** — STILL PENDING → tracked in **issue #340**. Only Prague 1947 confirmed; a guide's Spain/France/Albania/Italy list is unconfirmed. Keep Q49 hedged and hold the candidate **7th blog post** ("Moreška around the world") until #340 returns a verified list.
+10. ⚠️ **Odak music dates (Q28)** flagged: composed **1937**, in use since **1947**; per HGD note one digit may be swapped, to confirm.
+
+**Copy pass 2026-07-14:** section B reordered (main-characters overview now first); society ~80 to ~150; AI em-dash removed from all answers per new copy rule.
