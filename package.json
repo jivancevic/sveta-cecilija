@@ -11,6 +11,7 @@
     "start": "node scripts/bootstrap-db.mjs && next start",
     "db:bootstrap": "node scripts/bootstrap-db.mjs",
     "seed:staging": "node scripts/seed-staging.mjs",
+    "seed:faqs": "payload run scripts/seed-faqs.ts",
     "lint": "eslint",
     "db": "docker compose up -d",
     "db:stop": "docker compose down",
