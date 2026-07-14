@@ -56,9 +56,8 @@ Both are ImprovMX forwarding aliases (no real mailbox), so adding one is near-ze
 - **Today:** ~200 TripAdvisor reviews accrued passively over ~10 years.
 - **Target:** 3–5× velocity in 2026 season via active solicitation.
 - **Tactics:**
-  - **QR card handed at exit by door staff:** front side "Loved the show? Review us →" + QR linking to TripAdvisor review form. Back side same QR linking to Google review form. Print ~500, give to door staff.
   - **Follow-up email** 2h after performance (post-ticket-purchase, via Brevo) with two big buttons: "Review on TripAdvisor" / "Review on Google". Subject line "How was Moreška?" One-click unsubscribe (List-Unsubscribe header) persists across future shows.
-  - **Door staff script:** one-line ask at exit, "If you enjoyed the show, please scan this to leave a quick review." Requires staff buy-in — train at season start.
+  - **Rejected — printed QR review cards handed at exit by door staff (2026-07-07):** built (bilingual print-ready card + `scripts/generate-review-cards.mjs`) then abandoned; decided not to hand guests any post-show card/keepsake. Issue #43 closed not-planned, PR #306 closed unmerged. Don't re-propose the physical-card route without a fresh decision.
 - **Don't:** offer incentives for reviews (Google + TripAdvisor TOS violation, can get listings delisted).
 
 #### Experience findings (#124 — done; full doc `docs/research/tripadvisor-review-themes.md`)
@@ -112,6 +111,8 @@ Velocity amplifies whatever the current experience is, so close the cheap gaps b
 - **Lead time:** 2–4 weeks to list, longer if Viator wants approval calls.
 
 ### 7. Content / blog (slow but durable — 2027 payoff)
+
+> **GEO + FAQ:** the blog is one half of the content programme. See **`docs/geo-strategy.md`** for the Generative-Engine-Optimization plan (being surfaced by AI answer engines — a *near-term* 2026 channel, unlike classic organic), the Payload-backed `/faq` decision, the four GEO levers, and how the blog and FAQ interlock. Drafted FAQ answers (50 real tourist questions) live in `docs/faq-drafts/`.
 
 - **Cadence:** 1 long-form post/month (800–1,200 words), HGD-produced.
 - **Suggested first 6 posts** (target informational queries that ads can't profitably bid on):

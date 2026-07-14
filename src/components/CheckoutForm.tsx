@@ -13,7 +13,7 @@ import type { Dictionary } from '@/lib/i18n'
 import type { Locale } from '@/proxy'
 import type { Venue } from '@/lib/venues'
 import { calculateOrderTotal } from '@/lib/pricing'
-import { startCheckout } from '@/app/actions/checkout'
+import { startCheckout, applyPromoCode } from '@/app/actions/checkout'
 
 interface ShowSummary {
   id: string
@@ -78,8 +78,44 @@ export default function CheckoutForm({
   const [paymentIntentId, setPaymentIntentId] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  // Member promo code (ADR-0018). `appliedCode` is the code that validated
+  // server-side; `promoAdultPrice` drives the local preview. Editing the field
+  // clears any applied code so the shown price can never lag the entered code.
+  const [promoInput, setPromoInput] = useState('')
+  const [appliedCode, setAppliedCode] = useState<string | null>(null)
+  const [promoAdultPrice, setPromoAdultPrice] = useState<number | null>(null)
+  const [promoError, setPromoError] = useState(false)
+  const [promoChecking, setPromoChecking] = useState(false)
 
-  const totals = useMemo(() => calculateOrderTotal({ adults, children }), [adults, children])
+  const promo = promoAdultPrice != null ? { adultPriceEur: promoAdultPrice } : null
+  const totals = useMemo(
+    () => calculateOrderTotal({ adults, children }, promo),
+    [adults, children, promoAdultPrice],
+  )
+
+  function onPromoInputChange(value: string) {
+    setPromoInput(value)
+    setAppliedCode(null)
+    setPromoAdultPrice(null)
+    setPromoError(false)
+  }
+
+  async function applyPromo() {
+    const code = promoInput.trim()
+    if (!code || promoChecking) return
+    setPromoChecking(true)
+    setPromoError(false)
+    const res = await applyPromoCode(code)
+    setPromoChecking(false)
+    if (res.ok) {
+      setAppliedCode(code)
+      setPromoAdultPrice(res.adultPriceEur)
+    } else {
+      setAppliedCode(null)
+      setPromoAdultPrice(null)
+      setPromoError(true)
+    }
+  }
   const venueName = show.venue === 'zimsko-kino' ? tPerf.venueZimsko : tPerf.venueLjetno
 
   const formValid =
@@ -113,6 +149,9 @@ export default function CheckoutForm({
       children,
       buyer: { name: name.trim(), email: email.trim() },
       locale,
+      // Only the code that already validated server-side (never a raw draft),
+      // so the shown total matches the charged total. The server re-validates.
+      promoCode: appliedCode ?? undefined,
     })
     setCreating(false)
     if (!res.ok) {
@@ -161,13 +200,40 @@ export default function CheckoutForm({
         </div>
         {totals.discountEur > 0 && (
           <div className="checkout__row checkout__row--discount">
-            <span>{t.discountLabel}</span>
+            <span>{totals.promoApplied ? t.discountPromoLabel : t.discountLabel}</span>
             <span>−€{totals.discountEur}</span>
           </div>
         )}
         <div className="checkout__row checkout__row--total">
           <strong>{t.totalLabel}</strong>
           <strong>€{totals.totalEur}</strong>
+        </div>
+
+        <div className="checkout__promo">
+          <label className="checkout__field">
+            <span>{t.promoLabel}</span>
+            <div className="checkout__promo-row">
+              <input
+                type="text"
+                name="promoCode"
+                autoComplete="off"
+                value={promoInput}
+                onChange={(e) => onPromoInputChange(e.target.value)}
+                placeholder={t.promoPlaceholder}
+                disabled={!!clientSecret}
+              />
+              <button
+                type="button"
+                className="checkout__promo-btn"
+                onClick={applyPromo}
+                disabled={!!clientSecret || promoChecking || promoInput.trim().length === 0}
+              >
+                {t.promoApplyButton}
+              </button>
+            </div>
+          </label>
+          {appliedCode && <small className="checkout__promo-ok">{t.promoApplied}</small>}
+          {promoError && <small className="checkout__promo-err">{t.promoInvalid}</small>}
         </div>
       </section>
 

@@ -31,7 +31,8 @@ EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN
 CREATE TYPE public.enum_orders_channel AS ENUM (
     'online',
-    'partner'
+    'partner',
+    'comp'
 );
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
@@ -39,6 +40,12 @@ DO $$ BEGIN
 CREATE TYPE public.enum_orders_locale AS ENUM (
     'en',
     'hr'
+);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+CREATE TYPE public.enum_promo_codes_discount_type AS ENUM (
+    'adult-price-override'
 );
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
@@ -154,6 +161,8 @@ CREATE TABLE IF NOT EXISTS public.orders (
     code character varying,
     channel public.enum_orders_channel DEFAULT 'online'::public.enum_orders_channel NOT NULL,
     partner_id integer,
+    member_id integer,
+    promo_code_id integer,
     buyer_name character varying,
     email character varying,
     adult_count numeric NOT NULL,
@@ -198,6 +207,46 @@ CREATE SEQUENCE IF NOT EXISTS public.partners_id_seq
     CACHE 1;
 
 ALTER SEQUENCE public.partners_id_seq OWNED BY public.partners.id;
+
+CREATE TABLE IF NOT EXISTS public.members (
+    id integer NOT NULL,
+    name character varying NOT NULL,
+    active boolean DEFAULT true,
+    note character varying,
+    updated_at timestamp(3) with time zone DEFAULT now() NOT NULL,
+    created_at timestamp(3) with time zone DEFAULT now() NOT NULL
+);
+
+CREATE SEQUENCE IF NOT EXISTS public.members_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.members_id_seq OWNED BY public.members.id;
+
+CREATE TABLE IF NOT EXISTS public.promo_codes (
+    id integer NOT NULL,
+    code character varying NOT NULL,
+    member_id integer NOT NULL,
+    discount_type public.enum_promo_codes_discount_type DEFAULT 'adult-price-override'::public.enum_promo_codes_discount_type NOT NULL,
+    adult_price_eur numeric DEFAULT 15 NOT NULL,
+    active boolean DEFAULT true,
+    updated_at timestamp(3) with time zone DEFAULT now() NOT NULL,
+    created_at timestamp(3) with time zone DEFAULT now() NOT NULL
+);
+
+CREATE SEQUENCE IF NOT EXISTS public.promo_codes_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.promo_codes_id_seq OWNED BY public.promo_codes.id;
 
 CREATE TABLE IF NOT EXISTS public.payload_kv (
     id integer NOT NULL,
@@ -244,7 +293,9 @@ CREATE TABLE IF NOT EXISTS public.payload_locked_documents_rels (
     contact_submissions_id integer,
     posts_id integer,
     order_lookups_id integer,
-    partners_id integer
+    partners_id integer,
+    members_id integer,
+    promo_codes_id integer
 );
 
 CREATE SEQUENCE IF NOT EXISTS public.payload_locked_documents_rels_id_seq
@@ -431,6 +482,10 @@ ALTER TABLE ONLY public.orders ALTER COLUMN id SET DEFAULT nextval('public.order
 
 ALTER TABLE ONLY public.partners ALTER COLUMN id SET DEFAULT nextval('public.partners_id_seq'::regclass);
 
+ALTER TABLE ONLY public.members ALTER COLUMN id SET DEFAULT nextval('public.members_id_seq'::regclass);
+
+ALTER TABLE ONLY public.promo_codes ALTER COLUMN id SET DEFAULT nextval('public.promo_codes_id_seq'::regclass);
+
 ALTER TABLE ONLY public.payload_kv ALTER COLUMN id SET DEFAULT nextval('public.payload_kv_id_seq'::regclass);
 
 ALTER TABLE ONLY public.payload_locked_documents ALTER COLUMN id SET DEFAULT nextval('public.payload_locked_documents_id_seq'::regclass);
@@ -476,6 +531,20 @@ DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'partners_pkey' AND conrelid = 'public.partners'::regclass) THEN
     ALTER TABLE ONLY public.partners
     ADD CONSTRAINT partners_pkey PRIMARY KEY (id);
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'members_pkey' AND conrelid = 'public.members'::regclass) THEN
+    ALTER TABLE ONLY public.members
+    ADD CONSTRAINT members_pkey PRIMARY KEY (id);
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'promo_codes_pkey' AND conrelid = 'public.promo_codes'::regclass) THEN
+    ALTER TABLE ONLY public.promo_codes
+    ADD CONSTRAINT promo_codes_pkey PRIMARY KEY (id);
   END IF;
 END $$;
 
@@ -574,6 +643,10 @@ CREATE INDEX IF NOT EXISTS orders_created_at_idx ON public.orders USING btree (c
 
 CREATE INDEX IF NOT EXISTS orders_partner_idx ON public.orders USING btree (partner_id);
 
+CREATE INDEX IF NOT EXISTS orders_member_idx ON public.orders USING btree (member_id);
+
+CREATE INDEX IF NOT EXISTS orders_promo_code_idx ON public.orders USING btree (promo_code_id);
+
 CREATE INDEX IF NOT EXISTS orders_show_idx ON public.orders USING btree (show_id);
 
 CREATE INDEX IF NOT EXISTS orders_updated_at_idx ON public.orders USING btree (updated_at);
@@ -581,6 +654,18 @@ CREATE INDEX IF NOT EXISTS orders_updated_at_idx ON public.orders USING btree (u
 CREATE INDEX IF NOT EXISTS partners_created_at_idx ON public.partners USING btree (created_at);
 
 CREATE INDEX IF NOT EXISTS partners_updated_at_idx ON public.partners USING btree (updated_at);
+
+CREATE INDEX IF NOT EXISTS members_created_at_idx ON public.members USING btree (created_at);
+
+CREATE INDEX IF NOT EXISTS members_updated_at_idx ON public.members USING btree (updated_at);
+
+CREATE UNIQUE INDEX IF NOT EXISTS promo_codes_code_idx ON public.promo_codes USING btree (code);
+
+CREATE INDEX IF NOT EXISTS promo_codes_member_idx ON public.promo_codes USING btree (member_id);
+
+CREATE INDEX IF NOT EXISTS promo_codes_created_at_idx ON public.promo_codes USING btree (created_at);
+
+CREATE INDEX IF NOT EXISTS promo_codes_updated_at_idx ON public.promo_codes USING btree (updated_at);
 
 CREATE UNIQUE INDEX IF NOT EXISTS payload_kv_key_idx ON public.payload_kv USING btree (key);
 
@@ -599,6 +684,10 @@ CREATE INDEX IF NOT EXISTS payload_locked_documents_rels_orders_id_idx ON public
 CREATE INDEX IF NOT EXISTS payload_locked_documents_rels_parent_idx ON public.payload_locked_documents_rels USING btree (parent_id);
 
 CREATE INDEX IF NOT EXISTS payload_locked_documents_rels_partners_id_idx ON public.payload_locked_documents_rels USING btree (partners_id);
+
+CREATE INDEX IF NOT EXISTS payload_locked_documents_rels_members_id_idx ON public.payload_locked_documents_rels USING btree (members_id);
+
+CREATE INDEX IF NOT EXISTS payload_locked_documents_rels_promo_codes_id_idx ON public.payload_locked_documents_rels USING btree (promo_codes_id);
 
 CREATE INDEX IF NOT EXISTS payload_locked_documents_rels_path_idx ON public.payload_locked_documents_rels USING btree (path);
 
@@ -688,6 +777,27 @@ DO $$ BEGIN
 END $$;
 
 DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'orders_member_id_members_id_fk' AND conrelid = 'public.orders'::regclass) THEN
+    ALTER TABLE ONLY public.orders
+    ADD CONSTRAINT orders_member_id_members_id_fk FOREIGN KEY (member_id) REFERENCES public.members(id) ON DELETE SET NULL;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'orders_promo_code_id_promo_codes_id_fk' AND conrelid = 'public.orders'::regclass) THEN
+    ALTER TABLE ONLY public.orders
+    ADD CONSTRAINT orders_promo_code_id_promo_codes_id_fk FOREIGN KEY (promo_code_id) REFERENCES public.promo_codes(id) ON DELETE SET NULL;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'promo_codes_member_id_members_id_fk' AND conrelid = 'public.promo_codes'::regclass) THEN
+    ALTER TABLE ONLY public.promo_codes
+    ADD CONSTRAINT promo_codes_member_id_members_id_fk FOREIGN KEY (member_id) REFERENCES public.members(id) ON DELETE SET NULL;
+  END IF;
+END $$;
+
+DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'orders_show_id_shows_id_fk' AND conrelid = 'public.orders'::regclass) THEN
     ALTER TABLE ONLY public.orders
     ADD CONSTRAINT orders_show_id_shows_id_fk FOREIGN KEY (show_id) REFERENCES public.shows(id) ON DELETE SET NULL;
@@ -726,6 +836,20 @@ DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'payload_locked_documents_rels_partners_fk' AND conrelid = 'public.payload_locked_documents_rels'::regclass) THEN
     ALTER TABLE ONLY public.payload_locked_documents_rels
     ADD CONSTRAINT payload_locked_documents_rels_partners_fk FOREIGN KEY (partners_id) REFERENCES public.partners(id) ON DELETE CASCADE;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'payload_locked_documents_rels_members_fk' AND conrelid = 'public.payload_locked_documents_rels'::regclass) THEN
+    ALTER TABLE ONLY public.payload_locked_documents_rels
+    ADD CONSTRAINT payload_locked_documents_rels_members_fk FOREIGN KEY (members_id) REFERENCES public.members(id) ON DELETE CASCADE;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'payload_locked_documents_rels_promo_codes_fk' AND conrelid = 'public.payload_locked_documents_rels'::regclass) THEN
+    ALTER TABLE ONLY public.payload_locked_documents_rels
+    ADD CONSTRAINT payload_locked_documents_rels_promo_codes_fk FOREIGN KEY (promo_codes_id) REFERENCES public.promo_codes(id) ON DELETE CASCADE;
   END IF;
 END $$;
 

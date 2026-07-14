@@ -2,7 +2,7 @@
 
 Human-action runbook for the marketing-email infrastructure decided in
 [ADR-0004](./adr/0004-email-infrastructure.md). The bulk post-show review email
-feature is already built in code (sends T+2h, one-click unsubscribe — #57); the
+feature is built, deployed, and live (sends T+1.5h, one-click unsubscribe — #57, #342); the
 steps below are the DNS / dashboard / billing clicks an agent cannot perform.
 
 Covers:
@@ -146,7 +146,7 @@ Left on root `moreska.eu` deliberately:
   reputation.
 
 This was the only code change; the unsubscribe link, List-Unsubscribe headers, and
-T+2h timing already shipped in #57.
+T+1.5h timing shipped in #57 (retimed from T+2h in #342).
 
 ---
 

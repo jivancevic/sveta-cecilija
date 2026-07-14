@@ -64,6 +64,7 @@ const COPY = {
     soldBy: 'Sold by',
     adult: 'Adult',
     child: 'Child',
+    complimentary: 'Complimentary',
     scanAtDoor: 'Scan this code at the door',
     perPerson: 'One ticket per person. This QR admits one person.',
     claimPrompt: 'Get a digital ticket and show updates. Scan this code and add your email.',
@@ -79,6 +80,7 @@ const COPY = {
     soldBy: 'Prodano putem',
     adult: 'Odrasli',
     child: 'Dijete',
+    complimentary: 'Gratis',
     scanAtDoor: 'Skenirajte ovaj kod na ulazu',
     perPerson: 'Jedna ulaznica po osobi. Ovaj QR pušta jednu osobu.',
     claimPrompt:
@@ -103,9 +105,14 @@ function priceEur(type: TicketType): number {
   return type === 'adult' ? ADULT_PRICE_EUR : CHILD_PRICE_EUR
 }
 
-/** "Adult · €20" / "Dijete · €10" — the per-ticket type + face price line. */
-function typePriceLabel(type: TicketType, locale: 'en' | 'hr'): string {
+/**
+ * "Adult · €20" / "Dijete · €10" — the per-ticket type + face price line. Comp
+ * slips carry no price: the slot reads "Complimentary" / "Gratis" instead
+ * (ADR-0019, #318).
+ */
+function typePriceLabel(type: TicketType, locale: 'en' | 'hr', free = false): string {
   const c = COPY[locale]
+  if (free) return c.complimentary
   const word = type === 'adult' ? c.adult : c.child
   return `${word} · €${priceEur(type)}`
 }
@@ -297,8 +304,10 @@ export interface RenderTicketsPdfInput {
   orderRef: string
   /** Present only on partner slips. Renders a SOLD BY detail row. */
   seller?: { name: string }
-  /** Partner, unclaimed slips: render the claim-invitation note band. */
+  /** Partner/comp unclaimed slips: render the claim-invitation note band. */
   showClaimPrompt?: boolean
+  /** Comp (goodwill) slips: the price slot reads "Complimentary" / "Gratis". */
+  free?: boolean
 }
 
 export interface RenderTicketsPdfDeps {
@@ -383,7 +392,7 @@ export async function renderTicketsPdf(
               </Text>
             </View>
           )}
-          <Text style={styles.typePrice}>{typePriceLabel(ticket.type, input.locale)}</Text>
+          <Text style={styles.typePrice}>{typePriceLabel(ticket.type, input.locale, input.free)}</Text>
         </View>
 
         <View style={styles.qrCol}>

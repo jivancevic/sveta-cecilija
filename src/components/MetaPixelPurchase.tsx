@@ -11,17 +11,51 @@ interface Props {
 /**
  * Fires the Meta Pixel `Purchase` standard event once the pixel is loaded.
  * Safe to render unconditionally — it no-ops if the visitor declined cookies
- * (in which case `window.fbq` was never installed by CookieConsent).
+ * (in which case `window.fbq` is never installed by CookieConsent).
+ *
+ * `window.fbq` is installed by CookieConsent, which lives in the layout — its
+ * mount effect can run AFTER this page-level component's effect, so fbq may not
+ * exist on the first attempt. A one-shot guard would then drop the Purchase
+ * permanently (observed: only PageView fired, never Purchase). Poll briefly
+ * until fbq is ready instead.
+ *
+ * Passes `eventID: order_<orderId>` so this browser event dedupes against the
+ * server-side Conversions API Purchase fired from the Stripe webhook
+ * (`src/lib/meta/capi.ts`) — Meta merges the two into one rather than counting
+ * the purchase twice.
  */
 export default function MetaPixelPurchase({ value, currency = 'EUR', orderId }: Props) {
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    if (typeof window.fbq !== 'function') return;
-    window.fbq('track', 'Purchase', {
-      value,
-      currency,
-      ...(orderId !== undefined ? { order_id: String(orderId) } : {}),
-    });
+
+    let done = false;
+    const fire = () => {
+      if (done || typeof window.fbq !== 'function') return false;
+      window.fbq(
+        'track',
+        'Purchase',
+        {
+          value,
+          currency,
+          ...(orderId !== undefined ? { order_id: String(orderId) } : {}),
+        },
+        orderId !== undefined ? { eventID: `order_${orderId}` } : undefined,
+      );
+      done = true;
+      return true;
+    };
+
+    if (fire()) return;
+
+    const interval = setInterval(() => {
+      if (fire()) clearInterval(interval);
+    }, 200);
+    const timeout = setTimeout(() => clearInterval(interval), 8000);
+
+    return () => {
+      clearInterval(interval);
+      clearTimeout(timeout);
+    };
   }, [value, currency, orderId]);
 
   return null;

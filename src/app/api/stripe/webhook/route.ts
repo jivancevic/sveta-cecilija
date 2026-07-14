@@ -12,6 +12,7 @@ import { generateOrderCode as makeOrderCode } from '@/lib/tickets/order-code'
 import { randomInt } from 'node:crypto'
 import { sendTicketEmail } from '@/lib/email/send-ticket-email'
 import { generateQrPng } from '@/lib/email/qr'
+import { sendMetaPurchase } from '@/lib/meta/capi'
 import type { Venue } from '@/lib/venues'
 
 export const runtime = 'nodejs'
@@ -75,9 +76,19 @@ export async function POST(req: Request) {
         },
         createOrder: async (input) => {
           const showRef = Number.isFinite(Number(input.show)) ? Number(input.show) : input.show
+          const { promoCode, ...rest } = input
+          const promoRef =
+            promoCode != null && Number.isFinite(Number(promoCode))
+              ? Number(promoCode)
+              : promoCode
           const doc = await payload.create({
             collection: 'orders',
-            data: { ...input, show: showRef as number },
+            data: {
+              ...rest,
+              show: showRef as number,
+              // Nullable relationship (ADR-0018); omit when no code was applied.
+              ...(promoRef != null ? { promoCode: promoRef as number } : {}),
+            },
           })
           return { id: String(doc.id) }
         },
@@ -93,6 +104,18 @@ export async function POST(req: Request) {
           }
         },
         generateToken: generateQrToken,
+        // Resolve an applied promo code (ADR-0018) from PI metadata to its
+        // PromoCodes record id for the Order's nullable `promoCode` link.
+        resolvePromoCode: async (code) => {
+          const r = await payload.find({
+            collection: 'promo-codes',
+            where: { code: { equals: code } },
+            limit: 1,
+            depth: 0,
+            overrideAccess: true,
+          })
+          return r.docs[0] ? { id: String(r.docs[0].id) } : null
+        },
         // Serialize the online insert against partner sells of the same show
         // (#179) via the shared advisory lock.
         withSeatLock: (showId, critical) => withShowSellLock(pool, showId, critical),
@@ -140,6 +163,32 @@ export async function POST(req: Request) {
             )
           } catch (err) {
             console.error('[stripe/webhook] notifyBuyer failed', err)
+          }
+        },
+        notifyMeta: async ({ orderId, valueCents, email }) => {
+          // Server-side Purchase to Meta. Best-effort: skip silently if the env
+          // isn't configured, and swallow any send error so the webhook still
+          // returns 200 (Stripe must never retry over a failed analytics ping).
+          const pixelId = process.env.NEXT_PUBLIC_META_PIXEL_ID
+          const accessToken = process.env.META_CAPI_ACCESS_TOKEN
+          if (!pixelId || !accessToken) return
+          try {
+            await sendMetaPurchase(
+              {
+                pixelId,
+                accessToken,
+                // Same dedup key the browser pixel sends (MetaPixelPurchase.tsx).
+                eventId: `order_${orderId}`,
+                value: valueCents / 100,
+                currency: 'EUR',
+                email,
+                orderId,
+                eventSourceUrl: 'https://moreska.eu',
+              },
+              { fetch: globalThis.fetch },
+            )
+          } catch (err) {
+            console.error('[stripe/webhook] meta capi failed', err)
           }
         },
       },

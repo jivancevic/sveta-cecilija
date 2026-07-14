@@ -1,4 +1,4 @@
-// Brevo transactional sender for the post-show review-request email (T+2h).
+// Brevo transactional sender for the post-show review-request email (T+1.5h).
 // Same shape as send-ticket-email / send-refund-email — pure POST, EN+HR,
 // fire-and-forget with grep-able failure logs.
 //
@@ -46,70 +46,161 @@ const SENDER = { email: 'newsletter@bilten.moreska.eu', name: 'Moreška by HGD S
 const REPLY_TO = { email: 'info@moreska.eu', name: 'HGD Sveta Cecilija' }
 
 function renderSubject(locale: 'en' | 'hr'): string {
-  return locale === 'hr' ? 'Kako Vam se svidjela Moreška?' : 'How was Moreška?'
+  return locale === 'hr'
+    ? 'Bili ste dio priče duge stoljećima'
+    : 'You were part of something centuries old'
+}
+
+// Public brand assets, served from prod. Email clients don't render webp
+// reliably (Outlook), so these are dedicated PNG copies under public/email/.
+const ASSET_BASE = 'https://moreska.eu/email'
+
+interface ReviewCopy {
+  preheader: string
+  heading: string
+  greeting: (name: string) => string
+  thanks: string[] // gratitude paragraphs — the focus of the email
+  reviewLead: string // the ask, right before the buttons
+  tripadvisorLabel: string
+  googleLabel: string
+  signoff: string // may contain <br/>
+  footer: string // legal line; MUST keep "Legal entity: HGD Sveta Cecilija" (EN)
+  unsub: (url: string) => string
+}
+
+const COPY: Record<'en' | 'hr', ReviewCopy> = {
+  en: {
+    preheader: 'Thank you for coming to the Moreška. It meant a lot to have you with us.',
+    heading: 'Thank you for being here',
+    greeting: (name) => `Dear ${name},`,
+    thanks: [
+      'You came to see the Moreška, a sword dance Korčula has kept alive for centuries: the drums, the two kings, and Bula at the heart of the fight. We are grateful you were part of it.',
+      'The dance lives because people still come to watch it. Every full square, every guest who stays to the last clash of swords, carries it on to the next generation. So, truly: thank you for being here.',
+    ],
+    reviewLead:
+      'If it stayed with you, a few words would mean the world to us. Your review helps other travellers find the real Moreška, in the town where it began.',
+    tripadvisorLabel: 'Review on TripAdvisor',
+    googleLabel: 'Review on Google',
+    signoff: 'With gratitude,<br/>HGD Sveta Cecilija',
+    footer:
+      "You're receiving this because you bought a ticket from HGD Sveta Cecilija. Legal entity: HGD Sveta Cecilija, Korčula, Croatia. You can reach us any time at <a href=\"mailto:info@moreska.eu\" style=\"color:#b9b2a6;\">info@moreska.eu</a>.",
+    unsub: (url) =>
+      ` If you'd rather not hear from us again, <a href="${url}" style="color:#b9b2a6;text-decoration:underline;">unsubscribe here</a>.`,
+  },
+  hr: {
+    preheader: 'Hvala Vam što ste došli na morešku. Bilo nam je drago što ste bili s nama.',
+    heading: 'Hvala Vam što ste bili s nama',
+    greeting: (name) => `Poštovani ${name},`,
+    thanks: [
+      'Došli ste vidjeti morešku, viteški mačevalački ples koji Korčula čuva već stoljećima: glazbu, dva kralja, vojske i Bulu. Drago nam je što ste bili dio te priče.',
+      'Moreška živi jer ju ljudi i dalje dolaze gledati. Svaka osoba koja ostane do posljednjeg udarca mačeva prenosi ju novim naraštajima. Zato, iskreno: hvala Vam.',
+    ],
+    reviewLead:
+      'Ako Vam je ostala u sjećanju, par riječi značilo bi nam jako puno. Vaša recenzija pomaže drugim posjetiteljima da pronađu pravu morešku, u gradu u kojem je ostala.',
+    tripadvisorLabel: 'Recenzija na TripAdvisoru',
+    googleLabel: 'Recenzija na Googleu',
+    signoff: 'Sa zahvalnošću,<br/>HGD Sveta Cecilija',
+    footer:
+      'Ovu poruku primate jer ste kupili ulaznicu kod HGD Sveta Cecilija. Pravna osoba: HGD Sveta Cecilija, Korčula, Hrvatska. Uvijek nam se možete javiti na <a href="mailto:info@moreska.eu" style="color:#b9b2a6;">info@moreska.eu</a>.',
+    unsub: (url) =>
+      ` Ako više ne želite primati ovakve poruke, <a href="${url}" style="color:#b9b2a6;text-decoration:underline;">odjavite se ovdje</a>.`,
+  },
 }
 
 function renderHtml(input: SendReviewEmailInput, locale: 'en' | 'hr'): string {
   const { buyer, tripadvisorUrl, googleReviewUrl, unsubscribeUrl } = input
+  const c = COPY[locale]
 
-  const unsubHr = unsubscribeUrl
-    ? ` Ako se želite odjaviti od ovakvih poruka, <a href="${unsubscribeUrl}" style="color:#888;">odjavite se ovdje</a>.`
-    : ''
-  const unsubEn = unsubscribeUrl
-    ? ` To stop receiving these, <a href="${unsubscribeUrl}" style="color:#888;">unsubscribe here</a>.`
-    : ''
+  // Brand tokens mirrored from globals.css ("Tempered Silence": near-black ink,
+  // warm cream, gold). Inline because email clients strip <link>/external CSS.
+  // Single-quote the family names: these strings sit inside double-quoted
+  // style="…" attributes, so a double-quoted "Segoe UI" would close the
+  // attribute early and drop every declaration after it (e.g. button colours).
+  const fontHeading = `'Bodoni Moda SC', 'Bodoni Moda', Georgia, serif`
+  const fontBody = `Inter, -apple-system, 'Segoe UI', Arial, sans-serif`
+  const gold = '#b48a3c' // --gold token
+  const ink = '#1a1a1a'
+  const cream = '#faf6ef'
+  const border = '#e6dfd1'
+  const bodyText = '#3d372f'
+  const muted = '#6b6257'
 
-  // Brand fonts mirrored from globals.css. Inline because email clients
-  // strip <link>/external CSS — keep tokens centralised here.
-  const fontHeading = `"Bodoni Moda SC", "Bodoni Moda", Georgia, serif`
-  const fontBody = `Inter, -apple-system, "Segoe UI", Arial, sans-serif`
-  const gold = '#b48a3c' // matches --gold token in .t-stone
-  const bg = '#faf6ef'
-  const text = '#1a1a1a'
+  const paragraphs = c.thanks
+    .map(
+      (p) =>
+        `<p style="margin:0 0 18px 0;font-size:16px;line-height:1.6;color:${bodyText};">${p}</p>`,
+    )
+    .join('\n      ')
 
-  const buttonStyle = `display:inline-block;padding:14px 28px;margin:8px 6px;background:${gold};color:#fff;text-decoration:none;font-family:${fontBody};font-weight:600;font-size:15px;letter-spacing:0.02em;border-radius:2px;`
+  // Two-tone CTA pair: TripAdvisor filled gold, Google filled ink, each led by
+  // a white platform glyph. Bulletproof padded anchors (no VML) — fine for the
+  // mobile Gmail/Apple Mail audience.
+  const btnBase = `display:inline-block;padding:14px 26px;margin:6px;text-decoration:none;font-family:${fontBody};font-weight:600;font-size:15px;letter-spacing:0.02em;border-radius:3px;`
+  const icon = (name: string) =>
+    `<img src="${ASSET_BASE}/icon-${name}.png" alt="" width="18" height="18" style="vertical-align:middle;margin-right:12px;" />`
+  const taButton = `<a href="${tripadvisorUrl}" style="${btnBase}background:${gold};color:#ffffff;">${icon('tripadvisor')}${c.tripadvisorLabel}</a>`
+  const googleButton = `<a href="${googleReviewUrl}" style="${btnBase}background:${ink};color:#ffffff;">${icon('google')}${c.googleLabel}</a>`
 
-  if (locale === 'hr') {
-    return `
-<div style="background:${bg};padding:32px 16px;font-family:${fontBody};color:${text};">
-  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:560px;margin:0 auto;background:#fff;border:1px solid #e6dfd1;">
-    <tr><td style="padding:36px 32px 12px 32px;">
-      <h1 style="font-family:${fontHeading};font-size:28px;line-height:1.2;margin:0 0 16px 0;color:${text};">Hvala što ste bili s nama</h1>
-      <p style="margin:0 0 16px 0;font-size:16px;line-height:1.55;">Poštovani ${buyer.name},</p>
-      <p style="margin:0 0 16px 0;font-size:16px;line-height:1.55;">Nadamo se da Vam se naša Moreška svidjela. Jako bi nam značilo ako Vam dvije minute izdvojite za kratku recenziju. Vaša priča pomaže drugim posjetiteljima da pronađu autentičnu Morešku.</p>
-    </td></tr>
-    <tr><td align="center" style="padding:8px 32px 24px 32px;">
-      <a href="${tripadvisorUrl}" style="${buttonStyle}">Recenzija na TripAdvisoru</a>
-      <a href="${googleReviewUrl}" style="${buttonStyle}">Recenzija na Googleu</a>
-    </td></tr>
-    <tr><td style="padding:0 32px 32px 32px;">
-      <p style="margin:0;font-size:14px;line-height:1.55;color:#555;">Srdačan pozdrav,<br/>Moreška by HGD Sveta Cecilija</p>
-    </td></tr>
-    <tr><td style="padding:16px 32px;border-top:1px solid #e6dfd1;font-size:11px;color:#888;line-height:1.5;">
-      Ovaj email je poslan jer ste kupili ulaznicu kod HGD Sveta Cecilija. Pravna osoba: HGD Sveta Cecilija, Korčula, Hrvatska. Možete nam pisati na <a href="mailto:info@moreska.eu" style="color:#888;">info@moreska.eu</a>.${unsubHr}
-    </td></tr>
-  </table>
-</div>
-`.trim()
-  }
+  const unsub = unsubscribeUrl ? c.unsub(unsubscribeUrl) : ''
 
   return `
-<div style="background:${bg};padding:32px 16px;font-family:${fontBody};color:${text};">
-  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:560px;margin:0 auto;background:#fff;border:1px solid #e6dfd1;">
-    <tr><td style="padding:36px 32px 12px 32px;">
-      <h1 style="font-family:${fontHeading};font-size:28px;line-height:1.2;margin:0 0 16px 0;color:${text};">Thank you for being with us</h1>
-      <p style="margin:0 0 16px 0;font-size:16px;line-height:1.55;">Hi ${buyer.name},</p>
-      <p style="margin:0 0 16px 0;font-size:16px;line-height:1.55;">We hope you enjoyed the Moreška. It would mean a great deal if you could spare two minutes to leave a short review. Your story helps other visitors find the original Moreška.</p>
-    </td></tr>
-    <tr><td align="center" style="padding:8px 32px 24px 32px;">
-      <a href="${tripadvisorUrl}" style="${buttonStyle}">Review on TripAdvisor</a>
-      <a href="${googleReviewUrl}" style="${buttonStyle}">Review on Google</a>
-    </td></tr>
-    <tr><td style="padding:0 32px 32px 32px;">
-      <p style="margin:0;font-size:14px;line-height:1.55;color:#555;">With thanks,<br/>Moreška by HGD Sveta Cecilija</p>
-    </td></tr>
-    <tr><td style="padding:16px 32px;border-top:1px solid #e6dfd1;font-size:11px;color:#888;line-height:1.5;">
-      You're receiving this because you purchased a ticket from HGD Sveta Cecilija. Legal entity: HGD Sveta Cecilija, Korčula, Croatia. You can reach us at <a href="mailto:info@moreska.eu" style="color:#888;">info@moreska.eu</a>.${unsubEn}
+<div style="margin:0;padding:0;background:${cream};">
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0;color:${cream};font-size:1px;line-height:1px;">${c.preheader}&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;&nbsp;&zwnj;</div>
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:${cream};font-family:${fontBody};">
+    <tr><td align="center" style="padding:28px 12px;">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="width:600px;max-width:600px;background:#ffffff;border:1px solid ${border};border-radius:4px;overflow:hidden;">
+
+        <!-- gold top rule -->
+        <tr><td style="height:4px;background:${gold};font-size:0;line-height:0;">&nbsp;</td></tr>
+
+        <!-- header: full-colour crest on cream (the crest already carries the
+             HGD SV. CECILIJA · KORČULA wordmark, so no repeated text line) -->
+        <tr><td align="center" style="background:${cream};padding:28px 32px 26px 32px;border-bottom:1px solid ${border};">
+          <img src="${ASSET_BASE}/logo.png" alt="HGD Sveta Cecilija - Korčula" height="88" style="display:block;height:88px;width:auto;margin:0 auto;" />
+        </td></tr>
+
+        <!-- body: thank-you copy is the focus -->
+        <tr><td style="padding:38px 44px 8px 44px;background:#ffffff;">
+          <h1 style="font-family:${fontHeading};font-size:30px;line-height:1.2;margin:0 0 22px 0;color:${ink};text-align:center;">${c.heading}</h1>
+          <p style="margin:0 0 18px 0;font-size:16px;line-height:1.6;color:${bodyText};">${c.greeting(buyer.name)}</p>
+      ${paragraphs}
+        </td></tr>
+
+        <!-- crossed-swords divider. The hairlines are 1px elements vertically
+             centred in the cell (vertical-align:middle), so they land at the
+             swords' mid-height — a cell border-bottom would paint at the row
+             bottom instead. -->
+        <tr><td style="padding:10px 44px 18px 44px;background:#ffffff;">
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+            <tr>
+              <td style="vertical-align:middle;"><div style="height:1px;line-height:1px;font-size:0;background:#e6dcc4;">&nbsp;</div></td>
+              <td width="72" style="padding:0 16px;vertical-align:middle;">
+                <img src="${ASSET_BASE}/swords.png" alt="" width="40" style="display:block;width:40px;height:auto;margin:0 auto;" />
+              </td>
+              <td style="vertical-align:middle;"><div style="height:1px;line-height:1px;font-size:0;background:#e6dcc4;">&nbsp;</div></td>
+            </tr>
+          </table>
+        </td></tr>
+
+        <!-- the review ask, then the buttons, at the end -->
+        <tr><td style="padding:0 44px 4px 44px;background:#ffffff;">
+          <p style="margin:0 0 20px 0;font-size:16px;line-height:1.6;color:${muted};text-align:center;">${c.reviewLead}</p>
+        </td></tr>
+        <tr><td align="center" style="padding:0 32px 30px 32px;background:#ffffff;">
+          ${taButton}
+          ${googleButton}
+        </td></tr>
+
+        <!-- sign-off -->
+        <tr><td style="padding:0 44px 34px 44px;background:#ffffff;">
+          <p style="margin:0;font-size:15px;line-height:1.6;color:${muted};">${c.signoff}</p>
+        </td></tr>
+
+        <!-- footer: near-black band -->
+        <tr><td style="padding:22px 44px;background:${ink};font-size:12px;line-height:1.6;color:#b9b2a6;">
+          ${c.footer}${unsub}
+        </td></tr>
+      </table>
     </td></tr>
   </table>
 </div>

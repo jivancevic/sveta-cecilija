@@ -17,10 +17,18 @@ import { UpcomingHero } from './dashboard/UpcomingHero'
 import { PastShowsList } from './dashboard/PastShowsList'
 import { SeasonTrajectoryChart } from './dashboard/SeasonTrajectoryChart'
 import { ChannelMixChart } from './dashboard/ChannelMixChart'
-import { getActiveTicketCountsByChannel } from '@/lib/tickets/sold-seats'
+import { PromoCodeSalesPanel } from './dashboard/PromoCodeSalesPanel'
+import { CompMemberCountsPanel } from './dashboard/CompMemberCountsPanel'
+import {
+  getActiveTicketCountsByChannel,
+  getActiveTicketCountsByPromoCode,
+  getCompCountsByMember,
+} from '@/lib/tickets/sold-seats'
 import { doorProgress, type DoorProgress } from '@/lib/dashboard/door-progress'
 import { TicketLookupPanel } from './TicketLookupPanel'
 import { PartnerSellForm, type SellShow } from './PartnerSellForm'
+import { CompIssuePanel } from './CompIssuePanel'
+import type { CompMember } from './CompIssueForm'
 import { PartnerRecentSales } from './PartnerRecentSales'
 import { getPartnerRecentSalesPage } from '@/lib/partner/recent-sales-page'
 import { PartnerSalesPanel } from './PartnerSalesPanel'
@@ -87,7 +95,7 @@ export async function AdminDashboardView() {
   // stats input and the season money facts.
   const pool = (payload.db as unknown as { pool: { query: PoolQuery } }).pool
   const poolQuery: PoolQuery = (sql, params) => pool.query(sql, params)
-  const [input, diagnostics, money, channelTickets] = await Promise.all([
+  const [input, diagnostics, money, channelTickets, promoCodeSales, compsByMember] = await Promise.all([
     getStatsInput(),
     gatherDevDiagnostics(user as { role?: string } | null, {
       query: poolQuery,
@@ -99,6 +107,12 @@ export async function AdminDashboardView() {
     // Channel-mix chart (#242): online vs partner active-ticket counts. In-person
     // sales have no ticket rows, so they come from shows.inPersonSold below.
     getActiveTicketCountsByChannel(poolQuery),
+    // Promo-code reporting panel (#325, ADR-0018): per-code whole-party active
+    // tickets + revenue, top draw first. Cancelled/refunded excluded upstream.
+    getActiveTicketCountsByPromoCode(poolQuery),
+    // Comps-per-member report (#323, ADR-0019): active comp tickets grouped by
+    // the attributed member, with the adult/child split. Cancelled excluded.
+    getCompCountsByMember(poolQuery),
   ])
   const dashboardShows = toDashboardShows(input.shows)
   const { upcoming, past } = partitionShows({ today: input.today, shows: dashboardShows })
@@ -125,6 +139,29 @@ export async function AdminDashboardView() {
   })
   const inquiries = countInquiries(newEnquiries.docs as InquiryRow[])
 
+  // Comp-issue flow (#318, ADR-0019): active upcoming shows to give away seats
+  // for, plus the active members to attribute them to. Both feed the admin-only
+  // comp-issue action below.
+  const [compUpcoming, membersRes] = await Promise.all([
+    getUpcomingShows(),
+    payload.find({
+      collection: 'members',
+      where: { active: { equals: true } },
+      sort: 'name',
+      limit: 1000,
+      depth: 0,
+    }),
+  ])
+  const compShows: SellShow[] = compUpcoming.map((s) => ({
+    id: String(s.id),
+    label: `${formatShowDate(s.date)} · ${s.time} · ${VENUE_LABEL[s.venue] ?? s.venue}`,
+    remaining: s.remaining,
+  }))
+  const compMembers: CompMember[] = membersRes.docs.map((d) => ({
+    id: String(d.id),
+    name: (d.name as string) ?? '',
+  }))
+
   return (
     <div style={{ padding: '24px clamp(16px, 4vw, 40px)', maxWidth: 1280, margin: '0 auto' }}>
       <h1 style={{ marginBottom: 16, fontSize: 24 }}>{adminT(lang, 'dashboard')}</h1>
@@ -138,6 +175,7 @@ export async function AdminDashboardView() {
         season={season}
         revenueCents={money.revenueCollectedCents}
         partnerReceivableCents={money.partnerReceivableCents}
+        compsIssued={channelTickets.comp}
       />
 
       {/* Live inquiries badge (#239): "<n> new, incl. <m> booking enquiries",
@@ -149,6 +187,12 @@ export async function AdminDashboardView() {
 
       <AdminActions lang={lang} />
 
+      {/* Comp (goodwill) ticket issue — admin-only action that opens a
+          partner-style form (#318, ADR-0019). */}
+      <div style={{ marginTop: 12 }}>
+        <CompIssuePanel shows={compShows} members={compMembers} lang={lang} />
+      </div>
+
       <div style={{ marginTop: 24 }}>
         <UpcomingHero upcoming={upcoming} lang={lang} />
         <PastShowsList past={past} lang={lang} />
@@ -157,6 +201,14 @@ export async function AdminDashboardView() {
       {/* Season charts (#242): per-show sold trajectory + season channel mix. */}
       <SeasonTrajectoryChart shows={dashboardShows} lang={lang} />
       <ChannelMixChart counts={channelCounts} lang={lang} />
+
+      {/* Promo-code reporting (#325, ADR-0018): top codes by tickets sold, with
+          the partner "show 3 → show more" expand pattern. */}
+      <PromoCodeSalesPanel rows={promoCodeSales} lang={lang} />
+
+      {/* Comps-per-member report (#323, ADR-0019): flat table of goodwill comp
+          tickets issued per member, biggest recipient first. */}
+      <CompMemberCountsPanel rows={compsByMember} lang={lang} />
 
       {diagnostics && <SuperadminDevStrip data={diagnostics} />}
 

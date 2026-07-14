@@ -26,12 +26,12 @@ function makeDeps(overrides: Partial<DispatchDeps> = {}): DispatchDeps {
 }
 
 describe('dispatchReviewEmails', () => {
-  it('passes a cutoff exactly 2h before now to findEligibleOrders', async () => {
+  it('passes a cutoff exactly 1.5h before now to findEligibleOrders', async () => {
     const now = new Date('2026-06-01T12:00:00Z')
     const deps = makeDeps()
     await dispatchReviewEmails({ now }, deps)
     const arg = (deps.findEligibleOrders as ReturnType<typeof vi.fn>).mock.calls[0][0] as Date
-    expect(arg.toISOString()).toBe('2026-06-01T10:00:00.000Z')
+    expect(arg.toISOString()).toBe('2026-06-01T10:30:00.000Z')
   })
 
   it('sends one email per eligible order when claim succeeds', async () => {

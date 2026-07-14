@@ -3,11 +3,55 @@
 import type Stripe from 'stripe'
 import { getPayload } from 'payload'
 import config from '@payload-config'
-import { createCheckoutSession, type CheckoutInput } from '@/lib/checkout/create-checkout-session'
+import {
+  createCheckoutSession,
+  type CheckoutInput,
+  type ResolvedPromoCode,
+} from '@/lib/checkout/create-checkout-session'
 import { createPaymentIntentWithPmcFallback } from '@/lib/checkout/create-payment-intent'
 import { getStripe } from '@/lib/stripe'
 import type { PurchasableShow } from '@/lib/checkout/purchasability'
 import { getActiveTicketCountForShow, type PoolQuery } from '@/lib/tickets/sold-seats'
+import type { Payload } from 'payload'
+
+// Resolve a typed promo code to its record. Read with overrideAccess because
+// PromoCodes read is admin-only, and the public checkout is unauthenticated;
+// this is a trusted server-side read of a single code the guest typed (no PII),
+// not a mutation, so the admin-only collection access doesn't apply here.
+async function resolvePromoCode(
+  payload: Payload,
+  code: string,
+): Promise<ResolvedPromoCode | null> {
+  const trimmed = code.trim()
+  if (!trimmed) return null
+  const r = await payload.find({
+    collection: 'promo-codes',
+    where: { code: { equals: trimmed } },
+    limit: 1,
+    depth: 0,
+    overrideAccess: true,
+  })
+  const doc = r.docs[0]
+  if (!doc) return null
+  return {
+    code: String(doc.code),
+    adultPriceEur: Number(doc.adultPriceEur),
+    active: Boolean(doc.active),
+  }
+}
+
+// Client-side preview helper (ADR-0018): validates a typed code so the checkout
+// UI can show the discounted price or an inline error. This is UX only — the
+// authoritative recompute happens again in createCheckoutSession, which never
+// trusts a client-supplied price.
+export async function applyPromoCode(
+  code: string,
+): Promise<{ ok: true; adultPriceEur: number } | { ok: false }> {
+  const payload = await getPayload({ config })
+  const found = await resolvePromoCode(payload, code)
+  if (!found || !found.active) return { ok: false as const }
+  return { ok: true as const, adultPriceEur: found.adultPriceEur }
+}
 
 export async function startCheckout(input: CheckoutInput) {
   const payload = await getPayload({ config })
@@ -16,6 +60,7 @@ export async function startCheckout(input: CheckoutInput) {
 
   try {
     const session = await createCheckoutSession(input, {
+      findPromoCode: (code) => resolvePromoCode(payload, code),
       findShow: async (id) => {
         try {
           const doc = await payload.findByID({ collection: 'shows', id, depth: 0 })

@@ -102,4 +102,101 @@ describe('createCheckoutSession', () => {
       ),
     ).rejects.toThrow(/email/i)
   })
+
+  describe('member promo code (ADR-0018)', () => {
+    it('recomputes the discount server-side and carries the code in metadata', async () => {
+      const deps = {
+        ...makeDeps(),
+        findPromoCode: vi.fn().mockResolvedValue({ code: 'ANA15', adultPriceEur: 15, active: true }),
+      }
+      // 5 adults: min(5×15 = 75, 4×20 = 80) = 75 => 7500 cents.
+      const session = await createCheckoutSession(
+        { showId: '1', adults: 5, children: 0, buyer: { name: 'Ana', email: 'a@b.co' }, promoCode: 'ANA15' },
+        deps,
+      )
+      expect(session.totalCents).toBe(7500)
+      expect(session.promoApplied).toBe(true)
+      expect(deps.findPromoCode).toHaveBeenCalledWith('ANA15')
+      expect(deps.createPaymentIntent).toHaveBeenCalledWith(
+        expect.objectContaining({
+          amountCents: 7500,
+          metadata: expect.objectContaining({ promoCode: 'ANA15' }),
+        }),
+      )
+    })
+
+    it('never trusts the client price: the amount comes from the server recompute', async () => {
+      const deps = {
+        ...makeDeps(),
+        findPromoCode: vi.fn().mockResolvedValue({ code: 'ANA15', adultPriceEur: 15, active: true }),
+      }
+      // 2 adults: code 2×15 = 30 < standard 40 => 3000 cents.
+      const session = await createCheckoutSession(
+        { showId: '1', adults: 2, children: 0, buyer: { name: 'Ana', email: 'a@b.co' }, promoCode: 'ANA15' },
+        deps,
+      )
+      expect(session.totalCents).toBe(3000)
+      expect(session.promoApplied).toBe(true)
+    })
+
+    it('still attributes the code even when the 5-for-4 offer wins the price', async () => {
+      const deps = {
+        ...makeDeps(),
+        // Weak code: adult stays €19, standard 5-for-4 (80) beats it (95).
+        findPromoCode: vi.fn().mockResolvedValue({ code: 'WEAK', adultPriceEur: 19, active: true }),
+      }
+      const session = await createCheckoutSession(
+        { showId: '1', adults: 5, children: 0, buyer: { name: 'Ana', email: 'a@b.co' }, promoCode: 'WEAK' },
+        deps,
+      )
+      expect(session.totalCents).toBe(8000)
+      // The code is still applied/attributed for member reporting.
+      expect(session.promoApplied).toBe(true)
+      expect(deps.createPaymentIntent).toHaveBeenCalledWith(
+        expect.objectContaining({ metadata: expect.objectContaining({ promoCode: 'WEAK' }) }),
+      )
+    })
+
+    it('ignores an inactive code and proceeds at the normal price without metadata', async () => {
+      const deps = {
+        ...makeDeps(),
+        findPromoCode: vi.fn().mockResolvedValue({ code: 'OFF', adultPriceEur: 15, active: false }),
+      }
+      const session = await createCheckoutSession(
+        { showId: '1', adults: 2, children: 0, buyer: { name: 'Ana', email: 'a@b.co' }, promoCode: 'OFF' },
+        deps,
+      )
+      expect(session.totalCents).toBe(4000)
+      expect(session.promoApplied).toBe(false)
+      const meta = deps.createPaymentIntent.mock.calls[0][0].metadata
+      expect(meta).not.toHaveProperty('promoCode')
+    })
+
+    it('ignores an unknown code and proceeds at the normal price', async () => {
+      const deps = {
+        ...makeDeps(),
+        findPromoCode: vi.fn().mockResolvedValue(null),
+      }
+      const session = await createCheckoutSession(
+        { showId: '1', adults: 2, children: 0, buyer: { name: 'Ana', email: 'a@b.co' }, promoCode: 'NOPE' },
+        deps,
+      )
+      expect(session.totalCents).toBe(4000)
+      expect(session.promoApplied).toBe(false)
+      expect(deps.createPaymentIntent.mock.calls[0][0].metadata).not.toHaveProperty('promoCode')
+    })
+
+    it('does not resolve a code when none is entered', async () => {
+      const deps = {
+        ...makeDeps(),
+        findPromoCode: vi.fn().mockResolvedValue(null),
+      }
+      const session = await createCheckoutSession(
+        { showId: '1', adults: 2, children: 0, buyer: { name: 'Ana', email: 'a@b.co' } },
+        deps,
+      )
+      expect(deps.findPromoCode).not.toHaveBeenCalled()
+      expect(session.promoApplied).toBe(false)
+    })
+  })
 })

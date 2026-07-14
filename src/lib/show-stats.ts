@@ -16,6 +16,8 @@ export interface ShowStatsOrder {
   childCount: number
   totalCents: number
   refunded: boolean
+  /** Order channel (ADR-0008/0019). Absent/legacy rows are treated as 'online'. */
+  channel?: 'online' | 'partner' | 'comp'
   tokens: ShowStatsToken[]
 }
 
@@ -31,6 +33,11 @@ export interface ShowStatsHeader {
   status: 'active' | 'cancelled'
   onlineSold: number
   inPersonSold: number
+  /** Comp (goodwill) seats issued for this show (channel='comp', ADR-0019). Real
+   *  people at the door, but never revenue: kept apart from onlineSold so seat
+   *  math reconciles (online + inPerson + comp + legacyReserved + remaining =
+   *  capacity) without a comp ever landing in a money figure. */
+  compSold: number
   legacyReserved: number
   totalSold: number
   scanned: number
@@ -63,9 +70,14 @@ export function computeShowStats(input: ShowStatsInput): ShowStatsOutput {
   // getScannedPeopleForShow. `tokens` here are the order's active tickets.
   let scanned = 0
   let revenueCents = 0
+  let compSold = 0
   for (const o of orders) {
     scanned += o.tokens.filter((t) => t.scanned).length
     if (!o.refunded) revenueCents += o.totalCents
+    // Comp seats (channel='comp', ADR-0019): tokens here are already active-only,
+    // so their count is the live comp seat count. total=0, so they never touch
+    // revenueCents above — the count is broken out purely for seat reconciliation.
+    if (o.channel === 'comp') compSold += o.tokens.length
   }
 
   return {
@@ -74,10 +86,13 @@ export function computeShowStats(input: ShowStatsInput): ShowStatsOutput {
       time: show.time,
       venue: show.venue,
       status: show.status,
-      // `onlineSold` is the admin-facing display column; its value is the live
-      // active-ticket count.
-      onlineSold: show.activeTicketCount,
+      // `onlineSold` is the admin-facing display column: the live active-ticket
+      // count MINUS comp seats, so comps show in their own column and the seat
+      // math still reconciles against capacity (partner seats stay folded in
+      // here, as before — #322 only pulls comps out).
+      onlineSold: show.activeTicketCount - compSold,
       inPersonSold: show.inPersonSold,
+      compSold,
       legacyReserved: show.legacyReserved,
       totalSold: show.activeTicketCount + show.inPersonSold,
       scanned,

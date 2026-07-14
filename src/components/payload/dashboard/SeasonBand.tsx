@@ -17,11 +17,15 @@ export function SeasonBand({
   season,
   revenueCents,
   partnerReceivableCents,
+  compsIssued,
 }: {
   lang: AdminLang
   season: SeasonCapacity
   revenueCents: number
   partnerReceivableCents?: number
+  /** Season comp (goodwill) seats issued (#322, ADR-0019). A COUNT only —
+   *  rendered apart from the money tiles and never summed into any total. */
+  compsIssued?: number
 }) {
   return (
     <div
@@ -78,6 +82,26 @@ export function SeasonBand({
           </div>
           <div style={accentNumberStyle(24)}>{season.totalSold}</div>
         </div>
+
+        {/* Comps issued (#322, ADR-0019): a COUNT of goodwill seats given away.
+            Sits with the other count tiles, deliberately apart from the money
+            figures — a comp carries no revenue and is never summed into a total. */}
+        {compsIssued != null ? (
+          <div style={{ minWidth: 0 }}>
+            <div
+              style={{
+                fontSize: 12,
+                color: 'var(--theme-elevation-500)',
+                textTransform: 'uppercase',
+                letterSpacing: 0.4,
+                marginBottom: 4,
+              }}
+            >
+              {adminT(lang, 'compsIssued')}
+            </div>
+            <div style={accentNumberStyle(24)}>{compsIssued}</div>
+          </div>
+        ) : null}
 
         <div style={{ minWidth: 0 }}>
           <div

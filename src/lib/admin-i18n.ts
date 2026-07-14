@@ -124,6 +124,9 @@ export const dashboardStrings = {
     channelInPerson: 'In person',
     channelPartner: 'Partners',
     noSalesYet: 'No sales yet.',
+    // Comps on the dashboards (#322, ADR-0019): a count, never a money figure.
+    compSold: 'Comp', // per-show seat-reconciliation column
+    compsIssued: 'Comps issued', // season-level count figure
     // Partner sell form + recent-orders list (revamp)
     sellTickets: 'Sell tickets',
     showWord: 'Performance',
@@ -141,6 +144,24 @@ export const dashboardStrings = {
     saleDoneTitle: 'Sale completed',
     saleDonePdf: 'PDF opened in a new tab.',
     openPdfAgain: 'Open PDF again',
+    // Comp (goodwill) ticket issue form (#318, ADR-0019)
+    compTitle: 'Issue comp tickets',
+    compAction: 'Issue comp tickets',
+    compMember: 'Member',
+    compMemberSearch: 'Search members',
+    compMemberSelect: 'Select a member',
+    compAddMember: '+ Add member',
+    compNewMemberName: 'New member name',
+    compSaveMember: 'Save member',
+    compMemberRequired: 'Select or add a member.',
+    compAddMemberFailed: 'Could not add the member.',
+    compNoMembers: 'No members yet. Add one to attribute comps.',
+    compHolderName: 'Holder name (optional)',
+    compHolderHint: 'Defaults to the member. Printed on the slip.',
+    compEmail: 'Email (optional)',
+    compIssue: 'Issue comp tickets',
+    compDoneTitle: 'Comp tickets issued',
+    compFailed: 'Could not issue the comp tickets.',
     recentSales: 'Recent orders',
     recentCancelNote: 'Tap an order to cancel individual tickets. You can cancel on the same day the order was made.',
     showMore: 'Show more',
@@ -177,6 +198,21 @@ export const dashboardStrings = {
     helpHeading: 'Need help?',
     helpContact: 'Contact admin@moreska.eu',
     mailSubject: 'Partner dashboard: help',
+    // Promo codes reporting panel (#325, ADR-0018)
+    promoCodes: 'Promo codes',
+    promoCodesDesc: 'Top codes by tickets sold. Whole party per code, cancelled and refunded excluded.',
+    promoCodeMember: 'Member',
+    promoCodeTickets: 'Tickets sold',
+    promoCodeRevenue: 'Revenue',
+    noPromoCodes: 'No promo codes yet.',
+    // Comps-per-member report (#323, ADR-0019)
+    compsByMember: 'Comps by member',
+    compsByMemberDesc: 'Comp tickets issued per member this season. Cancelled excluded.',
+    compsMember: 'Member',
+    compsAdult: 'Adult',
+    compsChild: 'Child',
+    compsTotal: 'Total',
+    noComps: 'No comps issued yet.',
   },
   hr: {
     dashboard: 'Nadzorna ploča',
@@ -231,6 +267,9 @@ export const dashboardStrings = {
     channelInPerson: 'Na blagajni',
     channelPartner: 'Partneri',
     noSalesYet: 'Još nema prodaje.',
+    // Comps on the dashboards (#322, ADR-0019): a count, never a money figure.
+    compSold: 'Gratis', // per-show seat-reconciliation column
+    compsIssued: 'Izdano gratis ulaznica', // season-level count figure
     // Partner sell form + recent-orders list (revamp)
     sellTickets: 'Prodaja ulaznica',
     showWord: 'Izvedba',
@@ -248,6 +287,24 @@ export const dashboardStrings = {
     saleDoneTitle: 'Prodaja dovršena',
     saleDonePdf: 'PDF se otvorio u novoj kartici.',
     openPdfAgain: 'Ponovno otvori PDF',
+    // Comp (goodwill) ticket issue form (#318, ADR-0019)
+    compTitle: 'Podijeli gratis ulaznice',
+    compAction: 'Podijeli gratis ulaznice',
+    compMember: 'Član',
+    compMemberSearch: 'Pretraži članove',
+    compMemberSelect: 'Odaberite člana',
+    compAddMember: '+ Dodaj člana',
+    compNewMemberName: 'Ime novog člana',
+    compSaveMember: 'Spremi člana',
+    compMemberRequired: 'Odaberite ili dodajte člana.',
+    compAddMemberFailed: 'Dodavanje člana nije uspjelo.',
+    compNoMembers: 'Još nema članova. Dodajte jednog za pripisivanje gratisa.',
+    compHolderName: 'Ime vlasnika (nije obavezno)',
+    compHolderHint: 'Zadano ime člana. Ispisuje se na ulaznici.',
+    compEmail: 'Email (nije obavezno)',
+    compIssue: 'Izdaj gratis ulaznice',
+    compDoneTitle: 'Gratis ulaznice izdane',
+    compFailed: 'Izdavanje gratis ulaznica nije uspjelo.',
     recentSales: 'Nedavne narudžbe',
     recentCancelNote: 'Dodirnite narudžbu za otkazivanje pojedinih ulaznica. Otkazati možete isti dan kad je narudžba napravljena.',
     showMore: 'Prikaži više',
@@ -284,6 +341,21 @@ export const dashboardStrings = {
     helpHeading: 'Trebate pomoć?',
     helpContact: 'Kontaktirajte admin@moreska.eu',
     mailSubject: 'Partnerska ploča: pomoć',
+    // Promo codes reporting panel (#325, ADR-0018)
+    promoCodes: 'Promo kodovi',
+    promoCodesDesc: 'Najkorišteniji kodovi po broju ulaznica. Cijela grupa po kodu, otkazane i vraćene isključene.',
+    promoCodeMember: 'Član',
+    promoCodeTickets: 'Prodano ulaznica',
+    promoCodeRevenue: 'Prihod',
+    noPromoCodes: 'Još nema promo kodova.',
+    // Comps-per-member report (#323, ADR-0019)
+    compsByMember: 'Besplatne po članu',
+    compsByMemberDesc: 'Besplatne ulaznice izdane po članu ove sezone. Otkazane isključene.',
+    compsMember: 'Član',
+    compsAdult: 'Odrasli',
+    compsChild: 'Djeca',
+    compsTotal: 'Ukupno',
+    noComps: 'Još nema izdanih besplatnih ulaznica.',
   },
 } as const
 

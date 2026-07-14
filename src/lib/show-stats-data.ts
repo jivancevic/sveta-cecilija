@@ -39,7 +39,7 @@ export async function getShowStatsInput(showId: string): Promise<ShowStatsInput 
 
   // Pull orders for this show, plus their tickets, in two simple queries.
   const ordersRes = await pool.query(
-    `SELECT id, buyer_name, email, adult_count, child_count, total, refund_status
+    `SELECT id, buyer_name, email, adult_count, child_count, total, refund_status, channel
      FROM orders WHERE show_id = $1 ORDER BY id ASC`,
     [numericId],
   )
@@ -78,6 +78,7 @@ export async function getShowStatsInput(showId: string): Promise<ShowStatsInput 
       childCount: Number(r.child_count ?? 0),
       totalCents: Number(r.total ?? 0),
       refunded: String(r.refund_status ?? 'none') === 'refunded',
+      channel: (String(r.channel ?? 'online') as ShowStatsOrder['channel']),
       tokens: tokensByOrder.get(id) ?? [],
     }
   })

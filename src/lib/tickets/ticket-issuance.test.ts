@@ -52,6 +52,24 @@ describe('issueTickets', () => {
     expect(order.tickets).toHaveLength(5)
   })
 
+  it('issues comp tickets for free (total=0) regardless of party size and carries the member id', async () => {
+    const order = await issueTickets(
+      input({ channel: 'comp', adults: 3, children: 2, memberId: 9, buyer: { name: 'Ivo', email: null } }),
+      deps,
+    )
+    expect(order.channel).toBe('comp')
+    expect(order.totalCents).toBe(0)
+    expect(order.memberId).toBe(9)
+    expect(order.partnerId).toBeNull()
+    expect(order.buyerName).toBe('Ivo')
+    expect(order.tickets).toHaveLength(5)
+  })
+
+  it('defaults memberId to null on non-comp orders', async () => {
+    const order = await issueTickets(input(), deps)
+    expect(order.memberId).toBeNull()
+  })
+
   it('carries buyer PII through online; leaves it null for an anonymous partner sale', async () => {
     const online = await issueTickets(
       input({ buyer: { name: 'Ana Anić', email: 'ana@example.com' } }),

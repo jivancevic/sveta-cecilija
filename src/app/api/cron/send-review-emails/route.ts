@@ -40,14 +40,17 @@ export async function POST(req: NextRequest) {
 
   const tripadvisorUrl =
     process.env.TRIPADVISOR_REVIEW_URL ??
-    // Listing d1898279 per issue #35.
-    'https://www.tripadvisor.com/UserReviewEdit-g303821-d1898279-Moreska_Sword_Dance-Korcula_Korcula_Island_Dubrovnik_Neretva_County_Dalmatia.html'
+    // Verified write-a-review deep link (geo g1007309, listing d1898279):
+    // lands straight on the TripAdvisor review composer (login gated only on
+    // submit). Checked live 2026-06-08.
+    'https://www.tripadvisor.com/UserReviewEdit-g1007309-d1898279-Moreska_Sword_Dance-Korcula_Town_Korcula_Island_Dubrovnik_Neretva_County_Dalmatia.html'
   const googleReviewUrl =
     process.env.GOOGLE_REVIEW_URL ??
-    // Placeholder fallback until issue #36 publishes the Google Business
-    // Profile review link. Sends users to a sensible Google Maps search so
-    // they aren't dead-ended.
-    'https://www.google.com/maps/search/?api=1&query=Moreska+HGD+Sveta+Cecilija+Korcula'
+    // Verified write-a-review deep link for the Google Business Profile
+    // (place_id ChIJ1WfXALdRShMRDwNPzjZgj2I, "Sveta Cecilija - Croatian Music
+    // Society"): opens the Google review composer directly. Checked live
+    // 2026-06-08. Owners see the management view while signed in — expected.
+    'https://search.google.com/local/writereview?placeid=ChIJ1WfXALdRShMRDwNPzjZgj2I'
 
   const brevoApiKey = process.env.BREVO_API_KEY
   if (!brevoApiKey) {
