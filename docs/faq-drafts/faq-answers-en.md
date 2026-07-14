@@ -150,7 +150,7 @@ Yes, the Moreška is performed to a live brass-band score that underscores every
 ### Who wrote the music for the Moreška?
 *Q28, Tko je napisao glazbu za morešku?*
 
-The music was composed by the renowned Croatian composer **Krsto Odak** in 1937, in collaboration with conductor **Josip Svoboda**. Their brass-band arrangement has been used at every performance since 1947 and is still the score you hear today. ⚠️ *(Odak dates to confirm: composed 1937, in use since 1947; one digit may be swapped.)* — *sc 173–174; cw 136*
+The music was composed by the renowned Croatian composer **Krsto Odak** in 1937, in collaboration with conductor **Josip Svoboda**. Their brass-band arrangement has been used at every performance since 1947 and is still the score you hear today. The original score was lost during the Second World War and later restored with Odak's own help, which is why it has been in continuous use since 1947. — *sc 173–174; cw 136*
 
 ### Is the accompanying music performed live?
 *Q39, Izvodi li se glazba koja prati morešku uživo?*

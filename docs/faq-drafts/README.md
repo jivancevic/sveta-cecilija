@@ -83,6 +83,6 @@ Review-ready English answers to the **50 tourist questions** supplied by an HGD 
 7. ✅ **Injury / danger framing (Q47/48)** — CONFIRMED: current framing approved; injuries **can happen and are accepted as part of the performance**, kept rare by training.
 8. ✅ **Meet & photos after the show (Q41/42)** — CONFIRMED: visitors **can be photographed with the two kings and the Bula**, and are welcome to **join the society for a drink at its premises**.
 9. ⚠️ **Tour countries (Q49)** — STILL PENDING → tracked in **issue #340**. Only Prague 1947 confirmed; a guide's Spain/France/Albania/Italy list is unconfirmed. Keep Q49 hedged and hold the candidate **7th blog post** ("Moreška around the world") until #340 returns a verified list.
-10. ⚠️ **Odak music dates (Q28)** flagged: composed **1937**, in use since **1947**; per HGD note one digit may be swapped, to confirm.
+10. ✅ **Odak music dates (Q28)** RESOLVED (web research 2026-07-14): composed **1937**, score lost in WWII, restored with Odak's help, in continuous use since **1947** — no digit swap, both years correct. Flag removed. Sources: hkm.hr, hds.hr, moreska.hr.
 
 **Copy pass 2026-07-14:** section B reordered (main-characters overview now first); society ~80 to ~150; AI em-dash removed from all answers per new copy rule.
