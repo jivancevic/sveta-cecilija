@@ -1,7 +1,7 @@
 # Sadržaj Stranice: HGD Sveta Cecilija / moreska.eu
 # Jezik: Hrvatski
 
-> **Pravilo pisanja — bez „—" (em-dash).** Nikad ne koristi dugu crticu (—) u tekstovima za web; to je znak da je tekst pisao AI. Umjesto nje koristi zarez, dvotočku, zagrade ili točku, prema smislu rečenice. Vrijedi za sav ovdašnji tekst, blog/FAQ nacrte i rječnike stranice (`src/messages/*.json`). Rasponi brojeva koriste kraću crticu (npr. 5–8) i u redu su.
+> **Pravilo pisanja: bez „—" (em-dash).** Nikad ne koristi dugu crticu (—) u tekstovima za web; to je znak da je tekst pisao AI. Umjesto nje koristi zarez, dvotočku, zagrade ili točku, prema smislu rečenice. Vrijedi za sav ovdašnji tekst, blog/FAQ nacrte i rječnike stranice (`src/messages/*.json`). Rasponi brojeva koriste kraću crticu (npr. 5–8) i u redu su.
 
 ---
 
@@ -21,7 +21,7 @@
 **Naslov:** Živa tradicija, 143 godine u nastajanju
 
 **Tekst:**
-Od 1883. godine HGD Sveta Cecilija čuvar je najdragocjenije tradicije Korčule. Moreška — posljednji autentični ratni ples Europe — izvodi se ovdje, na ovom otoku, od strane sinova Korčule. Željezni mačevi, arhaični stihovi i sedam borbi koje se nisu promijenile kroz stoljeća. Dođite i svjedočite tome.
+Od 1883. godine HGD Sveta Cecilija čuvar je najdragocjenije tradicije Korčule. Moreška, posljednji autentični ratni ples Europe, izvodi se ovdje, na ovom otoku, od strane sinova Korčule. Željezni mačevi, arhaični stihovi i sedam borbi koje se nisu promijenile kroz stoljeća. Dođite i svjedočite tome.
 
 **CTA:** Otkrij našu priču →
 
@@ -66,76 +66,76 @@ Odrasli **20 €** · Djeca do 14 godina **10 €** · Grupe: svaka 5. ulaznica 
 | 12. listopada 2026. | Ponedjeljak | 21:00 |
 | 14. listopada 2026. | Srijeda | 21:00 |
 
-> **Napomena za administratora:** Nastup 29. srpnja (Blagdan sv. Todora) posebni je nastup kod Spomenika — nije javni nastup s online prodajom ulaznica.
+> **Napomena za administratora:** Nastup 29. srpnja (Blagdan sv. Todora) posebni je nastup kod Spomenika, nije javni nastup s online prodajom ulaznica.
 
 ---
 
 ## VREMENSKI TIJEK POVIJESTI
 *(8 unaprijed kodiranih unosa pri pokretanju)*
 
-**1 — 1150.: Ples se rađa**
-Najraniji zabilježeni nastup Moreške odvija se u Lleidi, u Španjolskoj, u spomen na kršćansko osvajanje Aragona. Rađa se ritual insceniranog sukoba dviju vojski — koji će putovati Sredozemljem kroz stoljeća.
+**1 · 1150.: Ples se rađa**
+Najraniji zabilježeni nastup Moreške odvija se u Lleidi, u Španjolskoj, u spomen na kršćansko osvajanje Aragona. Rađa se ritual insceniranog sukoba dviju vojski, koji će putovati Sredozemljem kroz stoljeća.
 
-**2 — 1420.: Korčula ulazi u mletački svijet**
-Korčula ulazi u gotovo četiri stoljeća mletačke vlasti. Pomorski trgovački putovi povezuju otok sa Sicilijom, južnom Italijom i Španjolskom — isti putovi koji će tradiciju plesa mačevima donijeti do njezina konačnog doma.
+**2 · 1420.: Korčula ulazi u mletački svijet**
+Korčula ulazi u gotovo četiri stoljeća mletačke vlasti. Pomorski trgovački putovi povezuju otok sa Sicilijom, južnom Italijom i Španjolskom, isti putovi koji će tradiciju plesa mačevima donijeti do njezina konačnog doma.
 
-**3 — 1666.: Prvi zapis na Korčuli**
+**3 · 1666.: Prvi zapis na Korčuli**
 Gradski dnevnik od 7. ožujka 1666. bilježi nastup Moreške za vrijeme karnevala. Ples je već duboko ukorijenjen. Dok slične tradicije nestaju diljem Dalmacije, Korčula ih čuva.
 
-**4 — 1883.: Osnovano HGD Sveta Cecilija**
-Za vrijeme Hrvatskog narodnog preporoda, mještani osnivaju Korčulansko pjevačko društvo sv. Cecilije — današnje HGD Sveta Cecilija. Osnivački statuti proglašavaju misiju "oplemeniti srca lokalne mladeži" i braniti hrvatski jezik, narodnu pjesmu i identitet. Društvo postaje institucionalni dom Moreške.
+**4 · 1883.: Osnovano HGD Sveta Cecilija**
+Za vrijeme Hrvatskog narodnog preporoda, mještani osnivaju Korčulansko pjevačko društvo sv. Cecilije, današnje HGD Sveta Cecilija. Osnivački statuti proglašavaju misiju "oplemeniti srca lokalne mladeži" i braniti hrvatski jezik, narodnu pjesmu i identitet. Društvo postaje institucionalni dom Moreške.
 
-**5 — 1937.: Glazba je zapisana**
-Hrvatski skladatelj Krsto Odak i dirigent Josip Svoboda stvaraju konačnu partitura za puhački orkestar za Morešku — isti aranžman koji se koristi i danas. Sedam stavaka, svaki ubrzava tempo, s vrhuncem u bijesnom finalu posljednjeg kolapa.
+**5 · 1937.: Glazba je zapisana**
+Hrvatski skladatelj Krsto Odak i dirigent Josip Svoboda stvaraju konačnu partituru za puhački orkestar za Morešku, isti aranžman koji se koristi i danas. Sedam stavaka, svaki ubrzava tempo, s vrhuncem u bijesnom finalu posljednjeg kolapa.
 
-**6 — 1944.: Obnova iz pepela**
-Drugi svjetski rat ušutkuje društvo. Kostimi i mačevi su izgubljeni. No dok se otok oslobađa, brijač Ivo Lozica i učitelj Božo Jeričević od nule školuju novu skupinu moreškanta — dječake od 12 do 17 godina. Tradicija ne umire.
+**6 · 1944.: Obnova iz pepela**
+Drugi svjetski rat ušutkuje društvo. Kostimi i mačevi su izgubljeni. No dok se otok oslobađa, brijač Ivo Lozica i učitelj Božo Jeričević od nule školuju novu skupinu moreškanta, dječake od 12 do 17 godina. Tradicija ne umire.
 
-**7 — 1991.: Novo doba**
+**7 · 1991.: Novo doba**
 Nakon proglašenja hrvatske neovisnosti, HGD Sveta Cecilija službeno se obnavlja pod izvornim imenom i misijom. Društvo se vraća svojim korijenima: čuvanju Moreške i njegovanja svih dimenzija korčulanskog kulturnog života.
 
-**8 — Danas: Zaštićena živa baština**
-Moreška je priznata kao zaštićeno kulturno dobro Republike Hrvatske. Izvodi se dva puta tjedno tijekom ljeta u Ljetnom kinu, ostajući ono što je uvijek bila: duša Korčule, prenošena s oca na sina, jedan udarac željeza o железo u jednom trenutku.
+**8 · Danas: Zaštićena živa baština**
+Moreška je priznata kao zaštićeno kulturno dobro Republike Hrvatske. Izvodi se dva puta tjedno tijekom ljeta u Ljetnom kinu, ostajući ono što je uvijek bila: duša Korčule, prenošena s oca na sina, jedan udarac željeza o željezo u jednom trenutku.
 
 ---
 
-## MOREŠKA — STRANICA SEKCIJE
+## MOREŠKA · STRANICA SEKCIJE
 
 **Naslov:** Ples čelika Korčule
 
 **Uvod:**
-Od svih plesova mačevima koji su nekoć prošaravali Sredozemlje — od Španjolske do Sicilije, od Venecije do grčkih otoka — jedino je korčulanska Moreška preživjela netaknuta. Ne kao muzejski eksponat. Kao živa izvedba, izvedena na izvornom korčulanskom dijalektu 17. stoljeća, s željeznim mačevima koji teže kilogram svaki i udaraju dovoljno snažno da ispuštaju iskre.
+Od svih plesova mačevima koji su nekoć prošaravali Sredozemlje (od Španjolske do Sicilije, od Venecije do grčkih otoka), jedino je korčulanska Moreška preživjela netaknuta. Ne kao muzejski eksponat. Kao živa izvedba, izvedena na izvornom korčulanskom dijalektu 17. stoljeća, s željeznim mačevima koji teže kilogram svaki i udaraju dovoljno snažno da ispuštaju iskre.
 
 **Priča**
 
 Dva kralja. Jedna zarobljena djevojka. Sedam bitki da bi se odlučila njezina sudbina.
 
-Bijeli kralj Osman dolazi osloboditi svoju zaručnicu — Bulu — od Crnog kralja Mora, koji ju je silom uzeo. Bula odbija popustiti: *"Dragi moj, slatka ljubavi... puno me više boli tvoja neželjena ljubav nego čelik."* Slijedi Sfida — izazov — a zatim sedam kolapa: niz sve intenzivnijih figura sukoba mačevima koji eskalira od lirskog kruženja do bijesne završne borbe.
+Bijeli kralj Osman dolazi osloboditi svoju zaručnicu, Bulu, od Crnog kralja Mora, koji ju je silom uzeo. Bula odbija popustiti: *"Dragi moj, slatka ljubavi... puno me više boli tvoja neželjena ljubav nego čelik."* Slijedi Sfida (izazov), a zatim sedam kolapa: niz sve intenzivnijih figura sukoba mačevima koji eskalira od lirskog kruženja do bijesne završne borbe.
 
 Crna vojska okružena je, a njihov krug se skuplja sa svakom figurom dok Crni kralj ne položi mač pred noge Bijelom kralju. Bula je oslobođena. Vrlina pobjeđuje. Uvijek je pobjeđivala.
 
 **Ples**
 
-Moreška je jedinstvena u europskoj folklornoj tradiciji po tehnici dvostrukog mača: svaki plesač drži dvije željezne oštrice — desna ruka udara, lijeva para. Koreografija je fiksna i prenosi se nepromijenjena generacijama. Svaka od sedam figura ima ime: Rugier, Moreška, Finta, Moro in dentro, Križ, Rugier de fuorivia i Završna figura — izvedena punom brzinom u taktu 4/4.
+Moreška je jedinstvena u europskoj folklornoj tradiciji po tehnici dvostrukog mača: svaki plesač drži dvije željezne oštrice: desna ruka udara, lijeva para. Koreografija je fiksna i prenosi se nepromijenjena generacijama. Svaka od sedam figura ima ime: Rugier, Moreška, Finta, Moro in dentro, Križ, Rugier de fuorivia i Završna figura, izvedena punom brzinom u taktu 4/4.
 
-Sam zvuk vrijedi putovanja. Železo o železo, bam bam bam, odjekuje od kamenih zidova starog grada.
+Sam zvuk vrijedi putovanja. Željezo o željezo, bam bam bam, odjekuje od kamenih zidova starog grada.
 
 **Kostim**
 
-Odijelo moreškanta za razliku je od svega ostalog u hrvatskoj folkloru — rimsko-orijentalni stil koji seže do talijanskog dvorskog baleta 17. stoljeća. Bijela vojska nosi crveno; Crna vojska nosi crno. Pune nabrane suknje, bijele rimske manšete, pojasevi, rubci. Raskošno, ratničko, nepogrešivo.
+Odijelo moreškanta za razliku je od svega ostalog u hrvatskom folkloru, rimsko-orijentalni stil koji seže do talijanskog dvorskog baleta 17. stoljeća. Bijela vojska nosi crveno; Crna vojska nosi crno. Pune nabrane suknje, bijele rimske manšete, pojasevi, rubci. Raskošno, ratničko, nepogrešivo.
 
 **Sudjelovanje**
 
-Morešku tradicionalno izvode muškarci iz korčulanskih obitelji. Dječaci počinju učiti korake u osnovnoj školi. Lokalna izreka dočarava što to znači: *"Nisi muško ako ne znaš plesati Morešku."* Uloge — uključujući kraljeve i Bulu — često se prenose s oca na sina kroz generacije.
+Morešku tradicionalno izvode muškarci iz korčulanskih obitelji. Dječaci počinju učiti korake u osnovnoj školi. Lokalna izreka dočarava što to znači: *"Nisi muško ako ne znaš plesati Morešku."* Uloge, uključujući kraljeve i Bulu, često se prenose s oca na sina kroz generacije.
 
 ---
 
-## PUHAČKI ORKESTAR — STRANICA SEKCIJE
+## PUHAČKI ORKESTAR · STRANICA SEKCIJE
 
 **Naslov:** Zvuk plesa mačevima
 
 **Tekst:**
-Puhački orkestar HGD-a Sveta Cecilija glazbena je okosnica Moreške. Svaki udarac mačeva, svaki dramski obrat u priči, potpomognut je brass aranžmanom koji je 1937. godine skladao Krsto Odak — jedan od najistaknutijih hrvatskih skladatelja — i koji se živo izvodi na svakom nastupu do danas.
+Puhački orkestar HGD-a Sveta Cecilija glazbena je okosnica Moreške. Svaki udarac mačeva, svaki dramski obrat u priči, potpomognut je brass aranžmanom koji je 1937. godine skladao Krsto Odak (jedan od najistaknutijih hrvatskih skladatelja) i koji se živo izvodi na svakom nastupu do danas.
 
 No uloga Orkestra seže daleko izvan ljetne pozornice. Kroz cijelu godinu, ansambl izvodi koncertni repertoar, prati građanske proslave i predstavlja Korčulu na regionalnim i nacionalnim festivalima. Od marševa do suvremenih hrvatskih kompozicija, Puhački orkestar nosi glazbeni identitet otoka kamo god nastupa.
 
@@ -143,14 +143,14 @@ Orkestar je otvoren za glazbenike s Korčule i okolnih otoka. Najstariji je kont
 
 ---
 
-## KLAPA SVETA CECILIJA — STRANICA SEKCIJE
+## KLAPA SVETA CECILIJA · STRANICA SEKCIJE
 
 **Naslov:** Glas prije mača
 
 **Tekst:**
 Prije nego što željeza zazvone, čuje se glas.
 
-Klapa Sveta Cecilija otvara svaki nastup Moreške tradicijskom dalmatinskom a cappella pjesmom — glazbenom formom jadranske obale, prepoznatom od UNESCO-a kao nematerijalna kulturna baština. Bez instrumenata, bez pojačala. Samo harmonija muških glasova koji nose stoljetnu pomorsku dušu.
+Klapa Sveta Cecilija otvara svaki nastup Moreške tradicijskom dalmatinskom a cappella pjesmom, glazbenom formom jadranske obale, prepoznatom od UNESCO-a kao nematerijalna kulturna baština. Bez instrumenata, bez pojačala. Samo harmonija muških glasova koji nose stoljetnu pomorsku dušu.
 
 Klapa pjevanje zvuk je Dalmacije u najčišćem obliku: melankoličan, topao, tehnički zahtjevan i posve zajednički. Čuti ga na kamenom dvorištu Ljetnog kina, prije nego što se pojave mačevi, znači razumjeti nešto bitno o životu na ovom otoku.
 
@@ -158,7 +158,7 @@ Ansambl nastupa na svakoj Moreškoj kroz sezonu te na festivalima, koncertima i 
 
 ---
 
-## ZBOR — STRANICA SEKCIJE
+## ZBOR · STRANICA SEKCIJE
 
 **Naslov:** Glas koji se rađa iznova
 
@@ -167,27 +167,27 @@ Osnovan 2023. godine, Zbor HGD-a Sveta Cecilija raste polako, ali sigurno. Nakon
 
 Kao najstarije pjevačko društvo u Dalmaciji, HGD Sveta Cecilija dugo je čekao na povratak zbora. Ne možemo biti ponosniji na njegov uspješan povratak.
 
-Zbor izvodi zborski repertoar koji obuhvaća hrvatsku narodnu glazbu, sakralna djela i suvremene skladbe. Novi članovi uvijek su dobrodošli. Ako pjevate — ili ste oduvijek htjeli — vrata su otvorena.
+Zbor izvodi zborski repertoar koji obuhvaća hrvatsku narodnu glazbu, sakralna djela i suvremene skladbe. Novi članovi uvijek su dobrodošli. Ako pjevate, ili ste oduvijek htjeli, vrata su otvorena.
 
 *Puni program i datumi nadolazećih koncerata uskoro.*
 
 ---
 
-## PRIVATNA MOREŠKA — STRANICA USLUGE
+## PRIVATNA MOREŠKA · STRANICA USLUGE
 
 **Naslov:** Dovedite Morešku na vaš događaj
 
 **Podnaslov:**
-Cjelovita privatna izvedba posljednjeg autentičnog ratnog plesa Europe — za grupe, u Ljetnom kinu ili Centru za kulturu Korčula.
+Cjelovita privatna izvedba posljednjeg autentičnog ratnog plesa Europe, za grupe, u Ljetnom kinu ili Centru za kulturu Korčula.
 
 **Tekst:**
 Organizirate li korporativni retreat, izlet s kruzera, kulturni program ili privatno slavlje, HGD Sveta Cecilija može izvesti Morešku isključivo za vašu grupu.
 
-Vaši gosti svjedočit će cjelovitoj izvedbi: dramskom dijalogu na arhaičnom korčulanskom dijalektu, a cappella uvodu Klape, živo sviranju puhačkog orkestra i svih sedam kolapa — s vrhuncem u predaji mača Crnog kralja i oslobađanju Bule.
+Vaši gosti svjedočit će cjelovitoj izvedbi: dramskom dijalogu na arhaičnom korčulanskom dijalektu, a cappella uvodu Klape, živo sviranju puhačkog orkestra i svih sedam kolapa, s vrhuncem u predaji mača Crnog kralja i oslobađanju Bule.
 
 Privatni nastupi dostupni su na dva korčulanska mjesta:
-- **Ljetno kino** — tradicionalni dom Moreške na otvorenom
-- **Centar za kulturu Korčula** — zatvorena alternativa za veće grupe ili nepovoljno vrijeme
+- **Ljetno kino:** tradicionalni dom Moreške na otvorenom
+- **Centar za kulturu Korčula:** zatvorena alternativa za veće grupe ili nepovoljno vrijeme
 
 Cijene su dostupne na upit i ovise o veličini grupe, datumu i odabranom prostoru.
 
@@ -197,22 +197,22 @@ Cijene su dostupne na upit i ovise o veličini grupe, datumu i odabranom prostor
 
 ---
 
-## MOREŠKA ISKUSTVO — STRANICA USLUGE
+## MOREŠKA ISKUSTVO · STRANICA USLUGE
 
 **Naslov:** Moreška iskustvo
 
 **Podnaslov:**
-Intimni susret s živom baštinom Korčule. Namijenjeno posjetiteljima s ograničenim vremenom — ili onima koji žele ići dublje od same izvedbe.
+Intimni susret s živom baštinom Korčule. Namijenjeno posjetiteljima s ograničenim vremenom, ili onima koji žele ići dublje od same izvedbe.
 
 **Tekst:**
-Nisu svi posjetitelji u mogućnosti prisustvovati cjelovitoj večernjoj izvedbi. Moreška iskustvo naš je odgovor: kurirana, edukativna susret s tradicijom, dostupan za male grupe po dogovoru.
+Nisu svi posjetitelji u mogućnosti prisustvovati cjelovitoj večernjoj izvedbi. Moreška iskustvo naš je odgovor: kuriran, edukativan susret s tradicijom, dostupan za male grupe po dogovoru.
 
 Na jednoj sesiji vaša će se grupa susresti licem u lice s:
 
-- **Baštinom i regalijom** — izbliza pogled na zamršene tradicionalne kostime i željezne mačeve koji se koriste na svakoj izvedbi
-- **Povijesnim uvidima** — kratka povijest HGD-a Sveta Cecilija i podrijetla Moreške, od Španjolske 12. stoljeća do današnje Korčule
-- **Kulturnom važnošću** — što ovaj ples uistinu predstavlja za identitet otoka i njegovih ljudi
-- **Izvedbom** — ulomci dramatičnih dijaloga i isječci iz viteške borbe mačevima
+- **Baštinom i regalijom:** izbliza pogled na zamršene tradicionalne kostime i željezne mačeve koji se koriste na svakoj izvedbi
+- **Povijesnim uvidima:** kratka povijest HGD-a Sveta Cecilija i podrijetla Moreške, od Španjolske 12. stoljeća do današnje Korčule
+- **Kulturnom važnošću:** što ovaj ples uistinu predstavlja za identitet otoka i njegovih ljudi
+- **Izvedbom:** ulomci dramatičnih dijaloga i isječci iz viteške borbe mačevima
 
 Minimalni broj sudionika: 5 osoba. Dostupno po dogovoru.
 
@@ -225,7 +225,7 @@ Minimalni broj sudionika: 5 osoba. Dostupno po dogovoru.
 **Naslov:** Javite nam se
 
 **Podnaslov:**
-Za opće upite, privatne rezervacije, tiskovne upite ili bilo što drugo — rado ćemo vam odgovoriti.
+Za opće upite, privatne rezervacije, tiskovne upite ili bilo što drugo, rado ćemo vam odgovoriti.
 
 **Polja obrasca:**
 - Ime i prezime
@@ -236,7 +236,7 @@ Za opće upite, privatne rezervacije, tiskovne upite ili bilo što drugo — rad
 **Ispod gumba za slanje:**
 Odgovorimo unutar 2 radna dana.
 
-**Predmet automatskog odgovora:** Primili smo vašu poruku — HGD Sveta Cecilija
+**Predmet automatskog odgovora:** Primili smo vašu poruku · HGD Sveta Cecilija
 **Tekst automatskog odgovora:** Hvala što ste se obratili HGD-u Sveta Cecilija. Primili smo vašu poruku i odgovorimo unutar 2 radna dana. U međuvremenu, sve informacije o našim nastupima možete pronaći na moreska.eu.
 
 ---
