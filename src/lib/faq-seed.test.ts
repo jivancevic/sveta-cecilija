@@ -6,6 +6,7 @@ import {
   inlineToTextNodes,
   answerToLexical,
   lexicalPlainText,
+  toSeedSql,
   FAQ_SEED_CATEGORIES,
 } from '@/lib/faq-seed'
 
@@ -97,5 +98,31 @@ describe('parseFaqDrafts (real drafts)', () => {
   it('maps the visiting section correctly', () => {
     const perf = entries.find((e) => e.question === 'Where is the Moreška performed?')
     expect(perf?.category).toBe('visiting')
+  })
+})
+
+describe('toSeedSql', () => {
+  const entries = parseFaqDrafts(DRAFTS)
+  const sql = toSeedSql(entries)
+
+  it('emits one guarded INSERT per entry', () => {
+    expect((sql.match(/^INSERT INTO faqs /gm) ?? [])).toHaveLength(45)
+    expect((sql.match(/WHERE NOT EXISTS \(SELECT 1 FROM faqs/g) ?? [])).toHaveLength(45)
+  })
+
+  it('escapes single quotes and embeds valid jsonb answers', () => {
+    // apostrophes are doubled for SQL
+    expect(sql).toContain("Europe''s last surviving authentic war dance")
+    // every embedded ::jsonb literal round-trips to a Lexical root
+    const jsonLiterals = sql.match(/SELECT '(?:[^']|'')*', '((?:[^']|'')*)'::jsonb/g) ?? []
+    expect(jsonLiterals.length).toBe(45)
+    const first = /'((?:[^']|'')*)'::jsonb/.exec(sql)![1].replace(/''/g, "'")
+    expect(JSON.parse(first).root.type).toBe('root')
+  })
+
+  it('casts enums and carries the draft status through', () => {
+    expect(sql).toContain("'published'::enum_faqs_status")
+    expect(sql).toContain("'draft'::enum_faqs_status")
+    expect(sql).toContain("'en'::enum_faqs_locale")
   })
 })

@@ -206,6 +206,50 @@ export function parseFaqDrafts(md: string): FaqSeedEntry[] {
   return entries
 }
 
+function sqlStr(s: string): string {
+  return `'${s.replace(/'/g, "''")}'`
+}
+
+/**
+ * Emit idempotent seed SQL for db/schema/seed-faqs.sql — the PROD publish path.
+ *
+ * The prod runtime is a minimal Next standalone image that does not ship the
+ * seed script, the drafts, or the Payload CLI, so `payload run` can't seed prod.
+ * Instead this SQL is applied by scripts/bootstrap-db.mjs on every deploy, like
+ * db/schema/seed-shows.sql. Each row is guarded by WHERE NOT EXISTS on
+ * (question, locale) so it only inserts once and never clobbers admin edits.
+ *
+ * The `answer` richText is written as a jsonb literal — byte-equivalent to what
+ * Payload stores for the field, so /faq renders it identically.
+ */
+export function toSeedSql(entries: FaqSeedEntry[]): string {
+  const rows = entries
+    .map((e) => {
+      const q = sqlStr(e.question)
+      const answer = sqlStr(JSON.stringify(e.answer))
+      return (
+        `INSERT INTO faqs (question, answer, category, locale, "order", status)\n` +
+        `SELECT ${q}, ${answer}::jsonb, '${e.category}'::enum_faqs_category, ` +
+        `'en'::enum_faqs_locale, ${e.order}, '${e.status}'::enum_faqs_status\n` +
+        `WHERE NOT EXISTS (SELECT 1 FROM faqs WHERE question = ${q} AND locale = 'en');`
+      )
+    })
+    .join('\n\n')
+  return (
+    `-- Seed the public /faq from the reviewed English drafts\n` +
+    `-- (docs/faq-drafts/faq-answers-en.md). GENERATED — do not hand-edit;\n` +
+    `-- regenerate with: npm run seed:faqs -- --emit-sql > db/schema/seed-faqs.sql\n` +
+    `--\n` +
+    `-- Idempotent (INSERT ... WHERE NOT EXISTS on question+locale): inserts each\n` +
+    `-- answer once, never clobbers admin edits or re-adds a deleted row's counts.\n` +
+    `-- ${entries.filter((e) => e.status === 'published').length} published, ` +
+    `${entries.filter((e) => e.status === 'draft').length} draft (Q49 tour list, pending #340). EN only.\n` +
+    `-- Sorts after 00-base.sql / migrate-faqs.sql (needs the faqs table).\n\n` +
+    rows +
+    '\n'
+  )
+}
+
 /** Flatten a built editor state back to plain text (for logging / assertions). */
 export function lexicalPlainText(state: SerializedEditorState): string {
   return state.root.children
