@@ -7,7 +7,7 @@ heroImage: "/torches.webp"
 heroImageAlt: "Korčula old town lit at night, the setting for the open-air Moreška sword dance"
 targetKeyword: "things to do in korcula at night"
 publishedAt: "2026-09-15T09:00:00Z"
-status: "draft"
+status: "published"
 ---
 
 # What to Do in Korčula in the Evening

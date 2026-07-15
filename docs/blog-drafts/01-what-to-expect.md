@@ -7,7 +7,7 @@ heroImage: "/moreska-wide.webp"
 heroImageAlt: "The two Moreška armies facing off with iron swords on the Summer Cinema stage in Korčula"
 targetKeyword: "moreska performance korcula"
 publishedAt: "2026-07-15T09:00:00Z"
-status: "draft"
+status: "published"
 ---
 
 # What to Expect at a Moreška Performance in Korčula
