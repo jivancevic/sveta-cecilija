@@ -7,7 +7,7 @@ heroImage: "/todor-2-vojske.webp"
 heroImageAlt: "The two opposing armies of the Moreška sword dance assembled in Korčula"
 targetKeyword: "moreska vs kumpanjija"
 publishedAt: "2026-10-15T09:00:00Z"
-status: "draft"
+status: "published"
 ---
 
 # Moreška vs Kumpanjija: Korčula's Two Sword Dances
@@ -35,7 +35,7 @@ It is recognised as a **protected cultural good of the Republic of Croatia**, an
 
 The Kumpanjija is the sword-dance tradition of Korčula's villages. Our own historical sources confirm what's stated above, that it is a distinct island sword dance performed in places like Žrnovo, Blato and Vela Luka, but they don't go into detail about how it's choreographed.
 
-> **A note on accuracy:** Beyond "it's a village sword-dance tradition distinct from the town's Moreška," the finer points below reflect *general descriptions* of the Kumpanjija rather than our own verified society records. We've flagged this for the editor. If you want the authoritative account, the local cultural societies of Blato, Žrnovo, Vela Luka, Pupnat, Smokvica and Čara are the people to ask.
+> **A note on accuracy:** Beyond "it's a village sword-dance tradition distinct from the town's Moreška," the finer points below reflect *general descriptions* of the Kumpanjija rather than our own verified society records. If you want the authoritative account, the local cultural societies of Blato, Žrnovo, Vela Luka, Pupnat, Smokvica and Čara are the people to ask.
 
 In broad terms, visitors and ethnographers commonly describe the Kumpanjija as differing from the Moreška in a few ways: it tends to centre on a single linked or "chain" sword formation rather than the Moreška's twin blades and elaborate two-king drama, and it's traditionally bound up with village ceremony and identity rather than a scripted theatrical plot. The exact form varies from village to village, which is part of its charm.
 

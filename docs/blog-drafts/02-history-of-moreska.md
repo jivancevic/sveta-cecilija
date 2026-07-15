@@ -7,7 +7,7 @@ heroImage: "/cecilija-est.webp"
 heroImageAlt: "Historic photograph connected to HGD Sveta Cecilija, guardian of the Moreška sword dance since 1883"
 targetKeyword: "history of moreska"
 publishedAt: "2026-11-15T09:00:00Z"
-status: "draft"
+status: "published"
 ---
 
 # The History of Moreška: 400 Years of Sword Dance

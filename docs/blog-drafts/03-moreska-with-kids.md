@@ -7,7 +7,7 @@ heroImage: "/younglings.webp"
 heroImageAlt: "Young Moreška dancers in costume in Korčula, learning the centuries-old sword dance"
 targetKeyword: "moreska with kids"
 publishedAt: "2026-08-15T09:00:00Z"
-status: "draft"
+status: "published"
 ---
 
 # Is Moreška Suitable for Kids?

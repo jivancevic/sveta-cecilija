@@ -40,7 +40,7 @@ Moreška je opstala jer su je pojedinci odlučili nositi. Imena koja su je spasi
 - **Božo Jeričević**, učitelj, od nule je uvježbao tu prvu poslijeratnu skupinu tinejdžera, u dobi od svega 12 do 17 godina, nakon što je rat raznio nošnje, mačeve i partiture.
 - **Krsto Odak** i dirigent **Josip Svoboda** dali su plesu partituru za limenu glazbu, napisanu 1937., koja i danas pokreće svaku izvedbu.
 
-Danas tradiciju nosi društvo od oko **80 članova**, ustrojeno u **moreškantsku družinu**, [Puhački orkestar](/sections/wind-orchestra) i [Klapu Sveta Cecilija](/sections/klapa). Plesači koje vidite na pozornici trenutačna su karika u lancu koji se neprekinuto proteže sve do njih.
+Danas tradiciju nosi društvo od oko **150 članova**, ustrojeno u **moreškantsku družinu**, [Puhački orkestar](/sections/wind-orchestra) i [Klapu Sveta Cecilija](/sections/klapa). Plesači koje vidite na pozornici trenutačna su karika u lancu koji se neprekinuto proteže sve do njih.
 
 ## Njihovim riječima
 

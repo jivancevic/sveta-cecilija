@@ -7,7 +7,7 @@ heroImage: "/cecilija-est.webp"
 heroImageAlt: "Povijesna fotografija vezana uz HGD Sveta Cecilija, čuvara Moreške od 1883. godine"
 targetKeyword: "povijest moreške"
 publishedAt: "2026-11-15T09:00:00Z"
-status: "draft"
+status: "published"
 ---
 
 # Povijest Moreške: 400 godina plesa s mačevima
@@ -56,7 +56,7 @@ Kroz socijalističke jugoslavenske naraštaje ples se nastavio pod različitim o
 
 ## Moreška danas
 
-Društvo danas broji oko 80 članova i djeluje kroz tri sekcije: **moreškantsku družinu**, **[Puhački orkestar](/sections/wind-orchestra)** i **[Klapu Sveta Cecilija](/sections/klapa)**. Nekoć izvođena samo jednom godišnje na **29. srpnja, blagdan sv. Todora**, raskošna izvedba koja je znala trajati dva sata, Moreška se sada izvodi kroz cijelu ljetnu sezonu kako bi je posjetitelji mogli doživjeti. Korčula je 1997. čak pokrenula Festival viteških igara i plesova s mačevima.
+Društvo danas broji oko 150 članova i djeluje kroz tri sekcije: **moreškantsku družinu**, **[Puhački orkestar](/sections/wind-orchestra)** i **[Klapu Sveta Cecilija](/sections/klapa)**. Nekoć izvođena samo jednom godišnje na **29. srpnja, blagdan sv. Todora**, raskošna izvedba koja je znala trajati dva sata, Moreška se sada izvodi kroz cijelu ljetnu sezonu kako bi je posjetitelji mogli doživjeti. Korčula je 1997. čak pokrenula Festival viteških igara i plesova s mačevima.
 
 Moreška je danas **zaštićeno kulturno dobro Republike Hrvatske**. Gotovo devet stoljeća nakon one prve inscenirane bitke u Španjolskoj, ista se drama i dalje odvija na kamenoj pozornici u Korčuli, dvije vojske, željezni mačevi i zajednica koja nije dopustila da njezin ples umre.
 
