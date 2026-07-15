@@ -35,7 +35,7 @@
 
 ## Project: moreska.eu — HGD Sveta Cecilija
 
-Website for HGD Sveta Cecilija, a 143-year-old cultural organisation from Korčula, Croatia, home of the Moreška sword dance. Public site at `moreska.eu`. Full PRD in GitHub Issues #1. Target: cutover from `korcula-moreska.com` to `moreska.eu` before peak season (end of June 2026) — the remaining gating issue is [#11](https://github.com/jivancevic/sveta-cecilija/issues/11) (DNS switch, HITL). For current open work, run `gh issue list --state open`.
+Website for HGD Sveta Cecilija, a 143-year-old cultural organisation from Korčula, Croatia, home of the Moreška sword dance. Public site at `moreska.eu`. Full PRD in GitHub Issues #1. **Cutover is complete (verified 2026-06-25):** `moreska.eu` is live and taking real Stripe sales; both legacy domains 301-redirect to it. The project is now in the operate / go-to-market / compliance phase — most open work is human/ops-gated (marketing, email/DNS, fiscalization #297). For current open work, run `gh issue list --state open`.
 
 ### Organisation registry details
 
