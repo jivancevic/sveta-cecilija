@@ -17,6 +17,13 @@ export function scanUrl(token: string): string {
   return `${siteBaseUrl()}/scan/${encodeURIComponent(token)}`
 }
 
+// Self-serve reschedule-refund page for a signed per-order token (ADR-0021).
+// Built against siteBaseUrl() so the link in a reschedule email points at the
+// deployment that sent it, exactly like scanUrl (see the staging QR gotcha above).
+export function refundUrl(token: string): string {
+  return `${siteBaseUrl()}/order/${encodeURIComponent(token)}/refund`
+}
+
 // Absolute redirect target back to the scan page. Built against siteBaseUrl(),
 // NOT `req.url`: behind Coolify/Traefik the request URL carries the internal
 // bind host, so `new URL(path, req.url)` produced a 303 Location of
