@@ -9,6 +9,8 @@ import {
   type RescheduleDeps,
 } from '@/lib/show-reschedule'
 import { sendDateChangeEmail } from '@/lib/email/send-date-change-email'
+import { signRescheduleRefundToken } from '@/lib/refund/reschedule-refund-token'
+import { refundUrl } from '@/lib/site-url'
 import { toIsoDate } from '@/lib/to-iso-date'
 
 export const runtime = 'nodejs'
@@ -23,7 +25,15 @@ const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 
 type Pool = { query: (sql: string, params: unknown[]) => Promise<{ rows: Record<string, unknown>[] }> }
 
-function buildDeps(pool: Pool, brevoApiKey: string): RescheduleDeps {
+// Per-order self-serve refund link for the reschedule email (ADR-0021). Built
+// from the signed HMAC token so the buyer can cancel + refund without a login.
+// Empty secret → undefined URL → email still sends, just without the refund CTA.
+function buildRefundUrl(orderId: string, secret: string): string | undefined {
+  if (!secret) return undefined
+  return refundUrl(signRescheduleRefundToken(orderId, secret))
+}
+
+function buildDeps(pool: Pool, brevoApiKey: string, secret: string): RescheduleDeps {
   return {
     getShow: async (showId): Promise<RescheduleShow | null> => {
       const res = await pool.query(`SELECT id, date, time, venue FROM shows WHERE id = $1`, [Number(showId)])
@@ -87,6 +97,7 @@ function buildDeps(pool: Pool, brevoApiKey: string): RescheduleDeps {
           buyer: { name: buyer.name, email: buyer.email },
           show,
           locale: buyer.locale ?? 'en',
+          refundUrl: buildRefundUrl(buyer.orderId, secret),
         },
         { fetch: globalThis.fetch, brevoApiKey },
       ),
@@ -99,7 +110,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   const { payload } = gate
   const { id } = await params
   const pool = (payload.db as unknown as { pool: Pool }).pool
-  const deps = buildDeps(pool, process.env.BREVO_API_KEY ?? '')
+  const deps = buildDeps(pool, process.env.BREVO_API_KEY ?? '', process.env.PAYLOAD_SECRET ?? '')
   try {
     const preview = await previewReschedule(id, deps)
     return NextResponse.json(preview)
@@ -126,8 +137,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: 'newDate must be YYYY-MM-DD' }, { status: 400 })
   }
 
+  const secret = process.env.PAYLOAD_SECRET ?? ''
   const pool = (payload.db as unknown as { pool: Pool }).pool
-  const deps = buildDeps(pool, brevoApiKey)
+  const deps = buildDeps(pool, brevoApiKey, secret)
 
   // Test mode: send the EN + HR preview to the admin's own inbox. No DB write,
   // no buyer notification — the "let me see it first" path.
@@ -141,8 +153,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       if (!show) return NextResponse.json({ error: 'Show not found' }, { status: 404 })
       const sample = { orderId: 'TEST', buyer: { name: 'Ivan Horvat', email: adminEmail } }
       const showDates = { oldDate: show.date, newDate, time: show.time, venue: show.venue }
+      // Sign a real token for the sample so the CTA renders and lands on the
+      // refund page (it will show the neutral "not valid" state for TEST — the
+      // admin is checking layout + that the link resolves, not refunding).
+      const sampleRefundUrl = buildRefundUrl('TEST', secret)
       for (const locale of ['en', 'hr'] as const) {
-        await sendDateChangeEmail({ ...sample, show: showDates, locale }, { fetch: globalThis.fetch, brevoApiKey })
+        await sendDateChangeEmail(
+          { ...sample, show: showDates, locale, refundUrl: sampleRefundUrl },
+          { fetch: globalThis.fetch, brevoApiKey },
+        )
       }
       return NextResponse.json({ status: 'test-sent', to: adminEmail })
     } catch (err) {
