@@ -23,13 +23,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   const { id } = await params
 
-  const result = await sendOrderTicketEmail(
-    payload as unknown as OrderEmailPayload,
-    id,
-  ).catch((err): { status: 'failed'; email: string | null } => {
-    console.error(`[orders/resend-ticket-email] threw orderId=${id}`, err)
-    return { status: 'failed', email: null }
-  })
+  // sendOrderTicketEmail never throws — it maps every failure to a status.
+  const result = await sendOrderTicketEmail(payload as unknown as OrderEmailPayload, id)
 
   if (result.status === 'skipped') {
     return NextResponse.json(

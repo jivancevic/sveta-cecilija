@@ -135,14 +135,11 @@ export async function POST(req: NextRequest) {
     // never rolls the comp back. We AWAIT it (rather than fire-and-forget) so
     // the response carries the TRUE outcome and the form banner can say whether
     // the mail actually left ('sent' / 'skipped' when no email / 'failed').
+    // sendOrderTicketEmail never throws (it maps every failure to a status),
+    // so no try/catch here — a bad email can't roll the committed comp back.
     const emailResult = await sendOrderTicketEmail(
       payload as unknown as OrderEmailPayload,
       result.orderId,
-    ).catch(
-      (err): { status: 'failed'; email: string | null } => {
-        console.error('[comp/issue] ticket email send threw', err)
-        return { status: 'failed', email: email }
-      },
     )
 
     return NextResponse.json({

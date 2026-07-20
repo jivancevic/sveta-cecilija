@@ -64,7 +64,13 @@ export async function sendOrderTicketEmail(
   const order = await payload
     .findByID({ collection: 'orders', id, depth: 1 })
     .catch(() => null)
-  if (!order) return { status: 'skipped', email: null }
+  // A missing order is a real error, not a skip: 'skipped' is reserved for the
+  // "no email on file" case so the caller can show the benign green banner only
+  // then. An order that can't be loaded must surface as a failure.
+  if (!order) {
+    console.error(`[sendOrderTicketEmail] order not found orderId=${String(orderId)}`)
+    return { status: 'failed', email: null }
+  }
 
   const email = typeof order.email === 'string' ? order.email.trim() : ''
   if (!email) return { status: 'skipped', email: null }
@@ -78,16 +84,20 @@ export async function sendOrderTicketEmail(
     return { status: 'failed', email }
   }
 
-  const ticketsRes = await payload.find({
-    collection: 'tickets',
-    where: { order: { equals: order.id } },
-    limit: 500,
-    depth: 0,
-    // Sort by serial id so CODE-N refs match the originally-emailed PDF exactly
-    // (created_at can tie at ms precision — see the tickets.pdf route note).
-    sort: 'id',
-  })
-  if (ticketsRes.docs.length === 0) {
+  const ticketsRes = await payload
+    .find({
+      collection: 'tickets',
+      where: { order: { equals: order.id } },
+      limit: 500,
+      depth: 0,
+      // Sort by serial id so CODE-N refs match the originally-emailed PDF exactly
+      // (created_at can tie at ms precision — see the tickets.pdf route note).
+      sort: 'id',
+    })
+    // Honour the documented "never throws" contract — a DB hiccup here is a
+    // failure to report, not an exception to bubble into the caller's response.
+    .catch(() => null)
+  if (!ticketsRes || ticketsRes.docs.length === 0) {
     console.error(`[sendOrderTicketEmail] no tickets orderId=${String(order.id)}`)
     return { status: 'failed', email }
   }

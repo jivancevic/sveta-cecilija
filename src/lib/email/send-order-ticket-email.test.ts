@@ -51,13 +51,27 @@ describe('sendOrderTicketEmail', () => {
     expect(send).not.toHaveBeenCalled()
   })
 
-  it('returns skipped when the order does not exist', async () => {
+  it('returns failed (not skipped) when the order does not exist', async () => {
     const send = okSend()
     const res = await sendOrderTicketEmail(makePayload(null), 999, {
       brevoApiKey: 'k',
       sendTicketEmail: send,
     })
-    expect(res).toEqual({ status: 'skipped', email: null })
+    expect(res).toEqual({ status: 'failed', email: null })
+    expect(send).not.toHaveBeenCalled()
+  })
+
+  it('returns failed (never throws) when the tickets query rejects', async () => {
+    const send = okSend()
+    const payload: OrderEmailPayload = {
+      findByID: vi.fn().mockResolvedValue(baseOrder),
+      find: vi.fn().mockRejectedValue(new Error('db down')),
+    }
+    const res = await sendOrderTicketEmail(payload, 42, {
+      brevoApiKey: 'k',
+      sendTicketEmail: send,
+    })
+    expect(res).toEqual({ status: 'failed', email: 'guest@example.com' })
     expect(send).not.toHaveBeenCalled()
   })
 
