@@ -58,7 +58,10 @@ export const Orders: CollectionConfig = {
     hidden: ({ user }) => !isAdminTier(user as { role?: string } | null),
     components: {
       edit: {
-        editMenuItems: ['@/components/payload/RefundOrderMenuItem#RefundOrderMenuItem'],
+        editMenuItems: [
+          '@/components/payload/ResendTicketEmailMenuItem#ResendTicketEmailMenuItem',
+          '@/components/payload/RefundOrderMenuItem#RefundOrderMenuItem',
+        ],
       },
     },
   },

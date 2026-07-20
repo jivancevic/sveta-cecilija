@@ -1,6 +1,7 @@
 import { InPersonSalesMenuItem as InPersonSalesMenuItem_74208101ad22a47f22206e8e116241cd } from '@/components/payload/InPersonSalesMenuItem'
 import { CancelShowMenuItem as CancelShowMenuItem_4b982f4a2c156b12ad67cf911e80ac86 } from '@/components/payload/CancelShowMenuItem'
 import { RefundOrderMenuItem as RefundOrderMenuItem_aaa1 } from '@/components/payload/RefundOrderMenuItem'
+import { ResendTicketEmailMenuItem as ResendTicketEmailMenuItem_aaa5 } from '@/components/payload/ResendTicketEmailMenuItem'
 import { ViewOrdersForShowMenuItem as ViewOrdersForShowMenuItem_aaa2 } from '@/components/payload/ViewOrdersForShowMenuItem'
 import { MarkMovedToZimskoMenuItem as MarkMovedToZimskoMenuItem_aaa3 } from '@/components/payload/MarkMovedToZimskoMenuItem'
 import { RescheduleShowMenuItem as RescheduleShowMenuItem_aaa4 } from '@/components/payload/RescheduleShowMenuItem'
@@ -18,6 +19,7 @@ export const importMap = {
   "@/components/payload/InPersonSalesMenuItem#InPersonSalesMenuItem": InPersonSalesMenuItem_74208101ad22a47f22206e8e116241cd,
   "@/components/payload/CancelShowMenuItem#CancelShowMenuItem": CancelShowMenuItem_4b982f4a2c156b12ad67cf911e80ac86,
   "@/components/payload/RefundOrderMenuItem#RefundOrderMenuItem": RefundOrderMenuItem_aaa1,
+  "@/components/payload/ResendTicketEmailMenuItem#ResendTicketEmailMenuItem": ResendTicketEmailMenuItem_aaa5,
   "@/components/payload/ViewOrdersForShowMenuItem#ViewOrdersForShowMenuItem": ViewOrdersForShowMenuItem_aaa2,
   "@/components/payload/MarkMovedToZimskoMenuItem#MarkMovedToZimskoMenuItem": MarkMovedToZimskoMenuItem_aaa3,
   "@/components/payload/RescheduleShowMenuItem#RescheduleShowMenuItem": RescheduleShowMenuItem_aaa4,
