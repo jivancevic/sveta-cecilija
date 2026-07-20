@@ -8,6 +8,7 @@ import {
   type CompIssueShow,
 } from '@/lib/comp/create-comp-issue'
 import { VENUE_CAPACITY, type Venue } from '@/lib/venues'
+import { sendOrderTicketEmail, type OrderEmailPayload } from '@/lib/email/send-order-ticket-email'
 import { getActiveTicketCountForShow, type PoolQuery } from '@/lib/tickets/sold-seats'
 import { withShowSellLock, type SellLockPool } from '@/lib/tickets/sell-lock'
 import { generateQrToken } from '@/lib/qr-token'
@@ -129,12 +130,29 @@ export async function POST(req: NextRequest) {
       },
     )
 
+    // Send the ticket email to the recipient the admin entered, if any. The
+    // order + tickets are already committed above — this is best-effort and
+    // never rolls the comp back. We AWAIT it (rather than fire-and-forget) so
+    // the response carries the TRUE outcome and the form banner can say whether
+    // the mail actually left ('sent' / 'skipped' when no email / 'failed').
+    const emailResult = await sendOrderTicketEmail(
+      payload as unknown as OrderEmailPayload,
+      result.orderId,
+    ).catch(
+      (err): { status: 'failed'; email: string | null } => {
+        console.error('[comp/issue] ticket email send threw', err)
+        return { status: 'failed', email: email }
+      },
+    )
+
     return NextResponse.json({
       orderId: result.orderId,
       code: result.code,
       adultCount: result.adultCount,
       childCount: result.childCount,
       ticketCount: result.tickets.length,
+      emailStatus: emailResult.status,
+      emailTo: emailResult.email,
     })
   } catch (err) {
     if (err instanceof CompIssueError) {

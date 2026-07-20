@@ -40,7 +40,13 @@ export function CompIssueForm({
   const [email, setEmail] = React.useState('')
   const [submitting, setSubmitting] = React.useState(false)
   const [error, setError] = React.useState<string | null>(null)
-  const [banner, setBanner] = React.useState<{ orderId: string; code: string; ticketCount: number } | null>(null)
+  const [banner, setBanner] = React.useState<{
+    orderId: string
+    code: string
+    ticketCount: number
+    emailStatus: 'sent' | 'skipped' | 'failed'
+    emailTo: string | null
+  } | null>(null)
 
   // Member picker state.
   const [memberQuery, setMemberQuery] = React.useState('')
@@ -131,7 +137,13 @@ export function CompIssueForm({
         return
       }
       openPdf(data.orderId)
-      setBanner({ orderId: data.orderId, code: data.code, ticketCount: data.ticketCount })
+      setBanner({
+        orderId: data.orderId,
+        code: data.code,
+        ticketCount: data.ticketCount,
+        emailStatus: data.emailStatus === 'sent' || data.emailStatus === 'failed' ? data.emailStatus : 'skipped',
+        emailTo: typeof data.emailTo === 'string' ? data.emailTo : null,
+      })
       setAdults(0)
       setChildren(0)
       setMemberId('')
@@ -156,6 +168,8 @@ export function CompIssueForm({
           lang={lang}
           code={banner.code}
           ticketCount={banner.ticketCount}
+          emailStatus={banner.emailStatus}
+          emailTo={banner.emailTo}
           onOpenPdf={() => openPdf(banner.orderId)}
           onClose={dismissBanner}
         />
@@ -338,31 +352,46 @@ function SuccessBanner({
   lang,
   code,
   ticketCount,
+  emailStatus,
+  emailTo,
   onOpenPdf,
   onClose,
 }: {
   lang: AdminLang
   code: string
   ticketCount: number
+  emailStatus: 'sent' | 'skipped' | 'failed'
+  emailTo: string | null
   onOpenPdf: () => void
   onClose: () => void
 }) {
+  // A failed email is a warning the admin must act on (resend), so that banner
+  // stays amber and never auto-dismisses. Sent/skipped stay green and drain.
+  const failed = emailStatus === 'failed'
   const [width, setWidth] = React.useState(100)
   React.useEffect(() => {
+    if (failed) return
     const raf = requestAnimationFrame(() => setWidth(0))
     const fallback = setTimeout(onClose, BANNER_MS + 600)
     return () => {
       cancelAnimationFrame(raf)
       clearTimeout(fallback)
     }
-  }, [onClose])
+  }, [onClose, failed])
+
+  const emailLine =
+    emailStatus === 'sent'
+      ? `${adminT(lang, 'compEmailSent')}${emailTo ? ` ${emailTo}` : ''}`
+      : emailStatus === 'failed'
+        ? `⚠ ${adminT(lang, 'compEmailFailed')}${emailTo ? ` ${emailTo}` : ''} — ${adminT(lang, 'compEmailFailedHint')}`
+        : adminT(lang, 'compEmailSkipped')
 
   return (
     <div
       role="status"
       style={{
-        background: '#1f7a3a',
-        border: '1px solid #19632f',
+        background: failed ? '#8a5a00' : '#1f7a3a',
+        border: `1px solid ${failed ? '#6e4700' : '#19632f'}`,
         borderRadius: 8,
         padding: '12px 14px',
         marginBottom: 16,
@@ -376,6 +405,9 @@ function SuccessBanner({
             {ticketCount} · <span style={{ fontFamily: 'var(--font-mono, monospace)' }}>{code}</span> ·{' '}
             {adminT(lang, 'saleDonePdf')}
           </div>
+          <div style={{ color: 'rgba(255,255,255,0.95)', marginTop: 4, fontWeight: failed ? 700 : 400 }}>
+            {emailLine}
+          </div>
         </div>
         <button type="button" onClick={onClose} aria-label="×" style={closeBtn}>
           ×
@@ -384,19 +416,21 @@ function SuccessBanner({
       <button type="button" onClick={onOpenPdf} style={linkBtn}>
         {adminT(lang, 'openPdfAgain')}
       </button>
-      <div style={{ height: 4, borderRadius: 4, background: 'rgba(255,255,255,0.3)', overflow: 'hidden', marginTop: 8 }}>
-        <div
-          onTransitionEnd={(e) => {
-            if (e.propertyName === 'width') onClose()
-          }}
-          style={{
-            width: `${width}%`,
-            height: '100%',
-            background: '#fff',
-            transition: `width ${BANNER_MS}ms linear`,
-          }}
-        />
-      </div>
+      {!failed && (
+        <div style={{ height: 4, borderRadius: 4, background: 'rgba(255,255,255,0.3)', overflow: 'hidden', marginTop: 8 }}>
+          <div
+            onTransitionEnd={(e) => {
+              if (e.propertyName === 'width') onClose()
+            }}
+            style={{
+              width: `${width}%`,
+              height: '100%',
+              background: '#fff',
+              transition: `width ${BANNER_MS}ms linear`,
+            }}
+          />
+        </div>
+      )}
     </div>
   )
 }
