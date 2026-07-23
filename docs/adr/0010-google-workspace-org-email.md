@@ -1,6 +1,6 @@
 # ADR-0010: Move org email + files to Google Workspace (supersedes ADR-0004)
 
-**Status:** Proposed — contingent on Google for Nonprofits eligibility being granted
+**Status:** In progress — Google for Nonprofits eligibility **granted** (org approved). Free Workspace-for-Nonprofits activation submitted 2026-07-23 and pending Google review (recovered a pre-existing lapsed trial tenant `admin@moreska.eu` on the domain; grace to cancellation 2026-08-16). Flip to **Accepted** and mark ADR-0004 **superseded** once the MX cutover completes per #173. The paid Business-Starter fallback (Considered option 5) is not being used.
 **Date:** 2026-06-02
 **Supersedes:** ADR-0004 (on acceptance)
 
