@@ -4,7 +4,7 @@
 > the repo's *domain documentation*. This file tracks **registered domains, DNS, and
 > legacy org email addresses** — surfaced by issue #107 and tied to the #11 cutover.
 
-Last updated: 2026-06-02. Owner: Josip (dev). Source trigger: legacy credentials folder
+Last updated: 2026-07-16 (added §5 email-auth DNS). Owner: Josip (dev). Source trigger: legacy credentials folder
 (`cecilija-passes/`) found on Desktop, which revealed a second registrar ("Regica") nobody
 knew about, plus a set of deprecated `t-com.hr` email aliases.
 
@@ -185,3 +185,67 @@ domain's mail lives post-cutover:
 
 This is small but genuinely load-bearing for the cutover. Worth its own `ready-for-human` issue
 linked from #11, or a checklist item inside #11.
+
+---
+
+## 5. Email authentication DNS (SPF / DKIM / DMARC / BIMI)
+
+> Outbound sender-auth records for the two sending domains, as opposed to §1–§4 which cover
+> registrar / receiving / legacy forwarding. **Owner: #346 (BIMI).** Records below verified live
+> via `dig` **2026-07-16**.
+
+Two domains send mail, both through **Brevo**:
+- **`moreska.eu`** — transactional (ticket confirmations from `tickets@moreska.eu`, other org mail
+  from `info@moreska.eu`) + human "send as `info@moreska.eu`" from Gmail via the Brevo SMTP relay.
+  Inbound MX is **ImprovMX** (receiving/forwarding only — it does not sign or send *as* moreska.eu).
+- **`bilten.moreska.eu`** — marketing/newsletter (`newsletter@bilten.moreska.eu`), ADR-0004.
+
+### Live records (both verified 2026-07-16)
+
+| Record | Type | Value |
+|---|---|---|
+| `moreska.eu` (SPF) | TXT | `v=spf1 include:spf.brevo.com include:spf.improvmx.com ~all` |
+| `bilten.moreska.eu` (SPF) | TXT | `v=spf1 include:spf.brevo.com -all` |
+| `brevo1._domainkey.moreska.eu` / `brevo2…` | CNAME | → `b1.moreska-eu.dkim.brevo.com` / `b2…` (Brevo DKIM) |
+| `brevo1._domainkey.bilten.moreska.eu` / `brevo2…` | CNAME | → `b1.bilten-moreska-eu.dkim.brevo.com` / `b2…` |
+| `_dmarc.moreska.eu` | TXT | `v=DMARC1; p=quarantine; rua=mailto:rua@dmarc.brevo.com; adkim=r; aspf=r` |
+| `_dmarc.bilten.moreska.eu` | TXT | `v=DMARC1; p=quarantine; rua=mailto:rua@dmarc.brevo.com; adkim=r; aspf=r` |
+
+**DMARC is already at enforcement (`p=quarantine`, no `pct`)** on both domains — this is the BIMI
+prerequisite, so BIMI is unblocked. How alignment resolves for a real Brevo send (from the live
+Gmail `Authentication-Results` of a ticket email, 2026-07-16):
+
+```
+dkim=pass  header.i=@moreska.eu  header.s=brevo2       ← DKIM aligned → carries DMARC
+spf=pass   smtp.mailfrom=bounces-…@ae.d.mailin.fr      ← Brevo bounce domain, NOT aligned to moreska.eu
+dmarc=pass (p=QUARANTINE sp=QUARANTINE dis=NONE) header.from=moreska.eu
+```
+
+> **Why the SPF `include:spf.brevo.com` on `moreska.eu` doesn't affect DMARC:** Brevo sends with an
+> envelope-from on its own bounce domain (`*.mailin.fr`), so SPF authenticates *that* domain, never
+> aligns to `moreska.eu`, and DMARC passes purely on **DKIM** alignment (`d=moreska.eu`). The SPF
+> include is still correct to keep (belt-and-suspenders, and it covers the relay path), just not the
+> thing carrying DMARC here.
+
+### BIMI — remaining step (#346)
+
+DMARC enforcement + DKIM alignment + the logo asset are all in place; the only unpublished piece is
+the two BIMI TXT records. The logo is served at **`https://moreska.eu/email/bimi-logo.svg`** (HTTP
+200, `image/svg+xml`, BIMI-profile `baseProfile="tiny-ps"`, `<title>`, square `viewBox`; PR #353,
+issue #345). Publish in Hetzner DNS:
+
+| Record | Type | Value |
+|---|---|---|
+| `default._bimi.moreska.eu` | TXT | `v=BIMI1; l=https://moreska.eu/email/bimi-logo.svg; a=;` |
+| `default._bimi.bilten.moreska.eu` | TXT | `v=BIMI1; l=https://moreska.eu/email/bimi-logo.svg; a=;` |
+
+`a=;` explicitly declares "no VMC/CMC certificate" (correct for the free stack). Cert-free BIMI shows
+the logo in Fastmail and a few others; **Gmail/Apple/Yahoo still require a paid VMC/CMC** to render it
+(deferred). After publishing, verify with a delivered message to a cert-free client.
+
+> **Testing gotcha — a "send as `info@moreska.eu`" *to your own Gmail* does NOT verify the relay
+> path.** Gmail loop-delivers same-account mail internally (no `Received` / `Authentication-Results`
+> headers, `@mail.gmail.com` Message-ID), so it can't confirm SPF/DKIM/DMARC. To test the Gmail→Brevo
+> relay path, send to a **non-Gmail** mailbox or a checker (`check-auth@verifier.port25.com`,
+> mail-tester.com) and read the auth result there. The **transactional** path is genuinely exercised
+> by any real Brevo-sent ticket email inbound to Gmail (that's how the results above were captured).
