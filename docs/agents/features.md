@@ -36,6 +36,24 @@ Optimistic-concurrency claim on the *current* date (not a one-shot flag like the
 
 The notice is **deduped by email** (`DISTINCT ON (lower(email))` — one per person) and **transactional** (never checks `marketing_optouts`). Pure DI orchestration in `src/lib/show-reschedule.ts`; sender `src/lib/email/send-date-change-email.ts`; route `POST/GET /api/shows/[id]/reschedule`. Audit columns `date_changed_at` / `date_changed_by_id` / `original_date` added in `db/schema/app.sql`.
 
+### Re-issuing a lost self-serve refund link (support)
+
+The reschedule email's refund link (ADR-0021) is the buyer's only route to it — there is no "resend my link" self-service, and buyers do lose the mail (first real case: 2026-07-26). The token is **stateless and never expires**, so it can be regenerated on demand for any order.
+
+1. Find the order and confirm eligibility — needs `shows.date_changed_at IS NOT NULL`, `channel='online'`, a `stripe_payment_intent_id`, `refund_status='none'`, and **zero scanned tickets** (the same conditions `evaluateRefundEligibility` re-derives; see `src/lib/refund/reschedule-refund-context.ts`). Note the orders column is `email`, not `buyer_email`.
+2. Sign the token with the **prod** `PAYLOAD_SECRET` — run it inside the running app container so the secret never leaves the box, and print only the URL:
+   ```js
+   // node -e inside the prod app container
+   const { createHmac } = require('crypto')
+   const id = '<orderId>'
+   const t = Buffer.from(id).toString('base64url') + '.' +
+     createHmac('sha256', process.env.PAYLOAD_SECRET).update(id).digest('base64url')
+   console.log(`${process.env.NEXT_PUBLIC_BASE_URL}/order/${encodeURIComponent(t)}/refund`)
+   ```
+3. Verify before sending: a plain `GET` on the URL is side-effect-free (the refund is a `POST`). A 200 showing the order total + the "Cancel & refund" CTA means `ELIGIBLE`; the page renders its own neutral state for every other case.
+
+Prefer this over refunding for the buyer from `/admin` — the decision (and the irreversible click) stays with them.
+
 ## Marketing-class email + opt-outs (#57)
 
 Only the **post-show review email** is marketing-class. Everything else (ticket confirmation, refund, venue-change) is **transactional** and never checks the opt-out list — it concerns a ticket the buyer already holds.
