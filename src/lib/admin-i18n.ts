@@ -19,9 +19,10 @@ export const ADMIN_LANGS: readonly AdminLang[] = ['en', 'hr'] as const
 // The developer (`superadmin`) and the shared door account (`tehnika`) default
 // to English: the door account is shared by whoever is on the gate, and its
 // scan overlay shows guest-readable English to the ticket holder being admitted.
-// The secretary (`admin`) and reseller (`partner`) work in Croatian, as do
-// unknown/missing roles — the safe default for the Croatian-speaking staff this
-// panel is built for.
+// The secretary (`admin`), reseller (`partner`) and the shared society-
+// membership login (`member`, ADR-0022) work in Croatian, as do unknown/missing
+// roles — the safe default for the Croatian-speaking staff this panel is built
+// for.
 export function defaultLanguageForRole(role: string | null | undefined): AdminLang {
   return role === 'superadmin' || role === 'tehnika' ? 'en' : 'hr'
 }
@@ -217,6 +218,20 @@ export const dashboardStrings = {
     compsChild: 'Child',
     compsTotal: 'Total',
     noComps: 'No comps issued yet.',
+    // Member season dashboard (#362, ADR-0022). "Issued", never "sold": the
+    // headline counts comps, unlike every figure on the secretary dashboard.
+    memberSeasonTitle: 'Season',
+    memberIssued: 'Tickets issued',
+    memberIssuedShort: 'Issued',
+    memberSeasonFill: 'Season capacity filled',
+    memberPerShow: 'By performance',
+    memberTicketTypes: 'Ticket types',
+    memberChannels: 'Where the tickets came from',
+    memberChannelBoxOffice: 'Box office',
+    memberBoxOfficeNote: 'Box office tickets are not split into adult / child.',
+    memberNoShows: 'No performances scheduled for this season yet.',
+    memberIntro:
+      'Tickets issued this season, including complimentary tickets. Cancelled and refunded tickets are not counted.',
   },
   hr: {
     dashboard: 'Nadzorna ploča',
@@ -364,6 +379,20 @@ export const dashboardStrings = {
     compsChild: 'Djeca',
     compsTotal: 'Ukupno',
     noComps: 'Još nema izdanih besplatnih ulaznica.',
+    // Member season dashboard (#362, ADR-0022). "Izdano", nikad "prodano":
+    // brojka uključuje gratis ulaznice, za razliku od tajničke ploče.
+    memberSeasonTitle: 'Sezona',
+    memberIssued: 'Izdano ulaznica',
+    memberIssuedShort: 'Izdano',
+    memberSeasonFill: 'Popunjenost sezone',
+    memberPerShow: 'Po izvedbi',
+    memberTicketTypes: 'Vrste ulaznica',
+    memberChannels: 'Odakle su ulaznice',
+    memberChannelBoxOffice: 'Blagajna',
+    memberBoxOfficeNote: 'Ulaznice s blagajne nisu razvrstane na odrasle i djecu.',
+    memberNoShows: 'Za ovu sezonu još nema zakazanih izvedbi.',
+    memberIntro:
+      'Izdane ulaznice u ovoj sezoni, uključujući gratis ulaznice. Otkazane i vraćene ulaznice se ne broje.',
   },
 } as const
 

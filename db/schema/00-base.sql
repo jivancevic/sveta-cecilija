@@ -136,7 +136,10 @@ CREATE TYPE public.enum_users_role AS ENUM (
     'superadmin',
     'admin',
     'tehnika',
-    'partner'
+    'partner',
+    -- Shared read-only society-membership login (ADR-0022). Existing databases
+    -- pick this up from migrate-roles-3-member-enum.sql, not from here.
+    'member'
 );
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 

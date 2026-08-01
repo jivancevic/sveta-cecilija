@@ -1,4 +1,4 @@
-export type Role = 'superadmin' | 'admin' | 'tehnika' | 'partner'
+export type Role = 'superadmin' | 'admin' | 'tehnika' | 'partner' | 'member'
 
 export type RoleUser = { role?: Role | string } | null | undefined
 
@@ -21,6 +21,15 @@ export function isAuthed(user: RoleUser): boolean {
 
 export function isPartner(user: RoleUser): boolean {
   return !!user && (user as { role?: string }).role === 'partner'
+}
+
+// The shared, read-only society-membership login (ADR-0022). Deliberately in NO
+// other predicate: `member` is not internal staff (isAuthed), not admin tier,
+// not a reseller. It reaches its own dashboard branch and nothing else — every
+// collection's access and `admin.hidden` is an allow-list, so a role that
+// appears in none of them defaults to denied, which is the safe direction.
+export function isMember(user: RoleUser): boolean {
+  return !!user && (user as { role?: string }).role === 'member'
 }
 
 // The `partners` record a `partner`-role login is bound to. The link is the

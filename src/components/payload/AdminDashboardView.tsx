@@ -6,7 +6,7 @@ import { getPayload } from 'payload'
 import config from '@payload-config'
 import { getStatsInput } from '@/lib/stats-data'
 import { ADMIN_LANG_COOKIE, adminT, resolveAdminLang, type AdminLang } from '@/lib/admin-i18n'
-import { isAdminTier, isAuthed, isPartner, partnerIdOf } from '@/lib/access/roles'
+import { isAdminTier, isAuthed, isMember, isPartner, partnerIdOf } from '@/lib/access/roles'
 import { getNextShow, getScannedPeopleForShow, getUpcomingShows, type NextShow } from '@/lib/shows'
 import { toDashboardShows } from '@/lib/dashboard/from-stats'
 import { partitionShows } from '@/lib/dashboard/partition'
@@ -40,6 +40,9 @@ import { PartnerMonthToDateCard } from './PartnerMonthToDateCard'
 import type { PoolQuery } from '@/lib/tickets/sold-seats'
 import { countInquiries, type InquiryRow } from '@/lib/dashboard/inquiries'
 import { InquiriesBadge } from './InquiriesBadge'
+import { buildMemberSeason } from '@/lib/member/season'
+import { getSeasonTicketRowsByShow } from '@/lib/member/season-data'
+import { MemberSeasonDashboard } from './MemberSeasonDashboard'
 import { gatherDevDiagnostics } from '@/lib/dev-diagnostics/gather'
 import { getStripeBalanceSummary } from '@/lib/dev-diagnostics/stripe-balance'
 import { SuperadminDevStrip } from './SuperadminDevStrip'
@@ -71,6 +74,13 @@ export async function AdminDashboardView() {
   // so branch here before the staff-only login guard below.
   if (isPartner(user as { role?: string } | null)) {
     return <PartnerDashboard payload={payload} user={user} lang={lang} />
+  }
+
+  // The shared society-membership login (ADR-0022) is likewise authenticated but
+  // outside isAuthed, so it branches before the staff guard too. Read-only: this
+  // is the only page it can reach.
+  if (isMember(user as { role?: string } | null)) {
+    return <MemberDashboard payload={payload} lang={lang} />
   }
 
   if (!isAuthed(user as { role?: string } | null)) {
@@ -412,6 +422,40 @@ function DoorProgressHero({
       </div>
     </div>
   )
+}
+
+// Season ticket view for the shared `member` login (#362, ADR-0022).
+//
+// Two reads, both already-established seams: getStatsInput for the season's
+// performances (date/venue/capacity/sold, with `date` normalized to YYYY-MM-DD)
+// and one grouped ticket query for the adult/child + channel split. The season
+// filter, the box-office derivation and every rollup live in the pure
+// buildMemberSeason(); this function only wires data to it.
+//
+// Deliberately does NOT reuse the secretary dashboard's money/action pieces: no
+// figure on this page is derived from `orders.total`, and it renders no links.
+async function MemberDashboard({
+  payload,
+  lang,
+}: {
+  payload: Awaited<ReturnType<typeof getPayload>>
+  lang: AdminLang
+}) {
+  const pool = (payload.db as unknown as { pool: { query: PoolQuery } }).pool
+  const poolQuery: PoolQuery = (sql, params) => pool.query(sql, params)
+
+  const [input, ticketRows] = await Promise.all([
+    getStatsInput(),
+    getSeasonTicketRowsByShow(poolQuery),
+  ])
+
+  const season = buildMemberSeason({
+    today: input.today,
+    shows: toDashboardShows(input.shows),
+    ticketRows,
+  })
+
+  return <MemberSeasonDashboard season={season} lang={lang} />
 }
 
 // Scoped dashboard shell for the `partner` role (ADR-0008, ADR-0006 pattern).

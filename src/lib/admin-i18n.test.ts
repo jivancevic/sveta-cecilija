@@ -22,6 +22,10 @@ describe('defaultLanguageForRole', () => {
     expect(defaultLanguageForRole('partner')).toBe('hr')
   })
 
+  it('defaults the shared society-membership login to Croatian (ADR-0022)', () => {
+    expect(defaultLanguageForRole('member')).toBe('hr')
+  })
+
   it('defaults the developer (superadmin) to English', () => {
     expect(defaultLanguageForRole('superadmin')).toBe('en')
   })
