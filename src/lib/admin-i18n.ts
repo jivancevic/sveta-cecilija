@@ -222,7 +222,6 @@ export const dashboardStrings = {
     // headline counts comps, unlike every figure on the secretary dashboard.
     memberSeasonTitle: 'Season',
     memberIssued: 'Tickets issued',
-    memberIssuedShort: 'Issued',
     memberSeasonFill: 'Season capacity filled',
     memberPerShow: 'By performance',
     memberTicketTypes: 'Ticket types',
@@ -383,7 +382,6 @@ export const dashboardStrings = {
     // brojka uključuje gratis ulaznice, za razliku od tajničke ploče.
     memberSeasonTitle: 'Sezona',
     memberIssued: 'Izdano ulaznica',
-    memberIssuedShort: 'Izdano',
     memberSeasonFill: 'Popunjenost sezone',
     memberPerShow: 'Po izvedbi',
     memberTicketTypes: 'Vrste ulaznica',

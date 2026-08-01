@@ -1,14 +1,15 @@
 import { describe, it, expect } from 'vitest'
 import { buildMemberSeason, seasonYear, type SeasonTicketRow } from './season'
-import type { DashboardShow } from '../dashboard/partition'
+import type { StatsShow } from '../stats'
 
-function show(over: Partial<DashboardShow> & { id: string; date: string }): DashboardShow {
+function show(over: Partial<StatsShow> & { id: string; date: string }): StatsShow {
   return {
     time: '21:30',
     venue: 'ljetno-kino',
-    sold: 0,
-    capacity: 320,
-    remaining: 320,
+    activeTicketCount: 0,
+    inPersonSold: 0,
+    legacyReserved: 0,
+    scannedCount: 0,
     status: 'active',
     ...over,
   }
@@ -36,9 +37,9 @@ describe('buildMemberSeason', () => {
     const result = buildMemberSeason({
       today,
       shows: [
-        show({ id: '1', date: '2026-07-01', sold: 100 }),
-        show({ id: '2', date: '2025-07-01', sold: 200 }), // last season
-        show({ id: '3', date: '2027-07-01', sold: 50 }), // next season
+        show({ id: '1', date: '2026-07-01', activeTicketCount: 100 }),
+        show({ id: '2', date: '2025-07-01', activeTicketCount: 200 }), // last season
+        show({ id: '3', date: '2027-07-01', activeTicketCount: 50 }), // next season
       ],
       ticketRows: [
         row({ showId: '1', adult: 80, child: 20, online: 100 }),
@@ -54,12 +55,22 @@ describe('buildMemberSeason', () => {
     expect(result.types.child).toBe(20)
   })
 
+  it('tolerates a full ISO timestamp as the show date', () => {
+    const result = buildMemberSeason({
+      today,
+      shows: [show({ id: '1', date: '2026-07-01T19:00:00.000Z', activeTicketCount: 10 })],
+      ticketRows: [],
+    })
+    expect(result.shows).toHaveLength(1)
+    expect(result.shows[0].date).toBe('2026-07-01')
+  })
+
   it('excludes cancelled performances from the list, the totals and the capacity', () => {
     const result = buildMemberSeason({
       today,
       shows: [
-        show({ id: '1', date: '2026-07-01', sold: 100 }),
-        show({ id: '2', date: '2026-07-02', sold: 40, status: 'cancelled' }),
+        show({ id: '1', date: '2026-07-01', activeTicketCount: 100 }),
+        show({ id: '2', date: '2026-07-02', activeTicketCount: 40, status: 'cancelled' }),
       ],
       ticketRows: [
         row({ showId: '1', adult: 100, online: 100 }),
@@ -73,35 +84,31 @@ describe('buildMemberSeason', () => {
     expect(result.channels.online).toBe(100)
   })
 
-  it('derives box office as the sold seats that carry no ticket rows', () => {
-    // sold = active tickets (70) + shows.inPersonSold (30) = 100.
+  it('counts box office as inPersonSold + legacyReserved, both of which occupy seats', () => {
+    // ADR-0022: box office is "the shows.inPersonSold counter (with
+    // legacyReserved folded in)". Both take a real seat — remainingSeats
+    // subtracts each — so both belong in a seats-issued / capacity-fill view,
+    // even though the secretary dashboard's "sold" figure omits legacyReserved
+    // as a reservation rather than a sale.
     const result = buildMemberSeason({
       today,
-      shows: [show({ id: '1', date: '2026-07-01', sold: 100 })],
+      shows: [
+        show({ id: '1', date: '2026-07-01', activeTicketCount: 70, inPersonSold: 30, legacyReserved: 40 }),
+      ],
       ticketRows: [row({ showId: '1', adult: 50, child: 20, online: 60, partner: 10 })],
     })
 
-    expect(result.issued).toBe(100)
-    expect(result.channels).toEqual({ online: 60, partner: 10, comp: 0, boxOffice: 30 })
+    expect(result.issued).toBe(140)
+    expect(result.channels).toEqual({ online: 60, partner: 10, comp: 0, boxOffice: 70 })
     // Box office has no ticket type, so it is reported apart from adult/child.
-    expect(result.types).toEqual({ adult: 50, child: 20, boxOffice: 30 })
-  })
-
-  it('never reports a negative box office when a show is oversold on tickets alone', () => {
-    const result = buildMemberSeason({
-      today,
-      shows: [show({ id: '1', date: '2026-07-01', sold: 5 })],
-      ticketRows: [row({ showId: '1', adult: 8, online: 8 })],
-    })
-
-    expect(result.channels.boxOffice).toBe(0)
-    expect(result.types.boxOffice).toBe(0)
+    expect(result.types).toEqual({ adult: 50, child: 20, boxOffice: 70 })
+    expect(result.shows[0]).toMatchObject({ issued: 140, capacity: 320, percent: 44 })
   })
 
   it('counts comps in the headline and keeps them visible as their own channel', () => {
     const result = buildMemberSeason({
       today,
-      shows: [show({ id: '1', date: '2026-07-01', sold: 100 })],
+      shows: [show({ id: '1', date: '2026-07-01', activeTicketCount: 100 })],
       ticketRows: [row({ showId: '1', adult: 100, online: 90, comp: 10 })],
     })
 
@@ -114,8 +121,8 @@ describe('buildMemberSeason', () => {
     const result = buildMemberSeason({
       today,
       shows: [
-        show({ id: '1', date: '2026-07-01', sold: 160, capacity: 320 }),
-        show({ id: '2', date: '2026-07-02', sold: 125, capacity: 250, venue: 'zimsko-kino' }),
+        show({ id: '1', date: '2026-07-01', activeTicketCount: 160 }),
+        show({ id: '2', date: '2026-07-02', activeTicketCount: 125, venue: 'zimsko-kino' }),
       ],
       ticketRows: [],
     })
@@ -146,7 +153,7 @@ describe('buildMemberSeason', () => {
     // the season channel/type mix.
     const result = buildMemberSeason({
       today,
-      shows: [show({ id: '1', date: '2026-07-01', sold: 10 })],
+      shows: [show({ id: '1', date: '2026-07-01', activeTicketCount: 10 })],
       ticketRows: [row({ showId: '1', adult: 10, online: 10 }), row({ showId: '999', adult: 5, online: 5 })],
     })
 

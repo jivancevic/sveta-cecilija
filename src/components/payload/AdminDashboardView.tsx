@@ -427,10 +427,14 @@ function DoorProgressHero({
 // Season ticket view for the shared `member` login (#362, ADR-0022).
 //
 // Two reads, both already-established seams: getStatsInput for the season's
-// performances (date/venue/capacity/sold, with `date` normalized to YYYY-MM-DD)
-// and one grouped ticket query for the adult/child + channel split. The season
-// filter, the box-office derivation and every rollup live in the pure
+// performances (raw per-show counters, with `date` normalized to YYYY-MM-DD) and
+// one grouped ticket query for the adult/child + channel split. The season
+// filter, the box-office sum and every rollup live in the pure
 // buildMemberSeason(); this function only wires data to it.
+//
+// Note it feeds buildMemberSeason the RAW StatsShow rows, not toDashboardShows()
+// — the secretary dashboard's `sold` drops legacyReserved, which still occupies
+// a seat and so must count here (ADR-0022).
 //
 // Deliberately does NOT reuse the secretary dashboard's money/action pieces: no
 // figure on this page is derived from `orders.total`, and it renders no links.
@@ -449,11 +453,7 @@ async function MemberDashboard({
     getSeasonTicketRowsByShow(poolQuery),
   ])
 
-  const season = buildMemberSeason({
-    today: input.today,
-    shows: toDashboardShows(input.shows),
-    ticketRows,
-  })
+  const season = buildMemberSeason({ today: input.today, shows: input.shows, ticketRows })
 
   return <MemberSeasonDashboard season={season} lang={lang} />
 }
