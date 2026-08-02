@@ -1,6 +1,7 @@
 import { APIError, type CollectionConfig } from 'payload'
 import { isSuperadmin, isAdminTier } from '@/lib/access/roles'
 import { assertUserEmailPolicy, UserEmailRequiredError } from '@/lib/access/user-email-policy'
+import { userUpdateAccess } from '@/lib/access/user-self-update'
 import { ADMIN_LANG_COOKIE, seedAdminLangCookie } from '@/lib/admin-i18n'
 
 type ReqUser = { id?: string | number; role?: string } | null | undefined
@@ -91,7 +92,10 @@ export const Users: CollectionConfig = {
   },
   access: {
     read: selfOrSuperadmin,
-    update: selfOrSuperadmin,
+    // Update is NOT the mirror of read: the shared `member` account is denied
+    // self-edit so no single member can rotate the society's shared password
+    // (ADR-0022). Rule lives in user-self-update.ts, where it is unit-tested.
+    update: ({ req }: { req: { user: unknown } }) => userUpdateAccess(req.user as ReqUser),
     create: superadminOnly,
     delete: superadminOnly,
   },
@@ -120,6 +124,9 @@ export const Users: CollectionConfig = {
         // Partner sales channel (ADR-0008). Value only here; scoped access +
         // partner dashboard land in #143.
         { label: 'Partner', value: 'partner' },
+        // Shared read-only society-membership login (ADR-0022). Sees only the
+        // season ticket dashboard; in no access predicate anywhere else.
+        { label: 'Member (shared, read-only)', value: 'member' },
       ],
       access: {
         // Field-level lock: only superadmin can read or write the role field.

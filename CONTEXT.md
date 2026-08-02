@@ -169,15 +169,16 @@ This split exists because buyers used to burn their own tickets by tapping the l
 ALREADY_SCANNED additionally renders **Undo scan** above these two when the original scan was within the last 2 minutes (see "Undo-scan window"). Buttons are stacked vertical, full-width, 48px min-height for thumb-tap reliability at the door.
 
 ### Admin tiers
-Three Payload user roles, see [ADR-0006](../docs/adr/0006-three-tier-admin-roles.md):
+Payload user roles — three internal tiers from [ADR-0006](../docs/adr/0006-three-tier-admin-roles.md), plus the reseller `partner` ([ADR-0008](../docs/adr/0008-partner-sales-channel.md)) and the read-only `member` ([ADR-0022](../docs/adr/0022-member-season-dashboard.md)):
 
 | Role | Who | Can do |
 |---|---|---|
 | `superadmin` | Developer (Josip) | Everything, including user management (create/delete users, change roles). |
 | `admin` | HGD secretaries | Everything except user management. Add/cancel shows, view orders, issue refunds, read inquiries, record in-person sales. Sees own profile only; cannot see or promote other users. The `role` field is field-level locked to `superadmin` so secretaries can edit name/email/password but not their own tier. |
 | `tehnika` | Shared door-staff account (username **`tehnika`**, no email — ADR-0011) | Authenticate `/scan/[token]` for atomic mark-as-scanned; look up a ticket by name/email/code and admit it (see Tehnika dashboard). May see, **for a specifically-searched ticket only**, buyer name + party size + show + scan status. **No financials** (amounts, refunds), **no browsable buyer list**, no order-collection browsing, cannot issue refunds. |
+| `member` | Shared society-membership account (username **`clanovi`**, no email — [ADR-0022](../docs/adr/0022-member-season-dashboard.md)) | **Read-only, one page.** Sees the season ticket dashboard (tickets issued, per-performance counts + capacity fill, adult/child, channel mix) and nothing else. No collections, no buyer PII, no money figures, no actions. Cannot even edit its own account — `member` is excluded from the `selfOrSuperadmin` update on Users, so only a superadmin rotates the shared password. |
 
-Per-role sidebar visibility: superadmin sees all collections; admin sees everything except Users (Shows, Orders, QRTokens, ContactSubmissions, Posts); tehnika sees an empty sidebar. The `/admin` landing route is a custom dashboard component that branches on role (stats-only for tehnika, full task dashboard for admin/superadmin).
+Per-role sidebar visibility: superadmin sees all collections; admin sees everything except Users (Shows, Orders, QRTokens, ContactSubmissions, Posts); tehnika and member see an empty sidebar. The `/admin` landing route is a custom dashboard component that branches on role (stats-only for tehnika, full task dashboard for admin/superadmin).
 
 Session length: `Users.auth.tokenExpiration` is 30 days for all tiers so the shared tehnika device stays logged in across long stretches, and secretaries aren't re-logging daily. Password rotation invalidates if a device is lost.
 
@@ -188,6 +189,7 @@ The `/admin` landing is **one business-language dashboard**, not a per-role rede
 - **`superadmin` (Josip):** the **same** secretary dashboard **plus** a power-user "developer strip" (raw counts, system/health signals, environment indicator, direct collection links). He is not given a separate raw-table landing — Payload's left sidebar already *is* the raw view, so a second one would only duplicate it. The landing's job is the cross-collection at-a-glance that no single table gives.
 - **`tehnika`:** distinct, purpose-built door-scan dashboard, also being rethought in this redesign. **Defaults to English** (the door account is shared and a guest glances at the result screen; see *Tehnika role* and *Admin language*). The Croatian default that previously applied to tehnika was reversed; partner is unaffected.
 - **`partner`:** distinct, scoped reseller view; defaults to Croatian.
+- **`member`:** a fifth, read-only branch — the season ticket view described in [ADR-0022](../docs/adr/0022-member-season-dashboard.md); defaults to Croatian. Its headline counts **comps** and is therefore labelled *izdano* (issued), not *prodano* (sold) — deliberately unlike the secretary dashboard, where comps sit outside sales and outside every money total.
 
 **Visual language.** Surfaces use Payload's native theme tokens (`--theme-elevation-*`) so the dashboard harmonizes with the admin chrome and respects light/dark mode; brand identity enters only as **restrained accents** — the brand **gold** for key figures and chart fills, **Bodoni Moda SC** for the big hero numbers. Not a full brand reskin (a styled island inside Payload's grey chrome reads as disjointed and fights dark mode).
 
