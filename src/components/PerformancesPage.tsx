@@ -30,7 +30,7 @@ function formatDate(isoDate: string, locale: Locale) {
 
 export default function PerformancesPage({ t, tSchedule, shows, locale, initialDate, images }: Props) {
   const initialMatch = initialDate
-    ? shows.find((s) => s.date === initialDate && !s.salesPaused)
+    ? shows.find((s) => s.date === initialDate && !s.onlineSalesPaused)
     : undefined;
   const [activeId, setActiveId] = useState<string | null>(initialMatch ? initialMatch.id : null);
   const [adults, setAdults] = useState(1);
@@ -110,7 +110,7 @@ export default function PerformancesPage({ t, tSchedule, shows, locale, initialD
           {shows.map((show, i) => {
             const { day, month, year, weekday } = formatDate(show.date, locale);
             const soldOut = show.remaining <= 0;
-            const paused = show.salesPaused && !soldOut;
+            const paused = show.onlineSalesPaused && !soldOut;
             const isActive = activeId === show.id;
             const fewLeft = !soldOut && !paused && show.remaining <= 50 && i < 3;
             const image = images[i % images.length];

@@ -18,7 +18,7 @@ export interface Show {
   venue: Venue;
   remaining: number; // venue capacity - onlineSold - inPersonSold - legacyReserved
   /** Admin has paused online sales — show stays listed, buy CTA replaced by a note. */
-  salesPaused: boolean;
+  onlineSalesPaused: boolean;
 }
 
 export interface NextShow {
@@ -126,7 +126,7 @@ export async function getUpcomingShows(limit?: number): Promise<Show[]> {
           inPersonSold: (show.inPersonSold as number) ?? 0,
           legacyReserved: (show.legacyReserved as number) ?? 0,
         }),
-        salesPaused: Boolean(show.onlineSalesPaused),
+        onlineSalesPaused: Boolean(show.onlineSalesPaused),
       }
     })
     // Drop shows that started more than the grace window ago (Europe/Zagreb).

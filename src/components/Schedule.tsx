@@ -44,7 +44,7 @@ export default function Schedule({ t, shows, locale }: Props) {
         {shows.map((show, i) => {
           const { day, month, year, weekday } = formatDate(show.date, locale);
           const soldOut = show.remaining <= 0;
-          const paused = show.salesPaused && !soldOut;
+          const paused = show.onlineSalesPaused && !soldOut;
           const isNext = i === 0;
           const image = SHOW_IMAGES[i % SHOW_IMAGES.length];
           const venueName = show.venue === 'zimsko-kino' ? t.venueZimsko : t.venueLjetno;
