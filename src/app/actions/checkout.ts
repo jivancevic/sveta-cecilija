@@ -74,6 +74,7 @@ export async function startCheckout(input: CheckoutInput) {
             inPersonSold: (doc.inPersonSold as number) ?? 0,
             legacyReserved: (doc.legacyReserved as number) ?? 0,
             status: doc.status as 'active' | 'cancelled',
+            onlineSalesPaused: Boolean(doc.onlineSalesPaused),
           }
         } catch {
           return null

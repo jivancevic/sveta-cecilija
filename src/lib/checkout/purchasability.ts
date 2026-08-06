@@ -39,11 +39,17 @@ export interface PurchasableShow {
    */
   legacyReserved?: number
   status: 'active' | 'cancelled'
+  /**
+   * Admin toggle: online checkout is paused for this show. Partner/comp sales
+   * are not gated here (they have their own flows); optional for back-compat
+   * with callers/tests that predate the toggle (absent = not paused).
+   */
+  onlineSalesPaused?: boolean
 }
 
 export class CheckoutValidationError extends Error {
-  code: 'EMPTY' | 'CANCELLED' | 'PAST' | 'OVER_CAPACITY'
-  constructor(code: 'EMPTY' | 'CANCELLED' | 'PAST' | 'OVER_CAPACITY', message: string) {
+  code: 'EMPTY' | 'CANCELLED' | 'SALES_PAUSED' | 'PAST' | 'OVER_CAPACITY'
+  constructor(code: 'EMPTY' | 'CANCELLED' | 'SALES_PAUSED' | 'PAST' | 'OVER_CAPACITY', message: string) {
     super(message)
     this.code = code
   }
@@ -59,6 +65,12 @@ export function assertPurchasable(
   }
   if (show.status === 'cancelled') {
     throw new CheckoutValidationError('CANCELLED', 'This show has been cancelled')
+  }
+  if (show.onlineSalesPaused) {
+    throw new CheckoutValidationError(
+      'SALES_PAUSED',
+      'Online sales for this show are closed',
+    )
   }
   // A show stays purchasable until 1h after its Korčula (Europe/Zagreb) start —
   // not from the previous UTC midnight (the bare dayOnly date) — so late

@@ -449,6 +449,7 @@ CREATE TABLE IF NOT EXISTS public.shows (
     in_person_sold numeric DEFAULT 0,
     legacy_reserved numeric DEFAULT 0,
     status public.enum_shows_status DEFAULT 'active'::public.enum_shows_status NOT NULL,
+    online_sales_paused boolean DEFAULT false,
     venue_changed_at timestamp(3) with time zone,
     venue_changed_by_id integer,
     date_changed_at timestamp(3) with time zone,

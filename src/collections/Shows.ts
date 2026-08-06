@@ -16,7 +16,7 @@ export const Shows: CollectionConfig = {
   },
   admin: {
     useAsTitle: 'date',
-    defaultColumns: ['date', 'time', 'venue', 'onlineSold', 'inPersonSold', 'legacyReserved', 'status'],
+    defaultColumns: ['date', 'time', 'venue', 'onlineSold', 'inPersonSold', 'legacyReserved', 'status', 'onlineSalesPaused'],
     hidden: ({ user }) => !isAdminTier(user as { role?: string } | null),
     components: {
       edit: {
@@ -93,6 +93,15 @@ export const Shows: CollectionConfig = {
         { label: 'Active', value: 'active' },
         { label: 'Cancelled', value: 'cancelled' },
       ],
+    },
+    {
+      name: 'onlineSalesPaused',
+      type: 'checkbox',
+      defaultValue: false,
+      admin: {
+        description:
+          'Pause ONLINE ticket sales for this show. The show stays listed on /tickets with an "online sales closed" note. Partner (POS) sales, comp tickets, door scanning and stats are unaffected. Uncheck to resume sales.',
+      },
     },
     // Bad-weather venue-change audit (#94). Populated by the "Mark show as
     // moved to Zimsko" action; read-only in the admin. NULL = never moved.
