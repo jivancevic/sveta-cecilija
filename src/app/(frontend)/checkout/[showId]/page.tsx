@@ -52,6 +52,24 @@ export default async function CheckoutRoute({ params, searchParams }: RouteProps
   }
   if (!showDoc || showDoc.status === 'cancelled') notFound()
 
+  // Online sales paused by an admin: keep the page reachable (people share
+  // checkout links) but replace the form with the "sales closed" note. The
+  // server action re-checks this in assertPurchasable, so this is UX, not
+  // the security boundary.
+  if (showDoc.onlineSalesPaused) {
+    return (
+      <div className="inner-page t-stone">
+        <Nav locale={locale} t={dict.nav} variant="inner" />
+        <main className="checkout-page">
+          <h1 className="checkout-page__h">{dict.checkoutPage.pageHeading}</h1>
+          <p className="checkout-page__paused">{dict.checkoutPage.salesPausedNote}</p>
+          <Link href="/tickets" className="checkout-page__back">{dict.checkoutPage.pageBack}</Link>
+        </main>
+        <Footer locale={locale} t={dict.footer} />
+      </div>
+    )
+  }
+
   const venue = (showDoc.venue as Venue) ?? 'ljetno-kino'
   // Sold seats = active tickets (online_sold column retired, ADR-0007/0008).
   const pool = (payload.db as unknown as { pool: { query: PoolQuery } }).pool

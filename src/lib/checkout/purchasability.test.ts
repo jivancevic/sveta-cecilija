@@ -47,6 +47,18 @@ describe('assertPurchasable', () => {
     expect(() => assertPurchasable(baseShow({ status: 'cancelled' }), { adults: 1, children: 0 })).toThrow(/cancelled/i)
   })
 
+  it('rejects a show whose online sales are paused', () => {
+    expect(() =>
+      assertPurchasable(baseShow({ onlineSalesPaused: true }), { adults: 1, children: 0 }),
+    ).toThrow(/closed/i)
+  })
+
+  it('allows a purchase when onlineSalesPaused is explicitly false', () => {
+    expect(() =>
+      assertPurchasable(baseShow({ onlineSalesPaused: false }), { adults: 1, children: 0 }),
+    ).not.toThrow()
+  })
+
   it('rejects a show that already started', () => {
     const past = new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString()
     expect(() => assertPurchasable(baseShow({ date: past }), { adults: 1, children: 0 })).toThrow(/past/i)

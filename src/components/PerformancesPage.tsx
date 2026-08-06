@@ -29,7 +29,9 @@ function formatDate(isoDate: string, locale: Locale) {
 }
 
 export default function PerformancesPage({ t, tSchedule, shows, locale, initialDate, images }: Props) {
-  const initialMatch = initialDate ? shows.find((s) => s.date === initialDate) : undefined;
+  const initialMatch = initialDate
+    ? shows.find((s) => s.date === initialDate && !s.onlineSalesPaused)
+    : undefined;
   const [activeId, setActiveId] = useState<string | null>(initialMatch ? initialMatch.id : null);
   const [adults, setAdults] = useState(1);
   const [children, setChildren] = useState(0);
@@ -108,14 +110,17 @@ export default function PerformancesPage({ t, tSchedule, shows, locale, initialD
           {shows.map((show, i) => {
             const { day, month, year, weekday } = formatDate(show.date, locale);
             const soldOut = show.remaining <= 0;
+            const paused = show.onlineSalesPaused && !soldOut;
             const isActive = activeId === show.id;
-            const fewLeft = !soldOut && show.remaining <= 50 && i < 3;
+            const fewLeft = !soldOut && !paused && show.remaining <= 50 && i < 3;
             const image = images[i % images.length];
             const venueName = show.venue === 'zimsko-kino' ? t.venueZimsko : t.venueLjetno;
 
-            const pillClass = soldOut ? '' : fewLeft ? ' amber' : ' green';
+            const pillClass = soldOut || paused ? '' : fewLeft ? ' amber' : ' green';
             const pillText = soldOut
               ? t.soldOutLabel
+              : paused
+              ? t.salesPausedLabel
               : fewLeft
               ? tSchedule.fewLeft
               : tSchedule.available;
@@ -145,13 +150,17 @@ export default function PerformancesPage({ t, tSchedule, shows, locale, initialD
                     </span>
                   </div>
                   <div className={`perf-card__cta${isActive ? ' perf-card__cta--hidden' : ''}`}>
-                    <button
-                      className="perf-card__book"
-                      onClick={() => openBooking(show.id)}
-                      disabled={soldOut}
-                    >
-                      {soldOut ? t.soldOutLabel : t.book}
-                    </button>
+                    {paused ? (
+                      <p className="perf-card__paused">{t.salesPausedNote}</p>
+                    ) : (
+                      <button
+                        className="perf-card__book"
+                        onClick={() => openBooking(show.id)}
+                        disabled={soldOut}
+                      >
+                        {soldOut ? t.soldOutLabel : t.book}
+                      </button>
+                    )}
                   </div>
                 </div>
 
@@ -194,7 +203,7 @@ export default function PerformancesPage({ t, tSchedule, shows, locale, initialD
                     <span>{t.total}</span>
                     <span className="perf-booking__total-amount">€{totals.totalEur}</span>
                   </div>
-                  {soldOut || totalTickets === 0 ? (
+                  {soldOut || paused || totalTickets === 0 ? (
                     <button className="perf-booking__confirm" disabled>
                       {t.confirm}
                     </button>

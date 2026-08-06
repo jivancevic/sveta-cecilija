@@ -385,3 +385,11 @@ CREATE TABLE IF NOT EXISTS critical_events (
 
 CREATE INDEX IF NOT EXISTS critical_events_created_at_idx
   ON critical_events (created_at DESC);
+
+-- ─── online sales pause (Shows) ───────────────────────────────────────
+-- Admin toggle: pause ONLINE checkout for one show while leaving it listed
+-- on /tickets, and leaving partner/comp sales, door scanning and stats
+-- untouched. Enforced server-side in src/lib/checkout/purchasability.ts.
+
+ALTER TABLE shows
+  ADD COLUMN IF NOT EXISTS online_sales_paused boolean DEFAULT false;
