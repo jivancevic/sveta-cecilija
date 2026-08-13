@@ -1,6 +1,6 @@
 # ADR-0004: Email infrastructure — addresses, sender identities, provider plan
 
-**Status:** Accepted
+**Status:** Superseded by ADR-0010 (2026-08-13). The address *layout* below still holds — `info@` is still the one human inbox and `tickets@` is still the transactional `From:` — but the **forward-only ImprovMX mechanism is gone**: `info@` is a real Google Workspace mailbox, `tickets@` is a Workspace alias, and the rest arrive via a Gmail Default-routing catch-all.
 **Date:** 2026-05-25
 
 ## Context
@@ -43,7 +43,14 @@ Door-staff currently authenticate to `/admin` via a shared Payload User with ema
 
 ### Forwarding mechanics
 
-ImprovMX already handles `info@moreska.eu` → personal inbox via MX records on `moreska.eu`. All new aliases (`tickets@`, `pr@`, `bookings@`, `press@`, `dev@`) are added as ImprovMX forwards to `info@`. No new mailboxes to provision; ImprovMX aliases are free at this scale.
+~~ImprovMX already handles `info@moreska.eu` → personal inbox via MX records on `moreska.eu`. All new aliases (`tickets@`, `pr@`, `bookings@`, `press@`, `dev@`) are added as ImprovMX forwards to `info@`.~~
+
+**Replaced 2026-08-13 (#223).** ImprovMX is gone. `info@` is a Google Workspace mailbox, `tickets@` is a Workspace **alias** on that user (free, up to 30 per user), and everything else — including `pr@`, `bookings@`, `press@`, `dev@` — is delivered by a Gmail **Default routing** catch-all scoped to non-recognized addresses.
+
+Two things to keep in mind before anyone "cleans up" that catch-all:
+
+- **`pr@moreska.eu` is the login/recovery address for Instagram / Facebook / TikTok / YouTube** (see the address list above). It has no human reader, which makes it look unused, but dropping it silently breaks account recovery on every social platform. It survives only because of the catch-all; promote it to a real alias if the catch-all is ever removed.
+- A catch-all attracts dictionary spam. It was kept deliberately as the cheaper trade against losing mail to typos, given that only `info@` is published on the site.
 
 ## Alternatives considered
 

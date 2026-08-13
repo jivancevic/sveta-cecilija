@@ -37,7 +37,7 @@ after the #11 cutover. For each domain found, decide whether to 301 → `moreska
 
 ## 2. Legacy org email addresses
 
-Canonical address is now **`info@moreska.eu`** (ImprovMX forwarder → personal inbox; see CLAUDE.md).
+Canonical address is now **`info@moreska.eu`** (real Google Workspace mailbox since 2026-08-13; see CLAUDE.md).
 All addresses below are **deprecated** and should be replaced with `info@moreska.eu` wherever found.
 
 Full inventory after the 2026-06-02 sweep (repo + live web). The `@korcula-moreska.com`
@@ -69,7 +69,7 @@ A fourth, `tickets@korcula-moreska.com` (old Tickera/WooCommerce ticketing addre
 > So cPanel tried to deliver `info@moreska.eu` locally (where no `info@` mailbox exists) and
 > refused the forwarder with *"already sends that email to the default address."* Fix: cPanel →
 > Email → **Email Routing** → `moreska.eu` → set to **Remote Mail Exchanger** (so the server
-> honours moreska.eu's real MX = ImprovMX). After that the forwarders save and reach the real
+> honours moreska.eu's real MX, which was ImprovMX at the time and is Google since #223). After that the forwarders save and reach the real
 > inbox. If you ever add another `@korcula-moreska.com` forwarder, this stays fixed — it's a
 > one-time per-domain setting.
 
@@ -95,13 +95,12 @@ wrong):**
    `hi.t-com.hr`. Awaiting reply; test each forward once HT confirms. (Contact channels: Moj Telekom
    Poslovni portal chat/ticket, or phone 0800 0005 / 0800 0900.)
 
-> **Interim caveat (ties to #173):** `info@moreska.eu` is currently just an ImprovMX forward to a
-> personal inbox — it is *not* a real shared mailbox yet, and has no reply-as. So forwarding the
-> society's main inbox there dumps all org mail into one personal inbox and replies won't come
-> *from* the org identity. That's acceptable as a "don't lose inquiries" stopgap, but it's exactly
-> the gap #173 (Google Workspace shared `info@`) closes. Keep-a-copy ON in HT so nothing is lost
-> while Workspace is provisioned; watch the destination spam folder (chained forwards can trip
-> spam filters).
+> **Resolved 2026-08-13 (#223).** This used to warn that `info@moreska.eu` was only an ImprovMX
+> forward into a personal inbox, with no shared mailbox and no reply-as. That gap is closed:
+> `info@` is a real Google Workspace mailbox (ADR-0010), so forwarding a legacy address here now
+> lands in the org inbox and replies go out *from* the org identity. Keep-a-copy ON at the source
+> is still sensible, and still watch the destination spam folder — chained forwards trip spam
+> filters regardless of who hosts the mailbox.
 
 ### Sweep status (Task 2)
 
@@ -163,7 +162,8 @@ The original gap analysis:
 What exists:
 
 - **#53 (closed)** — provisioned the *new* `moreska.eu` aliases (`tickets@`, `pr@`, `bookings@`,
-  `press@`, `dev@` → `info@`). Forward-only model per **ADR-0004**.
+  `press@`, `dev@` → `info@`). Forward-only model per **ADR-0004**; that mechanism was replaced in
+  **#223** (Workspace alias for `tickets@`, Gmail catch-all for the rest).
 - **#65 (closed)** — created the HGD-controlled Google account on `info@moreska.eu`.
 - **#107 (this)** — *audits* the legacy addresses. It does not own a forwarding decision.
 - **#11 (cutover)** — sets up a **301 HTTP redirect** `korcula-moreska.com` → `moreska.eu`.
@@ -179,8 +179,10 @@ forward `sv.cecilija@korcula-moreska.com` → `info@moreska.eu`. Mechanism depen
 domain's mail lives post-cutover:
 - If `korcula-moreska.com` stays on Totohost cPanel through 2026 (it does, per `docs/todo.md` §0):
   add a cPanel **forwarder** now, zero cost.
-- If/when the domain's DNS moves to Hetzner: re-point MX to ImprovMX and add the forward there
-  (same pattern as `info@moreska.eu`), OR keep a catch-all forward.
+- If/when the domain's DNS moves to Hetzner: **do not reach for ImprovMX** — it was retired for
+  `moreska.eu` in #223 and reintroducing it re-opens the spam vector that motivated the removal
+  (senders target the highest-numbered MX to dodge filtering). Point that domain's MX at Google
+  too and add the address as an alias on `info@`, or keep a catch-all forward at the old host.
 - Decide the same for `klapa@` / `glazba@` (likely just retire — low/no current traffic).
 
 This is small but genuinely load-bearing for the cutover. Worth its own `ready-for-human` issue
