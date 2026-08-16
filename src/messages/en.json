@@ -178,6 +178,8 @@
     "privacyPolicy": "Privacy Policy",
     "cookiePolicy": "Cookie Policy",
     "refundPolicy": "Refund Policy",
+    "impressum": "Impressum",
+    "identity": "HRVATSKO GLAZBENO DRUŠTVO SV.CECILIJA - KORČULA · OIB 52537805408",
     "blog": "Blog"
   },
   "aboutPage": {
@@ -321,6 +323,29 @@
       {
         "heading": "Questions and Case-by-Case Requests",
         "body": "For anything not covered here, including case-by-case requests after a venue change, email info@moreska.eu. We read every message and aim to reply within two business days."
+      }
+    ]
+  },
+  "impressumPage": {
+    "heroHeadline": "Impressum",
+    "heroSubtitle": "Who operates this website",
+    "lastUpdated": "Last updated: August 2026",
+    "sections": [
+      {
+        "heading": "Website Operator",
+        "body": "This website, moreska.eu, is operated by HRVATSKO GLAZBENO DRUŠTVO SV.CECILIJA - KORČULA (Croatian Music Society St. Cecilia, Korčula), a registered non-profit membership association based in Korčula, Croatia. The society was founded in 1883; its current legal entity was registered in 1991. All tickets and services sold on this website are sold by the society."
+      },
+      {
+        "heading": "Registry Details",
+        "body": "Legal name: HRVATSKO GLAZBENO DRUŠTVO SV.CECILIJA - KORČULA\n\nOIB (personal identification number): 52537805408\n\nMB (registry number): 03688194\n\nRegistered address: Knežev prolaz 1, 20260 Korčula, Croatia\n\nLegal form: membership association (udruga)\n\nAuthorised representative: Velebit Veršić, President"
+      },
+      {
+        "heading": "Contact",
+        "body": "Email: info@moreska.eu\n\nPhone: +385 92 1532305\n\nPostal address: HGD Sv. Cecilija, Knežev prolaz 1, 20260 Korčula, Croatia"
+      },
+      {
+        "heading": "Domains",
+        "body": "moreska.eu is the official website of the society. The society's earlier domain, korcula-moreska.com, remains owned by the society and permanently redirects to moreska.eu."
       }
     ]
   },

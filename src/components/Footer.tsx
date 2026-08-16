@@ -52,8 +52,11 @@ export default function Footer({ locale, t }: Props) {
       </div>
 
       <div className="foot__bottom">
-        <div className="foot__legal">
-          {t.legal} · <Link href="/privacy-policy">{t.privacyPolicy}</Link> · <Link href="/cookie-policy">{t.cookiePolicy}</Link> · <Link href="/refund-policy">{t.refundPolicy}</Link> · Developed by: <a href="https://www.linkedin.com/in/josipivancevic" target="_blank" rel="noopener noreferrer">Josip Ivančević</a>
+        <div>
+          <div className="foot__identity">{t.identity}</div>
+          <div className="foot__legal">
+            {t.legal} · <Link href="/impressum">{t.impressum}</Link> · <Link href="/privacy-policy">{t.privacyPolicy}</Link> · <Link href="/cookie-policy">{t.cookiePolicy}</Link> · <Link href="/refund-policy">{t.refundPolicy}</Link> · Developed by: <a href="https://www.linkedin.com/in/josipivancevic" target="_blank" rel="noopener noreferrer">Josip Ivančević</a>
+          </div>
         </div>
         <LangSwitcher locale={locale} className="foot__lang" />
       </div>
