@@ -53,7 +53,7 @@ Use these when filling out third-party platform business/verification forms (Met
 | Authorised representative | Velebit Veršić (President) |
 | Website (for new forms) | `https://moreska.eu` |
 
-Registry still lists `www.korcula-moreska.com` as the official website — update post-DNS-cutover.
+Registry still lists `www.korcula-moreska.com` as the official website. The change (signed RNO-P, website -> `https://moreska.eu`, e-mail -> `info@moreska.eu`) was submitted to the Ministry of Finance RNO register on 2026-08-16 (#369); delete this note once banovac.mfin.hr/rnoprt shows the new data.
 
 ### Stack
 
