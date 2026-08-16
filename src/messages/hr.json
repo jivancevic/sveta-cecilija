@@ -300,6 +300,29 @@
       }
     ]
   },
+  "impressumPage": {
+    "heroHeadline": "Impresum",
+    "heroSubtitle": "Tko upravlja ovom stranicom",
+    "lastUpdated": "Zadnja izmjena: kolovoz 2026.",
+    "sections": [
+      {
+        "heading": "Vlasnik stranice",
+        "body": "Ovom stranicom, moreska.eu, upravlja HRVATSKO GLAZBENO DRUŠTVO SV.CECILIJA - KORČULA, registrirana neprofitna udruga sa sjedištem u Korčuli. Društvo je osnovano 1883.; današnja pravna osoba registrirana je 1991. Sve ulaznice i usluge na ovoj stranici prodaje udruga."
+      },
+      {
+        "heading": "Registarski podaci",
+        "body": "Puni naziv: HRVATSKO GLAZBENO DRUŠTVO SV.CECILIJA - KORČULA\n\nOIB: 52537805408\n\nMB (matični broj): 03688194\n\nSjedište: Knežev prolaz 1, 20260 Korčula, Hrvatska\n\nPravni oblik: udruga\n\nOsoba ovlaštena za zastupanje: Velebit Veršić, predsjednik"
+      },
+      {
+        "heading": "Kontakt",
+        "body": "E-mail: info@moreska.eu\n\nTelefon: +385 92 1532305\n\nPoštanska adresa: HGD Sv. Cecilija, Knežev prolaz 1, 20260 Korčula, Hrvatska"
+      },
+      {
+        "heading": "Domene",
+        "body": "moreska.eu je službena web stranica udruge. Ranija domena udruge, korcula-moreska.com, i dalje je u vlasništvu udruge i trajno preusmjerava na moreska.eu."
+      }
+    ]
+  },
   "consent": {
     "notice": "Poslat ćemo Vam ulaznicu, sve promjene izvedbe i jednu kratku poruku nakon izvedbe. Možete se odjaviti u svakom trenutku."
   },
@@ -371,6 +394,8 @@
     "privacyPolicy": "Politika privatnosti",
     "cookiePolicy": "Politika kolačića",
     "refundPolicy": "Politika povrata",
+    "impressum": "Impresum",
+    "identity": "HRVATSKO GLAZBENO DRUŠTVO SV.CECILIJA - KORČULA · OIB 52537805408",
     "blog": "Blog"
   },
   "checkoutPage": {
