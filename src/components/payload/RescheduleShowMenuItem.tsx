@@ -12,7 +12,16 @@ interface Preview {
 }
 
 type RescheduleResult =
-  | { status: 'rescheduled'; oldDate: string; newDate: string; total: number; sent: number; failed: number }
+  | {
+      status: 'rescheduled'
+      oldDate: string
+      newDate: string
+      total: number
+      sent: number
+      failed: number
+      reissued: number
+      reissueFailed: number
+    }
   | { status: 'no-op'; date: string }
   | { status: 'date-mismatch' }
 
@@ -156,11 +165,23 @@ export function RescheduleShowMenuItem() {
       {result && (
         <div style={{ fontSize: 12, marginBottom: 8 }}>
           {result.status === 'rescheduled' && (
-            <p style={{ margin: 0 }}>
-              Rescheduled {result.oldDate} → {result.newDate}. Notified {result.sent} of {result.total} buyer
-              {result.total === 1 ? '' : 's'}
-              {result.failed > 0 ? `, ${result.failed} failed (see logs).` : '.'}
-            </p>
+            <>
+              <p style={{ margin: 0 }}>
+                Rescheduled {result.oldDate} → {result.newDate}. Notified {result.sent} of {result.total} buyer
+                {result.total === 1 ? '' : 's'}
+                {result.failed > 0 ? `, ${result.failed} failed (see logs).` : '.'}
+              </p>
+              {/* Reissue is per ORDER, so this count can exceed the buyer count
+                  (one person, several orders). A failure here means someone is
+                  still holding a PDF with the old date — resend it from the
+                  order's "Resend ticket email" action. */}
+              <p style={{ margin: '4px 0 0' }}>
+                Reissued {result.reissued} ticket{result.reissued === 1 ? '' : 's'} with the new date
+                {result.reissueFailed > 0
+                  ? `, ${result.reissueFailed} failed (resend from the order, see logs).`
+                  : '.'}
+              </p>
+            </>
           )}
           {result.status === 'no-op' && <p style={{ margin: 0 }}>That is already the show&apos;s date. Nothing changed.</p>}
           {result.status === 'date-mismatch' && (

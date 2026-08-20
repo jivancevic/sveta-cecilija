@@ -21,8 +21,21 @@ function makeDeps(overrides: Partial<RescheduleDeps> = {}): RescheduleDeps {
     findBuyers: vi.fn().mockResolvedValue([buyer({ orderId: '1' }), buyer({ orderId: '2', email: 'b@x.hr', locale: 'hr' })]),
     claimReschedule: vi.fn().mockResolvedValue(true),
     sendDateChangeEmail: vi.fn().mockResolvedValue(true),
+    findReissueOrderIds: vi.fn().mockResolvedValue(['1', '2']),
+    reissueTicket: vi.fn().mockResolvedValue(true),
     ...overrides,
   }
+}
+
+const RESCHEDULED = {
+  status: 'rescheduled',
+  oldDate: '2026-06-22',
+  newDate: '2026-06-23',
+  total: 2,
+  sent: 2,
+  failed: 0,
+  reissued: 2,
+  reissueFailed: 0,
 }
 
 describe('rescheduleShow', () => {
@@ -35,7 +48,7 @@ describe('rescheduleShow', () => {
       expect.objectContaining({ orderId: '1' }),
       { oldDate: '2026-06-22', newDate: '2026-06-23', time: '21:00', venue: 'ljetno-kino' },
     )
-    expect(result).toEqual({ status: 'rescheduled', oldDate: '2026-06-22', newDate: '2026-06-23', total: 2, sent: 2, failed: 0 })
+    expect(result).toEqual(RESCHEDULED)
   })
 
   it('claims BEFORE sending so a lost race never double-notifies', async () => {
@@ -54,6 +67,7 @@ describe('rescheduleShow', () => {
     expect(result).toEqual({ status: 'no-op', date: '2026-06-22' })
     expect(deps.claimReschedule).not.toHaveBeenCalled()
     expect(deps.sendDateChangeEmail).not.toHaveBeenCalled()
+    expect(deps.reissueTicket).not.toHaveBeenCalled()
   })
 
   it('reports date-mismatch (no send) when the atomic claim loses the race', async () => {
@@ -61,6 +75,7 @@ describe('rescheduleShow', () => {
     const result = await rescheduleShow({ showId: '7', userId: '3', newDate: '2026-06-23' }, deps)
     expect(result).toEqual({ status: 'date-mismatch' })
     expect(deps.sendDateChangeEmail).not.toHaveBeenCalled()
+    expect(deps.reissueTicket).not.toHaveBeenCalled()
   })
 
   it('counts partial send failures', async () => {
@@ -68,12 +83,88 @@ describe('rescheduleShow', () => {
       sendDateChangeEmail: vi.fn().mockResolvedValueOnce(true).mockResolvedValueOnce(false),
     })
     const result = await rescheduleShow({ showId: '7', userId: '3', newDate: '2026-06-23' }, deps)
-    expect(result).toEqual({ status: 'rescheduled', oldDate: '2026-06-22', newDate: '2026-06-23', total: 2, sent: 1, failed: 1 })
+    expect(result).toEqual({ ...RESCHEDULED, sent: 1, failed: 1 })
   })
 
   it('throws when the show does not exist', async () => {
     const deps = makeDeps({ getShow: vi.fn().mockResolvedValue(null) })
     await expect(rescheduleShow({ showId: 'x', userId: '3', newDate: '2026-06-23' }, deps)).rejects.toThrow('Show not found')
+  })
+})
+
+// #379 — the notice alone left buyers holding a PDF with the old date. After the
+// move we reissue the ticket itself, once per affected ORDER (not per buyer: the
+// notice is deduped by email, a ticket is not).
+describe('rescheduleShow ticket reissue', () => {
+  it('reissues exactly once per affected order, after the notice', async () => {
+    const calls: string[] = []
+    const deps = makeDeps({
+      findReissueOrderIds: vi.fn().mockResolvedValue(['1', '2', '3']),
+      sendDateChangeEmail: vi.fn(async () => { calls.push('notice'); return true }),
+      reissueTicket: vi.fn(async (orderId: string) => { calls.push(`reissue:${orderId}`); return true }),
+    })
+
+    const result = await rescheduleShow({ showId: '7', userId: '3', newDate: '2026-06-23' }, deps)
+
+    expect(deps.findReissueOrderIds).toHaveBeenCalledWith('7')
+    expect(deps.reissueTicket).toHaveBeenCalledTimes(3)
+    expect(deps.reissueTicket).toHaveBeenNthCalledWith(1, '1')
+    expect(deps.reissueTicket).toHaveBeenNthCalledWith(2, '2')
+    expect(deps.reissueTicket).toHaveBeenNthCalledWith(3, '3')
+    // Ticket last, so the newest ticket-shaped thing in the inbox is the correct one.
+    expect(calls).toEqual(['notice', 'notice', 'reissue:1', 'reissue:2', 'reissue:3'])
+    expect(result).toEqual({ ...RESCHEDULED, reissued: 3 })
+  })
+
+  it('reissues per order even when two orders share one buyer email', async () => {
+    // findBuyers dedupes by email (one notice per person); findReissueOrderIds
+    // does not (each order has its own QR codes and its own PDF).
+    const deps = makeDeps({
+      findBuyers: vi.fn().mockResolvedValue([buyer({ orderId: '1' })]),
+      findReissueOrderIds: vi.fn().mockResolvedValue(['1', '2']),
+    })
+    const result = await rescheduleShow({ showId: '7', userId: '3', newDate: '2026-06-23' }, deps)
+    expect(deps.sendDateChangeEmail).toHaveBeenCalledTimes(1)
+    expect(deps.reissueTicket).toHaveBeenCalledTimes(2)
+    expect(result).toEqual({ ...RESCHEDULED, total: 1, sent: 1, reissued: 2 })
+  })
+
+  it('does not roll back the date change when a reissue fails', async () => {
+    const deps = makeDeps({
+      reissueTicket: vi.fn().mockResolvedValueOnce(true).mockResolvedValueOnce(false),
+    })
+
+    const result = await rescheduleShow({ showId: '7', userId: '3', newDate: '2026-06-23' }, deps)
+
+    // The claim is the only write, it already happened, and nothing undoes it.
+    expect(deps.claimReschedule).toHaveBeenCalledTimes(1)
+    expect(result).toEqual({ ...RESCHEDULED, reissued: 1, reissueFailed: 1 })
+  })
+
+  it('does not roll back or abort the loop when a reissue THROWS', async () => {
+    const deps = makeDeps({
+      findReissueOrderIds: vi.fn().mockResolvedValue(['1', '2', '3']),
+      reissueTicket: vi
+        .fn()
+        .mockRejectedValueOnce(new Error('brevo exploded'))
+        .mockResolvedValue(true),
+    })
+
+    const result = await rescheduleShow({ showId: '7', userId: '3', newDate: '2026-06-23' }, deps)
+
+    // Order 1 blew up; orders 2 and 3 still got their ticket, and the admin still
+    // gets a 'rescheduled' result rather than an exception on a committed move.
+    expect(deps.reissueTicket).toHaveBeenCalledTimes(3)
+    expect(result).toEqual({ ...RESCHEDULED, reissued: 2, reissueFailed: 1 })
+  })
+
+  it('still reports the completed move when the reissue lookup itself fails', async () => {
+    const deps = makeDeps({
+      findReissueOrderIds: vi.fn().mockRejectedValue(new Error('db gone')),
+    })
+    const result = await rescheduleShow({ showId: '7', userId: '3', newDate: '2026-06-23' }, deps)
+    expect(result).toEqual({ ...RESCHEDULED, reissued: 0, reissueFailed: 0 })
+    expect(deps.reissueTicket).not.toHaveBeenCalled()
   })
 })
 

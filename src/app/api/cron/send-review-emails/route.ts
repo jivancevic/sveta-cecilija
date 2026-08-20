@@ -67,11 +67,14 @@ export async function POST(req: NextRequest) {
     const result = await dispatchReviewEmails(
       { now: new Date() },
       {
-        findEligibleOrders: async (cutoff) => {
+        findEligibleOrders: async (window) => {
           // Show date is stored as a calendar date (UTC midnight) and time as
           // 'HH:MM' (Europe/Zagreb wall clock). Construct the show start by
-          // adding the time to the date in the Zagreb timezone, then compare
-          // to cutoff (a UTC instant). Postgres handles the tz arithmetic.
+          // adding the time to the date in the Zagreb timezone, then bracket it
+          // with the run's window (both UTC instants). Postgres handles the tz
+          // arithmetic. The window FLOOR matters as much as the ceiling: a
+          // no-show is never claimed, so without it every past no-show would be
+          // re-selected on every run forever (#378).
           //
           // We INCLUDE refund_status='none' AND ticket count > 0 here so the
           // worker only sees orders worth claiming. Buyers who unsubscribed
@@ -79,8 +82,19 @@ export async function POST(req: NextRequest) {
           // opt-out persists across every future show — #57. This NOT EXISTS is
           // a pre-filter (don't claim opted-out orders); the authoritative
           // consent gate lives in sendReviewEmail (deps.isOptedOut).
+          //
+          // The attendance criterion (#378 — at least one active, scanned
+          // ticket) is projected as `attended` rather than pushed into WHERE:
+          // dispatchReviewEmails applies it as the final gate so the skip is
+          // counted in the run result, and it deliberately skips *before*
+          // claiming, so a no-show keeps review_email_sent_at NULL and a late
+          // scan correction still sends on the next run.
           const res = await pool.query(
-            `SELECT o.id, o.buyer_name, o.email, o.locale
+            `SELECT o.id, o.buyer_name, o.email, o.locale,
+                    EXISTS (
+                      SELECT 1 FROM tickets t
+                      WHERE t.order_id = o.id AND t.status = 'active' AND t.scanned
+                    ) AS attended
              FROM orders o
              JOIN shows s ON s.id = o.show_id
              WHERE o.review_email_sent_at IS NULL
@@ -90,14 +104,16 @@ export async function POST(req: NextRequest) {
                AND NOT EXISTS (
                  SELECT 1 FROM marketing_optouts m WHERE m.email = lower(o.email)
                )
-               AND ((s.date::date)::text || ' ' || s.time)::timestamp AT TIME ZONE 'Europe/Zagreb' <= $1`,
-            [cutoff.toISOString()],
+               AND ((s.date::date)::text || ' ' || s.time)::timestamp AT TIME ZONE 'Europe/Zagreb'
+                     BETWEEN $1 AND $2`,
+            [window.from.toISOString(), window.to.toISOString()],
           )
           return res.rows.map((r): EligibleOrder => ({
             id: String(r.id),
             buyerName: String(r.buyer_name ?? ''),
             email: String(r.email ?? ''),
             locale: r.locale === 'hr' ? 'hr' : r.locale === 'en' ? 'en' : null,
+            attended: r.attended === true,
           }))
         },
         claimOrder: async (orderId) => {
@@ -147,6 +163,9 @@ export async function POST(req: NextRequest) {
         },
       },
     )
+    // Also to the container log, so the per-run sold-vs-scanned gap is visible
+    // without capturing the scheduler's HTTP response body.
+    console.log('[cron/send-review-emails]', JSON.stringify(result))
     return NextResponse.json(result)
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Cron failed'

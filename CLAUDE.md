@@ -14,7 +14,7 @@
 | Payload admin customization (v3) — component paths, importMap, CSRF gate | `docs/agents/payload-admin.md` |
 | Frontend & CSS gotchas — specificity, `backdrop-filter`, hero loading, `next/image` | `docs/agents/frontend-css.md` |
 | Assets pipeline — `public/` vs `assets/`, webp conversion | `docs/agents/assets.md` |
-| Feature design notes — #94 bad-weather venue change, show reschedule, #57 marketing opt-outs | `docs/agents/features.md` |
+| Feature design notes — #94 bad-weather venue change, show reschedule + ticket reissue (#379), #57 marketing opt-outs + review-email attendance gate (#378), Stripe disputes (#380) | `docs/agents/features.md` |
 | Domain glossary | `CONTEXT.md` (single context; see `docs/agents/domain.md`) |
 | Architecture decisions | `docs/adr/` |
 
@@ -149,7 +149,8 @@ Access is keyed off `user.role` via the predicates in `src/lib/access/roles.ts` 
 - **Show types in `docs/performances.md`:** only `Redovna` (public ticketed) shows appear on `/tickets`; `Gulliver` / `Adriatic DMC` (private tour operator) and `Crveni križ` (charity) are scheduling context only, not in the DB.
 - **QR codes:** generated server-side at order creation, one per ticket, each encoding `https://moreska.eu/scan/[token]`. Door scanning is the browser-based `/scan/[token]` page only (Pretix dropped from MVP).
 - **Comp & promo:** admin-issued free tickets ride `channel='comp'` (`total=0`, `orders.member` attribution, kept out of revenue, capacity-guarded like a partner sell; ADR-0019). Member promo codes apply at online checkout (`adultPriceEur` override, best-of-two vs the automatic 5-for-4, never stacking; server recomputes; ADR-0018) and stay `channel='online'`.
-- **Refunds:** admin-initiated, plus buyer self-serve on a rescheduled show (ADR-0021: token-authed `/order/[token]/refund`, eligible while unscanned). Both paths share one idempotent, safely re-runnable engine — the route checks `refundStatus` before calling Stripe, the Stripe call carries a stable `refund:<paymentIntentId>` idempotency key (`src/lib/refund/create-stripe-refund.ts`), and a retry on an already-`refunded` order re-voids any still-active tickets (self-heal). Regression probe: `scripts/probe-refund-void.mjs`.
+- **Refunds:** admin-initiated, plus buyer self-serve on a rescheduled show (ADR-0021: token-authed `/order/[token]/refund`, eligible while unscanned). Both *money-moving* paths share one idempotent, safely re-runnable engine — the route checks `refundStatus` before calling Stripe, the Stripe call carries a stable `refund:<paymentIntentId>` idempotency key (`src/lib/refund/create-stripe-refund.ts`), and a retry on an already-`refunded` order re-voids any still-active tickets (self-heal). Regression probe: `scripts/probe-refund-void.mjs`.
+- **A lost chargeback is a third writer of `refundStatus='refunded'` and it deliberately bypasses that engine** (#380, `src/lib/dispute/handle-dispute.ts`): the funds already moved when Stripe decided the dispute, so calling the refund engine would double-refund or error. It mirrors only the bookkeeping half (mark refunded → cascade-void tickets) and sends no buyer email. Idempotency there is an **atomic claim** on `critical_events` (`INSERT … ON CONFLICT DO NOTHING`, partial unique index on `(kind, context->>'disputeId')`), *not* `recordCriticalEvent` — that writer swallows its own failures by contract, which is right for a reporting sink and fatal for a guard.
 
 ### CSS architecture
 

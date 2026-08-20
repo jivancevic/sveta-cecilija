@@ -149,7 +149,8 @@ Do not begin until **every box above is checked** and you have ~2 hours of monit
 
 1. Stripe Dashboard → toggle **Viewing test data** OFF.
 2. Developers → API keys → copy live `sk_live_...` and `pk_live_...`.
-3. Developers → Webhooks → create endpoint `https://moreska.eu/api/stripe/webhook` (in live mode), subscribe to `payment_intent.succeeded`, `charge.refunded`. Copy `whsec_...`.
+3. Developers → Webhooks → create endpoint `https://moreska.eu/api/stripe/webhook` (in live mode), subscribe to `payment_intent.succeeded`, `charge.refunded`, `charge.dispute.created`, `charge.dispute.closed`. Copy `whsec_...`.
+   - The two dispute events are **required** (#380): without them a chargeback is silent, and a lost dispute leaves the order unrefunded with tickets that still scan VALID at the door. Subscribe **every** endpoint that points at this app, not just the newest one.
 4. Coolify → env → update all three: `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET`. Redeploy.
 5. After redeploy, hit `https://moreska.eu/tickets` — page must still render (smoke check that the new keys are valid).
 
