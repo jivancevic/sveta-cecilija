@@ -13,6 +13,13 @@ import { randomInt } from 'node:crypto'
 import { sendTicketEmail } from '@/lib/email/send-ticket-email'
 import { generateQrPng } from '@/lib/email/qr'
 import { sendMetaPurchase } from '@/lib/meta/capi'
+import {
+  handleDisputeEvent,
+  toDisputeEvent,
+  type DisputeEventType,
+} from '@/lib/dispute/handle-dispute'
+import { buildDisputeDeps } from '@/lib/dispute/build-dispute-deps'
+import type { PoolQuery } from '@/lib/tickets/sold-seats'
 import type { Venue } from '@/lib/venues'
 
 export const runtime = 'nodejs'
@@ -42,6 +49,32 @@ export async function POST(req: Request) {
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Invalid signature'
     return NextResponse.json({ error: `Signature verification failed: ${message}` }, { status: 400 })
+  }
+
+  // Chargebacks (#380). Handled before the payment_intent.succeeded fast path
+  // because they were previously swallowed by it: a lost dispute left the order
+  // at refundStatus='none' with active tickets that still held a seat and still
+  // scanned VALID at the door, and nobody was told a dispute had been opened.
+  if (event.type === 'charge.dispute.created' || event.type === 'charge.dispute.closed') {
+    try {
+      const payload = await getPayload({ config })
+      const pool = (payload.db as unknown as { pool: { query: PoolQuery } }).pool
+      const result = await handleDisputeEvent(
+        toDisputeEvent(event.type as DisputeEventType, event.data.object),
+        buildDisputeDeps(payload, { query: (sql, params) => pool.query(sql, params) }),
+      )
+      // console.error so it lands in the container error stream: every one of
+      // these outcomes is something a human should eventually read.
+      console.error('[stripe/webhook] dispute', event.type, JSON.stringify(result))
+      return NextResponse.json({ received: true, dispute: result })
+    } catch (err) {
+      // Only genuinely transient failures reach here (the handler resolves
+      // unprocessable events to a no-op result rather than throwing), so a 500
+      // asks Stripe for a backoff retry that can actually succeed.
+      const message = err instanceof Error ? err.message : 'Dispute handler error'
+      console.error('[stripe/webhook] dispute handling failed', event.type, message)
+      return NextResponse.json({ error: message }, { status: 500 })
+    }
   }
 
   if (event.type !== 'payment_intent.succeeded') {
