@@ -56,9 +56,9 @@ export async function POST(req: Request) {
   // at refundStatus='none' with active tickets that still held a seat and still
   // scanned VALID at the door, and nobody was told a dispute had been opened.
   if (event.type === 'charge.dispute.created' || event.type === 'charge.dispute.closed') {
-    const payload = await getPayload({ config })
-    const pool = (payload.db as unknown as { pool: { query: PoolQuery } }).pool
     try {
+      const payload = await getPayload({ config })
+      const pool = (payload.db as unknown as { pool: { query: PoolQuery } }).pool
       const result = await handleDisputeEvent(
         toDisputeEvent(event.type as DisputeEventType, event.data.object),
         buildDisputeDeps(payload, { query: (sql, params) => pool.query(sql, params) }),
