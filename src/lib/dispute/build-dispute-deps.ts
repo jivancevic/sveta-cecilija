@@ -55,17 +55,49 @@ export function buildDisputeDeps(payload: Payload, pool: DisputeDepsPool): Handl
       }
       await sendDisputeNotification(input, { fetch, brevoApiKey })
     },
-    // Idempotency ledger: the critical-events row written for a (kind, disputeId)
-    // pair is what makes Stripe's at-least-once redelivery a no-op.
-    hasHandled: async (kind, disputeId) => {
+    // Idempotency ledger. NOTE the deliberate asymmetry with the rest of the
+    // critical-events sink: `recordCriticalEvent` is best-effort BY CONTRACT and
+    // swallows its own insert failure, which is right for a reporting sink and
+    // wrong for a guard — a swallowed claim would silently let Stripe's retry
+    // act a second time. So the claim writes directly and lets errors escape.
+    // ON CONFLICT DO NOTHING resolves against the partial unique index on
+    // (kind, context->>'disputeId') in db/schema/app.sql; without that index
+    // this degrades to a plain insert and the guard stops working.
+    claimEvent: async (kind, disputeId, context) => {
       const { rows } = await pool.query(
-        `SELECT 1 FROM critical_events
-          WHERE kind = $1 AND context->>'disputeId' = $2
-          LIMIT 1`,
-        [kind, disputeId],
+        `INSERT INTO critical_events (kind, context)
+         VALUES ($1, $2::jsonb)
+         ON CONFLICT DO NOTHING
+         RETURNING id`,
+        [kind, JSON.stringify({ ...context, disputeId })],
       )
       return rows.length > 0
     },
-    record: (kind, context) => recordCriticalEvent({ kind, context }, { query: pool.query }),
+    releaseEvent: async (kind, disputeId) => {
+      await pool.query(
+        `DELETE FROM critical_events WHERE kind = $1 AND context->>'disputeId' = $2`,
+        [kind, disputeId],
+      )
+    },
+    // Enrichment only, after the money and tickets are already correct — so this
+    // one IS best-effort, and reuses the swallowing sink writer on failure paths
+    // by simply not throwing.
+    finalizeEvent: async (kind, disputeId, context) => {
+      try {
+        await pool.query(
+          `UPDATE critical_events SET context = $3::jsonb
+            WHERE kind = $1 AND context->>'disputeId' = $2`,
+          [kind, disputeId, JSON.stringify({ ...context, disputeId })],
+        )
+      } catch (err) {
+        // Mirror recordCriticalEvent's contract: never turn reporting into a
+        // second failure mode. The claim row (with its seed context) survives.
+        console.error('[buildDisputeDeps] finalizeEvent failed', kind, disputeId, err)
+        await recordCriticalEvent(
+          { kind: 'stripe_dispute_finalize_failed', context: { kind, disputeId } },
+          { query: pool.query },
+        )
+      }
+    },
   }
 }

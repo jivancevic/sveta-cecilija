@@ -1,8 +1,10 @@
 import { describe, it, expect, vi } from 'vitest'
 import {
   dispatchReviewEmails,
+  REVIEW_WINDOW_DAYS,
   type DispatchDeps,
   type EligibleOrder,
+  type SendWindow,
 } from './dispatch-review-emails'
 
 function order(overrides: Partial<EligibleOrder> = {}): EligibleOrder {
@@ -27,12 +29,24 @@ function makeDeps(overrides: Partial<DispatchDeps> = {}): DispatchDeps {
 }
 
 describe('dispatchReviewEmails', () => {
-  it('passes a cutoff exactly 1.5h before now to findEligibleOrders', async () => {
+  it('passes a window whose ceiling is exactly 1.5h before now', async () => {
     const now = new Date('2026-06-01T12:00:00Z')
     const deps = makeDeps()
     await dispatchReviewEmails({ now }, deps)
-    const arg = (deps.findEligibleOrders as ReturnType<typeof vi.fn>).mock.calls[0][0] as Date
-    expect(arg.toISOString()).toBe('2026-06-01T10:30:00.000Z')
+    const arg = (deps.findEligibleOrders as ReturnType<typeof vi.fn>).mock.calls[0][0] as SendWindow
+    expect(arg.to.toISOString()).toBe('2026-06-01T10:30:00.000Z')
+  })
+
+  it('floors the window at REVIEW_WINDOW_DAYS before now, so old no-shows drop out', async () => {
+    const now = new Date('2026-06-01T12:00:00Z')
+    const deps = makeDeps()
+    await dispatchReviewEmails({ now }, deps)
+    const arg = (deps.findEligibleOrders as ReturnType<typeof vi.fn>).mock.calls[0][0] as SendWindow
+    expect(REVIEW_WINDOW_DAYS).toBe(7)
+    expect(arg.from.toISOString()).toBe('2026-05-25T12:00:00.000Z')
+    // A no-show is never claimed, so an unbounded query would re-select it on
+    // every run forever. The floor is the only thing that retires it.
+    expect(arg.from.getTime()).toBeLessThan(arg.to.getTime())
   })
 
   it('sends one email per eligible order when claim succeeds', async () => {

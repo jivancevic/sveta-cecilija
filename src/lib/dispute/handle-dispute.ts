@@ -23,10 +23,23 @@
 //     and the revenue reports need: money not ours, seat freed, QR dead. The
 //     accounting distinction lives in the `critical_events` row instead, which
 //     keeps the dispute id, reason and amount.
-//   - Idempotency under Stripe's at-least-once (and out-of-order) redelivery is
-//     enforced by `hasHandled(kind, disputeId)`, backed by the critical-events
-//     ledger. The void itself is already idempotent (it targets `status='active'`
-//     rows only); the guard additionally stops a duplicate admin alert.
+//   - Idempotency under Stripe's at-least-once (and concurrent) redelivery is
+//     enforced by an atomic CLAIM on the critical-events ledger, not by a
+//     read-then-write check. `claimEvent` does
+//     `INSERT … ON CONFLICT DO NOTHING RETURNING id` against the partial unique
+//     index on (kind, context->>'disputeId') (db/schema/app.sql), and we act
+//     only if we won the insert. Two earlier shapes were rejected:
+//       * check-then-act (`hasHandled` then `record`) — two deliveries racing
+//         both read false and both alert;
+//       * recording AFTER the work with `recordCriticalEvent` — that writer is
+//         best-effort BY CONTRACT and swallows its own insert failure, so a
+//         dropped ledger row silently leaves the event un-deduped forever.
+//     `claimEvent` therefore must NOT swallow: if the ledger is unreachable we
+//     want the route to 500 and Stripe to retry, not to act un-guarded.
+//     `releaseEvent` is the compensating delete when the work then throws, so a
+//     retry can redo it — same claim/release shape as the review-email cron.
+//     The void itself is independently idempotent (it targets `status='active'`
+//     rows only); the claim is what stops a duplicate admin alert.
 //   - An event we can't act on (unknown payment intent, `warning_closed`,
 //     `charge_refunded`) resolves to a no-op result, never a throw, so the route
 //     can 200 and Stripe stops retrying something retries cannot fix.
@@ -82,10 +95,25 @@ export interface HandleDisputeDeps {
   /** Cascade-void the order's active tickets (reason=refund). Returns how many. */
   voidTickets: (orderId: string) => Promise<number>
   notifyAdmins: (input: DisputeNotificationInput) => Promise<void>
-  /** True when this exact (kind, disputeId) pair was already recorded. */
-  hasHandled: (kind: string, disputeId: string) => Promise<boolean>
-  /** Append the audit row. Best-effort by contract; must not throw. */
-  record: (kind: string, context: Record<string, unknown>) => Promise<void>
+  /**
+   * Atomically claim this (kind, disputeId) pair by inserting its ledger row.
+   * True when this caller won the insert and should do the work; false when a
+   * row already existed (Stripe redelivery). MUST NOT swallow errors — a
+   * failure here has to propagate so the route 500s and Stripe retries.
+   */
+  claimEvent: (kind: string, disputeId: string, context: Record<string, unknown>) => Promise<boolean>
+  /**
+   * Compensating delete for a claim whose work then threw, so a Stripe retry
+   * can redo it. Best-effort: a failure here is logged, never rethrown, since
+   * it would mask the original error.
+   */
+  releaseEvent: (kind: string, disputeId: string) => Promise<void>
+  /**
+   * Enrich the claimed row once the work is done (orderId, ticketsVoided, …).
+   * Best-effort: the money and the tickets are already correct by this point,
+   * so losing the detail is cosmetic and must not fail the request.
+   */
+  finalizeEvent: (kind: string, disputeId: string, context: Record<string, unknown>) => Promise<void>
 }
 
 export type DisputeResult =
@@ -161,14 +189,6 @@ export async function handleDisputeEvent(
   if (!kind) return { action: 'noop', reason: `dispute closed as ${evt.status}; nothing to do` }
   if (!evt.disputeId) return { action: 'noop', reason: 'dispute event has no id' }
 
-  // At-least-once redelivery guard. Cheap, and the only thing standing between
-  // Stripe's retries and a duplicate admin alert.
-  if (await deps.hasHandled(kind, evt.disputeId)) return { action: 'duplicate', kind }
-
-  const order = evt.paymentIntentId
-    ? await deps.findOrderByPaymentIntent(evt.paymentIntentId)
-    : null
-
   const base = {
     disputeId: evt.disputeId,
     paymentIntentId: evt.paymentIntentId,
@@ -179,40 +199,55 @@ export async function handleDisputeEvent(
     evidenceDueBy: evt.evidenceDueBy,
   }
 
-  if (kind === DISPUTE_CREATED) {
-    // Alert first, record second: if the mail fails we'd rather throw (route
-    // 500s, Stripe retries with backoff) than silently mark it handled.
-    await deps.notifyAdmins({ ...base, order })
-    await deps.record(kind, {
-      ...base,
-      orderId: order?.id ?? null,
-      orderCode: order?.code ?? null,
-    })
-    return { action: 'alerted', kind, orderId: order?.id ?? null }
+  // Atomic claim, not a read-then-check: winning the INSERT is what grants the
+  // right to act. A redelivery (or a concurrent one) loses it and no-ops.
+  if (!(await deps.claimEvent(kind, evt.disputeId, base))) return { action: 'duplicate', kind }
+
+  try {
+    const order = evt.paymentIntentId
+      ? await deps.findOrderByPaymentIntent(evt.paymentIntentId)
+      : null
+    const identified = { orderId: order?.id ?? null, orderCode: order?.code ?? null }
+
+    if (kind === DISPUTE_CREATED) {
+      // If the mail throws we release the claim below, so Stripe's retry gets a
+      // real second attempt rather than hitting a claim with no alert behind it.
+      await deps.notifyAdmins({ ...base, order })
+      await deps.finalizeEvent(kind, evt.disputeId, { ...base, ...identified })
+      return { action: 'alerted', kind, orderId: identified.orderId }
+    }
+
+    if (kind === DISPUTE_WON) {
+      // Money stays with us; the order and its tickets are untouched.
+      await deps.finalizeEvent(kind, evt.disputeId, { ...base, ...identified })
+      return { action: 'noop', reason: 'dispute won; order left intact' }
+    }
+
+    // DISPUTE_LOST — funds are already gone at Stripe. Bookkeeping only.
+    if (!order) {
+      await deps.finalizeEvent(kind, evt.disputeId, { ...base, ...identified, matched: false })
+      return { action: 'noop', reason: 'no order matches the disputed payment intent' }
+    }
+
+    // Skip the redundant write when a refund already marked it; still void, so a
+    // dispute that follows a partially-applied refund self-heals the seats.
+    if (order.refundStatus !== 'refunded') await deps.markRefunded(order.id)
+    const voided = await deps.voidTickets(order.id)
+
+    await deps.finalizeEvent(kind, evt.disputeId, { ...base, ...identified, ticketsVoided: voided })
+    return { action: 'order_voided', kind, orderId: order.id, voided }
+  } catch (err) {
+    // Hand the claim back so the retry is a real attempt. Deliberately not
+    // rethrown from here: a failing release must not mask the original error.
+    try {
+      await deps.releaseEvent(kind, evt.disputeId)
+    } catch (releaseErr) {
+      console.error(
+        `[handleDisputeEvent] releaseEvent failed kind=${kind} disputeId=${evt.disputeId} error=${
+          releaseErr instanceof Error ? releaseErr.message : String(releaseErr)
+        }`,
+      )
+    }
+    throw err
   }
-
-  if (kind === DISPUTE_WON) {
-    // Money stays with us; the order and its tickets are untouched.
-    await deps.record(kind, { ...base, orderId: order?.id ?? null, orderCode: order?.code ?? null })
-    return { action: 'noop', reason: 'dispute won; order left intact' }
-  }
-
-  // DISPUTE_LOST — funds are already gone at Stripe. Bookkeeping only.
-  if (!order) {
-    await deps.record(kind, { ...base, orderId: null, orderCode: null, matched: false })
-    return { action: 'noop', reason: 'no order matches the disputed payment intent' }
-  }
-
-  // Skip the redundant write when a refund already marked it; still void, so a
-  // dispute that follows a partially-applied refund self-heals the seats.
-  if (order.refundStatus !== 'refunded') await deps.markRefunded(order.id)
-  const voided = await deps.voidTickets(order.id)
-
-  await deps.record(kind, {
-    ...base,
-    orderId: order.id,
-    orderCode: order.code,
-    ticketsVoided: voided,
-  })
-  return { action: 'order_voided', kind, orderId: order.id, voided }
 }

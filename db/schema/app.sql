@@ -386,6 +386,18 @@ CREATE TABLE IF NOT EXISTS critical_events (
 CREATE INDEX IF NOT EXISTS critical_events_created_at_idx
   ON critical_events (created_at DESC);
 
+-- Stripe dispute events (#380) additionally use this table as an IDEMPOTENCY
+-- LEDGER: the handler claims a (kind, disputeId) pair with
+-- `INSERT … ON CONFLICT DO NOTHING RETURNING id` and only acts if it won the
+-- insert, so Stripe's at-least-once (and concurrent) redelivery cannot raise a
+-- second admin alert. That claim is only atomic if the pair is unique, hence
+-- this index. It is PARTIAL on purpose: ordinary critical events legitimately
+-- repeat (the same enquiry can fail to send twice) and must stay unconstrained.
+-- Doubles as the lookup index for the claim itself.
+CREATE UNIQUE INDEX IF NOT EXISTS critical_events_dispute_id_idx
+  ON critical_events (kind, (context->>'disputeId'))
+  WHERE context ? 'disputeId';
+
 -- ─── online sales pause (Shows) ───────────────────────────────────────
 -- Admin toggle: pause ONLINE checkout for one show while leaving it listed
 -- on /tickets, and leaving partner/comp sales, door scanning and stats
