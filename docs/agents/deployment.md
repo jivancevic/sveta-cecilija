@@ -77,14 +77,16 @@ Both apps connect to the repo via the same Coolify **GitHub App** (no per-repo d
 
 **Why this exists:** the dispute handler is dead code until Stripe is told to send the events. Nothing in the app can do this — webhook subscriptions are dashboard/API state on the Stripe account, not config in this repo.
 
-**Current live state** (checked 2026-08-21 via `GET /v1/webhook_endpoints`):
+**Live state** (verified 2026-08-21 via `GET /v1/webhook_endpoints`, live key):
 
 | Endpoint | URL | Status | Events |
 |---|---|---|---|
-| `we_1TZquZ2LKHW8z1M1IxBbdyn2` | `https://moreska.eu/api/stripe/webhook` | **enabled** | `payment_intent.succeeded`, `payment_intent.payment_failed` |
-| `we_1TWXAw2LKHW8z1M18DM6p4dg` | `https://tickets.korcula-moreska.com/?wc-api=wc_stripe` | **disabled** | legacy WooCommerce set (already includes the dispute events, but it is off) |
+| `we_1TZquZ2LKHW8z1M1IxBbdyn2` | `https://moreska.eu/api/stripe/webhook` | **enabled** | `payment_intent.succeeded`, `payment_intent.payment_failed`, `charge.dispute.created`, `charge.dispute.closed` |
+| `we_1TWXAw2LKHW8z1M18DM6p4dg` | `https://tickets.korcula-moreska.com/?wc-api=wc_stripe` | **disabled** | legacy WooCommerce set (includes the dispute events, but the endpoint is off) |
 
-So there is **one** endpoint to change, not two. The legacy Woo endpoint is already disabled and must stay that way — do not re-enable it to "help".
+**The subscription step below is DONE** — the dispute events were added to the live endpoint on 2026-08-21, keeping the same endpoint id (so `STRIPE_WEBHOOK_SECRET` was not rotated). The steps are kept for the next time this account needs an event added, and because the same "don't create a new endpoint" trap applies every time.
+
+There is **one** endpoint to change, not two. The legacy Woo endpoint is already disabled and must stay that way — do not re-enable it to "help".
 
 ### Steps
 
