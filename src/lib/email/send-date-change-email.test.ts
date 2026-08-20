@@ -23,6 +23,20 @@ describe('renderDateChangePreview', () => {
     expect(html).toMatch(/Cancel &amp; refund my tickets|Cancel & refund my tickets/)
   })
 
+  // #379: the reissued ticket arrives as a SEPARATE message, so the notice has
+  // to announce it and say the QR codes are unchanged, or the two contradict.
+  it('announces the separately-sent reissued ticket and unchanged QR codes (EN)', () => {
+    const { html } = renderDateChangePreview(base, 'en')
+    expect(html).toContain('separate email')
+    expect(html).toMatch(/QR codes have not changed/i)
+  })
+
+  it('announces the separately-sent reissued ticket in Croatian too', () => {
+    const { html } = renderDateChangePreview(base, 'hr')
+    expect(html).toContain('zasebnoj poruci')
+    expect(html).toMatch(/QR kodovi se nisu promijenili/i)
+  })
+
   it('drops the old "reply to this email" escape hatch', () => {
     const { html } = renderDateChangePreview(base, 'en')
     expect(html.toLowerCase()).not.toContain('reply to this email')

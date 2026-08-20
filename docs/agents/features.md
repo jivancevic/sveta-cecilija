@@ -36,6 +36,20 @@ Optimistic-concurrency claim on the *current* date (not a one-shot flag like the
 
 The notice is **deduped by email** (`DISTINCT ON (lower(email))` — one per person) and **transactional** (never checks `marketing_optouts`). Pure DI orchestration in `src/lib/show-reschedule.ts`; sender `src/lib/email/send-date-change-email.ts`; route `POST/GET /api/shows/[id]/reschedule`. Audit columns `date_changed_at` / `date_changed_by_id` / `original_date` added in `db/schema/app.sql`.
 
+### The reissue (#379) — the notice is only half the fix
+
+The notice says "your tickets are automatically valid for the new date". True of the **QR token**, false of the **artefact the buyer holds**: their original ticket email keeps its old subject and its PDF keeps the old date, so a buyer who misses one email keeps re-reading a document that confidently states the wrong date. That cost a no-show, a chargeback and a 1-star review on 2026-08-20.
+
+So after the claim + notice, `rescheduleShow` **reissues the ticket itself** as a **second message per affected ORDER** (`findReissueOrderIds` → `reissueTicket`, wired to the existing `sendOrderTicketEmail`):
+
+- **Per order, not per buyer** — the notice dedupes by email, a ticket cannot: each order carries its own QR codes and its own PDF. Same scope otherwise (`channel IN ('online','comp')`, `email IS NOT NULL`, `refund_status='none'`).
+- **Same QR tokens.** `sendOrderTicketEmail` re-renders the **existing** `tickets` rows from the already-moved show row. It writes nothing — no new tokens, no re-scan invalidation, and the old PDF a buyer is already holding at the door still scans `VALID`.
+- **Ticket sent last** so the newest ticket-shaped thing in the inbox is the correct one.
+- **Never a rollback.** The move is claimed and committed first; a reissue that returns false *or throws* is counted (`reissued` / `reissueFailed` in the result, surfaced in the admin modal) and logged, never unwound. A failure means someone still holds an old-date PDF — fix it with the per-order **Resend ticket email** action.
+- The `reissue` copy line in `send-date-change-email.ts` announces the second message and states that the QR codes did not change. **Keep the two in sync** — if the reissue is ever dropped, drop that line with it.
+
+Items 2 (follow-up to non-openers via Brevo `opened` events) and 3 (admin view of non-openers) of #379 ship separately.
+
 ## Marketing-class email + opt-outs (#57)
 
 Only the **post-show review email** is marketing-class. Everything else (ticket confirmation, refund, venue-change) is **transactional** and never checks the opt-out list — it concerns a ticket the buyer already holds.
