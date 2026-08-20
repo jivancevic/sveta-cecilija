@@ -44,3 +44,9 @@ Only the **post-show review email** is marketing-class. Everything else (ticket 
 - The opt-out is keyed by **email** in the raw `marketing_optouts` table — by email, not order, so it persists across every future show (each show is a fresh Orders row; a per-order flag would silently re-subscribe on the next purchase).
 - `/api/unsubscribe` writes it (`ON CONFLICT DO NOTHING`, GET = confirmation page, POST = one-click); the dispatch SQL excludes opted-out emails via `NOT EXISTS`.
 - A collection-time consent notice (`consent.notice`, EN+HR) sits under the email field on checkout + the `/scan` claim form.
+
+### Attendance gate on the review email (#378)
+
+The review email only goes to buyers who **turned up**: the dispatch SQL projects `attended` = "this order has at least one **active, scanned** ticket", and `dispatchReviewEmails` skips the rest. Door scanning is therefore the source of truth for attendance; a group waved through unscanned silently loses its review ask, which is the cheap direction to fail (a no-show asked to review a show they missed produced a PayPal dispute and a 1-star review on 2026-08-19/20; 6.9% of the season's sends had this shape).
+
+The gate deliberately sits in `dispatchReviewEmails`, not in the query's `WHERE`, for two reasons: a skipped no-show is **never claimed** (`review_email_sent_at` stays NULL) so a late scan correction still sends on a later run, and the per-run `skippedNoShow` count keeps the sold-vs-scanned gap visible in the route's JSON + container log.

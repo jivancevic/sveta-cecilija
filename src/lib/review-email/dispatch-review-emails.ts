@@ -7,6 +7,21 @@
 //   4. order.refund_status != 'refunded'
 //   5. buyer email is not in marketing_optouts — pre-filtered in the caller's
 //      SQL; authoritatively gated in sendReviewEmail (src/lib/marketing/opt-out)
+//   6. the party actually turned up: at least one active ticket on the order is
+//      scanned (#378). The predicate is evaluated in the caller's SQL and
+//      arrives as `attended`; the skip itself happens *here*, before claimOrder,
+//      so a no-show is counted in the run result and left unclaimed
+//      (review_email_sent_at stays NULL) — a late scan correction still sends.
+//
+// Why gate on tickets.scanned rather than the weaker "order still has active
+// tickets": on show 14, 186 of 206 active tickets were scanned and no order was
+// *partially* scanned (six orders scanned 0%, every other order 100%). Door
+// scanning is therefore reliable at whole-party granularity, so a scanned gate
+// cannot silently suppress a buyer who did attend. The failure mode it does
+// carry — staff waving a group through unscanned costs that buyer their review
+// ask — is the cheap direction to fail; asking a no-show to review a show they
+// missed reads as a brush-off and has already produced a payment dispute and a
+// 1-star review (#378).
 //
 // Idempotency contract: deps.claimOrder MUST do an atomic
 // `UPDATE orders SET review_email_sent_at = NOW()
@@ -19,6 +34,8 @@ export interface EligibleOrder {
   buyerName: string
   email: string
   locale: 'en' | 'hr' | null
+  /** True when the order has >= 1 active ticket that was scanned at the door. */
+  attended: boolean
 }
 
 export interface DispatchInput {
@@ -30,8 +47,9 @@ export interface DispatchDeps {
   /**
    * Returns every order whose show's local date+time is at least 1.5h before
    * `cutoff` AND not already marked sent AND has tickets AND not refunded AND
-   * the buyer email is not opted out. Show date+time is treated as
-   * Europe/Zagreb wall clock and converted by the caller's SQL (see route).
+   * the buyer email is not opted out, each carrying its `attended` flag. Show
+   * date+time is treated as Europe/Zagreb wall clock and converted by the
+   * caller's SQL (see route).
    */
   findEligibleOrders: (cutoff: Date) => Promise<EligibleOrder[]>
   /**
@@ -49,6 +67,12 @@ export interface DispatchResult {
   considered: number
   sent: number
   skippedAlreadyClaimed: number
+  /**
+   * Orders that reached T+1.5h with no scanned active ticket. Surfaced per run
+   * so the sold-vs-scanned gap stays visible: a number that climbs is either
+   * genuine no-shows or the door skipping scans, and both are worth seeing.
+   */
+  skippedNoShow: number
   failed: number
 }
 
@@ -63,9 +87,16 @@ export async function dispatchReviewEmails(
 
   let sent = 0
   let skippedAlreadyClaimed = 0
+  let skippedNoShow = 0
   let failed = 0
 
   for (const order of eligible) {
+    // Deliberately before claimOrder: a no-show must stay unclaimed so a late
+    // scan correction lets the next run send.
+    if (!order.attended) {
+      skippedNoShow++
+      continue
+    }
     const claimed = await deps.claimOrder(order.id)
     if (!claimed) {
       skippedAlreadyClaimed++
@@ -95,6 +126,7 @@ export async function dispatchReviewEmails(
     considered: eligible.length,
     sent,
     skippedAlreadyClaimed,
+    skippedNoShow,
     failed,
   }
 }
