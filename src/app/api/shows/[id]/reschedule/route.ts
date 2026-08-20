@@ -9,6 +9,7 @@ import {
   type RescheduleDeps,
 } from '@/lib/show-reschedule'
 import { sendDateChangeEmail } from '@/lib/email/send-date-change-email'
+import { sendOrderTicketEmail, type OrderEmailPayload } from '@/lib/email/send-order-ticket-email'
 import { signRescheduleRefundToken } from '@/lib/refund/reschedule-refund-token'
 import { refundUrl } from '@/lib/site-url'
 import { toIsoDate } from '@/lib/to-iso-date'
@@ -18,7 +19,8 @@ export const dynamic = 'force-dynamic'
 
 // Admin-only "Reschedule show & notify buyers" workflow.
 //   GET  → preview: current date + affected online-buyer count + sample emails.
-//   POST { newDate }            → confirm: atomically move the date + audit, then notify buyers.
+//   POST { newDate }            → confirm: atomically move the date + audit, notify buyers,
+//                                 then reissue each affected order's ticket email/PDF/ICS (#379).
 //   POST { newDate, test:true } → send the EN+HR preview to the logged-in admin only; no writes, no buyer mail.
 
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/
@@ -33,7 +35,23 @@ function buildRefundUrl(orderId: string, secret: string): string | undefined {
   return refundUrl(signRescheduleRefundToken(orderId, secret))
 }
 
-function buildDeps(pool: Pool, brevoApiKey: string, secret: string): RescheduleDeps {
+// Orders that get a reissued ticket after the move (#379). Same scope as the
+// notice — an emailable, unrefunded order on this show — but deliberately NOT
+// deduped by email: the notice is one-per-person, a ticket is one-per-ORDER
+// because each order carries its own QR codes and its own PDF.
+const REISSUE_ORDER_SCOPE = `
+  FROM orders
+  WHERE show_id = $1
+    AND channel IN ('online', 'comp')
+    AND email IS NOT NULL
+    AND refund_status = 'none'`
+
+function buildDeps(
+  pool: Pool,
+  payload: OrderEmailPayload,
+  brevoApiKey: string,
+  secret: string,
+): RescheduleDeps {
   return {
     getShow: async (showId): Promise<RescheduleShow | null> => {
       const res = await pool.query(`SELECT id, date, time, venue FROM shows WHERE id = $1`, [Number(showId)])
@@ -101,6 +119,20 @@ function buildDeps(pool: Pool, brevoApiKey: string, secret: string): RescheduleD
         },
         { fetch: globalThis.fetch, brevoApiKey },
       ),
+    findReissueOrderIds: async (showId): Promise<string[]> => {
+      const res = await pool.query(`SELECT id ${REISSUE_ORDER_SCOPE} ORDER BY id`, [Number(showId)])
+      return res.rows.map((r) => String(r.id))
+    },
+    reissueTicket: async (orderId): Promise<boolean> => {
+      // Re-reads the order + its EXISTING ticket rows through the local API and
+      // re-renders the PDF/ICS from the show row we just moved, so the buyer gets
+      // the new date on the same QR tokens. Never writes; never throws (it maps
+      // every failure to a status). 'skipped' means no email on file — the
+      // findReissueOrderIds scope already excludes those, so treat it as a
+      // failure only if it ever happens (it would mean the row changed under us).
+      const result = await sendOrderTicketEmail(payload, orderId, { brevoApiKey })
+      return result.status === 'sent'
+    },
   }
 }
 
@@ -110,7 +142,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   const { payload } = gate
   const { id } = await params
   const pool = (payload.db as unknown as { pool: Pool }).pool
-  const deps = buildDeps(pool, process.env.BREVO_API_KEY ?? '', process.env.PAYLOAD_SECRET ?? '')
+  const deps = buildDeps(
+    pool,
+    payload as unknown as OrderEmailPayload,
+    process.env.BREVO_API_KEY ?? '',
+    process.env.PAYLOAD_SECRET ?? '',
+  )
   try {
     const preview = await previewReschedule(id, deps)
     return NextResponse.json(preview)
@@ -139,7 +176,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   const secret = process.env.PAYLOAD_SECRET ?? ''
   const pool = (payload.db as unknown as { pool: Pool }).pool
-  const deps = buildDeps(pool, brevoApiKey, secret)
+  const deps = buildDeps(pool, payload as unknown as OrderEmailPayload, brevoApiKey, secret)
 
   // Test mode: send the EN + HR preview to the admin's own inbox. No DB write,
   // no buyer notification — the "let me see it first" path.
