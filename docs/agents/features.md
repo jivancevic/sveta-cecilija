@@ -1,6 +1,6 @@
 # Feature design notes
 
-Deeper notes on two features whose design is non-obvious. CLAUDE.md keeps a one-line pointer to each.
+Deeper notes on the features whose design is non-obvious. CLAUDE.md keeps a one-line pointer to each.
 
 ## Bad-weather venue change, Ljetno → Zimsko (#94)
 
@@ -64,3 +64,32 @@ Only the **post-show review email** is marketing-class. Everything else (ticket 
 The review email only goes to buyers who **turned up**: the dispatch SQL projects `attended` = "this order has at least one **active, scanned** ticket", and `dispatchReviewEmails` skips the rest. Door scanning is therefore the source of truth for attendance; a group waved through unscanned silently loses its review ask, which is the cheap direction to fail (a no-show asked to review a show they missed produced a PayPal dispute and a 1-star review on 2026-08-19/20; 6.9% of the season's sends had this shape).
 
 The gate deliberately sits in `dispatchReviewEmails`, not in the query's `WHERE`, for two reasons: a skipped no-show is **never claimed** (`review_email_sent_at` stays NULL) so a late scan correction still sends on a later run, and the per-run `skippedNoShow` count keeps the sold-vs-scanned gap visible in the route's JSON + container log.
+
+**That "never claimed" property is exactly why the send window needs a floor as well as a ceiling.** `findEligibleOrders` takes a `SendWindow { from, to }` and the SQL brackets the show start with `BETWEEN`. Without `from`, a no-show would be re-selected on **every run forever** (it is never claimed, so `review_email_sent_at` never stops being NULL): `skippedNoShow` would report a season-long backlog rather than the recent gap, and a stray late scan months later would fire "how was the show?" for a long-past performance. `REVIEW_WINDOW_DAYS = 7` is far longer than the same-night door corrections it has to tolerate.
+
+## Stripe disputes / chargebacks (#380)
+
+Before this the webhook early-returned on everything except `payment_intent.succeeded`, so a chargeback was invisible: nobody was told a dispute had opened (the evidence deadline was only discoverable by logging into Stripe), and a **lost** dispute left the order at `refundStatus='none'` with its tickets `active` — still holding a seat and still scanning VALID at the door. Real incident 2026-08-20 (order 659), cleaned up by hand in prod.
+
+Two event types are subscribed, and nothing else (`charge.dispute.updated` is noise — nothing in the app reacts to evidence-state changes):
+
+| Event | Action |
+|---|---|
+| `charge.dispute.created` | Alert `info@` with order code, buyer, amount, reason and the `evidence_details.due_by` deadline. **Order untouched** — an open dispute is not a decision. |
+| `charge.dispute.closed` → `lost` | Mark refunded + cascade-void the tickets. No Stripe call, no buyer email. |
+| `charge.dispute.closed` → `won` | Recorded, order left intact. |
+| `charge.dispute.closed` → `warning_closed` / `charge_refunded` | Explicit no-op (never became a dispute / our own refund path already did the work). |
+
+Two design points worth not re-litigating:
+
+- **A lost dispute never calls Stripe.** The funds moved when Stripe decided it (`is_charge_refundable` is false by then), so the refund engine would double-refund or error. This path mirrors only the bookkeeping half of `refundOrder`'s already-refunded self-heal branch.
+- **`refundStatus` reuses `refunded`; there is no `disputed` value.** It is a drift-gate enum column (`db/schema/00-base.sql`) and `refunded` already means what the door and the revenue reports need: money not ours, seat freed, QR dead. The accounting distinction lives in the `critical_events` row (`stripe_dispute_created` / `_lost` / `_won`), which keeps the dispute id, reason, amount and `ticketsVoided`. Same reasoning applies to `cancel_reason='refund'` on the voided tickets: a chargeback and a refund leave a ticket in the same terminal, non-restorable state.
+
+**Idempotency is an atomic claim, not a check.** `claimEvent` runs `INSERT INTO critical_events … ON CONFLICT DO NOTHING RETURNING id` against the partial unique index on `(kind, context->>'disputeId')` (`db/schema/app.sql`) and the handler acts **only if it won the insert**. Two earlier shapes were rejected and should not come back:
+
+- *check-then-act* (`hasHandled` then `record`) — two deliveries racing both read false and both alert;
+- *record after the work* via `recordCriticalEvent` — that writer swallows its own insert failure **by contract**, so a dropped ledger row leaves the event un-deduped forever.
+
+So `claimEvent` must **not** swallow (a failure has to 500 so Stripe retries), `releaseEvent` hands the claim back when the work then throws, and only `finalizeEvent` — enrichment after the money and tickets are already correct — is best-effort. Same claim/release shape as the review-email cron.
+
+**Manual step, without which none of this fires:** the live webhook endpoint must be subscribed to `charge.dispute.created` and `charge.dispute.closed` in the Stripe dashboard. See the runbook in `docs/agents/deployment.md`.

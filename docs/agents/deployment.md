@@ -72,3 +72,49 @@ Both apps connect to the repo via the same Coolify **GitHub App** (no per-repo d
 1. **Inbound firewall must allow GitHub → Coolify webhook.** The GitHub App's `push` webhook is *inbound* to Coolify at `http://<box-ip>:8000`; manual **Redeploy** is *outbound* (the box clones GitHub), so Redeploy working tells you nothing about the webhook. If GitHub App → **Recent Deliveries** show `push` events failing with **"failed to connect to host"** (and `curl http://<box-ip>:8000` returns `code=000`), TCP 8000 is firewalled. Fix: add an **inbound rule in the Hetzner Cloud Firewall** — TCP, port **8000**, source = the GitHub `hooks` ranges from `https://api.github.com/meta` (re-check, they drift), **never `0.0.0.0/0`** (that exposes the Coolify dashboard). In the Hetzner rule form the CIDRs go in the **Source IPs** field (the "Any IPv4 / Any IPv6" box, type each + Enter), and `8000` goes in the **Port** field — a CIDR in the Port field errors "End port have to be higher than the start port". Host `ufw` was not a second blocker here, but check `sudo ufw status` if the cloud-firewall rule alone doesn't fix it.
 
 2. **Coolify waits for required CI checks before it deploys.** Even with the webhook reaching Coolify (delivery returns **200**), a deploy only fires once the commit's required checks (the vitest CI gate) pass. So **don't validate by "Redeliver" of a stale push** — that returns 200 but won't deploy, because the redelivered commit has no passing checks attached. Validate with a *real merge to `main`* and watch the deploy start after CI goes green.
+
+## Runbook: subscribe the live webhook to Stripe dispute events (#380)
+
+**Why this exists:** the dispute handler is dead code until Stripe is told to send the events. Nothing in the app can do this — webhook subscriptions are dashboard/API state on the Stripe account, not config in this repo.
+
+**Current live state** (checked 2026-08-21 via `GET /v1/webhook_endpoints`):
+
+| Endpoint | URL | Status | Events |
+|---|---|---|---|
+| `we_1TZquZ2LKHW8z1M1IxBbdyn2` | `https://moreska.eu/api/stripe/webhook` | **enabled** | `payment_intent.succeeded`, `payment_intent.payment_failed` |
+| `we_1TWXAw2LKHW8z1M18DM6p4dg` | `https://tickets.korcula-moreska.com/?wc-api=wc_stripe` | **disabled** | legacy WooCommerce set (already includes the dispute events, but it is off) |
+
+So there is **one** endpoint to change, not two. The legacy Woo endpoint is already disabled and must stay that way — do not re-enable it to "help".
+
+### Steps
+
+1. **Deploy this branch first.** Prod deploys are manual (see *Deploy triggers*). Enabling the events before the code ships is harmless (the old handler 200s and ignores unknown types), but you want the handler live so the first real dispute is actually processed.
+2. Stripe Dashboard → **Developers → Webhooks**. Confirm the toggle top-right reads **live mode**, not test — the test-mode endpoint list is separate and changing it does nothing for real chargebacks.
+3. Open the endpoint whose URL is `https://moreska.eu/api/stripe/webhook` (`we_1TZquZ…`).
+4. **Update details → Select events**, add:
+   - `charge.dispute.created`
+   - `charge.dispute.closed`
+5. Save. **Do not create a new endpoint** — a new one issues a new signing secret, and `STRIPE_WEBHOOK_SECRET` in Coolify would then be wrong for it. Adding events to an existing endpoint does **not** rotate its secret, so no env change is needed.
+
+### Verify
+
+From the prod container, so the key never leaves the box:
+
+```bash
+ssh hetzner "docker exec <app-container> node -e '
+const k=process.env.STRIPE_SECRET_KEY;
+fetch(\"https://api.stripe.com/v1/webhook_endpoints\",{headers:{Authorization:\"Bearer \"+k}})
+ .then(r=>r.json()).then(j=>j.data.forEach(e=>console.log(e.status, e.url, (e.enabled_events||[]).join(\",\"))));
+'"
+```
+
+Expect the moreska.eu row to list both `charge.dispute.*` events. Then in the dashboard use **Send test webhook** on that endpoint with `charge.dispute.created`: the app should 200, a `stripe_dispute_created` row should appear in `critical_events`, and an alert should reach `info@`. The test payload carries a fake payment intent, so expect `order: null` and an `UNKNOWN ORDER` subject — that is the correct response, not a bug.
+
+### Cleanup after a test send
+
+The test row occupies the idempotency claim for its dispute id, which is harmless (test ids never recur). If you want it gone:
+
+```sql
+DELETE FROM critical_events
+WHERE kind LIKE 'stripe_dispute%' AND context->>'disputeId' LIKE 'du_00000000%';
+```
