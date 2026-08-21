@@ -45,11 +45,11 @@ Door-staff currently authenticate to `/admin` via a shared Payload User with ema
 
 ~~ImprovMX already handles `info@moreska.eu` → personal inbox via MX records on `moreska.eu`. All new aliases (`tickets@`, `pr@`, `bookings@`, `press@`, `dev@`) are added as ImprovMX forwards to `info@`.~~
 
-**Replaced 2026-08-13 (#223).** ImprovMX is gone. `info@` is a Google Workspace mailbox, `tickets@` is a Workspace **alias** on that user (free, up to 30 per user), and everything else — including `pr@`, `bookings@`, `press@`, `dev@` — is delivered by a Gmail **Default routing** catch-all scoped to non-recognized addresses.
+**Replaced 2026-08-13 (#223).** ImprovMX is gone. `info@` is a Google Workspace mailbox, `tickets@` and `pr@` are Workspace **aliases** on that user (free, up to 30 per user), and everything else — including `bookings@`, `press@`, `dev@` — is delivered by a Gmail **Default routing** catch-all scoped to non-recognized addresses. The ImprovMX account was emptied of this domain on 2026-08-21 (#374), so the forwarder is not just bypassed, it no longer exists.
 
 Two things to keep in mind before anyone "cleans up" that catch-all:
 
-- **`pr@moreska.eu` is the login/recovery address for Instagram / Facebook / TikTok / YouTube** (see the address list above). It has no human reader, which makes it look unused, but dropping it silently breaks account recovery on every social platform. It survives only because of the catch-all; promote it to a real alias if the catch-all is ever removed.
+- **`pr@moreska.eu` is the login/recovery address for Instagram / Facebook / TikTok / YouTube** (see the address list above). It has no human reader, which makes it look unused. It was promoted to a **real alias on 2026-08-21 (#375)** precisely so that social-account recovery no longer depends on the catch-all; `bookings@`, `press@` and `dev@` still do.
 - A catch-all attracts dictionary spam. It was kept deliberately as the cheaper trade against losing mail to typos, given that only `info@` is published on the site.
 
 ## Alternatives considered
