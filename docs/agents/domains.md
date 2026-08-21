@@ -108,8 +108,14 @@ wrong):**
   on the live `korcula-moreska.com` site or in the public business registry (fininfo.hr). The only
   address publicly published on the old site is **`sv.cecilija@korcula-moreska.com`** (homepage
   footer + `/contacts/`), which is also cited as the media contact on third-party tourism pages.
-- ✅ **Public registry (fininfo.hr):** lists website `www.korcula-moreska.com`, **no email**.
-  Website field still needs updating to `moreska.eu` post-cutover (already noted in CLAUDE.md).
+- ✅ **Public registry — fixed 2026-08-17 (#369).** The official record is the **RNO** (Registar
+  neprofitnih organizacija, RNO broj `0163001`, https://banovac.mfin.hr/rnoprt/, searchable by OIB,
+  no login). It now reads website `https://moreska.eu/` and e-mail `info@moreska.eu`. Changed by
+  e-mailing a signed **Obrazac RNO-P** to `neprofitno.racunovodstvo@mfin.hr` — free, no attachments
+  beyond the form, no county office; the ministry confirmed the entry the next working day.
+  The `fininfo.hr` mirror is a **third party that lags** and still showed
+  `www.korcula-moreska.com` as of 2026-08-21 — cite banovac, not fininfo, when a platform reviewer
+  needs to tie the society to the domain.
 - ☐ **Legacy WP DB grep — NOT done (needs human/DB access).** The `wpbp_*` tables can only be
   reached via Totohost cPanel/phpMyAdmin or a DB export; neither is available to an agent. Given
   the old site is going read-only and will be 301'd, editing its stored content is low value —
