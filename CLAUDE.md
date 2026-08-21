@@ -143,7 +143,7 @@ Access is keyed off `user.role` via the predicates in `src/lib/access/roles.ts` 
 
 ### Ticketing rules
 
-- **Prices:** €20 adult, €10 child (fixed).
+- **Prices:** €20 adult, €10 child (fixed). **PDV-inclusive at 25%** (€20 = €16 base + €4 PDV), same rate both categories — confirmed by the accountant, may drop pending a ministry opinion, so treat the rate as configurable rather than a constant (ADR-0020).
 - **Venue capacities:** `ljetno-kino` (Summer Cinema / Ljetno kino) = 320; `zimsko-kino` (Cultural Center Korčula / Centar za kulturu) = 250. Always derived from `VENUE_CAPACITY` in `src/lib/shows.ts`; remaining = capacity − sold tickets.
 - **Public venue names differ from DB values** — EN "Summer Cinema" / "Cultural Center Korčula", HR "Ljetno kino" / "Centar za kulturu". Keys: `schedule.venue*`, `performancesPage.venue*`. Buyer-facing names come from `VENUE_LABEL` in `src/lib/venues.ts`. Venue shown on every show card; a bad-weather note tops the tickets page (zimsko is the fallback).
 - **Show types in `docs/performances.md`:** only `Redovna` (public ticketed) shows appear on `/tickets`; `Gulliver` / `Adriatic DMC` (private tour operator) and `Crveni križ` (charity) are scheduling context only, not in the DB.
