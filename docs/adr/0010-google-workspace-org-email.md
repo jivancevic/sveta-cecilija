@@ -1,6 +1,6 @@
 # ADR-0010: Move org email + files to Google Workspace (supersedes ADR-0004)
 
-**Status:** **Accepted** — MX cutover completed 2026-08-13 (#223 closed). Mail for `moreska.eu` is delivered by Google Workspace and `info@` is a real mailbox. The free-nonprofit activation was **not** how this landed: it was rejected twice, so a **paid Business Standard seat** was bought instead (one Flexible seat, on `info@`), with `admin@` and a break-glass `rezerva@` on free Cloud Identity licences. Outcome differs from Considered option 5 only in edition, not in shape.
+**Status:** **Accepted** — MX cutover completed 2026-08-13 (#223 closed). Mail for `moreska.eu` is delivered by Google Workspace and `info@` is a real mailbox. The free-nonprofit activation was **not** how this landed: it was rejected twice, so a **paid Business Standard seat** was bought instead (one Flexible seat, on `info@`), with `admin@` and a break-glass `rezerva@` on free Cloud Identity licences. Outcome differs from Considered option 5 only in edition, not in shape. **The driving requirement is now met: the secretary has direct access to `info@` as of 2026-08-21 (#373 closed), so org mail no longer sits in a personal inbox and no longer depends on Josip to relay it.** The free-nonprofit downgrade is still being pursued as a cost fix, not a capability fix (#370).
 **Date:** 2026-06-02
 **Supersedes:** ADR-0004
 
