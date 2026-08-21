@@ -39,7 +39,7 @@ Website for HGD Sveta Cecilija, a 143-year-old cultural organisation from Korču
 
 ### Organisation registry details
 
-Use these when filling out third-party platform business/verification forms (Meta Business Manager, Stripe, Google Ads, etc.). Source: https://www.fininfo.hr/Poduzece/Pregled/hrvatsko-glazbeno-drustvo-svcecilija-korcula/Detaljno/605996.
+Use these when filling out third-party platform business/verification forms (Meta Business Manager, Stripe, Google Ads, etc.). **Authoritative source is the RNO register** (Registar neprofitnih organizacija, RNO broj `0163001`): https://banovac.mfin.hr/rnoprt/ — search by OIB. `fininfo.hr` mirrors it but lags, so cite banovac when a reviewer needs proof.
 
 | Field | Value |
 |---|---|
@@ -53,7 +53,7 @@ Use these when filling out third-party platform business/verification forms (Met
 | Authorised representative | Velebit Veršić (President) |
 | Website (for new forms) | `https://moreska.eu` |
 
-Registry still lists `www.korcula-moreska.com` as the official website — update post-DNS-cutover.
+RNO registry updated 2026-08-17 (#369): website `https://moreska.eu/`, e-mail `info@moreska.eu`. The `fininfo.hr` mirror still shows the old `www.korcula-moreska.com` and will catch up on its own — don't chase it.
 
 ### Stack
 
