@@ -32,7 +32,7 @@ Adult €20 · Child €10
 
 **Description (HR)**
 ```
-Korčulanska viteška igra mačevima, izvedba HGD Sveta Cecilija, najstarijeg aktivnog moreškarskog ansambla u Hrvatskoj (od 1883.).
+Korčulanska viteška igra mačevima, izvedba HGD Sveta Cecilija, najstarijeg aktivnog moreškantskog ansambla u Hrvatskoj (od 1883.).
 
 📅 [Dan, datum]
 🕘 [Vrijeme]
