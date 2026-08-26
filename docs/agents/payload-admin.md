@@ -29,6 +29,8 @@ Two tied-together gotchas you must keep in place or every custom admin component
 
 Only `titleSuffix` and `defaultOGImageType` are Payload additions on top of Next.js `Metadata`. There is no `favicon` property.
 
+**Icons:** admin pages emit Payload's own metadata icons, which override the app-root `src/app/apple-icon.png` link tag — `/admin` HTML has no `apple-touch-icon`. That's why the same 180×180 icon also lives at `public/apple-touch-icon.png`: Safari's home-screen fallback probes that exact root path when no link tag is present. Keep both files in sync (and fully opaque — iOS renders transparency as black).
+
 ## Auth in custom API routes
 
 Use `payload.auth({ headers: req.headers })` to verify the admin session before calling `payload.create` / `payload.find` / etc.
