@@ -370,3 +370,58 @@ A small **curated sink** the app writes to at known failure seams that would oth
 - **Writer:** `src/lib/critical-events/record.ts` (`recordCriticalEvent`). **Best-effort by construction** — it swallows its own errors, so a writer can call it unguarded and a logging failure can never cascade into failing the operation that was trying to report a problem.
 - **First write-site (#235):** the enquiry-notification path. Before this, a contact-form submission was stored but the admin email silently failed to deliver on a bad/missing `BREVO_API_KEY`, and nobody was told. `submitEnquiry` now records `enquiry_notification_failed` when the Brevo send throws, and `enquiry_notification_skipped` when no notifier is wired (the adapter omits it exactly when the key is missing). The stored enquiry stays successful either way.
 - **Reader / UI:** `src/lib/critical-events/list.ts` (`listRecentCriticalEvents`) feeds a **collapsed, superadmin-only dev strip** on the `/admin` landing (`CriticalEventsDevStrip`). `admin`, `tehnika`, and `partner` never see it.
+
+## Moreškant (dancer roster app)
+
+Terms for the roster / attendance / lineup module ([ADR-0023](docs/adr/0023-permissions-replace-roles-app-surface.md), [ADR-0024](docs/adr/0024-moreskant-roster-domain.md)). The product name is **Moreškant**; it lives at `/app`.
+
+### Permission
+A named capability granted to a user; a user holds a *set* of them. Replaces the role tier. Vocabulary: `users`, `tickets`, `refunds`, `door`, `partner`, `season_stats`, `moreska`, `moreskant`, `dev`. "Superadmin" is no longer an entity, only shorthand for "all permissions". `partner` requires a Partner link; `moreskant` requires a Member link.
+_Avoid_: role, tier, admin-tier, superadmin (as a role).
+
+### Voditelj
+A user holding the `moreska` permission: runs the roster, edits performances, sets lineups, sends alarms, reads dancer stats, uses the MCP server. Josip and Branimir. Not every ticket admin is a voditelj (Tatjana is not).
+_Avoid_: admin, coach, leader.
+
+### Moreškant
+A person who dances the Moreška. Modelled as a **Member** with `isMoreskant`, plus nickname, mobile, email, dance roles and a primary role. A moreškant need not have a login (a guest in a lineup is still a Member row). A moreškant with a login holds the `moreskant` permission and a Member link. Sees nicknames and mobiles of other moreškanti, never emails.
+_Avoid_: dancer (in code names only), performer, user.
+
+### Nadimak (nickname)
+The name shown everywhere in the app for a moreškant ("Cici" for Ivan Fabris). Full name is kept for the voditelj and for comp attribution.
+
+### Dance role
+What a moreškant can dance: `crni` ⚫, `bili` 🔴 (the "white" army wears red), `crni_kralj`, `otmanovic`, `bili_kralj`, `bula`. A member may hold several. `crni_kralj` and `otmanovic` are special roles of a *crni* and require `crni`; `bili_kralj` requires `bili`. Only a voditelj edits roles.
+
+### Primary role
+The single dance role displayed on a moreškant's profile card (Cici: `crni_kralj`), chosen by the voditelj from the member's roles.
+
+### Performance (in Moreškant)
+Every occasion the Moreška is danced, public or not. Extends the existing `Shows` record with a **kind** (`redovna | dmc | gulliver | koncert | ostalo`) and a **public** flag. Only public performances have a venue, capacity, sales, and appear on `/tickets`; non-public ones carry a free-text **location** ("Le Ponant, luka"). Each performance has an **army threshold** (default 8 crni / 8 bili) and an optional **voditelj note** visible to moreškanti.
+_Avoid_: show (for non-public ones), gig, event.
+
+### Attendance
+A moreškant's answer for one performance: **no answer** / **coming** / **not coming**. A multi-role dancer only says "coming"; the voditelj picks the army. A voditelj may answer on someone's behalf. Changeable until the performance starts.
+_Avoid_: RSVP, availability, sign-up.
+
+### Army count
+Headcount of "coming" per army, compared to the threshold. `crni_kralj` and `otmanovic` count as crni, `bili_kralj` as bili, `bula` counts in neither. "3 bilih, 7 crnih" always states the *current* headcount, never the shortfall.
+
+### Alarm
+The push "Sokoliću, fali nas! Stanje za nastup <date time>: 3 bilih, 7 crnih" sent to moreškanti with **no answer** when an army is below threshold. Automatic once per performance at T-6h (or 18:00 the day before when the performance starts before 14:00, Europe/Zagreb), plus manual by a voditelj at any time. "Sokoliću" is a generic greeting, not a vocative of the nickname.
+
+### Lineup (postava)
+Who danced which dance role at a performance: one entry per member, exactly one role each. Enterable before or after the performance; **confirmed** by a voditelj marks it final. Only confirmed lineups feed statistics. A role outside the member's profile is a warning, not a block. The MCP `set_lineup` tool always writes an *unconfirmed* lineup.
+_Avoid_: cast, roster (roster = the whole membership).
+
+### Dancer statistics
+Per season (calendar year, as in ADR-0022): confirmed performances per moreškant, and how many times each danced `crni_kralj`, `bili_kralj`, `otmanovic`, `bula`. Past seasons selectable. Confirmed lineups of past performances are visible to every moreškant.
+
+### Moreškant comp
+A comp ticket (see *Comp ticket*) a moreškant issues for themselves at a public performance, attributed to their own Member row, capped at **4 tickets per performance** for self-issued ones only; admin-issued comps do not count. Cancelable by the moreškant until the performance starts, while unscanned.
+
+### Notification types
+Push is the only channel. (1) Alarm; (2) answer reminder at T-48h to *no answer*; (3) performance change (date, time, place, cancellation, voditelj note) to everyone except *not coming*, cannot be muted; (4) new performance to everyone; (5) to voditelji: a "coming" withdrawn within 24h. A user may hold several push subscriptions (devices).
+
+### Calendar feed
+A per-user tokenised ICS subscription of the season's performances, for Google/Apple/Outlook calendars.
