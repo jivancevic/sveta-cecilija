@@ -1,10 +1,8 @@
 import type { CollectionConfig } from 'payload'
-import { can } from '@/lib/access/permissions'
-
-type PermUser = { permissions?: unknown } | null | undefined
+import { can, type PermissionUser } from '@/lib/access/permissions'
 
 const backoffice = ({ req }: { req: { user: unknown } }) =>
-  can(req.user as PermUser, 'tickets')
+  can(req.user as PermissionUser, 'tickets')
 
 // Audit log of door-side ticket lookups. Tehnika needs to find buyers by
 // email or name when an email didn't arrive — that widens read scope, so
@@ -22,7 +20,7 @@ export const OrderLookups: CollectionConfig = {
   },
   admin: {
     defaultColumns: ['user', 'show', 'query', 'matchedOrderId', 'createdAt'],
-    hidden: ({ user }) => !can(user as PermUser, 'tickets'),
+    hidden: ({ user }) => !can(user as PermissionUser, 'tickets'),
   },
   fields: [
     { name: 'user', type: 'relationship', relationTo: 'users' },

@@ -1,10 +1,8 @@
 import type { CollectionConfig } from 'payload'
-import { can } from '@/lib/access/permissions'
-
-type PermUser = { permissions?: unknown } | null | undefined
+import { can, type PermissionUser } from '@/lib/access/permissions'
 
 const backoffice = ({ req }: { req: { user: unknown } }) =>
-  can(req.user as PermUser, 'tickets')
+  can(req.user as PermissionUser, 'tickets')
 
 export const ContactSubmissions: CollectionConfig = {
   slug: 'contact-submissions',
@@ -17,7 +15,7 @@ export const ContactSubmissions: CollectionConfig = {
   admin: {
     useAsTitle: 'name',
     defaultColumns: ['name', 'email', 'enquiryType', 'status', 'createdAt'],
-    hidden: ({ user }) => !can(user as PermUser, 'tickets'),
+    hidden: ({ user }) => !can(user as PermissionUser, 'tickets'),
     components: {
       edit: {
         editMenuItems: ['@/components/payload/MarkHandledMenuItem#MarkHandledMenuItem'],

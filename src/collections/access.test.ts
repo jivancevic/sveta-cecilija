@@ -3,7 +3,7 @@ import { Orders } from './Orders'
 import { ContactSubmissions } from './ContactSubmissions'
 import { Shows } from './Shows'
 import { Tickets } from './Tickets'
-import { Users } from './Users'
+import { Users, showPartnerLinkField } from './Users'
 import { Partners } from './Partners'
 import { PromoCodes } from './PromoCodes'
 import { Members } from './Members'
@@ -117,6 +117,24 @@ describe.each([
   it('is in the sidebar for the backoffice only', () => {
     expect(hidden(cfg, ticketAdmin)).toBe(false)
     for (const [, user] of outsiders) expect(hidden(cfg, user)).toBe(true)
+  })
+})
+
+// Scheduled posts must not leak: the public read filter is published-only AND
+// dated in the past. This is the Posts-only half of the shared filter asserted
+// above (Faqs has no publishedAt).
+describe('Posts public read filter', () => {
+  it.each(outsiders)('%s never sees a post dated in the future', (_label, user) => {
+    const result = raw(Posts.access?.read, user) as { and: Array<Record<string, unknown>> }
+    expect(result.and).toEqual(
+      expect.arrayContaining([{ status: { equals: 'published' } }]),
+    )
+    const dated = result.and.find((f) => 'publishedAt' in f) as
+      | { publishedAt: { less_than_equal: string } }
+      | undefined
+    expect(dated).toBeDefined()
+    // The filter snapshots "now" at access time; verify the shape.
+    expect(dated!.publishedAt.less_than_equal).toMatch(/^\d{4}-\d{2}-\d{2}T/)
   })
 })
 
@@ -398,6 +416,22 @@ describe('Users access', () => {
 
   it('the legacy role select still offers partner while the column is retained', () => {
     expect(usersFieldOf('role')?.options?.map((o) => o.value)).toContain('partner')
+  })
+
+  it('the partner link field shows for a `partner` holder and for a legacy partner row', () => {
+    expect(showPartnerLinkField({ permissions: ['partner'] })).toBe(true)
+    expect(showPartnerLinkField({ permissions: ['tickets', 'partner'] })).toBe(true)
+    // The retained legacy column still works until #397 drops it.
+    expect(showPartnerLinkField({ role: 'partner' })).toBe(true)
+  })
+
+  it('the partner link field is hidden for every other account', () => {
+    expect(showPartnerLinkField({ permissions: ['tickets', 'refunds', 'door'] })).toBe(false)
+    expect(showPartnerLinkField({ permissions: ['season_stats'] })).toBe(false)
+    expect(showPartnerLinkField({ permissions: [] })).toBe(false)
+    expect(showPartnerLinkField({ permissions: 'partner' })).toBe(false)
+    expect(showPartnerLinkField({})).toBe(false)
+    expect(showPartnerLinkField()).toBe(false)
   })
 
   it('permissions field is a required multi-select over the nine-word vocabulary, with no default', () => {

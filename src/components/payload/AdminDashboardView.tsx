@@ -6,7 +6,7 @@ import { getPayload } from 'payload'
 import config from '@payload-config'
 import { getStatsInput } from '@/lib/stats-data'
 import { ADMIN_LANG_COOKIE, adminT, resolveAdminLang, type AdminLang } from '@/lib/admin-i18n'
-import { partnerIdOf } from '@/lib/access/roles'
+import { partnerIdOf, type PartnerUser } from '@/lib/access/partner'
 import { dashboardBranchFor } from '@/lib/dashboard/branch'
 import { getNextShow, getScannedPeopleForShow, getUpcomingShows, type NextShow } from '@/lib/shows'
 import { toDashboardShows } from '@/lib/dashboard/from-stats'
@@ -482,7 +482,7 @@ async function PartnerDashboard({
   user: unknown
   lang: AdminLang
 }) {
-  const partnerId = partnerIdOf(user)
+  const partnerId = partnerIdOf(user as PartnerUser)
 
   let partner: PartnerRecord | null = null
   if (partnerId != null) {

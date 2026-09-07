@@ -1,15 +1,13 @@
 import type { CollectionConfig, Where } from 'payload'
-import { can } from '@/lib/access/permissions'
-
-type PermUser = { permissions?: unknown } | null | undefined
+import { can, type PermissionUser } from '@/lib/access/permissions'
 
 const backoffice = ({ req }: { req: { user: unknown } }) =>
-  can(req.user as PermUser, 'tickets')
+  can(req.user as PermissionUser, 'tickets')
 
 // Public reads: only published posts. The backoffice sees everything (drafts +
 // scheduled); a door account reads as a visitor does.
 const publicRead = ({ req }: { req: { user: unknown } }): true | Where => {
-  if (can(req.user as PermUser, 'tickets')) return true
+  if (can(req.user as PermissionUser, 'tickets')) return true
   return {
     and: [
       { status: { equals: 'published' } },
@@ -42,7 +40,7 @@ export const Posts: CollectionConfig = {
     defaultColumns: ['title', 'locale', 'status', 'publishedAt'],
     description:
       'Blog posts. Author = HGD Sveta Cecilija. Pick a locale; posts only appear on the public /blog of that locale.',
-    hidden: ({ user }) => !can(user as PermUser, 'tickets'),
+    hidden: ({ user }) => !can(user as PermissionUser, 'tickets'),
   },
   fields: [
     { name: 'title', type: 'text', required: true },

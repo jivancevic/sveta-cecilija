@@ -26,6 +26,17 @@ const PERMISSION_LABELS: Record<Permission, { en: string; hr: string }> = {
   dev: { en: 'Developer diagnostics', hr: 'Razvojna dijagnostika' },
 }
 
+// Visibility rule for the `partner` relationship field. Payload hands the
+// condition the form's data, not a user, so this reads the edited document:
+// the field belongs on an account that sells for a partner.
+export function showPartnerLinkField(data?: { permissions?: unknown; role?: unknown }): boolean {
+  const perms = data?.permissions
+  if (Array.isArray(perms) && perms.includes('partner')) return true
+  // Legacy fallback: the `role` column survives one release (#393), and a row
+  // migrated by hand may still be role-only.
+  return data?.role === 'partner'
+}
+
 // Holder of the `users` permission — the only person who may see or change a
 // permission set or the shared flag, their own record included (ADR-0023).
 const usersHolder = (user: ReqUser) => can(user as { permissions?: unknown } | null, 'users')
@@ -224,8 +235,11 @@ export const Users: CollectionConfig = {
       type: 'relationship',
       relationTo: 'partners',
       admin: {
-        description: 'Partner this login sells for (partner role only)',
-        condition: (data) => data?.role === 'partner',
+        description: 'Partner this login sells for (accounts holding `partner` only)',
+        // Shown for an account that holds `partner`, or one that still carries
+        // only the legacy role while the column is retained (#393). Exported so
+        // the rule is unit-tested rather than asserted through the admin UI.
+        condition: showPartnerLinkField,
       },
       access: {
         update: ({ req }) => usersHolder(req.user as ReqUser),
