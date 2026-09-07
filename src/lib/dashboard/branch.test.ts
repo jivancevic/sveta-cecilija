@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { dashboardBranchFor } from './branch'
 
 // One fixture per migration bundle (#393): the sets real accounts carry after
-// the role → permission migration.
+// the migration onto permissions.
 const developer = {
   permissions: ['users', 'tickets', 'refunds', 'door', 'partner', 'season_stats', 'moreska', 'moreskant', 'dev'],
 }
@@ -52,7 +52,7 @@ describe('dashboardBranchFor', () => {
     expect(dashboardBranchFor({ permissions: ['admin-tier', 'superadmin'] })).toBe('none')
   })
 
-  it('is not fooled by a legacy role with no permissions', () => {
-    expect(dashboardBranchFor({ role: 'superadmin' } as never)).toBe('none')
+  it('gives a session with no permission set at all no branch', () => {
+    expect(dashboardBranchFor({} as never)).toBe('none')
   })
 })

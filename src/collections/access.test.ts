@@ -12,8 +12,8 @@ import { Faqs } from './Faqs'
 import { Posts } from './Posts'
 
 // Permission-set fixtures, one per migration bundle (#393, ADR-0023). Every
-// access decision below reads `permissions`; `legacyRoleOnly` is the control
-// that proves no role survives as an alias.
+// access decision below reads `permissions`; `noPermissions` is the control
+// that proves an authenticated session with no set opens nothing.
 const developer = {
   id: '1',
   permissions: ['users', 'tickets', 'refunds', 'door', 'partner', 'season_stats', 'moreska', 'moreskant', 'dev'],
@@ -24,7 +24,7 @@ const partner = { id: '4', permissions: ['partner'], partner: 7 }
 const partnerNoLink = { id: '5', permissions: ['partner'] }
 const memberAccount = { id: '6', permissions: ['season_stats'], shared: true }
 const voditelj = { id: '7', permissions: ['moreska'] }
-const legacyRoleOnly = { id: '8', role: 'superadmin' }
+const noPermissions = { id: '8' }
 const anon = null
 
 // Every account that is NOT the ticketing backoffice. Used to assert the
@@ -35,7 +35,7 @@ const outsiders = [
   ['partner without a link', partnerNoLink],
   ['member', memberAccount],
   ['voditelj', voditelj],
-  ['legacy role only', legacyRoleOnly],
+  ['no permission set', noPermissions],
   ['anonymous', anon],
 ] as const
 
@@ -145,7 +145,7 @@ describe('Orders access', () => {
     // Door lookups go through the audited /api/orders/lookup route, not this.
     expect(call(Orders.access?.read, doorAccount)).toBe(false)
     expect(call(Orders.access?.read, memberAccount)).toBe(false)
-    expect(call(Orders.access?.read, legacyRoleOnly)).toBe(false)
+    expect(call(Orders.access?.read, noPermissions)).toBe(false)
     expect(call(Orders.access?.read, anon)).toBe(false)
   })
 
@@ -263,11 +263,11 @@ describe('Shows access', () => {
     expect(call(Shows.access?.read, doorAccount)).toBe(true)
   })
 
-  it('a partner, the member login, a voditelj, a legacy role and anon do not read', () => {
+  it('a partner, the member login, a voditelj, an empty session and anon do not read', () => {
     expect(call(Shows.access?.read, partner)).toBe(false)
     expect(call(Shows.access?.read, memberAccount)).toBe(false)
     expect(call(Shows.access?.read, voditelj)).toBe(false)
-    expect(call(Shows.access?.read, legacyRoleOnly)).toBe(false)
+    expect(call(Shows.access?.read, noPermissions)).toBe(false)
     expect(call(Shows.access?.read, anon)).toBe(false)
   })
 
@@ -311,7 +311,7 @@ describe('Tickets access', () => {
     expect(call(Tickets.access?.read, ticketAdmin)).toBe(true)
     expect(call(Tickets.access?.read, doorAccount)).toBe(true)
     expect(call(Tickets.access?.read, memberAccount)).toBe(false)
-    expect(call(Tickets.access?.read, legacyRoleOnly)).toBe(false)
+    expect(call(Tickets.access?.read, noPermissions)).toBe(false)
     expect(call(Tickets.access?.read, anon)).toBe(false)
   })
 
@@ -362,7 +362,7 @@ describe('Users access', () => {
       expect(call(Users.access?.[op], developer)).toBe(true)
       expect(call(Users.access?.[op], ticketAdmin)).toBe(false)
       expect(call(Users.access?.[op], doorAccount)).toBe(false)
-      expect(call(Users.access?.[op], legacyRoleOnly)).toBe(false)
+      expect(call(Users.access?.[op], noPermissions)).toBe(false)
       expect(call(Users.access?.[op], anon)).toBe(false)
     }
   })
@@ -384,19 +384,13 @@ describe('Users access', () => {
     expect(hidden(Users, doorAccount)).toBe(true)
     expect(hidden(Users, partner)).toBe(true)
     expect(hidden(Users, memberAccount)).toBe(true)
-    expect(hidden(Users, legacyRoleOnly)).toBe(true)
+    expect(hidden(Users, noPermissions)).toBe(true)
     expect(hidden(Users, anon)).toBe(true)
   })
 
-  it('the legacy role field is locked to a `users` holder (self-promotion is blocked)', () => {
-    const access = usersFieldOf('role')?.access
-    expect(access).toBeDefined()
-    for (const op of ['read', 'update', 'create'] as const) {
-      expect(call(access?.[op], developer)).toBe(true)
-      expect(call(access?.[op], ticketAdmin)).toBe(false)
-      expect(call(access?.[op], doorAccount)).toBe(false)
-      expect(call(access?.[op], legacyRoleOnly)).toBe(false)
-    }
+  // #398: the legacy tier column is gone from the collection and the database.
+  it('has no `role` field any more', () => {
+    expect(usersFieldOf('role')).toBeUndefined()
   })
 
   it('partner link field: write locked to a `users` holder, read left open for scoping', () => {
@@ -415,25 +409,9 @@ describe('Users access', () => {
     }
   })
 
-  it('the legacy role select still offers partner while the column is retained', () => {
-    expect(usersFieldOf('role')?.options?.map((o) => o.value)).toContain('partner')
-  })
-
-  // #397: the column survives one release so a container rollback finds intact
-  // data, but the field must not be part of the UI or of validation any more.
-  it('the legacy role field is hidden in the admin, optional, and has no default', () => {
-    const role = usersFieldOf('role')
-    expect(role).toBeDefined()
-    expect(role?.admin?.hidden).toBe(true)
-    expect(role?.required).toBeFalsy()
-    expect(role?.defaultValue).toBeUndefined()
-  })
-
-  it('the partner link field shows for a `partner` holder and for a legacy partner row', () => {
+  it('the partner link field shows for a `partner` holder', () => {
     expect(showPartnerLinkField({ permissions: ['partner'] })).toBe(true)
     expect(showPartnerLinkField({ permissions: ['tickets', 'partner'] })).toBe(true)
-    // The retained legacy column still works until #397 drops it.
-    expect(showPartnerLinkField({ role: 'partner' })).toBe(true)
   })
 
   it('the partner link field is hidden for every other account', () => {
@@ -475,8 +453,8 @@ describe('Users access', () => {
       expect(call(access?.[op], partner)).toBe(false)
       expect(call(access?.[op], memberAccount)).toBe(false)
       expect(call(access?.[op], anon)).toBe(false)
-      // The legacy role alone opens nothing: no alias survives into #397.
-      expect(call(access?.[op], legacyRoleOnly)).toBe(false)
+      // An authenticated session with no permission set opens nothing.
+      expect(call(access?.[op], noPermissions)).toBe(false)
     }
   })
 

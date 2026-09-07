@@ -42,7 +42,6 @@ describe('defaultLanguageForUser', () => {
     expect(defaultLanguageForUser(undefined)).toBe('hr')
     expect(defaultLanguageForUser(null)).toBe('hr')
     expect(defaultLanguageForUser({ permissions: ['something-else'] })).toBe('hr')
-    expect(defaultLanguageForUser({ role: 'superadmin' } as never)).toBe('hr')
   })
 })
 

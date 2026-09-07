@@ -40,7 +40,7 @@ describe('userUpdateAccess', () => {
     expect(userUpdateAccess({ permissions: ['tickets'] })).toBe(false)
   })
 
-  it('is not fooled by a legacy superadmin role with no permissions', () => {
-    expect(userUpdateAccess({ id: 1, role: 'superadmin' } as never)).toEqual({ id: { equals: 1 } })
+  it('scopes a user with no permission set to their own record', () => {
+    expect(userUpdateAccess({ id: 1 })).toEqual({ id: { equals: 1 } })
   })
 })
