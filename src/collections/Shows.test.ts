@@ -2,7 +2,19 @@ import { describe, expect, it } from 'vitest'
 import { Shows } from './Shows'
 import { PERFORMANCE_KINDS } from '@/lib/show-performance'
 
-type AnyField = { name?: string; type?: string; required?: boolean; defaultValue?: unknown; options?: unknown }
+type Condition = (
+  data: Record<string, unknown>,
+  siblingData: Record<string, unknown>,
+) => boolean
+
+type AnyField = {
+  name?: string
+  type?: string
+  required?: boolean
+  defaultValue?: unknown
+  options?: unknown
+  admin?: { condition?: Condition }
+}
 
 const fields = Shows.fields as AnyField[]
 const field = (name: string) => fields.find((f) => f.name === name)
@@ -59,6 +71,73 @@ describe('Shows collection fields', () => {
   })
 })
 
+// #409 — the sales fields and the two audit trails only mean something on a
+// public performance; on a ship call or a concert they are hidden, so the edit
+// view is about the performance instead of about tickets that do not exist.
+describe('Shows non-public field conditions (#409)', () => {
+  const SALES_AND_AUDIT_FIELDS = [
+    'venue',
+    'onlineSold',
+    'inPersonSold',
+    'legacyReserved',
+    'onlineSalesPaused',
+    'venueChangedAt',
+    'venueChangedBy',
+    'dateChangedAt',
+    'dateChangedBy',
+    'originalDate',
+  ]
+
+  // What is left visible: everything the performance itself needs.
+  const ALWAYS_VISIBLE_FIELDS = [
+    'date',
+    'time',
+    'kind',
+    'isPublic',
+    'location',
+    'client',
+    'status',
+    'thresholdCrni',
+    'thresholdBili',
+    'voditeljNote',
+  ]
+
+  it.each(SALES_AND_AUDIT_FIELDS)('hides %s on a non-public performance', (name) => {
+    const condition = field(name)!.admin?.condition
+    expect(condition, `${name} has no admin.condition`).toBeTypeOf('function')
+    const nonPublic = { kind: 'koncert', isPublic: false, location: 'Sv. Justina' }
+    expect(condition!(nonPublic, nonPublic)).toBe(false)
+  })
+
+  it.each(SALES_AND_AUDIT_FIELDS)('still shows %s on a public performance', (name) => {
+    const condition = field(name)!.admin!.condition!
+    const isPublic = { kind: 'redovna', isPublic: true, venue: 'ljetno-kino' }
+    expect(condition(isPublic, isPublic)).toBe(true)
+    // A row that predates the expand carries no isPublic value and is public.
+    expect(condition({ kind: 'redovna' }, { kind: 'redovna' })).toBe(true)
+  })
+
+  it.each(ALWAYS_VISIBLE_FIELDS)('leaves %s visible on every performance', (name) => {
+    expect(field(name)!.admin?.condition).toBeUndefined()
+  })
+
+  it('keeps status a plain editable select, so cancelling a non-public row is just a field edit', () => {
+    const status = field('status')!
+    expect(status.type).toBe('select')
+    expect(status.admin?.condition).toBeUndefined()
+    expect((status as { access?: unknown }).access).toBeUndefined()
+  })
+
+  it('has no hook that could email anyone when status changes', () => {
+    // Cancelling a non-public performance must send nothing. The collection's
+    // only hook is the beforeValidate validator — there is no afterChange (or
+    // any other) hook here, so no save path can reach Brevo. Buyer mail is only
+    // ever sent by the explicit admin actions, which now refuse non-public rows.
+    expect(Object.keys(Shows.hooks ?? {})).toEqual(['beforeValidate'])
+    expect(Shows.hooks?.beforeValidate).toHaveLength(1)
+  })
+})
+
 describe('Shows beforeValidate', () => {
   it('rejects a redovna that is not public', () => {
     expect(() =>
@@ -111,6 +190,23 @@ describe('Shows beforeValidate', () => {
       originalDoc: { kind: 'redovna', isPublic: true, venue: 'ljetno-kino' },
     })
     expect(out).toEqual({ time: '21:30' })
+  })
+
+  it('accepts a plain status change on a non-public performance (#409, cancel sends nothing)', () => {
+    const out = beforeValidate({
+      data: { status: 'cancelled' },
+      originalDoc: { kind: 'koncert', isPublic: false, location: 'Sv. Justina' },
+    })
+    // The patch carries the status plus the sales fields normalisation always
+    // re-forces on a non-public row. Nothing else — and no hook that could mail.
+    expect(out.status).toBe('cancelled')
+    expect(out.venue).toBeNull()
+    expect(Object.keys(out).sort()).toEqual([
+      'inPersonSold',
+      'legacyReserved',
+      'status',
+      'venue',
+    ])
   })
 
   it('forces the sales fields when a stored public show is flipped to non-public', () => {

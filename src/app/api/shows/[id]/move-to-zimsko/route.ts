@@ -23,7 +23,7 @@ function buildDeps(pool: Pool, brevoApiKey: string): MoveToZimskoDeps {
   return {
     getShow: async (showId): Promise<VenueChangeShow | null> => {
       const res = await pool.query(
-        `SELECT id, date, time, venue, venue_changed_at FROM shows WHERE id = $1`,
+        `SELECT id, date, time, venue, venue_changed_at, is_public FROM shows WHERE id = $1`,
         [Number(showId)],
       )
       const row = res.rows[0]
@@ -34,6 +34,9 @@ function buildDeps(pool: Pool, brevoApiKey: string): MoveToZimskoDeps {
         time: String(row.time ?? ''),
         venue: row.venue as Venue,
         venueChangedAt: row.venue_changed_at ? new Date(row.venue_changed_at as string).toISOString() : null,
+        // #409 — the move refuses on a non-public performance (it has no venue
+        // and no buyers); the gate itself lives in the venue-change seam.
+        isPublic: row.is_public !== false,
       }
     },
     findBuyers: async (showId): Promise<VenueChangeBuyer[]> => {

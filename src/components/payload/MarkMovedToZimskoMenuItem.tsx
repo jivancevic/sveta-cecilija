@@ -3,6 +3,7 @@
 import React, { useState } from 'react'
 import { useDocumentInfo } from '@payloadcms/ui'
 import { useRouter } from 'next/navigation'
+import { useSalesActionsVisible } from './useSalesActionsVisible'
 
 interface Preview {
   alreadyMoved: boolean
@@ -51,7 +52,8 @@ const secondaryBtn: React.CSSProperties = {
 }
 
 export function MarkMovedToZimskoMenuItem() {
-  const { id, collectionSlug } = useDocumentInfo()
+  const { id } = useDocumentInfo()
+  const visible = useSalesActionsVisible()
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -59,7 +61,8 @@ export function MarkMovedToZimskoMenuItem() {
   const [result, setResult] = useState<MoveResult | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  if (collectionSlug !== 'shows' || !id) return null
+  // A non-public performance has no venue to move and no buyers to notify (#409).
+  if (!visible) return null
 
   const openPreview = async () => {
     setOpen(true)

@@ -14,6 +14,7 @@ import {
 } from '@/lib/access/shows-access'
 import {
   PerformanceValidationError,
+  isPublicPerformance,
   validateAndNormalisePerformance,
 } from '@/lib/show-performance'
 
@@ -38,6 +39,20 @@ const rosterFieldRead = ({ req }: { req: { user: unknown } }) =>
   canReadRosterField(req.user as ReqUser)
 const rosterFieldUpdate = ({ req }: { req: { user: unknown } }) =>
   canEditRosterField(req.user as ReqUser)
+
+// #409 — on a non-public performance the form is about the performance, not
+// about tickets: no venue, no counters, no sales pause, no bad-weather or
+// reschedule audit trail. Those fields are hidden rather than shown empty, so
+// the edit view reads as what it is. `siblingData` is the same object as `data`
+// for these top-level fields; a brand-new document carries no value yet and the
+// column defaults to true, which `isPublicPerformance` already models.
+const publicPerformanceOnly = (
+  data: Record<string, unknown>,
+  siblingData: Record<string, unknown>,
+): boolean => {
+  const row = siblingData && 'isPublic' in siblingData ? siblingData : (data ?? {})
+  return isPublicPerformance(row)
+}
 
 export const Shows: CollectionConfig = {
   slug: 'shows',
@@ -199,6 +214,7 @@ export const Shows: CollectionConfig = {
       ],
       admin: {
         description: 'Public performances only. Capacity is derived from the venue.',
+        condition: publicPerformanceOnly,
       },
       access: { update: scheduleFieldUpdate },
     },
@@ -225,12 +241,14 @@ export const Shows: CollectionConfig = {
       name: 'onlineSold',
       type: 'number',
       defaultValue: 0,
+      admin: { condition: publicPerformanceOnly },
       access: { update: scheduleFieldUpdate },
     },
     {
       name: 'inPersonSold',
       type: 'number',
       defaultValue: 0,
+      admin: { condition: publicPerformanceOnly },
       access: { update: scheduleFieldUpdate },
     },
     {
@@ -241,6 +259,7 @@ export const Shows: CollectionConfig = {
       admin: {
         description:
           'Tickets sold on the previous WordPress site (korcula-moreska.com) before cutover. Subtracted from venue capacity so moreska.eu cannot oversell against them.',
+        condition: publicPerformanceOnly,
       },
       access: {
         // Defense-in-depth: pinning the field guarantees a door account, a
@@ -269,6 +288,7 @@ export const Shows: CollectionConfig = {
       admin: {
         description:
           'Pause ONLINE ticket sales for this show. The show stays listed on /tickets with an "online sales closed" note. Partner (POS) sales, comp tickets, door scanning and stats are unaffected. Uncheck to resume sales.',
+        condition: publicPerformanceOnly,
       },
       access: { update: scheduleFieldUpdate },
     },
@@ -280,6 +300,7 @@ export const Shows: CollectionConfig = {
       admin: {
         readOnly: true,
         description: 'When this show was moved Ljetno → Zimsko. NULL = not moved.',
+        condition: publicPerformanceOnly,
         date: { pickerAppearance: 'dayAndTime' },
       },
       access: { update: () => false },
@@ -291,6 +312,7 @@ export const Shows: CollectionConfig = {
       admin: {
         readOnly: true,
         description: 'Admin who marked this show as moved to Zimsko.',
+        condition: publicPerformanceOnly,
       },
       access: { update: () => false },
     },
@@ -303,6 +325,7 @@ export const Shows: CollectionConfig = {
       admin: {
         readOnly: true,
         description: 'When this show was last rescheduled. NULL = never rescheduled.',
+        condition: publicPerformanceOnly,
         date: { pickerAppearance: 'dayAndTime' },
       },
       access: { update: () => false },
@@ -314,6 +337,7 @@ export const Shows: CollectionConfig = {
       admin: {
         readOnly: true,
         description: 'Admin who last rescheduled this show.',
+        condition: publicPerformanceOnly,
       },
       access: { update: () => false },
     },
@@ -323,6 +347,7 @@ export const Shows: CollectionConfig = {
       admin: {
         readOnly: true,
         description: 'First scheduled date, before any reschedule. NULL = never rescheduled.',
+        condition: publicPerformanceOnly,
         date: { pickerAppearance: 'dayOnly', displayFormat: 'd MMM yyyy' },
       },
       access: { update: () => false },

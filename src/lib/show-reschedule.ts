@@ -31,6 +31,7 @@
 // a mail failure is counted and logged, never a rollback.
 
 import type { Venue } from './venues'
+import { assertPublicPerformance } from './show-admin-actions'
 
 export interface RescheduleShow {
   id: string
@@ -39,6 +40,12 @@ export interface RescheduleShow {
   time: string
   /** Venue slug — stated in the notice so a forgetful buyer knows where to go (unchanged by a reschedule). */
   venue: Venue
+  /**
+   * #409 — absent on pre-phase-2 rows, which are public by definition. A
+   * non-public performance has no buyers to notify and no tickets to reissue,
+   * so the action refuses rather than moving the date silently.
+   */
+  isPublic?: boolean | null
 }
 
 export interface RescheduleBuyer {
@@ -108,6 +115,7 @@ export async function rescheduleShow(
 ): Promise<RescheduleResult> {
   const show = await deps.getShow(input.showId)
   if (!show) throw new Error('Show not found')
+  assertPublicPerformance(show as unknown as Record<string, unknown>)
 
   if (input.newDate === show.date) {
     // Already on the target date — nothing to change, nobody to notify.
@@ -190,6 +198,7 @@ export async function previewReschedule(
 ): Promise<PreviewRescheduleResult> {
   const show = await deps.getShow(showId)
   if (!show) throw new Error('Show not found')
+  assertPublicPerformance(show as unknown as Record<string, unknown>)
   const buyers = await deps.findBuyers(showId)
   return {
     currentDate: show.date,

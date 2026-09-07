@@ -1,4 +1,5 @@
 import type { PoolQuery } from '@/lib/tickets/sold-seats'
+import { assertPublicPerformance } from '@/lib/show-admin-actions'
 
 export interface AddInPersonSalesInput {
   showId: string
@@ -6,6 +7,10 @@ export interface AddInPersonSalesInput {
 }
 
 export interface AddInPersonSalesDeps {
+  // The show row, for the public-performance gate (#409): a non-public
+  // performance sells no tickets, so a door count against one is meaningless.
+  // Returns null if the show does not exist. Only `isPublic` is read.
+  getShow: (showId: string) => Promise<{ isPublic?: boolean | null } | null>
   // Atomically increments in_person_sold by `delta` and returns the new total.
   // Returns null if the show does not exist. Implementations must be race-safe
   // (e.g. SQL `UPDATE … SET col = col + $1 RETURNING col`) — the helper
@@ -38,6 +43,9 @@ export async function addInPersonSales(
 ): Promise<{ inPersonSold: number }> {
   if (!Number.isInteger(input.count)) throw new Error('Count must be an integer')
   if (input.count <= 0) throw new Error('Count must be a positive integer')
+  const show = await deps.getShow(input.showId)
+  if (!show) throw new Error('Show not found')
+  assertPublicPerformance(show as Record<string, unknown>)
   const result = await deps.atomicIncrement(input.showId, input.count)
   if (!result) throw new Error('Show not found')
   return { inPersonSold: result.inPersonSold }
