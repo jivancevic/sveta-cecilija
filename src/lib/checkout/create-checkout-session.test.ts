@@ -199,4 +199,23 @@ describe('createCheckoutSession', () => {
       expect(session.promoApplied).toBe(false)
     })
   })
+  it('rejects a non-public performance and never creates a PaymentIntent (ADR-0024)', async () => {
+    const deps = makeDeps({ show: { ...baseShow, isPublic: false } })
+    await expect(
+      createCheckoutSession(
+        { showId: '1', adults: 1, children: 0, buyer: { name: 'Ana', email: 'a@b.co' } },
+        deps,
+      ),
+    ).rejects.toThrow(/not on sale/i)
+    expect(deps.createPaymentIntent).not.toHaveBeenCalled()
+  })
+
+  it('still sells a public performance carrying the explicit flag', async () => {
+    const deps = makeDeps({ show: { ...baseShow, isPublic: true } })
+    const session = await createCheckoutSession(
+      { showId: '1', adults: 1, children: 0, buyer: { name: 'Ana', email: 'a@b.co' } },
+      deps,
+    )
+    expect(session.totalCents).toBe(2000)
+  })
 })

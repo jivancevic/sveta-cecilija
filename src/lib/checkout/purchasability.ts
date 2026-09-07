@@ -45,11 +45,21 @@ export interface PurchasableShow {
    * with callers/tests that predate the toggle (absent = not paused).
    */
   onlineSalesPaused?: boolean
+  /**
+   * Is this a PUBLIC performance (ADR-0024)? A non-public one (a cruise-ship
+   * call, a concert) has no venue, no capacity and no seats to sell, so it can
+   * never be checked out. Optional for back-compat: rows that predate the
+   * expand — and older fixtures — carry no flag and are public.
+   */
+  isPublic?: boolean
 }
 
 export class CheckoutValidationError extends Error {
-  code: 'EMPTY' | 'CANCELLED' | 'SALES_PAUSED' | 'PAST' | 'OVER_CAPACITY'
-  constructor(code: 'EMPTY' | 'CANCELLED' | 'SALES_PAUSED' | 'PAST' | 'OVER_CAPACITY', message: string) {
+  code: 'EMPTY' | 'NOT_PUBLIC' | 'CANCELLED' | 'SALES_PAUSED' | 'PAST' | 'OVER_CAPACITY'
+  constructor(
+    code: 'EMPTY' | 'NOT_PUBLIC' | 'CANCELLED' | 'SALES_PAUSED' | 'PAST' | 'OVER_CAPACITY',
+    message: string,
+  ) {
     super(message)
     this.code = code
   }
@@ -62,6 +72,12 @@ export function assertPurchasable(
   const total = qty.adults + qty.children
   if (total <= 0) {
     throw new CheckoutValidationError('EMPTY', 'Select at least one ticket')
+  }
+  // A non-public performance is not a product. Checked before anything that
+  // touches the venue, because a non-public row's venue is NULL and
+  // VENUE_CAPACITY must never be consulted for it (ADR-0024).
+  if (show.isPublic === false) {
+    throw new CheckoutValidationError('NOT_PUBLIC', 'This performance is not on sale')
   }
   if (show.status === 'cancelled') {
     throw new CheckoutValidationError('CANCELLED', 'This show has been cancelled')

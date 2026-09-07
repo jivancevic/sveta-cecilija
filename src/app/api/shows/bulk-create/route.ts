@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requirePermission } from '@/lib/access/route-guard'
+import { PUBLIC_PERFORMANCE_WHERE } from '@/lib/show-performance'
 
 export async function POST(req: NextRequest) {
   const gate = await requirePermission(req, 'tickets')
@@ -43,11 +44,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ created: [], skipped: [], message: 'No dates match the selected days in that range' })
   }
 
-  // Fetch existing shows in range to detect duplicates
+  // Fetch existing shows in range to detect duplicates. Only PUBLIC ones count:
+  // a non-public performance (a ship call, a concert) on the same day is not a
+  // duplicate of a Redovna and must not suppress it (ADR-0024).
   const existingShows = await payload.find({
     collection: 'shows',
     where: {
       and: [
+        PUBLIC_PERFORMANCE_WHERE,
         { date: { greater_than_equal: start.toISOString() } },
         { date: { less_than_equal: new Date(endDate + 'T23:59:59Z').toISOString() } },
       ],
@@ -80,6 +84,11 @@ export async function POST(req: NextRequest) {
         date: date.toISOString(),
         time,
         venue,
+        // Bulk create is the ticket backoffice's tool: it only ever produces
+        // public Redovna shows (ADR-0024). `kind` and `isPublic` are written
+        // here, never read from the request body.
+        kind: 'redovna',
+        isPublic: true,
         onlineSold: 0,
         inPersonSold: 0,
         status: 'active',
