@@ -132,6 +132,20 @@ CREATE TYPE public.enum_tickets_type AS ENUM (
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 DO $$ BEGIN
+CREATE TYPE public.enum_users_permissions AS ENUM (
+    'users',
+    'tickets',
+    'refunds',
+    'door',
+    'partner',
+    'season_stats',
+    'moreska',
+    'moreskant',
+    'dev'
+);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
 CREATE TYPE public.enum_users_role AS ENUM (
     'superadmin',
     'admin',
@@ -496,6 +510,7 @@ ALTER SEQUENCE public.tickets_id_seq OWNED BY public.tickets.id;
 CREATE TABLE IF NOT EXISTS public.users (
     id integer NOT NULL,
     role public.enum_users_role DEFAULT 'admin'::public.enum_users_role NOT NULL,
+    shared boolean DEFAULT false,
     partner_id integer,
     updated_at timestamp(3) with time zone DEFAULT now() NOT NULL,
     created_at timestamp(3) with time zone DEFAULT now() NOT NULL,
@@ -518,6 +533,23 @@ CREATE SEQUENCE IF NOT EXISTS public.users_id_seq
     CACHE 1;
 
 ALTER SEQUENCE public.users_id_seq OWNED BY public.users.id;
+
+CREATE TABLE IF NOT EXISTS public.users_permissions (
+    "order" integer NOT NULL,
+    parent_id integer NOT NULL,
+    value public.enum_users_permissions,
+    id integer NOT NULL
+);
+
+CREATE SEQUENCE IF NOT EXISTS public.users_permissions_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.users_permissions_id_seq OWNED BY public.users_permissions.id;
 
 CREATE TABLE IF NOT EXISTS public.users_sessions (
     _order integer NOT NULL,
@@ -560,6 +592,8 @@ ALTER TABLE ONLY public.shows ALTER COLUMN id SET DEFAULT nextval('public.shows_
 ALTER TABLE ONLY public.tickets ALTER COLUMN id SET DEFAULT nextval('public.tickets_id_seq'::regclass);
 
 ALTER TABLE ONLY public.users ALTER COLUMN id SET DEFAULT nextval('public.users_id_seq'::regclass);
+
+ALTER TABLE ONLY public.users_permissions ALTER COLUMN id SET DEFAULT nextval('public.users_permissions_id_seq'::regclass);
 
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'contact_submissions_pkey' AND conrelid = 'public.contact_submissions'::regclass) THEN
@@ -670,6 +704,13 @@ DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'tickets_pkey' AND conrelid = 'public.tickets'::regclass) THEN
     ALTER TABLE ONLY public.tickets
     ADD CONSTRAINT tickets_pkey PRIMARY KEY (id);
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'users_permissions_pkey' AND conrelid = 'public.users_permissions'::regclass) THEN
+    ALTER TABLE ONLY public.users_permissions
+    ADD CONSTRAINT users_permissions_pkey PRIMARY KEY (id);
   END IF;
 END $$;
 
@@ -814,6 +855,10 @@ CREATE INDEX IF NOT EXISTS users_created_at_idx ON public.users USING btree (cre
 CREATE UNIQUE INDEX IF NOT EXISTS users_email_idx ON public.users USING btree (email);
 
 CREATE INDEX IF NOT EXISTS users_partner_idx ON public.users USING btree (partner_id);
+
+CREATE INDEX IF NOT EXISTS users_permissions_order_idx ON public.users_permissions USING btree ("order");
+
+CREATE INDEX IF NOT EXISTS users_permissions_parent_idx ON public.users_permissions USING btree (parent_id);
 
 CREATE INDEX IF NOT EXISTS users_sessions_order_idx ON public.users_sessions USING btree (_order);
 
@@ -995,6 +1040,13 @@ DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'users_partner_id_partners_id_fk' AND conrelid = 'public.users'::regclass) THEN
     ALTER TABLE ONLY public.users
     ADD CONSTRAINT users_partner_id_partners_id_fk FOREIGN KEY (partner_id) REFERENCES public.partners(id) ON DELETE SET NULL;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'users_permissions_parent_fk' AND conrelid = 'public.users_permissions'::regclass) THEN
+    ALTER TABLE ONLY public.users_permissions
+    ADD CONSTRAINT users_permissions_parent_fk FOREIGN KEY (parent_id) REFERENCES public.users(id) ON DELETE CASCADE;
   END IF;
 END $$;
 

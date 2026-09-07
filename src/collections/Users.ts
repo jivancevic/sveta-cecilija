@@ -1,13 +1,33 @@
 import { APIError, type CollectionConfig } from 'payload'
 import { isSuperadmin, isAdminTier } from '@/lib/access/roles'
+import { PERMISSIONS, can, type Permission } from '@/lib/access/permissions'
 import { assertUserEmailPolicy, UserEmailRequiredError } from '@/lib/access/user-email-policy'
 import { userUpdateAccess } from '@/lib/access/user-self-update'
 import { ADMIN_LANG_COOKIE, seedAdminLangCookie } from '@/lib/admin-i18n'
 
-type ReqUser = { id?: string | number; role?: string } | null | undefined
+type ReqUser = { id?: string | number; role?: string; permissions?: unknown } | null | undefined
 
 const superadminOnly = ({ req }: { req: { user: unknown } }) =>
   isSuperadmin(req.user as ReqUser)
+
+// Admin labels for the permission vocabulary (ADR-0023). The values are the
+// single source of truth in lib/access/permissions.ts; this map only decides
+// how each one reads in the /admin multi-select, EN and HR.
+const PERMISSION_LABELS: Record<Permission, { en: string; hr: string }> = {
+  users: { en: 'Users and permissions', hr: 'Korisnici i dozvole' },
+  tickets: { en: 'Ticketing backoffice', hr: 'Uredski dio prodaje ulaznica' },
+  refunds: { en: 'Refunds', hr: 'Povrati novca' },
+  door: { en: 'Door (scanning)', hr: 'Ulaz (skeniranje)' },
+  partner: { en: 'Partner sales (own partner only)', hr: 'Partnerska prodaja (samo vlastiti partner)' },
+  season_stats: { en: 'Season ticket dashboard', hr: 'Sezonska ploča s prodajom' },
+  moreska: { en: 'Moreška roster (voditelj)', hr: 'Postava moreške (voditelj)' },
+  moreskant: { en: 'Own moreškant view', hr: 'Vlastiti moreškantski pregled' },
+  dev: { en: 'Developer diagnostics', hr: 'Razvojna dijagnostika' },
+}
+
+// Holder of the `users` permission — the only person who may see or change a
+// permission set or the shared flag, their own record included (ADR-0023).
+const usersHolder = (user: ReqUser) => can(user as { permissions?: unknown } | null, 'users')
 
 // Superadmin sees everyone; any other authed user sees only their own record.
 // Combined with admin.hidden below, non-superadmins have no entry point to the
@@ -135,6 +155,58 @@ export const Users: CollectionConfig = {
         read: ({ req }) => isSuperadmin(req.user as ReqUser),
         update: ({ req }) => isSuperadmin(req.user as ReqUser),
         create: ({ req }) => isSuperadmin(req.user as ReqUser),
+      },
+    },
+    // The permission set (ADR-0023). Expand step of #393: the field exists and
+    // is filled for every user by the bootstrap migration, but nothing reads it
+    // yet — every access decision still runs off `role` until #395–#397 move
+    // the call sites over. Vocabulary comes from lib/access/permissions.ts; do
+    // not re-type the list here or anywhere else.
+    {
+      name: 'permissions',
+      type: 'select',
+      hasMany: true,
+      required: true,
+      label: { en: 'Permissions', hr: 'Dozvole' },
+      options: PERMISSIONS.map((value) => ({ value, label: PERMISSION_LABELS[value] })),
+      admin: {
+        description: {
+          en: 'What this account may do. A user without "users" can neither see nor change any permission set.',
+          hr: 'Što ovaj račun smije raditi. Korisnik bez dozvole "users" ne vidi niti mijenja nijedan skup dozvola.',
+        },
+      },
+      access: {
+        // Field-level lock, same shape as `role` above: only a `users` holder
+        // reads or writes a permission set — their own record included, so a
+        // secretary cannot grant herself anything (Users.access.update allows
+        // self-edit). Deliberately NOT `isSuperadmin(...) || can(...)`: an
+        // alias would let "superadmin" survive as a concept past #397. The
+        // bootstrap migration gives the superadmin row `users` before anyone
+        // logs in, so there is no chicken-and-egg.
+        read: ({ req }) => usersHolder(req.user as ReqUser),
+        update: ({ req }) => usersHolder(req.user as ReqUser),
+        create: ({ req }) => usersHolder(req.user as ReqUser),
+      },
+    },
+    // Marks a login shared by several people (the door `tehnika` account, the
+    // society-wide `member` account). The only place that knowledge lives from
+    // #395 on: shared accounts may not edit themselves, so one volunteer cannot
+    // lock the others out by rotating the password.
+    {
+      name: 'shared',
+      type: 'checkbox',
+      defaultValue: false,
+      label: { en: 'Shared account', hr: 'Zajednički račun' },
+      admin: {
+        description: {
+          en: 'Several people use this login. A shared account cannot edit its own record.',
+          hr: 'Ovu prijavu koristi više osoba. Zajednički račun ne može uređivati vlastiti zapis.',
+        },
+      },
+      access: {
+        read: ({ req }) => usersHolder(req.user as ReqUser),
+        update: ({ req }) => usersHolder(req.user as ReqUser),
+        create: ({ req }) => usersHolder(req.user as ReqUser),
       },
     },
     // The partner a `partner`-role login is bound to (ADR-0008). Read is left

@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { getPayload } from 'payload'
 import config from '@payload-config'
 import { type RoleUser } from './roles'
+import { can, hasAny, type Permission, type PermissionUser } from './permissions'
 
 type Payload = Awaited<ReturnType<typeof getPayload>>
 type AuthedUser = NonNullable<Awaited<ReturnType<Payload['auth']>>['user']>
@@ -39,6 +40,43 @@ export async function requireRole(
     return { payload, user: null, error: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) }
   }
   if (!predicate(user as RoleUser)) {
+    return { payload, user: null, error: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) }
+  }
+  return { payload, user, error: null }
+}
+
+/**
+ * The permission-shaped route chokepoint (ADR-0023). Same contract and same
+ * return shape as `requireRole` above — 401 without a session, 403 when the
+ * check fails, `{ payload, user }` otherwise — but keyed off the permission set
+ * instead of the role:
+ *
+ *   const gate = await requirePermission(req, 'refunds')
+ *   if (gate.error) return gate.error
+ *   const { payload, user } = gate
+ *
+ * Pass an array to mean "any of these" (`hasAny`), which is the composed
+ * predicate case `requireRole` covered with `u => isAdminTier(u) || isPartner(u)`.
+ * An empty array denies, never wildcards. Token/signature routes (Stripe
+ * webhook, /scan claim, unsubscribe, cron) stay outside this guard — they have
+ * no session user to check.
+ *
+ * Lands next to `requireRole` in the expand step of #393; the route call sites
+ * move over in #396 and `requireRole` goes away in #397.
+ */
+export async function requirePermission(
+  req: Request,
+  permission: Permission | Permission[],
+): Promise<RouteGuardResult> {
+  const payload = await getPayload({ config })
+  const { user } = await payload.auth({ headers: req.headers })
+  if (!user) {
+    return { payload, user: null, error: NextResponse.json({ error: 'Unauthorized' }, { status: 401 }) }
+  }
+  const allowed = Array.isArray(permission)
+    ? hasAny(user as PermissionUser, permission)
+    : can(user as PermissionUser, permission)
+  if (!allowed) {
     return { payload, user: null, error: NextResponse.json({ error: 'Forbidden' }, { status: 403 }) }
   }
   return { payload, user, error: null }

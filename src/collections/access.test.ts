@@ -277,6 +277,72 @@ describe('Users access', () => {
     }
   })
 
+  // ADR-0023 expand step (#394). The permission set and the shared flag are
+  // visible and writable ONLY to a `users` holder — their own record included,
+  // because Users.access.update allows self-edit and a secretary must not be
+  // able to grant herself anything. Note the fixtures below carry permission
+  // sets, not roles: the superadmin ROLE alone does not open these fields.
+  const usersFieldOf = (name: string) =>
+    Users.fields.find((f) => 'name' in f && f.name === name) as
+      | { type?: string; required?: boolean; hasMany?: boolean; defaultValue?: unknown; options?: { value: string }[]; access?: { read?: unknown; update?: unknown; create?: unknown } }
+      | undefined
+
+  const usersHolder = { id: '1', permissions: ['users', 'tickets', 'refunds', 'door', 'partner', 'season_stats', 'moreska', 'moreskant', 'dev'] }
+  const ticketAdmin = { id: '2', permissions: ['tickets', 'refunds', 'door'] }
+  const doorOnly = { id: '3', permissions: ['door'] }
+  const partnerPerm = { id: '4', permissions: ['partner'], partner: 7 }
+  const memberPerm = { id: '5', permissions: ['season_stats'] }
+  const noPerms = { id: '6', permissions: [] }
+
+  it('permissions field is a required multi-select over the nine-word vocabulary, with no default', () => {
+    const field = usersFieldOf('permissions')
+    expect(field).toBeDefined()
+    expect(field?.type).toBe('select')
+    expect(field?.hasMany).toBe(true)
+    expect(field?.required).toBe(true)
+    expect(field?.defaultValue).toBeUndefined()
+    expect(field?.options?.map((o) => o.value)).toEqual([
+      'users',
+      'tickets',
+      'refunds',
+      'door',
+      'partner',
+      'season_stats',
+      'moreska',
+      'moreskant',
+      'dev',
+    ])
+  })
+
+  it('permissions field read/update/create are locked to `users` holders', () => {
+    const access = usersFieldOf('permissions')?.access
+    expect(access).toBeDefined()
+    for (const op of ['read', 'update', 'create'] as const) {
+      expect(call(access?.[op], usersHolder)).toBe(true)
+      expect(call(access?.[op], ticketAdmin)).toBe(false)
+      expect(call(access?.[op], doorOnly)).toBe(false)
+      expect(call(access?.[op], partnerPerm)).toBe(false)
+      expect(call(access?.[op], memberPerm)).toBe(false)
+      expect(call(access?.[op], noPerms)).toBe(false)
+      expect(call(access?.[op], anon)).toBe(false)
+      // The legacy role alone opens nothing: no alias survives into #397.
+      expect(call(access?.[op], superadmin)).toBe(false)
+    }
+  })
+
+  it('shared checkbox defaults to false and is locked to `users` holders', () => {
+    const field = usersFieldOf('shared')
+    expect(field?.type).toBe('checkbox')
+    expect(field?.defaultValue).toBe(false)
+    for (const op of ['read', 'update', 'create'] as const) {
+      expect(call(field?.access?.[op], usersHolder)).toBe(true)
+      expect(call(field?.access?.[op], ticketAdmin)).toBe(false)
+      expect(call(field?.access?.[op], doorOnly)).toBe(false)
+      expect(call(field?.access?.[op], memberPerm)).toBe(false)
+      expect(call(field?.access?.[op], anon)).toBe(false)
+    }
+  })
+
   it('tokenExpiration is 30 days', () => {
     const auth = Users.auth as { tokenExpiration?: number } | true | undefined
     expect(typeof auth === 'object' && auth?.tokenExpiration).toBe(60 * 60 * 24 * 30)
