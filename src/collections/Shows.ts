@@ -1,5 +1,17 @@
 import { APIError, type CollectionConfig } from 'payload'
-import { can, hasAny } from '@/lib/access/permissions'
+import {
+  canEditPlacementField,
+  canEditRosterField,
+  canEditScheduleField,
+  canReadRosterField,
+  canSetPublicFlag,
+  nonPublicAuthoringOverrides,
+  showsCreateAccess,
+  showsDeleteAccess,
+  showsHiddenInAdmin,
+  showsReadAccess,
+  showsUpdateAccess,
+} from '@/lib/access/shows-access'
 import {
   PerformanceValidationError,
   validateAndNormalisePerformance,
@@ -7,20 +19,33 @@ import {
 
 type ReqUser = { permissions?: unknown } | null | undefined
 
-const backoffice = ({ req }: { req: { user: unknown } }) =>
-  can(req.user as ReqUser, 'tickets')
-// The door needs the schedule to scan against, so `door` reads shows too; only
-// the backoffice may change one.
-const staffRead = ({ req }: { req: { user: unknown } }) =>
-  hasAny(req.user as ReqUser, ['tickets', 'door'])
+// Every rule is a pure predicate in src/lib/access/shows-access.ts (#408); the
+// wrappers below are only Payload's calling convention.
+const userOf = ({ req }: { req: { user: unknown } }) => req.user as ReqUser
+
+// The schedule and sales fields: `tickets` always, a voditelj on a non-public
+// row only.
+const scheduleFieldUpdate = ({
+  req,
+  doc,
+}: {
+  req: { user: unknown }
+  doc?: Record<string, unknown>
+}) => canEditScheduleField(req.user as ReqUser, doc)
+
+// The roster fields belong to the voditelj on every row, public or not.
+const rosterFieldRead = ({ req }: { req: { user: unknown } }) =>
+  canReadRosterField(req.user as ReqUser)
+const rosterFieldUpdate = ({ req }: { req: { user: unknown } }) =>
+  canEditRosterField(req.user as ReqUser)
 
 export const Shows: CollectionConfig = {
   slug: 'shows',
   access: {
-    read: staffRead,
-    create: backoffice,
-    update: backoffice,
-    delete: backoffice,
+    read: (args) => showsReadAccess(userOf(args)),
+    create: (args) => showsCreateAccess(userOf(args)),
+    update: (args) => showsUpdateAccess(userOf(args)),
+    delete: (args) => showsDeleteAccess(userOf(args)),
   },
   admin: {
     useAsTitle: 'date',
@@ -38,7 +63,7 @@ export const Shows: CollectionConfig = {
       'status',
       'onlineSalesPaused',
     ],
-    hidden: ({ user }) => !can(user as ReqUser, 'tickets'),
+    hidden: ({ user }) => showsHiddenInAdmin(user as ReqUser),
     components: {
       edit: {
         editMenuItems: [
@@ -62,11 +87,22 @@ export const Shows: CollectionConfig = {
     // Payload plumbing. `beforeValidate` (not `beforeChange`) so the forced
     // values are in place before the field validators run.
     beforeValidate: [
-      ({ data, originalDoc }) => {
+      ({ data, originalDoc, operation, req }) => {
         const patch = (data ?? {}) as Record<string, unknown>
         // On an update Payload hands us only the changed fields, so validate the
         // effective document, not the patch.
         const merged = { ...((originalDoc ?? {}) as Record<string, unknown>), ...patch }
+
+        // A voditelj (`moreska` without `tickets`) can never author a public
+        // performance. This runs AFTER Payload's field-access pass, which is
+        // what makes it the last word — see nonPublicAuthoringOverrides.
+        const overrides = nonPublicAuthoringOverrides(
+          (req as { user?: unknown } | undefined)?.user as ReqUser,
+          operation as string,
+          merged,
+        )
+        Object.assign(patch, overrides)
+        Object.assign(merged, overrides)
 
         let normalised: Record<string, unknown>
         try {
@@ -93,6 +129,9 @@ export const Shows: CollectionConfig = {
       admin: {
         date: { pickerAppearance: 'dayOnly', displayFormat: 'd MMM yyyy' },
       },
+      // A voditelj may correct the date of a private booking, never of a public
+      // show: moving one mails every buyer (#404, stories 3 and 10).
+      access: { update: scheduleFieldUpdate },
     },
     {
       name: 'time',
@@ -105,6 +144,7 @@ export const Shows: CollectionConfig = {
         if (h > 23 || m > 59) return 'Invalid time value'
         return true
       },
+      access: { update: scheduleFieldUpdate },
     },
     // Every performance of the season lives in this collection (ADR-0024): the
     // 22 public Redovna shows that sell tickets, plus the ship calls, concerts
@@ -125,6 +165,10 @@ export const Shows: CollectionConfig = {
         description:
           'Redovna is the public ticketed show. Every other kind is a private booking or a one-off and is never sold online.',
       },
+      // Settable on create by anyone who may create a performance (a voditelj
+      // enters a new DMC or Gulliver booking); afterwards it follows the
+      // schedule rule.
+      access: { update: scheduleFieldUpdate },
     },
     {
       name: 'isPublic',
@@ -135,6 +179,13 @@ export const Shows: CollectionConfig = {
       admin: {
         description:
           'A public performance is listed on /tickets, sells seats against a venue capacity and is scanned at the door. Untick for a private booking: it then needs a location instead of a venue and never reaches a buyer. A Redovna is always public.',
+      },
+      // Only the ticket backoffice decides what is on sale. A voditelj's create
+      // is additionally forced non-public by the beforeValidate hook, because a
+      // denied field falls back to this field's `true` default.
+      access: {
+        create: ({ req }) => canSetPublicFlag(req.user as ReqUser),
+        update: ({ req }) => canSetPublicFlag(req.user as ReqUser),
       },
     },
     {
@@ -149,6 +200,7 @@ export const Shows: CollectionConfig = {
       admin: {
         description: 'Public performances only. Capacity is derived from the venue.',
       },
+      access: { update: scheduleFieldUpdate },
     },
     {
       name: 'location',
@@ -157,6 +209,8 @@ export const Shows: CollectionConfig = {
         description:
           'Free-text place for a non-public performance, e.g. "Zimsko kino", "Sv. Justina", "Spomenik sv. Todora". Required when the performance is not public.',
       },
+      // Readable by anyone who can read the row; the voditelj maintains it.
+      access: { update: ({ req }) => canEditPlacementField(req.user as ReqUser) },
     },
     {
       name: 'client',
@@ -165,9 +219,20 @@ export const Shows: CollectionConfig = {
         description:
           'The ship or the organiser behind a private booking, e.g. "Le Ponant", "NG Orion". Optional.',
       },
+      access: { update: ({ req }) => canEditPlacementField(req.user as ReqUser) },
     },
-    { name: 'onlineSold', type: 'number', defaultValue: 0 },
-    { name: 'inPersonSold', type: 'number', defaultValue: 0 },
+    {
+      name: 'onlineSold',
+      type: 'number',
+      defaultValue: 0,
+      access: { update: scheduleFieldUpdate },
+    },
+    {
+      name: 'inPersonSold',
+      type: 'number',
+      defaultValue: 0,
+      access: { update: scheduleFieldUpdate },
+    },
     {
       name: 'legacyReserved',
       type: 'number',
@@ -178,10 +243,10 @@ export const Shows: CollectionConfig = {
           'Tickets sold on the previous WordPress site (korcula-moreska.com) before cutover. Subtracted from venue capacity so moreska.eu cannot oversell against them.',
       },
       access: {
-        // Defense-in-depth: collection-level update is already admin-tier-only,
-        // but pinning the field guarantees a door account (or any future
-        // permission) can never mutate it even if collection access is widened.
-        update: ({ req }) => can(req.user as ReqUser, 'tickets'),
+        // Defense-in-depth: pinning the field guarantees a door account, a
+        // voditelj or any future permission can never mutate a sales counter
+        // even if collection access is widened.
+        update: scheduleFieldUpdate,
       },
     },
     {
@@ -193,6 +258,9 @@ export const Shows: CollectionConfig = {
         { label: 'Active', value: 'active' },
         { label: 'Cancelled', value: 'cancelled' },
       ],
+      // A voditelj cancels a private booking (#404, story 5); cancelling a
+      // public show mails buyers and stays with the backoffice.
+      access: { update: scheduleFieldUpdate },
     },
     {
       name: 'onlineSalesPaused',
@@ -202,6 +270,7 @@ export const Shows: CollectionConfig = {
         description:
           'Pause ONLINE ticket sales for this show. The show stays listed on /tickets with an "online sales closed" note. Partner (POS) sales, comp tickets, door scanning and stats are unaffected. Uncheck to resume sales.',
       },
+      access: { update: scheduleFieldUpdate },
     },
     // Bad-weather venue-change audit (#94). Populated by the "Mark show as
     // moved to Zimsko" action; read-only in the admin. NULL = never moved.
@@ -258,8 +327,9 @@ export const Shows: CollectionConfig = {
       },
       access: { update: () => false },
     },
-    // Roster fields (ADR-0024). Nothing reads them yet — phase 3 (attendance,
-    // army alarm, lineup) does. They carry no field-level access in this phase.
+    // Roster fields (ADR-0024). Phase 3 (attendance, army alarm, lineup) reads
+    // them; here they are the voditelj's alone — a `tickets`-only holder never
+    // sees them, in the form or in the API response (#404, story 20).
     {
       name: 'thresholdCrni',
       type: 'number',
@@ -269,6 +339,7 @@ export const Shows: CollectionConfig = {
       admin: {
         description: 'Minimum number of crni moreškanti for this performance. Default 8.',
       },
+      access: { read: rosterFieldRead, update: rosterFieldUpdate },
     },
     {
       name: 'thresholdBili',
@@ -279,6 +350,7 @@ export const Shows: CollectionConfig = {
       admin: {
         description: 'Minimum number of bili moreškanti for this performance. Default 8.',
       },
+      access: { read: rosterFieldRead, update: rosterFieldUpdate },
     },
     {
       name: 'voditeljNote',
@@ -287,6 +359,7 @@ export const Shows: CollectionConfig = {
         description:
           'Note from the voditelj for the moreškanti, e.g. "meet at the harbour gate at 9:30".',
       },
+      access: { read: rosterFieldRead, update: rosterFieldUpdate },
     },
   ],
 }
