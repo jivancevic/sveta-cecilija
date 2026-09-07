@@ -147,11 +147,22 @@ export const Users: CollectionConfig = {
     hidden: ({ user }) => !can(user as ReqUser, 'users'),
   },
   fields: [
+    // Legacy tier column (ADR-0006/0008/0022), superseded by `permissions`
+    // (ADR-0023). Nothing reads it for access any more; it is retained for one
+    // release so a container rollback to the pre-#393 image finds intact data,
+    // and dropped in #398. Hidden from the admin UI, optional and defaultless so
+    // no new account is asked to pick a tier; a new row lands on NULL, which
+    // every old predicate reads as denied if the image is ever rolled back.
+    //
+    // `required` and `defaultValue` map straight onto the column's NOT NULL and
+    // DEFAULT, so dropping them here IS a schema change: the matching
+    // db/schema/migrate-permissions-3-role-optional.sql keeps the drift gate
+    // green. `admin.hidden` still renders a hidden input whose form-state value
+    // round-trips (null here), so the field never needs a value on save.
     {
       name: 'role',
       type: 'select',
-      required: true,
-      defaultValue: 'admin',
+      admin: { hidden: true },
       options: [
         { label: 'Superadmin', value: 'superadmin' },
         { label: 'Admin', value: 'admin' },
@@ -165,10 +176,8 @@ export const Users: CollectionConfig = {
       ],
       access: {
         // Field-level lock: only a `users` holder reads or writes the legacy
-        // role. Without this, a secretary could promote herself by editing her
-        // own profile (Users.access.update allows self-edit). The column is
-        // kept for one release so a rollback finds intact data (#393); nothing
-        // reads it for access any more.
+        // role. `admin.hidden` keeps it off the form; this keeps it out of the
+        // REST/local API payload for everyone else too.
         read: ({ req }) => usersHolder(req.user as ReqUser),
         update: ({ req }) => usersHolder(req.user as ReqUser),
         create: ({ req }) => usersHolder(req.user as ReqUser),
@@ -194,10 +203,10 @@ export const Users: CollectionConfig = {
         // Field-level lock, same shape as `role` above: only a `users` holder
         // reads or writes a permission set — their own record included, so a
         // secretary cannot grant herself anything (Users.access.update allows
-        // self-edit). Deliberately NOT `isSuperadmin(...) || can(...)`: an
-        // alias would let "superadmin" survive as a concept past #397. The
-        // bootstrap migration gives the developer's row `users` before anyone
-        // logs in, so there is no chicken-and-egg.
+        // self-edit). `can(user, 'users')` and nothing else: no role alias
+        // survives, so "superadmin" is only shorthand for holding every
+        // permission. The bootstrap migration gives the developer's row `users`
+        // before anyone logs in, so there is no chicken-and-egg.
         read: ({ req }) => usersHolder(req.user as ReqUser),
         update: ({ req }) => usersHolder(req.user as ReqUser),
         create: ({ req }) => usersHolder(req.user as ReqUser),

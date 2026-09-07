@@ -1,0 +1,34 @@
+-- Migration step 3/3 of the permission set: retire the legacy `role` column's
+-- constraints. See ADR-0023 (#397).
+--
+-- `permissions` is the access model since #395; `role` is now a hidden,
+-- optional, defaultless Payload field kept for one release so a container
+-- rollback to the pre-#393 image still finds intact data. #398 drops the column
+-- and the enum outright.
+--
+-- The column MUST lose both its NOT NULL and its `admin` DEFAULT, for two
+-- reasons:
+--
+--   1. Drift gate (ADR-0013). Payload push emits `role public.enum_users_role`
+--      with no default and no NOT NULL for a non-required, defaultless select.
+--      Leaving the constraints on db/schema/ makes bootstrap stop reproducing
+--      Payload's expected schema and fails scripts/schema-diff.mjs.
+--   2. Safety on rollback. With the DEFAULT in place, a door-only or partner
+--      account created after this deploy would silently land on `role='admin'`
+--      (Payload no longer sends the column, so Postgres fills it), and a
+--      rollback to the old image would read that row as a secretary. With the
+--      DEFAULT gone the row gets NULL instead, which every old role predicate
+--      reads as "denied" — fail-closed, the safe direction.
+--
+-- Existing rows keep the value the earlier role migrations gave them, so the
+-- rollback path they exist for is unaffected. 00-base.sql carries the same
+-- shape for a fresh database.
+--
+-- Filename sorts after migrate-permissions-2-data.sql, which still reads
+-- `role::text` to derive each user's bundle; that file is unaffected by the
+-- constraint change (a NULL role falls through its CASE to an empty bundle).
+--
+-- Idempotent.
+
+ALTER TABLE public.users ALTER COLUMN role DROP DEFAULT;
+ALTER TABLE public.users ALTER COLUMN role DROP NOT NULL;

@@ -10,8 +10,7 @@ vi.mock('payload', () => ({
 }))
 vi.mock('@payload-config', () => ({ default: {} }))
 
-import { requirePermission, requireRole } from './route-guard'
-import { isSuperadmin } from './roles'
+import { requirePermission } from './route-guard'
 
 const req = new Request('http://localhost/api/whatever')
 
@@ -81,21 +80,5 @@ describe('requirePermission', () => {
     signedInWith(['refunds'])
     await requirePermission(req, 'refunds')
     expect(auth).toHaveBeenCalledTimes(1)
-  })
-})
-
-// The role guard is untouched by #394; this pins that it still behaves.
-describe('requireRole (unchanged)', () => {
-  it('still returns 401 / 403 / pass-through', async () => {
-    auth.mockResolvedValue({ user: null })
-    expect((await requireRole(req, isSuperadmin)).error?.status).toBe(401)
-
-    auth.mockResolvedValue({ user: { id: 2, role: 'admin' } })
-    expect((await requireRole(req, isSuperadmin)).error?.status).toBe(403)
-
-    auth.mockResolvedValue({ user: { id: 3, role: 'superadmin' } })
-    const gate = await requireRole(req, isSuperadmin)
-    expect(gate.error).toBeNull()
-    expect(gate.user).toMatchObject({ id: 3 })
   })
 })
