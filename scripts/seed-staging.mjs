@@ -111,16 +111,13 @@ const CHILD_CENTS = 1000 // €10
 //                                                              (linked to the
 //                                                               Kaleta fixture)
 const SEED_PASSWORD = 'staging-dev-pw'
-// `permissions` is the access model (ADR-0023); `role` is only the retained
-// legacy column (#397, dropped in #398). Seed BOTH: the bootstrap data
-// migration would eventually derive the bundle from `role`, but only on the
-// next container restart, so a freshly seeded staging would have logins that
-// can reach nothing until then.
+// `permissions` is the access model (ADR-0023) and the only thing seeded: the
+// legacy `role` column was dropped in #398.
 const SEED_USERS = [
-  { email: 'admin@staging.local', role: 'admin', permissions: ['tickets', 'refunds', 'door'] },
-  { email: 'tehnika@staging.local', role: 'tehnika', permissions: ['door'], shared: true },
+  { email: 'admin@staging.local', permissions: ['tickets', 'refunds', 'door'] },
+  { email: 'tehnika@staging.local', permissions: ['door'], shared: true },
   // partner_id wired below
-  { email: 'partner@staging.local', role: 'partner', permissions: ['partner'] },
+  { email: 'partner@staging.local', permissions: ['partner'] },
 ]
 // Fixture reseller (ADR-0008). Idempotency key is the (recognizably-fake) name.
 const SEED_PARTNER = {
@@ -259,17 +256,16 @@ async function upsertPartner(client, p) {
 /**
  * Idempotently upsert a Payload-auth user (raw SQL). `permissions` is the
  * access model (see src/lib/access/permissions.ts) and is rewritten from
- * scratch on every run; `role` is the retained legacy enum_users_role label
- * (#397) and gates nothing. `partnerId` links a partner login to its partners
- * row via users.partner_id.
+ * scratch on every run. `partnerId` links a partner login to its partners row
+ * via users.partner_id.
  *
- * Only the columns we're certain of are written: email, hash, salt, role,
+ * Only the columns we're certain of are written: email, hash, salt,
  * partner_id, updated_at, created_at. Payload's other auth columns
  * (reset_password_*, login_attempts, lock_until) are nullable and left to their
  * DB defaults. The password is re-hashed on every run so the documented dev
  * credential always wins, even if someone changed it through /admin.
  */
-async function upsertUser(client, { email, role, permissions, partnerId = null, shared = false }) {
+async function upsertUser(client, { email, permissions, partnerId = null, shared = false }) {
   const { salt, hash } = payloadPasswordSaltHash(SEED_PASSWORD)
   const existing = await client.query(`SELECT id FROM users WHERE email = $1`, [email])
   let id
@@ -277,16 +273,16 @@ async function upsertUser(client, { email, role, permissions, partnerId = null, 
     id = existing.rows[0].id
     await client.query(
       `UPDATE users
-         SET hash = $2, salt = $3, role = $4, partner_id = $5, shared = $6, updated_at = now()
+         SET hash = $2, salt = $3, partner_id = $4, shared = $5, updated_at = now()
        WHERE id = $1`,
-      [id, hash, salt, role, partnerId, shared],
+      [id, hash, salt, partnerId, shared],
     )
   } else {
     const res = await client.query(
-      `INSERT INTO users (email, hash, salt, role, partner_id, shared)
-       VALUES ($1, $2, $3, $4, $5, $6)
+      `INSERT INTO users (email, hash, salt, partner_id, shared)
+       VALUES ($1, $2, $3, $4, $5)
        RETURNING id`,
-      [email, hash, salt, role, partnerId, shared],
+      [email, hash, salt, partnerId, shared],
     )
     id = res.rows[0].id
   }
@@ -465,7 +461,6 @@ async function main() {
     for (const u of SEED_USERS) {
       const id = await upsertUser(client, {
         email: u.email,
-        role: u.role,
         permissions: u.permissions,
         shared: u.shared ?? false,
         // Only the partner login is bound to the fixture partner.

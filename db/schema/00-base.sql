@@ -145,18 +145,6 @@ CREATE TYPE public.enum_users_permissions AS ENUM (
 );
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
-DO $$ BEGIN
-CREATE TYPE public.enum_users_role AS ENUM (
-    'superadmin',
-    'admin',
-    'tehnika',
-    'partner',
-    -- Shared read-only society-membership login (ADR-0022). Existing databases
-    -- pick this up from migrate-roles-3-member-enum.sql, not from here.
-    'member'
-);
-EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-
 CREATE TABLE IF NOT EXISTS public.contact_submissions (
     id integer NOT NULL,
     name character varying NOT NULL,
@@ -509,12 +497,6 @@ ALTER SEQUENCE public.tickets_id_seq OWNED BY public.tickets.id;
 
 CREATE TABLE IF NOT EXISTS public.users (
     id integer NOT NULL,
-    -- Legacy tier column, superseded by users_permissions (ADR-0023). Retained
-    -- for one release for the rollback path, hidden and optional in Payload, so
-    -- it carries neither NOT NULL nor a DEFAULT any more. Dropped in #398.
-    -- Existing databases get the same shape from
-    -- migrate-permissions-3-role-optional.sql.
-    role public.enum_users_role,
     shared boolean DEFAULT false,
     partner_id integer,
     updated_at timestamp(3) with time zone DEFAULT now() NOT NULL,
