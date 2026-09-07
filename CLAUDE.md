@@ -133,7 +133,7 @@ Every decision reads the permission set via `can()` / `hasAny()` from `src/lib/a
 |---|---|---|
 | `Orders` | `tickets`; `partner` → only own (`partnerOwnOrdersWhere`) | `tickets` |
 | `ContactSubmissions` | `tickets` | `tickets` |
-| `Shows` | `tickets` or `door` (the door needs the schedule to scan against) | `tickets` |
+| `Shows` | `tickets` or `moreska`; `door` → public performances only | `tickets`; `moreska` → non-public rows, plus the roster fields on any row (#408) |
 | `Tickets` | `tickets` or `door`; `partner` → only own (`partnerOwnTicketsWhere`) | `tickets` |
 | `Partners` | `tickets`; `partner` → only own (`partnerOwnRecordWhere`) | `tickets` |
 | `Members` | `tickets` | `tickets` |

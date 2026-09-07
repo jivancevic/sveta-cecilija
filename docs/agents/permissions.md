@@ -16,7 +16,7 @@ Nine words, listed once in `src/lib/access/permissions.ts`. Never re-type the li
 | `door` | Scanning a ticket, looking a code up, the door dashboard. Reads shows and tickets, nothing else. |
 | `partner` | A reseller login, scoped to its linked Partners record. |
 | `season_stats` | The shared read-only season ticket dashboard (ADR-0022). |
-| `moreska` | Moreška roster tools, the voditelj's view (ADR-0024). Reserved; gates nothing yet. |
+| `moreska` | Moreška roster tools, the voditelj's view (ADR-0024). Gates the Shows collection since #408: every performance is readable, non-public ones are the voditelj's to create and delete, and the roster fields are theirs alone. |
 | `moreskant` | A moreškant's own roster view (ADR-0024). Reserved; gates nothing yet. |
 | `dev` | Developer diagnostics: the dev strip and the critical-events strip (ADR-0016). |
 
@@ -33,6 +33,7 @@ An unknown permission string is dropped rather than fatal, so a stale or hand-ed
 
 - **Staff wins over reseller.** A `users` holder holds `partner` too, so a bare `can(user, 'partner')` would flip the developer into the reseller branch of a route that serves both. Use `actsAsPartner()` from `partner.ts`, which is `partner && !tickets`.
 - **A `partner` holder with no Partners link owns nothing**, never everything. The `Where` helpers return `false` (Payload reads that as "match nothing"), which is why the `users` holder (permission but no link) scopes to nothing there and reaches partner data through the `tickets` branch instead.
+- **A performance is one row, three audiences.** `Shows` access is the first thing `moreska` gates (#408): the predicates live in `src/lib/access/shows-access.ts`, not in the collection. `door` reads a `Where` on `isPublic = true`; a `moreska`-only holder reaches every row but may create and delete only non-public ones, and the field-level locks refuse the date, time, kind, venue, status, sales counters and the public flag on a public show. The invariant "a voditelj can never author a public row" is carried by the collection's `beforeValidate` hook, not by field access: Payload enforces field access *before* validation and replaces a denied value with the field's `defaultValue`, which for `isPublic` is `true`.
 - **Field-level locks are what stop self-promotion.** `Users.access.update` allows self-edit, so `permissions` and `shared` each carry `access: { read, update, create }` locked to `can(user, 'users')`. The `partner` link locks only `update` and `create`: its read stays open deliberately, because the value has to ride along on `req.user` for the ownership scoping in `partner.ts` to find it. A field that fails the predicate is silently dropped from the write, with no error to the caller, so a missing lock fails open and quietly.
 - **Shared accounts.** `Users.shared` is the only marker (the door `tehnika` login, the society-wide `member` login). `userUpdateAccess` denies a shared account self-edit, so one volunteer cannot rotate the password and lock the others out. Do not infer "shared" from a permission set.
 - **Email is required for a named individual**, decided from the set, not a tier: `users`, `tickets` or `moreska` (`src/lib/access/user-email-policy.ts`). Door, partner and season_stats accounts are username-only.
