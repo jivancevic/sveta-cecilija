@@ -11,6 +11,7 @@
 | Schema + DB patterns — bootstrap, enum migrations, atomic & race-safe SQL, TRUNCATE CASCADE | `docs/agents/db-bootstrap.md` (+ `db/schema/README.md`) |
 | Deployment + DB topology — Coolify, Dockerfile/standalone build, env promotion, dev/prod/staging DB names | `docs/agents/deployment.md` |
 | Working in worktrees / parallel sessions — `.env.local`, devDeps, push-hang, `gh pr merge` | `docs/agents/worktree-dev.md` |
+| Permissions & access: the vocabulary, migration bundles, field locks, shared accounts | `docs/agents/permissions.md` (+ [ADR-0023](docs/adr/0023-permissions-replace-roles-app-surface.md)) |
 | Payload admin customization (v3) — component paths, importMap, CSRF gate | `docs/agents/payload-admin.md` |
 | Frontend & CSS gotchas — specificity, `backdrop-filter`, hero loading, `next/image` | `docs/agents/frontend-css.md` |
 | Assets pipeline — `public/` vs `assets/`, webp conversion | `docs/agents/assets.md` |
@@ -24,8 +25,8 @@
 - **Never query the Shows collection directly in page components** — go through `getUpcomingShows()` / `getNextShow()` in `src/lib/shows.ts`.
 - **There is no `capacity` field on Shows and never add one** — capacity is fixed per venue (`VENUE_CAPACITY` in `src/lib/shows.ts`).
 - **Ticket prices are fixed: €20 adult, €10 child** — no dynamic pricing.
-- **Roles are `superadmin | admin | tehnika | partner | member`** — read predicates from `src/lib/access/roles.ts`, never hardcode the list elsewhere. (`door-staff` is a retired label.) `member` is a read-only shared society login (ADR-0022) and is in **no** access predicate: it reaches its own dashboard branch and nothing else.
-- **Admin-only mutation routes must re-check the role in the handler** — Payload's local API runs `overrideAccess: true`, so collection `access` doesn't gate them. Use `requireRole(req, predicate)` from `src/lib/access/route-guard.ts` (the single chokepoint); don't re-type `getPayload → auth → role check` inline. Token/signature routes (Stripe webhook, `/scan/[token]/claim`, unsubscribe, cron) are the only exceptions.
+- **There are no roles: a user holds a *set* of permissions** (ADR-0023). The vocabulary is `users | tickets | refunds | door | partner | season_stats | moreska | moreskant | dev`, spelled out once in `src/lib/access/permissions.ts`; never re-type it elsewhere. `can(user, 'refunds')` (or `hasAny`) is the **only** predicate: no role string comparison, no tier alias. "Superadmin" is shorthand for "holds every permission", not a thing in code. `shared` on Users is the only marker of a shared login (ADR-0022); a shared account may not edit its own record. Details: `docs/agents/permissions.md`.
+- **Staff mutation routes must re-check the permission in the handler.** Payload's local API runs `overrideAccess: true`, so collection `access` doesn't gate them. Use `requirePermission(req, 'refunds')` from `src/lib/access/route-guard.ts` (the single chokepoint); don't re-type `getPayload → auth → permission check` inline. Token/signature routes (Stripe webhook, `/scan/[token]/claim`, `/order/[token]/refund`, unsubscribe, cron) are the only exceptions.
 - **Accumulating numeric columns must use atomic SQL** (`col = col + $1`), never read-modify-write. See `db-bootstrap.md`.
 - **Secrets (Stripe live keys, `BREVO_API_KEY`, `PAYLOAD_SECRET`) never appear in any committed file or chat** — runtime env only (Coolify); if one leaks, rotate it.
 - **`.gitignore` blocks every `.env*` except `.env.example`** (the committed template).
@@ -83,7 +84,7 @@ RNO registry updated 2026-08-17 (#369): website `https://moreska.eu/`, e-mail `i
 | `/checkout/[showId]/confirmation` | `…/confirmation/page.tsx` | Post-payment landing; looks up Order by `pi` (5×400ms retry to bridge the webhook race) |
 | `/privacy-policy`, `/cookie-policy` | `src/app/(frontend)/…/page.tsx` | Legal pages (EN+HR), via `LegalPage.tsx` |
 | `/scan/[token]` | `src/app/scan/[token]/page.tsx` (+ `scan/layout.tsx`) | Auth-aware door scan — buyer view if unauth, staff atomic mark-and-read if internal. Outside `(frontend)` (own minimal layout). Logic in `src/lib/scan-token.ts`; CSRF caveats in `payload-admin.md` |
-| `/admin`, `/admin/stats`, `/admin/stats/[showId]` | Payload + `src/components/payload/AdminStatsView.tsx`, `AdminShowStatsView.tsx` | Admin dashboard + role-aware stats views |
+| `/admin`, `/admin/stats`, `/admin/stats/[showId]` | Payload + `src/components/payload/AdminStatsView.tsx`, `AdminShowStatsView.tsx` | Admin dashboard + permission-aware stats views |
 | `/api/stripe/webhook` | `src/app/api/stripe/webhook/route.ts` | Creates Order + Tickets on payment success |
 
 ### Key files
@@ -93,7 +94,7 @@ RNO registry updated 2026-08-17 (#369): website `https://moreska.eu/`, e-mail `i
 | `src/proxy.ts` | Locale detection (Next.js 16 "proxy" convention) |
 | `src/lib/shows.ts` | **Only** server-side entry point for frontend show data: `getUpcomingShows()`, `getNextShow()` (canonical "active door show"); derives `remaining` from `VENUE_CAPACITY` |
 | `src/lib/scan-token.ts` | Pure DI logic for `/scan/[token]` → `VALID \| ALREADY_SCANNED \| INVALID`; race-safety delegated to `deps.atomicMarkScanned` (raw `UPDATE tickets … WHERE scanned=false RETURNING …`) |
-| `src/lib/access/roles.ts` | Role predicates (`isSuperadmin`, `isAdminTier`, `isAuthed`, `isPartner`, `partnerIdOf`) — source of truth for roles |
+| `src/lib/access/permissions.ts` | The permission vocabulary + `can()` / `hasAny()`: source of truth for access (ADR-0023) |
 | `src/lib/access/partner.ts` | Partner ownership `Where` scoping, shared by collection access + partner routes |
 | `src/lib/data.ts` | Locale-agnostic data: performances, history vignettes, section/service card + page meta |
 | `src/messages/{en,hr}.json` | All UI strings (identical structure) |
@@ -117,29 +118,32 @@ Field-level detail lives in `src/collections/*.ts` — this table is purpose + k
 | `OrderLookups` (`order-lookups`) | Buyer-facing order lookup support |
 | `Tickets` (`tickets`) | **Per-person** ticket + QR token → Orders; `scanned`/`scannedAt`. Seats = COUNT of active tickets (`online_sold` retired). Renamed from `qr_tokens`. |
 | `ContactSubmissions` (`contact-submissions`) | Enquiry-form submissions |
-| `Users` (`users`) | Payload auth + `role` (see `roles.ts`). Hybrid username login (ADR-0011): unique `username`, email optional but required for superadmin/admin. Shared door account is username `tehnika` (no email). `partner` logins carry a `partner` → Partners relationship. |
-| `Partners` (`partners`) | Reseller channel (ADR-0008): `name`, `oib`, `commissionPercent`, `active`. Admin-tier CRUD; a partner reads only its own record. |
-| `Members` (`members`) | Society members (ADR-0019): `name`, `active`, `note`. Shared attribution target for comp tickets (`orders.member`) and promo codes (`promoCodes.member`). No email/login. Admin-tier CRUD; hidden from tehnika/partner. |
-| `PromoCodes` (`promo-codes`) | Member promo codes (ADR-0018): `code` (unique), `member` (→ Members), `discountType` (`adult-price-override`), `adultPriceEur` (default 15), `active`. Applied at online checkout, best-of-two vs 5-for-4. Admin-tier CRUD. |
+| `Users` (`users`) | Payload auth + `permissions` (see `permissions.ts`) + `shared`. Hybrid username login (ADR-0011): unique `username`, email optional but required for `users` / `tickets` / `moreska` holders. Shared door account is username `tehnika` (no email), shared society login is `member`. A `partner` holder carries a `partner` → Partners relationship. `role` survives as a hidden legacy column for the rollback path (dropped in #398). |
+| `Partners` (`partners`) | Reseller channel (ADR-0008): `name`, `oib`, `commissionPercent`, `active`. `tickets` CRUD; a partner reads only its own record. |
+| `Members` (`members`) | Society members (ADR-0019): `name`, `active`, `note`. Shared attribution target for comp tickets (`orders.member`) and promo codes (`promoCodes.member`). No email/login. `tickets` CRUD; hidden from door and partner accounts. |
+| `PromoCodes` (`promo-codes`) | Member promo codes (ADR-0018): `code` (unique), `member` (→ Members), `discountType` (`adult-price-override`), `adultPriceEur` (default 15), `active`. Applied at online checkout, best-of-two vs 5-for-4. `tickets` CRUD. |
 | `Posts` (`posts`) | Blog posts (heroImage may be a remote URL) |
 | `marketing_optouts` | **Raw table, NOT a Payload collection** (#57): `email` PK, `source`, `optedOutAt`. Created in `db/schema/app.sql`; see `docs/agents/features.md`. |
 
-### Role-based access controls
+### Permission-based access controls
 
-Access is keyed off `user.role` via the predicates in `src/lib/access/roles.ts` (`isAuthed` = internal staff: superadmin/admin/tehnika, **not** partner). Partner ownership scoping lives in `src/lib/access/partner.ts` and is re-derived by partner-facing routes (the local API runs `overrideAccess: true`).
+Every decision reads the permission set via `can()` / `hasAny()` from `src/lib/access/permissions.ts` (ADR-0023). Partner ownership scoping lives in `src/lib/access/partner.ts` and is re-derived by partner-facing routes, because the local API runs `overrideAccess: true`. Vocabulary, bundles and gotchas: `docs/agents/permissions.md`.
 
 | Collection | read | create/update/delete |
 |---|---|---|
-| `Orders` | admin-tier; `partner` → only own | admin-tier |
-| `ContactSubmissions` | admin-tier | admin-tier |
-| `Shows` | authed (for `/scan` + stats) | admin-tier |
-| `Tickets` | authed (door scanning); `partner` → only own | admin-tier |
-| `Partners` | admin-tier; `partner` → only own | admin-tier |
-| `Members` | admin-tier | admin-tier |
-| `PromoCodes` | admin-tier | admin-tier |
-| `Users` | self-or-superadmin | create/delete superadmin-only; update self-or-superadmin |
+| `Orders` | `tickets`; `partner` → only own (`partnerOwnOrdersWhere`) | `tickets` |
+| `ContactSubmissions` | `tickets` | `tickets` |
+| `Shows` | `tickets` or `door` (the door needs the schedule to scan against) | `tickets` |
+| `Tickets` | `tickets` or `door`; `partner` → only own (`partnerOwnTicketsWhere`) | `tickets` |
+| `Partners` | `tickets`; `partner` → only own (`partnerOwnRecordWhere`) | `tickets` |
+| `Members` | `tickets` | `tickets` |
+| `PromoCodes` | `tickets` | `tickets` |
+| `OrderLookups` | `tickets` | `tickets` |
+| `Users` | `users`, else own row only | create/delete `users`; update `users` or self, except a `shared` account, which may never edit itself |
 
-`POST /api/orders/[id]/refund` re-checks the role in-handler and 403s otherwise (the local API's `overrideAccess: true` means collection access alone doesn't gate it). The Stripe webhook and frontend show queries use the local API, so collection access doesn't affect them.
+`Users.role`, `Users.permissions`, `Users.shared` and the `Users.partner` link are additionally field-locked to `users`, so no one can grant themselves anything through the self-edit path. `role` is a hidden, optional legacy column kept only for the rollback path; #398 drops it.
+
+`POST /api/orders/[id]/refund` and every other staff route re-check in-handler through `requirePermission` and 403 otherwise (the local API's `overrideAccess: true` means collection access alone doesn't gate them). The Stripe webhook and frontend show queries use the local API, so collection access doesn't affect them.
 
 ### Ticketing rules
 
