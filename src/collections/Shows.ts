@@ -1,23 +1,27 @@
 import type { CollectionConfig } from 'payload'
-import { isAdminTier, isAuthed } from '@/lib/access/roles'
+import { can, hasAny } from '@/lib/access/permissions'
 
-const adminOnly = ({ req }: { req: { user: unknown } }) =>
-  isAdminTier(req.user as { role?: string } | null)
-const authedOnly = ({ req }: { req: { user: unknown } }) =>
-  isAuthed(req.user as { role?: string } | null)
+type ReqUser = { permissions?: unknown } | null | undefined
+
+const backoffice = ({ req }: { req: { user: unknown } }) =>
+  can(req.user as ReqUser, 'tickets')
+// The door needs the schedule to scan against, so `door` reads shows too; only
+// the backoffice may change one.
+const staffRead = ({ req }: { req: { user: unknown } }) =>
+  hasAny(req.user as ReqUser, ['tickets', 'door'])
 
 export const Shows: CollectionConfig = {
   slug: 'shows',
   access: {
-    read: authedOnly,
-    create: adminOnly,
-    update: adminOnly,
-    delete: adminOnly,
+    read: staffRead,
+    create: backoffice,
+    update: backoffice,
+    delete: backoffice,
   },
   admin: {
     useAsTitle: 'date',
     defaultColumns: ['date', 'time', 'venue', 'onlineSold', 'inPersonSold', 'legacyReserved', 'status', 'onlineSalesPaused'],
-    hidden: ({ user }) => !isAdminTier(user as { role?: string } | null),
+    hidden: ({ user }) => !can(user as ReqUser, 'tickets'),
     components: {
       edit: {
         editMenuItems: [
@@ -79,9 +83,9 @@ export const Shows: CollectionConfig = {
       },
       access: {
         // Defense-in-depth: collection-level update is already admin-tier-only,
-        // but pinning the field guarantees tehnika (or any future role)
-        // can never mutate it even if collection access is widened.
-        update: ({ req }) => isAdminTier(req.user as { role?: string } | null),
+        // but pinning the field guarantees a door account (or any future
+        // permission) can never mutate it even if collection access is widened.
+        update: ({ req }) => can(req.user as ReqUser, 'tickets'),
       },
     },
     {

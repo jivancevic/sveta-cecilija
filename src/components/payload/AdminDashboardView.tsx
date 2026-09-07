@@ -6,7 +6,8 @@ import { getPayload } from 'payload'
 import config from '@payload-config'
 import { getStatsInput } from '@/lib/stats-data'
 import { ADMIN_LANG_COOKIE, adminT, resolveAdminLang, type AdminLang } from '@/lib/admin-i18n'
-import { isAdminTier, isAuthed, isMember, isPartner, partnerIdOf } from '@/lib/access/roles'
+import { partnerIdOf, type PartnerUser } from '@/lib/access/partner'
+import { dashboardBranchFor } from '@/lib/dashboard/branch'
 import { getNextShow, getScannedPeopleForShow, getUpcomingShows, type NextShow } from '@/lib/shows'
 import { toDashboardShows } from '@/lib/dashboard/from-stats'
 import { partitionShows } from '@/lib/dashboard/partition'
@@ -55,10 +56,14 @@ const VENUE_LABEL: Record<string, string> = {
 }
 
 // Replaces Payload's default collection-card dashboard. Rendered for /admin.
-// Branches on role:
-//   - tehnika: next-show-only block + Scan-a-ticket button. No season aggregate,
-//              no revenue, no other shows. See ADR-0006 / CONTEXT.md "Stats dashboard".
-//   - admin/superadmin: season aggregate + action row + show table.
+// Branches on the permission set through the pure dashboardBranchFor() (#395):
+//   - partner:      own sell form, own sales, own stats. Never org data.
+//   - season_stats: the shared society season view (ADR-0022). Read-only.
+//   - door:         next-show-only block + Scan-a-ticket button. No season
+//                   aggregate, no revenue, no other shows (ADR-0006 /
+//                   CONTEXT.md "Stats dashboard").
+//   - tickets:      season aggregate + action row + show table.
+//   - none:         nothing to show — back to the login page.
 export async function AdminDashboardView() {
   const payload = await getPayload({ config })
   const { user } = await payload.auth({ headers: await headers() })
@@ -68,30 +73,34 @@ export async function AdminDashboardView() {
   // This mirrors how Payload's chrome resolves language, so switching in account
   // settings flips both the chrome and this custom copy. (Issue #234, ADR-0015.)
   const cookieLang = (await cookies()).get(ADMIN_LANG_COOKIE)?.value
-  const lang = resolveAdminLang({ cookieLang, role: (user as { role?: string } | null)?.role })
+  const lang = resolveAdminLang({ cookieLang, user: user as { permissions?: unknown } | null })
 
-  // Partner is authenticated but is NOT internal staff (isAuthed excludes it),
-  // so branch here before the staff-only login guard below.
-  if (isPartner(user as { role?: string } | null)) {
+  // Who the footer line names. The permission set is not a job title, so the
+  // account's own username is what "Signed in as" shows now.
+  const signedInAs =
+    (user as { username?: string; email?: string } | null)?.username ??
+    (user as { email?: string } | null)?.email ??
+    ''
+
+  const branch = dashboardBranchFor(user as { permissions?: unknown } | null)
+
+  // A partner or the shared society login is authenticated but is NOT internal
+  // staff, so each gets its own scoped view; `none` means an authenticated
+  // account with no dashboard at all, which goes back to the login page.
+  if (branch === 'partner') {
     return <PartnerDashboard payload={payload} user={user} lang={lang} />
   }
 
-  // The shared society-membership login (ADR-0022) is likewise authenticated but
-  // outside isAuthed, so it branches before the staff guard too. Read-only: this
-  // is the only page it can reach.
-  if (isMember(user as { role?: string } | null)) {
+  if (branch === 'season_stats') {
     return <MemberDashboard payload={payload} lang={lang} />
   }
 
-  if (!isAuthed(user as { role?: string } | null)) {
-    redirect(`/admin/login?redirect=${encodeURIComponent('/admin')}`)
+  if (branch === 'door') {
+    return <TehnikaDashboard signedInAs={signedInAs} lang={lang} />
   }
 
-  const role = (user as { role?: string }).role
-  const adminTier = isAdminTier(user as { role?: string })
-
-  if (!adminTier) {
-    return <TehnikaDashboard role={role} lang={lang} />
+  if (branch !== 'tickets') {
+    redirect(`/admin/login?redirect=${encodeURIComponent('/admin')}`)
   }
 
   // Upcoming-show-first secretary dashboard (#238, ADR-0015). The whole season
@@ -223,7 +232,7 @@ export async function AdminDashboardView() {
       {diagnostics && <SuperadminDevStrip data={diagnostics} />}
 
       <p style={{ fontSize: 11, color: 'var(--theme-elevation-400)', marginTop: 24 }}>
-        {adminT(lang, 'signedInAs')} {role}.
+        {adminT(lang, 'signedInAs')} {signedInAs}.
       </p>
     </div>
   )
@@ -269,7 +278,7 @@ function AdminActions({ lang }: { lang: AdminLang }) {
 // queue leads with the action: a large live admitted/sold progress hero for the
 // active door show, then a dominant full-width scan button opening the in-page
 // html5-qrcode viewfinder (never a native-camera-first flow). No revenue, no PII.
-async function TehnikaDashboard({ role, lang }: { role?: string; lang: AdminLang }) {
+async function TehnikaDashboard({ signedInAs, lang }: { signedInAs: string; lang: AdminLang }) {
   const next = await getNextShow()
   const scanned = next ? await getScannedPeopleForShow(next.id) : 0
   const progress = doorProgress(next, scanned)
@@ -322,7 +331,7 @@ async function TehnikaDashboard({ role, lang }: { role?: string; lang: AdminLang
       ) : null}
 
       <p style={{ fontSize: 11, color: 'var(--theme-elevation-400)', marginTop: 24 }}>
-        {adminT(lang, 'signedInAs')} {role}.
+        {adminT(lang, 'signedInAs')} {signedInAs}.
       </p>
     </div>
   )
@@ -458,7 +467,7 @@ async function MemberDashboard({
   return <MemberSeasonDashboard season={season} lang={lang} />
 }
 
-// Scoped dashboard shell for the `partner` role (ADR-0008, ADR-0006 pattern).
+// Scoped dashboard shell for a `partner` login (ADR-0008, ADR-0006 pattern).
 // This slice (#143) establishes the role, the scoped landing, and the empty
 // sidebar; the sell form, own-stats and same-day storno land in later slices.
 // The layout here is HITL-reviewed before #143 is considered done.
@@ -473,7 +482,7 @@ async function PartnerDashboard({
   user: unknown
   lang: AdminLang
 }) {
-  const partnerId = partnerIdOf(user as { role?: string; partner?: unknown } | null)
+  const partnerId = partnerIdOf(user as PartnerUser)
 
   let partner: PartnerRecord | null = null
   if (partnerId != null) {

@@ -4,7 +4,7 @@ import { getPayload } from 'payload'
 import config from '@payload-config'
 import { getShowStatsInput } from '@/lib/show-stats-data'
 import { computeShowStats } from '@/lib/show-stats'
-import { isAdminTier } from '@/lib/access/roles'
+import { can, type PermissionUser } from '@/lib/access/permissions'
 import { ADMIN_LANG_COOKIE, resolveAdminLang } from '@/lib/admin-i18n'
 import { AdminShowStatsBody } from './AdminShowStatsView'
 
@@ -38,8 +38,10 @@ export async function AdminStatsView(props: AdminStatsViewProps = {}) {
   const input = await getShowStatsInput(showId)
   if (!input) notFound()
   const { header, orders } = computeShowStats(input)
-  const adminView = isAdminTier(user as { role?: string })
+  // The PII columns (buyer name, email) are backoffice-only; a door account
+  // reaching this page sees the anonymised view (ADR-0023).
+  const adminView = can(user as PermissionUser, 'tickets')
   const cookieLang = (await cookies()).get(ADMIN_LANG_COOKIE)?.value
-  const lang = resolveAdminLang({ cookieLang, role: (user as { role?: string }).role })
+  const lang = resolveAdminLang({ cookieLang, user: user as PermissionUser })
   return <AdminShowStatsBody header={header} orders={orders} adminView={adminView} lang={lang} />
 }

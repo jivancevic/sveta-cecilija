@@ -1,15 +1,15 @@
 import type { CollectionConfig } from 'payload'
-import { isAdminTier } from '@/lib/access/roles'
+import { can } from '@/lib/access/permissions'
 
-type ReqUser = { id?: string | number; role?: string; partner?: unknown } | null | undefined
+type ReqUser = { id?: string | number; permissions?: unknown; partner?: unknown } | null | undefined
 
-const adminOnly = ({ req }: { req: { user: unknown } }) =>
-  isAdminTier(req.user as ReqUser)
+const backoffice = ({ req }: { req: { user: unknown } }) =>
+  can(req.user as ReqUser, 'tickets')
 
 // HGD society members (ADR-0019). A member is the attribution target for
 // comp (goodwill) tickets and, later, member promo codes (ADR-0018).
 // Deliberately minimal: no money, law, login or commission — a member never
-// authenticates. Admin-tier CRUD only; hidden from tehnika/partner sidebars.
+// authenticates. `tickets` holders do the CRUD; nobody else sees the sidebar entry.
 export const Members: CollectionConfig = {
   slug: 'members',
   labels: {
@@ -17,16 +17,16 @@ export const Members: CollectionConfig = {
     plural: { en: 'Members', hr: 'Članovi' },
   },
   access: {
-    read: adminOnly,
-    create: adminOnly,
-    update: adminOnly,
-    delete: adminOnly,
+    read: backoffice,
+    create: backoffice,
+    update: backoffice,
+    delete: backoffice,
   },
   admin: {
     useAsTitle: 'name',
     defaultColumns: ['name', 'active'],
-    // Only admin-tier manage members; never shown to tehnika or partner.
-    hidden: ({ user }) => !isAdminTier(user as ReqUser),
+    // Only the ticketing backoffice manages members; hidden from everyone else.
+    hidden: ({ user }) => !can(user as ReqUser, 'tickets'),
   },
   fields: [
     {
