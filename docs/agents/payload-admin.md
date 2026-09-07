@@ -14,7 +14,7 @@ Never direct React imports. Every component slot in `buildConfig` and collection
 - **Item in edit view 3-dot menu**: `collection.admin.components.edit.editMenuItems`
 - **Hide a collection from the sidebar (per-permission)**: `collection.admin.hidden: ({ user }) => !can(user, 'tickets')`. Hidden collections also return 404 on direct URL access, not just sidebar omission. Predicates come from `src/lib/access/permissions.ts`; see `docs/agents/permissions.md`.
 - **Field-level access** (e.g. lock the `permissions` field against self-promotion): `field.access: { read, update, create }`. Each takes a function of `{ req }`. The field is silently dropped from updates if the predicate returns false, with no error to the caller, so a missing lock fails open and quietly.
-- **`field.admin.hidden: true` does not remove the field from the form.** Payload renders it as an `<input type="hidden">` whose form-state value round-trips on save, so a hidden select still needs a valid (or null) value. It is invisible in the UI, which is what `Users.role` relies on. Combine it with `field.access.read` when the value must also stay out of the API payload.
+- **`field.admin.hidden: true` does not remove the field from the form.** Payload renders it as an `<input type="hidden">` whose form-state value round-trips on save, so a hidden select still needs a valid (or null) value. It is invisible in the UI, which is what the retired `Users.role` field relied on while the column was still there (#397, dropped in #398). Combine it with `field.access.read` when the value must also stay out of the API payload.
 - **No per-row list actions exist in v3** — cancel/single-doc actions belong in the edit view.
 
 ## `importMap.js` is manually maintained

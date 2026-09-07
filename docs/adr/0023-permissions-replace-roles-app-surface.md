@@ -2,6 +2,7 @@
 
 **Status:** Accepted
 **Date:** 2026-09-07
+**Update 2026-09-07 (#398):** decision 1 is complete in the database as well as in code. The legacy `users.role` column and `enum_users_role` were dropped (`db/schema/migrate-zz-drop-users-role.sql`); the rollback window the column was retained for has closed.
 
 ## Context
 
