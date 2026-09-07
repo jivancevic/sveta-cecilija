@@ -13,17 +13,32 @@
 --   member     -> season_stats + shared
 --
 -- Re-runnable on EVERY restart, which bootstrap-db.mjs guarantees it will be:
--- the INSERT only touches users whose permission set is still empty, so once a
--- `users` holder edits a set in /admin this file never overwrites it again —
--- including the case where they deliberately clear a permission but leave at
--- least one (an emptied set is refilled, which is the safe direction: the field
--- is required, so a truly empty set is a bug, not a choice).
+-- BOTH statements are guarded on "this user's permission set is still empty",
+-- so together they fire exactly once per user, on the first bootstrap after
+-- this deploy. Afterwards the set is never empty again, so once a `users`
+-- holder edits a set or clears the `shared` flag in /admin, this file never
+-- overwrites either again. The one exception is a set emptied completely,
+-- which is refilled — the safe direction, because the field is required, so a
+-- truly empty set is a bug rather than a choice.
 --
 -- `role::text` is used throughout so the file stays parseable on a database
 -- whose enum no longer carries one of these labels (same reason as
 -- migrate-roles-2-data.sql).
 --
 -- Idempotent.
+
+-- The two shared logins (ADR-0022 for `member`, the door device for `tehnika`).
+-- Runs BEFORE the INSERT below and carries the SAME guard, so it fires exactly
+-- once — on the first bootstrap after this deploy, while the permission set is
+-- still empty. After the INSERT the set is never empty again, so a later edit
+-- by a `users` holder (including turning `shared` off) sticks across restarts.
+UPDATE public.users u
+   SET shared = true
+ WHERE u.shared IS DISTINCT FROM true
+   AND u.role::text IN ('tehnika', 'member')
+   AND NOT EXISTS (
+     SELECT 1 FROM public.users_permissions p WHERE p.parent_id = u.id
+   );
 
 INSERT INTO public.users_permissions ("order", parent_id, value)
 SELECT b.ord, u.id, b.perm::public.enum_users_permissions
@@ -44,13 +59,3 @@ SELECT b.ord, u.id, b.perm::public.enum_users_permissions
  WHERE NOT EXISTS (
    SELECT 1 FROM public.users_permissions p WHERE p.parent_id = u.id
  );
-
--- The two shared logins (ADR-0022 for `member`, the door device for `tehnika`).
--- Guarded on the current value, so the second run matches no rows and a
--- deliberate later change by a `users` holder is only re-applied if it put the
--- flag back to false — acceptable, because these two accounts are shared by
--- definition and nothing else in the system is.
-UPDATE public.users
-   SET shared = true
- WHERE shared IS DISTINCT FROM true
-   AND role::text IN ('tehnika', 'member');
