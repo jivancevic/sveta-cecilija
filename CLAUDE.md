@@ -141,7 +141,7 @@ Every decision reads the permission set via `can()` / `hasAny()` from `src/lib/a
 | `OrderLookups` | `tickets` | `tickets` |
 | `Users` | `users`, else own row only | create/delete `users`; update `users` or self, except a `shared` account, which may never edit itself |
 
-`Users.role`, `Users.permissions`, `Users.shared` and the `Users.partner` link are additionally field-locked to `users`, so no one can grant themselves anything through the self-edit path. `role` is a hidden, optional legacy column kept only for the rollback path; #398 drops it.
+`Users.role`, `Users.permissions` and `Users.shared` are additionally field-locked to `users` (read, update and create), and the `Users.partner` link is write-locked to `users` with read left open, so no one can grant themselves anything through the self-edit path. `role` is a hidden, optional legacy column kept only for the rollback path; #398 drops it.
 
 `POST /api/orders/[id]/refund` and every other staff route re-check in-handler through `requirePermission` and 403 otherwise (the local API's `overrideAccess: true` means collection access alone doesn't gate them). The Stripe webhook and frontend show queries use the local API, so collection access doesn't affect them.
 
