@@ -1,5 +1,9 @@
-import type { CollectionConfig } from 'payload'
+import { APIError, type CollectionConfig } from 'payload'
 import { can, hasAny } from '@/lib/access/permissions'
+import {
+  PerformanceValidationError,
+  validateAndNormalisePerformance,
+} from '@/lib/show-performance'
 
 type ReqUser = { permissions?: unknown } | null | undefined
 
@@ -20,7 +24,20 @@ export const Shows: CollectionConfig = {
   },
   admin: {
     useAsTitle: 'date',
-    defaultColumns: ['date', 'time', 'venue', 'onlineSold', 'inPersonSold', 'legacyReserved', 'status', 'onlineSalesPaused'],
+    defaultColumns: [
+      'date',
+      'time',
+      'kind',
+      'isPublic',
+      'venue',
+      'location',
+      'client',
+      'onlineSold',
+      'inPersonSold',
+      'legacyReserved',
+      'status',
+      'onlineSalesPaused',
+    ],
     hidden: ({ user }) => !can(user as ReqUser, 'tickets'),
     components: {
       edit: {
@@ -38,6 +55,35 @@ export const Shows: CollectionConfig = {
         },
       },
     },
+  },
+  hooks: {
+    // The kind/isPublic invariants (ADR-0024). The rules themselves are a pure,
+    // unit-tested function in src/lib/show-performance.ts; this hook is only the
+    // Payload plumbing. `beforeValidate` (not `beforeChange`) so the forced
+    // values are in place before the field validators run.
+    beforeValidate: [
+      ({ data, originalDoc }) => {
+        const patch = (data ?? {}) as Record<string, unknown>
+        // On an update Payload hands us only the changed fields, so validate the
+        // effective document, not the patch.
+        const merged = { ...((originalDoc ?? {}) as Record<string, unknown>), ...patch }
+
+        let normalised: Record<string, unknown>
+        try {
+          normalised = validateAndNormalisePerformance(merged)
+        } catch (err) {
+          if (err instanceof PerformanceValidationError) throw new APIError(err.message, 400)
+          throw err
+        }
+
+        // Write back only the keys normalisation may have forced, so a partial
+        // update stays partial.
+        for (const key of ['venue', 'inPersonSold', 'legacyReserved', 'onlineSalesPaused']) {
+          if (normalised[key] !== merged[key]) patch[key] = normalised[key]
+        }
+        return patch
+      },
+    ],
   },
   fields: [
     {
@@ -60,15 +106,65 @@ export const Shows: CollectionConfig = {
         return true
       },
     },
+    // Every performance of the season lives in this collection (ADR-0024): the
+    // 22 public Redovna shows that sell tickets, plus the ship calls, concerts
+    // and one-offs that do not.
     {
-      name: 'venue',
+      name: 'kind',
       type: 'select',
       required: true,
-      defaultValue: 'ljetno-kino',
+      defaultValue: 'redovna',
+      options: [
+        { label: 'Redovna (public ticketed show)', value: 'redovna' },
+        { label: 'Adriatic DMC', value: 'dmc' },
+        { label: 'Gulliver', value: 'gulliver' },
+        { label: 'Koncert', value: 'koncert' },
+        { label: 'Ostalo', value: 'ostalo' },
+      ],
+      admin: {
+        description:
+          'Redovna is the public ticketed show. Every other kind is a private booking or a one-off and is never sold online.',
+      },
+    },
+    {
+      name: 'isPublic',
+      type: 'checkbox',
+      required: true,
+      defaultValue: true,
+      label: 'Public performance',
+      admin: {
+        description:
+          'A public performance is listed on /tickets, sells seats against a venue capacity and is scanned at the door. Untick for a private booking: it then needs a location instead of a venue and never reaches a buyer. A Redovna is always public.',
+      },
+    },
+    {
+      name: 'venue',
+      // Not `required`: a non-public performance has no venue (it has a
+      // location). "Public ⇒ venue" is enforced by the beforeValidate hook.
+      type: 'select',
       options: [
         { label: 'Ljetno kino (320)', value: 'ljetno-kino' },
         { label: 'Zimsko kino / Centar za kulturu (250)', value: 'zimsko-kino' },
       ],
+      admin: {
+        description: 'Public performances only. Capacity is derived from the venue.',
+      },
+    },
+    {
+      name: 'location',
+      type: 'text',
+      admin: {
+        description:
+          'Free-text place for a non-public performance, e.g. "Zimsko kino", "Sv. Justina", "Spomenik sv. Todora". Required when the performance is not public.',
+      },
+    },
+    {
+      name: 'client',
+      type: 'text',
+      admin: {
+        description:
+          'The ship or the organiser behind a private booking, e.g. "Le Ponant", "NG Orion". Optional.',
+      },
     },
     { name: 'onlineSold', type: 'number', defaultValue: 0 },
     { name: 'inPersonSold', type: 'number', defaultValue: 0 },
@@ -161,6 +257,36 @@ export const Shows: CollectionConfig = {
         date: { pickerAppearance: 'dayOnly', displayFormat: 'd MMM yyyy' },
       },
       access: { update: () => false },
+    },
+    // Roster fields (ADR-0024). Nothing reads them yet — phase 3 (attendance,
+    // army alarm, lineup) does. They carry no field-level access in this phase.
+    {
+      name: 'thresholdCrni',
+      type: 'number',
+      required: true,
+      defaultValue: 8,
+      min: 0,
+      admin: {
+        description: 'Minimum number of crni moreškanti for this performance. Default 8.',
+      },
+    },
+    {
+      name: 'thresholdBili',
+      type: 'number',
+      required: true,
+      defaultValue: 8,
+      min: 0,
+      admin: {
+        description: 'Minimum number of bili moreškanti for this performance. Default 8.',
+      },
+    },
+    {
+      name: 'voditeljNote',
+      type: 'textarea',
+      admin: {
+        description:
+          'Note from the voditelj for the moreškanti, e.g. "meet at the harbour gate at 9:30".',
+      },
     },
   ],
 }

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { assertPurchasable, type PurchasableShow } from './purchasability'
+import { assertPurchasable, CheckoutValidationError, type PurchasableShow } from './purchasability'
 
 // Pin the clock. Several cases build "today"/"tomorrow" shows and assert
 // whether they're past the online-sale cutoff (start +1h, Europe/Zagreb). Left
@@ -133,5 +133,32 @@ describe('assertPurchasable', () => {
         { adults: 1, children: 0 },
       ),
     ).toThrow(/capacity|remaining|sold out/i)
+  })
+  it('rejects a non-public performance (ADR-0024): it has no seats to sell', () => {
+    expect(() =>
+      assertPurchasable(baseShow({ isPublic: false }), { adults: 1, children: 0 }),
+    ).toThrow(/not on sale|non-public|not available/i)
+  })
+
+  it('reports NOT_PUBLIC as the error code for a non-public performance', () => {
+    try {
+      assertPurchasable(baseShow({ isPublic: false }), { adults: 1, children: 0 })
+      throw new Error('expected assertPurchasable to throw')
+    } catch (err) {
+      expect((err as CheckoutValidationError).code).toBe('NOT_PUBLIC')
+    }
+  })
+
+  it('rejects a non-public performance before any capacity maths runs (venue may be null)', () => {
+    expect(() =>
+      assertPurchasable(
+        baseShow({ isPublic: false, venue: null as unknown as 'ljetno-kino' }),
+        { adults: 1, children: 0 },
+      ),
+    ).toThrow(/not on sale|non-public|not available/i)
+  })
+
+  it('treats a show with no isPublic key as public (pre-expand rows and older fixtures)', () => {
+    expect(() => assertPurchasable(baseShow({}), { adults: 1, children: 0 })).not.toThrow()
   })
 })

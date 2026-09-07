@@ -6,6 +6,7 @@ import { getLocale } from '@/lib/locale'
 import { getDictionary } from '@/lib/i18n'
 import { VENUE_CAPACITY, type Venue } from '@/lib/venues'
 import { getActiveTicketCountForShow, type PoolQuery } from '@/lib/tickets/sold-seats'
+import { isPublicPerformance } from '@/lib/show-performance'
 import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
 import CheckoutForm from '@/components/CheckoutForm'
@@ -51,6 +52,9 @@ export default async function CheckoutRoute({ params, searchParams }: RouteProps
     notFound()
   }
   if (!showDoc || showDoc.status === 'cancelled') notFound()
+  // A non-public performance (ADR-0024) has no venue, no capacity and no seats.
+  // A guessed or stale link must 404, not render a page against a NULL venue.
+  if (!isPublicPerformance(showDoc as Record<string, unknown>)) notFound()
 
   // Online sales paused by an admin: keep the page reachable (people share
   // checkout links) but replace the form with the "sales closed" note. The
