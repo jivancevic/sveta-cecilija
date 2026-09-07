@@ -164,7 +164,7 @@ describe('gatherDevDiagnostics (`dev` permission gating)', () => {
     ['member', { permissions: ['season_stats'] }],
     ['empty set', { permissions: [] }],
     ['malformed set', { permissions: 'dev' }],
-    ['legacy role only', { role: 'superadmin' } as { permissions?: unknown }],
+    ['no permission set at all', {} as { permissions?: unknown }],
     ['anonymous', null],
   ])('returns null and runs no queries for %s', async (_label, user) => {
     const d = deps()

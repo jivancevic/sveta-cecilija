@@ -154,7 +154,7 @@ describe('GET /api/orders/[id]/tickets.pdf session gate by permission', () => {
   it.each([
     ['a member login', { permissions: ['season_stats'] }],
     ['an empty set', { permissions: [] }],
-    ['a legacy role with no permission set', { role: 'admin' }],
+    ['a session with no permission set at all', {}],
   ])('401s %s', async (_label, user) => {
     findByID.mockResolvedValue(PARTNER_ORDER)
     auth.mockResolvedValue({ user })

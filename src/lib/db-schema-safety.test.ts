@@ -99,38 +99,47 @@ describe('db/schema safety', () => {
   })
 })
 
-// The legacy `role` column (#397, ADR-0023). Payload's field is hidden,
-// optional and defaultless; db/schema must declare the matching shape or the
-// drift gate (scripts/schema-diff.mjs) fails, and a post-deploy account would
-// silently inherit `admin` from a leftover DEFAULT. #398 drops the column.
-describe('legacy users.role column', () => {
+// #398 (ADR-0023): the legacy `role` column and its enum are gone from the
+// schema. These assertions are the regression guard for the ordering that makes
+// the drop safe on a database that is upgraded straight from a pre-permissions
+// image — bootstrap-db.mjs applies db/schema/*.sql in plain filename order on
+// every restart, so the drop must sort AFTER everything that still reads the
+// column, and those readers must be no-ops once it is gone.
+describe('the dropped users.role column', () => {
   const base = readFileSync(path.join(SCHEMA_DIR, '00-base.sql'), 'utf-8')
-  const usersTable =
-    stripComments(base).match(/CREATE TABLE IF NOT EXISTS public\.users \(([\s\S]*?)\n\);/)?.[1] ?? ''
+  const files = readdirSync(SCHEMA_DIR).filter((f) => f.endsWith('.sql')).sort()
+  const DROP_FILE = 'migrate-zz-drop-users-role.sql'
 
-  it('is still declared in the base schema (rollback path, dropped in #398)', () => {
-    expect(usersTable).toMatch(/role\s+public\.enum_users_role/)
+  it('is not declared in the base schema, and neither is its enum', () => {
+    const cleaned = stripComments(base)
+    expect(cleaned).not.toMatch(/enum_users_role/)
+    const usersTable = cleaned.match(/CREATE TABLE IF NOT EXISTS public\.users \(([\s\S]*?)\n\);/)?.[1] ?? ''
+    expect(usersTable).not.toMatch(/^\s*role\s/m)
   })
 
-  it('carries neither NOT NULL nor a DEFAULT in the base schema', () => {
-    const roleLine = usersTable.split('\n').find((l) => /^\s*role\s/.test(l)) ?? ''
-    expect(roleLine).not.toMatch(/NOT NULL/i)
-    expect(roleLine).not.toMatch(/DEFAULT/i)
+  it('is dropped column-first then type, both guarded with IF EXISTS', () => {
+    const drop = stripComments(readFileSync(path.join(SCHEMA_DIR, DROP_FILE), 'utf-8'))
+    expect(drop).toMatch(/ALTER TABLE public\.users DROP COLUMN IF EXISTS role;/i)
+    expect(drop).toMatch(/DROP TYPE IF EXISTS public\.enum_users_role;/i)
+    expect(drop.indexOf('DROP COLUMN')).toBeLessThan(drop.indexOf('DROP TYPE'))
   })
 
-  it('drops both constraints on databases that already exist', () => {
-    const migration = readFileSync(
-      path.join(SCHEMA_DIR, 'migrate-permissions-3-role-optional.sql'),
-      'utf-8',
-    )
-    expect(migration).toMatch(/ALTER COLUMN role DROP DEFAULT/i)
-    expect(migration).toMatch(/ALTER COLUMN role DROP NOT NULL/i)
+  it('the drop sorts last among the migrate-* files', () => {
+    const migrations = files.filter((f) => f.startsWith('migrate-'))
+    expect(migrations[migrations.length - 1]).toBe(DROP_FILE)
   })
 
-  it('the bundle data migration still reads role as text, so a NULL role is safe', () => {
-    const data = readFileSync(path.join(SCHEMA_DIR, 'migrate-permissions-2-data.sql'), 'utf-8')
-    expect(data).toMatch(/role::text/)
-    // Applies before the constraint drop (bootstrap-db.mjs sorts by filename).
-    expect('migrate-permissions-2-data.sql' < 'migrate-permissions-3-role-optional.sql').toBe(true)
+  it('every remaining reader of the column is behind an existence guard', () => {
+    for (const file of files) {
+      if (file === DROP_FILE) continue
+      const sql = stripComments(readFileSync(path.join(SCHEMA_DIR, file), 'utf-8'))
+      // `role::text` / `enum_users_role` are the only ways the column is read;
+      // the bare word appears in seed prose, which is not SQL.
+      if (!/role::text|enum_users_role/.test(sql)) continue
+      // The guard: an information_schema lookup for users.role, and dynamic
+      // EXECUTE so the statements are never parsed without the column.
+      const guarded = /information_schema\.columns[\s\S]*?column_name = 'role'/.test(sql)
+      expect(guarded, `${file} reads users.role without an existence guard`).toBe(true)
+    }
   })
 })

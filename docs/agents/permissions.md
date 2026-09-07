@@ -33,16 +33,16 @@ An unknown permission string is dropped rather than fatal, so a stale or hand-ed
 
 - **Staff wins over reseller.** A `users` holder holds `partner` too, so a bare `can(user, 'partner')` would flip the developer into the reseller branch of a route that serves both. Use `actsAsPartner()` from `partner.ts`, which is `partner && !tickets`.
 - **A `partner` holder with no Partners link owns nothing**, never everything. The `Where` helpers return `false` (Payload reads that as "match nothing"), which is why the `users` holder (permission but no link) scopes to nothing there and reaches partner data through the `tickets` branch instead.
-- **Field-level locks are what stop self-promotion.** `Users.access.update` allows self-edit, so `permissions`, `shared` and `role` each carry `access: { read, update, create }` locked to `can(user, 'users')`. The `partner` link locks only `update` and `create`: its read stays open deliberately, because the value has to ride along on `req.user` for the ownership scoping in `partner.ts` to find it. A field that fails the predicate is silently dropped from the write, with no error to the caller, so a missing lock fails open and quietly.
+- **Field-level locks are what stop self-promotion.** `Users.access.update` allows self-edit, so `permissions` and `shared` each carry `access: { read, update, create }` locked to `can(user, 'users')`. The `partner` link locks only `update` and `create`: its read stays open deliberately, because the value has to ride along on `req.user` for the ownership scoping in `partner.ts` to find it. A field that fails the predicate is silently dropped from the write, with no error to the caller, so a missing lock fails open and quietly.
 - **Shared accounts.** `Users.shared` is the only marker (the door `tehnika` login, the society-wide `member` login). `userUpdateAccess` denies a shared account self-edit, so one volunteer cannot rotate the password and lock the others out. Do not infer "shared" from a permission set.
 - **Email is required for a named individual**, decided from the set, not a tier: `users`, `tickets` or `moreska` (`src/lib/access/user-email-policy.ts`). Door, partner and season_stats accounts are username-only.
 - **Admin chrome language** defaults from the set too (`src/lib/admin-i18n.ts`): English for a `dev` holder or a door-only account, Croatian otherwise. The user's own `payload-lng` choice always wins.
 
-## The legacy `role` column
+## The legacy `role` column is gone
 
-`users.role` is retained for exactly one release so a container rollback to the pre-#393 image finds intact data. It is hidden in the admin, optional, defaultless, and read-locked to `users`; nothing reads it for access. #398 drops the column and the enum.
+`users.role` and `enum_users_role` were dropped in #398 (`db/schema/migrate-zz-drop-users-role.sql`), after the one-release rollback window they were retained for. There is one access model in the schema now. A row shape carrying a `role` is not a fallback anywhere: an account with no permission set reaches nothing.
 
-Its constraints were dropped along with the Payload `required`/`defaultValue` (`db/schema/migrate-permissions-3-role-optional.sql`), for two reasons: Payload push emits a bare `role public.enum_users_role` for a non-required defaultless select, so leaving `NOT NULL DEFAULT 'admin'` in `db/schema/` fails the drift gate; and had the DEFAULT stayed, an account created after the deploy would silently inherit `role='admin'` and a rollback would read it as a secretary. A NULL role is read as denied by every old predicate, which is the fail-closed direction.
+The drop file is named `migrate-zz-…` deliberately. `bootstrap-db.mjs` applies `db/schema/*.sql` in plain filename order on every restart, and two files still read the column while it exists — the bundle backfill (`migrate-permissions-2-data.sql`) and the door account's username/email fixups (`migrate-username-1.sql`) — so the drop must sort after both, or a database upgraded straight from a pre-permissions image would lose its roles before they were ever translated into permission sets and every login would be locked out. Both readers are additionally wrapped in an `information_schema` column-existence guard and run through `EXECUTE`, so they are never parsed on a database without the column: a fresh DB built from `00-base.sql`, or any DB the drop has already run on. `src/lib/db-schema-safety.test.ts` asserts both the ordering and the guards.
 
 ## Migration bundles
 
@@ -56,4 +56,4 @@ Its constraints were dropped along with the Payload `required`/`defaultValue` (`
 | `partner` | `partner` | |
 | `member` | `season_stats` | ✓ |
 
-After the first bootstrap the set is never empty again, so an edit made in `/admin` sticks across restarts.
+After the first bootstrap the set is never empty again, so an edit made in `/admin` sticks across restarts. Since #398 the whole file is a no-op unless the column is still there, which only a database upgraded straight from a pre-permissions image can be.

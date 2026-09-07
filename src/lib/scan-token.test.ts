@@ -338,7 +338,7 @@ describe('scanViewerFor', () => {
     ['an empty set', { permissions: [] }],
     ['a malformed set', { permissions: 'door' }],
     ['an unknown word only', { permissions: ['doorman'] }],
-    ['a legacy role with no permission set', { role: 'tehnika' } as { permissions?: unknown }],
+    ['a session with no permission set at all', {} as { permissions?: unknown }],
     ['no session at all', null],
   ])('gives %s the buyer view', (_label, user) => {
     expect(scanViewerFor(user)).toBe('buyer')

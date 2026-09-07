@@ -118,7 +118,7 @@ Field-level detail lives in `src/collections/*.ts` — this table is purpose + k
 | `OrderLookups` (`order-lookups`) | Buyer-facing order lookup support |
 | `Tickets` (`tickets`) | **Per-person** ticket + QR token → Orders; `scanned`/`scannedAt`. Seats = COUNT of active tickets (`online_sold` retired). Renamed from `qr_tokens`. |
 | `ContactSubmissions` (`contact-submissions`) | Enquiry-form submissions |
-| `Users` (`users`) | Payload auth + `permissions` (see `permissions.ts`) + `shared`. Hybrid username login (ADR-0011): unique `username`, email optional but required for `users` / `tickets` / `moreska` holders. Shared door account is username `tehnika` (no email), shared society login is `member`. A `partner` holder carries a `partner` → Partners relationship. `role` survives as a hidden legacy column for the rollback path (dropped in #398). |
+| `Users` (`users`) | Payload auth + `permissions` (see `permissions.ts`) + `shared`. Hybrid username login (ADR-0011): unique `username`, email optional but required for `users` / `tickets` / `moreska` holders. Shared door account is username `tehnika` (no email), shared society login is `member`. A `partner` holder carries a `partner` → Partners relationship. |
 | `Partners` (`partners`) | Reseller channel (ADR-0008): `name`, `oib`, `commissionPercent`, `active`. `tickets` CRUD; a partner reads only its own record. |
 | `Members` (`members`) | Society members (ADR-0019): `name`, `active`, `note`. Shared attribution target for comp tickets (`orders.member`) and promo codes (`promoCodes.member`). No email/login. `tickets` CRUD; hidden from door and partner accounts. |
 | `PromoCodes` (`promo-codes`) | Member promo codes (ADR-0018): `code` (unique), `member` (→ Members), `discountType` (`adult-price-override`), `adultPriceEur` (default 15), `active`. Applied at online checkout, best-of-two vs 5-for-4. `tickets` CRUD. |
@@ -141,7 +141,7 @@ Every decision reads the permission set via `can()` / `hasAny()` from `src/lib/a
 | `OrderLookups` | `tickets` | `tickets` |
 | `Users` | `users`, else own row only | create/delete `users`; update `users` or self, except a `shared` account, which may never edit itself |
 
-`Users.role`, `Users.permissions` and `Users.shared` are additionally field-locked to `users` (read, update and create), and the `Users.partner` link is write-locked to `users` with read left open, so no one can grant themselves anything through the self-edit path. `role` is a hidden, optional legacy column kept only for the rollback path; #398 drops it.
+`Users.permissions` and `Users.shared` are additionally field-locked to `users` (read, update and create), and the `Users.partner` link is write-locked to `users` with read left open, so no one can grant themselves anything through the self-edit path. The legacy `role` column and its enum were dropped in #398.
 
 `POST /api/orders/[id]/refund` and every other staff route re-check in-handler through `requirePermission` and 403 otherwise (the local API's `overrideAccess: true` means collection access alone doesn't gate them). The Stripe webhook and frontend show queries use the local API, so collection access doesn't affect them.
 

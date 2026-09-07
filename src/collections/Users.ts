@@ -29,12 +29,9 @@ const PERMISSION_LABELS: Record<Permission, { en: string; hr: string }> = {
 // Visibility rule for the `partner` relationship field. Payload hands the
 // condition the form's data, not a user, so this reads the edited document:
 // the field belongs on an account that sells for a partner.
-export function showPartnerLinkField(data?: { permissions?: unknown; role?: unknown }): boolean {
+export function showPartnerLinkField(data?: { permissions?: unknown }): boolean {
   const perms = data?.permissions
-  if (Array.isArray(perms) && perms.includes('partner')) return true
-  // Legacy fallback: the `role` column survives one release (#393), and a row
-  // migrated by hand may still be role-only.
-  return data?.role === 'partner'
+  return Array.isArray(perms) && perms.includes('partner')
 }
 
 // Holder of the `users` permission — the only person who may see or change a
@@ -147,42 +144,6 @@ export const Users: CollectionConfig = {
     hidden: ({ user }) => !can(user as ReqUser, 'users'),
   },
   fields: [
-    // Legacy tier column (ADR-0006/0008/0022), superseded by `permissions`
-    // (ADR-0023). Nothing reads it for access any more; it is retained for one
-    // release so a container rollback to the pre-#393 image finds intact data,
-    // and dropped in #398. Hidden from the admin UI, optional and defaultless so
-    // no new account is asked to pick a tier; a new row lands on NULL, which
-    // every old predicate reads as denied if the image is ever rolled back.
-    //
-    // `required` and `defaultValue` map straight onto the column's NOT NULL and
-    // DEFAULT, so dropping them here IS a schema change: the matching
-    // db/schema/migrate-permissions-3-role-optional.sql keeps the drift gate
-    // green. `admin.hidden` still renders a hidden input whose form-state value
-    // round-trips (null here), so the field never needs a value on save.
-    {
-      name: 'role',
-      type: 'select',
-      admin: { hidden: true },
-      options: [
-        { label: 'Superadmin', value: 'superadmin' },
-        { label: 'Admin', value: 'admin' },
-        { label: 'Tehnika', value: 'tehnika' },
-        // Partner sales channel (ADR-0008). Value only here; scoped access +
-        // partner dashboard land in #143.
-        { label: 'Partner', value: 'partner' },
-        // Shared read-only society-membership login (ADR-0022). Sees only the
-        // season ticket dashboard; in no access predicate anywhere else.
-        { label: 'Member (shared, read-only)', value: 'member' },
-      ],
-      access: {
-        // Field-level lock: only a `users` holder reads or writes the legacy
-        // role. `admin.hidden` keeps it off the form; this keeps it out of the
-        // REST/local API payload for everyone else too.
-        read: ({ req }) => usersHolder(req.user as ReqUser),
-        update: ({ req }) => usersHolder(req.user as ReqUser),
-        create: ({ req }) => usersHolder(req.user as ReqUser),
-      },
-    },
     // The permission set (ADR-0023) — the source of every access decision in
     // the admin since #395. Vocabulary comes from lib/access/permissions.ts; do
     // not re-type the list here or anywhere else.
@@ -200,7 +161,7 @@ export const Users: CollectionConfig = {
         },
       },
       access: {
-        // Field-level lock, same shape as `role` above: only a `users` holder
+        // Field-level lock: only a `users` holder
         // reads or writes a permission set — their own record included, so a
         // secretary cannot grant herself anything (Users.access.update allows
         // self-edit). `can(user, 'users')` and nothing else: no role alias
@@ -245,8 +206,7 @@ export const Users: CollectionConfig = {
       relationTo: 'partners',
       admin: {
         description: 'Partner this login sells for (accounts holding `partner` only)',
-        // Shown for an account that holds `partner`, or one that still carries
-        // only the legacy role while the column is retained (#393). Exported so
+        // Shown for an account that holds the `partner` permission. Exported so
         // the rule is unit-tested rather than asserted through the admin UI.
         condition: showPartnerLinkField,
       },
