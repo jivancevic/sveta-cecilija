@@ -343,6 +343,7 @@ describe('Users access', () => {
           hasMany?: boolean
           defaultValue?: unknown
           options?: { value: string }[]
+          admin?: { hidden?: unknown }
           access?: { read?: unknown; update?: unknown; create?: unknown }
         }
       | undefined
@@ -416,6 +417,16 @@ describe('Users access', () => {
 
   it('the legacy role select still offers partner while the column is retained', () => {
     expect(usersFieldOf('role')?.options?.map((o) => o.value)).toContain('partner')
+  })
+
+  // #397: the column survives one release so a container rollback finds intact
+  // data, but the field must not be part of the UI or of validation any more.
+  it('the legacy role field is hidden in the admin, optional, and has no default', () => {
+    const role = usersFieldOf('role')
+    expect(role).toBeDefined()
+    expect(role?.admin?.hidden).toBe(true)
+    expect(role?.required).toBeFalsy()
+    expect(role?.defaultValue).toBeUndefined()
   })
 
   it('the partner link field shows for a `partner` holder and for a legacy partner row', () => {
