@@ -4,6 +4,7 @@ import { getDataIntegrity } from './data-integrity'
 import { getIntegrationHealth } from './integration-health'
 import { summarizeStripeBalance, createStripeBalanceCache } from './stripe-balance'
 import { gatherDevDiagnostics } from './gather'
+import { publicPerformanceSql } from '../show-performance'
 
 describe('resolveEnvInfo', () => {
   it('classifies staging before production (NEXT_PUBLIC_ENV wins)', () => {
@@ -67,6 +68,8 @@ describe('getDataIntegrity', () => {
     const anomalySql = query.mock.calls[0][0]
     expect(anomalySql).toMatch(/orders_without_tickets/)
     expect(anomalySql).toMatch(/past_active_shows/)
+    // #406: a past non-public performance is a calendar record, not an anomaly.
+    expect(anomalySql).toContain(publicPerformanceSql())
     expect(anomalySql).toMatch(/refund_status = 'refunded'/)
     expect(res.anomalies).toEqual({
       ordersWithoutTickets: 2,
