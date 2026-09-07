@@ -97,6 +97,16 @@ CREATE TYPE public.enum_promo_codes_discount_type AS ENUM (
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 DO $$ BEGIN
+CREATE TYPE public.enum_shows_kind AS ENUM (
+    'redovna',
+    'dmc',
+    'gulliver',
+    'koncert',
+    'ostalo'
+);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
 CREATE TYPE public.enum_shows_status AS ENUM (
     'active',
     'cancelled'
@@ -446,7 +456,11 @@ CREATE TABLE IF NOT EXISTS public.shows (
     id integer NOT NULL,
     date timestamp(3) with time zone NOT NULL,
     "time" character varying NOT NULL,
-    venue public.enum_shows_venue DEFAULT 'ljetno-kino'::public.enum_shows_venue NOT NULL,
+    kind public.enum_shows_kind DEFAULT 'redovna'::public.enum_shows_kind NOT NULL,
+    is_public boolean DEFAULT true NOT NULL,
+    venue public.enum_shows_venue,
+    location character varying,
+    client character varying,
     online_sold numeric DEFAULT 0,
     in_person_sold numeric DEFAULT 0,
     legacy_reserved numeric DEFAULT 0,
@@ -457,6 +471,9 @@ CREATE TABLE IF NOT EXISTS public.shows (
     date_changed_at timestamp(3) with time zone,
     date_changed_by_id integer,
     original_date timestamp(3) with time zone,
+    threshold_crni numeric DEFAULT 8 NOT NULL,
+    threshold_bili numeric DEFAULT 8 NOT NULL,
+    voditelj_note character varying,
     updated_at timestamp(3) with time zone DEFAULT now() NOT NULL,
     created_at timestamp(3) with time zone DEFAULT now() NOT NULL
 );
