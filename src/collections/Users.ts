@@ -151,9 +151,14 @@ export const Users: CollectionConfig = {
     // (ADR-0023). Nothing reads it for access any more; it is retained for one
     // release so a container rollback to the pre-#393 image finds intact data,
     // and dropped in #398. Hidden from the admin UI, optional and defaultless so
-    // no new account is asked to pick a tier. The DB column keeps its NOT NULL
-    // and its `admin` DEFAULT — Postgres fills it on insert, which is why
-    // dropping `required`/`defaultValue` here is not a schema change.
+    // no new account is asked to pick a tier; a new row lands on NULL, which
+    // every old predicate reads as denied if the image is ever rolled back.
+    //
+    // `required` and `defaultValue` map straight onto the column's NOT NULL and
+    // DEFAULT, so dropping them here IS a schema change: the matching
+    // db/schema/migrate-permissions-3-role-optional.sql keeps the drift gate
+    // green. `admin.hidden` still renders a hidden input whose form-state value
+    // round-trips (null here), so the field never needs a value on save.
     {
       name: 'role',
       type: 'select',
