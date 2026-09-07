@@ -13,6 +13,7 @@ import {
   showsReadAccess,
   showsUpdateAccess,
 } from './shows-access'
+import type { PermissionUser } from './permissions'
 import { PUBLIC_PERFORMANCE_WHERE } from '@/lib/show-performance'
 
 // The four accounts the phase-2 Shows rules distinguish, plus the controls.
@@ -29,12 +30,18 @@ const memberAccount = { id: '7', permissions: ['season_stats'], shared: true }
 const noPermissions = { id: '8' }
 const anon = null
 
-const strangers = [
+// Every account that holds none of the three performance permissions.
+const strangers: ReadonlyArray<readonly [string, PermissionUser]> = [
   ['partner', partner],
   ['member', memberAccount],
-  ['no permission set', noPermissions],
+  ['no permission set', noPermissions as PermissionUser],
   ['anonymous', anon],
-] as const
+]
+
+const doorAndStrangers: ReadonlyArray<readonly [string, PermissionUser]> = [
+  ['door', doorAccount],
+  ...strangers,
+]
 
 const publicRow = { id: 1, isPublic: true, kind: 'redovna', venue: 'ljetno-kino' }
 const nonPublicRow = { id: 2, isPublic: false, kind: 'gulliver', location: 'Ljetno kino' }
@@ -68,7 +75,7 @@ describe('Shows create access', () => {
     expect(showsCreateAccess(voditelj)).toEqual(NON_PUBLIC_PERFORMANCE_WHERE)
   })
 
-  it.each([['door', doorAccount], ...strangers])('%s creates nothing', (_label, user) => {
+  it.each(doorAndStrangers)('%s creates nothing', (_label, user) => {
     expect(showsCreateAccess(user)).toBe(false)
   })
 })
@@ -86,7 +93,7 @@ describe('Shows update access', () => {
     expect(showsUpdateAccess(voditelj)).toBe(true)
   })
 
-  it.each([['door', doorAccount], ...strangers])('%s updates nothing', (_label, user) => {
+  it.each(doorAndStrangers)('%s updates nothing', (_label, user) => {
     expect(showsUpdateAccess(user)).toBe(false)
   })
 })
@@ -100,7 +107,7 @@ describe('Shows delete access', () => {
     expect(showsDeleteAccess(voditelj)).toEqual(NON_PUBLIC_PERFORMANCE_WHERE)
   })
 
-  it.each([['door', doorAccount], ...strangers])('%s deletes nothing', (_label, user) => {
+  it.each(doorAndStrangers)('%s deletes nothing', (_label, user) => {
     expect(showsDeleteAccess(user)).toBe(false)
   })
 })
