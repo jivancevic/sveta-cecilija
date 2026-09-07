@@ -98,16 +98,16 @@ export async function AdminDashboardView() {
   // (un-windowed) is partitioned into upcoming vs past; the hero leads with the
   // next show + fill bar + remaining seats, the season band persists on top.
   //
-  // Superadmin-only dev strip (#235/#244, ADR-0016): gatherDevDiagnostics is the
-  // gating chokepoint — it returns null (and runs no queries) for admin/tehnika/
-  // partner, so the work only happens for a superadmin, and each probe inside is
-  // fail-soft so it can never break the dashboard. Fetched in parallel with the
+  // Dev-only dev strip (#235/#244, ADR-0016): gatherDevDiagnostics is the
+  // gating chokepoint — it returns null (and runs no queries) for anyone
+  // without the `dev` permission, so the work only happens for a `dev` holder,
+  // and each probe inside is fail-soft so it can never break the dashboard. Fetched in parallel with the
   // stats input and the season money facts.
   const pool = (payload.db as unknown as { pool: { query: PoolQuery } }).pool
   const poolQuery: PoolQuery = (sql, params) => pool.query(sql, params)
   const [input, diagnostics, money, channelTickets, promoCodeSales, compsByMember] = await Promise.all([
     getStatsInput(),
-    gatherDevDiagnostics(user as { role?: string } | null, {
+    gatherDevDiagnostics(user as { permissions?: unknown } | null, {
       query: poolQuery,
       stripeBalance: getStripeBalanceSummary,
     }),
