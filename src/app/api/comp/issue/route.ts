@@ -7,6 +7,7 @@ import {
   type CompIssueShow,
 } from '@/lib/comp/create-comp-issue'
 import { VENUE_CAPACITY, type Venue } from '@/lib/venues'
+import { isPublicPerformance } from '@/lib/show-performance'
 import { sendOrderTicketEmail, type OrderEmailPayload } from '@/lib/email/send-order-ticket-email'
 import { getActiveTicketCountForShow, type PoolQuery } from '@/lib/tickets/sold-seats'
 import { withShowSellLock, type SellLockPool } from '@/lib/tickets/sell-lock'
@@ -75,6 +76,10 @@ export async function POST(req: NextRequest) {
             id: Number(doc.id),
             date: doc.date as string,
             status: doc.status as 'active' | 'cancelled',
+            // ADR-0024: the ONE "is public" spelling lives in show-performance.
+            isPublic: isPublicPerformance(doc as Record<string, unknown>),
+            // Undefined for a non-public performance (it has no venue), which is
+            // harmless: the pure flow rejects it before any seat maths runs.
             capacity: VENUE_CAPACITY[venue],
             inPersonSold: (doc.inPersonSold as number) ?? 0,
             legacyReserved: (doc.legacyReserved as number) ?? 0,

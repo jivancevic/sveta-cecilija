@@ -8,10 +8,12 @@
 
 import { issueTickets, type IssuedOrder, type TicketType } from '../tickets/ticket-issuance'
 import { assertCanSell } from '../tickets/seat-availability'
+import { isPublicPerformance } from '../show-performance'
 
 export type PartnerSaleErrorCode =
   | 'INVALID_QUANTITY'
   | 'SHOW_NOT_FOUND'
+  | 'SHOW_NOT_PUBLIC'
   | 'SHOW_INACTIVE'
   | 'SHOW_PAST'
   | 'OVERSELL'
@@ -31,6 +33,11 @@ export interface PartnerSaleShow {
   /** YYYY-MM-DD (or ISO; only the date part is compared). */
   date: string
   status: 'active' | 'cancelled'
+  /**
+   * Public performance flag (ADR-0024). Omitted on rows that predate the expand
+   * (and on older fixtures), which are public by definition.
+   */
+  isPublic?: boolean
   /** VENUE_CAPACITY[venue], resolved by the caller. */
   capacity: number
   inPersonSold: number
@@ -101,6 +108,14 @@ export async function createPartnerSale(
   const show = await deps.loadShow(showId)
   if (!show) {
     throw new PartnerSaleError('SHOW_NOT_FOUND', 'Show not found')
+  }
+  // Only public performances are sellable (ADR-0024, #407). The form offers
+  // public ones only; this catches a stale client or a hand-rolled POST.
+  if (!isPublicPerformance(show as unknown as Record<string, unknown>)) {
+    throw new PartnerSaleError(
+      'SHOW_NOT_PUBLIC',
+      'This performance is not a public show and cannot be sold',
+    )
   }
   if (show.status !== 'active') {
     throw new PartnerSaleError('SHOW_INACTIVE', 'This show is cancelled and cannot be sold')

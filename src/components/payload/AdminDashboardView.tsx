@@ -33,7 +33,7 @@ import type { CompMember } from './CompIssueForm'
 import { PartnerRecentSales } from './PartnerRecentSales'
 import { getPartnerRecentSalesPage } from '@/lib/partner/recent-sales-page'
 import { PartnerSalesPanel } from './PartnerSalesPanel'
-import { getPartnerSeasonStats } from '@/lib/partner/partner-data'
+import { getPartnerSeasonStats, getStatistikaShows } from '@/lib/partner/partner-data'
 import { buildStatistikaBars } from '@/lib/partner/partner-stats'
 import { getPartnerMonthToDate } from '@/lib/partner/month-to-date'
 import { monthKeyInZagreb } from '@/lib/partner/partner-reconciliation'
@@ -551,22 +551,16 @@ async function PartnerDashboard({
   const now = new Date()
   const { year, month } = monthKeyInZagreb(now.toISOString())
 
-  const [recentPage, seasonStats, monthToDate, allShowsRes] = await Promise.all([
+  const [recentPage, seasonStats, monthToDate, allShows] = await Promise.all([
     getPartnerRecentSalesPage(poolQuery, numericPartnerId, { page: 1, pageSize: 3 }),
     getPartnerSeasonStats(poolQuery, numericPartnerId),
     getPartnerMonthToDate(poolQuery, { partnerId: numericPartnerId, commissionPercent, year, month }),
-    // ALL active season performances (Statistika shows every izvedba, not only
-    // the ones this partner sold).
-    poolQuery(`SELECT id, date FROM shows WHERE status = 'active' ORDER BY date`, []),
+    // Every active PUBLIC season performance (Statistika shows every izvedba the
+    // partner could sell, not only the ones they did — and never a non-public
+    // one, which they could never sell; #407).
+    getStatistikaShows(poolQuery),
   ])
 
-  const allShows = allShowsRes.rows.map((r) => {
-    const d = (r as { id: unknown; date: unknown }).date
-    return {
-      showId: String((r as { id: unknown }).id),
-      showDate: d instanceof Date ? d.toISOString().slice(0, 10) : String(d ?? '').slice(0, 10),
-    }
-  })
   const statBars = buildStatistikaBars(allShows, seasonStats.perShow)
 
   const monthLabel = now.toLocaleDateString(lang === 'hr' ? 'hr-HR' : 'en-GB', {
