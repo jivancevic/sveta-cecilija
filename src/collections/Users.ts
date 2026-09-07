@@ -1,14 +1,15 @@
 import { APIError, type CollectionConfig } from 'payload'
-import { isSuperadmin, isAdminTier } from '@/lib/access/roles'
 import { PERMISSIONS, can, type Permission } from '@/lib/access/permissions'
 import { assertUserEmailPolicy, UserEmailRequiredError } from '@/lib/access/user-email-policy'
 import { userUpdateAccess } from '@/lib/access/user-self-update'
 import { ADMIN_LANG_COOKIE, seedAdminLangCookie } from '@/lib/admin-i18n'
 
-type ReqUser = { id?: string | number; role?: string; permissions?: unknown } | null | undefined
+type ReqUser = { id?: string | number; permissions?: unknown; shared?: unknown } | null | undefined
 
-const superadminOnly = ({ req }: { req: { user: unknown } }) =>
-  isSuperadmin(req.user as ReqUser)
+// Account administration is the `users` permission and nothing else — the
+// account that holds it is what "superadmin" used to name (ADR-0023).
+const usersOnly = ({ req }: { req: { user: unknown } }) =>
+  can(req.user as ReqUser, 'users')
 
 // Admin labels for the permission vocabulary (ADR-0023). The values are the
 // single source of truth in lib/access/permissions.ts; this map only decides
@@ -29,13 +30,13 @@ const PERMISSION_LABELS: Record<Permission, { en: string; hr: string }> = {
 // permission set or the shared flag, their own record included (ADR-0023).
 const usersHolder = (user: ReqUser) => can(user as { permissions?: unknown } | null, 'users')
 
-// Superadmin sees everyone; any other authed user sees only their own record.
-// Combined with admin.hidden below, non-superadmins have no entry point to the
-// Users UI at all — the self-row access exists only to support the profile
+// A `users` holder sees everyone; any other authed user sees only their own
+// record. Combined with admin.hidden below, nobody else has an entry point to
+// the Users UI at all — the self-row access exists only to support the profile
 // edit page reached from a top-bar account link.
-const selfOrSuperadmin = ({ req }: { req: { user: unknown } }) => {
+const selfOrUsersHolder = ({ req }: { req: { user: unknown } }) => {
   const user = req.user as ReqUser
-  if (isSuperadmin(user)) return true
+  if (can(user, 'users')) return true
   if (!user?.id) return false
   return { id: { equals: user.id } }
 }
@@ -59,9 +60,9 @@ export const Users: CollectionConfig = {
   hooks: {
     // Seed the admin chrome language on login (issue #234, ADR-0015). A fresh
     // staff login has no `payload-lng` cookie yet, so the chrome would otherwise
-    // fall back to Accept-Language / English. We seed it to the role-based
-    // default (Croatian for admin/tehnika/partner, English for superadmin) the
-    // first time, and leave any existing valid choice alone — the native
+    // fall back to Accept-Language / English. We seed it to the permission-based
+    // default (English for a `dev` holder or a door-only account, Croatian
+    // otherwise) the first time, and leave any existing valid choice alone — the native
     // account-settings selector writes the same cookie, so a user's saved
     // choice always wins. cookies().set works inside the admin login server
     // action; in a non-request scope (e.g. a seed script calling payload.login)
@@ -73,7 +74,7 @@ export const Users: CollectionConfig = {
           const store = await cookies()
           const next = seedAdminLangCookie({
             existing: store.get(ADMIN_LANG_COOKIE)?.value,
-            role: (user as { role?: string })?.role,
+            user: user as { permissions?: unknown } | null,
           })
           if (next) {
             store.set({
@@ -85,22 +86,24 @@ export const Users: CollectionConfig = {
           }
         } catch {
           // No writable request scope — nothing to seed. The dashboard's own
-          // resolveAdminLang() still applies the role default as a safety net.
+          // resolveAdminLang() still applies the same default as a safety net.
         }
         return user
       },
     ],
-    // Conditional email requirement: superadmin/admin (real people) must have an
-    // email; tehnika/partner may be username-only. Merge incoming data over the
+    // Conditional email requirement: an account held by a named person
+    // (`users`, `tickets` or `moreska`) must have an email; door, partner and
+    // season_stats accounts may be username-only. Merge incoming data over the
     // existing doc so an update that touches only one field is judged on the
     // resulting record — and an explicit `email: null` is honoured, not masked
     // by the original value.
     beforeValidate: [
       ({ data, originalDoc }) => {
-        const role = data && 'role' in data ? data.role : originalDoc?.role
+        const permissions =
+          data && 'permissions' in data ? data.permissions : originalDoc?.permissions
         const email = data && 'email' in data ? data.email : originalDoc?.email
         try {
-          assertUserEmailPolicy({ role, email })
+          assertUserEmailPolicy({ permissions, email })
         } catch (e) {
           // Surface as a clean 400 validation error in /admin, not a generic 500.
           if (e instanceof UserEmailRequiredError) throw new APIError(e.message, 400)
@@ -111,25 +114,26 @@ export const Users: CollectionConfig = {
     ],
   },
   access: {
-    read: selfOrSuperadmin,
-    // Update is NOT the mirror of read: the shared `member` account is denied
-    // self-edit so no single member can rotate the society's shared password
-    // (ADR-0022). Rule lives in user-self-update.ts, where it is unit-tested.
+    read: selfOrUsersHolder,
+    // Update is NOT the mirror of read: an account flagged `shared` is denied
+    // self-edit so no single holder can rotate a shared password (ADR-0022).
+    // Rule lives in user-self-update.ts, where it is unit-tested.
     update: ({ req }: { req: { user: unknown } }) => userUpdateAccess(req.user as ReqUser),
-    create: superadminOnly,
-    delete: superadminOnly,
+    create: usersOnly,
+    delete: usersOnly,
   },
   admin: {
     useAsTitle: 'email',
-    // Hide Users from the sidebar for everyone but superadmin (ADR-0006: only
-    // the developer manages users; secretaries/tehnika/partner get no Users
-    // entry). The top-bar Account link routes to the dedicated `/admin/account`
-    // view — NOT this collection's edit page — so hiding the collection does
-    // not 404 the profile page (verified on Payload v3.84; an earlier comment
-    // here predated that routing and left Users leaking into every sidebar,
-    // including the partner's). Direct `/admin/collections/users` still 404s
-    // for non-superadmins, which is the intended lockdown.
-    hidden: ({ user }) => !isSuperadmin(user as ReqUser),
+    // Hide Users from the sidebar for everyone but a `users` holder (ADR-0006:
+    // only the developer manages accounts; the secretary, the door and a
+    // partner get no Users entry). The top-bar Account link routes to the
+    // dedicated `/admin/account` view — NOT this collection's edit page — so
+    // hiding the collection does not 404 the profile page (verified on Payload
+    // v3.84; an earlier comment here predated that routing and left Users
+    // leaking into every sidebar, including the partner's). Direct
+    // `/admin/collections/users` still 404s for everyone else, which is the
+    // intended lockdown.
+    hidden: ({ user }) => !can(user as ReqUser, 'users'),
   },
   fields: [
     {
@@ -149,18 +153,18 @@ export const Users: CollectionConfig = {
         { label: 'Member (shared, read-only)', value: 'member' },
       ],
       access: {
-        // Field-level lock: only superadmin can read or write the role field.
-        // Without this, a secretary could promote herself to superadmin by
-        // editing her own profile (Users.access.update allows self-edit).
-        read: ({ req }) => isSuperadmin(req.user as ReqUser),
-        update: ({ req }) => isSuperadmin(req.user as ReqUser),
-        create: ({ req }) => isSuperadmin(req.user as ReqUser),
+        // Field-level lock: only a `users` holder reads or writes the legacy
+        // role. Without this, a secretary could promote herself by editing her
+        // own profile (Users.access.update allows self-edit). The column is
+        // kept for one release so a rollback finds intact data (#393); nothing
+        // reads it for access any more.
+        read: ({ req }) => usersHolder(req.user as ReqUser),
+        update: ({ req }) => usersHolder(req.user as ReqUser),
+        create: ({ req }) => usersHolder(req.user as ReqUser),
       },
     },
-    // The permission set (ADR-0023). Expand step of #393: the field exists and
-    // is filled for every user by the bootstrap migration, but nothing reads it
-    // yet — every access decision still runs off `role` until #395–#397 move
-    // the call sites over. Vocabulary comes from lib/access/permissions.ts; do
+    // The permission set (ADR-0023) — the source of every access decision in
+    // the admin since #395. Vocabulary comes from lib/access/permissions.ts; do
     // not re-type the list here or anywhere else.
     {
       name: 'permissions',
@@ -181,7 +185,7 @@ export const Users: CollectionConfig = {
         // secretary cannot grant herself anything (Users.access.update allows
         // self-edit). Deliberately NOT `isSuperadmin(...) || can(...)`: an
         // alias would let "superadmin" survive as a concept past #397. The
-        // bootstrap migration gives the superadmin row `users` before anyone
+        // bootstrap migration gives the developer's row `users` before anyone
         // logs in, so there is no chicken-and-egg.
         read: ({ req }) => usersHolder(req.user as ReqUser),
         update: ({ req }) => usersHolder(req.user as ReqUser),
@@ -189,9 +193,9 @@ export const Users: CollectionConfig = {
       },
     },
     // Marks a login shared by several people (the door `tehnika` account, the
-    // society-wide `member` account). The only place that knowledge lives from
-    // #395 on: shared accounts may not edit themselves, so one volunteer cannot
-    // lock the others out by rotating the password.
+    // society-wide `member` account). The only place that knowledge lives:
+    // userUpdateAccess reads it, so a shared account may not edit itself and one
+    // volunteer cannot lock the others out by rotating the password.
     {
       name: 'shared',
       type: 'checkbox',
@@ -209,11 +213,12 @@ export const Users: CollectionConfig = {
         create: ({ req }) => usersHolder(req.user as ReqUser),
       },
     },
-    // The partner a `partner`-role login is bound to (ADR-0008). Read is left
-    // open so the value rides along on `req.user` for ownership scoping; write
-    // is locked to admin-tier. A partner can edit its own profile (selfOrSuper-
-    // admin update), so without this lock it could repoint itself at another
-    // partner and read that partner's data.
+    // The partner a `partner` login is bound to (ADR-0008). Read is left open
+    // so the value rides along on `req.user` for ownership scoping; write is
+    // locked to a `users` holder (#393: not the backoffice — repointing a login
+    // is account administration). A partner can edit its own profile, so
+    // without this lock it could repoint itself at another partner and read
+    // that partner's data.
     {
       name: 'partner',
       type: 'relationship',
@@ -223,8 +228,8 @@ export const Users: CollectionConfig = {
         condition: (data) => data?.role === 'partner',
       },
       access: {
-        update: ({ req }) => isAdminTier(req.user as ReqUser),
-        create: ({ req }) => isAdminTier(req.user as ReqUser),
+        update: ({ req }) => usersHolder(req.user as ReqUser),
+        create: ({ req }) => usersHolder(req.user as ReqUser),
       },
     },
     // Log out action on the account view (/admin/account). A `ui` field stores

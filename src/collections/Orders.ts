@@ -1,11 +1,11 @@
 import type { CollectionBeforeDeleteHook, CollectionConfig } from 'payload'
-import { isAdminTier } from '@/lib/access/roles'
+import { can } from '@/lib/access/permissions'
 import { partnerOwnOrdersWhere } from '@/lib/access/partner'
 
-type ReqUser = { role?: string; partner?: unknown } | null | undefined
+type ReqUser = { permissions?: unknown; partner?: unknown } | null | undefined
 
-const adminOnly = ({ req }: { req: { user: unknown } }) =>
-  isAdminTier(req.user as ReqUser)
+const backoffice = ({ req }: { req: { user: unknown } }) =>
+  can(req.user as ReqUser, 'tickets')
 
 // Cascade a per-person ticket delete when its order is deleted.
 //
@@ -35,17 +35,17 @@ export const cascadeOrderTicketsDelete: CollectionBeforeDeleteHook = async ({ re
 export const Orders: CollectionConfig = {
   slug: 'orders',
   access: {
-    // Admin-tier reads every order; a partner reads only orders it sold
-    // (orders.partner = self). Tehnika has no collection read (door lookups go
-    // through the audited /api/orders/lookup route, not this access).
+    // The backoffice (`tickets`) reads every order; a partner reads only orders
+    // it sold (orders.partner = self). A door account has no collection read —
+    // door lookups go through the audited /api/orders/lookup route, not this.
     read: ({ req }) => {
       const user = req.user as ReqUser
-      if (isAdminTier(user)) return true
+      if (can(user, 'tickets')) return true
       return partnerOwnOrdersWhere(user)
     },
-    create: adminOnly,
-    update: adminOnly,
-    delete: adminOnly,
+    create: backoffice,
+    update: backoffice,
+    delete: backoffice,
   },
   hooks: {
     // Delete an order's tickets before the order itself (see hook comment).
@@ -55,7 +55,7 @@ export const Orders: CollectionConfig = {
     useAsTitle: 'buyerName',
     defaultColumns: ['buyerName', 'email', 'adultCount', 'childCount', 'total', 'refundStatus', 'show'],
     listSearchableFields: ['buyerName', 'email'],
-    hidden: ({ user }) => !isAdminTier(user as { role?: string } | null),
+    hidden: ({ user }) => !can(user as ReqUser, 'tickets'),
     components: {
       edit: {
         editMenuItems: [

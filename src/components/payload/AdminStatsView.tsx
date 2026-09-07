@@ -40,6 +40,6 @@ export async function AdminStatsView(props: AdminStatsViewProps = {}) {
   const { header, orders } = computeShowStats(input)
   const adminView = isAdminTier(user as { role?: string })
   const cookieLang = (await cookies()).get(ADMIN_LANG_COOKIE)?.value
-  const lang = resolveAdminLang({ cookieLang, role: (user as { role?: string }).role })
+  const lang = resolveAdminLang({ cookieLang, user: user as { permissions?: unknown } })
   return <AdminShowStatsBody header={header} orders={orders} adminView={adminView} lang={lang} />
 }

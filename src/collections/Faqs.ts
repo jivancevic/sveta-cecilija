@@ -1,12 +1,15 @@
 import type { CollectionConfig, Where } from 'payload'
-import { isAdminTier } from '@/lib/access/roles'
+import { can } from '@/lib/access/permissions'
 
-const adminOnly = ({ req }: { req: { user: unknown } }) =>
-  isAdminTier(req.user as { role?: string } | null)
+type PermUser = { permissions?: unknown } | null | undefined
 
-// Public reads: only published FAQs. Admins see everything (drafts included).
+const backoffice = ({ req }: { req: { user: unknown } }) =>
+  can(req.user as PermUser, 'tickets')
+
+// Public reads: only published FAQs. The backoffice sees everything (drafts too);
+// a door account has no backoffice permission, so it reads as a visitor does.
 const publicRead = ({ req }: { req: { user: unknown } }): true | Where => {
-  if (isAdminTier(req.user as { role?: string } | null)) return true
+  if (can(req.user as PermUser, 'tickets')) return true
   return { status: { equals: 'published' } } as Where
 }
 
@@ -14,16 +17,16 @@ export const Faqs: CollectionConfig = {
   slug: 'faqs',
   access: {
     read: publicRead,
-    create: adminOnly,
-    update: adminOnly,
-    delete: adminOnly,
+    create: backoffice,
+    update: backoffice,
+    delete: backoffice,
   },
   admin: {
     useAsTitle: 'question',
     defaultColumns: ['question', 'category', 'locale', 'order', 'status'],
     description:
       'Frequently asked questions, shown on /faq grouped by category. Pick a locale; FAQs only appear on the public /faq of that locale. Answers must be verified by HGD before publishing.',
-    hidden: ({ user }) => !isAdminTier(user as { role?: string } | null),
+    hidden: ({ user }) => !can(user as PermUser, 'tickets'),
   },
   fields: [
     { name: 'question', type: 'text', required: true },

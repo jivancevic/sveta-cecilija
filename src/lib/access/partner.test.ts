@@ -19,6 +19,9 @@ const superadmin = {
   id: 4,
   permissions: ['users', 'tickets', 'refunds', 'door', 'partner', 'season_stats', 'moreska', 'moreskant', 'dev'],
 }
+// A row that still carries only the legacy role, with no permission set: the
+// point of the migration is that it owns nothing.
+const legacyRoleOnly = { id: 5, role: 'partner', partner: 5 }
 const anon = null
 
 describe('partnerIdOf', () => {
@@ -52,8 +55,10 @@ describe('partner ownership Where helpers', () => {
     expect(partnerOwnTicketsWhere(partnerNoLink)).toBe(false)
   })
 
+  // `legacyRoleOnly` carries role='partner' and a link but no permission set:
+  // no role survives as an alias (#397 deletes the column).
   it('users without the partner permission get no scope (false) from every helper', () => {
-    for (const u of [admin, tehnika, member, anon]) {
+    for (const u of [admin, tehnika, member, legacyRoleOnly, anon]) {
       expect(partnerOwnOrdersWhere(u)).toBe(false)
       expect(partnerOwnRecordWhere(u)).toBe(false)
       expect(partnerOwnTicketsWhere(u)).toBe(false)

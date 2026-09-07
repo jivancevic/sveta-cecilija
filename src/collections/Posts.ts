@@ -1,12 +1,15 @@
 import type { CollectionConfig, Where } from 'payload'
-import { isAdminTier } from '@/lib/access/roles'
+import { can } from '@/lib/access/permissions'
 
-const adminOnly = ({ req }: { req: { user: unknown } }) =>
-  isAdminTier(req.user as { role?: string } | null)
+type PermUser = { permissions?: unknown } | null | undefined
 
-// Public reads: only published posts. Admins see everything (drafts + scheduled).
+const backoffice = ({ req }: { req: { user: unknown } }) =>
+  can(req.user as PermUser, 'tickets')
+
+// Public reads: only published posts. The backoffice sees everything (drafts +
+// scheduled); a door account reads as a visitor does.
 const publicRead = ({ req }: { req: { user: unknown } }): true | Where => {
-  if (isAdminTier(req.user as { role?: string } | null)) return true
+  if (can(req.user as PermUser, 'tickets')) return true
   return {
     and: [
       { status: { equals: 'published' } },
@@ -30,16 +33,16 @@ export const Posts: CollectionConfig = {
   slug: 'posts',
   access: {
     read: publicRead,
-    create: adminOnly,
-    update: adminOnly,
-    delete: adminOnly,
+    create: backoffice,
+    update: backoffice,
+    delete: backoffice,
   },
   admin: {
     useAsTitle: 'title',
     defaultColumns: ['title', 'locale', 'status', 'publishedAt'],
     description:
       'Blog posts. Author = HGD Sveta Cecilija. Pick a locale; posts only appear on the public /blog of that locale.',
-    hidden: ({ user }) => !isAdminTier(user as { role?: string } | null),
+    hidden: ({ user }) => !can(user as PermUser, 'tickets'),
   },
   fields: [
     { name: 'title', type: 'text', required: true },
