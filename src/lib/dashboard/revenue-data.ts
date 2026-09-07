@@ -3,6 +3,7 @@
 // all the arithmetic and are unit-tested without a DB.
 
 import type { PoolQuery } from '../tickets/sold-seats'
+import { publicPerformanceSql } from '../show-performance'
 import {
   revenueCollectedCents,
   partnerReceivableCents,
@@ -27,8 +28,12 @@ export async function getDashboardMoney(query: PoolQuery): Promise<DashboardMone
   const [orderRes, inPersonRes, partnerRes] = await Promise.all([
     // Online orders: total + refund status (the pure fn drops only 'refunded').
     query(`SELECT total, refund_status FROM orders`),
-    // In-person cash: a flat per-show headcount summed across the season.
-    query(`SELECT COALESCE(SUM(in_person_sold), 0)::bigint AS count FROM shows`),
+    // In-person cash: a flat per-show headcount summed across the season, over
+    // PUBLIC performances only (ADR-0024, #406) — a non-public performance has
+    // no venue, no capacity and no box office, so it can never contribute cash.
+    query(
+      `SELECT COALESCE(SUM(in_person_sold), 0)::bigint AS count FROM shows WHERE ${publicPerformanceSql()}`,
+    ),
     // Partner receivable: every partner-channel ticket with its partner's rate.
     query(
       `SELECT p.id AS partner_id,

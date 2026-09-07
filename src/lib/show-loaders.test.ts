@@ -129,6 +129,27 @@ describe('loadNextShow', () => {
     expect(next).toMatchObject({ id: '1', date: '2099-08-10', time: '21:00', venue: 'ljetno-kino', onlineSold: 7 })
   })
 
+  // The door dashboard's "tonight's show" (and therefore its admitted-progress
+  // ring, the scan scope and the manual code lookup) is whatever getNextShow
+  // returns. A 10:00 cruise-ship call on the SAME day as the evening Redovna is
+  // the case that would break it: it sorts first and it is still in the future.
+  it("picks the evening Redovna over the same-day 10:00 DMC call", async () => {
+    const dmcCall: Row = {
+      ...nonPublicPerformance,
+      id: 5,
+      date: FUTURE, // same calendar day as publicShow
+      time: '10:00',
+      kind: 'dmc',
+      client: 'Adriatic DMC',
+    }
+    const next = await loadNextShow({
+      find: fakeFind([dmcCall, publicShow]),
+      activeTicketCountForShow: async () => 0,
+      now: () => new Date('2099-08-10T06:00:00.000Z'),
+    })
+    expect(next).toMatchObject({ id: '1', time: '21:00', venue: 'ljetno-kino' })
+  })
+
   it('returns null when only non-public performances remain', async () => {
     const next = await loadNextShow({
       find: fakeFind([nonPublicPerformance]),

@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { buildMemberSeason, seasonYear, type SeasonTicketRow } from './season'
 import type { StatsShow } from '../stats'
+import { loadStatsInput } from '../stats-loaders'
 
 function show(over: Partial<StatsShow> & { id: string; date: string }): StatsShow {
   return {
@@ -159,6 +160,59 @@ describe('buildMemberSeason', () => {
 
     expect(result.channels.online).toBe(10)
     expect(result.types.adult).toBe(10)
+  })
+
+  // #406: the member dashboard is fed by getStatsInput + the tickets⋈orders
+  // join. A non-public performance (a cruise-ship call) is dropped by the
+  // loader's public predicate, and it has no orders so the join yields no row
+  // for it either — so it adds neither a list row nor a scrap of capacity.
+  it('shows no row for a non-public performance sitting in the table', async () => {
+    const rows = [
+      {
+        id: '1',
+        date: '2026-07-01T00:00:00.000Z',
+        time: '21:30',
+        venue: 'ljetno-kino',
+        status: 'active',
+        isPublic: true,
+        inPersonSold: 0,
+        legacyReserved: 0,
+      },
+      {
+        id: '2',
+        date: '2026-07-02T00:00:00.000Z',
+        time: '10:00',
+        venue: null,
+        status: 'active',
+        isPublic: false,
+        inPersonSold: 0,
+        legacyReserved: 0,
+      },
+    ]
+    // Honours the `where` it is handed, so a missing predicate shows up as an
+    // extra row rather than as a string mismatch.
+    const find = async (args: { where?: unknown }) => {
+      const want = (args.where as { isPublic?: { equals: boolean } } | undefined)?.isPublic?.equals
+      return { docs: want == null ? rows : rows.filter((r) => r.isPublic === want) }
+    }
+
+    const input = await loadStatsInput({
+      find,
+      soldByShow: async () => new Map([['1', 40]]),
+      scannedByShow: async () => new Map(),
+      totalRevenueCents: async () => 0,
+      today,
+    })
+    // Only orders produce ticket rows, and a non-public performance has none.
+    const season = buildMemberSeason({
+      today: input.today,
+      shows: input.shows,
+      ticketRows: [row({ showId: '1', adult: 40, online: 40 })],
+    })
+
+    expect(season.shows.map((s) => s.showId)).toEqual(['1'])
+    expect(season.capacity).toBe(320)
+    expect(season.issued).toBe(40)
   })
 
   it('returns a zeroed season when nothing is scheduled this year', () => {
