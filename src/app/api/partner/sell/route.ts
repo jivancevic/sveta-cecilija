@@ -66,6 +66,9 @@ export async function POST(req: NextRequest) {
             id: Number(doc.id),
             date: doc.date as string,
             status: doc.status as 'active' | 'cancelled',
+            // ADR-0024: non-public performances have no venue and no capacity;
+            // the pure flow rejects them before any seat maths runs.
+            isPublic: doc.isPublic !== false,
             capacity: VENUE_CAPACITY[venue],
             inPersonSold: (doc.inPersonSold as number) ?? 0,
             legacyReserved: (doc.legacyReserved as number) ?? 0,
