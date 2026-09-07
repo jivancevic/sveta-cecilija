@@ -98,3 +98,39 @@ describe('db/schema safety', () => {
     expect(findUnguardedMutations(payload)).toHaveLength(2)
   })
 })
+
+// The legacy `role` column (#397, ADR-0023). Payload's field is hidden,
+// optional and defaultless; db/schema must declare the matching shape or the
+// drift gate (scripts/schema-diff.mjs) fails, and a post-deploy account would
+// silently inherit `admin` from a leftover DEFAULT. #398 drops the column.
+describe('legacy users.role column', () => {
+  const base = readFileSync(path.join(SCHEMA_DIR, '00-base.sql'), 'utf-8')
+  const usersTable =
+    stripComments(base).match(/CREATE TABLE IF NOT EXISTS public\.users \(([\s\S]*?)\n\);/)?.[1] ?? ''
+
+  it('is still declared in the base schema (rollback path, dropped in #398)', () => {
+    expect(usersTable).toMatch(/role\s+public\.enum_users_role/)
+  })
+
+  it('carries neither NOT NULL nor a DEFAULT in the base schema', () => {
+    const roleLine = usersTable.split('\n').find((l) => /^\s*role\s/.test(l)) ?? ''
+    expect(roleLine).not.toMatch(/NOT NULL/i)
+    expect(roleLine).not.toMatch(/DEFAULT/i)
+  })
+
+  it('drops both constraints on databases that already exist', () => {
+    const migration = readFileSync(
+      path.join(SCHEMA_DIR, 'migrate-permissions-3-role-optional.sql'),
+      'utf-8',
+    )
+    expect(migration).toMatch(/ALTER COLUMN role DROP DEFAULT/i)
+    expect(migration).toMatch(/ALTER COLUMN role DROP NOT NULL/i)
+  })
+
+  it('the bundle data migration still reads role as text, so a NULL role is safe', () => {
+    const data = readFileSync(path.join(SCHEMA_DIR, 'migrate-permissions-2-data.sql'), 'utf-8')
+    expect(data).toMatch(/role::text/)
+    // Applies before the constraint drop (bootstrap-db.mjs sorts by filename).
+    expect('migrate-permissions-2-data.sql' < 'migrate-permissions-3-role-optional.sql').toBe(true)
+  })
+})
