@@ -32,17 +32,8 @@ export function isMember(user: RoleUser): boolean {
   return !!user && (user as { role?: string }).role === 'member'
 }
 
-// The `partners` record a `partner`-role login is bound to. The link is the
-// `partner` relationship on the Users collection; Payload returns it on
-// `req.user` as a bare id (depth 0) or a populated doc. Returns undefined when
-// unset (a misconfigured partner login with no linked record) — callers MUST
-// treat that as "owns nothing", never as "owns everything".
-export function partnerIdOf(user: RoleUser): number | string | undefined {
-  const link = (user as { partner?: unknown } | null | undefined)?.partner
-  if (link == null) return undefined
-  if (typeof link === 'object') {
-    const id = (link as { id?: number | string }).id
-    return id == null ? undefined : id
-  }
-  return link as number | string
-}
+// `partnerIdOf` reads the Partners *link*, not the role, so it survives the
+// permission migration (ADR-0023) and now lives with the rest of the partner
+// scoping in ./partner. Re-exported here so the remaining role-shaped call
+// sites keep compiling until #397 deletes this module.
+export { partnerIdOf } from './partner'

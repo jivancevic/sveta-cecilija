@@ -7,11 +7,25 @@ import { Users } from './Users'
 import { Partners } from './Partners'
 import { PromoCodes } from './PromoCodes'
 
-const superadmin = { id: '1', role: 'superadmin' }
-const admin = { id: '2', role: 'admin' }
-const tehnika = { id: '3', role: 'tehnika' }
-const partner = { id: '4', role: 'partner', partner: 7 }
-const partnerNoLink = { id: '5', role: 'partner' }
+// Fixtures carry BOTH the legacy role and the migration bundle (#393): the
+// collections still branch on the role until #395, while the partner scoping
+// module already decides from the permission set (#396).
+const ALL = [
+  'users',
+  'tickets',
+  'refunds',
+  'door',
+  'partner',
+  'season_stats',
+  'moreska',
+  'moreskant',
+  'dev',
+]
+const superadmin = { id: '1', role: 'superadmin', permissions: ALL }
+const admin = { id: '2', role: 'admin', permissions: ['tickets', 'refunds', 'door'] }
+const tehnika = { id: '3', role: 'tehnika', permissions: ['door'] }
+const partner = { id: '4', role: 'partner', permissions: ['partner'], partner: 7 }
+const partnerNoLink = { id: '5', role: 'partner', permissions: ['partner'] }
 const anon = null
 
 function call(fn: unknown, user: unknown): boolean {
@@ -326,7 +340,7 @@ describe('Users access', () => {
       expect(call(access?.[op], noPerms)).toBe(false)
       expect(call(access?.[op], anon)).toBe(false)
       // The legacy role alone opens nothing: no alias survives into #397.
-      expect(call(access?.[op], superadmin)).toBe(false)
+      expect(call(access?.[op], { id: '99', role: 'superadmin' })).toBe(false)
     }
   })
 
