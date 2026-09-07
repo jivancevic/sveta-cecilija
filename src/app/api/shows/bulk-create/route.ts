@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { requireRole } from '@/lib/access/route-guard'
-import { isAdminTier } from '@/lib/access/roles'
+import { requirePermission } from '@/lib/access/route-guard'
 
 export async function POST(req: NextRequest) {
-  const gate = await requireRole(req, isAdminTier)
+  const gate = await requirePermission(req, 'tickets')
   if (gate.error) return gate.error
   const { payload } = gate
 

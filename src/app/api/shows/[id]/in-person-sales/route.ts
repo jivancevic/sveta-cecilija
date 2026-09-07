@@ -1,11 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { addInPersonSales, incrementInPersonSold } from '@/lib/in-person-sales'
-import { requireRole } from '@/lib/access/route-guard'
-import { isAdminTier } from '@/lib/access/roles'
+import { requirePermission } from '@/lib/access/route-guard'
 import type { PoolQuery } from '@/lib/tickets/sold-seats'
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const gate = await requireRole(req, isAdminTier)
+  const gate = await requirePermission(req, 'tickets')
   if (gate.error) return gate.error
   const { payload } = gate
 

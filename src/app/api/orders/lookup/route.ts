@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { type Where } from 'payload'
-import { isAuthed } from '@/lib/access/roles'
-import { requireRole } from '@/lib/access/route-guard'
+import { requirePermission } from '@/lib/access/route-guard'
 import { getNextShow } from '@/lib/shows'
 import {
   lookupOrder,
@@ -33,7 +32,7 @@ function whereForQuery(q: NormalizedQuery, showId: number | string): Where {
 }
 
 export async function POST(req: NextRequest) {
-  const gate = await requireRole(req, isAuthed)
+  const gate = await requirePermission(req, ['door', 'tickets'])
   if (gate.error) return gate.error
   const { payload, user } = gate
 

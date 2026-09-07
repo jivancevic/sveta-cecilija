@@ -4,7 +4,8 @@ import config from '@payload-config'
 import { renderTicketsPdf } from '@/lib/email/render-tickets-pdf'
 import { generateQrPng } from '@/lib/email/qr'
 import { verifyTicketLink } from '@/lib/ticket-link'
-import { isAuthed, isPartner, partnerIdOf } from '@/lib/access/roles'
+import { hasAny } from '@/lib/access/permissions'
+import { partnerIdOf } from '@/lib/access/partner'
 import type { Venue } from '@/lib/venues'
 
 export const runtime = 'nodejs'
@@ -24,7 +25,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   }
 
   // Auth: either a signed token (?t=...) tied to this order + buyer email,
-  // or an authenticated admin/tehnika cookie session.
+  // or a cookie session holding `door`/`tickets` (staff) or `partner`.
   const url = new URL(req.url)
   const linkToken = url.searchParams.get('t')
   const buyerEmail = (order.email as string) ?? ''
@@ -36,14 +37,16 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
   }
   if (!authorized) {
     const { user } = await payload.auth({ headers: req.headers })
-    // Internal staff (admin/tehnika) can download any order's tickets.
-    if (isAuthed(user as { role?: string } | null)) authorized = true
+    // Internal staff (the door account or a ticket admin) can download any
+    // order's tickets.
+    const u = user as { permissions?: unknown; partner?: unknown } | null
+    if (hasAny(u, ['door', 'tickets'])) authorized = true
     // A partner can download the PDF for an order it sold (its own slips to
     // reprint), but no other partner's. order.partner is populated at depth 1.
-    if (!authorized && isPartner(user as { role?: string } | null)) {
+    if (!authorized && hasAny(u, ['partner'])) {
       const op = order.partner as { id?: number | string } | number | string | null | undefined
       const orderPartnerId = op != null && typeof op === 'object' ? op.id : op
-      const self = partnerIdOf(user as { role?: string; partner?: unknown } | null)
+      const self = partnerIdOf(u)
       if (orderPartnerId != null && self != null && String(orderPartnerId) === String(self)) {
         authorized = true
       }

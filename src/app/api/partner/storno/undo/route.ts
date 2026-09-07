@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { isAdminTier, isPartner, partnerIdOf } from '@/lib/access/roles'
-import { requireRole } from '@/lib/access/route-guard'
+import { actsAsPartner, partnerIdOf } from '@/lib/access/partner'
+import { requirePermission } from '@/lib/access/route-guard'
 import {
   performRestore,
   RestoreError,
@@ -32,16 +32,18 @@ export const dynamic = 'force-dynamic'
 // same per-show advisory sell lock as a sale; it rejects with SEAT_TAKEN if the
 // freed seat was resold in the interim.
 export async function POST(req: NextRequest) {
-  const gate = await requireRole(req, (u) => isAdminTier(u) || isPartner(u))
+  const gate = await requirePermission(req, ['tickets', 'partner'])
   if (gate.error) return gate.error
   const { payload, user } = gate
 
-  const admin = isAdminTier(user as { role?: string })
-  const partner = isPartner(user as { role?: string })
+  // Staff wins when a caller holds both (the `users` holder does): `admin`
+  // here means "unrestricted", `partner` means "own sales, same-day window".
+  const partner = actsAsPartner(user as { permissions?: unknown; partner?: unknown } | null)
+  const admin = !partner
 
   // A partner login must be bound to a partner record; otherwise it owns nothing.
   const callerPartnerId = partner
-    ? partnerIdOf(user as { role?: string; partner?: unknown } | null)
+    ? partnerIdOf(user as { permissions?: unknown; partner?: unknown } | null)
     : undefined
   if (partner && callerPartnerId == null) {
     return NextResponse.json({ error: 'Account not linked to a partner' }, { status: 403 })

@@ -85,7 +85,7 @@ describe('GET /api/orders/[id]/tickets.pdf partner-slip wiring', () => {
     })
     const t = signTicketLink({ orderId: '42', email: ORDER.email })
     // No email on the order, so authorise via staff session instead.
-    auth.mockResolvedValue({ user: { role: 'admin' } })
+    auth.mockResolvedValue({ user: { permissions: ['tickets', 'refunds', 'door'] } })
     const res = await GET(req(`?t=${t}`), { params })
     expect(res.status).toBe(200)
     const input = renderMock.mock.calls.at(-1)![0]
@@ -128,7 +128,7 @@ describe('GET /api/orders/[id]/tickets.pdf partner-slip wiring', () => {
         partner: 7,
       })
       .mockResolvedValueOnce({ id: 7, name: 'Gulliver Travel' })
-    auth.mockResolvedValue({ user: { role: 'admin' } })
+    auth.mockResolvedValue({ user: { permissions: ['tickets', 'refunds', 'door'] } })
     const res = await GET(req(''), { params })
     expect(res.status).toBe(200)
     const input = renderMock.mock.calls.at(-1)![0]

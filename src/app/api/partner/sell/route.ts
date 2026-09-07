@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { randomInt } from 'crypto'
-import { partnerIdOf, isPartner } from '@/lib/access/roles'
-import { requireRole } from '@/lib/access/route-guard'
+import { partnerIdOf } from '@/lib/access/partner'
+import { requirePermission } from '@/lib/access/route-guard'
 import {
   createPartnerSale,
   PartnerSaleError,
@@ -20,11 +20,11 @@ export const dynamic = 'force-dynamic'
 // Local API runs overrideAccess, so this route re-checks the caller is a partner
 // and binds the sale to THEIR own partner id (never trusts a body-supplied one).
 export async function POST(req: NextRequest) {
-  const gate = await requireRole(req, isPartner)
+  const gate = await requirePermission(req, 'partner')
   if (gate.error) return gate.error
   const { payload, user } = gate
 
-  const partnerId = partnerIdOf(user as { role?: string; partner?: unknown } | null)
+  const partnerId = partnerIdOf(user as { permissions?: unknown; partner?: unknown } | null)
   if (partnerId == null) {
     return NextResponse.json({ error: 'Account not linked to a partner' }, { status: 403 })
   }
