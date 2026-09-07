@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { randomInt } from 'crypto'
-import { isAdminTier } from '@/lib/access/roles'
-import { requireRole } from '@/lib/access/route-guard'
+import { requirePermission } from '@/lib/access/route-guard'
 import {
   createCompIssue,
   CompIssueError,
@@ -18,11 +17,11 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 // POST /api/comp/issue — an admin issues free (comp) tickets to a society member
-// for an active upcoming show (ADR-0019). Admin-tier only: the local API runs
-// overrideAccess, so this route re-checks the role in-handler (CLAUDE.md hard
-// rule). The member is required — attribution is the whole point.
+// for an active upcoming show (ADR-0019). `tickets` only: the local API runs
+// overrideAccess, so this route re-checks the permission in-handler (CLAUDE.md
+// hard rule). The member is required — attribution is the whole point.
 export async function POST(req: NextRequest) {
-  const gate = await requireRole(req, isAdminTier)
+  const gate = await requirePermission(req, 'tickets')
   if (gate.error) return gate.error
   const { payload } = gate
 

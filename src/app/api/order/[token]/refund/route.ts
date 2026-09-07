@@ -16,7 +16,7 @@ export const dynamic = 'force-dynamic'
 // A buyer whose show was rescheduled cancels + refunds their OWN order from the
 // link in the reschedule email. Authorization is the signed per-order HMAC token
 // (verifyRescheduleRefundToken) — the sanctioned token/signature exception to the
-// requireRole rule (alongside the Stripe webhook, /scan/[token]/claim, unsubscribe,
+// requirePermission rule (alongside the Stripe webhook, /scan/[token]/claim, unsubscribe,
 // cron). Every eligibility condition is RE-CHECKED here server-side; the client is
 // never trusted. Reuses the same refundOrder() engine as the admin refund route.
 export async function POST(req: NextRequest, { params }: { params: Promise<{ token: string }> }) {

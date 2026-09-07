@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { isAdminTier } from '@/lib/access/roles'
-import { requireRole } from '@/lib/access/route-guard'
+import { requirePermission } from '@/lib/access/route-guard'
 import { cancelComp, CancelCompError, type CancelCompOrder } from '@/lib/comp/cancel-comp'
 import { voidOrderTickets, voidSingleTicket, type TicketVoidExecutor } from '@/lib/tickets/ticket-void'
 
@@ -11,9 +10,9 @@ export const dynamic = 'force-dynamic'
 // ticket issued in error (ADR-0019, #321). Body: { orderId: string, ticketId?:
 // string }; whole-order when ticketId is omitted.
 //
-// Admin-tier only, NO time window (the same-day window is partner self-service,
-// not an admin rule). The local API runs overrideAccess, so the role is
-// re-checked in-handler via requireRole (CLAUDE.md hard rule). This is the
+// `tickets` only, NO time window (the same-day window is partner self-service,
+// not an admin rule). The local API runs overrideAccess, so the permission is
+// re-checked in-handler via requirePermission (CLAUDE.md hard rule). This is the
 // admin-only, comp-scoped counterpart to the partner /api/partner/storno route:
 // it reuses the SAME void primitive with reason='storno' (comp voids are
 // distinguished by channel='comp', so no new enum value), refuses to touch a
@@ -21,7 +20,7 @@ export const dynamic = 'force-dynamic'
 // so it re-enters remaining capacity + the per-show comp count immediately. A
 // voided comp slip then scans to a clear CANCELLED state (scan-token).
 export async function POST(req: NextRequest) {
-  const gate = await requireRole(req, isAdminTier)
+  const gate = await requirePermission(req, 'tickets')
   if (gate.error) return gate.error
   const { payload } = gate
 

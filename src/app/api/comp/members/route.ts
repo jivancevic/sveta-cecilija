@@ -1,16 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { isAdminTier } from '@/lib/access/roles'
-import { requireRole } from '@/lib/access/route-guard'
+import { requirePermission } from '@/lib/access/route-guard'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 // GET  /api/comp/members — active members for the comp-issue picker.
 // POST /api/comp/members — create a member inline ("+ Add member") without
-// leaving the issue form (ADR-0019, #318). Admin-tier only: the local API runs
-// overrideAccess, so the role is re-checked in-handler (CLAUDE.md hard rule).
+// leaving the issue form (ADR-0019, #318). `tickets` only: the local API runs
+// overrideAccess, so the permission is re-checked in-handler (CLAUDE.md hard rule).
 export async function GET(req: NextRequest) {
-  const gate = await requireRole(req, isAdminTier)
+  const gate = await requirePermission(req, 'tickets')
   if (gate.error) return gate.error
   const { payload } = gate
 
@@ -26,7 +25,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const gate = await requireRole(req, isAdminTier)
+  const gate = await requirePermission(req, 'tickets')
   if (gate.error) return gate.error
   const { payload } = gate
 

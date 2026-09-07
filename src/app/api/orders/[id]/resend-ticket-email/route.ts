@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { isAdminTier } from '@/lib/access/roles'
-import { requireRole } from '@/lib/access/route-guard'
+import { requirePermission } from '@/lib/access/route-guard'
 import {
   sendOrderTicketEmail,
   type OrderEmailPayload,
@@ -10,14 +9,14 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 // POST /api/orders/[id]/resend-ticket-email — re-send an order's ticket PDF to
-// the address currently on the order (Order.email). Admin-tier only: the local
-// API runs overrideAccess, so this route re-checks the role in-handler
+// the address currently on the order (Order.email). `tickets` only: the local
+// API runs overrideAccess, so this route re-checks the permission in-handler
 // (CLAUDE.md hard rule). It always sends to the persisted email — to fix a wrong
 // or missing address the admin edits the Order's email field first, then resends
 // (no inline email input by design). Works for any channel that has an email;
 // comp slips render "Complimentary" and partner slips keep their SOLD BY row.
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const gate = await requireRole(req, isAdminTier)
+  const gate = await requirePermission(req, 'tickets')
   if (gate.error) return gate.error
   const { payload } = gate
 

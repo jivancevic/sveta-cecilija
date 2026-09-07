@@ -148,29 +148,35 @@ describe('stripe balance', () => {
   })
 })
 
-describe('gatherDevDiagnostics (superadmin gating)', () => {
+describe('gatherDevDiagnostics (`dev` permission gating)', () => {
   const deps = () => ({
     query: vi.fn().mockResolvedValue({ rows: [{}] }),
     stripeBalance: vi.fn().mockResolvedValue(null),
     env: { NODE_ENV: 'development', DATABASE_URL: 'postgresql://h/sveta_cecilija_dev' },
   })
 
+  const devHolder = { permissions: ['users', 'tickets', 'dev'] }
+
   it.each([
-    ['admin'],
-    ['tehnika'],
-    ['partner'],
-    [undefined],
-  ])('returns null and runs no queries for role=%s', async (role) => {
+    ['ticket admin', { permissions: ['tickets', 'refunds', 'door'] }],
+    ['door account', { permissions: ['door'] }],
+    ['partner', { permissions: ['partner'] }],
+    ['member', { permissions: ['season_stats'] }],
+    ['empty set', { permissions: [] }],
+    ['malformed set', { permissions: 'dev' }],
+    ['legacy role only', { role: 'superadmin' } as { permissions?: unknown }],
+    ['anonymous', null],
+  ])('returns null and runs no queries for %s', async (_label, user) => {
     const d = deps()
-    const result = await gatherDevDiagnostics(role ? { role } : null, d)
+    const result = await gatherDevDiagnostics(user, d)
     expect(result).toBeNull()
     expect(d.query).not.toHaveBeenCalled()
     expect(d.stripeBalance).not.toHaveBeenCalled()
   })
 
-  it('bundles every section for a superadmin', async () => {
+  it('bundles every section for a `dev` holder', async () => {
     const d = deps()
-    const result = await gatherDevDiagnostics({ role: 'superadmin' }, d)
+    const result = await gatherDevDiagnostics(devHolder, d)
     expect(result).not.toBeNull()
     expect(result!.env.environment).toBe('development')
     expect(result!.integrity).toBeDefined()
@@ -182,7 +188,7 @@ describe('gatherDevDiagnostics (superadmin gating)', () => {
   it('one failing probe degrades to a fallback, not a thrown dashboard', async () => {
     const d = deps()
     d.query.mockRejectedValue(new Error('db down'))
-    const result = await gatherDevDiagnostics({ role: 'superadmin' }, d)
+    const result = await gatherDevDiagnostics(devHolder, d)
     expect(result).not.toBeNull()
     expect(result!.integrity.anomalies.ordersWithoutTickets).toBe(0)
     expect(result!.criticalEvents).toEqual([])

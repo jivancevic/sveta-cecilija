@@ -85,7 +85,7 @@ describe('GET /api/orders/[id]/tickets.pdf partner-slip wiring', () => {
     })
     const t = signTicketLink({ orderId: '42', email: ORDER.email })
     // No email on the order, so authorise via staff session instead.
-    auth.mockResolvedValue({ user: { role: 'admin' } })
+    auth.mockResolvedValue({ user: { permissions: ['tickets', 'refunds', 'door'] } })
     const res = await GET(req(`?t=${t}`), { params })
     expect(res.status).toBe(200)
     const input = renderMock.mock.calls.at(-1)![0]
@@ -128,11 +128,49 @@ describe('GET /api/orders/[id]/tickets.pdf partner-slip wiring', () => {
         partner: 7,
       })
       .mockResolvedValueOnce({ id: 7, name: 'Gulliver Travel' })
-    auth.mockResolvedValue({ user: { role: 'admin' } })
+    auth.mockResolvedValue({ user: { permissions: ['tickets', 'refunds', 'door'] } })
     const res = await GET(req(''), { params })
     expect(res.status).toBe(200)
     const input = renderMock.mock.calls.at(-1)![0]
     expect(input.seller).toEqual({ name: 'Gulliver Travel' })
     expect(input.showClaimPrompt).toBe(true)
+  })
+})
+
+
+// The cookie-session half of the gate, now keyed off the permission set (#396).
+describe('GET /api/orders/[id]/tickets.pdf session gate by permission', () => {
+  const PARTNER_ORDER = { ...ORDER, email: '', channel: 'partner', partner: { id: 7, name: 'Kaleta' } }
+
+  it.each([
+    ['the door account', { permissions: ['door'] }],
+    ['a ticket admin', { permissions: ['tickets', 'refunds', 'door'] }],
+  ])('lets %s download any order', async (_label, user) => {
+    findByID.mockResolvedValue(PARTNER_ORDER)
+    auth.mockResolvedValue({ user })
+    expect((await GET(req(''), { params })).status).toBe(200)
+  })
+
+  it.each([
+    ['a member login', { permissions: ['season_stats'] }],
+    ['an empty set', { permissions: [] }],
+    ['a legacy role with no permission set', { role: 'admin' }],
+  ])('401s %s', async (_label, user) => {
+    findByID.mockResolvedValue(PARTNER_ORDER)
+    auth.mockResolvedValue({ user })
+    expect((await GET(req(''), { params })).status).toBe(401)
+  })
+
+  it('lets a partner reprint its own order but not another partner\'s', async () => {
+    findByID.mockResolvedValue(PARTNER_ORDER)
+    auth.mockResolvedValue({ user: { permissions: ['partner'], partner: 7 } })
+    expect((await GET(req(''), { params })).status).toBe(200)
+
+    auth.mockResolvedValue({ user: { permissions: ['partner'], partner: 8 } })
+    expect((await GET(req(''), { params })).status).toBe(401)
+
+    // No Partners link at all: owns nothing.
+    auth.mockResolvedValue({ user: { permissions: ['partner'] } })
+    expect((await GET(req(''), { params })).status).toBe(401)
   })
 })
