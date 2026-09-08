@@ -87,7 +87,7 @@ describe('decideAppAccess — the moreškant', () => {
 describe('decideAppAccess — everybody else', () => {
   it.each([
     ['anonymous', null],
-    ['an authenticated account with no permission set', { id: '2' }],
+    ['an authenticated account with no permission set', { id: '2', permissions: undefined }],
     ['tickets (Tatjana)', user('tickets', 'refunds', 'door')],
     ['the door login', user('door')],
     ['a partner POS', user('partner')],
@@ -100,7 +100,7 @@ describe('decideAppAccess — everybody else', () => {
   })
 
   it('ignores a permission word outside the vocabulary', () => {
-    expect(decideAppAccess({ id: '1', permissions: ['voditelj'] }, dancer())).toEqual({
+    expect(decideAppAccess(user('voditelj'), dancer())).toEqual({
       kind: 'denied',
     })
   })

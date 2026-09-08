@@ -47,7 +47,7 @@ export type AppAccess =
 export function isActiveMoreskant(member: AppMember | null | undefined): member is AppMember {
   if (!member) return false
   if (member.active === false) return false
-  return isMoreskantRow(member as Record<string, unknown>)
+  return isMoreskantRow(member as unknown as Record<string, unknown>)
 }
 
 /**
