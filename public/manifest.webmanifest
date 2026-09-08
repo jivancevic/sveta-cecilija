@@ -1,7 +1,7 @@
 {
   "name": "Moreškant",
   "short_name": "Moreškant",
-  "description": "Raspored nastupa za moreškante i voditelje HGD Sveta Cecilija.",
+  "description": "Raspored izvedbi za moreškante i voditelje HGD Sveta Cecilija.",
   "lang": "hr",
   "dir": "ltr",
   "start_url": "/app",

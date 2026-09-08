@@ -24,6 +24,7 @@ import {
   type AttendanceMember,
   type AttendancePerformance,
 } from './rules'
+import { rejectAppRequest, type AppRequestMeta } from '@/lib/app/request-guard'
 
 export interface AnswerBody {
   performanceId?: unknown
@@ -41,6 +42,13 @@ export interface ExistingAnswer {
 }
 
 export interface AnswerDeps {
+  /**
+   * Origin / Sec-Fetch-Site / Content-Type, plus the origins we own. Every
+   * cookie-authenticated `/app` POST runs the same cross-site check (#421
+   * follow-up): this route writes on the strength of a session cookie, which is
+   * exactly what a cross-site `fetch` can aim at a signed-in dancer's browser.
+   */
+  request: AppRequestMeta
   actor: AttendanceActor
   loadPerformance: (id: string) => Promise<AttendancePerformance | null>
   loadMember: (id: string) => Promise<AttendanceMember | null>
@@ -74,8 +82,10 @@ export interface AnswerResult {
 }
 
 export const ANSWER_ROUTE_ERRORS = {
-  badRequest: 'Nedostaju podaci o nastupu ili moreškantu.',
-  noPerformance: 'Nastup ne postoji.',
+  /** Cross-site or non-JSON. A real dancer never sees it; an attacker learns nothing. */
+  rejected: 'Odgovor trenutno nije moguć.',
+  badRequest: 'Nedostaju podaci o izvedbi ili moreškantu.',
+  noPerformance: 'Ta izvedba ne postoji.',
   failed: 'Spremanje odgovora nije uspjelo. Pokušaj ponovno.',
 } as const
 
@@ -88,6 +98,8 @@ function id(value: unknown): string {
 /**
  * POST /api/app/attendance.
  *
+ * 403/415 when the request is cross-site or not JSON (see
+ * `src/lib/app/request-guard.ts`), before any read or write;
  * 400 for a body that names no performance or member, or a request the rules
  * call nonsense; 403 for one the caller may not make; 200 with the answer as it
  * now stands, so the client can settle its optimistic highlight on the server's
@@ -97,6 +109,11 @@ export async function handleAttendanceAnswer(
   body: AnswerBody | null | undefined,
   deps: AnswerDeps,
 ): Promise<AnswerResult> {
+  const rejection = rejectAppRequest(deps.request)
+  if (rejection) {
+    return { status: rejection.status, body: { error: ANSWER_ROUTE_ERRORS.rejected } }
+  }
+
   const performanceId = id(body?.performanceId)
   const memberId = id(body?.memberId)
   if (!performanceId || !memberId) {

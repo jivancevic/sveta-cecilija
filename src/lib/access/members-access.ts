@@ -31,8 +31,8 @@ export function membersReadAccess(user: PermissionUser): boolean {
 
 /**
  * Create: both. A voditelj adds a dancer who is not yet in the table; `name` is
- * required, so create on `name` stays open (see {@link canEditAttributionField}
- * — it is the *rename* that is the backoffice's).
+ * required, so create on `name` stays open — but `active` and `note` do not
+ * (see {@link canEditAttributionField}).
  */
 export function membersCreateAccess(user: PermissionUser): boolean {
   return isMemberHolder(user)
@@ -76,9 +76,16 @@ export function canEditMoreskantField(user: PermissionUser): boolean {
 
 /**
  * `name`, `active` and `note` — the ADR-0019 attribution half. Readable by both
- * (the voditelj needs the real name behind a nickname), writable on update by
- * the backoffice only: renaming or retiring a Member reaches comp reporting and
+ * (the voditelj needs the real name behind a nickname), writable by the
+ * backoffice only: renaming or retiring a Member reaches comp reporting and
  * the promo-code picker, which are not the voditelj's to move.
+ *
+ * It gates create as well as update on `active` and `note`, so a `moreska`-only
+ * holder cannot reach through a new row what they may not change on an existing
+ * one. `name` is the exception, left open on create: a voditelj adds a dancer
+ * and the field is required, so locking it would make create impossible for
+ * them. Payload falls back to a field's `defaultValue` when access strips the
+ * incoming value, so a voditelj's new member is still `active = true`.
  */
 export function canEditAttributionField(user: PermissionUser): boolean {
   return can(user, 'tickets')

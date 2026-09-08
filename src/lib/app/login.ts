@@ -16,6 +16,7 @@
 // route files are only the wiring.
 
 import { APP_STRINGS } from './strings'
+import { rejectAppRequest, type AppRequestMeta } from './request-guard'
 
 /** What the login form posts. */
 export interface AppLoginInput {
@@ -31,21 +32,52 @@ export interface AppAuthResult {
   setCookie?: string
 }
 
-export interface AppLoginDeps {
+/** The cross-site check both handlers run before they touch a session. */
+export interface AppRequestGuarded {
+  /** Origin / Sec-Fetch-Site / Content-Type, plus the origins we own. */
+  request: AppRequestMeta
+}
+
+/**
+ * Exactly one identifier, never both: Payload's `loginWithUsername` refuses an
+ * email in the username field and vice versa (ADR-0011).
+ */
+export type AppLoginCredentials =
+  | { email: string; password: string }
+  | { username: string; password: string }
+
+export interface AppLoginDeps extends AppRequestGuarded {
   /**
    * Payload's local `login`, narrowed to what this route passes. Resolves with
    * a token on success; throws (or resolves tokenless) on bad credentials.
    */
-  login: (credentials: { email?: string; username?: string; password: string }) => Promise<{
+  login: (credentials: AppLoginCredentials) => Promise<{
     token?: string | null
   }>
   /** Payload's `generatePayloadCookie` for the users collection. */
   cookie: (token: string) => string
 }
 
-export interface AppLogoutDeps {
+export interface AppLogoutDeps extends AppRequestGuarded {
   /** Payload's `generateExpiredPayloadCookie` for the users collection. */
   expiredCookie: () => string
+  /**
+   * Removes the session behind the request from `users.sessions` (Payload's
+   * `logoutOperation`). Clearing the cookie alone leaves the JWT valid for its
+   * full 30 days, so anyone holding a copy stays signed in.
+   */
+  invalidateSession: () => Promise<void>
+}
+
+/**
+ * A cross-site or non-JSON POST, refused before any session work. The body
+ * carries the generic Croatian "not possible right now" line: a real user never
+ * sees it (their browser sends our own Origin) and an attacker learns nothing.
+ */
+function guard(deps: AppRequestGuarded): AppAuthResult | null {
+  const rejection = rejectAppRequest(deps.request)
+  if (!rejection) return null
+  return { status: rejection.status, body: { error: APP_STRINGS.login.unexpected } }
 }
 
 /**
@@ -65,6 +97,7 @@ function str(value: unknown): string {
 /**
  * POST /api/app/login.
  *
+ * 403/415 when the request is cross-site or not JSON (see ./request-guard.ts),
  * 400 with a Croatian message when a field is missing, 401 when the credentials
  * are wrong, 200 + the session cookie when they are right. The 401 message never
  * says which half was wrong — an account-enumeration hint on a public URL.
@@ -73,6 +106,9 @@ export async function handleAppLogin(
   input: AppLoginInput | null | undefined,
   deps: AppLoginDeps,
 ): Promise<AppAuthResult> {
+  const rejected = guard(deps)
+  if (rejected) return rejected
+
   const identifier = str(input?.identifier)
   // A password is used verbatim; only its presence is checked.
   const password = typeof input?.password === 'string' ? input.password : ''
@@ -83,10 +119,11 @@ export async function handleAppLogin(
 
   let token: string | null | undefined
   try {
-    const result = await deps.login({
-      [identifierField(identifier)]: identifier,
-      password,
-    })
+    const credentials: AppLoginCredentials =
+      identifierField(identifier) === 'email'
+        ? { email: identifier, password }
+        : { username: identifier, password }
+    const result = await deps.login(credentials)
     token = result?.token
   } catch {
     return { status: 401, body: { error: APP_STRINGS.login.failed } }
@@ -100,9 +137,22 @@ export async function handleAppLogin(
 }
 
 /**
- * POST /api/app/logout — clears the shared session cookie. Always 200: signing
- * out of a session that is already gone is a success, not an error.
+ * POST /api/app/logout — invalidates the session, then clears the cookie.
+ *
+ * The order matters and so does the swallow: the session row is what actually
+ * ends the login (the cookie is only the browser's copy of a JWT that stays
+ * valid for 30 days), but a failure to write it must not leave the dancer with
+ * a cookie they cannot drop. Always 200: signing out of a session that is
+ * already gone is a success, not an error.
  */
-export function handleAppLogout(deps: AppLogoutDeps): AppAuthResult {
+export async function handleAppLogout(deps: AppLogoutDeps): Promise<AppAuthResult> {
+  const rejected = guard(deps)
+  if (rejected) return rejected
+
+  try {
+    await deps.invalidateSession()
+  } catch {
+    // No session, or Payload refused: the cookie still goes.
+  }
   return { status: 200, body: { ok: true }, setCookie: deps.expiredCookie() }
 }

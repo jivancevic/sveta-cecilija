@@ -1,6 +1,15 @@
 import { describe, expect, it, vi } from 'vitest'
 import { ANSWER_ROUTE_ERRORS, handleAttendanceAnswer, type AnswerDeps } from './answer'
 import { ANSWER_ERRORS } from './rules'
+import type { AppRequestMeta } from '@/lib/app/request-guard'
+
+/** A same-origin JSON POST: what the app's own fetch sends. */
+const sameOrigin: AppRequestMeta = {
+  origin: 'https://moreska.eu',
+  secFetchSite: 'same-origin',
+  contentType: 'application/json',
+  allowedOrigins: ['https://moreska.eu'],
+}
 
 // #422 — the answer route through injected deps: status codes, upsert
 // semantics and `clear`. 401 is not modelled here on purpose: an anonymous
@@ -23,13 +32,15 @@ const member = {
 }
 
 function deps(over: Partial<AnswerDeps> = {}): AnswerDeps & {
+  loadPerformance: ReturnType<typeof vi.fn>
   create: ReturnType<typeof vi.fn>
   update: ReturnType<typeof vi.fn>
   remove: ReturnType<typeof vi.fn>
 } {
   return {
+    request: sameOrigin,
     actor: { user: cici, memberId: '3' },
-    loadPerformance: async () => ({ id: '10', startMs: START, cancelled: false }),
+    loadPerformance: vi.fn(async () => ({ id: '10', startMs: START, cancelled: false })),
     loadMember: async () => member,
     findExisting: async () => null,
     create: vi.fn(async () => ({})),
@@ -45,6 +56,35 @@ const body = (over: Record<string, unknown> = {}) => ({
   memberId: '3',
   status: 'coming',
   ...over,
+})
+
+describe('handleAttendanceAnswer — the cross-site guard', () => {
+  it('403s a cross-site POST before it reads anything', async () => {
+    const d = deps({
+      request: { ...sameOrigin, secFetchSite: 'cross-site' },
+      loadPerformance: vi.fn(async () => ({ id: '10', startMs: START, cancelled: false })),
+    })
+    const out = await handleAttendanceAnswer(body(), d)
+    expect(out).toEqual({ status: 403, body: { error: ANSWER_ROUTE_ERRORS.rejected } })
+    expect(d.loadPerformance).not.toHaveBeenCalled()
+    expect(d.create).not.toHaveBeenCalled()
+  })
+
+  it('403s a foreign Origin', async () => {
+    const out = await handleAttendanceAnswer(
+      body(),
+      deps({ request: { ...sameOrigin, origin: 'https://evil.example', secFetchSite: null } }),
+    )
+    expect(out).toMatchObject({ status: 403 })
+  })
+
+  it('415s anything that is not application/json', async () => {
+    const out = await handleAttendanceAnswer(
+      body(),
+      deps({ request: { ...sameOrigin, contentType: 'application/x-www-form-urlencoded' } }),
+    )
+    expect(out).toEqual({ status: 415, body: { error: ANSWER_ROUTE_ERRORS.rejected } })
+  })
 })
 
 describe('handleAttendanceAnswer — the body', () => {

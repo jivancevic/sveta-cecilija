@@ -5,9 +5,6 @@
 -- unique index on (performance_id, member_id) is load-bearing rather than
 -- decorative: the app upserts on that pair and deletes to clear an answer, so a
 -- second row for the same pair would silently split one dancer's answer in two.
--- Payload does not emit that index (it is not a Payload `unique` field, which
--- only covers a single column), so it lives here and is mirrored by hand into
--- 00-base.sql, the same way members_moreskant_nickname_unique_idx is.
 --
 -- Named `migrate-zz-…` so it sorts AFTER every file that creates a table it
 -- references (`members`, `shows`, `users`, `payload_locked_documents_rels`) —
@@ -75,6 +72,12 @@ CREATE INDEX IF NOT EXISTS attendance_created_at_idx ON attendance USING btree (
 CREATE INDEX IF NOT EXISTS attendance_updated_at_idx ON attendance USING btree (updated_at);
 
 -- 4. One answer per moreškant per performance. The upsert key.
+--    THIS FILE IS THE INDEX'S ONLY HOME. Payload's push never emits it (a
+--    two-column unique index is not a field config — `unique: true` covers one
+--    column), so it must not appear in the generated 00-base.sql, which a
+--    regeneration would silently drop. Same rule as
+--    members_moreskant_nickname_unique_idx in migrate-moreskant-identity.sql
+--    and critical_events' partial unique index in app.sql.
 CREATE UNIQUE INDEX IF NOT EXISTS attendance_performance_member_unique_idx
   ON attendance USING btree (performance_id, member_id);
 

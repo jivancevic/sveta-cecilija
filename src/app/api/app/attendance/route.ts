@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { requirePermission } from '@/lib/access/route-guard'
+import { appRequestMeta } from '@/lib/app/request-guard'
 import { resolveOwnMemberId, type MemberLinkReader } from '@/lib/access/attendance-access'
 import { handleAttendanceAnswer, type ExistingAnswer } from '@/lib/attendance/answer'
 import type { Army, AttendanceMember, AttendancePerformance } from '@/lib/attendance/rules'
@@ -11,6 +12,11 @@ import { showStartMs } from '@/lib/show-time'
 // codes and upsert in `src/lib/attendance/answer.ts`, both unit-tested through
 // injected deps. What this file adds is the two things a pure function cannot
 // do — the permission gate and the Payload calls.
+//
+// It also carries the `/app` cross-site guard (#421 follow-up): this is a
+// cookie-authenticated POST, the shape a cross-site `fetch` can aim at a
+// signed-in dancer's browser, so the handler refuses a foreign `Origin` or a
+// non-JSON body before it reads anything.
 //
 // `requirePermission([...])` is the chokepoint every staff route uses (CLAUDE.md
 // hard rule): the local API runs `overrideAccess: true`, so the collection
@@ -41,6 +47,7 @@ export async function POST(req: Request) {
   const body = await req.json().catch(() => null)
 
   const result = await handleAttendanceAnswer(body, {
+    request: appRequestMeta(req, process.env.NEXT_PUBLIC_BASE_URL),
     actor: { user: user as { permissions?: unknown }, memberId: ownMemberId == null ? null : String(ownMemberId) },
 
     loadPerformance: async (id): Promise<AttendancePerformance | null> => {

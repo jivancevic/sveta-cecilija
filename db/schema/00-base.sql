@@ -842,8 +842,6 @@ CREATE INDEX IF NOT EXISTS attendance_performance_idx ON public.attendance USING
 
 CREATE INDEX IF NOT EXISTS attendance_updated_at_idx ON public.attendance USING btree (updated_at);
 
-CREATE UNIQUE INDEX IF NOT EXISTS attendance_performance_member_unique_idx ON public.attendance USING btree (performance_id, member_id);
-
 CREATE INDEX IF NOT EXISTS contact_submissions_created_at_idx ON public.contact_submissions USING btree (created_at);
 
 CREATE INDEX IF NOT EXISTS contact_submissions_updated_at_idx ON public.contact_submissions USING btree (updated_at);
@@ -859,8 +857,6 @@ CREATE INDEX IF NOT EXISTS members_roles_order_idx ON public.members_roles USING
 CREATE INDEX IF NOT EXISTS members_roles_parent_idx ON public.members_roles USING btree (parent_id);
 
 CREATE INDEX IF NOT EXISTS members_updated_at_idx ON public.members USING btree (updated_at);
-
-CREATE UNIQUE INDEX IF NOT EXISTS members_moreskant_nickname_unique_idx ON public.members USING btree (lower(nickname)) WHERE ((is_moreskant = true) AND (nickname IS NOT NULL));
 
 CREATE INDEX IF NOT EXISTS order_lookups_created_at_idx ON public.order_lookups USING btree (created_at);
 
