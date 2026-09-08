@@ -22,12 +22,12 @@ import { can, type PermissionUser } from './permissions'
 import type { Where } from 'payload'
 
 /**
- * The access decision for every operation on `attendance`.
+ * READ: the voditelj sees every row; a dancer sees their own, as a `Where`.
  *
  * `ownMemberId` is the caller's own Members link, already resolved. A
  * `moreskant` without one owns nothing — never everything.
  */
-export function attendanceAccess(
+export function attendanceReadAccess(
   user: PermissionUser,
   ownMemberId: string | number | null | undefined,
 ): boolean | Where {
@@ -35,6 +35,28 @@ export function attendanceAccess(
   if (!can(user, 'moreskant')) return false
   if (ownMemberId == null) return false
   return { member: { equals: ownMemberId } }
+}
+
+/**
+ * CREATE / UPDATE / DELETE: `moreska` and nobody else.
+ *
+ * A `Where` must never be returned here, and a dancer must never be allowed
+ * through. Payload's create operation only tests the access result for
+ * TRUTHINESS (`collections/operations/create.js`), so a `Where` reads as "yes,
+ * go ahead" and the row's own values are never checked against it: a signed-in
+ * moreškant could POST `/api/attendance` with anybody's member id, any army,
+ * after the start, on a cancelled izvedba — and PATCH an existing row to
+ * re-point its `member`. The `/app` session cookie is the same `payload-token`
+ * the admin REST API accepts, so that is a real reachable path, not a
+ * theoretical one.
+ *
+ * A dancer loses nothing: `/app` never writes through collection access. Its
+ * answer route runs `overrideAccess: true` and applies
+ * `src/lib/attendance/rules.ts`, which is where "only your own row, only before
+ * the start" actually lives. What is left here is the voditelj's admin CRUD.
+ */
+export function attendanceWriteAccess(user: PermissionUser): boolean {
+  return can(user, 'moreska')
 }
 
 /**

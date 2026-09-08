@@ -670,13 +670,14 @@ describe('Attendance access', () => {
 
   async function scoped(op: 'read' | 'create' | 'update' | 'delete', user: unknown) {
     const fn = Attendance.access?.[op] as
-      | ((args: { req: { user: unknown; payload: unknown } }) => Promise<unknown>)
+      | ((args: { req: { user: unknown; payload: unknown } }) => unknown)
       | undefined
     if (typeof fn !== 'function') return true
-    return fn({ req: { user, payload: linked } })
+    return await fn({ req: { user, payload: linked } })
   }
 
-  const OPS = ['read', 'create', 'update', 'delete'] as const
+  const WRITES = ['create', 'update', 'delete'] as const
+  const OPS = ['read', ...WRITES] as const
 
   it('a voditelj reads and mutates every row', async () => {
     for (const op of OPS) {
@@ -685,9 +686,28 @@ describe('Attendance access', () => {
     }
   })
 
-  it('a moreškant is scoped to their own Member on every verb', async () => {
-    for (const op of OPS) {
-      expect(await scoped(op, moreskantAccount)).toEqual({ member: { equals: 3 } })
+  it('a moreškant READS their own rows, as a Where', async () => {
+    expect(await scoped('read', moreskantAccount)).toEqual({ member: { equals: 3 } })
+  })
+
+  // The hole this asserts against: Payload's create operation only tests the
+  // access result for TRUTHINESS, so an own-rows `Where` on create would read
+  // as "allowed" and the row's own values would never be compared to it — a
+  // dancer could POST /api/attendance for anybody, with the same session cookie
+  // /app hands them. Writes are `moreska`-only; a dancer writes through the
+  // answer route, which runs overrideAccess and applies the rules.
+  it('a moreškant may NOT create, update or delete a row directly', async () => {
+    for (const op of WRITES) {
+      expect(await scoped(op, moreskantAccount)).toBe(false)
+    }
+  })
+
+  it('no write access ever answers with a Where', async () => {
+    for (const op of WRITES) {
+      for (const user of [voditelj, developer, moreskantAccount, ticketAdmin, anon]) {
+        const result = await scoped(op, user)
+        expect(typeof result).toBe('boolean')
+      }
     }
   })
 
@@ -698,9 +718,9 @@ describe('Attendance access', () => {
     expect(await scoped('read', sessionWithoutLink)).toEqual({ member: { equals: 5 } })
   })
 
-  it('a moreškant whose account has no Member link owns nothing', async () => {
+  it('a moreškant whose account has no Member link reads nothing', async () => {
     const unlinked = { id: '7', permissions: ['moreskant'] }
-    for (const op of OPS) expect(await scoped(op, unlinked)).toBe(false)
+    expect(await scoped('read', unlinked)).toBe(false)
   })
 
   it.each([

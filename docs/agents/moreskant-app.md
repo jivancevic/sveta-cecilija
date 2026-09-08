@@ -125,12 +125,21 @@ it. That is also why the `attendance` access functions are **async**.
 
 ### Collection access
 
-`moreska` reads and writes every row; a `moreskant` is scoped by
-`{ member: { equals: <own> } }`; nobody else reaches the collection at all, the
-backoffice included. The TIME rule is deliberately *not* here: a `Where` cannot
-express "the related performance has not started" without a join, so it lives in
-the route's rules. The sidebar entry is `moreska`-only (a voditelj fixing a
-wrong row without the developer, #419 story 18).
+`moreska` reads and writes every row. A `moreskant` **reads** their own rows as
+`{ member: { equals: <own> } }` and writes nothing: create, update and delete are
+`moreska`-only. Nobody else reaches the collection at all, the backoffice
+included. The sidebar entry is `moreska`-only (a voditelj fixing a wrong row
+without the developer, #419 story 18).
+
+**Writes are narrower than reads on purpose.** Payload's create operation only
+tests the access result for truthiness, so an own-rows `Where` on `create` would
+read as "allowed" and the new row's values would never be compared against it: a
+signed-in dancer could POST `/api/attendance` for anybody, with any army, after
+the start, using the very `payload-token` cookie `/app` hands them. Dancers lose
+nothing, because `/app` never writes through collection access — the answer route
+runs `overrideAccess: true` and applies the rules. That is also where the TIME
+rule lives, since a `Where` cannot express "the related performance has not
+started" without a join.
 
 ### The detail view
 

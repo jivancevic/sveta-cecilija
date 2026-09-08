@@ -1,7 +1,8 @@
 import type { CollectionConfig } from 'payload'
 import {
-  attendanceAccess,
   attendanceHiddenInAdmin,
+  attendanceReadAccess,
+  attendanceWriteAccess,
   resolveOwnMemberId,
   type MemberLinkReader,
 } from '@/lib/access/attendance-access'
@@ -18,15 +19,24 @@ type ReqUser = { id?: string | number; permissions?: unknown; member?: unknown }
 // collection is the stock CRUD view a voditelj uses to fix a wrong row without
 // the developer (#419, story 18), plus the row scoping for a dancer.
 //
-// Access is a pure predicate in src/lib/access/attendance-access.ts. The wrapper
-// below is async for one reason: `Users.member` is field-locked to `users`
-// (#420), so `req.user` arrives without the link and it has to be re-read with
+// Access is a pure predicate in src/lib/access/attendance-access.ts. Read is
+// async for one reason: `Users.member` is field-locked to `users` (#420), so
+// `req.user` arrives without the link and it has to be re-read with
 // `overrideAccess` — the same thing `/app`'s viewer does.
-const scoped = async ({ req }: { req: { user: unknown; payload?: unknown } }) => {
+//
+// WRITES ARE `moreska`-ONLY, deliberately narrower than reads. Payload's create
+// operation only checks the access result for truthiness, so an own-rows
+// `Where` there would have been a hole a dancer could POST straight through
+// with the session cookie `/app` gives them. Dancers write through the answer
+// route instead, which runs `overrideAccess: true` and applies the rules.
+const scopedRead = async ({ req }: { req: { user: unknown; payload?: unknown } }) => {
   const user = req.user as ReqUser
   const ownMemberId = await resolveOwnMemberId(req.payload as MemberLinkReader | undefined, user)
-  return attendanceAccess(user, ownMemberId)
+  return attendanceReadAccess(user, ownMemberId)
 }
+
+const voditeljOnly = ({ req }: { req: { user: unknown } }) =>
+  attendanceWriteAccess(req.user as ReqUser)
 
 export const Attendance: CollectionConfig = {
   slug: 'attendance',
@@ -35,10 +45,10 @@ export const Attendance: CollectionConfig = {
     plural: { en: 'Attendance', hr: 'Dolasci' },
   },
   access: {
-    read: scoped,
-    create: scoped,
-    update: scoped,
-    delete: scoped,
+    read: scopedRead,
+    create: voditeljOnly,
+    update: voditeljOnly,
+    delete: voditeljOnly,
   },
   admin: {
     useAsTitle: 'id',

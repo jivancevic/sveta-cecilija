@@ -141,7 +141,7 @@ Every decision reads the permission set via `can()` / `hasAny()` from `src/lib/a
 | `Partners` | `tickets`; `partner` → only own (`partnerOwnRecordWhere`) | `tickets` |
 | `Members` | `tickets` or `moreska` | `tickets` or `moreska`; delete `tickets` only. Moreškant fields read+write locked to `moreska`; `name`/`active`/`note` update locked to `tickets` |
 | `PromoCodes` | `tickets` | `tickets` |
-| `Attendance` | `moreska`; `moreskant` → only own rows (`attendanceAccess`) | same as read. Nobody else, backoffice included. The "before the start" rule lives in the answer route, not in the `Where` |
+| `Attendance` | `moreska`; `moreskant` → only own rows (`attendanceReadAccess`) | `moreska` only (`attendanceWriteAccess`) — never a `Where`, which Payload's create would read as plain "allowed". Dancers write through `POST /api/app/attendance`, where the rules live |
 | `OrderLookups` | `tickets` | `tickets` |
 | `Users` | `users`, else own row only | create/delete `users`; update `users` or self, except a `shared` account, which may never edit itself |
 
