@@ -451,8 +451,28 @@ snapshots of the row.
 - **A moved date or time releases the `alarm` and `reminder` claims** on
   `performance_notifications` (#440 review). The claim was taken against the old
   start instant, so without the release a rescheduled evening would never alarm
-  again. It happens even when nothing is sent — a performance dragged out of the
-  past notifies nobody and still needs its claims cleared.
+  again. The release is conditional on the START having moved and on nothing
+  else: a venue move, a note or a cancellation leaves the claims alone, while a
+  performance dragged out of the past releases them and still notifies nobody.
+- **The fan-out is DETACHED and the claim release is awaited** (#441 review).
+  Payload runs `afterChange` inside the save's transaction, so awaiting a push
+  to every device would hold that transaction open for a round trip to FCM per
+  phone. The release is one fast DELETE on the same connection, and a release
+  that silently did not happen is the defect above; `NotifyOutcome.sending` is
+  the detached promise, returned for tests and never awaited in production.
+- **Every change notification carries its own tag** (`change-<id>-<updatedAt>`).
+  A tag per performance would collapse the shade, and a dancer who had not yet
+  read "vrijeme" would find only "poruka voditelja" in its place. The alarm
+  keeps its collapsing tag: two alarms are the same plea twice.
+- **The two raw-SQL admin actions notify from the route, not from the hook**
+  (`src/lib/push/raw-save.ts`). The #379 reschedule and the #94 venue move are
+  optimistic-concurrency `UPDATE … RETURNING` claims that never touch the
+  collection, so no hook fires for them — and they are the two changes that
+  matter most. Each reads the row before and after its claim and calls
+  `notifyPerformanceFactsSaved`, so the decision is not duplicated.
+- **A bulk create is ONE announcement.** `/api/shows/bulk-create` writes a season
+  in a loop; each `payload.create` carries `context.skipRosterPush`, the hook
+  honours it, and the route sends a single "N novih izvedbi" pointing at `/app`.
 - **The hook can never fail a save.** `notifyPerformanceSaved` catches, logs and
   returns; the hook wraps the dep construction in its own try/catch. A voditelj
   must be able to cancel a performance while a push service is down.
@@ -470,10 +490,14 @@ the route hands it to `notifyWithdrawal`. The rule is `isWithdrawal`
 a *cleared* row, which is the absence of a row), answered by the DANCER for
 their own Member, within 24 hours of a start that has not happened yet. A
 voditelj correcting somebody's answer notifies nobody — they are the audience.
-The audience is every user holding `moreska`, read straight off
+The audience is every **unshared** user holding `moreska`, read straight off
 `users_permissions` (`loadVoditeljUserIds`), because `permissions` is a hasMany
-select in its own table and a Payload `contains` query does not reach it. Deps
-are built lazily, so an ordinary "dolazim" costs no pool lookup.
+select in its own table and a Payload `contains` query does not reach it. The
+`shared IS NOT TRUE` half is a rule, not an optimisation: the society's shared
+`member` login (ADR-0022) holds `moreska` and lives on whatever phone last
+signed in. Deps are built lazily and the send is detached, so an ordinary
+"dolazim" costs no pool lookup and a withdrawal never makes the dancer wait for
+the voditelji's phones.
 
 ### The note edit
 

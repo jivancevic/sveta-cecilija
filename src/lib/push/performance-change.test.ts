@@ -90,6 +90,17 @@ describe('the change sentence', () => {
     expect(text(snapshot({ cancelled: true }), snapshot())).toContain('izvedba više nije otkazana')
   })
 
+  it('gives every save its own tag, so two changes stack instead of replacing', () => {
+    const first = buildChangeMessage(snapshot({ updatedAt: '2026-07-01T10:00:00.000Z' }), ['time'])
+    const second = buildChangeMessage(snapshot({ updatedAt: '2026-07-01T10:05:00.000Z' }), ['note'])
+    expect(first.tag).not.toBe(second.tag)
+    expect(first.tag.startsWith('change-7-')).toBe(true)
+  })
+
+  it('falls back to the clock when the row carries no updatedAt', () => {
+    expect(buildChangeMessage(snapshot(), ['time'], AHEAD).tag).toBe(`change-7-${AHEAD}`)
+  })
+
   it('expires with the performance it is about', () => {
     const message = buildChangeMessage(snapshot(), ['time'], AHEAD)
     // 1 Aug 06:00 UTC → 5 Aug 21:00 Zagreb (19:00 UTC) is a little over 4 days.
