@@ -20,9 +20,9 @@ type ReqUser = { id?: string | number; permissions?: unknown; member?: unknown }
 // the developer (#419, story 18), plus the row scoping for a dancer.
 //
 // Access is a pure predicate in src/lib/access/attendance-access.ts. Read is
-// async for one reason: `Users.member` is field-locked to `users` (#420), so
-// `req.user` arrives without the link and it has to be re-read with
-// `overrideAccess` — the same thing `/app`'s viewer does.
+// async for one reason: the caller's own Members link is re-read with
+// `overrideAccess` (defence in depth: the field is locked to `users`), the
+// same thing `/app`'s viewer does.
 //
 // WRITES ARE `moreska`-ONLY, deliberately narrower than reads. Payload's create
 // operation only checks the access result for truthiness, so an own-rows

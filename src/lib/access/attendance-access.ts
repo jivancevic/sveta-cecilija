@@ -82,12 +82,13 @@ export interface MemberLinkReader {
 /**
  * The caller's own Members link.
  *
- * `Users.member` is field-locked to `users` (#420), so `req.user` arrives
- * WITHOUT it — by design, so a moreškant cannot repoint themselves. Every
- * consumer therefore has to re-read the account with `overrideAccess`, the same
- * thing `src/lib/app/viewer.ts` does for the `/app` access decision. A dangling
- * or unreadable link resolves to null, which every caller treats as "owns
- * nothing".
+ * `Users.member` is field-locked to `users` (#420). The JWT strategy loads the
+ * user through the local API with `overrideAccess: true`, so the link usually
+ * IS on `req.user`; the re-read with `overrideAccess` is defence in depth
+ * against a session doc that predates a relink or a future strategy change,
+ * the same thing `src/lib/app/viewer.ts` does for the `/app` access decision
+ * (see PR #427). A dangling or unreadable link resolves to null, which every
+ * caller treats as "owns nothing".
  */
 export async function resolveOwnMemberId(
   payload: MemberLinkReader | undefined,
