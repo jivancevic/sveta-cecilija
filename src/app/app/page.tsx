@@ -6,6 +6,8 @@ import { APP_STRINGS, ROLE_LABELS } from '@/lib/app/strings'
 import type { DanceRole } from '@/lib/moreskant-profile'
 import { resolveAppViewer } from '@/lib/app/viewer'
 import { vapidPublicKey } from '@/lib/push/vapid'
+import { calendarFeedUrl } from '@/lib/calendar/feed'
+import { CalendarPanel } from './CalendarPanel'
 import { InstallHint } from './InstallHint'
 import { LogoutButton } from './LogoutButton'
 import { PerformanceList } from './PerformanceList'
@@ -53,6 +55,14 @@ export default async function MoreskantHomePage() {
   const voditelj = viewer.access.kind === 'voditelj'
   const season = await getSeasonPerformances({ memberId: me?.id ?? null, voditelj })
 
+  // The shared feed (#433). Both halves are server facts handed down as one
+  // prop: a deployment missing either simply shows no panel, rather than a
+  // "Kalendar" heading over a broken link.
+  const calendarUrl = calendarFeedUrl(
+    process.env.NEXT_PUBLIC_BASE_URL,
+    process.env.CALENDAR_FEED_TOKEN,
+  )
+
   return (
     <div className="app__shell">
       <header className="app__header">
@@ -82,6 +92,8 @@ export default async function MoreskantHomePage() {
           rather than a NEXT_PUBLIC_ twin of the same value (#431): one name for
           one key means the operator cannot set half of a pair. */}
       <InstallHint vapidPublicKey={vapidPublicKey()} />
+
+      {calendarUrl && <CalendarPanel url={calendarUrl} />}
     </div>
   )
 }

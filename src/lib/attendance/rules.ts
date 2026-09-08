@@ -89,6 +89,14 @@ export interface AttendancePerformance {
   /** Epoch ms of the start instant, Europe/Zagreb (`showStartMs`). */
   startMs: number
   cancelled: boolean
+  /**
+   * The raw YYYY-MM-DD / HH:MM the start was computed from. No rule in this
+   * file reads them: they are here so the ONE object the answer route already
+   * loads can also carry what a notification sentence says (#436), instead of
+   * a second read of the same row.
+   */
+  date?: string
+  time?: string
 }
 
 /** Who is asking. `memberId` is the actor's OWN Member link, if any. */

@@ -53,6 +53,12 @@ export const ALLOW_LIST: Record<string, string> = {
     'Order-joined read: refund context for an existing order.',
   'src/lib/app/detail-data.ts':
     'Roster read (#423): the moreškant app covers EVERY performance of the season, public or not (ADR-0024) — filtering on the predicate would hide a ship call from the dancers who have to turn up for it. Id-addressed, behind the /app access decision.',
+  'src/lib/push/raw-save.ts':
+    'Roster read (#436): an id-addressed read of the row a raw admin action just wrote, so the moreškanti can be told what changed. Every performance is on the roster, public or not (ADR-0024), and the read surfaces nothing to a buyer — it only builds a push message.',
+  'src/lib/calendar/calendar-data.ts':
+    'Roster read (#433): the shared ICS feed carries EVERY performance of the current and future seasons, public or not (ADR-0024) — a ship call is an evening a dancer has to turn up for, and filtering on the predicate would hide it from the calendar the roster subscribes to. Token-authed route, no buyer surface.',
+  'src/app/api/app/note/route.ts':
+    'Roster write route (#436): the voditelj note is a roster field on EVERY performance, public or not (ADR-0024). The id-addressed read only checks the row exists before the update, behind requirePermission(moreska).',
   'src/app/api/app/attendance/route.ts':
     'Roster write route (#422): the moreškant app covers EVERY performance of the season, public or not (ADR-0024), so filtering on the predicate would be wrong. The id-addressed read only builds the start instant and the cancelled flag for the answer rules, behind requirePermission([moreskant, moreska]).',
   'src/lib/push/push-data.ts':

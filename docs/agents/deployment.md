@@ -52,6 +52,7 @@ Coolify runs its *own* internal Postgres in a separate `coolify-db` container �
 - `BREVO_API_KEY` — for transactional email (issue #6).
 - `NEXT_PUBLIC_BASE_URL` — `https://moreska.eu` in prod.
 - `CRON_SECRET` — bearer for the cron routes (`/api/cron/send-review-emails`, `/api/cron/moreskant-notifications`).
+- `CALENDAR_FEED_TOKEN` — the single secret behind the shared ICS calendar feed (#433). Generate with `openssl rand -hex 24`. The URL is `https://moreska.eu/api/app/calendar/<token>.ics` and the `/app` "Kalendar" panel renders it from `NEXT_PUBLIC_BASE_URL` + the token; unset, the panel is hidden and the route answers **500 with a log** (a 404 would read like a wrong link). Rotating it silently breaks every calendar already subscribed, so tell the dancers before you do.
 - `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` — web push for the Moreškant app (#431). Generate the pair **once** with
   `node -e "console.log(JSON.stringify(require('web-push').generateVAPIDKeys()))"` and paste both into Coolify; the subject is `mailto:info@moreska.eu`. **Rotating the private key invalidates every existing subscription**, so a rotation has to be followed by `DELETE FROM push_subscriptions` and every dancer pressing "Uključi obavijesti" again. Without the keys the app still works and simply sends nothing.
 

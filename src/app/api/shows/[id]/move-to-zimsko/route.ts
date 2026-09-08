@@ -9,6 +9,8 @@ import {
 } from '@/lib/venue-change'
 import { sendVenueChangeEmail } from '@/lib/email/send-venue-change-email'
 import { isPublicPerformance } from '@/lib/show-performance'
+import { createPushDeps, type PushPayload } from '@/lib/push/push-data'
+import { loadPerformanceFacts, notifyRawPerformanceSave } from '@/lib/push/raw-save'
 import type { Venue } from '@/lib/venues'
 
 export const runtime = 'nodejs'
@@ -117,8 +119,16 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   const pool = (payload.db as unknown as { pool: Pool }).pool
   const deps = buildDeps(pool, brevoApiKey)
+  const push = createPushDeps(payload as unknown as PushPayload)
+  const before = await loadPerformanceFacts(push.query, id)
   try {
     const result = await moveShowToZimsko({ showId: id, userId: String(user.id) }, deps)
+
+    // The write is a raw `UPDATE … RETURNING` claim, so no Payload hook fires
+    // for it (#441 review): the roster is told here instead, from the row as it
+    // stood before the claim and as it stands after. Never fails the request —
+    // the buyers have already been emailed by the time this runs.
+    await notifyRawPerformanceSave(id, before, push)
     return NextResponse.json(result)
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Move failed'

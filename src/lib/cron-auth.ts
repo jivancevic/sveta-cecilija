@@ -10,17 +10,13 @@
 // long series of requests against a very stable server, which is exactly what a
 // scheduler-facing URL on a small box is — and the fix is one line.
 //
-// `timingSafeEqual` THROWS on buffers of different length, so the length check
-// comes first and is deliberately not constant-time: the length of a secret is
-// not the secret.
+// The comparison itself lives in `src/lib/timing-safe.ts` since #433, where the
+// calendar feed needed the same thing for a token in a path.
 
-import { timingSafeEqual } from 'node:crypto'
+import { secretMatches } from './timing-safe'
 
 /** True when `header` is exactly `Bearer <secret>`. */
 export function bearerMatches(header: string | null | undefined, secret: string): boolean {
   if (!secret) return false
-  const expected = Buffer.from(`Bearer ${secret}`, 'utf8')
-  const given = Buffer.from(header ?? '', 'utf8')
-  if (given.length !== expected.length) return false
-  return timingSafeEqual(given, expected)
+  return secretMatches(header, `Bearer ${secret}`)
 }

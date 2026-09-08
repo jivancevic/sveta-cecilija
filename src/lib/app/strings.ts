@@ -197,6 +197,32 @@ export const APP_STRINGS = {
     missing: 'Ta izvedba ne postoji.',
     failed: 'Alarm nije poslan. Pokušaj ponovno.',
   },
+
+  /**
+   * The voditelj's note, edited from the phone (#436, story 25).
+   *
+   * The same note the admin form calls "Note from the voditelj": one field, two
+   * places to type it, and one hook that notifies the roster either way.
+   */
+  note: {
+    label: 'Poruka voditelja',
+    placeholder: 'npr. nađemo se na molu u 9:30',
+    save: 'Spremi poruku',
+    saving: 'Spremam...',
+    saved: 'Poruka je spremljena.',
+    missing: 'Ta izvedba ne postoji.',
+    failed: 'Poruka nije spremljena. Pokušaj ponovno.',
+    tooLong: 'Poruka je predugačka.',
+  },
+
+  /** The shared calendar subscription (#433, glossary: *Calendar feed*). */
+  calendar: {
+    title: 'Kalendar',
+    body: 'Dodaj ovu poveznicu u Google, Apple ili Outlook kalendar i sve izvedbe su ti u telefonu.',
+    copy: 'Kopiraj poveznicu',
+    copied: 'Poveznica je kopirana.',
+    copyFailed: 'Kopiranje nije uspjelo, označi poveznicu i kopiraj ručno.',
+  },
 } as const
 
 /**
@@ -217,6 +243,66 @@ export const PUSH_MESSAGES = {
     title: 'Javi dolazak',
     body: (input: { date: string; time: string }) =>
       `Izvedba je ${formatPerformanceDate(input.date)} u ${input.time}. Još nisi javio dolaziš li.`,
+  },
+
+  /**
+   * Type (3), the performance change (#436, stories 15 and 16).
+   *
+   * The sentence NAMES what changed, so a dancer standing in the harbour does
+   * not have to open the app to learn whether it is the time or the pier. The
+   * date and time in it are always the NEW ones: a message about a change is a
+   * message about what is true now.
+   *
+   * A cancellation gets its own title, because it is the one change that means
+   * "do not come" rather than "come differently".
+   */
+  change: {
+    title: 'Promjena izvedbe',
+    cancelledTitle: 'Izvedba je otkazana',
+    cancelledBody: (input: { date: string; time: string }) =>
+      `Izvedba ${formatPerformanceDate(input.date)} u ${input.time} je otkazana.`,
+    body: (input: { date: string; time: string; fields: readonly string[] }) =>
+      `Izvedba ${formatPerformanceDate(input.date)} u ${input.time}. Promijenjeno: ${input.fields.join(', ')}.`,
+    fields: {
+      date: 'datum',
+      time: 'vrijeme',
+      place: 'mjesto',
+      cancelled: 'otkazivanje',
+      note: 'poruka voditelja',
+    },
+    /** The way back: the row was cancelled and is not any more. */
+    uncancelled: 'izvedba više nije otkazana',
+  },
+
+  /** Type (4): a performance that did not exist a minute ago (story 17). */
+  created: {
+    title: 'Nova izvedba',
+    body: (input: { date: string; time: string; kind: string; place: string }) =>
+      `${input.kind}, ${formatPerformanceDate(input.date)} u ${input.time}${
+        input.place ? `, ${input.place}` : ''
+      }. Javi dolaziš li.`,
+  },
+
+  /**
+   * A whole season entered at once (#441 review).
+   *
+   * The bulk-create tool writes twenty-two Redovna shows in a loop; twenty-two
+   * separate "nova izvedba" pushes would be a phone buzzing for a minute about
+   * a schedule nobody has to answer this instant. One sentence, and the tap
+   * lands on the list rather than on any one evening.
+   */
+  createdBulk: {
+    title: 'Nove izvedbe',
+    body: (input: { count: number; firstDate: string }) =>
+      `U raspored je dodano ${input.count} ${input.count === 1 ? 'nova izvedba' : 'novih izvedbi'}, prva ${formatPerformanceDate(input.firstDate)}.`,
+  },
+
+  /** Type (5), to the voditelji only: a "dolazim" withdrawn (story 18). */
+  withdrawal: {
+    title: 'Netko je odustao',
+    someone: 'Moreškant',
+    body: (input: { who: string; date: string; time: string }) =>
+      `${input.who} više ne dolazi na izvedbu ${formatPerformanceDate(input.date)} u ${input.time}.`,
   },
 } as const
 

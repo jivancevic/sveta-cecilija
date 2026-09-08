@@ -14,6 +14,8 @@ import { refundUrl } from '@/lib/site-url'
 import { toIsoDate } from '@/lib/to-iso-date'
 import { assertPublicPerformance } from '@/lib/show-admin-actions'
 import { isPublicPerformance } from '@/lib/show-performance'
+import { createPushDeps, type PushPayload } from '@/lib/push/push-data'
+import { loadPerformanceFacts, notifyRawPerformanceSave } from '@/lib/push/raw-save'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -215,8 +217,18 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     }
   }
 
+  const push = createPushDeps(payload as unknown as PushPayload)
+  const before = await loadPerformanceFacts(push.query, id)
   try {
     const result = await rescheduleShow({ showId: id, userId: String(user.id), newDate }, deps)
+
+    // The write is a raw `UPDATE … RETURNING` claim, so no Payload hook fires
+    // for it (#441 review): the roster is told here instead, from the row as it
+    // stood before the claim and as it stands after. Never fails the request —
+    // the buyers have already been emailed by the time this runs.
+    // A moved date also invalidates the alarm and reminder claims, which is
+    // the #440 defect this route would otherwise still have.
+    await notifyRawPerformanceSave(id, before, push)
     return NextResponse.json(result)
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Reschedule failed'

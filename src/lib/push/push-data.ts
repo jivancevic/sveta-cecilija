@@ -28,6 +28,7 @@ import {
   finalizeNotification,
   loadSubscriptions,
   loadUserIdsByMember,
+  loadVoditeljUserIds,
   poolQuery,
   releaseNotification,
   removeSubscriptionById,
@@ -179,6 +180,7 @@ export function createPushDeps(payload: PushPayload) {
     loadAttendance: (performanceId: string) => loadAttendanceRows(payload, performanceId),
     loadMoreskanti: () => loadActiveMoreskanti(payload),
     loadUserIdsByMember: (memberIds: readonly string[]) => loadUserIdsByMember(query, memberIds),
+    loadVoditeljUserIds: () => loadVoditeljUserIds(query),
     send: createSender(query),
     claim: (performanceId: string, type: ScheduledNotificationType) =>
       claimNotification(query, performanceId, type),

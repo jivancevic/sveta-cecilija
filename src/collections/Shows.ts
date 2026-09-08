@@ -12,6 +12,7 @@ import {
   showsReadAccess,
   showsUpdateAccess,
 } from '@/lib/access/shows-access'
+import { notifyRosterOnShowChange } from '@/lib/push/shows-hook'
 import {
   PerformanceValidationError,
   isPublicPerformance,
@@ -123,6 +124,12 @@ export const Shows: CollectionConfig = {
   hooks: {
     // Delete a performance's attendance rows before the performance itself.
     beforeDelete: [cascadeShowAttendanceDelete],
+    // Tell the roster what changed (#436): a create pushes "nova izvedba", a
+    // save that moved the date, the time, the place, the cancelled status or
+    // the voditelj note pushes what changed, and a moved start additionally
+    // releases the alarm/reminder claims so the cron reschedules. Everything
+    // is decided in src/lib/push/notify.ts and nothing here can fail a save.
+    afterChange: [notifyRosterOnShowChange],
     // The kind/isPublic invariants (ADR-0024). The rules themselves are a pure,
     // unit-tested function in src/lib/show-performance.ts; this hook is only the
     // Payload plumbing. `beforeValidate` (not `beforeChange`) so the forced
