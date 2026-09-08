@@ -19,6 +19,7 @@
 // `src/collections/Attendance.ts` is only the wiring.
 
 import { can, type PermissionUser } from './permissions'
+import { relationId } from '@/lib/payload-relation'
 import type { Where } from 'payload'
 
 /**
@@ -76,16 +77,6 @@ export interface MemberLinkReader {
     depth: number
     overrideAccess: boolean
   }) => Promise<unknown>
-}
-
-/** The id a Payload relationship field holds, whether populated or not. */
-export function relationId(value: unknown): string | number | null {
-  if (value == null) return null
-  if (typeof value === 'object') {
-    const id = (value as { id?: unknown }).id
-    return typeof id === 'string' || typeof id === 'number' ? id : null
-  }
-  return typeof value === 'string' || typeof value === 'number' ? value : null
 }
 
 /**

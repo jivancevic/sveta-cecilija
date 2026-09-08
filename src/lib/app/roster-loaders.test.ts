@@ -426,6 +426,22 @@ describe('loadSeasonPerformances — the chip is the voditelj\'s only', () => {
       return { docs: shows }
     })
 
+  it('scopes the chip query to the season\'s own performances', async () => {
+    const f = findFor()
+    await loadSeasonPerformances({
+      find: f,
+      voditelj: true,
+      memberId: '3',
+      now: () => new Date('2026-08-05T10:00:00.000Z'),
+    })
+    const chipCall = f.mock.calls
+      .map((c) => c[0] as { collection?: string; where?: unknown })
+      .filter((a) => a.collection === 'attendance')
+      .pop()
+    // Not "every answer ever recorded": the query names this season's rows.
+    expect(chipCall?.where).toEqual({ performance: { in: ['1'] } })
+  })
+
   it('attaches a chip for a voditelj', async () => {
     const out = await loadSeasonPerformances({
       find: findFor(),

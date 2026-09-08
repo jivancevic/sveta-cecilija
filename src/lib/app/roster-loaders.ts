@@ -23,8 +23,15 @@ import { seasonYear } from '@/lib/member/season'
 import { isPublicPerformance, type PerformanceKind } from '@/lib/show-performance'
 import { showStartMs } from '@/lib/show-time'
 import type { ShowsFind } from '@/lib/show-loaders'
-import { moreskantMayAnswer, type Army, type AttendanceMember, type AttendanceStatus } from '@/lib/attendance/rules'
+import {
+  moreskantMayAnswer,
+  toAttendanceMember,
+  type Army,
+  type AttendanceMember,
+  type AttendanceStatus,
+} from '@/lib/attendance/rules'
 import { countArmies, type AttendanceRow } from '@/lib/attendance/army-count'
+import { relationIdString } from '@/lib/payload-relation'
 import type { Venue } from '@/lib/venues'
 
 /** One performance card. No email, ever. */
@@ -78,16 +85,6 @@ export interface SeasonPerformances {
  * any more is noise on a phone screen (#419, story 30).
  */
 export const CANCELLED_WINDOW_MS = 7 * 24 * 60 * 60 * 1000
-
-/** The id behind a Payload relationship value, populated or not. */
-export function relationIdOf(value: unknown): string | null {
-  if (value == null) return null
-  if (typeof value === 'object') {
-    const id = (value as { id?: unknown }).id
-    return id == null ? null : String(id)
-  }
-  return String(value)
-}
 
 function threshold(value: unknown, fallback = 8): number {
   return typeof value === 'number' && Number.isFinite(value) ? value : fallback
@@ -254,7 +251,7 @@ export async function loadSeasonPerformances(
       depth: 0,
     })
     for (const row of mine.docs) {
-      const performance = relationIdOf(row.performance)
+      const performance = relationIdString(row.performance)
       if (performance && (row.status === 'coming' || row.status === 'not_coming')) {
         answers.set(performance, row.status)
       }
@@ -268,9 +265,18 @@ export async function loadSeasonPerformances(
 
   // The voditelj's headcount chips: two more queries, and only for the account
   // that has a reason to see them. A dancer gets the numbers on the detail page.
-  if (deps.voditelj) {
+  if (deps.voditelj && rows.length > 0) {
+    // Scoped to this season's performances: without the filter this reads every
+    // answer ever recorded, which grows without bound one season at a time and
+    // is thrown away immediately.
+    const performanceIds = rows.map((p) => p.id)
     const [all, roster] = await Promise.all([
-      deps.find({ collection: 'attendance', limit: 5000, depth: 0 }),
+      deps.find({
+        collection: 'attendance',
+        where: { performance: { in: performanceIds } },
+        limit: 5000,
+        depth: 0,
+      }),
       deps.find({
         collection: 'members',
         where: { and: [{ isMoreskant: { equals: true } }, { active: { not_equals: false } }] },
@@ -281,8 +287,8 @@ export async function loadSeasonPerformances(
 
     const attendance: (AttendanceRow & { performanceId: string })[] = []
     for (const row of all.docs) {
-      const performanceId = relationIdOf(row.performance)
-      const memberId = relationIdOf(row.member)
+      const performanceId = relationIdString(row.performance)
+      const memberId = relationIdString(row.member)
       if (!performanceId || !memberId) continue
       if (row.status !== 'coming' && row.status !== 'not_coming') continue
       attendance.push({
@@ -293,16 +299,7 @@ export async function loadSeasonPerformances(
       })
     }
 
-    const members: AttendanceMember[] = roster.docs.map((doc) => ({
-      id: String(doc.id),
-      name: typeof doc.name === 'string' ? doc.name : null,
-      nickname: typeof doc.nickname === 'string' ? doc.nickname : null,
-      mobile: typeof doc.mobile === 'string' ? doc.mobile : null,
-      roles: Array.isArray(doc.roles) ? (doc.roles as string[]) : [],
-      primaryRole: typeof doc.primaryRole === 'string' ? doc.primaryRole : null,
-      active: doc.active !== false,
-      isMoreskant: doc.isMoreskant === true,
-    }))
+    const members: AttendanceMember[] = roster.docs.map(toAttendanceMember)
 
     rows = attachArmyChips(rows, attendance, members)
   }

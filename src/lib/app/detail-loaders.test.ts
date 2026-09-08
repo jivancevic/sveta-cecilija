@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
-import { buildPerformanceDetail, loadPerformanceDetail, toDetailMember } from './detail-loaders'
+import { buildPerformanceDetail, loadPerformanceDetail } from './detail-loaders'
+import { toAttendanceMember } from '@/lib/attendance/rules'
 import { showStartMs } from '@/lib/show-time'
 
 // #423 — the detail payload: grouping, mobiles present, emails absent, the
@@ -69,9 +70,9 @@ function build(over: Partial<Parameters<typeof buildPerformanceDetail>[0]> = {})
   })
 }
 
-describe('toDetailMember', () => {
+describe('toAttendanceMember', () => {
   it('projects the roster identity and drops the email', () => {
-    const out = toDetailMember(memberDoc(1, 'Cici', 'crni'))
+    const out = toAttendanceMember(memberDoc(1, 'Cici', 'crni'))
     expect(out).toEqual({
       id: '1',
       name: 'Ime Cici',

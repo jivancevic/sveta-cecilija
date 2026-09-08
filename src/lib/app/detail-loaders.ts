@@ -8,8 +8,9 @@
 //
 // The PII boundary of ADR-0024 lives in this file's shape: `RosterPerson`
 // carries a nickname and a mobile and there is no email field to fill, so a
-// dancer can call a friend and nothing else leaks. `toDetailMember` is an
-// explicit projection, never a spread of the Payload doc.
+// dancer can call a friend and nothing else leaks. `toAttendanceMember` (in
+// `attendance/rules.ts`, next to the type it builds) is an explicit projection,
+// never a spread of the Payload doc.
 //
 // Read-only is a property of the VIEWER, not of the page: a moreškant looking
 // back at last week sees the answers as they were, while a voditelj can still
@@ -22,12 +23,13 @@ import { countArmies, type ArmyCount, type AttendanceRow } from '@/lib/attendanc
 import {
   allowedArmies,
   moreskantMayAnswer,
+  toAttendanceMember,
   type Army,
   type AttendanceMember,
   type AttendanceStatus,
 } from '@/lib/attendance/rules'
-import { isMoreskantRow } from '@/lib/moreskant-profile'
-import { relationIdOf, toRosterPerformance, type RosterPerformance } from './roster-loaders'
+import { relationIdString } from '@/lib/payload-relation'
+import { toRosterPerformance, type RosterPerformance } from './roster-loaders'
 
 export interface PerformanceDetail {
   performance: RosterPerformance
@@ -45,23 +47,9 @@ export interface PerformanceDetail {
   myMemberId: string | null
 }
 
-/** A Payload members doc → the roster identity. Emails are deliberately absent. */
-export function toDetailMember(doc: Record<string, unknown>): AttendanceMember {
-  return {
-    id: String(doc.id),
-    name: typeof doc.name === 'string' ? doc.name : null,
-    nickname: typeof doc.nickname === 'string' ? doc.nickname : null,
-    mobile: typeof doc.mobile === 'string' ? doc.mobile : null,
-    roles: Array.isArray(doc.roles) ? (doc.roles.filter((r) => typeof r === 'string') as string[]) : [],
-    primaryRole: typeof doc.primaryRole === 'string' ? doc.primaryRole : null,
-    active: doc.active !== false,
-    isMoreskant: isMoreskantRow(doc),
-  }
-}
-
 /** A Payload attendance doc → the flat row the count reads. */
 export function toAttendanceRow(doc: Record<string, unknown>): AttendanceRow | null {
-  const memberId = relationIdOf(doc.member)
+  const memberId = relationIdString(doc.member)
   if (!memberId) return null
   if (doc.status !== 'coming' && doc.status !== 'not_coming') return null
   return {
@@ -86,7 +74,7 @@ export function buildPerformanceDetail(input: {
   nowMs: number
 }): PerformanceDetail {
   const performance = toRosterPerformance(input.performanceDoc)
-  const members = input.memberDocs.map(toDetailMember)
+  const members = input.memberDocs.map(toAttendanceMember)
   const rows = input.attendanceDocs
     .map(toAttendanceRow)
     .filter((r): r is AttendanceRow => r !== null)

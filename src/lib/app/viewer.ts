@@ -1,6 +1,7 @@
 import { headers } from 'next/headers'
 import { getPayload } from 'payload'
 import config from '@payload-config'
+import { relationId } from '@/lib/payload-relation'
 import { decideAppAccess, type AppAccess, type AppMember } from './access'
 
 // Who is asking, resolved once per `/app` request (#421).
@@ -44,16 +45,6 @@ export function toAppMember(doc: Record<string, unknown> | null | undefined): Ap
     active: doc.active !== false,
     isMoreskant: doc.isMoreskant === true,
   }
-}
-
-/** The id a Payload relationship field holds, whether populated or not. */
-function relationId(value: unknown): string | number | null {
-  if (value == null) return null
-  if (typeof value === 'object') {
-    const id = (value as { id?: unknown }).id
-    return typeof id === 'string' || typeof id === 'number' ? id : null
-  }
-  return typeof value === 'string' || typeof value === 'number' ? value : null
 }
 
 export async function resolveAppViewer(): Promise<AppViewer> {
