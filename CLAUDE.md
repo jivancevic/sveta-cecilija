@@ -85,7 +85,7 @@ RNO registry updated 2026-08-17 (#369): website `https://moreska.eu/`, e-mail `i
 | `/checkout/[showId]/confirmation` | `…/confirmation/page.tsx` | Post-payment landing; looks up Order by `pi` (5×400ms retry to bridge the webhook race) |
 | `/privacy-policy`, `/cookie-policy` | `src/app/(frontend)/…/page.tsx` | Legal pages (EN+HR), via `LegalPage.tsx` |
 | `/scan/[token]` | `src/app/scan/[token]/page.tsx` (+ `scan/layout.tsx`) | Auth-aware door scan — buyer view if unauth, staff atomic mark-and-read if internal. Outside `(frontend)` (own minimal layout). Logic in `src/lib/scan-token.ts`; CSRF caveats in `payload-admin.md` |
-| `/app`, `/app/login`, `/app/izvedba/[id]`, `/app/set-password`, `/app/forgot` | `src/app/app/…` (own route group + layout) | Moreškant roster app, Croatian only, noindex, outside `(frontend)`/`(payload)`. Access decision in `src/lib/app/access.ts`; attendance answers write through `POST /api/app/attendance`; a dancer's login is issued by the invitation (`POST /api/app/invite`), never self-registered; see `docs/agents/moreskant-app.md` |
+| `/app`, `/app/login`, `/app/izvedba/[id]`, `/app/statistika`, `/app/set-password`, `/app/forgot` | `src/app/app/…` (own route group + layout) | Moreškant roster app, Croatian only, noindex, outside `(frontend)`/`(payload)`. Access decision in `src/lib/app/access.ts`; attendance answers write through `POST /api/app/attendance`; a dancer's login is issued by the invitation (`POST /api/app/invite`), never self-registered; see `docs/agents/moreskant-app.md` |
 | `/admin`, `/admin/stats`, `/admin/stats/[showId]` | Payload + `src/components/payload/AdminStatsView.tsx`, `AdminShowStatsView.tsx` | Admin dashboard + permission-aware stats views |
 | `/api/stripe/webhook` | `src/app/api/stripe/webhook/route.ts` | Creates Order + Tickets on payment success |
 
@@ -125,6 +125,7 @@ Field-level detail lives in `src/collections/*.ts` — this table is purpose + k
 | `Members` (`members`) | Society members (ADR-0019): `name`, `active`, `note`. Shared attribution target for comp tickets (`orders.member`) and promo codes (`promoCodes.member`). Since #420 also the moreškant identity (ADR-0024): `isMoreskant` + nickname, mobile, email, dance roles, primary role, locked to `moreska`; rules in `docs/agents/moreskant-app.md`. |
 | `PromoCodes` (`promo-codes`) | Member promo codes (ADR-0018): `code` (unique), `member` (→ Members), `discountType` (`adult-price-override`), `adultPriceEur` (default 15), `active`. Applied at online checkout, best-of-two vs 5-for-4. `tickets` CRUD. |
 | `Attendance` (`attendance`) | One moreškant's answer for one performance (ADR-0024, #422): `performance` → Shows, `member` → Members, `status` (`coming \| not_coming`), `army` (`crni \| bili \| null`), `answeredBy`, `answeredAt`. Unique on (performance, member); **"no answer" is the absence of a row**. Written only by `POST /api/app/attendance`; rules + army count in `docs/agents/moreskant-app.md`. |
+| `Lineups` (`lineups`) | The postava of one performance (ADR-0024, #432): `performance` → Shows, `member` → Members, `role` from the dance-role enum. Unique on (performance, member); confirmation is one flag per evening (`shows.lineupConfirmed`), and only confirmed lineups reach a dancer or the season statistics. Written only by `POST /api/app/lineup`; rules in `docs/agents/moreskant-app.md`. |
 | `Posts` (`posts`) | Blog posts (heroImage may be a remote URL) |
 | `marketing_optouts` | **Raw table, NOT a Payload collection** (#57): `email` PK, `source`, `optedOutAt`. Created in `db/schema/app.sql`; see `docs/agents/features.md`. |
 
@@ -141,6 +142,7 @@ Every decision reads the permission set via `can()` / `hasAny()` from `src/lib/a
 | `Partners` | `tickets`; `partner` → only own (`partnerOwnRecordWhere`) | `tickets` |
 | `Members` | `tickets` or `moreska` | `tickets` or `moreska`; delete `tickets` only. Moreškant fields read+write locked to `moreska`; `name`/`active`/`note` update locked to `tickets` |
 | `PromoCodes` | `tickets` | `tickets` |
+| `Lineups` | `moreska`; `moreskant` → only rows of a confirmed performance (`lineupReadAccess`) | `moreska` only (`lineupWriteAccess`), a boolean for the same reason. Dancers never write a lineup |
 | `Attendance` | `moreska`; `moreskant` → only own rows (`attendanceReadAccess`) | `moreska` only (`attendanceWriteAccess`) — never a `Where`, which Payload's create would read as plain "allowed". Dancers write through `POST /api/app/attendance`, where the rules live |
 | `OrderLookups` | `tickets` | `tickets` |
 | `Users` | `users`, else own row only | create/delete `users`; update `users` or self, except a `shared` account, which may never edit itself |

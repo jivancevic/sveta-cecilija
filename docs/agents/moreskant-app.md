@@ -11,7 +11,8 @@ The dancer-facing surface of the roster module ([ADR-0023](../adr/0023-permissio
 - **Invitations** (#424): "Pošalji pozivnicu" on a Member, `/app/set-password`, "Zaboravljena lozinka".
 
 Phase 4 batch A (#431, #435) adds **push**, batch B (#436, #433) the triggered
-notifications, the note edit and the calendar feed: see the Push section at the end. What `/app` writes is an attendance row, a push subscription, the session cookie and, through the invitation, a dancer's password.
+notifications, the note edit and the calendar feed, batch C (#432, #437) the
+**lineups** and the **statistics**: see the sections at the end. What `/app` writes is an attendance row, a push subscription, the session cookie and, through the invitation, a dancer's password.
 
 ## Route group
 
@@ -539,3 +540,105 @@ and a per-user feed would buy a token table and a revocation story for nothing.
 - The `/app` "Kalendar" panel (`CalendarPanel.tsx`) renders
   `NEXT_PUBLIC_BASE_URL` + the path with a copy button, and is simply absent when
   either half is unset.
+
+## Lineups / postave (#432 — phase 4 batch C)
+
+Who danced which dance role at one performance: the `lineups` collection
+(performance → Shows, member → Members, role from the dance-role enum), unique
+on (performance, member) — one role per dancer per evening, which is what stops
+the statistics double counting. Glossary: `CONTEXT.md` → *Lineup (postava)*.
+
+**Confirmation is one flag per evening, not per row**: `shows.lineupConfirmed`
+plus `lineupConfirmedAt`, both roster fields (`moreska`). A postava is confirmed
+as a whole, and half a confirmed evening is not a state anybody means.
+
+### Read is scoped by the performance, not by the member
+
+That is the one place this differs from attendance. `moreska` sees everything; a
+`moreskant` gets `{ 'performance.lineupConfirmed': { equals: true } }` on
+**read** and nothing on create, update or delete. Reaching THROUGH the
+relationship rather than carrying a list of ids is deliberate: an id list would
+go stale between the access decision and the query, and a lineup unlocked mid
+request has to stop being visible immediately (story 34). Writes stay a plain
+boolean for the reason `attendance-access.ts` sets out at length — Payload's
+create tests the result for truthiness, so a `Where` there reads as "allowed".
+
+### The two writers
+
+| Route | Gate | Notes |
+|---|---|---|
+| `POST /api/app/lineup` | `requirePermission('moreska')` + `/app` guard | `{ performanceId, entries: [{ memberId, role }] }`; replaces the WHOLE lineup in one transaction; **409** when the lineup is confirmed; 400 for an unknown role, a duplicated member, or somebody who is not an active moreškant |
+| `POST /api/app/lineup/confirm` | same | `{ performanceId, confirmed }`; `confirmed` must be a real boolean, or 400 — an absent value must never unlock an evening by accident |
+
+Replace, not patch: the editor holds the whole list in front of the voditelj, so
+"these are the people who danced" is the sentence they mean, and the route
+implements the same operation. The transaction lives in the route
+(`payload.db.beginTransaction()`), because a delete that succeeded and inserts
+that did not would leave a confirmed evening empty.
+
+409 rather than 403 is a decision: the voditelj IS allowed, after they press
+Otključaj.
+
+### The rules are pure
+
+`src/lib/lineup/rules.ts`:
+
+- **`buildLineupFromAttendance`** — "Napravi iz prisutnosti" (story 27). Only
+  `coming` answers; the role is the member's **primary role**, and the stored
+  army wins only when it CONTRADICTS that role. An attendance row's army is
+  derived from the primary role on create, so a stored `crni` against a
+  `crni_kralj` profile is nobody's decision and must not demote the king; a
+  stored `bili` against it is the voditelj's "Prebaci u ..." and does. A bula
+  carries no army and stays a bula.
+- **`roleWarnings`** — a role outside the member's profile is a **warning and
+  still saves** (story 29): a bula danced by a crni in an emergency has to be
+  recordable as it happened. The editor recomputes the same rule in the browser
+  over the same roster, so the line appears while choosing rather than after
+  saving.
+- **`validateLineupEntries`** — the two things that are nonsense rather than
+  unusual: an unknown role and a member listed twice. A member outside the
+  active roster is refused too; that is about the PERSON, not the role.
+
+The suggestion costs no round trip: it is a pure function of data the detail
+loader already has, so the server computes it and hands it down as a prop.
+
+### Cascades
+
+`cascadeShowLineupDelete` / `cascadeMemberLineupDelete` mirror the attendance
+pair, for the same reason: both FKs are `ON DELETE SET NULL` on `NOT NULL`
+columns (Payload's own shape, which the drift gate pins), so the database itself
+refuses to delete a performance or a Member that is still in a postava.
+`scripts/probe-lineup-schema.mjs` proves that against real Postgres.
+
+### Schema
+
+`db/schema/migrate-zz-b-lineups.sql`. **The `-b-` is a sort key, not a word**:
+bootstrap applies these files in filename order, the file has to land after
+`migrate-members.sql` / `migrate-shows-performance.sql` and before
+`migrate-zz-drop-users-role.sql`, which must stay the last `migrate-*` file
+(#398, asserted by `db-schema-safety.test.ts`) — and a plain
+`migrate-zz-lineups.sql` would sort after it. The two-column unique index lives
+only there, never in the regenerated `00-base.sql`.
+
+## Statistics (#437 — phase 4 batch C)
+
+`/app/statistika`: one row per active moreškant for the selected season —
+confirmed performances danced, and how many times as crni kralj, bili kralj,
+otmanović and bula. Tapping a row reveals the split by performance kind.
+Society-wide, like the rest of `/app`: every moreškant sees the whole table.
+
+- **Only confirmed lineups count** (story 39). The filter is on the
+  *performance*, and it lives in `aggregateDancerStats`
+  (`src/lib/lineup/stats.ts`) rather than in the query, so it is stated once and
+  tested directly.
+- **A dancer who danced nothing is still a row, at zero** — a scoreboard that
+  hides the zeros reads as if those dancers did not exist.
+- Sorted by performances danced, then nickname (Croatian collation).
+- The season is the calendar year (`seasonYear`, ADR-0022); `?sezona=YYYY`
+  chooses it and anything unparseable or unknown falls back to the current one,
+  so a mistyped bookmark shows this year's table rather than an error.
+- The loader (`stats-loaders.ts` + `stats-data.ts`, the phase 2 split) fetches
+  the season's performances, then the lineups of the **confirmed** ones in ONE
+  query — never one query per evening — and skips that query entirely when
+  nothing is confirmed, since an empty `in` list would ask for every lineup ever
+  written.
