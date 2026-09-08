@@ -132,18 +132,24 @@ describe('Shows non-public field conditions (#409)', () => {
     expect((status as { access?: { read?: unknown } }).access?.read).toBeUndefined()
   })
 
-  it('has no hook that could email anyone when status changes', () => {
-    // Cancelling a non-public performance must send nothing. The collection has
-    // no afterChange (or any other save-path) hook, so nothing on the way to
-    // the database can reach Brevo. Buyer mail is only ever sent by the
-    // explicit admin actions, which now refuse non-public rows.
+  it('has no hook that could EMAIL anyone when status changes', () => {
+    // Cancelling a non-public performance must send no buyer mail. Nothing on
+    // the way to the database can reach Brevo: buyer mail is only ever sent by
+    // the explicit admin actions, which refuse non-public rows.
     //
-    // The two hooks that DO exist are the beforeValidate validator and the
-    // #422 attendance cascade on delete; neither sends anything, and this
-    // assertion is exact so a third one has to be justified here.
-    expect(Object.keys(Shows.hooks ?? {}).sort()).toEqual(['beforeDelete', 'beforeValidate'])
+    // The three hooks that DO exist are the beforeValidate validator, the #422
+    // attendance cascade on delete, and the #436 roster afterChange, which
+    // sends WEB PUSH to the moreškanti (never email, ADR-0024) and swallows its
+    // own failures so it cannot fail a save. This assertion is exact, so a
+    // fourth hook has to be justified here.
+    expect(Object.keys(Shows.hooks ?? {}).sort()).toEqual([
+      'afterChange',
+      'beforeDelete',
+      'beforeValidate',
+    ])
     expect(Shows.hooks?.beforeValidate).toHaveLength(1)
     expect(Shows.hooks?.beforeDelete).toHaveLength(1)
+    expect(Shows.hooks?.afterChange).toHaveLength(1)
   })
 })
 
