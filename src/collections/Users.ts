@@ -215,6 +215,32 @@ export const Users: CollectionConfig = {
         create: ({ req }) => usersHolder(req.user as ReqUser),
       },
     },
+    // The Member a `moreskant` login belongs to (ADR-0024, #420). One person,
+    // one Members row: the roster, comp attribution and promo codes share an
+    // identity, and `/app` resolves the dancer behind a login through this link
+    // (#421). Read is locked alongside the writes — a moreškant must not be able
+    // to repoint themselves at another dancer, and nothing in the session needs
+    // the value: `/app` re-reads it server-side with `overrideAccess: true`
+    // (unlike `partner`, whose value rides along on `req.user` for ownership
+    // scoping). The link is filled by the invitation flow (#424); until then a
+    // `users` holder sets it by hand.
+    {
+      name: 'member',
+      type: 'relationship',
+      relationTo: 'members',
+      label: { en: 'Member (moreškant)', hr: 'Član (moreškant)' },
+      admin: {
+        description: {
+          en: 'The society member this login belongs to. Required for a `moreskant` account.',
+          hr: 'Član društva kojem pripada ova prijava. Obavezan za račun s dozvolom `moreskant`.',
+        },
+      },
+      access: {
+        read: ({ req }) => usersHolder(req.user as ReqUser),
+        update: ({ req }) => usersHolder(req.user as ReqUser),
+        create: ({ req }) => usersHolder(req.user as ReqUser),
+      },
+    },
     // Log out action on the account view (/admin/account). A `ui` field stores
     // nothing; its component renders a Log out button, scoped to the viewer's
     // own record. Logout was moved here off the dashboards (#167).

@@ -128,6 +128,28 @@ CREATE TYPE public.enum_tickets_cancel_reason AS ENUM (
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 DO $$ BEGIN
+CREATE TYPE public.enum_members_primary_role AS ENUM (
+    'crni',
+    'bili',
+    'crni_kralj',
+    'otmanovic',
+    'bili_kralj',
+    'bula'
+);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+CREATE TYPE public.enum_members_roles AS ENUM (
+    'crni',
+    'bili',
+    'crni_kralj',
+    'otmanovic',
+    'bili_kralj',
+    'bula'
+);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
 CREATE TYPE public.enum_tickets_status AS ENUM (
     'active',
     'cancelled'
@@ -203,6 +225,11 @@ CREATE TABLE IF NOT EXISTS public.members (
     name character varying NOT NULL,
     active boolean DEFAULT true,
     note character varying,
+    is_moreskant boolean DEFAULT false,
+    nickname character varying,
+    mobile character varying,
+    email character varying,
+    primary_role public.enum_members_primary_role,
     updated_at timestamp(3) with time zone DEFAULT now() NOT NULL,
     created_at timestamp(3) with time zone DEFAULT now() NOT NULL
 );
@@ -216,6 +243,23 @@ CREATE SEQUENCE IF NOT EXISTS public.members_id_seq
     CACHE 1;
 
 ALTER SEQUENCE public.members_id_seq OWNED BY public.members.id;
+
+CREATE TABLE IF NOT EXISTS public.members_roles (
+    "order" integer NOT NULL,
+    parent_id integer NOT NULL,
+    value public.enum_members_roles,
+    id integer NOT NULL
+);
+
+CREATE SEQUENCE IF NOT EXISTS public.members_roles_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.members_roles_id_seq OWNED BY public.members_roles.id;
 
 CREATE TABLE IF NOT EXISTS public.order_lookups (
     id integer NOT NULL,
@@ -516,6 +560,7 @@ CREATE TABLE IF NOT EXISTS public.users (
     id integer NOT NULL,
     shared boolean DEFAULT false,
     partner_id integer,
+    member_id integer,
     updated_at timestamp(3) with time zone DEFAULT now() NOT NULL,
     created_at timestamp(3) with time zone DEFAULT now() NOT NULL,
     email character varying,
@@ -569,6 +614,8 @@ ALTER TABLE ONLY public.faqs ALTER COLUMN id SET DEFAULT nextval('public.faqs_id
 
 ALTER TABLE ONLY public.members ALTER COLUMN id SET DEFAULT nextval('public.members_id_seq'::regclass);
 
+ALTER TABLE ONLY public.members_roles ALTER COLUMN id SET DEFAULT nextval('public.members_roles_id_seq'::regclass);
+
 ALTER TABLE ONLY public.order_lookups ALTER COLUMN id SET DEFAULT nextval('public.order_lookups_id_seq'::regclass);
 
 ALTER TABLE ONLY public.orders ALTER COLUMN id SET DEFAULT nextval('public.orders_id_seq'::regclass);
@@ -617,6 +664,13 @@ DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'members_pkey' AND conrelid = 'public.members'::regclass) THEN
     ALTER TABLE ONLY public.members
     ADD CONSTRAINT members_pkey PRIMARY KEY (id);
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'members_roles_pkey' AND conrelid = 'public.members_roles'::regclass) THEN
+    ALTER TABLE ONLY public.members_roles
+    ADD CONSTRAINT members_roles_pkey PRIMARY KEY (id);
   END IF;
 END $$;
 
@@ -744,6 +798,12 @@ CREATE INDEX IF NOT EXISTS members_created_at_idx ON public.members USING btree 
 
 CREATE INDEX IF NOT EXISTS members_updated_at_idx ON public.members USING btree (updated_at);
 
+CREATE UNIQUE INDEX IF NOT EXISTS members_moreskant_nickname_unique_idx ON public.members USING btree (lower(nickname)) WHERE ((is_moreskant = true) AND (nickname IS NOT NULL));
+
+CREATE INDEX IF NOT EXISTS members_roles_order_idx ON public.members_roles USING btree ("order");
+
+CREATE INDEX IF NOT EXISTS members_roles_parent_idx ON public.members_roles USING btree (parent_id);
+
 CREATE INDEX IF NOT EXISTS order_lookups_created_at_idx ON public.order_lookups USING btree (created_at);
 
 CREATE INDEX IF NOT EXISTS order_lookups_show_idx ON public.order_lookups USING btree (show_id);
@@ -860,6 +920,8 @@ CREATE UNIQUE INDEX IF NOT EXISTS users_email_idx ON public.users USING btree (e
 
 CREATE INDEX IF NOT EXISTS users_partner_idx ON public.users USING btree (partner_id);
 
+CREATE INDEX IF NOT EXISTS users_member_idx ON public.users USING btree (member_id);
+
 CREATE INDEX IF NOT EXISTS users_permissions_order_idx ON public.users_permissions USING btree ("order");
 
 CREATE INDEX IF NOT EXISTS users_permissions_parent_idx ON public.users_permissions USING btree (parent_id);
@@ -883,6 +945,13 @@ DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'order_lookups_user_id_users_id_fk' AND conrelid = 'public.order_lookups'::regclass) THEN
     ALTER TABLE ONLY public.order_lookups
     ADD CONSTRAINT order_lookups_user_id_users_id_fk FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE SET NULL;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'members_roles_parent_fk' AND conrelid = 'public.members_roles'::regclass) THEN
+    ALTER TABLE ONLY public.members_roles
+    ADD CONSTRAINT members_roles_parent_fk FOREIGN KEY (parent_id) REFERENCES public.members(id) ON DELETE CASCADE;
   END IF;
 END $$;
 
@@ -1044,6 +1113,13 @@ DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'users_partner_id_partners_id_fk' AND conrelid = 'public.users'::regclass) THEN
     ALTER TABLE ONLY public.users
     ADD CONSTRAINT users_partner_id_partners_id_fk FOREIGN KEY (partner_id) REFERENCES public.partners(id) ON DELETE SET NULL;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'users_member_id_members_id_fk' AND conrelid = 'public.users'::regclass) THEN
+    ALTER TABLE ONLY public.users
+    ADD CONSTRAINT users_member_id_members_id_fk FOREIGN KEY (member_id) REFERENCES public.members(id) ON DELETE SET NULL;
   END IF;
 END $$;
 

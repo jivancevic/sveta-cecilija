@@ -10,13 +10,16 @@ describe('emailRequiredFor', () => {
     expect(emailRequiredFor({ permissions: ['users', 'tickets', 'dev'] })).toBe(true)
     expect(emailRequiredFor({ permissions: ['tickets', 'refunds', 'door'] })).toBe(true)
     expect(emailRequiredFor({ permissions: ['moreska'] })).toBe(true)
+    // #420: a moreškant login is created by an invitation email, so the inbox
+    // is the account's precondition, not a nicety.
+    expect(emailRequiredFor({ permissions: ['moreskant'] })).toBe(true)
+    expect(emailRequiredFor({ permissions: ['moreska', 'moreskant'] })).toBe(true)
   })
 
   it('does not require email for shared or external accounts', () => {
     expect(emailRequiredFor({ permissions: ['door'] })).toBe(false)
     expect(emailRequiredFor({ permissions: ['partner'] })).toBe(false)
     expect(emailRequiredFor({ permissions: ['season_stats'] })).toBe(false)
-    expect(emailRequiredFor({ permissions: ['moreskant'] })).toBe(false)
   })
 
   it('does not require email for an empty, missing or unknown set', () => {
@@ -37,6 +40,9 @@ describe('assertUserEmailPolicy', () => {
     )
     expect(() => assertUserEmailPolicy({ permissions: ['moreska'], email: '   ' })).toThrow(
       /email address is required/i,
+    )
+    expect(() => assertUserEmailPolicy({ permissions: ['moreskant'], email: null })).toThrow(
+      UserEmailRequiredError,
     )
   })
 
