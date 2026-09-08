@@ -10,6 +10,7 @@ import {
   selfCompCapExceeded,
   selfCompRemaining,
   type SelfCompActor,
+  type SelfCompCancelContext,
   type SelfCompIssueDeps,
   type SelfCompCancelDeps,
   type SelfCompOrder,
@@ -194,6 +195,17 @@ describe('POST /api/app/comp/issue', () => {
     expect(calls).toHaveLength(0)
   })
 
+  it('refuses a single field above the cap with the cap sentence, not "pick one"', async () => {
+    const calls: IssueCall[] = []
+    const result = await handleSelfCompIssue(
+      { performanceId: '10', adults: 5, children: 0 },
+      issueDeps({}, calls),
+    )
+    expect(result.status).toBe(409)
+    expect(result.body.error).toBe(APP_STRINGS.comp.capReached)
+    expect(calls).toHaveLength(0)
+  })
+
   it('refuses a nonsense count as a bad request', async () => {
     const calls: IssueCall[] = []
     const result = await handleSelfCompIssue(
@@ -301,15 +313,16 @@ const ownOrder: SelfCompOrder = {
   channel: 'comp',
   compIssuedBy: 'self',
   memberId: '7',
-  anyScanned: false,
-  performance: upcoming,
 }
+
+const context: SelfCompCancelContext = { anyScanned: false, performance: upcoming }
 
 function cancelDeps(overrides: Partial<SelfCompCancelDeps> = {}): SelfCompCancelDeps {
   return {
     request: sameOrigin,
     actor,
     loadOrder: async () => ownOrder,
+    loadCancelContext: async () => context,
     voidOrder: async () => 2,
     now: () => new Date(NOW),
     ...overrides,
@@ -328,40 +341,73 @@ describe('POST /api/app/comp/cancel', () => {
     expect(result.status).toBe(403)
   })
 
-  it('404s an unknown order', async () => {
-    const result = await handleSelfCompCancel({ orderId: '55' }, cancelDeps({ loadOrder: async () => null }))
-    expect(result.status).toBe(404)
+  // The oracle test: four different orders, ONE answer, so walking the ids
+  // tells a dancer nothing about what exists, what is a comp or whose it is.
+  const foreign: Record<string, SelfCompOrder | null> = {
+    'no such order': null,
+    'a paid online order': { ...ownOrder, channel: 'online', compIssuedBy: null },
+    "an admin's comp for the same member": { ...ownOrder, compIssuedBy: 'admin' },
+    "another dancer's self-issued comp": { ...ownOrder, memberId: '8' },
+  }
+  for (const [label, order] of Object.entries(foreign)) {
+    it(`answers one plain 404 for ${label}`, async () => {
+      const result = await handleSelfCompCancel(
+        { orderId: '55' },
+        cancelDeps({ loadOrder: async () => order }),
+      )
+      expect(result.status).toBe(404)
+      expect(result.body.error).toBe(APP_STRINGS.comp.notFound)
+    })
+  }
+
+  it('never reads the tickets or the evening of an order that is not the caller own', async () => {
+    let context = 0
+    await handleSelfCompCancel(
+      { orderId: '55' },
+      cancelDeps({
+        loadOrder: async () => ({ ...ownOrder, memberId: '8' }),
+        loadCancelContext: async () => {
+          context += 1
+          return { anyScanned: false, performance: upcoming }
+        },
+      }),
+    )
+    expect(context).toBe(0)
   })
 
-  it('refuses a paid online order', async () => {
+  it('refuses rather than voids when the evening cannot be read', async () => {
+    let voided = 0
     const result = await handleSelfCompCancel(
       { orderId: '55' },
-      cancelDeps({ loadOrder: async () => ({ ...ownOrder, channel: 'online', compIssuedBy: null }) }),
+      cancelDeps({
+        loadCancelContext: async () => ({ anyScanned: false, performance: null }),
+        voidOrder: async () => {
+          voided += 1
+          return 1
+        },
+      }),
     )
-    expect(result.status).toBe(400)
+    expect(result.status).toBe(409)
+    expect(voided).toBe(0)
   })
 
-  it('refuses an admin comp, cap or no cap', async () => {
+  it('still gives the tickets back on an evening that was cancelled', async () => {
     const result = await handleSelfCompCancel(
       { orderId: '55' },
-      cancelDeps({ loadOrder: async () => ({ ...ownOrder, compIssuedBy: 'admin' }) }),
+      cancelDeps({
+        loadCancelContext: async () => ({
+          anyScanned: false,
+          performance: { ...upcoming, cancelled: true },
+        }),
+      }),
     )
-    expect(result.status).toBe(400)
-  })
-
-  it('refuses another dancer self-issued comp', async () => {
-    const result = await handleSelfCompCancel(
-      { orderId: '55' },
-      cancelDeps({ loadOrder: async () => ({ ...ownOrder, memberId: '8' }) }),
-    )
-    expect(result.status).toBe(403)
-    expect(result.body.error).toBe(APP_STRINGS.comp.notYours)
+    expect(result.status).toBe(200)
   })
 
   it('refuses once a ticket has been scanned', async () => {
     const result = await handleSelfCompCancel(
       { orderId: '55' },
-      cancelDeps({ loadOrder: async () => ({ ...ownOrder, anyScanned: true }) }),
+      cancelDeps({ loadCancelContext: async () => ({ ...context, anyScanned: true }) }),
     )
     expect(result.status).toBe(409)
     expect(result.body.error).toBe(APP_STRINGS.comp.scanned)

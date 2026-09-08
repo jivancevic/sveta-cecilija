@@ -361,7 +361,7 @@ CREATE TABLE IF NOT EXISTS public.orders (
     channel public.enum_orders_channel DEFAULT 'online'::public.enum_orders_channel NOT NULL,
     partner_id integer,
     member_id integer,
-    comp_issued_by public.enum_orders_comp_issued_by DEFAULT 'admin'::public.enum_orders_comp_issued_by,
+    comp_issued_by public.enum_orders_comp_issued_by,
     promo_code_id integer,
     buyer_name character varying,
     email character varying,

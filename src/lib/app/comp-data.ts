@@ -10,28 +10,27 @@
 // one — the only things added are `compIssuedBy: 'self'`, the `member` forced to
 // the caller, and the cap check slipped inside the lock the engine already takes.
 
-import { randomInt } from 'crypto'
 import { relationIdString } from '@/lib/payload-relation'
 import { isActiveMoreskant } from '@/lib/app/access'
 import { resolveOwnMemberId, type MemberLinkReader } from '@/lib/access/attendance-access'
-import {
-  createCompIssue,
-  CompIssueError,
-  type CompIssueShow,
-} from '@/lib/comp/create-comp-issue'
+import { createCompIssue, CompIssueError } from '@/lib/comp/create-comp-issue'
+import { buildCompIssueDeps } from '@/lib/comp/comp-issue-deps'
 import {
   SelfCompCapError,
   type SelfCompActor,
+  type SelfCompCancelContext,
   type SelfCompIssueOutcome,
   type SelfCompOrder,
   type SelfCompPerformance,
 } from '@/lib/comp/self-comp'
 import { sendOrderTicketEmail, type OrderEmailPayload } from '@/lib/email/send-order-ticket-email'
-import { generateQrToken } from '@/lib/qr-token'
 import { isPublicPerformance } from '@/lib/show-performance'
-import { generateOrderCode as makeOrderCode } from '@/lib/tickets/order-code'
-import { getActiveTicketCountForShow, getSelfCompTicketCount, type PoolQuery } from '@/lib/tickets/sold-seats'
-import { withShowSellLock, type SellLockPool } from '@/lib/tickets/sell-lock'
+import { remainingSeats } from '@/lib/tickets/seat-availability'
+import {
+  getActiveTicketCountForShow,
+  getSelfCompTicketCount,
+  type PoolQuery,
+} from '@/lib/tickets/sold-seats'
 import { voidOrderTickets, type TicketVoidExecutor } from '@/lib/tickets/ticket-void'
 import { toIsoDate } from '@/lib/to-iso-date'
 import { VENUE_CAPACITY, type Venue } from '@/lib/venues'
@@ -44,7 +43,7 @@ export interface CompPayload {
   db: unknown
 }
 
-type CompPool = { query: PoolQuery } & SellLockPool
+type CompPool = { query: PoolQuery }
 
 function poolOf(payload: CompPayload): CompPool {
   return (payload.db as { pool: CompPool }).pool
@@ -122,11 +121,24 @@ export async function loadSelfCompPerformance(
   }
 }
 
-/** One order plus the two facts a cancel refuses on: a scan, and the start. */
+function channelOf(value: unknown): SelfCompOrder['channel'] {
+  return value === 'partner' || value === 'comp' ? value : 'online'
+}
+
+function issuedByOf(value: unknown): SelfCompOrder['compIssuedBy'] {
+  return value === 'self' || value === 'admin' ? value : null
+}
+
+/**
+ * The order, and nothing that costs a second query.
+ *
+ * The ownership test runs on this alone, so an id that is not the caller's own
+ * self-issued comp is refused before any ticket or show is read.
+ */
 export async function loadSelfCompOrder(
   payload: CompPayload,
   orderId: string,
-): Promise<SelfCompOrder | null> {
+): Promise<(SelfCompOrder & { showId: string | null }) | null> {
   let doc: Record<string, unknown> | null = null
   try {
     doc = (await payload.findByID({
@@ -140,32 +152,50 @@ export async function loadSelfCompOrder(
   }
   if (!doc) return null
 
-  const showId = relationIdString(doc.show)
+  return {
+    id: String(doc.id),
+    channel: channelOf(doc.channel),
+    compIssuedBy: issuedByOf(doc.compIssuedBy),
+    memberId: relationIdString(doc.member),
+    showId: relationIdString(doc.show),
+  }
+}
+
+/** The scan and the evening, read only for an order the caller already owns. */
+export async function loadSelfCompCancelContext(
+  payload: CompPayload,
+  order: SelfCompOrder & { showId?: string | null },
+): Promise<SelfCompCancelContext> {
   const [scanned, performance] = await Promise.all([
     payload.find({
       collection: 'tickets',
-      where: { and: [{ order: { equals: doc.id } }, { scanned: { equals: true } }] },
+      where: { and: [{ order: { equals: order.id } }, { scanned: { equals: true } }] },
       limit: 1,
       depth: 0,
       overrideAccess: true,
     }),
-    showId ? loadSelfCompPerformance(payload, showId) : Promise.resolve(null),
+    order.showId ? loadSelfCompPerformance(payload, order.showId) : Promise.resolve(null),
   ])
-
-  return {
-    id: String(doc.id),
-    channel: typeof doc.channel === 'string' ? doc.channel : 'online',
-    compIssuedBy: typeof doc.compIssuedBy === 'string' ? doc.compIssuedBy : null,
-    memberId: relationIdString(doc.member),
-    anyScanned: scanned.docs.length > 0,
-    performance,
-  }
+  return { anyScanned: scanned.docs.length > 0, performance }
 }
 
 /** Void every still-active ticket of the order (reason 'storno'), as /admin does. */
 export async function voidSelfCompOrder(payload: CompPayload, orderId: string): Promise<number> {
   const { voided } = await voidOrderTickets(drizzleOf(payload), orderId, 'storno')
   return voided
+}
+
+/**
+ * Issue the comps through the shared engine, and mail the PDF.
+ *
+ * `guard` (the cap check) is run inside `withShowSellLock`, wrapping the
+ * engine's own critical section: the lock is taken once, the dancer's tally and
+ * the room's capacity are read under it, and the tickets are written before it
+ * is released. Two taps a millisecond apart therefore queue rather than race.
+ */
+export interface IssueSelfCompDeps {
+  /** Seam for tests; defaults to the real Brevo-backed ticket email. */
+  sendEmail?: typeof sendOrderTicketEmail
 }
 
 /**
@@ -187,8 +217,8 @@ export async function issueSelfComp(
     email: string
     guard: () => Promise<void>
   },
+  deps: IssueSelfCompDeps = {},
 ): Promise<SelfCompIssueOutcome> {
-  const pool = poolOf(payload)
   const memberId = Number(args.memberId)
   const showId = Number(args.performanceId)
   if (!Number.isFinite(memberId) || !Number.isFinite(showId)) {
@@ -209,81 +239,14 @@ export async function issueSelfComp(
         email: args.email,
         locale: 'hr',
       },
-      {
-        loadShow: async (id): Promise<CompIssueShow | null> => {
-          const doc = (await payload
-            .findByID({ collection: 'shows', id, depth: 0, overrideAccess: true })
-            .catch(() => null)) as Record<string, unknown> | null
-          if (!doc) return null
-          return {
-            id: Number(doc.id),
-            date: toIsoDate(doc.date),
-            status: doc.status === 'cancelled' ? 'cancelled' : 'active',
-            isPublic: isPublicPerformance(doc),
-            capacity: VENUE_CAPACITY[doc.venue as Venue],
-            inPersonSold: (doc.inPersonSold as number) ?? 0,
-            legacyReserved: (doc.legacyReserved as number) ?? 0,
-          }
-        },
-        countActiveTickets: (id) =>
-          getActiveTicketCountForShow((sql, params) => pool.query(sql, params), id),
-        // The cap joins the capacity check under ONE lock (see the doc comment).
-        withSeatLock: (sid, critical) =>
-          withShowSellLock(pool, sid, async () => {
-            await args.guard()
-            return critical()
-          }),
-        generateOrderCode: () =>
-          makeOrderCode({
-            isUnique: async (code) => {
-              const r = await payload.find({
-                collection: 'orders',
-                where: { code: { equals: code } },
-                limit: 1,
-                depth: 0,
-                overrideAccess: true,
-              })
-              return r.docs.length === 0
-            },
-            randomInt: (max) => randomInt(max),
-          }),
-        generateToken: generateQrToken,
-        persist: async ({ order, tickets }) => {
-          const orderDoc = await payload.create({
-            collection: 'orders',
-            data: {
-              code: order.code,
-              channel: 'comp',
-              // The ONE field that tells this comp from an admin's (#430,
-              // stories 52 + 53): the cap counts it, /admin shows it.
-              compIssuedBy: 'self',
-              member: memberId,
-              buyerName: order.buyerName,
-              email: order.email,
-              adultCount: order.adultCount,
-              childCount: order.childCount,
-              total: order.totalCents,
-              refundStatus: 'none',
-              show: order.showId,
-              locale: order.locale,
-            },
-            overrideAccess: true,
-          })
-          for (const t of tickets) {
-            await payload.create({
-              collection: 'tickets',
-              data: {
-                token: t.token,
-                type: t.type,
-                status: 'active',
-                order: Number(orderDoc.id),
-              },
-              overrideAccess: true,
-            })
-          }
-          return { orderId: String(orderDoc.id) }
-        },
-      },
+      // The SAME wiring /api/comp/issue uses; the two things this caller adds
+      // are the marker and the cap, and `wrapLock` is what puts the cap check
+      // inside the seat lock rather than before it.
+      buildCompIssueDeps(payload, {
+        memberId,
+        compIssuedBy: 'self',
+        wrapLock: args.guard,
+      }),
     )
   } catch (err) {
     if (err instanceof SelfCompCapError) return { ok: false, reason: 'cap' }
@@ -298,10 +261,8 @@ export async function issueSelfComp(
   // a status rather than throwing, and awaiting it is what lets the answer say
   // whether the letter actually left. A dev laptop Brevo rejects therefore
   // reports `failed` and keeps the comps.
-  const email = await sendOrderTicketEmail(
-    payload as unknown as OrderEmailPayload,
-    result.orderId,
-  )
+  const send = deps.sendEmail ?? sendOrderTicketEmail
+  const email = await send(payload as unknown as OrderEmailPayload, result.orderId)
 
   return {
     ok: true,
@@ -310,6 +271,47 @@ export async function issueSelfComp(
     ticketCount: result.tickets.length,
     emailStatus: email.status,
   }
+}
+
+/**
+ * Seats still sellable on a performance, or null when it has no capacity to
+ * speak of (a non-public evening has no venue).
+ *
+ * The same arithmetic every other seat consumer uses — `VENUE_CAPACITY` minus
+ * the active tickets minus the counters — through `remainingSeats`, so the
+ * number the comp form respects is the number `/tickets` shows. It is advisory
+ * only: the authoritative check is `assertCanSell` inside the sell lock.
+ */
+export async function loadSeatsRemaining(
+  payload: CompPayload,
+  performanceId: string,
+): Promise<number | null> {
+  let doc: Record<string, unknown> | null = null
+  try {
+    doc = (await payload.findByID({
+      collection: 'shows',
+      id: performanceId,
+      depth: 0,
+      overrideAccess: true,
+    })) as Record<string, unknown> | null
+  } catch {
+    return null
+  }
+  if (!doc) return null
+  const capacity = VENUE_CAPACITY[doc.venue as Venue]
+  if (typeof capacity !== 'number') return null
+
+  const pool = poolOf(payload)
+  const activeTicketCount = await getActiveTicketCountForShow(
+    (sql, params) => pool.query(sql, params),
+    performanceId,
+  )
+  return remainingSeats({
+    capacity,
+    activeTicketCount,
+    inPersonSold: (doc.inPersonSold as number) ?? 0,
+    legacyReserved: (doc.legacyReserved as number) ?? 0,
+  })
 }
 
 /** The caller's ACTIVE self-issued comp tickets on one performance. */

@@ -1,6 +1,7 @@
 import { getPayload } from 'payload'
 import config from '@payload-config'
 import { relationIdString } from '@/lib/payload-relation'
+import { loadSeatsRemaining, type CompPayload } from './comp-data'
 import { loadPerformanceDetail, type PerformanceDetail } from './detail-loaders'
 
 // The IO wiring behind `/app/izvedba/[id]` (#423) — the `roster-data.ts` shape:
@@ -110,6 +111,10 @@ export async function getPerformanceDetail(
         anyScanned: scanned.has(String(o.id)),
       }))
     },
+
+    // Seats left, for the comp form's sold-out line (#434, story 47). Advisory:
+    // the authoritative refusal is `assertCanSell` inside the sell lock.
+    loadSeatsRemaining: (id) => loadSeatsRemaining(payload as unknown as CompPayload, id),
 
     loadMoreskanti: async () => {
       const result = await payload.find({

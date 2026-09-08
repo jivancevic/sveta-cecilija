@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { requirePermission } from '@/lib/access/route-guard'
 import { appRequestMeta } from '@/lib/app/request-guard'
 import {
+  loadSelfCompCancelContext,
   loadSelfCompOrder,
   resolveSelfCompActor,
   voidSelfCompOrder,
@@ -37,6 +38,9 @@ export async function POST(req: Request) {
     request: appRequestMeta(req, process.env.NEXT_PUBLIC_BASE_URL),
     actor,
     loadOrder: (orderId) => loadSelfCompOrder(p, orderId),
+    // Second read, and only for an order the handler has already established is
+    // the caller's own self-issued comp.
+    loadCancelContext: (order) => loadSelfCompCancelContext(p, order),
     voidOrder: (orderId) => voidSelfCompOrder(p, orderId),
   })
 

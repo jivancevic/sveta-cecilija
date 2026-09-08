@@ -160,7 +160,10 @@ export function CompTickets({
         </ul>
       )}
 
-      {comps.remaining === 0 ? (
+      {!comps.seatsAvailable ? (
+        // A comp holds a real seat, so a full room has none to give (story 47).
+        <p className="app__empty">{APP_STRINGS.comp.soldOut}</p>
+      ) : comps.remaining === 0 ? (
         <p className="app__empty">{APP_STRINGS.comp.capReached}</p>
       ) : (
         <>

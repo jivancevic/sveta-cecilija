@@ -8,9 +8,16 @@
 -- four (#430, story 52), and the only way to tell the two apart afterwards is
 -- to record it at issue time.
 --
--- The column is NULLABLE with a default of 'admin' rather than NOT NULL: every
--- order that predates this file (online, partner and comp alike) carries NULL,
--- and a NOT NULL would fail on the very first restart against the live table.
+-- The column is NULLABLE and has NO DEFAULT, both deliberately:
+--
+--   * every order that predates this file carries NULL, so a NOT NULL would
+--     fail on the very first restart against the live table;
+--   * a default of 'admin' would label every FUTURE online and partner order
+--     "Admin" in the /admin column, which is a small lie about a Stripe
+--     purchase — and `ADD COLUMN … DEFAULT` would have stamped it on every
+--     existing row too (Postgres 11+ fills them). Both comp routes write the
+--     value explicitly instead (`buildCompIssueDeps`).
+--
 -- Readers treat NULL exactly as 'admin' — only the literal 'self' is a
 -- self-issued comp — so the backfill below is bookkeeping, not a correctness
 -- requirement.
@@ -35,22 +42,20 @@ CREATE TYPE public.enum_orders_comp_issued_by AS ENUM (
 );
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
--- 2. The column itself, added WITHOUT the default and given it immediately
---    after. `ADD COLUMN ... DEFAULT x` fills every existing row with x
---    (Postgres 11+), which would stamp "issued by admin" on every Stripe
---    purchase and every partner slip in the table. Two statements keep the
---    backfill in step 3, where it can name the rows it means. New rows still
---    take the default, so the admin comp route needs no change.
+-- 2. The column itself, with no default (see the header).
 ALTER TABLE orders
   ADD COLUMN IF NOT EXISTS comp_issued_by public.enum_orders_comp_issued_by;
 
+-- 3. Drop a default if an earlier revision of this file left one behind. A
+--    no-op on a column that has none, so it is safe on every restart.
 ALTER TABLE orders
-  ALTER COLUMN comp_issued_by SET DEFAULT 'admin'::public.enum_orders_comp_issued_by;
+  ALTER COLUMN comp_issued_by DROP DEFAULT;
 
--- 3. Backfill the comp orders that predate the column. Every comp that already
+-- 4. Backfill the comp orders that predate the column. Every comp that already
 --    exists was issued by an admin — /app could not issue one until this ticket.
 --    Idempotent: the WHERE stops matching once the rows are written, and
---    re-applying the same value would be a no-op anyway.
+--    re-applying the same value would be a no-op anyway. Paid online and
+--    partner orders are deliberately left NULL: the field is about comps.
 UPDATE orders
    SET comp_issued_by = 'admin'
  WHERE channel = 'comp'

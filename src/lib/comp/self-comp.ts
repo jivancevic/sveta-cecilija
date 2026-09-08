@@ -51,16 +51,28 @@ export interface SelfCompPerformance {
   isPublic: boolean
 }
 
-/** The order a cancel is aimed at, as the caller's own records describe it. */
+/**
+ * The order a cancel is aimed at: only what the OWNERSHIP test needs.
+ *
+ * Deliberately no tickets and no performance. Those are a second read, and it
+ * happens after ownership has been established (`loadCancelContext`), so a
+ * dancer poking at order ids cannot make the server work on somebody else's
+ * order at all.
+ */
 export interface SelfCompOrder {
   id: string
-  channel: string
-  /** 'self' | 'admin' | null; NULL predates the column and means 'admin'. */
-  compIssuedBy: string | null
+  channel: 'online' | 'partner' | 'comp'
+  /** NULL predates the column and means 'admin' (#434). */
+  compIssuedBy: 'admin' | 'self' | null
   /** The Member the comp is attributed to. */
   memberId: string | null
+}
+
+/** The two facts a cancel refuses on, read only for an order already owned. */
+export interface SelfCompCancelContext {
   /** True when ANY ticket of the order has been through the door. */
   anyScanned: boolean
+  /** Null when the performance cannot be read: a refusal, never a pass. */
   performance: SelfCompPerformance | null
 }
 
@@ -118,6 +130,8 @@ export interface SelfCompCancelDeps {
   request: AppRequestMeta
   actor: SelfCompActor | null
   loadOrder: (orderId: string) => Promise<SelfCompOrder | null>
+  /** Read only AFTER the order is known to be the caller's own self-issued comp. */
+  loadCancelContext: (order: SelfCompOrder) => Promise<SelfCompCancelContext>
   /** Void every still-active ticket of the order; returns how many went. */
   voidOrder: (orderId: string) => Promise<number>
   now?: () => Date
@@ -162,10 +176,19 @@ function idOf(value: unknown): string {
   return ''
 }
 
-function count(value: unknown): number | null {
+/**
+ * A ticket count off the wire: a number, `'over'` when it exceeds the cap on its
+ * own, or null when it is not a count at all.
+ *
+ * The two failures are different answers. Asking for five adults is a request
+ * the cap refuses (409, "you have used your four"); asking for minus one or for
+ * "two" is a malformed request (400). Collapsing them told a dancer who typed a
+ * big number to "pick at least one ticket", which is not what they did wrong.
+ */
+function count(value: unknown): number | 'over' | null {
   const n = typeof value === 'number' ? value : typeof value === 'string' ? Number(value) : NaN
-  if (!Number.isInteger(n) || n < 0 || n > SELF_COMP_CAP) return null
-  return n
+  if (!Number.isInteger(n) || n < 0) return null
+  return n > SELF_COMP_CAP ? 'over' : n
 }
 
 /**
@@ -177,21 +200,37 @@ function count(value: unknown): number | null {
 export function selfCompWindow(
   performance: SelfCompPerformance,
   nowMs: number,
+  options: { forCancel?: boolean } = {},
 ): { ok: true } | { ok: false; status: number; error: string } {
+  // Giving tickets BACK is allowed on an evening that was cancelled after they
+  // were issued: the seats are freed either way and the dancer is tidying up.
+  // Only "it has already started" applies to both directions.
+  if (options.forCancel) {
+    return startedYet(performance, nowMs)
+      ? { ok: false, status: 409, error: APP_STRINGS.comp.started }
+      : { ok: true }
+  }
   if (!performance.isPublic) {
     return { ok: false, status: 400, error: APP_STRINGS.comp.notPublic }
   }
   if (performance.cancelled) {
     return { ok: false, status: 400, error: APP_STRINGS.comp.showCancelled }
   }
+  return startedYet(performance, nowMs)
+    ? { ok: false, status: 409, error: APP_STRINGS.comp.started }
+    : { ok: true }
+}
+
+/**
+ * Has the evening begun?
+ *
+ * A performance with no usable start instant counts as still ahead: the
+ * capacity guard and the door remain the real limits, and refusing on a
+ * malformed row would lock a dancer out of a perfectly good evening.
+ */
+function startedYet(performance: SelfCompPerformance, nowMs: number): boolean {
   const startMs = showStartMs(performance.date, performance.time)
-  // A performance with no usable start instant is treated as still ahead: the
-  // capacity guard and the door remain the real limits, and refusing on a
-  // malformed row would lock a dancer out of a perfectly good evening.
-  if (!Number.isNaN(startMs) && nowMs >= startMs) {
-    return { ok: false, status: 409, error: APP_STRINGS.comp.started }
-  }
-  return { ok: true }
+  return !Number.isNaN(startMs) && nowMs >= startMs
 }
 
 /** POST /api/app/comp/issue. `requirePermission(req, 'moreskant')` is the route's job. */
@@ -216,6 +255,9 @@ export async function handleSelfCompIssue(
   const children = count(body?.children)
   if (adults === null || children === null) {
     return { status: 400, body: { error: APP_STRINGS.comp.pickOne } }
+  }
+  if (adults === 'over' || children === 'over') {
+    return { status: 409, body: { error: APP_STRINGS.comp.capReached } }
   }
   const requested = adults + children
   if (requested === 0) return { status: 400, body: { error: APP_STRINGS.comp.pickOne } }
@@ -268,7 +310,16 @@ export async function handleSelfCompIssue(
   }
 }
 
-/** POST /api/app/comp/cancel. Whole order only (#430, Out of Scope). */
+/**
+ * POST /api/app/comp/cancel. Whole order only (#430, Out of Scope).
+ *
+ * **One answer for every order that is not the caller's own self-issued comp.**
+ * A 404 for "no such order", a 400 for "that is an admin comp" and a 403 for
+ * "that one is Bepo's" would together be an oracle: a dancer walking the order
+ * ids would learn which exist, which are comps and whose they are. There is one
+ * situation as far as this route is concerned — "you have no such order" — and
+ * it has one status and one sentence.
+ */
 export async function handleSelfCompCancel(
   body: SelfCompCancelBody | null | undefined,
   deps: SelfCompCancelDeps,
@@ -279,36 +330,40 @@ export async function handleSelfCompCancel(
   if (!deps.actor) return { status: 403, body: { error: APP_STRINGS.comp.noMember } }
 
   const orderId = idOf(body?.orderId)
-  if (!orderId) return { status: 400, body: { error: APP_STRINGS.comp.notFound } }
+  if (!orderId) return { status: 404, body: { error: APP_STRINGS.comp.notFound } }
 
   const order = await deps.loadOrder(orderId)
-  if (!order) return { status: 404, body: { error: APP_STRINGS.comp.notFound } }
+  const mine =
+    order != null &&
+    order.channel === 'comp' &&
+    order.compIssuedBy === 'self' &&
+    order.memberId != null &&
+    String(order.memberId) === deps.actor.memberId
+  if (!order || !mine) return { status: 404, body: { error: APP_STRINGS.comp.notFound } }
 
-  // A paid online order and an admin comp are both somebody else's business:
-  // /app cancels only what /app issued (#430, Out of Scope).
-  if (order.channel !== 'comp' || order.compIssuedBy !== 'self') {
-    return { status: 400, body: { error: APP_STRINGS.comp.notYours } }
-  }
-  if (order.memberId == null || String(order.memberId) !== deps.actor.memberId) {
-    return { status: 403, body: { error: APP_STRINGS.comp.notYours } }
-  }
+  // Only now is a second read worth doing: the order is the caller's own.
+  const context = await deps.loadCancelContext(order)
 
   // Someone is already inside on this slip. Voiding it would free a seat that
   // is physically taken, so the door wins over the app.
-  if (order.anyScanned) return { status: 409, body: { error: APP_STRINGS.comp.scanned } }
+  if (context.anyScanned) return { status: 409, body: { error: APP_STRINGS.comp.scanned } }
 
-  if (order.performance) {
-    const nowMs = (deps.now?.() ?? new Date()).getTime()
-    const startMs = showStartMs(order.performance.date, order.performance.time)
-    if (!Number.isNaN(startMs) && nowMs >= startMs) {
-      return { status: 409, body: { error: APP_STRINGS.comp.started } }
-    }
+  // No performance means the "has it started?" rule cannot be applied, and an
+  // unenforceable rule is a refusal, not a pass.
+  if (!context.performance) {
+    return { status: 409, body: { error: APP_STRINGS.comp.cancelFailed } }
   }
+  const window = selfCompWindow(
+    context.performance,
+    (deps.now?.() ?? new Date()).getTime(),
+    { forCancel: true },
+  )
+  if (!window.ok) return { status: window.status, body: { error: window.error } }
 
   const voided = await deps.voidOrder(orderId)
   // Already cancelled: nothing moved, and there is nothing to tell the dancer
   // that is not already true on their screen after a refresh.
-  if (voided === 0) return { status: 409, body: { error: APP_STRINGS.comp.notFound } }
+  if (voided === 0) return { status: 409, body: { error: APP_STRINGS.comp.cancelFailed } }
 
   return { status: 200, body: { ok: true, voided } }
 }

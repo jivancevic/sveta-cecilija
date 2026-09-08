@@ -107,6 +107,12 @@ export interface OwnCompRow {
  */
 export interface CompView {
   visible: boolean
+  /**
+   * Whether the room still has seats (story 47). False hides the form and says
+   * so: a comp holds a real seat, so a sold-out evening has none to give, and
+   * the engine would refuse the request anyway.
+   */
+  seatsAvailable: boolean
   /** Active tickets this dancer issued themselves here. Admin comps excluded. */
   issued: number
   /** SELF_COMP_CAP minus `issued`: what the steppers may still ask for. */
@@ -156,6 +162,8 @@ export function buildCompView(input: {
   ownComps: readonly OwnCompRow[]
   myMemberId: string | null
   myName: string | null
+  /** Seats still sellable; null when they could not be read (treated as some). */
+  seatsRemaining?: number | null
   nowMs: number
 }): CompView {
   const upcoming = !Number.isNaN(input.performance.startMs) && input.performance.startMs > input.nowMs
@@ -177,6 +185,9 @@ export function buildCompView(input: {
 
   return {
     visible,
+    // Unknown is not "none": a seat count that could not be read must not take
+    // the form away, because the sell lock is where the real refusal lives.
+    seatsAvailable: input.seatsRemaining == null || input.seatsRemaining > 0,
     issued,
     remaining: selfCompRemaining(issued),
     defaultName: (input.myName ?? '').trim(),
@@ -288,6 +299,7 @@ export function buildPerformanceDetail(input: {
   memberDocs: Record<string, unknown>[]
   lineupDocs?: Record<string, unknown>[]
   ownComps?: readonly OwnCompRow[]
+  seatsRemaining?: number | null
   viewer: { memberId: string | null; voditelj: boolean }
   nowMs: number
 }): PerformanceDetail {
@@ -343,6 +355,7 @@ export function buildPerformanceDetail(input: {
       ownComps: input.ownComps ?? [],
       myMemberId: input.viewer.memberId,
       myName: me?.name ?? me?.nickname ?? null,
+      seatsRemaining: input.seatsRemaining,
       nowMs: input.nowMs,
     }),
     lineup: buildLineupView({
@@ -366,6 +379,8 @@ export interface PerformanceDetailDeps {
   loadLineup?: (performanceId: string) => Promise<Record<string, unknown>[]>
   /** The viewer's OWN self-issued comp orders here (#434); never anyone else's. */
   loadOwnComps?: (performanceId: string, memberId: string) => Promise<OwnCompRow[]>
+  /** Seats still sellable, for the comp form's sold-out line (#434). */
+  loadSeatsRemaining?: (performanceId: string) => Promise<number | null>
   viewer: { memberId: string | null; voditelj: boolean }
   now?: () => Date
 }
@@ -378,13 +393,18 @@ export async function loadPerformanceDetail(
   if (!performanceDoc) return null
 
   const memberId = deps.viewer.memberId
-  const [attendanceDocs, memberDocs, lineupDocs, ownComps] = await Promise.all([
+  const [attendanceDocs, memberDocs, lineupDocs, ownComps, seatsRemaining] = await Promise.all([
     deps.loadAttendance(performanceId),
     deps.loadMoreskanti(),
     deps.loadLineup?.(performanceId) ?? Promise.resolve([]),
+    // Both comp reads are for the viewer's own section, so neither runs for a
+    // viewer who has no Member row to issue against.
     memberId && deps.loadOwnComps
       ? deps.loadOwnComps(performanceId, memberId)
       : Promise.resolve([] as OwnCompRow[]),
+    memberId && deps.loadSeatsRemaining
+      ? deps.loadSeatsRemaining(performanceId)
+      : Promise.resolve(null),
   ])
 
   return buildPerformanceDetail({
@@ -393,6 +413,7 @@ export async function loadPerformanceDetail(
     memberDocs,
     lineupDocs,
     ownComps,
+    seatsRemaining,
     viewer: deps.viewer,
     nowMs: (deps.now?.() ?? new Date()).getTime(),
   })

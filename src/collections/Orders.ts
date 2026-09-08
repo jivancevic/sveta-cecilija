@@ -108,20 +108,26 @@ export const Orders: CollectionConfig = {
     },
     // Who issued a comp: an admin from /admin, or the moreškant themselves from
     // /app (#434, ADR-0024 phase 4). Meaningful on comp orders only; NULL on
-    // every row that predates the column, which readers treat as 'admin' — only
-    // the literal 'self' counts against a dancer's four tickets per performance
-    // (#430, story 52), so an admin's gesture never eats their own allowance.
-    // The admin comp routes set nothing and take this default.
+    // every row that predates the column and on every online/partner order,
+    // which readers treat as 'admin' — only the literal 'self' counts against a
+    // dancer's four tickets per performance (#430, story 52), so an admin's
+    // gesture never eats their own allowance.
+    //
+    // NO `defaultValue`, deliberately: it would label every Stripe purchase
+    // "Admin" in the list. Both comp routes write the value explicitly through
+    // `buildCompIssueDeps`. A `tickets` holder can still change it by hand,
+    // which is how the backoffice resets a dancer's cap on purpose.
     {
       name: 'compIssuedBy',
       type: 'select',
-      defaultValue: 'admin',
       options: [
         { label: 'Admin', value: 'admin' },
         { label: 'Self (moreškant)', value: 'self' },
       ],
       admin: {
-        readOnly: true,
+        // Editable, unlike the attribution links above: a `tickets` holder
+        // changing 'self' to 'admin' is how the backoffice gives a dancer their
+        // four back on purpose. Nobody else reaches the collection.
         description: 'Who issued this comp: the backoffice, or the dancer from /app',
       },
     },
