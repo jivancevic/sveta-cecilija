@@ -36,6 +36,7 @@ import {
   type LineupEntry,
   type RoleWarning,
 } from '@/lib/lineup/rules'
+import { selfCompRemaining } from '@/lib/comp/self-comp'
 import { toRosterPerformance, type RosterPerformance } from './roster-loaders'
 
 /** One line of the postava, already labelled for the screen. */
@@ -77,6 +78,44 @@ export interface LineupView {
   canEdit: boolean
 }
 
+/** One of the caller's own self-issued comp orders, as the section lists it. */
+export interface OwnCompOrder {
+  orderId: string
+  /** The short order reference, the same one printed on the slip. */
+  code: string
+  /** ACTIVE tickets under it: what "Moje karte" counts and a cancel frees. */
+  tickets: number
+  /** False once anyone has walked through the door on this order. */
+  canCancel: boolean
+}
+
+/** What the loader hands `loadOwnComps` back, before the rules touch it. */
+export interface OwnCompRow {
+  orderId: string
+  code: string | null
+  tickets: number
+  anyScanned: boolean
+}
+
+/**
+ * The "Besplatne karte" section (#434, glossary: *Moreškant comp*).
+ *
+ * `visible` is story 47 in one field: a Member link, a PUBLIC performance, not
+ * cancelled, still ahead. A non-public evening sells no seats at all, so there
+ * is nothing to give away; a viewer with no Member link has nobody to attribute
+ * a comp to, and the route refuses them for the same reason (story 55).
+ */
+export interface CompView {
+  visible: boolean
+  /** Active tickets this dancer issued themselves here. Admin comps excluded. */
+  issued: number
+  /** SELF_COMP_CAP minus `issued`: what the steppers may still ask for. */
+  remaining: number
+  /** The default for "Ime na karti": the dancer's own full name (story 49). */
+  defaultName: string
+  orders: OwnCompOrder[]
+}
+
 export interface PerformanceDetail {
   performance: RosterPerformance
   count: ArmyCount
@@ -101,6 +140,50 @@ export interface PerformanceDetail {
   myMemberId: string | null
   /** The Postava section (#432). */
   lineup: LineupView
+  /** The dancer's own free tickets (#434). */
+  comps: CompView
+}
+
+/**
+ * The comp section, from rows already loaded.
+ *
+ * The cap arithmetic is NOT re-done here: `selfCompRemaining` is the same
+ * function the issue route's guard measures against, so the "još N od 4" a
+ * dancer reads and the 409 they would get cannot disagree.
+ */
+export function buildCompView(input: {
+  performance: RosterPerformance
+  ownComps: readonly OwnCompRow[]
+  myMemberId: string | null
+  myName: string | null
+  nowMs: number
+}): CompView {
+  const upcoming = !Number.isNaN(input.performance.startMs) && input.performance.startMs > input.nowMs
+  const visible =
+    input.myMemberId != null &&
+    input.performance.isPublic &&
+    !input.performance.cancelled &&
+    upcoming
+
+  const orders = input.ownComps
+    .filter((row) => row.tickets > 0)
+    .map((row) => ({
+      orderId: row.orderId,
+      code: row.code ?? row.orderId,
+      tickets: row.tickets,
+      canCancel: !row.anyScanned,
+    }))
+  const issued = orders.reduce((sum, order) => sum + order.tickets, 0)
+
+  return {
+    visible,
+    issued,
+    remaining: selfCompRemaining(issued),
+    defaultName: (input.myName ?? '').trim(),
+    // A hidden section carries no orders: the payload's shape is where the rule
+    // is enforced, so no template can leak one by forgetting a condition.
+    orders: visible ? orders : [],
+  }
 }
 
 /** A Payload attendance doc → the flat row the count reads. */
@@ -204,6 +287,7 @@ export function buildPerformanceDetail(input: {
   attendanceDocs: Record<string, unknown>[]
   memberDocs: Record<string, unknown>[]
   lineupDocs?: Record<string, unknown>[]
+  ownComps?: readonly OwnCompRow[]
   viewer: { memberId: string | null; voditelj: boolean }
   nowMs: number
 }): PerformanceDetail {
@@ -217,6 +301,12 @@ export function buildPerformanceDetail(input: {
     crni: performance.thresholdCrni,
     bili: performance.thresholdBili,
   })
+
+  // The viewer's own roster row, when they are on it: the comp section defaults
+  // "Ime na karti" to the name it carries (story 49).
+  const me = input.viewer.memberId
+    ? members.find((m) => String(m.id) === input.viewer.memberId)
+    : undefined
 
   const myAnswer = input.viewer.memberId
     ? (rows.find((r) => r.memberId === input.viewer.memberId)?.status ?? null)
@@ -248,6 +338,13 @@ export function buildPerformanceDetail(input: {
     canAlarm,
     moveTargets,
     myMemberId: input.viewer.memberId,
+    comps: buildCompView({
+      performance,
+      ownComps: input.ownComps ?? [],
+      myMemberId: input.viewer.memberId,
+      myName: me?.name ?? me?.nickname ?? null,
+      nowMs: input.nowMs,
+    }),
     lineup: buildLineupView({
       performanceDoc: input.performanceDoc,
       lineupDocs: input.lineupDocs ?? [],
@@ -267,6 +364,8 @@ export interface PerformanceDetailDeps {
   loadMoreskanti: () => Promise<Record<string, unknown>[]>
   /** Every lineup row for that performance (#432). */
   loadLineup?: (performanceId: string) => Promise<Record<string, unknown>[]>
+  /** The viewer's OWN self-issued comp orders here (#434); never anyone else's. */
+  loadOwnComps?: (performanceId: string, memberId: string) => Promise<OwnCompRow[]>
   viewer: { memberId: string | null; voditelj: boolean }
   now?: () => Date
 }
@@ -278,10 +377,14 @@ export async function loadPerformanceDetail(
   const performanceDoc = await deps.loadPerformance(performanceId)
   if (!performanceDoc) return null
 
-  const [attendanceDocs, memberDocs, lineupDocs] = await Promise.all([
+  const memberId = deps.viewer.memberId
+  const [attendanceDocs, memberDocs, lineupDocs, ownComps] = await Promise.all([
     deps.loadAttendance(performanceId),
     deps.loadMoreskanti(),
     deps.loadLineup?.(performanceId) ?? Promise.resolve([]),
+    memberId && deps.loadOwnComps
+      ? deps.loadOwnComps(performanceId, memberId)
+      : Promise.resolve([] as OwnCompRow[]),
   ])
 
   return buildPerformanceDetail({
@@ -289,6 +392,7 @@ export async function loadPerformanceDetail(
     attendanceDocs,
     memberDocs,
     lineupDocs,
+    ownComps,
     viewer: deps.viewer,
     nowMs: (deps.now?.() ?? new Date()).getTime(),
   })

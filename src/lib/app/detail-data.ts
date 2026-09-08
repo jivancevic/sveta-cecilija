@@ -1,5 +1,6 @@
 import { getPayload } from 'payload'
 import config from '@payload-config'
+import { relationIdString } from '@/lib/payload-relation'
 import { loadPerformanceDetail, type PerformanceDetail } from './detail-loaders'
 
 // The IO wiring behind `/app/izvedba/[id]` (#423) — the `roster-data.ts` shape:
@@ -60,6 +61,54 @@ export async function getPerformanceDetail(
         overrideAccess: true,
       })
       return result.docs as unknown as Record<string, unknown>[]
+    },
+
+    // The viewer's OWN self-issued comps (#434). Two queries and never a third:
+    // the orders this dancer issued here, then the tickets under them in one
+    // `in` read, folded per order. `compIssuedBy: 'self'` is what keeps an
+    // admin's comp for the same member out of the list AND out of the cap
+    // (#430, story 52); a NULL from before the column never equals 'self'.
+    loadOwnComps: async (id, memberId) => {
+      const orders = await payload.find({
+        collection: 'orders',
+        where: {
+          and: [
+            { show: { equals: id } },
+            { member: { equals: memberId } },
+            { channel: { equals: 'comp' } },
+            { compIssuedBy: { equals: 'self' } },
+          ],
+        },
+        limit: 100,
+        depth: 0,
+        overrideAccess: true,
+      })
+      const docs = orders.docs as unknown as Record<string, unknown>[]
+      if (docs.length === 0) return []
+
+      const tickets = await payload.find({
+        collection: 'tickets',
+        where: { order: { in: docs.map((o) => String(o.id)) } },
+        limit: 1000,
+        depth: 0,
+        overrideAccess: true,
+      })
+
+      const active = new Map<string, number>()
+      const scanned = new Set<string>()
+      for (const row of tickets.docs as unknown as Record<string, unknown>[]) {
+        const orderId = relationIdString(row.order)
+        if (!orderId) continue
+        if (row.status === 'active') active.set(orderId, (active.get(orderId) ?? 0) + 1)
+        if (row.scanned === true) scanned.add(orderId)
+      }
+
+      return docs.map((o) => ({
+        orderId: String(o.id),
+        code: typeof o.code === 'string' ? o.code : null,
+        tickets: active.get(String(o.id)) ?? 0,
+        anyScanned: scanned.has(String(o.id)),
+      }))
     },
 
     loadMoreskanti: async () => {
