@@ -5,6 +5,7 @@ import { getSeasonPerformances } from '@/lib/app/roster-data'
 import { APP_STRINGS, ROLE_LABELS } from '@/lib/app/strings'
 import type { DanceRole } from '@/lib/moreskant-profile'
 import { resolveAppViewer } from '@/lib/app/viewer'
+import { vapidPublicKey } from '@/lib/push/vapid'
 import { InstallHint } from './InstallHint'
 import { LogoutButton } from './LogoutButton'
 import { PerformanceList } from './PerformanceList'
@@ -77,7 +78,10 @@ export default async function MoreskantHomePage() {
         voditelj={voditelj}
       />
 
-      <InstallHint />
+      {/* The public VAPID key is a server fact handed to the client as a prop
+          rather than a NEXT_PUBLIC_ twin of the same value (#431): one name for
+          one key means the operator cannot set half of a pair. */}
+      <InstallHint vapidPublicKey={vapidPublicKey()} />
     </div>
   )
 }

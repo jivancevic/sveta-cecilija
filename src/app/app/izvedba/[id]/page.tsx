@@ -7,6 +7,7 @@ import { resolveAppViewer } from '@/lib/app/viewer'
 import type { ArmyTally, RosterPerson } from '@/lib/attendance/army-count'
 import type { Army } from '@/lib/attendance/rules'
 import { VENUE_LABEL } from '@/lib/venues'
+import { AlarmButton } from '../../AlarmButton'
 import { AttendanceButtons } from '../../AttendanceButtons'
 import { ArmyMoveButton } from '../../ArmyMoveButton'
 import { LogoutButton } from '../../LogoutButton'
@@ -202,6 +203,8 @@ export default async function PerformanceDetailPage({
           allowClear={voditelj}
         />
       )}
+
+      {voditelj && !p.cancelled && <AlarmButton performanceId={p.id} />}
 
       <ArmySection
         title={APP_STRINGS.detail.crni}
