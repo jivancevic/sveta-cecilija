@@ -51,6 +51,9 @@ Coolify runs its *own* internal Postgres in a separate `coolify-db` container �
 - `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET` — from Stripe Dashboard.
 - `BREVO_API_KEY` — for transactional email (issue #6).
 - `NEXT_PUBLIC_BASE_URL` — `https://moreska.eu` in prod.
+- `CRON_SECRET` — bearer for the cron routes (`/api/cron/send-review-emails`, `/api/cron/moreskant-notifications`).
+- `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` — web push for the Moreškant app (#431). Generate the pair **once** with
+  `node -e "console.log(JSON.stringify(require('web-push').generateVAPIDKeys()))"` and paste both into Coolify; the subject is `mailto:info@moreska.eu`. **Rotating the private key invalidates every existing subscription**, so a rotation has to be followed by `DELETE FROM push_subscriptions` and every dancer pressing "Uključi obavijesti" again. Without the keys the app still works and simply sends nothing.
 
 Setting/changing any of these requires a redeploy — Coolify env doesn't hot-reload into the running container.
 
@@ -62,6 +65,22 @@ node server.js                  # the actual app (Next.js standalone entry point
 ```
 
 This is the container `CMD`. If bootstrap fails, the container exits — `server.js` never runs. Logs will show `[bootstrap-db] failed: <reason>`. The script also handles `DATABASE_URL not set` gracefully (logs and skips, so the app can start in degraded mode for debugging).
+
+## Coolify scheduled tasks
+
+Two, both hitting a `CRON_SECRET`-bearer route with `node -e fetch` rather than
+`curl` (the app image has node, not curl):
+
+| Task | Schedule | Command |
+|---|---|---|
+| Review emails (#378) | `*/15 * * * *` | `node -e "fetch('http://localhost:3000/api/cron/send-review-emails',{method:'POST',headers:{Authorization:'Bearer '+process.env.CRON_SECRET}}).then(r=>r.text()).then(console.log)"` |
+| Moreškant alarm + reminder (#435) | `*/15 * * * *` | `node -e "fetch('http://localhost:3000/api/cron/moreskant-notifications',{method:'POST',headers:{Authorization:'Bearer '+process.env.CRON_SECRET}}).then(r=>r.text()).then(console.log)"` |
+
+Both are idempotent by claim, so a missed run costs at most a delay and a double
+run sends once. The roster task prints a JSON summary
+(`{performances, alarm:{…}, reminder:{…}, errors}`) to the task log; `claimed`
+without `sent` means the alarm was claimed and skipped because no army was short,
+which is the intended behaviour, not a failure.
 
 ## Deploy triggers
 

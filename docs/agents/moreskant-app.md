@@ -10,7 +10,7 @@ The dancer-facing surface of the roster module ([ADR-0023](../adr/0023-permissio
 - **The performance detail** `/app/izvedba/[id]`: armies against thresholds, on-behalf answers, the army move, the card headcount chip (#423).
 - **Invitations** (#424): "Pošalji pozivnicu" on a Member, `/app/set-password`, "Zaboravljena lozinka".
 
-Push is phase 4. What `/app` writes is an attendance row, the session cookie and, through the invitation, a dancer's password.
+Phase 4 batch A (#431, #435) adds **push**: see the Push section at the end. What `/app` writes is an attendance row, a push subscription, the session cookie and, through the invitation, a dancer's password.
 
 ## Route group
 
@@ -64,9 +64,9 @@ Access follows the **roster, not the login table**: unticking `active` or `isMor
 
 `public/manifest.webmanifest`: name and short name "Moreškant", `display: standalone`, `start_url` and `scope` `/app`, stone background and gold theme taken from the `.t-stone` tokens, 192 and 512 px PNG icons derived from the Cecilija logo (the webp rule in `assets.md` covers photos in `public/`; manifest icons are PNG by spec). Linked from the `/app` layout only, so no public page advertises it.
 
-**There is no service worker in this phase, deliberately** (#419, story 47): until push exists, a cache layer can only turn app bugs into caching bugs.
+**The service worker arrived with push (#431) and still caches nothing** — the phase 3 reason (#419, story 47) survives it: a cache layer over server-rendered roster data can only turn app bugs into caching bugs. Details in the Push section below.
 
-The "Dodaj na početni zaslon" hint (`InstallHint.tsx`) is one dismissible line remembered per device in `localStorage`, every access wrapped in `try/catch`, and it is skipped when `display-mode: standalone` says the icon already exists. It is plain instructions rather than an install button, because iOS never fires `beforeinstallprompt` and iOS is where the hint matters most.
+The "Dodaj na početni zaslon" hint (`InstallHint.tsx`) is one dismissible line remembered per device in `localStorage`, every access wrapped in `try/catch`, and it is skipped when `display-mode: standalone` says the icon already exists. It is plain instructions rather than an install button, because iOS never fires `beforeinstallprompt` and iOS is where the hint matters most. Since #431 that same component is also the notifications banner (Push, below).
 
 ## Attendance (#422, #423)
 
@@ -302,3 +302,102 @@ Browser-verified once, and worth knowing when reading a 200 in the network tab:
 a `moreskant` PATCHing their own row with a new username, permission set and
 member link gets a **200 and no change at all**, because a denied field is
 dropped in silence.
+
+## Push (#431, #435 — phase 4 batch A)
+
+Web push is the **only** notification channel (ADR-0024): no email, no SMS. What
+ships here is the plumbing plus two of the five notification types — the
+**alarm** (1) and the **T-48h reminder** (2). Types (3), (4) and (5) are #432.
+
+### The service worker lives at the ROOT, and that is load-bearing
+
+`public/moreskant-sw.js`, registered with `scope: '/app'`. A worker's default
+maximum scope is its own directory, so a script under `public/app/` could only
+claim `/app/` — and `/app/` does **not** cover `/app` itself, which is the page
+the banner lives on: `navigator.serviceWorker.ready` there waits forever. Found
+in a real Chrome, not in a test. From the root the allowed maximum is `/`, so
+`/app` is granted with no `Service-Worker-Allowed` header.
+
+The worker handles `push`, `notificationclick` and `pushsubscriptionchange`.
+**There is no fetch handler and no cache**, deliberately: phase 3's reason still
+holds (`/app` is server-rendered from data that changes hour by hour, so a cache
+could only turn app bugs into caching bugs). A click opens
+`/app/izvedba/[id]`, reusing an already-open window rather than stacking copies.
+
+### Two raw tables, not collections
+
+`db/schema/migrate-push.sql` (probe: `scripts/probe-push-schema.mjs`).
+
+- `push_subscriptions` — one row per **device**: user, endpoint, the two keys,
+  user agent, timestamps. `endpoint` is unique across the whole table, not per
+  user, and the subscribe route upserts on it: the endpoint *is* the device, so
+  when a dancer signs out of a shared phone and a voditelj signs in, the row has
+  to **move** rather than exist twice. `ON DELETE CASCADE` from `users`.
+- `performance_notifications` — the once-per-performance claim, unique on
+  (performance, type).
+
+Neither is a Payload collection: nobody edits them in `/admin`, and a
+subscription is a browser secret rather than a document (`marketing_optouts` is
+the same shape). They are therefore absent from `00-base.sql` and must stay
+absent — the drift gate only requires the bootstrap schema to be a **superset**
+of Payload's. The file is named `migrate-push.sql`, not `migrate-zz-push.sql`:
+its FKs reach only `users` and `shows` (both in `00-base.sql`), and
+`migrate-zz-drop-users-role.sql` has to remain the last `migrate-*` file (#398).
+
+### The routes
+
+| Route | Gate | Notes |
+|---|---|---|
+| `POST /api/app/push/subscribe` | `requirePermission(['moreskant','moreska'])` + `/app` guard | upsert on endpoint; 400 without endpoint **and** both keys |
+| `POST /api/app/push/unsubscribe` | same | deletes the caller's OWN row for that endpoint; 200 even when nothing went |
+| `POST /api/app/alarm` | `requirePermission('moreska')` + guard | `{ performanceId, includeNotComing }`, no throttle, returns device counts |
+| `POST /api/cron/moreskant-notifications` | `CRON_SECRET` bearer | the alarm + reminder jobs; 500 when the secret is unset |
+
+### The sender
+
+`src/lib/push/send.ts` fans out over a user list with an injected poster (the
+real one is `web-push` in `web-push-poster.ts`, the only file that imports it).
+**404 or 410 deletes the row** — the subscription is gone for good; every other
+failure leaves it alone, because unreachable this minute is not gone. One user
+with a phone and a tablet is one *recipient* and two *devices*, and the number
+the voditelj is shown is the devices that actually took the message.
+
+Missing VAPID keys are a deployment state, not an error: `createSender` degrades
+to a sender that reports zero, so a developer without keys still gets a working
+`/app` and an honest "0 uređaja".
+
+### The timing rules
+
+`src/lib/push/schedule.ts`, pure over a fake clock.
+
+- **Alarm**: due from T-6h, or from **18:00 the evening before** when the
+  performance starts before 14:00 Zagreb; closed at the start. The evening-before
+  time is a wall-clock reading, so it goes through `zagrebWallClockMs` and
+  resolves at +01:00 after the October switch.
+- **Reminder**: due from T-48h and **closes 24 hours later** (`REMINDER_WINDOW_MS`).
+  The closing edge is a decision: left open until the start, the reminder would
+  also fire six hours before on top of the alarm, and a performance entered at
+  the last minute would greet the roster with "izvedba je za dva dana" about an
+  evening that is nearly over.
+
+### The claim, and why the alarm is claimed even when skipped
+
+The cron runs every 15 minutes, so "exactly once per performance" is a property
+of the data, not of the schedule: `INSERT … ON CONFLICT DO NOTHING RETURNING id`
+on `performance_notifications`, the dispute-claim pattern
+(`src/lib/dispute/handle-dispute.ts`). The **claim is taken before** the
+threshold question, so an evening judged covered at T-6h stays judged and one
+late "ne dolazim" cannot ring twenty phones at midnight. A claim whose send then
+throws is released; a send that simply reached nobody keeps its claim, because
+there is nothing to retry. A voditelj who disagrees has the manual alarm, which
+has no claim and no limit.
+
+### The banner
+
+`InstallHint.tsx` is now the one banner and asks the two questions in order
+(#430 stories 1-3): no `PushManager` and not installed → the iOS "add to the home
+screen" line; supported and unsubscribed → "Uključi obavijesti"; already
+subscribed → one muted line with the per-device off switch, which is the whole of
+the per-device control (story 5). Whether **this** device is subscribed is read
+from the browser, never from the server, and the component renders nothing until
+it has looked.

@@ -26,7 +26,10 @@ import { APP_STRINGS } from '@/lib/app/strings'
 // of that may take `/app` down.
 
 const DISMISSED_KEY = 'moreskant.installHint.dismissed'
-const SW_URL = '/app/sw.js'
+// The worker script lives at the ROOT so it can claim `/app` itself, not only
+// `/app/…` — see the header of `public/moreskant-sw.js`.
+const SW_URL = '/moreskant-sw.js'
+const SW_SCOPE = '/app'
 
 type BannerState = 'unknown' | 'install' | 'offer' | 'on' | 'hidden'
 
@@ -89,7 +92,7 @@ export function InstallHint({ vapidPublicKey }: { vapidPublicKey?: string | null
         return
       }
       try {
-        const registration = await navigator.serviceWorker.getRegistration(SW_URL)
+        const registration = await navigator.serviceWorker.getRegistration(SW_SCOPE)
         const subscription = await registration?.pushManager.getSubscription()
         if (!cancelled) setState(subscription ? 'on' : 'offer')
       } catch {
@@ -114,7 +117,7 @@ export function InstallHint({ vapidPublicKey }: { vapidPublicKey?: string | null
       }
       // `register` resolves as soon as the worker is registered, which is not
       // the same as being active; `ready` is what `subscribe()` needs.
-      await navigator.serviceWorker.register(SW_URL, { scope: '/app/' })
+      await navigator.serviceWorker.register(SW_URL, { scope: SW_SCOPE })
       const registration = await navigator.serviceWorker.ready
       const subscription = await registration.pushManager.subscribe({
         // Required by Chrome: a silent push is not allowed on the open web.
@@ -146,7 +149,7 @@ export function InstallHint({ vapidPublicKey }: { vapidPublicKey?: string | null
     setBusy(true)
     setError(null)
     try {
-      const registration = await navigator.serviceWorker.getRegistration(SW_URL)
+      const registration = await navigator.serviceWorker.getRegistration(SW_SCOPE)
       const subscription = await registration?.pushManager.getSubscription()
       if (subscription) {
         await fetch('/api/app/push/unsubscribe', {

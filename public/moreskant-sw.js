@@ -8,10 +8,14 @@
 // Without a fetch handler the browser serves every request from the network as
 // if the worker were not there.
 //
-// Served from `/app/sw.js` — a static file under `public/app/` — so its scope
-// is `/app/` by path and no `Service-Worker-Allowed` header is needed. It is
-// plain JS with no build step, which is also why it is here rather than in
-// `src/`.
+// Served from the ROOT (`/moreskant-sw.js`) and registered with `scope: '/app'`,
+// which is the manifest's scope too. A worker's default maximum scope is its own
+// directory, so a script under `public/app/` could only ever claim `/app/` —
+// and `/app/` does NOT cover `/app` itself, which is the page the banner lives
+// on: `navigator.serviceWorker.ready` there would wait forever. From the root
+// the allowed maximum is `/` and `/app` is granted without a
+// `Service-Worker-Allowed` header. It is plain JS with no build step, which is
+// also why it is here rather than in `src/`.
 
 self.addEventListener('install', () => {
   // Take over straight away: the first registration should be able to receive
