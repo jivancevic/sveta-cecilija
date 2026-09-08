@@ -116,7 +116,7 @@ Field-level detail lives in `src/collections/*.ts` — this table is purpose + k
 | Collection (slug) | Purpose |
 |---|---|
 | `Shows` (`shows`) | **Every** performance, public or not (ADR-0024): `kind` + `isPublic` decide whether a row sells tickets. Public rows keep the old shape (date/time/venue, sold counters, `status`, #94 venue-move audit); capacity derived per venue, never stored. Rules: `docs/agents/features.md`. |
-| `Orders` (`orders`) | One purchase: buyer + counts + `total` (EUR cents) + `stripePaymentIntentId` + `refundStatus` → Shows. `channel` (`online \| partner \| comp`); `partner` link for reseller scoping; `member` link for comp attribution (ADR-0019); `promoCode` link for online promo orders (ADR-0018, still `channel=online`) |
+| `Orders` (`orders`) | One purchase: buyer + counts + `total` (EUR cents) + `stripePaymentIntentId` + `refundStatus` → Shows. `channel` (`online \| partner \| comp`); `partner` link for reseller scoping; `member` link for comp attribution (ADR-0019); `promoCode` link for online promo orders (ADR-0018, still `channel=online`); `compIssuedBy` (`admin \| self`, NULL reads as `admin`) marks a comp a moreškant issued for themselves from `/app` (#434, capped at 4 per performance) |
 | `OrderLookups` (`order-lookups`) | Buyer-facing order lookup support |
 | `Tickets` (`tickets`) | **Per-person** ticket + QR token → Orders; `scanned`/`scannedAt`. Seats = COUNT of active tickets (`online_sold` retired). Renamed from `qr_tokens`. |
 | `ContactSubmissions` (`contact-submissions`) | Enquiry-form submissions |

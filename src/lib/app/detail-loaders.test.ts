@@ -222,3 +222,77 @@ describe('canAlarm', () => {
     )
   })
 })
+
+// #434 — the "Besplatne karte" section: who sees it, what the allowance says,
+// and which of a dancer's own orders may still be given back.
+describe('buildCompView (self-issued comps)', () => {
+  const comp = (over: Record<string, unknown> = {}) => ({
+    orderId: '900',
+    code: 'MK-1234',
+    tickets: 2,
+    anyScanned: false,
+    ...over,
+  })
+
+  it('shows the section to a dancer on an upcoming public performance', () => {
+    const out = build({ ownComps: [comp()] })
+    expect(out.comps.visible).toBe(true)
+    expect(out.comps.issued).toBe(2)
+    expect(out.comps.remaining).toBe(2)
+    expect(out.comps.orders).toEqual([
+      { orderId: '900', code: 'MK-1234', tickets: 2, canCancel: true },
+    ])
+  })
+
+  it('defaults the printed name to the dancer full name', () => {
+    expect(build().comps.defaultName).toBe('Ime Cici')
+  })
+
+  it('hides it from a viewer with no Member link (story 55)', () => {
+    const out = build({ viewer: { memberId: null, voditelj: true }, ownComps: [comp()] })
+    expect(out.comps.visible).toBe(false)
+    expect(out.comps.orders).toEqual([])
+  })
+
+  it('hides it on a non-public performance, which sells no seats at all', () => {
+    const out = build({
+      performanceDoc: show({ isPublic: false, venue: null, location: 'Luka', kind: 'dmc' }),
+      ownComps: [comp()],
+    })
+    expect(out.comps.visible).toBe(false)
+  })
+
+  it('hides it on a cancelled evening and on one that has started', () => {
+    expect(build({ performanceDoc: show({ status: 'cancelled' }) }).comps.visible).toBe(false)
+    expect(build({ nowMs: at('2026-08-20', '21:30') }).comps.visible).toBe(false)
+  })
+
+  it('drops a fully cancelled order and gives its allowance back', () => {
+    const out = build({ ownComps: [comp({ tickets: 0 })] })
+    expect(out.comps.orders).toEqual([])
+    expect(out.comps.remaining).toBe(4)
+  })
+
+  it('replaces the form with a sold-out line when the room is full (story 47)', () => {
+    const out = build({ seatsRemaining: 0 })
+    expect(out.comps.visible).toBe(true)
+    expect(out.comps.seatsAvailable).toBe(false)
+  })
+
+  it('keeps the form when seats are left, and when the count is unknown', () => {
+    expect(build({ seatsRemaining: 3 }).comps.seatsAvailable).toBe(true)
+    expect(build({ seatsRemaining: null }).comps.seatsAvailable).toBe(true)
+    expect(build().comps.seatsAvailable).toBe(true)
+  })
+
+  it('offers no cancel once a ticket has been scanned', () => {
+    const out = build({ ownComps: [comp({ anyScanned: true })] })
+    expect(out.comps.orders[0]?.canCancel).toBe(false)
+  })
+
+  it('leaves nothing when the four are out', () => {
+    const out = build({ ownComps: [comp({ tickets: 3 }), comp({ orderId: '901', tickets: 1 })] })
+    expect(out.comps.issued).toBe(4)
+    expect(out.comps.remaining).toBe(0)
+  })
+})

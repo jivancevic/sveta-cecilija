@@ -272,6 +272,52 @@ export const APP_STRINGS = {
     hint: 'Broje se samo potvrđene postave. Dodirni redak za razradu po vrsti izvedbe.',
   },
 
+  /**
+   * Self-issued comps (#434, glossary: *Moreškant comp*).
+   *
+   * One sentence per refusal, shared by the section a dancer sees and the two
+   * routes: a button that is hidden and a POST that is refused are the same
+   * rule, and two wordings for it would read as two.
+   */
+  comp: {
+    title: 'Besplatne karte',
+    intro: 'Do 4 karte po izvedbi. Stižu ti na e-mail kao PDF, s QR kodom za ulaz.',
+    adults: 'Odrasli',
+    children: 'Djeca',
+    /** The allowance still left, next to the steppers (#430, story 48). */
+    remaining: (left: number) => `još ${left} od 4`,
+    nameLabel: 'Ime na karti',
+    namePlaceholder: 'Ime i prezime',
+    issue: 'Izdaj karte',
+    issuing: 'Izdajem...',
+    issued: 'Karte su izdane i poslane na tvoj e-mail.',
+    issuedNoEmail: 'Karte su izdane, ali e-mail nije otišao. Javi voditelju.',
+    mine: (count: number) => `Moje karte: ${count}`,
+    cancel: 'Otkaži',
+    cancelling: 'Otkazujem...',
+    cancelled: 'Karte su otkazane.',
+    /** Refusals, all of them also spoken by the routes. */
+    /** The `/app` cross-site guard, in the comp routes' own words. */
+    rejected: 'Zahtjev nije prihvaćen. Pokušaj ponovno iz aplikacije.',
+    pickOne: 'Odaberi barem jednu kartu.',
+    capReached: 'Potrošio si svoje 4 besplatne karte za ovu izvedbu.',
+    noMember: 'Tvoja prijava nije povezana s moreškantom, pa ne možeš izdati besplatne karte.',
+    noEmail: 'Na tvojem moreškantu nema e-mail adrese, pa karte nemaju kamo. Javi voditelju.',
+    notPublic: 'Za ovu izvedbu se ne prodaju karte.',
+    showCancelled: 'Izvedba je otkazana.',
+    started: 'Izvedba je počela, karte se više ne mijenjaju.',
+    soldOut: 'Nema više slobodnih mjesta.',
+    scanned: 'Karta je već skenirana, pa se narudžba ne može otkazati.',
+    /**
+     * The ONE answer to every cancel that is not the caller's own self-issued
+     * comp: unknown, paid, an admin's, or another dancer's. Three honest
+     * sentences would map the order table for anyone who tried them.
+     */
+    notFound: 'Karte nisu pronađene.',
+    failed: 'Karte nisu izdane. Pokušaj ponovno.',
+    cancelFailed: 'Otkazivanje nije uspjelo. Pokušaj ponovno.',
+  },
+
   /** The shared calendar subscription (#433, glossary: *Calendar feed*). */
   calendar: {
     title: 'Kalendar',

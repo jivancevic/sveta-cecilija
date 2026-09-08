@@ -11,6 +11,7 @@ import { VENUE_LABEL } from '@/lib/venues'
 import { AlarmButton } from '../../AlarmButton'
 import { LineupEditor } from '../../LineupEditor'
 import { AttendanceButtons } from '../../AttendanceButtons'
+import { CompTickets } from '../../CompTickets'
 import { ArmyMoveButton } from '../../ArmyMoveButton'
 import { LogoutButton } from '../../LogoutButton'
 import { NoteEditor } from '../../NoteEditor'
@@ -247,6 +248,12 @@ export default async function PerformanceDetailPage({
           button keeps the page from offering what the server will decline.
           `canAlarm` is decided in the loader, over its own clock. */}
       {detail.canAlarm && <AlarmButton performanceId={p.id} />}
+
+      {/* Besplatne karte (#434). The loader decides `visible` - a Member link,
+          a public performance, not cancelled, still ahead - so the section is
+          absent for a voditelj without a Member link and for every non-public
+          evening, and the two routes refuse the same cases anyway. */}
+      {detail.comps.visible && <CompTickets performanceId={p.id} comps={detail.comps} />}
 
       <ArmySection
         title={APP_STRINGS.detail.crni}

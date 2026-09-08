@@ -53,7 +53,16 @@ export const Orders: CollectionConfig = {
   },
   admin: {
     useAsTitle: 'buyerName',
-    defaultColumns: ['buyerName', 'email', 'adultCount', 'childCount', 'total', 'refundStatus', 'show'],
+    defaultColumns: [
+      'buyerName',
+      'email',
+      'adultCount',
+      'childCount',
+      'total',
+      'compIssuedBy',
+      'refundStatus',
+      'show',
+    ],
     listSearchableFields: ['buyerName', 'email'],
     hidden: ({ user }) => !can(user as ReqUser, 'tickets'),
     components: {
@@ -96,6 +105,31 @@ export const Orders: CollectionConfig = {
       type: 'relationship',
       relationTo: 'members',
       admin: { readOnly: true, description: 'Member that received this order (comp channel only)' },
+    },
+    // Who issued a comp: an admin from /admin, or the moreškant themselves from
+    // /app (#434, ADR-0024 phase 4). Meaningful on comp orders only; NULL on
+    // every row that predates the column and on every online/partner order,
+    // which readers treat as 'admin' — only the literal 'self' counts against a
+    // dancer's four tickets per performance (#430, story 52), so an admin's
+    // gesture never eats their own allowance.
+    //
+    // NO `defaultValue`, deliberately: it would label every Stripe purchase
+    // "Admin" in the list. Both comp routes write the value explicitly through
+    // `buildCompIssueDeps`. A `tickets` holder can still change it by hand,
+    // which is how the backoffice resets a dancer's cap on purpose.
+    {
+      name: 'compIssuedBy',
+      type: 'select',
+      options: [
+        { label: 'Admin', value: 'admin' },
+        { label: 'Self (moreškant)', value: 'self' },
+      ],
+      admin: {
+        // Editable, unlike the attribution links above: a `tickets` holder
+        // changing 'self' to 'admin' is how the backoffice gives a dancer their
+        // four back on purpose. Nobody else reaches the collection.
+        description: 'Who issued this comp: the backoffice, or the dancer from /app',
+      },
     },
     // Promo code applied to this online order (ADR-0018, #325). Null for
     // partner/comp and for online orders with no code. Attribution + reporting
