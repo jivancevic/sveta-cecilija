@@ -346,8 +346,25 @@ describe('Members access', () => {
       expect(field?.access?.read).toBeUndefined()
       expect(call(field?.access?.update, ticketAdmin)).toBe(true)
       expect(call(field?.access?.update, voditelj)).toBe(false)
-      // Create left open so a voditelj can add a dancer (`name` is required).
-      expect(field?.access?.create).toBeUndefined()
+    },
+  )
+
+  // A voditelj may create a Member (a new dancer is a new row), so `name` has
+  // to be writable on create — it is required. `active` and `note` are not:
+  // leaving create open let a `moreska`-only holder file a new member as
+  // already retired, or write comp-reporting free text, which the update lock
+  // exists to prevent (#420).
+  it('name is creatable by the voditelj because a new dancer needs one', () => {
+    expect(memberFieldOf('name')?.access?.create).toBeUndefined()
+  })
+
+  it.each(['active', 'note'] as const)(
+    '%s is the backoffice’s on create as well as on update',
+    (name) => {
+      const field = memberFieldOf(name)
+      expect(call(field?.access?.create, ticketAdmin)).toBe(true)
+      expect(call(field?.access?.create, developer)).toBe(true)
+      expect(call(field?.access?.create, voditelj)).toBe(false)
     },
   )
 
