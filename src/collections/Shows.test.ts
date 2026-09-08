@@ -124,8 +124,12 @@ describe('Shows non-public field conditions (#409)', () => {
   it('keeps status a plain editable select, so cancelling a non-public row is just a field edit', () => {
     const status = field('status')!
     expect(status.type).toBe('select')
+    // No condition: unlike the sales fields, `status` stays on the form of a
+    // non-public row, because that is how you cancel one.
     expect(status.admin?.condition).toBeUndefined()
-    expect((status as { access?: unknown }).access).toBeUndefined()
+    // Not read-locked either, so whoever can open the row can see and set it.
+    // Who may *write* it is #408's `scheduleFieldUpdate` rule, not ours.
+    expect((status as { access?: { read?: unknown } }).access?.read).toBeUndefined()
   })
 
   it('has no hook that could email anyone when status changes', () => {
