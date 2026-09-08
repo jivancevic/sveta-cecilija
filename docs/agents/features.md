@@ -10,6 +10,12 @@ There is exactly **one** spelling of "is public" — `PUBLIC_PERFORMANCE_WHERE`,
 
 The 14 non-public performances of 2026 were imported once by `db/schema/seed-zz-nonpublic-performances.sql` (#411). Its guard is the whole INSERT firing only while `NOT EXISTS (SELECT 1 FROM shows WHERE is_public = false)` — bootstrap re-applies every schema file on every restart, so a per-row guard would resurrect a performance the voditelj deleted. Behaviour proof: `scripts/probe-nonpublic-seed.mjs` (throwaway DB, three bootstraps). `docs/performances.md` and the print `.ods` are frozen prints from then on; the database is the source of truth.
 
+## The Moreškant app (`/app`, ADR-0024 phase 3, #419)
+
+The dancer-facing roster: who is coming to which izvedba, per army, against a threshold. Everything about it — the route group and its `.app` scope, the access decision (a function of the login *and* the linked Member, not of a permission alone), the loaders, the attendance rules and army count, the invitation / set-password / forgot flows and the "Ima prijavu" column — lives in **`docs/agents/moreskant-app.md`**. Permission wording is in `permissions.md`, the vocabulary in `CONTEXT.md` → *Moreškant*.
+
+Two facts worth carrying here, because they cross into ticketing: the roster reads **every** performance of the season, public and non-public alike (it uses `isPublicPerformance` to decide how a row renders, never to filter), and nothing in `/app` touches capacity, sales, refunds or the public site.
+
 ## Bad-weather venue change, Ljetno → Zimsko (#94)
 
 Admin edit-view action `MarkMovedToZimskoMenuItem`, 2-step:

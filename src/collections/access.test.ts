@@ -338,6 +338,33 @@ describe('Members access', () => {
     },
   )
 
+  // #424: "ima prijavu" on the Members list.
+  it('hasLogin is a read-only virtual field, readable by a `moreska` holder only', () => {
+    const field = memberFieldOf('hasLogin') as
+      | { type?: string; virtual?: boolean; access?: Record<string, unknown> }
+      | undefined
+    expect(field).toBeDefined()
+    expect(field?.type).toBe('checkbox')
+    // Virtual: no column, so it cannot drift from `users.member`, which is the
+    // truth it reports.
+    expect(field?.virtual).toBe(true)
+    expect(call(field?.access?.read, voditelj)).toBe(true)
+    expect(call(field?.access?.read, developer)).toBe(true)
+    expect(call(field?.access?.read, ticketAdmin)).toBe(false)
+    // Nothing writes it, the invitation included.
+    for (const op of ['create', 'update'] as const) {
+      expect(call(field?.access?.[op], developer)).toBe(false)
+      expect(call(field?.access?.[op], voditelj)).toBe(false)
+    }
+  })
+
+  it('the invitation is an edit-menu item on Members', () => {
+    const items = (
+      Members.admin?.components as { edit?: { editMenuItems?: string[] } } | undefined
+    )?.edit?.editMenuItems
+    expect(items).toContain('@/components/payload/InviteMoreskantMenuItem#InviteMoreskantMenuItem')
+  })
+
   it.each(ATTRIBUTION_FIELDS)(
     '%s stays readable by both but is only the backoffice’s to change',
     (name) => {
@@ -569,6 +596,34 @@ describe('Users access', () => {
       expect(call(memberField?.access?.[op], moreskantAccount)).toBe(false)
       expect(call(memberField?.access?.[op], anon)).toBe(false)
     }
+  })
+
+  // #424: the invitation issues the username; the dancer may not rename it.
+  it('username field: write locked to a `users` holder, read left open', () => {
+    const usernameField = usersFieldOf('username')
+    expect(usernameField).toBeDefined()
+    // Payload adds the base username field itself (loginWithUsername,
+    // ADR-0011); our declaration merges into it to carry the lock, so `unique`
+    // and `required` are deliberately NOT re-stated here.
+    expect(usernameField?.access?.read).toBeUndefined()
+    for (const op of ['update', 'create'] as const) {
+      expect(call(usernameField?.access?.[op], developer)).toBe(true)
+      expect(call(usernameField?.access?.[op], ticketAdmin)).toBe(false)
+      expect(call(usernameField?.access?.[op], voditelj)).toBe(false)
+      // Self-edit is allowed on the record, so this lock is the only thing
+      // between a moreškant and the login name the voditelj issued.
+      expect(call(usernameField?.access?.[op], moreskantAccount)).toBe(false)
+      expect(call(usernameField?.access?.[op], anon)).toBe(false)
+    }
+  })
+
+  // #424: the reset-token length is passed per call (seven days for an
+  // invitation, one hour for "Zaboravljena lozinka"). Payload reads
+  // `collectionConfig.auth?.forgotPassword?.expiration ?? expiration ?? 3600000`,
+  // so a value here would WIN over the argument and silently freeze both.
+  it('sets no forgotPassword.expiration, which would override the per-call one', () => {
+    const auth = Users.auth as { forgotPassword?: { expiration?: number } } | undefined
+    expect(auth?.forgotPassword?.expiration).toBeUndefined()
   })
 
   it('partner link field: write locked to a `users` holder, read left open for scoping', () => {

@@ -390,7 +390,7 @@ A person who dances the Moreška. Modelled as a **Member** with `isMoreskant`, p
 _Avoid_: dancer (in code names only), performer, user.
 
 ### Nadimak (nickname)
-The name shown everywhere in the app for a moreškant ("Cici" for Ivan Fabris). Full name is kept for the voditelj and for comp attribution.
+The name shown everywhere in the app for a moreškant ("Cici" for Ivan Fabris). Full name is kept for the voditelj and for comp attribution. Required and **unique among moreškanti, case-insensitively** ("cici" and "Cici" are one person), which is also where a dancer's username comes from when they are invited (`Cici` → `cici`, a second one → `cici2`).
 
 ### Dance role
 What a moreškant can dance: `crni` ⚫, `bili` 🔴 (the "white" army wears red), `crni_kralj`, `otmanovic`, `bili_kralj`, `bula`. A member may hold several. `crni_kralj` and `otmanovic` are special roles of a *crni* and require `crni`; `bili_kralj` requires `bili`. Only a voditelj edits roles.
@@ -403,11 +403,15 @@ Every occasion the Moreška is danced, public or not. Extends the existing `Show
 _Avoid_: show (for non-public ones), gig, event.
 
 ### Attendance
-A moreškant's answer for one performance: **no answer** / **coming** / **not coming**. A multi-role dancer only says "coming"; the voditelj picks the army. A voditelj may answer on someone's behalf. Changeable until the performance starts.
+A moreškant's answer for one performance: **no answer** / **coming** / **not coming** — no answer being the *absence of a row*, never a third value. A multi-role dancer only says "coming"; the voditelj picks the army, and until they do the answer counts in the army of the dancer's **primary role** (`crni`/`crni_kralj`/`otmanović` → crni, `bili`/`bili kralj` → bili, `bula` → neither). A voditelj may answer on someone's behalf, at any time. A dancer's own answer is changeable until the performance starts.
 _Avoid_: RSVP, availability, sign-up.
 
 ### Army count
 Headcount of "coming" per army, compared to the threshold. `crni_kralj` and `otmanovic` count as crni, `bili_kralj` as bili, `bula` counts in neither. "3 bilih, 7 crnih" always states the *current* headcount, never the shortfall.
+
+### Pozivnica (invitation)
+The only way a moreškant gets a login. A voditelj presses "Pošalji pozivnicu" on the Member; the account is created with exactly the `moreskant` permission and the Member link, and the dancer gets a Croatian email with a link to choose a password, **valid for seven days**. Pressing again sends a fresh link to the same login, never a second one. A dancer who forgets their password asks for one themselves from the login page and gets the same page behind a **one-hour** link.
+_Avoid_: registration, sign-up, account request.
 
 ### Alarm
 The push "Sokoliću, fali nas! Stanje za nastup <date time>: 3 bilih, 7 crnih" sent to moreškanti with **no answer** when an army is below threshold. Automatic once per performance at T-6h (or 18:00 the day before when the performance starts before 14:00, Europe/Zagreb), plus manual by a voditelj at any time. "Sokoliću" is a generic greeting, not a vocative of the nickname.
