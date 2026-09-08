@@ -313,6 +313,23 @@
   color: var(--goldBright);
 }
 
+/* The counterpart of .app__error: "the mail is on its way" (#424). */
+.app__notice {
+  margin: 0 0 16px;
+  padding: 10px 12px;
+  border: 1px solid var(--gold);
+  border-radius: var(--radius);
+  color: var(--goldBright);
+  font-size: 14px;
+}
+
+/* Under the login form: one quiet line, not a second call to action. */
+.app__aside {
+  margin: 18px 0 0;
+  font-size: 14px;
+  text-align: center;
+}
+
 /* ── Add to home screen hint ────────────────────────────── */
 .app__hint {
   position: relative;

@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { APP_STRINGS } from '@/lib/app/strings'
 import { resolveAppViewer } from '@/lib/app/viewer'
@@ -29,6 +30,11 @@ export default async function MoreskantLoginPage() {
       <h1>{APP_STRINGS.name}</h1>
       <p>{APP_STRINGS.login.intro}</p>
       <LoginForm />
+      <p className="app__aside">
+        <Link className="app__link" href="/app/forgot">
+          {APP_STRINGS.forgot.link}
+        </Link>
+      </p>
     </main>
   )
 }
