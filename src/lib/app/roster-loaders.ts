@@ -23,6 +23,15 @@ import { seasonYear } from '@/lib/member/season'
 import { isPublicPerformance, type PerformanceKind } from '@/lib/show-performance'
 import { showStartMs } from '@/lib/show-time'
 import type { ShowsFind } from '@/lib/show-loaders'
+import {
+  moreskantMayAnswer,
+  toAttendanceMember,
+  type Army,
+  type AttendanceMember,
+  type AttendanceStatus,
+} from '@/lib/attendance/rules'
+import { countArmies, type AttendanceRow } from '@/lib/attendance/army-count'
+import { relationIdString } from '@/lib/payload-relation'
 import type { Venue } from '@/lib/venues'
 
 /** One performance card. No email, ever. */
@@ -44,6 +53,24 @@ export interface RosterPerformance {
   voditeljNote: string | null
   /** Epoch ms of the start instant, Europe/Zagreb. */
   startMs: number
+  /** Minimum crni / bili moreškanti for this evening (#408). */
+  thresholdCrni: number
+  thresholdBili: number
+  /** The viewer's OWN answer, or null when they have not answered (#422). */
+  myAnswer: AttendanceStatus | null
+  /** Whether the viewer may still change that answer from the card (#422). */
+  canAnswer: boolean
+  /**
+   * The per-army headcount chip a voditelj sees on the card (#423), or null for
+   * a moreškant, who gets the numbers on the detail page instead.
+   */
+  chip: ArmyChip | null
+}
+
+/** The card chip: two headcounts against two thresholds, nothing else. */
+export interface ArmyChip {
+  crni: { count: number; threshold: number; below: boolean }
+  bili: { count: number; threshold: number; below: boolean }
 }
 
 export interface SeasonPerformances {
@@ -58,6 +85,10 @@ export interface SeasonPerformances {
  * any more is noise on a phone screen (#419, story 30).
  */
 export const CANCELLED_WINDOW_MS = 7 * 24 * 60 * 60 * 1000
+
+function threshold(value: unknown, fallback = 8): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : fallback
+}
 
 function text(value: unknown): string | null {
   return typeof value === 'string' && value.trim() !== '' ? value.trim() : null
@@ -80,6 +111,12 @@ export function toRosterPerformance(row: Record<string, unknown>): RosterPerform
     cancelled: row.status === 'cancelled',
     voditeljNote: text(row.voditeljNote),
     startMs: date && time ? showStartMs(date, time) : Number.NaN,
+    thresholdCrni: threshold(row.thresholdCrni),
+    thresholdBili: threshold(row.thresholdBili),
+    // Filled in by attachOwnAnswers / attachArmyChips once the viewer is known.
+    myAnswer: null,
+    canAnswer: false,
+    chip: null,
   }
 }
 
@@ -112,9 +149,70 @@ export function splitSeasonPerformances(
   return { upcoming, past }
 }
 
+/**
+ * Fold the viewer's OWN answers into the cards (#422).
+ *
+ * `answers` is keyed by performance id; a missing key is "no answer", the
+ * absence of a row (glossary: *Attendance*). `canAnswer` is the same sentence
+ * the answer route enforces (`moreskantMayAnswer`), so the buttons a dancer sees
+ * disabled are exactly the ones the server would refuse. A voditelj may answer
+ * at any time, cancelled or long past (#419, story 13).
+ */
+export function attachOwnAnswers(
+  rows: RosterPerformance[],
+  answers: Map<string, AttendanceStatus>,
+  nowMs: number,
+  opts: { voditelj: boolean; hasMember: boolean },
+): RosterPerformance[] {
+  return rows.map((p) => ({
+    ...p,
+    myAnswer: answers.get(p.id) ?? null,
+    canAnswer: opts.hasMember && (opts.voditelj || moreskantMayAnswer(p, nowMs)),
+  }))
+}
+
+/**
+ * The per-army headcount on every card (#423, voditelj story 10): a short
+ * performance has to stand out in the list, not only once you open it.
+ *
+ * The numbers come from `countArmies`, the single home of the counting rule —
+ * this function only groups the season's rows by performance and hands each
+ * bundle over, so the chip and the detail page can never disagree.
+ */
+export function attachArmyChips(
+  rows: RosterPerformance[],
+  attendance: readonly (AttendanceRow & { performanceId: string })[],
+  members: readonly AttendanceMember[],
+): RosterPerformance[] {
+  const byPerformance = new Map<string, AttendanceRow[]>()
+  for (const row of attendance) {
+    const list = byPerformance.get(row.performanceId)
+    if (list) list.push(row)
+    else byPerformance.set(row.performanceId, [row])
+  }
+
+  return rows.map((p) => {
+    const count = countArmies(byPerformance.get(p.id) ?? [], members, {
+      crni: p.thresholdCrni,
+      bili: p.thresholdBili,
+    })
+    return {
+      ...p,
+      chip: {
+        crni: { count: count.crni.count, threshold: count.crni.threshold, below: count.crni.below },
+        bili: { count: count.bili.count, threshold: count.bili.threshold, below: count.bili.below },
+      },
+    }
+  })
+}
+
 export interface SeasonPerformancesDeps {
   find: ShowsFind
   now?: () => Date
+  /** The viewer's own Members id, when the login has one. */
+  memberId?: string | null
+  /** True when the viewer holds `moreska`: no time lock on their own answer. */
+  voditelj?: boolean
 }
 
 /**
@@ -140,6 +238,71 @@ export async function loadSeasonPerformances(
     depth: 0,
   })
 
-  const rows = result.docs.map(toRosterPerformance)
+  let rows = result.docs.map(toRosterPerformance)
+
+  // The viewer's own answers, one query for the whole season. A voditelj with no
+  // Member link (a non-dancing voditelj, story 15) skips it entirely.
+  const answers = new Map<string, AttendanceStatus>()
+  if (deps.memberId) {
+    const mine = await deps.find({
+      collection: 'attendance',
+      where: { member: { equals: deps.memberId } },
+      limit: 1000,
+      depth: 0,
+    })
+    for (const row of mine.docs) {
+      const performance = relationIdString(row.performance)
+      if (performance && (row.status === 'coming' || row.status === 'not_coming')) {
+        answers.set(performance, row.status)
+      }
+    }
+  }
+
+  rows = attachOwnAnswers(rows, answers, now.getTime(), {
+    voditelj: deps.voditelj === true,
+    hasMember: deps.memberId != null,
+  })
+
+  // The voditelj's headcount chips: two more queries, and only for the account
+  // that has a reason to see them. A dancer gets the numbers on the detail page.
+  if (deps.voditelj && rows.length > 0) {
+    // Scoped to this season's performances: without the filter this reads every
+    // answer ever recorded, which grows without bound one season at a time and
+    // is thrown away immediately.
+    const performanceIds = rows.map((p) => p.id)
+    const [all, roster] = await Promise.all([
+      deps.find({
+        collection: 'attendance',
+        where: { performance: { in: performanceIds } },
+        limit: 5000,
+        depth: 0,
+      }),
+      deps.find({
+        collection: 'members',
+        where: { and: [{ isMoreskant: { equals: true } }, { active: { not_equals: false } }] },
+        limit: 1000,
+        depth: 0,
+      }),
+    ])
+
+    const attendance: (AttendanceRow & { performanceId: string })[] = []
+    for (const row of all.docs) {
+      const performanceId = relationIdString(row.performance)
+      const memberId = relationIdString(row.member)
+      if (!performanceId || !memberId) continue
+      if (row.status !== 'coming' && row.status !== 'not_coming') continue
+      attendance.push({
+        performanceId,
+        memberId,
+        status: row.status,
+        army: row.army === 'crni' || row.army === 'bili' ? (row.army as Army) : null,
+      })
+    }
+
+    const members: AttendanceMember[] = roster.docs.map(toAttendanceMember)
+
+    rows = attachArmyChips(rows, attendance, members)
+  }
+
   return { year, ...splitSeasonPerformances(rows, now.getTime()) }
 }

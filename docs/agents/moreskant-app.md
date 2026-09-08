@@ -2,12 +2,14 @@
 
 The dancer-facing surface of the roster module ([ADR-0023](../adr/0023-permissions-replace-roles-app-surface.md), [ADR-0024](../adr/0024-moreskant-roster-domain.md); phase 3 = #419). Croatian only, mobile first, no ticketing. Glossary in `CONTEXT.md` → *Moreškant*.
 
-## What ships in phase 3 (#420 + #421)
+## What ships in phase 3 (#420 → #423)
 
 - Moreškant identity on `Members` and the `Users.member` link (#420).
 - The `/app` route group: login, the access decision, the season's performance cards, the PWA manifest (#421).
+- **Attendance**: the collection, the answer rules, the army count, Dolazim / Ne dolazim on every card (#422).
+- **The performance detail** `/app/izvedba/[id]`: armies against thresholds, on-behalf answers, the army move, the card headcount chip (#423).
 
-Attendance buttons, the performance detail, invitations and push are **later tickets** (#422 onwards). `/app` currently reads; it writes nothing but the session cookie.
+Invitations (#424) and push (phase 4) are later tickets. The only thing `/app` writes is an attendance row and the session cookie.
 
 ## Route group
 
@@ -64,3 +66,99 @@ Access follows the **roster, not the login table**: unticking `active` or `isMor
 **There is no service worker in this phase, deliberately** (#419, story 47): until push exists, a cache layer can only turn app bugs into caching bugs.
 
 The "Dodaj na početni zaslon" hint (`InstallHint.tsx`) is one dismissible line remembered per device in `localStorage`, every access wrapped in `try/catch`, and it is skipped when `display-mode: standalone` says the icon already exists. It is plain instructions rather than an install button, because iOS never fires `beforeinstallprompt` and iOS is where the hint matters most.
+
+## Attendance (#422, #423)
+
+One row per (performance, moreškant) in the `attendance` collection: `status`
+(`coming | not_coming`), `army` (`crni | bili | null`), `answeredBy`,
+`answeredAt`. **"No answer" is the absence of a row** (glossary: *Attendance*) —
+never a third status value. That is why the unique index on
+(`performance`, `member`) is load-bearing rather than decorative: the app
+upserts on that pair and *deletes* the row to clear an answer. Payload's push
+never emits a two-column unique index (`unique: true` covers one column), so
+`migrate-zz-attendance.sql` is the index's **only** home — putting it in the
+generated `00-base.sql` would only mean losing it at the next regeneration, the
+same rule the nickname index from #420 follows.
+
+### The answer rules
+
+`src/lib/attendance/rules.ts`, pure and table-tested. `decideAttendanceAnswer`
+is the whole rule set:
+
+| Caller | May answer for | When | The army |
+|---|---|---|---|
+| `moreskant` | their own Member only | before the start, not cancelled | never theirs to set |
+| `moreska` (voditelj) | any active moreškant | any time, cancelled or long past | theirs alone |
+
+- 403 means "you may not do this" (someone else's answer, an evening that has
+  started or been cancelled, an army only a voditelj may set); 400 means "this
+  makes no sense" (unknown status or army, an army the member's roles do not
+  cover, a member who is not a live moreškant).
+- On create the army defaults from the **primary role**: `crni` / `crni_kralj` /
+  `otmanovic` → crni, `bili` / `bili_kralj` → bili, `bula` → null. On update it
+  keeps whatever the voditelj chose.
+- `moreskantMayAnswer()` is the single sentence behind both the lock the route
+  enforces and the disabled buttons a dancer sees, so the two cannot drift.
+
+### The army count is the single home of the counting rule
+
+`src/lib/attendance/army-count.ts`. Kings count in their army, an otmanović in
+the crni army, a **bula in neither**; only `coming` counts; the no-answer list is
+the active moreškanti minus everyone who answered, which is what puts a *guest*
+(a dancer with no login) in front of the voditelj's buttons. The card chip, the
+detail page and the phase 4 alarm all call it; nothing recomputes a headcount
+anywhere else, browser included — a successful answer calls `router.refresh()`
+rather than counting locally.
+
+### The one writer
+
+`POST /api/app/attendance` (`{ performanceId, memberId, status: coming |
+not_coming | clear, army? }`), guarded by
+`requirePermission(req, ['moreskant', 'moreska'])`. The local API runs
+`overrideAccess: true`, so the collection access does not gate it — the rules
+do. The army move posts through the same route; there is no second writer.
+
+`Users.member` is field-locked to `users`, so `req.user` carries no link:
+`resolveOwnMemberId()` (`src/lib/access/attendance-access.ts`) re-reads the
+account with `overrideAccess`, and both the route and the collection access use
+it. That is also why the `attendance` access functions are **async**.
+
+### Collection access
+
+`moreska` reads and writes every row. A `moreskant` **reads** their own rows as
+`{ member: { equals: <own> } }` and writes nothing: create, update and delete are
+`moreska`-only. Nobody else reaches the collection at all, the backoffice
+included. The sidebar entry is `moreska`-only (a voditelj fixing a wrong row
+without the developer, #419 story 18).
+
+**Writes are narrower than reads on purpose.** Payload's create operation only
+tests the access result for truthiness, so an own-rows `Where` on `create` would
+read as "allowed" and the new row's values would never be compared against it: a
+signed-in dancer could POST `/api/attendance` for anybody, with any army, after
+the start, using the very `payload-token` cookie `/app` hands them. Dancers lose
+nothing, because `/app` never writes through collection access — the answer route
+runs `overrideAccess: true` and applies the rules. That is also where the TIME
+rule lives, since a `Where` cannot express "the related performance has not
+started" without a join.
+
+### The detail view
+
+`/app/izvedba/[id]`, loaded by `src/lib/app/detail-loaders.ts` (pure) +
+`detail-data.ts` (the Payload calls). Read-only is a property of the **viewer**,
+not of the page: a moreškant looking back at last week sees the answers as they
+were, a voditelj can still correct them. Mobiles are `tel:` links; there is no
+email field in the payload to leak (ADR-0024's PII boundary is a property of the
+data contract, not of a template, and `detail-loaders.test.ts` asserts it on the
+rendered payload).
+
+The voditelj additionally gets Dolazim / Ne dolazim next to every no-answer
+nickname, a Poništi on any answer, and a "Prebaci u …" control on a coming
+dancer who holds **both** armies. Hiding those controls from a moreškant is
+convenience; the route refuses them anyway.
+
+### The card chip
+
+A voditelj's cards carry `Crni n/threshold` and `Bili n/threshold`, red below
+threshold, so a short evening is visible without opening it (#419, story 10). It
+costs two extra queries and only for the account that has a reason to see them —
+a dancer gets the numbers on the detail page.

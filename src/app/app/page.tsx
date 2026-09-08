@@ -49,7 +49,8 @@ export default async function MoreskantHomePage() {
   if (viewer.access.kind === 'denied') return <DeniedPage />
 
   const me = accessMember(viewer.access)
-  const season = await getSeasonPerformances()
+  const voditelj = viewer.access.kind === 'voditelj'
+  const season = await getSeasonPerformances({ memberId: me?.id ?? null, voditelj })
 
   return (
     <div className="app__shell">
@@ -69,7 +70,12 @@ export default async function MoreskantHomePage() {
         {APP_STRINGS.list.season} {season.year}
       </p>
 
-      <PerformanceList upcoming={season.upcoming} past={season.past} />
+      <PerformanceList
+        upcoming={season.upcoming}
+        past={season.past}
+        memberId={me?.id ?? null}
+        voditelj={voditelj}
+      />
 
       <InstallHint />
     </div>

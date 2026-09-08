@@ -60,6 +60,40 @@ export const APP_STRINGS = {
     noteLabel: 'Voditelj',
   },
 
+  /**
+   * The two buttons and everything that can go wrong around them (#422).
+   *
+   * `locked` and `cancelled` are ONE sentence each, shared by the card, the
+   * detail view and the answer route's refusal: a dancer who taps a locked
+   * button and a dancer whose POST is refused are in the same situation, and
+   * two wordings for it would only look like two different rules.
+   */
+  answer: {
+    coming: 'Dolazim',
+    notComing: 'Ne dolazim',
+    clear: 'Poništi',
+    locked: 'Izvedba je počela, odgovori se više ne mijenjaju.',
+    cancelled: 'Izvedba je otkazana.',
+    failed: 'Odgovor nije spremljen. Pokušaj ponovno.',
+    saving: 'Spremam...',
+  },
+
+  /** The performance detail and the voditelj's headcount (#423). */
+  detail: {
+    back: 'Natrag',
+    note: 'Poruka voditelja',
+    crni: 'Crni',
+    bili: 'Bili',
+    bula: 'Bule',
+    notComing: 'Ne dolaze',
+    noAnswer: 'Bez odgovora',
+    empty: 'Nema nikoga.',
+    call: 'Nazovi',
+    move: 'Prebaci',
+    moveTo: (army: string) => `Prebaci u ${army}`,
+    missing: 'Ta izvedba ne postoji.',
+  },
+
   install: {
     title: 'Dodaj na početni zaslon',
     body: 'Otvori izbornik preglednika i odaberi "Dodaj na početni zaslon" za ikonu Moreškant.',
