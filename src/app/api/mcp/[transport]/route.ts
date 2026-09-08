@@ -177,11 +177,24 @@ const handler = createMcpHandler(
 )
 
 /**
+ * The scope that stands for "the token's user still holds `moreska`".
+ *
+ * It is checked as a SCOPE rather than inside `verifyToken` for one reason:
+ * `withMcpAuth` turns an unknown token into 401 and a missing required scope
+ * into **403**, which is exactly the distinction that matters here. An
+ * exception thrown from `verifyToken` is swallowed into a 401, so "the token is
+ * real, the person is no longer a voditelj" would read identically to "there is
+ * no such token" — and 403 is the honest answer to the first.
+ */
+const MORESKA_SCOPE = 'moreska'
+
+/**
  * Bearer token → `AuthInfo`, or `undefined` for a 401.
  *
  * The second half is the one that matters: the token's user is re-read and
  * `moreska` re-checked on EVERY call. A token is a credential, not a captured
- * permission set.
+ * permission set — a permission taken away in `/admin` bites the next sentence
+ * the voditelj types into Claude, with no token row touched.
  */
 const verifyToken = async (
   _req: Request,
@@ -195,12 +208,12 @@ const verifyToken = async (
   const user = await payload
     .findByID({ collection: 'users', id: verified.userId, depth: 0, overrideAccess: true })
     .catch(() => null)
-  if (!can(user as PermissionUser, 'moreska')) return undefined
+  const isVoditelj = can(user as PermissionUser, 'moreska')
 
   return {
     token: bearerToken,
     clientId: verified.clientId,
-    scopes: verified.scopes,
+    scopes: isVoditelj ? [...verified.scopes, MORESKA_SCOPE] : verified.scopes,
     expiresAt: verified.expiresAt,
     resource: new URL(verified.resource ?? mcpResourceUrl()),
     extra: { userId: verified.userId, tokenKey: sha256(bearerToken) } satisfies McpIdentity,
@@ -235,6 +248,7 @@ function route(req: Request): Promise<Response> {
     // `resource` (see the well-known route).
     authHandler = withMcpAuth(handler, verifyToken, {
       required: true,
+      requiredScopes: [MORESKA_SCOPE],
       resourceMetadataPath: '/.well-known/oauth-protected-resource',
       resourceUrl: issuerUrl(),
     })
