@@ -25,7 +25,6 @@ import {
   moreskantMayAnswer,
   toAttendanceMember,
   type Army,
-  type AttendanceMember,
   type AttendanceStatus,
 } from '@/lib/attendance/rules'
 import { relationIdString } from '@/lib/payload-relation'
