@@ -100,8 +100,8 @@ export const Users: CollectionConfig = {
       },
     ],
     // Conditional email requirement: an account held by a named person
-    // (`users`, `tickets` or `moreska`) must have an email; door, partner and
-    // season_stats accounts may be username-only. Merge incoming data over the
+    // (`users`, `tickets`, `moreska` or, since #420, `moreskant`) must have an
+    // email; door, partner and season_stats accounts may be username-only. Merge incoming data over the
     // existing doc so an update that touches only one field is judged on the
     // resulting record — and an explicit `email: null` is honoured, not masked
     // by the original value.
@@ -218,12 +218,13 @@ export const Users: CollectionConfig = {
     // The Member a `moreskant` login belongs to (ADR-0024, #420). One person,
     // one Members row: the roster, comp attribution and promo codes share an
     // identity, and `/app` resolves the dancer behind a login through this link
-    // (#421). Read is locked alongside the writes — a moreškant must not be able
-    // to repoint themselves at another dancer, and nothing in the session needs
-    // the value: `/app` re-reads it server-side with `overrideAccess: true`
-    // (unlike `partner`, whose value rides along on `req.user` for ownership
-    // scoping). The link is filled by the invitation flow (#424); until then a
-    // `users` holder sets it by hand.
+    // (#421). Read is locked alongside the writes so the value never leaves the
+    // server in an API response a dancer can read; it still rides along on
+    // `req.user`, because Payload's JWT strategy loads the account with
+    // `overrideAccess: true` (the same reason `permissions` is there). `/app`
+    // re-reads it server-side regardless — see `src/lib/app/viewer.ts`. The
+    // link is filled by the invitation flow (#424); until then a `users` holder
+    // sets it by hand.
     {
       name: 'member',
       type: 'relationship',
