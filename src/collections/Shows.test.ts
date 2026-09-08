@@ -169,6 +169,17 @@ describe('Shows field-level locks', () => {
     },
   )
 
+  // The schedule lock is an UPDATE lock only. A voditelj entering a new private
+  // booking has to fill the date, time, kind, location and client on the create
+  // form; only `isPublic` is pinned on create (and the beforeValidate hook
+  // forces it anyway).
+  it.each(['date', 'time', 'kind', 'venue', 'status', 'location', 'client'])(
+    'leaves %s open on create, so a voditelj can fill it on a new booking',
+    (name) => {
+      expect(fieldAccess(name, 'create')).toBeUndefined()
+    },
+  )
+
   it.each(['location', 'client'])('lets both the backoffice and the voditelj write %s', (name) => {
     const update = fieldAccess(name, 'update')!
     expect(update({ req: { user: ticketAdmin }, doc: publicRow })).toBe(true)
