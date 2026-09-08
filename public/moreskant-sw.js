@@ -60,10 +60,18 @@ self.addEventListener('notificationclick', (event) => {
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clients) => {
       // Reuse a window that is already on the app rather than opening a second
       // copy: on a phone the app is usually already open behind the lock screen.
+      //
+      // `navigate()` is a PROMISE and it REJECTS for a client this worker does
+      // not control (an `includeUncontrolled` window from before the worker was
+      // installed). Firing it unawaited would leave the tap merely focusing the
+      // old page, showing last week's headcount, so it is chained and a
+      // rejection falls back to opening a fresh window.
       for (const client of clients) {
         if (client.url.includes('/app') && 'focus' in client) {
-          client.navigate(url)
-          return client.focus()
+          return client
+            .navigate(url)
+            .then((navigated) => (navigated || client).focus())
+            .catch(() => self.clients.openWindow(url))
         }
       }
       return self.clients.openWindow(url)

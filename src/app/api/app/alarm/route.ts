@@ -13,7 +13,9 @@ import { createPushDeps, loadPerformanceForAlarm, type PushPayload } from '@/lib
 //
 // No throttle, deliberately (#430, story 23): a desperate evening is allowed
 // two alarms, and the only person who can send one is already trusted with the
-// roster. The rules and the counts live in `src/lib/push/alarm.ts`.
+// roster. It still refuses a cancelled or already-started performance (409),
+// because story 20 is a rule about every notification. The rules and the counts
+// live in `src/lib/push/alarm.ts`.
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'

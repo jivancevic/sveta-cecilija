@@ -19,6 +19,7 @@ import { countArmies, type ArmyCount, type AttendanceRow } from '@/lib/attendanc
 import type { AttendanceMember } from '@/lib/attendance/rules'
 import { rejectAppRequest, type AppRequestMeta } from '@/lib/app/request-guard'
 import { APP_STRINGS } from '@/lib/app/strings'
+import { showStartMs } from '@/lib/show-time'
 import {
   alarmRecipientMembers,
   buildAlarmMessage,
@@ -41,6 +42,8 @@ export interface AlarmCoreDeps {
   /** Member id → the user id of that dancer's login, for those who have one. */
   loadUserIdsByMember: (memberIds: readonly string[]) => Promise<Map<string, string>>
   send: (userIds: readonly string[], message: PushMessage) => Promise<SendPushResult>
+  /** Injected clock: the alarm's TTL and the "already started" refusal read it. */
+  now?: () => Date
 }
 
 export interface AlarmDispatch {
@@ -56,24 +59,42 @@ export interface AlarmDispatch {
 const NOTHING: SendPushResult = { recipients: 0, devices: 0, delivered: 0, dead: 0, failed: 0 }
 
 /**
- * Count, pick, send. Returns the count as well, because both callers report it:
- * the route to the voditelj's screen, the cron to its JSON summary.
+ * Read the answers and the roster ONCE and count them.
+ *
+ * Every caller goes through this rather than loading for itself, because the
+ * cron's alarm asks the count two questions — "is an army short?" and "what does
+ * the sentence say?" — and reading twice would let an answer landing between
+ * them send a headcount that is not the one judged short (#440 review).
+ */
+export async function countForAlarm(
+  performance: AlarmPerformance,
+  deps: Pick<AlarmCoreDeps, 'loadAttendance' | 'loadMoreskanti'>,
+): Promise<ArmyCount> {
+  const [rows, members] = await Promise.all([
+    deps.loadAttendance(performance.id),
+    deps.loadMoreskanti(),
+  ])
+  return countArmies(rows, members, {
+    crni: performance.thresholdCrni,
+    bili: performance.thresholdBili,
+  })
+}
+
+/**
+ * Pick and send, over a count the caller may already hold.
+ *
+ * Returns the count as well, because both callers report it: the route to the
+ * voditelj's screen, the cron to its JSON summary.
  */
 export async function dispatchAlarm(
   performance: AlarmPerformance,
   options: { includeNotComing?: boolean },
   deps: AlarmCoreDeps,
+  /** The count this run already took; omitted means "read it now". */
+  precounted?: ArmyCount,
 ): Promise<AlarmDispatch> {
-  const [rows, members] = await Promise.all([
-    deps.loadAttendance(performance.id),
-    deps.loadMoreskanti(),
-  ])
-
-  const count = countArmies(rows, members, {
-    crni: performance.thresholdCrni,
-    bili: performance.thresholdBili,
-  })
-  const message = buildAlarmMessage(performance, count)
+  const count = precounted ?? (await countForAlarm(performance, deps))
+  const message = buildAlarmMessage(performance, count, (deps.now?.() ?? new Date()).getTime())
   const memberIds = alarmRecipientMembers(count, options)
 
   if (memberIds.length === 0) {
@@ -133,13 +154,21 @@ export async function handleManualAlarm(
   const performance = await deps.loadPerformance(performanceId)
   if (!performance) return { status: 400, body: { error: APP_STRINGS.alarm.missing } }
 
-  // A cancelled evening is the one case a voditelj is refused: "fali nas" about
-  // a performance that is not happening is the opposite of informative. A PAST
-  // performance is deliberately NOT refused — unlike the automatic alarm, which
-  // only ever looks ahead, the voditelj is standing there and is the judge of
-  // whether the pier still needs people (#430, story 21).
+  // Two refusals, both of them "this alarm cannot mean anything any more".
+  // A cancelled evening: "fali nas" about a performance that is not happening is
+  // the opposite of informative. An evening that has already STARTED: #430's
+  // story 20 is a rule about every notification, manual included — only
+  // performances ahead of now (Zagreb time, `showStartMs`) ever trigger
+  // anything, and a push queued at 21:05 for a 21:00 izvedba reaches a phone
+  // when the answer it asks for is no longer possible.
   if (performance.cancelled) {
     return { status: 400, body: { error: APP_STRINGS.alarm.cancelled } }
+  }
+
+  const nowMs = (deps.now?.() ?? new Date()).getTime()
+  const startMs = showStartMs(performance.date, performance.time)
+  if (!Number.isNaN(startMs) && nowMs >= startMs) {
+    return { status: 409, body: { error: APP_STRINGS.alarm.started } }
   }
 
   const dispatch = await dispatchAlarm(

@@ -3,7 +3,8 @@ import { getPayload } from 'payload'
 import config from '@payload-config'
 import { createPushDeps, loadDuePerformances, type PushPayload } from '@/lib/push/push-data'
 import { runRosterNotifications } from '@/lib/push/roster-notifications'
-import type { ScheduledNotificationType } from '@/lib/push/schedule'
+import { vapidConfig } from '@/lib/push/vapid'
+import { bearerMatches } from '@/lib/cron-auth'
 
 // POST /api/cron/moreskant-notifications — the roster's scheduled push (#435).
 //
@@ -25,8 +26,7 @@ export async function POST(req: NextRequest) {
   if (!expected) {
     return NextResponse.json({ error: 'CRON_SECRET not configured' }, { status: 500 })
   }
-  const auth = req.headers.get('authorization') ?? ''
-  if (auth !== `Bearer ${expected}`) {
+  if (!bearerMatches(req.headers.get('authorization'), expected)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
@@ -40,17 +40,18 @@ export async function POST(req: NextRequest) {
       loadMoreskanti: deps.loadMoreskanti,
       loadUserIdsByMember: deps.loadUserIdsByMember,
       send: deps.send,
-      claim: (performanceId: string, type: ScheduledNotificationType) =>
-        deps.claim(performanceId, type),
-      release: (performanceId: string, type: ScheduledNotificationType) =>
-        deps.release(performanceId, type),
-      finalize: (performanceId: string, type: ScheduledNotificationType, devices: number) =>
-        deps.finalize(performanceId, type, devices),
+      claim: deps.claim,
+      release: deps.release,
+      finalize: deps.finalize,
     })
+    // `pushEnabled: false` is the difference between "nothing was due" and
+    // "this deployment has no VAPID keys", which otherwise look identical in a
+    // scheduler log full of zeros.
+    const body = { ...result, pushEnabled: vapidConfig() !== null }
     // Also to the container log, so a run's outcome is readable without
     // capturing the scheduler's HTTP response body.
-    console.log('[cron/moreskant-notifications]', JSON.stringify(result))
-    return NextResponse.json(result)
+    console.log('[cron/moreskant-notifications]', JSON.stringify(body))
+    return NextResponse.json(body)
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Cron failed'
     console.error('[cron/moreskant-notifications]', message)

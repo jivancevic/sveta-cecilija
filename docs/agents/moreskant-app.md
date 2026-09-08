@@ -350,7 +350,7 @@ its FKs reach only `users` and `shows` (both in `00-base.sql`), and
 |---|---|---|
 | `POST /api/app/push/subscribe` | `requirePermission(['moreskant','moreska'])` + `/app` guard | upsert on endpoint; 400 without endpoint **and** both keys |
 | `POST /api/app/push/unsubscribe` | same | deletes the caller's OWN row for that endpoint; 200 even when nothing went |
-| `POST /api/app/alarm` | `requirePermission('moreska')` + guard | `{ performanceId, includeNotComing }`, no throttle, returns device counts |
+| `POST /api/app/alarm` | `requirePermission('moreska')` + guard | `{ performanceId, includeNotComing }`, no throttle, returns device counts; **409 for a performance that has already started**, 400 for a cancelled one |
 | `POST /api/cron/moreskant-notifications` | `CRON_SECRET` bearer | the alarm + reminder jobs; 500 when the secret is unset |
 
 ### The sender
@@ -363,8 +363,21 @@ with a phone and a tablet is one *recipient* and two *devices*, and the number
 the voditelj is shown is the devices that actually took the message.
 
 Missing VAPID keys are a deployment state, not an error: `createSender` degrades
-to a sender that reports zero, so a developer without keys still gets a working
-`/app` and an honest "0 uređaja".
+to a sender that reports zero (with one `console.warn`), so a developer without
+keys still gets a working `/app` and an honest "0 uređaja". The cron summary
+carries `pushEnabled: false` in that case, because otherwise a misconfigured
+production is a log full of zeros that reads exactly like a quiet week.
+
+**A message decides its own TTL.** An alarm expires WITH the performance it is
+about (`alarmTtlSeconds`, floor one minute): a push service holds a message for
+its whole TTL, so a flat twelve hours would wake a phone that came back online
+after the evening had begun. A reminder keeps twelve hours — two days out, a
+night in a tunnel changes nothing.
+
+**Only performances ahead of now ever trigger anything** (#430, story 20), the
+manual alarm included: `handleManualAlarm` answers 409 for an evening that has
+started, and the detail page hides the button through `canAlarm` from the loader
+(a `Date.now()` in render is an impure call the React compiler rejects).
 
 ### The timing rules
 
@@ -389,7 +402,14 @@ on `performance_notifications`, the dispute-claim pattern
 threshold question, so an evening judged covered at T-6h stays judged and one
 late "ne dolazim" cannot ring twenty phones at midnight. A claim whose send then
 throws is released; a send that simply reached nobody keeps its claim, because
-there is nothing to retry. A voditelj who disagrees has the manual alarm, which
+there is nothing to retry. Each run reads the answers and the roster **once**
+(`countForAlarm`): the count that decides "is an army short?" is the count the
+sentence states, and a second read would let an answer landing between the two
+send a headcount that is not the one judged short.
+
+Both cron routes compare their bearer with `timingSafeEqual`
+(`src/lib/cron-auth.ts`), because a scheduler-facing URL on a small box is
+exactly the stable target a byte-at-a-time timing compare leaks to. A voditelj who disagrees has the manual alarm, which
 has no claim and no limit.
 
 ### The banner

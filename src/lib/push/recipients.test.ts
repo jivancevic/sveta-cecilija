@@ -1,15 +1,24 @@
 import { describe, expect, it } from 'vitest'
 import { countArmies, type AttendanceRow } from '@/lib/attendance/army-count'
 import type { AttendanceMember } from '@/lib/attendance/rules'
+import { showStartMs } from '@/lib/show-time'
 import {
+  MIN_ALARM_TTL_SECONDS,
+  REMINDER_TTL_SECONDS,
   alarmRecipientMembers,
-  alarmText,
+  alarmTtlSeconds,
   anyArmyBelowThreshold,
   buildAlarmMessage,
   buildReminderMessage,
   reminderRecipientMembers,
   toUserIds,
 } from './recipients'
+
+/** The full sentence a device shows, the way a reader would read it. */
+function alarmText(perf: typeof performance, count: Parameters<typeof buildAlarmMessage>[1]) {
+  const message = buildAlarmMessage(perf, count)
+  return `${message.title} ${message.body}`
+}
 
 // #431 — who an alarm reaches and what it says, over the REAL army count so the
 // notification text and the card chip can never disagree.
@@ -90,6 +99,18 @@ describe('the alarm message', () => {
     expect(message.tag).toBe('alarm-10')
   })
 
+  it('expires WITH the performance, so an offline phone is never woken too late', () => {
+    const start = showStartMs(performance.date, performance.time)
+    const twoHoursBefore = start - 2 * 60 * 60 * 1000
+    expect(buildAlarmMessage(performance, count, twoHoursBefore).ttlSeconds).toBe(2 * 60 * 60)
+    // Never zero or negative, whatever the clock says.
+    expect(alarmTtlSeconds(performance, start)).toBe(MIN_ALARM_TTL_SECONDS)
+    expect(alarmTtlSeconds(performance, start + 60_000)).toBe(MIN_ALARM_TTL_SECONDS)
+    expect(alarmTtlSeconds({ id: '1', date: 'nekad', time: '21:00' }, start)).toBe(
+      MIN_ALARM_TTL_SECONDS,
+    )
+  })
+
   it('a bula moves no headcount', () => {
     // Ante (bula) answering "coming" changes neither number in the sentence.
     const withBula = countArmies(
@@ -108,6 +129,8 @@ describe('the reminder message', () => {
     expect(message.body).toContain('srijeda, 5. kolovoza u 21:00')
     expect(message.url).toBe('/app/izvedba/10')
     expect(message.tag).toBe('reminder-10')
+    // A reminder two days out survives a night in a tunnel.
+    expect(message.ttlSeconds).toBe(REMINDER_TTL_SECONDS)
   })
 })
 

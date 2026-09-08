@@ -204,7 +204,11 @@ export default async function PerformanceDetailPage({
         />
       )}
 
-      {voditelj && !p.cancelled && <AlarmButton performanceId={p.id} />}
+      {/* The alarm is only ever about an evening still ahead (#430, story 20),
+          and the route refuses a started or cancelled one anyway; hiding the
+          button keeps the page from offering what the server will decline.
+          `canAlarm` is decided in the loader, over its own clock. */}
+      {detail.canAlarm && <AlarmButton performanceId={p.id} />}
 
       <ArmySection
         title={APP_STRINGS.detail.crni}

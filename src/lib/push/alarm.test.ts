@@ -45,6 +45,9 @@ const performance: AlarmPerformance = {
   thresholdBili: 8,
 }
 
+/** Six hours before the izvedba begins: the alarm's own hour. */
+const NOW = new Date(Date.parse('2026-08-05T13:00:00.000Z'))
+
 const delivered = (n: number): SendPushResult => ({
   recipients: n,
   devices: n,
@@ -63,6 +66,7 @@ function deps(over: Partial<ManualAlarmDeps> = {}) {
     loadUserIdsByMember: async (ids: readonly string[]) =>
       new Map(ids.map((id) => [String(id), `u${id}`] as const)),
     send,
+    now: () => NOW,
     ...over,
   } as never
   return base
@@ -128,12 +132,33 @@ describe('handleManualAlarm', () => {
     expect(d.send).not.toHaveBeenCalled()
   })
 
-  it('still sends for a performance that has already started (the voditelj judges)', async () => {
+  it('refuses a performance that has already started (#430, story 20)', async () => {
+    // Only performances ahead of now ever trigger anything, manual included: a
+    // push queued at 21:05 for a 21:00 izvedba asks for an answer nobody can
+    // still give.
     const d = deps({ loadPerformance: async () => ({ ...performance, date: '2020-01-01' }) })
+    const result = await handleManualAlarm({ performanceId: '10' }, d)
+
+    expect(result.status).toBe(409)
+    expect(d.send).not.toHaveBeenCalled()
+  })
+
+  it('still sends one minute before the start', async () => {
+    const d = deps({ now: () => new Date(Date.parse('2026-08-05T18:59:00.000Z')) })
     const result = await handleManualAlarm({ performanceId: '10' }, d)
 
     expect(result.status).toBe(200)
     expect(d.send).toHaveBeenCalled()
+  })
+
+  it('reads the answers and the roster exactly once per alarm', async () => {
+    const loadAttendance = vi.fn(async () => rows)
+    const loadMoreskanti = vi.fn(async () => roster)
+    const d = deps({ loadAttendance, loadMoreskanti })
+    await handleManualAlarm({ performanceId: '10' }, d)
+
+    expect(loadAttendance).toHaveBeenCalledTimes(1)
+    expect(loadMoreskanti).toHaveBeenCalledTimes(1)
   })
 
   it('400s on an unknown or missing performance', async () => {

@@ -22,7 +22,7 @@ import { toAttendanceRow } from '@/lib/app/detail-loaders'
 import { toIsoDate } from '@/lib/to-iso-date'
 import type { AlarmPerformance } from './alarm'
 import type { DuePerformance } from './roster-notifications'
-import { LOOKAHEAD_MS } from './schedule'
+import { LOOKAHEAD_MS, type ScheduledNotificationType } from './schedule'
 import {
   claimNotification,
   finalizeNotification,
@@ -47,16 +47,28 @@ function threshold(value: unknown, fallback = 8): number {
   return typeof value === 'number' && Number.isFinite(value) ? value : fallback
 }
 
-/** One `shows` doc → the fields an alarm reasons about. */
-export function toAlarmPerformance(doc: Record<string, unknown>): AlarmPerformance {
+/**
+ * One performance row → the fields an alarm reasons about.
+ *
+ * ONE mapper for both shapes it arrives in: a Payload doc (camelCase) and a raw
+ * SQL row (snake_case). They are the same five facts, and two mappers would be
+ * two places for a threshold default to drift.
+ */
+export function toAlarmPerformance(row: Record<string, unknown>): AlarmPerformance {
   return {
-    id: String(doc.id),
-    date: toIsoDate(doc.date),
-    time: typeof doc.time === 'string' ? doc.time : '',
-    cancelled: doc.status === 'cancelled',
-    thresholdCrni: threshold(doc.thresholdCrni),
-    thresholdBili: threshold(doc.thresholdBili),
+    id: String(row.id),
+    date: toIsoDate(row.date),
+    time: typeof row.time === 'string' ? row.time : '',
+    cancelled: row.status === 'cancelled',
+    thresholdCrni: threshold(row.thresholdCrni ?? numberOrNull(row.threshold_crni)),
+    thresholdBili: threshold(row.thresholdBili ?? numberOrNull(row.threshold_bili)),
   }
+}
+
+/** Raw pg hands an integer column back as a number, but be sure of it. */
+function numberOrNull(value: unknown): number | null {
+  const n = Number(value)
+  return value == null || !Number.isFinite(n) ? null : n
 }
 
 export async function loadPerformanceForAlarm(
@@ -128,14 +140,7 @@ export async function loadDuePerformances(
               BETWEEN $1 AND $2`,
     [new Date(nowMs).toISOString(), new Date(nowMs + LOOKAHEAD_MS).toISOString()],
   )
-  return res.rows.map((row) => ({
-    id: String(row.id),
-    date: toIsoDate(row.date),
-    time: String(row.time ?? ''),
-    cancelled: row.status === 'cancelled',
-    thresholdCrni: threshold(Number(row.threshold_crni)),
-    thresholdBili: threshold(Number(row.threshold_bili)),
-  }))
+  return res.rows.map(toAlarmPerformance)
 }
 
 /**
@@ -151,6 +156,10 @@ export function createSender(
 ): (userIds: readonly string[], message: PushMessage) => Promise<SendPushResult> {
   const config = vapidConfig()
   if (!config) {
+    // Say so ONCE and loudly. Silence here is the failure mode a misconfigured
+    // production would show as "nobody subscribed", which is the same shape as
+    // a working deployment nobody has subscribed to yet.
+    console.warn('[push] VAPID keys not configured, push disabled')
     return async () => ({ recipients: 0, devices: 0, delivered: 0, dead: 0, failed: 0 })
   }
   const post = createWebPushPoster(config)
@@ -171,10 +180,11 @@ export function createPushDeps(payload: PushPayload) {
     loadMoreskanti: () => loadActiveMoreskanti(payload),
     loadUserIdsByMember: (memberIds: readonly string[]) => loadUserIdsByMember(query, memberIds),
     send: createSender(query),
-    claim: (performanceId: string, type: string) => claimNotification(query, performanceId, type),
-    release: (performanceId: string, type: string) =>
+    claim: (performanceId: string, type: ScheduledNotificationType) =>
+      claimNotification(query, performanceId, type),
+    release: (performanceId: string, type: ScheduledNotificationType) =>
       releaseNotification(query, performanceId, type),
-    finalize: (performanceId: string, type: string, devices: number) =>
+    finalize: (performanceId: string, type: ScheduledNotificationType, devices: number) =>
       finalizeNotification(query, performanceId, type, devices),
   }
 }

@@ -15,7 +15,30 @@
 
 import type { ArmyCount } from '@/lib/attendance/army-count'
 import { PUSH_MESSAGES } from '@/lib/app/strings'
+import { showStartMs } from '@/lib/show-time'
 import type { PushMessage } from './send'
+
+/**
+ * How long a REMINDER may wait for an offline phone. Two days out, a night in a
+ * tunnel changes nothing about whether the dancer still has to answer.
+ */
+export const REMINDER_TTL_SECONDS = 12 * 60 * 60
+
+/** The floor for an alarm's TTL: a minute is long enough to reach a phone. */
+export const MIN_ALARM_TTL_SECONDS = 60
+
+/**
+ * An alarm expires WITH THE PERFORMANCE it is about.
+ *
+ * A phone that comes back online after the evening has begun must not be handed
+ * "fali nas" for a performance that is already dancing — the push service holds
+ * a message for its whole TTL, so a flat twelve hours would do exactly that.
+ */
+export function alarmTtlSeconds(performance: NotifiablePerformance, nowMs: number): number {
+  const start = showStartMs(performance.date, performance.time)
+  if (Number.isNaN(start)) return MIN_ALARM_TTL_SECONDS
+  return Math.max(MIN_ALARM_TTL_SECONDS, Math.floor((start - nowMs) / 1000))
+}
 
 /** The performance fields a notification names. */
 export interface NotifiablePerformance {
@@ -72,6 +95,7 @@ export function performanceUrl(performanceId: string): string {
 export function buildAlarmMessage(
   performance: NotifiablePerformance,
   count: ArmyCount,
+  nowMs: number = Date.now(),
 ): PushMessage {
   return {
     title: PUSH_MESSAGES.alarm.title,
@@ -86,6 +110,7 @@ export function buildAlarmMessage(
     // replaces itself on the lock screen instead of stacking, while the
     // reminder and the alarm remain two separate notifications.
     tag: `alarm-${performance.id}`,
+    ttlSeconds: alarmTtlSeconds(performance, nowMs),
   }
 }
 
@@ -95,11 +120,6 @@ export function buildReminderMessage(performance: NotifiablePerformance): PushMe
     body: PUSH_MESSAGES.reminder.body({ date: performance.date, time: performance.time }),
     url: performanceUrl(performance.id),
     tag: `reminder-${performance.id}`,
+    ttlSeconds: REMINDER_TTL_SECONDS,
   }
-}
-
-/** The full alarm sentence as one line, for a log or a test. */
-export function alarmText(performance: NotifiablePerformance, count: ArmyCount): string {
-  const message = buildAlarmMessage(performance, count)
-  return `${message.title} ${message.body}`
 }

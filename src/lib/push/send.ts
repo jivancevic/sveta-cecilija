@@ -46,6 +46,14 @@ export interface PushMessage {
    * lock screen rather than stacking, which is what a phone in a pocket wants.
    */
   tag: string
+  /**
+   * How long the push service may hold this message for a phone that is
+   * offline. Decided by whoever built the message, because only they know what
+   * the message is about: an alarm is worthless once the performance has begun,
+   * while a reminder can wait out a night in a tunnel. The poster only forwards
+   * it; omitted means the poster's own default.
+   */
+  ttlSeconds?: number
 }
 
 /** What a push service said. `statusCode` is absent when the poster threw. */

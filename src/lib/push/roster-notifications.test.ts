@@ -139,6 +139,20 @@ describe('the automatic alarm', () => {
     expect(summary.alarm).toMatchObject({ claimed: 1, sent: 0, skipped: 1 })
   })
 
+  it('reads the answers and the roster exactly ONCE per run', async () => {
+    // The count that decides "is an army short?" is the count the sentence
+    // states. Two reads would let an answer landing between them send a
+    // headcount that is not the one judged short (#440 review).
+    const loadAttendance = vi.fn(async () => answered)
+    const loadMoreskanti = vi.fn(async () => roster)
+    const d = deps({ loadAttendance, loadMoreskanti })
+    await runRosterNotifications(d)
+
+    expect(loadAttendance).toHaveBeenCalledTimes(1)
+    expect(loadMoreskanti).toHaveBeenCalledTimes(1)
+    expect(d.send).toHaveBeenCalledTimes(1)
+  })
+
   it('a second run in the same window sends nothing (the claim)', async () => {
     const d = deps()
     await runRosterNotifications(d)
@@ -217,6 +231,16 @@ describe('the T-48h reminder', () => {
 
     expect(d.send).not.toHaveBeenCalled()
     expect(summary.reminder).toMatchObject({ claimed: 1, sent: 0, skipped: 1 })
+  })
+
+  it('reads the answers and the roster exactly ONCE per run', async () => {
+    const loadAttendance = vi.fn(async () => answered)
+    const loadMoreskanti = vi.fn(async () => roster)
+    const d = deps({ now: at48h, loadAttendance, loadMoreskanti })
+    await runRosterNotifications(d)
+
+    expect(loadAttendance).toHaveBeenCalledTimes(1)
+    expect(loadMoreskanti).toHaveBeenCalledTimes(1)
   })
 
   it('is not due a minute early and only once', async () => {

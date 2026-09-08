@@ -1,7 +1,7 @@
 // The SQL behind push (#431, #435).
 //
 // `push_subscriptions` and `performance_notifications` are RAW tables
-// (db/schema/migrate-zz-push.sql), not Payload collections, so this module is
+// (db/schema/migrate-push.sql), not Payload collections, so this module is
 // their only reader and writer: plain parameterised `pool.query` against the
 // pool Payload already owns, exactly as `marketing/opt-out.ts` and the dispute
 // claim do.
@@ -9,6 +9,8 @@
 // The pool is passed in as a one-method `PushQuery` rather than a Payload
 // instance, so every function here is callable from a route, from the cron job
 // and from a probe script without dragging the CMS along.
+
+import type { ScheduledNotificationType } from './schedule'
 
 export interface PushQuery {
   (sql: string, params?: unknown[]): Promise<{ rows: Record<string, unknown>[]; rowCount?: number | null }>
@@ -85,19 +87,6 @@ export async function loadSubscriptions(
   }))
 }
 
-/** True when this device already has a subscription: what hides the banner. */
-export async function hasSubscription(
-  query: PushQuery,
-  userId: string,
-  endpoint: string,
-): Promise<boolean> {
-  const res = await query(
-    `SELECT 1 FROM push_subscriptions WHERE user_id = $1 AND endpoint = $2 LIMIT 1`,
-    [Number(userId), endpoint],
-  )
-  return res.rows.length > 0
-}
-
 /**
  * Member id → the user id of that dancer's login.
  *
@@ -130,7 +119,7 @@ export async function loadUserIdsByMember(
 export async function claimNotification(
   query: PushQuery,
   performanceId: string,
-  type: string,
+  type: ScheduledNotificationType,
 ): Promise<boolean> {
   const res = await query(
     `INSERT INTO performance_notifications (performance_id, type)
@@ -146,7 +135,7 @@ export async function claimNotification(
 export async function releaseNotification(
   query: PushQuery,
   performanceId: string,
-  type: string,
+  type: ScheduledNotificationType,
 ): Promise<void> {
   await query(
     `DELETE FROM performance_notifications WHERE performance_id = $1 AND type = $2`,
@@ -158,7 +147,7 @@ export async function releaseNotification(
 export async function finalizeNotification(
   query: PushQuery,
   performanceId: string,
-  type: string,
+  type: ScheduledNotificationType,
   devices: number,
 ): Promise<void> {
   await query(

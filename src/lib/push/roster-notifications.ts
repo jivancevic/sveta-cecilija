@@ -30,8 +30,7 @@
 // Pure + DI over a fake clock, so the whole schedule is testable without a
 // database, a socket or a Tuesday.
 
-import { countArmies } from '@/lib/attendance/army-count'
-import { dispatchAlarm, type AlarmCoreDeps, type AlarmPerformance } from './alarm'
+import { countForAlarm, dispatchAlarm, type AlarmCoreDeps, type AlarmPerformance } from './alarm'
 import {
   anyArmyBelowThreshold,
   buildReminderMessage,
@@ -154,21 +153,17 @@ async function runAlarm(
   job.claimed++
 
   try {
-    const [rows, members] = await Promise.all([
-      deps.loadAttendance(performance.id),
-      deps.loadMoreskanti(),
-    ])
-    const count = countArmies(rows, members, {
-      crni: performance.thresholdCrni,
-      bili: performance.thresholdBili,
-    })
+    // ONE read per run: the same count answers "is an army short?" and fills the
+    // sentence. Reading twice would let an answer landing between the two send a
+    // headcount that is not the one judged short (#440 review).
+    const count = await countForAlarm(performance, deps)
     if (!anyArmyBelowThreshold(count)) {
       job.skipped++
       await finalize(deps, performance.id, 'alarm', 0)
       return
     }
 
-    const dispatch = await dispatchAlarm(performance, { includeNotComing: false }, deps)
+    const dispatch = await dispatchAlarm(performance, { includeNotComing: false }, deps, count)
     if (dispatch.userIds.length === 0) {
       job.skipped++
     } else {
@@ -208,19 +203,12 @@ async function runReminder(
   }
 }
 
-/** Null when there was nobody with a login to remind. */
+/** Null when there was nobody with a login to remind. One read, as above. */
 async function sendReminder(
   performance: DuePerformance,
   deps: RosterNotificationDeps,
 ): Promise<SendPushResult | null> {
-  const [rows, members] = await Promise.all([
-    deps.loadAttendance(performance.id),
-    deps.loadMoreskanti(),
-  ])
-  const count = countArmies(rows, members, {
-    crni: performance.thresholdCrni,
-    bili: performance.thresholdBili,
-  })
+  const count = await countForAlarm(performance, deps)
   const memberIds = reminderRecipientMembers(count)
   if (memberIds.length === 0) return null
 

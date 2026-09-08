@@ -175,7 +175,6 @@ export const APP_STRINGS = {
     iosTitle: 'Prvo dodaj na početni zaslon',
     iosBody:
       'Na iPhoneu obavijesti rade tek kad je Moreškant dodan na početni zaslon. Otvori izbornik dijeljenja i odaberi "Dodaj na početni zaslon".',
-    unsupported: 'Ovaj preglednik ne podržava obavijesti.',
     denied: 'Obavijesti su blokirane u postavkama preglednika. Uključi ih tamo pa pokušaj ponovno.',
     failed: 'Uključivanje obavijesti nije uspjelo. Pokušaj ponovno.',
     /** The `/app` POST routes answer with this when the guard refuses. */
@@ -194,6 +193,7 @@ export const APP_STRINGS = {
     noDevices: 'Nitko od njih nema uključene obavijesti, alarm nije poslan.',
     noRecipients: 'Svi su odgovorili, nema kome poslati alarm.',
     cancelled: 'Izvedba je otkazana, alarm se ne šalje.',
+    started: 'Izvedba je već počela, alarm se ne šalje.',
     missing: 'Ta izvedba ne postoji.',
     failed: 'Alarm nije poslan. Pokušaj ponovno.',
   },

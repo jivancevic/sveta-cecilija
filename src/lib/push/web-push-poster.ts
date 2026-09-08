@@ -34,7 +34,9 @@ export function createWebPushPoster(
             publicKey: config.publicKey,
             privateKey: config.privateKey,
           },
-          TTL: 60 * 60 * 12,
+          // Decided by the message (`alarmTtlSeconds` / `REMINDER_TTL_SECONDS`),
+          // because only the message knows how long it stays true.
+          TTL: message.ttlSeconds ?? 60 * 60 * 12,
           urgency: 'high',
         },
       )
