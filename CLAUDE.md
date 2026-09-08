@@ -15,6 +15,7 @@
 | Payload admin customization (v3) — component paths, importMap, CSRF gate | `docs/agents/payload-admin.md` |
 | Frontend & CSS gotchas — specificity, `backdrop-filter`, hero loading, `next/image` | `docs/agents/frontend-css.md` |
 | Assets pipeline — `public/` vs `assets/`, webp conversion | `docs/agents/assets.md` |
+| Moreškant app (`/app`) — route group, shared cookie, access decision, roster loaders, PWA | `docs/agents/moreskant-app.md` (+ [ADR-0024](docs/adr/0024-moreskant-roster-domain.md)) |
 | Feature design notes — non-public performances (`kind`/`isPublic`, ADR-0024), #94 bad-weather venue change, show reschedule + ticket reissue (#379), #57 marketing opt-outs + review-email attendance gate (#378), Stripe disputes (#380) | `docs/agents/features.md` |
 | Domain glossary | `CONTEXT.md` (single context; see `docs/agents/domain.md`) |
 | Architecture decisions | `docs/adr/` |
@@ -84,6 +85,7 @@ RNO registry updated 2026-08-17 (#369): website `https://moreska.eu/`, e-mail `i
 | `/checkout/[showId]/confirmation` | `…/confirmation/page.tsx` | Post-payment landing; looks up Order by `pi` (5×400ms retry to bridge the webhook race) |
 | `/privacy-policy`, `/cookie-policy` | `src/app/(frontend)/…/page.tsx` | Legal pages (EN+HR), via `LegalPage.tsx` |
 | `/scan/[token]` | `src/app/scan/[token]/page.tsx` (+ `scan/layout.tsx`) | Auth-aware door scan — buyer view if unauth, staff atomic mark-and-read if internal. Outside `(frontend)` (own minimal layout). Logic in `src/lib/scan-token.ts`; CSRF caveats in `payload-admin.md` |
+| `/app`, `/app/login` | `src/app/app/…` (own route group + layout) | Moreškant roster app, Croatian only, noindex, outside `(frontend)`/`(payload)`. Access decision in `src/lib/app/access.ts`; see `docs/agents/moreskant-app.md` |
 | `/admin`, `/admin/stats`, `/admin/stats/[showId]` | Payload + `src/components/payload/AdminStatsView.tsx`, `AdminShowStatsView.tsx` | Admin dashboard + permission-aware stats views |
 | `/api/stripe/webhook` | `src/app/api/stripe/webhook/route.ts` | Creates Order + Tickets on payment success |
 
@@ -118,9 +120,9 @@ Field-level detail lives in `src/collections/*.ts` — this table is purpose + k
 | `OrderLookups` (`order-lookups`) | Buyer-facing order lookup support |
 | `Tickets` (`tickets`) | **Per-person** ticket + QR token → Orders; `scanned`/`scannedAt`. Seats = COUNT of active tickets (`online_sold` retired). Renamed from `qr_tokens`. |
 | `ContactSubmissions` (`contact-submissions`) | Enquiry-form submissions |
-| `Users` (`users`) | Payload auth + `permissions` (see `permissions.ts`) + `shared`. Hybrid username login (ADR-0011): unique `username`, email optional but required for `users` / `tickets` / `moreska` holders. Shared door account is username `tehnika` (no email), shared society login is `member`. A `partner` holder carries a `partner` → Partners relationship. |
+| `Users` (`users`) | Payload auth + `permissions` (see `permissions.ts`) + `shared`. Hybrid username login (ADR-0011): unique `username`, email optional but required for `users` / `tickets` / `moreska` / `moreskant` holders. Shared door account is username `tehnika` (no email), shared society login is `member`. A `partner` holder carries a `partner` → Partners relationship; a dancer's login carries a `member` → Members one (`docs/agents/moreskant-app.md`). |
 | `Partners` (`partners`) | Reseller channel (ADR-0008): `name`, `oib`, `commissionPercent`, `active`. `tickets` CRUD; a partner reads only its own record. |
-| `Members` (`members`) | Society members (ADR-0019): `name`, `active`, `note`. Shared attribution target for comp tickets (`orders.member`) and promo codes (`promoCodes.member`). No email/login. `tickets` CRUD; hidden from door and partner accounts. |
+| `Members` (`members`) | Society members (ADR-0019): `name`, `active`, `note`. Shared attribution target for comp tickets (`orders.member`) and promo codes (`promoCodes.member`). Since #420 also the moreškant identity (ADR-0024): `isMoreskant` + nickname, mobile, email, dance roles, primary role, locked to `moreska`; rules in `docs/agents/moreskant-app.md`. |
 | `PromoCodes` (`promo-codes`) | Member promo codes (ADR-0018): `code` (unique), `member` (→ Members), `discountType` (`adult-price-override`), `adultPriceEur` (default 15), `active`. Applied at online checkout, best-of-two vs 5-for-4. `tickets` CRUD. |
 | `Posts` (`posts`) | Blog posts (heroImage may be a remote URL) |
 | `marketing_optouts` | **Raw table, NOT a Payload collection** (#57): `email` PK, `source`, `optedOutAt`. Created in `db/schema/app.sql`; see `docs/agents/features.md`. |
@@ -136,12 +138,12 @@ Every decision reads the permission set via `can()` / `hasAny()` from `src/lib/a
 | `Shows` | `tickets` or `moreska`; `door` → public performances only | `tickets`; `moreska` → non-public rows, plus the roster fields on any row (#408) |
 | `Tickets` | `tickets` or `door`; `partner` → only own (`partnerOwnTicketsWhere`) | `tickets` |
 | `Partners` | `tickets`; `partner` → only own (`partnerOwnRecordWhere`) | `tickets` |
-| `Members` | `tickets` | `tickets` |
+| `Members` | `tickets` or `moreska` | `tickets` or `moreska`; delete `tickets` only. Moreškant fields read+write locked to `moreska`; `name`/`active`/`note` update locked to `tickets` |
 | `PromoCodes` | `tickets` | `tickets` |
 | `OrderLookups` | `tickets` | `tickets` |
 | `Users` | `users`, else own row only | create/delete `users`; update `users` or self, except a `shared` account, which may never edit itself |
 
-`Users.permissions` and `Users.shared` are additionally field-locked to `users` (read, update and create), and the `Users.partner` link is write-locked to `users` with read left open, so no one can grant themselves anything through the self-edit path. The legacy `role` column and its enum were dropped in #398.
+`Users.permissions` and `Users.shared` are additionally field-locked to `users` (read, update and create); the `Users.partner` link is write-locked to `users` with read left open, and the `Users.member` link is locked for read *and* write, so no one can grant themselves anything (or repoint themselves at another dancer) through the self-edit path. The legacy `role` column and its enum were dropped in #398.
 
 `POST /api/orders/[id]/refund` and every other staff route re-check in-handler through `requirePermission` and 403 otherwise (the local API's `overrideAccess: true` means collection access alone doesn't gate them). The Stripe webhook and frontend show queries use the local API, so collection access doesn't affect them.
 
