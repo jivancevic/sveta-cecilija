@@ -7,7 +7,7 @@ import { APP_STRINGS } from '@/lib/app/strings'
 // Posts to /api/app/login, which sets the shared Payload cookie and answers
 // 200/401/400. The server owns every rule; this component owns the spinner and
 // the message it is handed (#421).
-export function LoginForm() {
+export function LoginForm({ next = '/app' }: { next?: string }) {
   const router = useRouter()
   const [identifier, setIdentifier] = useState('')
   const [password, setPassword] = useState('')
@@ -25,7 +25,9 @@ export function LoginForm() {
         body: JSON.stringify({ identifier, password }),
       })
       if (res.ok) {
-        router.replace('/app')
+        // `next` is already narrowed to a path inside /app by the server
+        // (`safeAppNextPath`); this component never widens it.
+        router.replace(next)
         router.refresh()
         return
       }

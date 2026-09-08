@@ -56,6 +56,10 @@ Coolify runs its *own* internal Postgres in a separate `coolify-db` container �
 - `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` — web push for the Moreškant app (#431). Generate the pair **once** with
   `node -e "console.log(JSON.stringify(require('web-push').generateVAPIDKeys()))"` and paste both into Coolify; the subject is `mailto:info@moreska.eu`. **Rotating the private key invalidates every existing subscription**, so a rotation has to be followed by `DELETE FROM push_subscriptions` and every dancer pressing "Uključi obavijesti" again. Without the keys the app still works and simply sends nothing.
 
+- `MCP_CLIENT_ID`, `MCP_REDIRECT_URIS` — the Claude connector's OAuth client (#438). `MCP_CLIENT_ID` is any stable string the client sends back (`claude` in prod); `MCP_REDIRECT_URIS` is a comma-separated allow-list, and in production it is `https://claude.ai/api/mcp/auth_callback`. There is **no client secret** to set (why: `moreskant-app.md` → *Connecting*). Neither value is a secret in the "rotate on leak" sense, but both must be set or the flow is refused. Changing `MCP_REDIRECT_URIS` does not invalidate any issued token; changing `MCP_CLIENT_ID` stops the next authorization, not the existing connections.
+
+  **Revoking a connector** (the ops answer, and the only place it is written down): `DELETE FROM oauth_tokens WHERE user_id = <id>` disconnects that voditelj's Claude app, and removing their `moreska` permission in `/admin` does the same without touching a row. Deleting the account takes both with it. There is no per-token UI: this is a two-voditelj society.
+
 Setting/changing any of these requires a redeploy — Coolify env doesn't hot-reload into the running container.
 
 ## What runs at startup

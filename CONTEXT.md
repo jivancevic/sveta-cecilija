@@ -414,7 +414,7 @@ The only way a moreškant gets a login. A voditelj presses "Pošalji pozivnicu" 
 _Avoid_: registration, sign-up, account request.
 
 ### Alarm
-The push "Sokoliću, fali nas! Stanje za nastup <date time>: 3 bilih, 7 crnih" sent to moreškanti with **no answer** when an army is below threshold. Automatic once per performance at T-6h (or 18:00 the day before when the performance starts before 14:00, Europe/Zagreb), plus manual by a voditelj at any time. "Sokoliću" is a generic greeting, not a vocative of the nickname.
+The push "Sokoliću, fali nas! Stanje za nastup <date time>: 3 bilih, 7 crnih" sent to moreškanti with **no answer** when an army is below threshold. Automatic once per performance at T-6h (or 18:00 the day before when the performance starts before 14:00, Europe/Zagreb), plus manual by a voditelj at any time. "Sokoliću" is a generic greeting, not a vocative of the nickname. The automatic one is claimed once per performance whether or not it is sent, so an evening judged covered at T-6h stays judged.
 
 ### Lineup (postava)
 Who danced which dance role at a performance: one entry per member, exactly one role each. Enterable before or after the performance; **confirmed** by a voditelj marks it final. Only confirmed lineups feed statistics. A role outside the member's profile is a warning, not a block. The MCP `set_lineup` tool always writes an *unconfirmed* lineup.
@@ -427,7 +427,11 @@ Per season (calendar year, as in ADR-0022): confirmed performances per moreškan
 A comp ticket (see *Comp ticket*) a moreškant issues for themselves at a public performance, attributed to their own Member row, capped at **4 tickets per performance** for self-issued ones only; admin-issued comps do not count. Cancelable by the moreškant until the performance starts, while unscanned.
 
 ### Notification types
-Push is the only channel. (1) Alarm; (2) answer reminder at T-48h to *no answer*; (3) performance change (date, time, place, cancellation, voditelj note) to everyone except *not coming*, cannot be muted; (4) new performance to everyone; (5) to voditelji: a "coming" withdrawn within 24h. A user may hold several push subscriptions (devices).
+Push is the only channel. (1) Alarm; (2) answer reminder at T-48h to *no answer*, and its window **closes 24 hours later** — a performance entered inside T-24h gets no reminder at all, the alarm covers it; (3) performance change (date, time, place, cancellation, voditelj note) to everyone except *not coming*, cannot be muted; (4) new performance to everyone; (5) to voditelji: a "coming" withdrawn within 24h. A user may hold several push subscriptions, **one per device**: the endpoint is unique across the whole table, not per user, so a shared phone rings for whoever signed in last rather than for both.
 
 ### Calendar feed
 One **shared** tokenised ICS subscription (`CALENDAR_FEED_TOKEN`, amended #433) of the current and future seasons' performances, for Google/Apple/Outlook calendars. The same URL for everybody, safe to paste in the WhatsApp group: it carries dates, places and the voditelj note, and nothing personal.
+
+### MCP (Moreškant connector)
+The server a voditelj adds to the Claude app (`https://moreska.eu/api/mcp`) so a postava can be dictated from a photo of the paper list (ADR-0024). Behind OAuth 2.1 with PKCE and one pre-registered public client; consent happens once at `/app/authorize`, restricted to `moreska`, and the **access token lives one year with no refresh token**. A token acts as its user and the permission is re-checked on every call, so revoking is either deleting the token row or removing `moreska`. Five tools: read the season, read one performance, read the roster, write an *unconfirmed* postava, create non-public performances in bulk. Nothing that confirms, alarms, answers attendance or issues a ticket.
+_Avoid_: API key, integration, bot.

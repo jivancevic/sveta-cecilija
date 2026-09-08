@@ -10,18 +10,14 @@
 // instance, so every function here is callable from a route, from the cron job
 // and from a probe script without dragging the CMS along.
 
+import { poolQuery as poolQueryOf, type PoolQuery } from '@/lib/db/pool-query'
 import type { ScheduledNotificationType } from './schedule'
 
-export interface PushQuery {
-  (sql: string, params?: unknown[]): Promise<{ rows: Record<string, unknown>[]; rowCount?: number | null }>
-}
+/** The pool view every raw-table store shares (`src/lib/db/pool-query.ts`). */
+export type PushQuery = PoolQuery
 
 /** The pool Payload holds open, typed down to the one method we use. */
-export function poolQuery(payload: unknown): PushQuery {
-  const pool = (payload as { db?: { pool?: { query: PushQuery } } }).db?.pool
-  if (!pool) throw new Error('No Postgres pool on the Payload instance')
-  return (sql, params) => pool.query(sql, params ?? [])
-}
+export const poolQuery: (payload: unknown) => PushQuery = poolQueryOf
 
 /** Upsert one device. See `subscribe.ts` for why the key is the endpoint. */
 export async function saveSubscription(

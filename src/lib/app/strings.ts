@@ -326,6 +326,26 @@ export const APP_STRINGS = {
     copied: 'Poveznica je kopirana.',
     copyFailed: 'Kopiranje nije uspjelo, označi poveznicu i kopiraj ručno.',
   },
+
+  /** The OAuth consent screen for the MCP connector (#438, stories 56-59). */
+  authorize: {
+    title: 'Poveži Claude',
+    /** The client is fixed and pre-registered, so its name is a constant too. */
+    client: 'Claude',
+    intro:
+      'Claude će moći čitati raspored izvedbi i moreškante te upisivati postave i nove nejavne izvedbe. Ne može potvrditi postavu, poslati alarm, javiti dolazak ni izdati karte.',
+    signedInAs: 'Prijavljen si kao',
+    allow: 'Dopusti pristup',
+    deny: 'Odbij',
+    working: 'Povezivanje...',
+    /** No session at all: the caller can fix this one themselves. */
+    signInFirst: 'Prijavi se u Moreškant pa pokušaj ponovno.',
+    /** A dancer, or anyone else without `moreska` (story 58). */
+    deniedTitle: 'Nemate pristup',
+    deniedBody: 'Claude se može povezati samo s računom voditelja.',
+    invalidRequest: 'Zahtjev za povezivanje nije ispravan. Pokušaj ponovno iz aplikacije Claude.',
+    failed: 'Povezivanje nije uspjelo. Pokušaj ponovno.',
+  },
 } as const
 
 /**
