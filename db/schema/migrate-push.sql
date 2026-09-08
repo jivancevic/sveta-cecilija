@@ -10,12 +10,18 @@
 -- schema to be a SUPERSET of Payload's, so extra tables here are fine and a
 -- regeneration would silently drop anything hand-added there.
 --
--- Named `migrate-zz-push.sql` so it sorts AFTER every file that creates a table
--- it references (`users`, `shows`) — bootstrap-db.mjs applies these files in
--- plain filename order with no dependency resolution (db/schema/README.md).
--- ORDERING: must sort after 00-base.sql (users, shows) and after
--- migrate-zz-attendance.sql; `p` > `d` > `a`, so the `migrate-zz-` family
--- already places it last.
+-- ORDERING: bootstrap-db.mjs applies these files in plain filename order with no
+-- dependency resolution (db/schema/README.md), so a file carrying a foreign key
+-- must sort after whatever creates the table it points at. Both FKs here point
+-- at `users` and `shows`, which `00-base.sql` builds first on a fresh database
+-- and which have existed on every populated one since the very first deploy —
+-- so this file needs no `zz` prefix, unlike `migrate-zz-attendance.sql`, whose
+-- FK reaches `members` (created by a later `migrate-` file).
+--
+-- It deliberately does NOT sort last: `migrate-zz-drop-users-role.sql` must stay
+-- the final `migrate-*` file (#398, asserted by `db-schema-safety.test.ts`),
+-- because every file that still reads `users.role` has to run before the column
+-- goes. `migrate-push` < `migrate-zz-…`, which is exactly right.
 --
 -- Every statement is guarded and safe to re-run on every restart. Nothing here
 -- writes or mutates a row.

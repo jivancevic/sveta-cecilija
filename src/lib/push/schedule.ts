@@ -32,6 +32,20 @@ export const ALARM_LEAD_MS = 6 * 60 * 60 * 1000
 export const REMINDER_LEAD_MS = 48 * 60 * 60 * 1000
 
 /**
+ * How long the reminder stays claimable after T-48h.
+ *
+ * The reminder window CLOSES, unlike the alarm's, and that is a decision rather
+ * than an omission (#435). "Javi dolazak, izvedba je za dva dana" is a sentence
+ * about two days from now: left open until the start it would also fire six
+ * hours before, on top of the alarm, and a performance entered at the last
+ * minute would greet the roster with a reminder about an evening that is nearly
+ * over. A whole day of slack is far more than a job running every fifteen
+ * minutes needs; an evening that slips past it is covered by the alarm, which
+ * is the notification that actually matters when time is short.
+ */
+export const REMINDER_WINDOW_MS = 24 * 60 * 60 * 1000
+
+/**
  * A performance starting before this hour (Europe/Zagreb wall clock) alarms the
  * evening before instead of six hours ahead.
  */
@@ -59,12 +73,17 @@ export function previousDay(date: string): string {
   return d.toISOString().slice(0, 10)
 }
 
-/** True when the stored wall clock reads before 14:00. */
+/**
+ * True when the stored wall clock reads before 14:00.
+ *
+ * A missing or malformed time is FALSE, not "before 14:00": an unreadable row
+ * should fall through to the plain T-6h branch, which then resolves to NaN and
+ * is never due, rather than quietly claim an 18:00 slot of its own.
+ */
 export function startsBeforeCutoff(time: string): boolean {
-  const hour = Number(time.slice(0, 2))
-  const minute = Number(time.slice(3, 5))
-  if (!Number.isFinite(hour)) return false
-  return hour * 60 + (Number.isFinite(minute) ? minute : 0) < MORNING_CUTOFF_HOUR * 60
+  const match = /^(\d{1,2}):(\d{2})/.exec(time.trim())
+  if (!match) return false
+  return Number(match[1]) * 60 + Number(match[2]) < MORNING_CUTOFF_HOUR * 60
 }
 
 /**
@@ -97,9 +116,12 @@ export function isAlarmDue(performance: ScheduledPerformance, nowMs: number): bo
   return due(alarmTimeMs(performance), showStartMs(performance.date, performance.time), nowMs)
 }
 
-/** Due, and the performance has not started yet. */
+/** Due, within the reminder's own window, and the performance is still ahead. */
 export function isReminderDue(performance: ScheduledPerformance, nowMs: number): boolean {
-  return due(reminderTimeMs(performance), showStartMs(performance.date, performance.time), nowMs)
+  const at = reminderTimeMs(performance)
+  const start = showStartMs(performance.date, performance.time)
+  if (!due(at, start, nowMs)) return false
+  return nowMs < at + REMINDER_WINDOW_MS
 }
 
 /**
