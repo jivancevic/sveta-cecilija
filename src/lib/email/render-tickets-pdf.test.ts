@@ -109,7 +109,11 @@ describe('renderTicketsPdf (real react-pdf render)', () => {
   const countPages = (buf: Buffer) =>
     (buf.toString('latin1').match(/\/Type\s*\/Page[^s]/g) || []).length
 
-  // Generous timeout: react-pdf font registration + layout is slow on cold start.
+  // Generous timeout: react-pdf font registration + layout is slow on cold
+  // start, and on a GitHub runner it shares two cores with every other suite
+  // vitest is running in parallel. 30s was already marginal there (30.3s on the
+  // #424 branch, twice); 90s is not a claim that this should take a minute, it
+  // is headroom so a busy runner cannot fail a green test.
   it('renders a valid 3-page PDF for a party of 5 (EN), one QR per person', async () => {
     let qrCalls = 0
     const buf = await renderTicketsPdf(
@@ -120,7 +124,7 @@ describe('renderTicketsPdf (real react-pdf render)', () => {
     expect(buf.length).toBeGreaterThan(2000)
     expect(countPages(buf)).toBe(3) // 5 tickets, 2 per page
     expect(qrCalls).toBe(5) // one QR per person
-  }, 30000)
+  }, 90000)
 
   it('renders a single-ticket one-page PDF in HR', async () => {
     const buf = await renderTicketsPdf(
@@ -129,5 +133,5 @@ describe('renderTicketsPdf (real react-pdf render)', () => {
     )
     expect(buf.subarray(0, 5).toString('latin1')).toBe('%PDF-')
     expect(countPages(buf)).toBe(1)
-  }, 30000)
+  }, 90000)
 })
