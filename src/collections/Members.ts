@@ -32,12 +32,19 @@ type ReqUser = { id?: string | number; permissions?: unknown } | null | undefine
 // are only Payload's calling convention.
 const userOf = ({ req }: { req: { user: unknown } }) => req.user as ReqUser
 
-const moreskantFieldRead = (args: { req: { user: unknown } }) =>
-  canReadMoreskantField(userOf(args))
-const moreskantFieldWrite = (args: { req: { user: unknown } }) =>
-  canEditMoreskantField(userOf(args))
 const attributionFieldWrite = (args: { req: { user: unknown } }) =>
   canEditAttributionField(userOf(args))
+
+/**
+ * The lock every moreškant field carries: `moreska` reads it, `moreska` writes
+ * it, on create and on update alike. One object rather than six copies, so the
+ * seventh field cannot be added with a different rule by accident.
+ */
+const MORESKANT_FIELD_ACCESS = {
+  read: (args: { req: { user: unknown } }) => canReadMoreskantField(userOf(args)),
+  update: (args: { req: { user: unknown } }) => canEditMoreskantField(userOf(args)),
+  create: (args: { req: { user: unknown } }) => canEditMoreskantField(userOf(args)),
+}
 
 /** Admin options for the dance-role selects; the vocabulary itself is in lib. */
 const DANCE_ROLE_OPTIONS = DANCE_ROLES.map((value) => ({
@@ -150,13 +157,17 @@ export const Members: CollectionConfig = {
         description:
           'Retired members drop out of the picker without deleting their history',
       },
-      access: { update: attributionFieldWrite },
+      // Create is locked too: a voditelj adding a dancer must not be able to
+      // file them as already retired. The field default (true) survives the
+      // lock — Payload falls back to it when access strips the value.
+      access: { update: attributionFieldWrite, create: attributionFieldWrite },
     },
     {
       name: 'note',
       type: 'textarea',
       label: { en: 'Note', hr: 'Bilješka' },
-      access: { update: attributionFieldWrite },
+      // Comp-reporting free text, on create as on update.
+      access: { update: attributionFieldWrite, create: attributionFieldWrite },
     },
     // ---------------------------------------------------------------------
     // The moreškant half (#420, ADR-0024). `moreska` only, read and write.
@@ -172,11 +183,7 @@ export const Members: CollectionConfig = {
           hr: 'Označi da je ovaj član plesač: nadimak, plesne uloge i glavna uloga postaju obavezni.',
         },
       },
-      access: {
-        read: moreskantFieldRead,
-        update: moreskantFieldWrite,
-        create: moreskantFieldWrite,
-      },
+      access: MORESKANT_FIELD_ACCESS,
     },
     {
       name: 'nickname',
@@ -189,11 +196,7 @@ export const Members: CollectionConfig = {
           hr: 'Ime koje se prikazuje svugdje u aplikaciji Moreškant. Obavezan i jedinstven među moreškantima.',
         },
       },
-      access: {
-        read: moreskantFieldRead,
-        update: moreskantFieldWrite,
-        create: moreskantFieldWrite,
-      },
+      access: MORESKANT_FIELD_ACCESS,
     },
     {
       name: 'mobile',
@@ -206,11 +209,7 @@ export const Members: CollectionConfig = {
           hr: 'Vidljiv ostalim moreškantima u aplikaciji kako bi se mogli nazvati.',
         },
       },
-      access: {
-        read: moreskantFieldRead,
-        update: moreskantFieldWrite,
-        create: moreskantFieldWrite,
-      },
+      access: MORESKANT_FIELD_ACCESS,
     },
     {
       name: 'email',
@@ -223,11 +222,7 @@ export const Members: CollectionConfig = {
           hr: 'Adresa na koju se šalje pozivnica za aplikaciju. Nikad se ne prikazuje drugim moreškantima.',
         },
       },
-      access: {
-        read: moreskantFieldRead,
-        update: moreskantFieldWrite,
-        create: moreskantFieldWrite,
-      },
+      access: MORESKANT_FIELD_ACCESS,
     },
     {
       name: 'roles',
@@ -242,11 +237,7 @@ export const Members: CollectionConfig = {
           hr: 'Sve što ovaj moreškant može plesati. Kralj ili otmanović traži i osnovnu ulogu svoje vojske.',
         },
       },
-      access: {
-        read: moreskantFieldRead,
-        update: moreskantFieldWrite,
-        create: moreskantFieldWrite,
-      },
+      access: MORESKANT_FIELD_ACCESS,
     },
     {
       name: 'primaryRole',
@@ -260,11 +251,7 @@ export const Members: CollectionConfig = {
           hr: 'Uloga koja se prikazuje na profilu. Mora biti među plesnim ulogama iznad.',
         },
       },
-      access: {
-        read: moreskantFieldRead,
-        update: moreskantFieldWrite,
-        create: moreskantFieldWrite,
-      },
+      access: MORESKANT_FIELD_ACCESS,
     },
   ],
 }

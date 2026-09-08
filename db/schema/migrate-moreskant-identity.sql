@@ -49,6 +49,13 @@ ALTER TABLE members ADD COLUMN IF NOT EXISTS primary_role public.enum_members_pr
 --    database half of the rule `src/lib/moreskant-profile.ts` enforces on save.
 --    Partial so the 14 attribution-only members (all with a NULL nickname) and
 --    any future non-dancer are outside it entirely.
+--
+--    THIS FILE IS THE INDEX'S ONLY HOME. Payload's push never emits it (a
+--    partial expression index is not a field config), so it must not appear in
+--    the generated 00-base.sql, which a regeneration would silently drop — the
+--    same rule that keeps critical_events' partial unique index in app.sql
+--    alone. Its home is here rather than app.sql because app.sql sorts first
+--    and the columns it indexes are added above.
 CREATE UNIQUE INDEX IF NOT EXISTS members_moreskant_nickname_unique_idx
   ON members (lower(nickname))
   WHERE is_moreskant = true AND nickname IS NOT NULL;

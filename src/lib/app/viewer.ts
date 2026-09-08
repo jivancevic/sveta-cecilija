@@ -7,11 +7,14 @@ import { decideAppAccess, type AppAccess, type AppMember } from './access'
 //
 // Two things the pure decision in ./access.ts cannot do for itself:
 //
-//  1. **Read the Member behind the login.** `Users.member` is field-locked to
-//     `users` (#420), so `payload.auth()` hands back a session WITHOUT it — by
-//     design: a moreškant must not be able to repoint themselves. We therefore
-//     re-read the account and its Member with `overrideAccess: true`, which is
-//     also how every other server-side read in this codebase works.
+//  1. **Read the Member behind the login.** `payload.auth()` does hand back
+//     `member` — its JWT strategy loads the account through the local API with
+//     `overrideAccess: true`, which is the same reason `permissions` reaches
+//     `can()`, so the `users` field lock on `Users.member` never applies there.
+//     We re-read the account and its Member anyway, with `overrideAccess`: the
+//     Member row is a second document the session never carried, and re-reading
+//     the link with it means a session issued before a relink cannot decide who
+//     a dancer is. Defence in depth, not a necessity.
 //  2. **Tell "signed out" from "denied".** An anonymous visitor is redirected to
 //     `/app/login`; a signed-in account without the roster permissions gets the
 //     "Nemate pristup" page. Same absence of access, two different answers, so
@@ -58,7 +61,7 @@ export async function resolveAppViewer(): Promise<AppViewer> {
   const { user } = await payload.auth({ headers: await headers() })
   if (!user) return { signedIn: false, access: { kind: 'denied' } }
 
-  // The session drops `member` (field-locked); re-read the row itself.
+  // Re-read the link and the Member row itself: see the header note.
   let memberDoc: Record<string, unknown> | null = null
   try {
     const account = await payload.findByID({
