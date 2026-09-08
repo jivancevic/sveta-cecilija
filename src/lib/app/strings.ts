@@ -308,8 +308,12 @@ export const APP_STRINGS = {
     started: 'Izvedba je počela, karte se više ne mijenjaju.',
     soldOut: 'Nema više slobodnih mjesta.',
     scanned: 'Karta je već skenirana, pa se narudžba ne može otkazati.',
+    /**
+     * The ONE answer to every cancel that is not the caller's own self-issued
+     * comp: unknown, paid, an admin's, or another dancer's. Three honest
+     * sentences would map the order table for anyone who tried them.
+     */
     notFound: 'Karte nisu pronađene.',
-    notYours: 'Te karte nisu tvoje.',
     failed: 'Karte nisu izdane. Pokušaj ponovno.',
     cancelFailed: 'Otkazivanje nije uspjelo. Pokušaj ponovno.',
   },
