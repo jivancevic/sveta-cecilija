@@ -5,6 +5,20 @@
 -- if this file stops reproducing what Payload push would create.
 
 DO $$ BEGIN
+CREATE TYPE public.enum_attendance_army AS ENUM (
+    'crni',
+    'bili'
+);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+CREATE TYPE public.enum_attendance_status AS ENUM (
+    'coming',
+    'not_coming'
+);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
 CREATE TYPE public.enum_contact_submissions_enquiry_type AS ENUM (
     'general',
     'private-moreska',
@@ -43,6 +57,28 @@ DO $$ BEGIN
 CREATE TYPE public.enum_faqs_status AS ENUM (
     'draft',
     'published'
+);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+CREATE TYPE public.enum_members_primary_role AS ENUM (
+    'crni',
+    'bili',
+    'crni_kralj',
+    'otmanovic',
+    'bili_kralj',
+    'bula'
+);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+CREATE TYPE public.enum_members_roles AS ENUM (
+    'crni',
+    'bili',
+    'crni_kralj',
+    'otmanovic',
+    'bili_kralj',
+    'bula'
 );
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
@@ -128,28 +164,6 @@ CREATE TYPE public.enum_tickets_cancel_reason AS ENUM (
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 DO $$ BEGIN
-CREATE TYPE public.enum_members_primary_role AS ENUM (
-    'crni',
-    'bili',
-    'crni_kralj',
-    'otmanovic',
-    'bili_kralj',
-    'bula'
-);
-EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-
-DO $$ BEGIN
-CREATE TYPE public.enum_members_roles AS ENUM (
-    'crni',
-    'bili',
-    'crni_kralj',
-    'otmanovic',
-    'bili_kralj',
-    'bula'
-);
-EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-
-DO $$ BEGIN
 CREATE TYPE public.enum_tickets_status AS ENUM (
     'active',
     'cancelled'
@@ -176,6 +190,28 @@ CREATE TYPE public.enum_users_permissions AS ENUM (
     'dev'
 );
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+CREATE TABLE IF NOT EXISTS public.attendance (
+    id integer NOT NULL,
+    performance_id integer NOT NULL,
+    member_id integer NOT NULL,
+    status public.enum_attendance_status NOT NULL,
+    army public.enum_attendance_army,
+    answered_by_id integer,
+    answered_at timestamp(3) with time zone,
+    updated_at timestamp(3) with time zone DEFAULT now() NOT NULL,
+    created_at timestamp(3) with time zone DEFAULT now() NOT NULL
+);
+
+CREATE SEQUENCE IF NOT EXISTS public.attendance_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.attendance_id_seq OWNED BY public.attendance.id;
 
 CREATE TABLE IF NOT EXISTS public.contact_submissions (
     id integer NOT NULL,
@@ -382,7 +418,8 @@ CREATE TABLE IF NOT EXISTS public.payload_locked_documents_rels (
     order_lookups_id integer,
     partners_id integer,
     members_id integer,
-    promo_codes_id integer
+    promo_codes_id integer,
+    attendance_id integer
 );
 
 CREATE SEQUENCE IF NOT EXISTS public.payload_locked_documents_rels_id_seq
@@ -608,6 +645,8 @@ CREATE TABLE IF NOT EXISTS public.users_sessions (
     expires_at timestamp(3) with time zone NOT NULL
 );
 
+ALTER TABLE ONLY public.attendance ALTER COLUMN id SET DEFAULT nextval('public.attendance_id_seq'::regclass);
+
 ALTER TABLE ONLY public.contact_submissions ALTER COLUMN id SET DEFAULT nextval('public.contact_submissions_id_seq'::regclass);
 
 ALTER TABLE ONLY public.faqs ALTER COLUMN id SET DEFAULT nextval('public.faqs_id_seq'::regclass);
@@ -645,6 +684,13 @@ ALTER TABLE ONLY public.tickets ALTER COLUMN id SET DEFAULT nextval('public.tick
 ALTER TABLE ONLY public.users ALTER COLUMN id SET DEFAULT nextval('public.users_id_seq'::regclass);
 
 ALTER TABLE ONLY public.users_permissions ALTER COLUMN id SET DEFAULT nextval('public.users_permissions_id_seq'::regclass);
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'attendance_pkey' AND conrelid = 'public.attendance'::regclass) THEN
+    ALTER TABLE ONLY public.attendance
+    ADD CONSTRAINT attendance_pkey PRIMARY KEY (id);
+  END IF;
+END $$;
 
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'contact_submissions_pkey' AND conrelid = 'public.contact_submissions'::regclass) THEN
@@ -786,6 +832,18 @@ DO $$ BEGIN
   END IF;
 END $$;
 
+CREATE INDEX IF NOT EXISTS attendance_answered_by_idx ON public.attendance USING btree (answered_by_id);
+
+CREATE INDEX IF NOT EXISTS attendance_created_at_idx ON public.attendance USING btree (created_at);
+
+CREATE INDEX IF NOT EXISTS attendance_member_idx ON public.attendance USING btree (member_id);
+
+CREATE INDEX IF NOT EXISTS attendance_performance_idx ON public.attendance USING btree (performance_id);
+
+CREATE INDEX IF NOT EXISTS attendance_updated_at_idx ON public.attendance USING btree (updated_at);
+
+CREATE UNIQUE INDEX IF NOT EXISTS attendance_performance_member_unique_idx ON public.attendance USING btree (performance_id, member_id);
+
 CREATE INDEX IF NOT EXISTS contact_submissions_created_at_idx ON public.contact_submissions USING btree (created_at);
 
 CREATE INDEX IF NOT EXISTS contact_submissions_updated_at_idx ON public.contact_submissions USING btree (updated_at);
@@ -796,13 +854,13 @@ CREATE INDEX IF NOT EXISTS faqs_updated_at_idx ON public.faqs USING btree (updat
 
 CREATE INDEX IF NOT EXISTS members_created_at_idx ON public.members USING btree (created_at);
 
-CREATE INDEX IF NOT EXISTS members_updated_at_idx ON public.members USING btree (updated_at);
-
-CREATE UNIQUE INDEX IF NOT EXISTS members_moreskant_nickname_unique_idx ON public.members USING btree (lower(nickname)) WHERE ((is_moreskant = true) AND (nickname IS NOT NULL));
-
 CREATE INDEX IF NOT EXISTS members_roles_order_idx ON public.members_roles USING btree ("order");
 
 CREATE INDEX IF NOT EXISTS members_roles_parent_idx ON public.members_roles USING btree (parent_id);
+
+CREATE INDEX IF NOT EXISTS members_updated_at_idx ON public.members USING btree (updated_at);
+
+CREATE UNIQUE INDEX IF NOT EXISTS members_moreskant_nickname_unique_idx ON public.members USING btree (lower(nickname)) WHERE ((is_moreskant = true) AND (nickname IS NOT NULL));
 
 CREATE INDEX IF NOT EXISTS order_lookups_created_at_idx ON public.order_lookups USING btree (created_at);
 
@@ -835,6 +893,8 @@ CREATE UNIQUE INDEX IF NOT EXISTS payload_kv_key_idx ON public.payload_kv USING 
 CREATE INDEX IF NOT EXISTS payload_locked_documents_created_at_idx ON public.payload_locked_documents USING btree (created_at);
 
 CREATE INDEX IF NOT EXISTS payload_locked_documents_global_slug_idx ON public.payload_locked_documents USING btree (global_slug);
+
+CREATE INDEX IF NOT EXISTS payload_locked_documents_rels_attendance_id_idx ON public.payload_locked_documents_rels USING btree (attendance_id);
 
 CREATE INDEX IF NOT EXISTS payload_locked_documents_rels_contact_submissions_id_idx ON public.payload_locked_documents_rels USING btree (contact_submissions_id);
 
@@ -918,9 +978,9 @@ CREATE INDEX IF NOT EXISTS users_created_at_idx ON public.users USING btree (cre
 
 CREATE UNIQUE INDEX IF NOT EXISTS users_email_idx ON public.users USING btree (email);
 
-CREATE INDEX IF NOT EXISTS users_partner_idx ON public.users USING btree (partner_id);
-
 CREATE INDEX IF NOT EXISTS users_member_idx ON public.users USING btree (member_id);
+
+CREATE INDEX IF NOT EXISTS users_partner_idx ON public.users USING btree (partner_id);
 
 CREATE INDEX IF NOT EXISTS users_permissions_order_idx ON public.users_permissions USING btree ("order");
 
@@ -935,6 +995,34 @@ CREATE INDEX IF NOT EXISTS users_updated_at_idx ON public.users USING btree (upd
 CREATE UNIQUE INDEX IF NOT EXISTS users_username_idx ON public.users USING btree (username);
 
 DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'attendance_answered_by_id_users_id_fk' AND conrelid = 'public.attendance'::regclass) THEN
+    ALTER TABLE ONLY public.attendance
+    ADD CONSTRAINT attendance_answered_by_id_users_id_fk FOREIGN KEY (answered_by_id) REFERENCES public.users(id) ON DELETE SET NULL;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'attendance_member_id_members_id_fk' AND conrelid = 'public.attendance'::regclass) THEN
+    ALTER TABLE ONLY public.attendance
+    ADD CONSTRAINT attendance_member_id_members_id_fk FOREIGN KEY (member_id) REFERENCES public.members(id) ON DELETE SET NULL;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'attendance_performance_id_shows_id_fk' AND conrelid = 'public.attendance'::regclass) THEN
+    ALTER TABLE ONLY public.attendance
+    ADD CONSTRAINT attendance_performance_id_shows_id_fk FOREIGN KEY (performance_id) REFERENCES public.shows(id) ON DELETE SET NULL;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'members_roles_parent_fk' AND conrelid = 'public.members_roles'::regclass) THEN
+    ALTER TABLE ONLY public.members_roles
+    ADD CONSTRAINT members_roles_parent_fk FOREIGN KEY (parent_id) REFERENCES public.members(id) ON DELETE CASCADE;
+  END IF;
+END $$;
+
+DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'order_lookups_show_id_shows_id_fk' AND conrelid = 'public.order_lookups'::regclass) THEN
     ALTER TABLE ONLY public.order_lookups
     ADD CONSTRAINT order_lookups_show_id_shows_id_fk FOREIGN KEY (show_id) REFERENCES public.shows(id) ON DELETE SET NULL;
@@ -945,13 +1033,6 @@ DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'order_lookups_user_id_users_id_fk' AND conrelid = 'public.order_lookups'::regclass) THEN
     ALTER TABLE ONLY public.order_lookups
     ADD CONSTRAINT order_lookups_user_id_users_id_fk FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE SET NULL;
-  END IF;
-END $$;
-
-DO $$ BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'members_roles_parent_fk' AND conrelid = 'public.members_roles'::regclass) THEN
-    ALTER TABLE ONLY public.members_roles
-    ADD CONSTRAINT members_roles_parent_fk FOREIGN KEY (parent_id) REFERENCES public.members(id) ON DELETE CASCADE;
   END IF;
 END $$;
 
@@ -980,6 +1061,13 @@ DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'orders_show_id_shows_id_fk' AND conrelid = 'public.orders'::regclass) THEN
     ALTER TABLE ONLY public.orders
     ADD CONSTRAINT orders_show_id_shows_id_fk FOREIGN KEY (show_id) REFERENCES public.shows(id) ON DELETE SET NULL;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'payload_locked_documents_rels_attendance_fk' AND conrelid = 'public.payload_locked_documents_rels'::regclass) THEN
+    ALTER TABLE ONLY public.payload_locked_documents_rels
+    ADD CONSTRAINT payload_locked_documents_rels_attendance_fk FOREIGN KEY (attendance_id) REFERENCES public.attendance(id) ON DELETE CASCADE;
   END IF;
 END $$;
 
@@ -1110,16 +1198,16 @@ DO $$ BEGIN
 END $$;
 
 DO $$ BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'users_partner_id_partners_id_fk' AND conrelid = 'public.users'::regclass) THEN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'users_member_id_members_id_fk' AND conrelid = 'public.users'::regclass) THEN
     ALTER TABLE ONLY public.users
-    ADD CONSTRAINT users_partner_id_partners_id_fk FOREIGN KEY (partner_id) REFERENCES public.partners(id) ON DELETE SET NULL;
+    ADD CONSTRAINT users_member_id_members_id_fk FOREIGN KEY (member_id) REFERENCES public.members(id) ON DELETE SET NULL;
   END IF;
 END $$;
 
 DO $$ BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'users_member_id_members_id_fk' AND conrelid = 'public.users'::regclass) THEN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'users_partner_id_partners_id_fk' AND conrelid = 'public.users'::regclass) THEN
     ALTER TABLE ONLY public.users
-    ADD CONSTRAINT users_member_id_members_id_fk FOREIGN KEY (member_id) REFERENCES public.members(id) ON DELETE SET NULL;
+    ADD CONSTRAINT users_partner_id_partners_id_fk FOREIGN KEY (partner_id) REFERENCES public.partners(id) ON DELETE SET NULL;
   END IF;
 END $$;
 
