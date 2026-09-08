@@ -273,6 +273,18 @@ describe('buildCompView (self-issued comps)', () => {
     expect(out.comps.remaining).toBe(4)
   })
 
+  it('replaces the form with a sold-out line when the room is full (story 47)', () => {
+    const out = build({ seatsRemaining: 0 })
+    expect(out.comps.visible).toBe(true)
+    expect(out.comps.seatsAvailable).toBe(false)
+  })
+
+  it('keeps the form when seats are left, and when the count is unknown', () => {
+    expect(build({ seatsRemaining: 3 }).comps.seatsAvailable).toBe(true)
+    expect(build({ seatsRemaining: null }).comps.seatsAvailable).toBe(true)
+    expect(build().comps.seatsAvailable).toBe(true)
+  })
+
   it('offers no cancel once a ticket has been scanned', () => {
     const out = build({ ownComps: [comp({ anyScanned: true })] })
     expect(out.comps.orders[0]?.canCancel).toBe(false)

@@ -16,6 +16,8 @@ The dancer-facing roster: who is coming to which izvedba, per army, against a th
 
 Two facts worth carrying here, because they cross into ticketing: the roster reads **every** performance of the season, public and non-public alike (it uses `isPublicPerformance` to decide how a row renders, never to filter), and nothing in `/app` touches capacity, sales, refunds or the public site.
 
+One exception since #434: a moreškant issues up to four **comp** tickets for themselves on a public performance, through the same comp engine, the same sell lock and the same ticket email `/api/comp/issue` uses — those seats are real seats. `orders.compIssuedBy` (`admin | self`) is what tells the two apart and what the cap counts. Rules: **`docs/agents/moreskant-app.md`** → *Self-issued comps*.
+
 ## Bad-weather venue change, Ljetno → Zimsko (#94)
 
 Admin edit-view action `MarkMovedToZimskoMenuItem`, 2-step:

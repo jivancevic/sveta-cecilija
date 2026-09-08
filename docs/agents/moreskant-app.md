@@ -745,8 +745,10 @@ COUNT(active tickets), the same self-healing the refund cascade relies on.
   not dance sees no section at all), no Member e-mail (400, there is nowhere to
   send the PDF), a non-public performance (400 — it sells no seats, ADR-0024),
   cancelled (400), already started (409), the cap (409), no seats left (409).
-  The **online sales pause does not apply**: like a partner sale and an admin
-  comp, a comp is not an online sale (CLAUDE.md, Ticketing rules).
+  The **online sales pause is deliberately not checked**, which matches
+  `/api/comp/issue`: the admin comp route does not check it either, and a comp
+  is not an online sale. A voditelj who truly wants comps stopped cancels the
+  performance or lets the room fill.
 - **The gate is `requirePermission(req, 'moreskant')` plus the access
   decision's Member resolution** (`resolveOwnMemberId` → the Member row →
   `isActiveMoreskant`), so a retired dancer is refused for the same reason they
@@ -757,7 +759,18 @@ COUNT(active tickets), the same self-healing the refund cascade relies on.
   out of scope and stay in `/admin`. A scanned order refuses with 409: someone
   is already inside on that slip, and voiding it would free a seat that is
   physically taken.
+- **Cancel answers ONE 404** for every order that is not the caller's own
+  self-issued comp — missing, paid, an admin comp, someone else's. Three honest
+  statuses would be an oracle: a dancer walking the order ids would learn which
+  exist, which are comps and whose they are. The tickets and the evening are
+  read only *after* ownership holds (`loadSelfCompCancelContext`), and an
+  evening that cannot be read refuses rather than voids.
 - The section's `visible` flag lives in the loader (`buildCompView`), not in the
   template, so a non-public or past evening cannot leak an issue button through
   a forgotten condition — and the hidden case carries no orders in the payload
-  at all.
+  at all. A full room keeps the section and loses the form: a comp holds a real
+  seat, so `remainingSeats` (the same arithmetic `/tickets` uses) decides
+  whether there is anything to give.
+- **`compIssuedBy` is editable in `/admin`** by a `tickets` holder, unlike the
+  `member` / `partner` attribution links beside it: switching a dancer's comp to
+  `admin` is how the backoffice gives them their four back on purpose.
