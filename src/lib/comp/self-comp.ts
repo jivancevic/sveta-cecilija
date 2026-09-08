@@ -200,7 +200,7 @@ export async function handleSelfCompIssue(
   deps: SelfCompIssueDeps,
 ): Promise<SelfCompResult> {
   const rejection = rejectAppRequest(deps.request)
-  if (rejection) return { status: rejection.status, body: { error: APP_STRINGS.push.rejected } }
+  if (rejection) return { status: rejection.status, body: { error: APP_STRINGS.comp.rejected } }
 
   // Story 55: a voditelj without a Member link has nobody to attribute a comp
   // to, so the section is absent AND the route refuses. 403, not 400: the
@@ -274,7 +274,7 @@ export async function handleSelfCompCancel(
   deps: SelfCompCancelDeps,
 ): Promise<SelfCompResult> {
   const rejection = rejectAppRequest(deps.request)
-  if (rejection) return { status: rejection.status, body: { error: APP_STRINGS.push.rejected } }
+  if (rejection) return { status: rejection.status, body: { error: APP_STRINGS.comp.rejected } }
 
   if (!deps.actor) return { status: 403, body: { error: APP_STRINGS.comp.noMember } }
 

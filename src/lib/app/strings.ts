@@ -297,6 +297,8 @@ export const APP_STRINGS = {
     cancelling: 'Otkazujem...',
     cancelled: 'Karte su otkazane.',
     /** Refusals, all of them also spoken by the routes. */
+    /** The `/app` cross-site guard, in the comp routes' own words. */
+    rejected: 'Zahtjev nije prihvaćen. Pokušaj ponovno iz aplikacije.',
     pickOne: 'Odaberi barem jednu kartu.',
     capReached: 'Potrošio si svoje 4 besplatne karte za ovu izvedbu.',
     noMember: 'Tvoja prijava nije povezana s moreškantom, pa ne možeš izdati besplatne karte.',
