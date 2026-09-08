@@ -133,12 +133,17 @@ describe('Shows non-public field conditions (#409)', () => {
   })
 
   it('has no hook that could email anyone when status changes', () => {
-    // Cancelling a non-public performance must send nothing. The collection's
-    // only hook is the beforeValidate validator — there is no afterChange (or
-    // any other) hook here, so no save path can reach Brevo. Buyer mail is only
-    // ever sent by the explicit admin actions, which now refuse non-public rows.
-    expect(Object.keys(Shows.hooks ?? {})).toEqual(['beforeValidate'])
+    // Cancelling a non-public performance must send nothing. The collection has
+    // no afterChange (or any other save-path) hook, so nothing on the way to
+    // the database can reach Brevo. Buyer mail is only ever sent by the
+    // explicit admin actions, which now refuse non-public rows.
+    //
+    // The two hooks that DO exist are the beforeValidate validator and the
+    // #422 attendance cascade on delete; neither sends anything, and this
+    // assertion is exact so a third one has to be justified here.
+    expect(Object.keys(Shows.hooks ?? {}).sort()).toEqual(['beforeDelete', 'beforeValidate'])
     expect(Shows.hooks?.beforeValidate).toHaveLength(1)
+    expect(Shows.hooks?.beforeDelete).toHaveLength(1)
   })
 })
 

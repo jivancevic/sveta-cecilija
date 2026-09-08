@@ -1,4 +1,4 @@
-import { APIError, type CollectionConfig } from 'payload'
+import { APIError, type CollectionBeforeDeleteHook, type CollectionConfig } from 'payload'
 import {
   canEditPlacementField,
   canEditRosterField,
@@ -54,6 +54,30 @@ const publicPerformanceOnly = (
   return isPublicPerformance(row)
 }
 
+// Cascade the attendance rows when a performance is deleted (#422).
+//
+// `attendance.performance_id` is `ON DELETE SET NULL` (Payload's generated
+// default for a relationship column) on a `NOT NULL` column, so the database
+// alone cannot delete a performance that still carries answers — it errors with
+//   null value in column "performance_id" of relation "attendance"
+//   violates not-null constraint
+// which reaches the admin as a failed delete. Flipping the FK to CASCADE in
+// db/schema is not an option: the drift gate mirrors Payload's push and
+// 00-base.sql is regenerated from one, so the change would be silently
+// reverted. Same reasoning, same shape and same transaction as
+// `cascadeOrderTicketsDelete` in Orders.ts — pass `req` so the answers and the
+// performance commit or roll back together.
+//
+// Runs for every delete, single or bulk: beforeDelete fires per document.
+export const cascadeShowAttendanceDelete: CollectionBeforeDeleteHook = async ({ req, id }) => {
+  await req.payload.delete({
+    collection: 'attendance',
+    where: { performance: { equals: id } },
+    req,
+    overrideAccess: true,
+  })
+}
+
 export const Shows: CollectionConfig = {
   slug: 'shows',
   access: {
@@ -97,6 +121,8 @@ export const Shows: CollectionConfig = {
     },
   },
   hooks: {
+    // Delete a performance's attendance rows before the performance itself.
+    beforeDelete: [cascadeShowAttendanceDelete],
     // The kind/isPublic invariants (ADR-0024). The rules themselves are a pure,
     // unit-tested function in src/lib/show-performance.ts; this hook is only the
     // Payload plumbing. `beforeValidate` (not `beforeChange`) so the forced

@@ -1,4 +1,4 @@
-import { APIError, type CollectionConfig } from 'payload'
+import { APIError, type CollectionBeforeDeleteHook, type CollectionConfig } from 'payload'
 import {
   canEditAttributionField,
   canEditMoreskantField,
@@ -85,6 +85,26 @@ async function otherNicknames(
   return result.docs.map((d) => (typeof d.nickname === 'string' ? d.nickname : ''))
 }
 
+// Cascade the attendance rows when a Member is deleted (#422).
+//
+// The mirror of `cascadeShowAttendanceDelete` on Shows, for the same reason:
+// `attendance.member_id` is `ON DELETE SET NULL` on a `NOT NULL` column, so a
+// Member who has ever answered cannot be deleted while those rows exist. Only
+// a `tickets` holder can delete a Member at all (a voditelj retires a dancer
+// with `active`), but when they do, the answers have to go with the row.
+//
+// Comp orders and promo codes point at Members through NULLABLE columns, so
+// they are deliberately left alone: attribution history survives a deletion as
+// a null, which is what ADR-0019 wants.
+export const cascadeMemberAttendanceDelete: CollectionBeforeDeleteHook = async ({ req, id }) => {
+  await req.payload.delete({
+    collection: 'attendance',
+    where: { member: { equals: id } },
+    req,
+    overrideAccess: true,
+  })
+}
+
 export const Members: CollectionConfig = {
   slug: 'members',
   labels: {
@@ -104,6 +124,8 @@ export const Members: CollectionConfig = {
     hidden: ({ user }) => membersHiddenInAdmin(user as ReqUser),
   },
   hooks: {
+    // Delete a member's attendance rows before the member itself.
+    beforeDelete: [cascadeMemberAttendanceDelete],
     // The moreškant profile invariants (ADR-0024). The rules are a pure,
     // unit-tested function in src/lib/moreskant-profile.ts; this hook only
     // merges the patch onto the stored row, loads the nicknames the uniqueness
