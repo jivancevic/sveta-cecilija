@@ -2,14 +2,15 @@
 
 The dancer-facing surface of the roster module ([ADR-0023](../adr/0023-permissions-replace-roles-app-surface.md), [ADR-0024](../adr/0024-moreskant-roster-domain.md); phase 3 = #419). Croatian only, mobile first, no ticketing. Glossary in `CONTEXT.md` → *Moreškant*.
 
-## What ships in phase 3 (#420 → #423)
+## What ships in phase 3 (#420 → #424)
 
 - Moreškant identity on `Members` and the `Users.member` link (#420).
 - The `/app` route group: login, the access decision, the season's performance cards, the PWA manifest (#421).
 - **Attendance**: the collection, the answer rules, the army count, Dolazim / Ne dolazim on every card (#422).
 - **The performance detail** `/app/izvedba/[id]`: armies against thresholds, on-behalf answers, the army move, the card headcount chip (#423).
+- **Invitations** (#424): "Pošalji pozivnicu" on a Member, `/app/set-password`, "Zaboravljena lozinka".
 
-Invitations (#424) and push (phase 4) are later tickets. The only thing `/app` writes is an attendance row and the session cookie.
+Push is phase 4. What `/app` writes is an attendance row, the session cookie and, through the invitation, a dancer's password.
 
 ## Route group
 
@@ -162,3 +163,108 @@ A voditelj's cards carry `Crni n/threshold` and `Bili n/threshold`, red below
 threshold, so a short evening is visible without opening it (#419, story 10). It
 costs two extra queries and only for the account that has a reason to see them —
 a dancer gets the numbers on the detail page.
+
+## Invitations, set-password and "Zaboravljena lozinka" (#424)
+
+A dancer never registers and never picks a permission: a voditelj presses one
+button on the Member and the login comes into existence with the bundle the
+voditelj could not have chosen wrong.
+
+### The one button
+
+`InviteMoreskantMenuItem` is an edit-menu item on Members, the Shows pattern
+(`useSalesActionsVisible` → `useInviteVisible`, deciding through the pure
+`inviteActionVisible`). It renders on a **saved** Members document whose
+`isMoreskant` is true, and that test is what hides it from the ticketing
+backoffice as well: the six moreškant fields lock *read* to `moreska` (#420), so
+a `tickets`-only account is never handed the `true` the rule needs. The
+permission list is only a belt to those braces — `/api/users/me` runs with
+`overrideAccess: false` and `Users.permissions` is locked to `users`, so a
+voditelj's own client user usually carries **no** permission set at all; an
+absent list therefore means "unknown", never "denied".
+
+The answer goes to a **toast**. Payload closes the edit-menu popup on click, so
+a message rendered inside the item is unmounted before the fetch resolves.
+
+### `POST /api/app/invite`
+
+`requirePermission(req, 'moreska')` first (the chokepoint every staff route
+uses), then the `/app` cross-site guard, then the rules in
+`src/lib/app/invite.ts`. It refuses with 400 and a Croatian sentence naming the
+field to fix when the Member is missing, not `isMoreskant`, not active, or has
+no email — the four things a voditelj can repair themselves.
+
+Otherwise it finds the User whose `member` link is this Member and, if there is
+none, creates one: `permissions: ['moreskant']` exactly, the `member` link, the
+Member's email, a `username` slugged from the nickname (`Cici` → `cici`, `Đuro`
+→ `djuro`, colliding names get `cici2`, `cici3`; `src/lib/app/username.ts`) and
+a crypto-random password that is never emailed and never used. A second press
+finds the same login and only mints a fresh token, which is what a lost email
+needs (#419, story 7).
+
+Two decisions live here rather than in a comment somewhere:
+
+- **The Member's email wins.** A voditelj maintains a dancer's contact details on
+  the Member row, so an invitation that meets a login carrying a different
+  address moves the login onto the Member's. Two addresses for one person would
+  mean "Zaboravljena lozinka" silently mailing the stale one.
+- **The reset token is targeted by username**, not by address: it is unique,
+  stable and unaffected by an email the invitation may just have moved.
+
+### The token lengths, and why the collection sets none
+
+Payload computes a reset token's life as
+`collectionConfig.auth?.forgotPassword?.expiration ?? expiration ?? 3600000`
+(`payload/dist/auth/operations/forgotPassword.js`). **The collection value wins
+over the argument** — it is not the fallback it reads like. So `Users.auth` sets
+no `forgotPassword.expiration` at all and each caller passes its own: seven days
+from the invitation, one hour from the reset. Setting seven days on the
+collection, as the ticket first suggested, would have frozen the reset at seven
+days too and ignored the hour in silence. `access.test.ts` guards the absence.
+
+`forgotPassword` is always called with `disableEmail: true`: Payload's own mail
+is English and points at `/admin/reset`, which no dancer may open. The Croatian
+letters are ours (`src/lib/email/send-moreskant-email.ts`, from
+`info@moreska.eu` — the society's identity, not the `tickets@` show stream —
+subjects "Pozivnica za Moreškant" and "Nova lozinka za Moreškant").
+
+### `/app/set-password` and `/app/forgot`
+
+`POST /api/app/set-password` runs Payload's `resetPassword`, which stores the
+hash **and opens a session**, so the route sets the same cookie the login route
+sets and the dancer lands on `/app` signed in rather than on a form asking for
+the password they chose two seconds ago. Minimum length is eight, enforced in
+`src/lib/app/set-password.ts` because the Users collection sets no minimum of
+its own. Bad token, expired token, already-used token: one 400 and one sentence,
+because for the dancer they are the same situation.
+
+`POST /api/app/forgot` **always answers 200** with the same sentence — account
+found, not found, or found without an email — since the difference between two
+answers on a public URL is a list of who has a login. The account lookup is ours
+rather than Payload's: `forgotPassword` returns null for an unknown account and
+never tells us the address to write to, and we need that address for our own
+letter.
+
+Both are unauthenticated, cookie-affecting POSTs outside Payload's CSRF list, so
+they carry `appRequestMeta` + `rejectAppRequest` exactly as the login route
+does. Neither uses `requirePermission`: there is no caller to authorize, and the
+token is the authentication.
+
+### "Ima prijavu"
+
+The Members list column (#419, story 9) is a **virtual** field: no column, so it
+cannot drift from `users.member`, which is the truth it reports. It is filled by
+ONE `find` per request, memoized on `req.context` and shared by every row of the
+list (`src/lib/access/member-logins.ts`) — an `afterRead` doing its own lookup,
+or a client Cell fetching `/api/users`, would both cost a query per rendered
+line. Read is `moreska`-only like the rest of the roster half; nothing writes it.
+
+### What a dancer cannot do to their own login
+
+`Users.access.update` allows self-edit, so every field of the invitation bundle
+carries its own lock to `users`: `permissions`, `member` and — since #424 —
+`username`, declared in the collection purely to merge that lock into Payload's
+own base field. Verified in the browser: a `moreskant` PATCHing their own row
+with a new username, a new permission set and a different member link gets a
+200 and no change at all (a denied field is dropped in silence, which is exactly
+why the locks are tested).

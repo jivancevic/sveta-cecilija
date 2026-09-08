@@ -10,6 +10,12 @@ Three setup steps beyond `EnterWorktree`:
 2. **`npm install --include=dev --no-audit --no-fund`** inside the worktree — the host `node_modules` is `--production`, so symlinking it leaves `@tailwindcss/postcss` and transitives like `enhanced-resolve` missing and every public page 500s on a postcss require. The install also mutates `package-lock.json`; revert it before any commit (`git checkout -- package-lock.json`) since unintended lockfile changes are a hard pre-merge gate.
 3. **`rm -rf .next`** after the install — turbopack caches the earlier "module not found" resolution failures and keeps serving 500s even once the missing module is on disk.
 
+**`NEXT_PUBLIC_BASE_URL` must name the port you actually run on**, or every cookie-authenticated route answers 401 and `/app` bounces to the login page: Payload's CSRF gate compares the request `Origin` against `serverURL`, so a `.env.local` saying `:3000` while you serve `:3424` rejects the cookie in silence (`payload-admin.md`). Start a worktree server with both set together:
+
+```sh
+NEXT_PUBLIC_BASE_URL=http://localhost:3424 PAYLOAD_DISABLE_PUSH=1 PORT=3424 npm run dev
+```
+
 If `bootstrap-db.mjs` itself fails on a stale enum and you only need to verify rendering, bypass it:
 ```sh
 set -a && . "$(pwd)/.env.local" && set +a && PORT=<port> node_modules/.bin/next dev
