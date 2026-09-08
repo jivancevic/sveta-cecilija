@@ -19,7 +19,8 @@
 // row and hands them over. `answer.ts` is the route half.
 
 import { can, type PermissionUser } from '@/lib/access/permissions'
-import { isDanceRole, type DanceRole } from '@/lib/moreskant-profile'
+import { isDanceRole, isMoreskantRow, type DanceRole } from '@/lib/moreskant-profile'
+import { APP_STRINGS } from '@/lib/app/strings'
 
 /** The two armies. `null` is a bula, who dances in neither. */
 export type Army = 'crni' | 'bili'
@@ -59,6 +60,27 @@ export interface AttendanceMember {
   primaryRole?: string | null
   active?: boolean | null
   isMoreskant?: boolean | null
+}
+
+/**
+ * A Payload members doc → the roster identity these rules and the army count
+ * read. An explicit projection, never a spread: `members.email` exists since
+ * #420 and must never reach an `/app` payload (ADR-0024's PII boundary is
+ * mobiles yes, emails no), and there is no email field here to fill.
+ */
+export function toAttendanceMember(doc: Record<string, unknown>): AttendanceMember {
+  return {
+    id: String(doc.id),
+    name: typeof doc.name === 'string' ? doc.name : null,
+    nickname: typeof doc.nickname === 'string' ? doc.nickname : null,
+    mobile: typeof doc.mobile === 'string' ? doc.mobile : null,
+    roles: Array.isArray(doc.roles)
+      ? (doc.roles.filter((r) => typeof r === 'string') as string[])
+      : [],
+    primaryRole: typeof doc.primaryRole === 'string' ? doc.primaryRole : null,
+    active: doc.active !== false,
+    isMoreskant: isMoreskantRow(doc),
+  }
 }
 
 /** The performance fields the rules reason about. */
@@ -120,6 +142,15 @@ export function isAnswerableMember(member: AttendanceMember | null | undefined):
   return member.isMoreskant === true
 }
 
+/** The id the request is about: the loaded Member's, or the raw one asked for. */
+function memberIdOf(
+  member: AttendanceMember | null | undefined,
+  input: { memberId?: string | number | null },
+): string {
+  if (member?.id != null) return String(member.id)
+  return input.memberId == null ? '' : String(input.memberId)
+}
+
 /**
  * True when a moreškant may still answer for themselves: the performance has
  * not started and has not been cancelled. The card reads this to decide whether
@@ -143,13 +174,20 @@ export type AnswerDecision =
   | { ok: true; op: 'write'; status: AttendanceStatus; army: Army | null }
   | { ok: false; status: 400 | 403; error: string }
 
-/** Croatian refusals; the only person who reads them is a dancer or a voditelj. */
+/**
+ * Croatian refusals; the only person who reads them is a dancer or a voditelj.
+ *
+ * `started` and `cancelled` are the very sentences the buttons show when they
+ * render locked (`APP_STRINGS.answer`), not paraphrases of them: tapping a dead
+ * button and having a POST refused are one situation, and a dancer should not
+ * have to work out whether two wordings mean two rules.
+ */
 export const ANSWER_ERRORS = {
   notAllowed: 'Nemaš pravo odgovarati za ovog moreškanta.',
   notMoreskant: 'Taj član nije aktivan moreškant.',
   unknownStatus: 'Nepoznat odgovor.',
-  started: 'Izvedba je počela, odgovor više nije moguće promijeniti.',
-  cancelled: 'Izvedba je otkazana.',
+  started: APP_STRINGS.answer.locked,
+  cancelled: APP_STRINGS.answer.cancelled,
   armyNotAllowed: 'Voditelj određuje vojsku.',
   armyNotInRoles: 'Taj moreškant ne pleše u toj vojsci.',
   unknownArmy: 'Nepoznata vojska.',
@@ -170,6 +208,12 @@ export const ANSWER_ERRORS = {
 export function decideAttendanceAnswer(input: {
   actor: AttendanceActor
   member: AttendanceMember | null | undefined
+  /**
+   * The Member id the caller asked about. Only needed when `member` is null (a
+   * row that does not exist): the self-only check runs before the target is
+   * inspected, so it needs the requested id, not the loaded one.
+   */
+  memberId?: string | number | null
   performance: AttendancePerformance
   request: unknown
   army?: unknown
@@ -184,15 +228,21 @@ export function decideAttendanceAnswer(input: {
     return { ok: false, status: 403, error: ANSWER_ERRORS.notAllowed }
   }
 
+  // The self-only check comes FIRST for a dancer, before anything is asserted
+  // about the target Member. Asking about a stranger's id must answer "not
+  // yours" and nothing else: if the 400 "that member is not an active
+  // moreškant" came first, a moreškant could walk the Members table and learn
+  // who is on the roster by reading status codes.
+  if (!voditelj && (!actor.memberId || String(actor.memberId) !== String(memberIdOf(member, input)))) {
+    return { ok: false, status: 403, error: ANSWER_ERRORS.notAllowed }
+  }
+
   if (!isAnswerableMember(member)) {
     return { ok: false, status: 400, error: ANSWER_ERRORS.notMoreskant }
   }
   const target = member as AttendanceMember
 
   if (!voditelj) {
-    if (!actor.memberId || String(actor.memberId) !== String(target.id)) {
-      return { ok: false, status: 403, error: ANSWER_ERRORS.notAllowed }
-    }
     if (performance.cancelled) {
       return { ok: false, status: 403, error: ANSWER_ERRORS.cancelled }
     }

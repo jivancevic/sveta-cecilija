@@ -146,6 +146,31 @@ describe('decideAttendanceAnswer — who may answer', () => {
       error: ANSWER_ERRORS.notMoreskant,
     })
   })
+
+  // The order of the two checks is the point: a dancer asking about somebody
+  // else always hears "not yours", never "that one is not a live moreškant".
+  // Otherwise the status code alone would let them walk the Members table and
+  // read off who is on the roster.
+  it.each([
+    ['a stranger who is a live moreškant', dancer({ id: '2' })],
+    ['a stranger who is retired', dancer({ id: '2', active: false })],
+    ['a stranger who is not a moreškant at all', dancer({ id: '2', isMoreskant: false })],
+    ['a Member id that does not exist', null],
+  ])('a moreškant asking about %s hears only 403', (_label, member) => {
+    expect(decide({ member, memberId: '2' })).toEqual({
+      ok: false,
+      status: 403,
+      error: ANSWER_ERRORS.notAllowed,
+    })
+  })
+
+  it('a moreškant whose own Member row went stale still gets 400, not a leak', () => {
+    // Their own id, so the self check passes; the row is simply no longer a
+    // dancer, which is theirs to be told about.
+    expect(decide({ member: dancer({ active: false }), memberId: '1' })).toMatchObject({
+      status: 400,
+    })
+  })
 })
 
 describe('decideAttendanceAnswer — when', () => {

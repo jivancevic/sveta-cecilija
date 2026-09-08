@@ -207,6 +207,45 @@ describe('handleAttendanceAnswer — the upsert', () => {
   })
 })
 
+describe('handleAttendanceAnswer — the create race', () => {
+  it('re-reads and updates when the unique index rejects a racing create', async () => {
+    // Two taps in flight: the other one created the row between our
+    // findExisting and our create, so the index throws. Second call to
+    // findExisting now sees it.
+    const findExisting = vi
+      .fn()
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ id: 77, army: 'crni' })
+    const d = deps({
+      findExisting,
+      create: vi.fn(async () => {
+        throw new Error('duplicate key value violates unique constraint')
+      }),
+    })
+
+    const out = await handleAttendanceAnswer(body(), d)
+
+    expect(out).toEqual({ status: 200, body: { ok: true, status: 'coming', army: 'crni' } })
+    expect(d.update).toHaveBeenCalledWith(77, {
+      status: 'coming',
+      army: 'crni',
+      answeredBy: 'u9',
+      answeredAt: NOW.toISOString(),
+    })
+  })
+
+  it('rethrows when the create failed for a reason that is not a race', async () => {
+    const d = deps({
+      findExisting: vi.fn().mockResolvedValue(null),
+      create: vi.fn(async () => {
+        throw new Error('connection terminated')
+      }),
+    })
+    await expect(handleAttendanceAnswer(body(), d)).rejects.toThrow('connection terminated')
+    expect(d.update).not.toHaveBeenCalled()
+  })
+})
+
 describe('handleAttendanceAnswer — clear', () => {
   it('deletes the row and answers with no answer', async () => {
     const d = deps({ findExisting: async () => ({ id: 55, army: 'crni' }) })

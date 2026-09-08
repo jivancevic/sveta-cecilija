@@ -131,6 +131,7 @@ export async function handleAttendanceAnswer(
   const decision = decideAttendanceAnswer({
     actor: deps.actor,
     member,
+    memberId,
     performance,
     request: body?.status as AnswerRequest,
     army: body?.army,
@@ -153,22 +154,24 @@ export async function handleAttendanceAnswer(
     ? ((deps.actor.user as { id?: string | number }).id ?? null)
     : null
 
+  const patch = { status: decision.status, army: decision.army, answeredBy, answeredAt }
+
   if (existing) {
-    await deps.update(existing.id, {
-      status: decision.status,
-      army: decision.army,
-      answeredBy,
-      answeredAt,
-    })
+    await deps.update(existing.id, patch)
   } else {
-    await deps.create({
-      performance: performanceId,
-      member: memberId,
-      status: decision.status,
-      army: decision.army,
-      answeredBy,
-      answeredAt,
-    })
+    try {
+      await deps.create({ performance: performanceId, member: memberId, ...patch })
+    } catch (err) {
+      // The find-then-create is not atomic, and the unique (performance,
+      // member) index is what makes that safe rather than silently duplicating:
+      // two taps in flight at once (a double tap, or the card and the detail
+      // page open on two phones) mean the second create hits the index and
+      // throws. That is a race, not a failure, so re-read once and update the
+      // row the other write just made. A second failure is a real error.
+      const raced = await deps.findExisting(performanceId, memberId)
+      if (!raced) throw err
+      await deps.update(raced.id, patch)
+    }
   }
 
   return { status: 200, body: { ok: true, status: decision.status, army: decision.army } }
