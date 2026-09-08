@@ -1,5 +1,4 @@
 import Link from 'next/link'
-import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { accessMember } from '@/lib/app/access'
 import { getSeasonPerformances } from '@/lib/app/roster-data'
