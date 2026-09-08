@@ -1,27 +1,16 @@
 // THE OAuth 2.1 authorization server behind the MCP connector (#438, ADR-0024).
 //
 // Ported from Sufler (`voxford-assistent/src/lib/oauth.ts`), which is what
-// ADR-0024 asks for: "copied from Sufler with a fixed client, so that nothing is
-// invented". Four things are deliberately different here.
+// ADR-0024 asks for. WHAT is different from that original and WHY — the
+// one-year token, the deleted refresh path, the public client, the hashed
+// codes — is written down once, in `docs/agents/moreskant-app.md` → *MCP and
+// OAuth*. What matters when reading THIS file:
 //
-//  1. **There is no refresh token.** The access token lives a YEAR (#430, story
-//     59) and there is no rotation path, so the whole grant #2 is gone: a
-//     connection that survives a season needs no refresh, and a refresh flow is
-//     a second set of rules to get wrong. Revocation is `DELETE FROM
-//     oauth_tokens` (plus the per-call `moreska` re-check, which revokes access
-//     without touching a row at all).
-//  2. **The client is identified, not authenticated.** Claude's connector is a
-//     PUBLIC client: it holds no secret it could keep, so PKCE S256 is the proof
-//     that the party redeeming a code is the party that started the flow. A
-//     `client_secret` here would be a shared constant in a desktop app, which is
-//     worse than honest about it. `MCP_CLIENT_ID` and the `MCP_REDIRECT_URIS`
-//     allow-list are what pin the client.
-//  3. **The subject is a Payload user id**, not an email: `/app/authorize` runs
-//     behind the same session cookie as the rest of `/app`, and the id is what
-//     the MCP route re-reads on every call to re-check `moreska`.
-//  4. **Codes are hashed at rest too**, not just tokens. A code lives five
-//     minutes and is single-use, but there is no reason for the database to hold
-//     a credential in the clear when a hash costs nothing.
+//   - the subject of a token is a Payload user id;
+//   - a token carries no permission, only an identity (`mcp/gate.ts`);
+//   - `takeCode` is a `DELETE … RETURNING`, so single use is a property of one
+//     statement rather than of the caller;
+//   - the audience (`resource`) is stored AND compared.
 //
 // Everything below is pure over an injected {@link OAuthStore}, so the whole
 // flow is unit-testable without Postgres (`oauth.test.ts`, Sufler's tests minus

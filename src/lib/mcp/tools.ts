@@ -462,16 +462,10 @@ export function isRealCalendarDay(value: string): boolean {
 /**
  * `create_performances({ rows })` — next year's cruise calls in one paste.
  *
- * **It cannot create a `redovna`.** A Redovna is a public performance: it needs
- * a venue, it sells tickets, it appears on `/tickets`, and the backoffice
- * creates a season of them from a date range in `/admin`. A tool that produced
- * one from a chat message would be one typo away from a ticket on sale for an
- * evening nobody planned, so the kinds are the non-public four and the refusal
- * says where to go instead.
- *
- * The batch is validated FIRST and written only if every row is good: half a
- * pasted calendar is harder to fix than none of it, and the caller gets the
- * whole list of what to correct in one answer.
+ * It cannot create a `redovna`, and a batch with one bad row writes nothing.
+ * Both rules and their reasons: `docs/agents/moreskant-app.md` → *The five
+ * tools*. Here, note only that validation is all-or-nothing and that the WRITE
+ * is transactional to match (`performance-bulk-create.ts`).
  */
 export async function createPerformances(
   args: { rows?: unknown },

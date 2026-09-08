@@ -323,7 +323,8 @@ dropped in silence.
 
 Web push is the **only** notification channel (ADR-0024): no email, no SMS. What
 ships here is the plumbing plus two of the five notification types — the
-**alarm** (1) and the **T-48h reminder** (2). Types (3), (4) and (5) are #432.
+**alarm** (1) and the **T-48h reminder** (2). Types (3), (4) and (5) are #436,
+the next section.
 
 ### The service worker lives at the ROOT, and that is load-bearing
 
@@ -739,16 +740,18 @@ Cancel reuses the void primitive whole-order (`voidOrderTickets`, reason
 `storno`), so the seats come back the moment the tickets go inactive — seats are
 COUNT(active tickets), the same self-healing the refund cascade relies on.
 
-- **`orders.compIssuedBy`** (`admin | self`, default `admin`, nullable) is the
-  only thing that tells the two kinds of comp apart. NULL predates the column
-  and reads as `admin`; only the literal `'self'` counts against the four, which
+- **`orders.compIssuedBy`** (`admin | self`, nullable, **no default at all**) is
+  the only thing that tells the two kinds of comp apart. A default of `admin`
+  is exactly what the migration goes out of its way to avoid — it would label
+  every future online and partner order as an admin comp, and `ADD COLUMN …
+  DEFAULT` would have stamped it on every Stripe purchase already in the table;
+  the file even drops a default an earlier revision might have left behind.
+  NULL therefore means "not a self-issued comp" and is *read* as `admin`, but
+  it is never written. Only the literal `'self'` counts against the four, which
   is story 52 — a voditelj's gift never eats a dancer's own allowance. It is a
   column in the `/admin` Orders list (story 53). Migration:
   `db/schema/migrate-zz-c-orders-comp-issued-by.sql` (the `-c-` is a sort key,
-  the `-b-lineups` convention), probe `scripts/probe-comp-issued-by.mjs`. The
-  column is added **without** its default and given it in a second statement:
-  `ADD COLUMN … DEFAULT` fills every existing row, which would stamp "issued by
-  admin" on every Stripe purchase in the table.
+  the `-b-lineups` convention), probe `scripts/probe-comp-issued-by.mjs`.
 - **The cap is counted inside the sell lock.** The route passes a `guard` into
   the engine's `withSeatLock`, so the dancer's tally
   (`getSelfCompTicketCount`) and the room's capacity are read under one lock and
@@ -835,8 +838,8 @@ is a `DELETE … RETURNING`, so two redemptions of one code race inside Postgres
 and only the one that removed the row sees it. A wrong verifier still consumes
 the code.
 
-**Revocation** is `DELETE FROM oauth_tokens WHERE user_id = …`, or nothing at
-all: removing `moreska` in `/admin` cuts the connector on the next call.
+How a connector is **revoked** is an ops question and lives in
+`deployment.md` → *Env vars*.
 
 ### The consent screen
 
@@ -865,19 +868,28 @@ without `moreska` → the "Nemate pristup" page (story 58); a valid request →
 
 ### The gates on every call
 
-1. **`verifyToken` re-reads the account.** A token is a credential, not a
-   captured permission set. Unknown or expired → **401**; real token, owner no
-   longer holds `moreska` → **403**. The second is expressed as a required
-   *scope* rather than as `verifyToken` returning nothing, because `withMcpAuth`
-   maps a thrown error to 401 and a missing scope to 403, and those two answers
-   mean genuinely different things (`permissions.md`).
-2. **The rate limit**, per token, before anything touches the database:
-   `src/lib/rate-limit/mcp-rate-limit.ts`, 120 calls a minute in the
-   `forgot-rate-limit.ts` shape. The key is the token's hash, so one connector is
-   one budget. Unlike the forgot route this answers an honest **429**: the caller
-   is authenticated and already knows it exists, and a model told "too many
-   requests" waits, while a silent success makes it retry.
-3. **Nothing else.** No tool confirms a lineup, sends an alarm, answers
+1. **The access check.** The one sentence, and the 401/403 split it implies,
+   belongs to `permissions.md` → *An MCP token acts as its user*. The mechanics
+   are `src/lib/mcp/gate.ts`: `mcpAuthScopes` stamps the permission onto the
+   token's scopes at verification time and strips any stored copy first, so a
+   scope can never stand in for the permission; `isMissingUserError` is what
+   keeps a database hiccup from reading as "you are no longer a voditelj".
+2. **The audience.** A token is bound to this deployment's MCP URL (RFC 8707)
+   and the binding is COMPARED on every call: a consent naming a different
+   `resource` is refused outright, every code is bound to ours, and a token
+   whose stored resource is not ours does not verify. Stored-but-unchecked
+   would be decoration, and it is also what keeps a caller-supplied string from
+   ever reaching `new URL()`.
+3. **The rate limit**: `src/lib/rate-limit/mcp-rate-limit.ts`, 120 calls a
+   minute in the `forgot-rate-limit.ts` shape, keyed on the token's ROW ID and
+   taken only AFTER the token verified. A key derived from an unverified bearer
+   would let a loop of random strings mint one key per request; the window log
+   evicts stale keys either way, but this way the set of possible keys is
+   exactly the set of issued tokens. Unlike the forgot route this answers an
+   honest **429**: the caller is authenticated and already knows it exists, and
+   a model told "too many requests" waits, while a silent success makes it
+   retry.
+4. **Nothing else.** No tool confirms a lineup, sends an alarm, answers
    attendance or issues a comp (story 63). Those stay taps in the app.
 
 ### The five tools
@@ -894,12 +906,16 @@ Pure functions over a DI'd store (`src/lib/mcp/tools.ts` + `store.ts`), the
 | `create_performances({ rows })` | `{ created, rejected }` |
 
 - **`set_lineup` never guesses** (story 61). Nicknames are matched through
-  `usernameFromNickname` (#424) on both sides — the SAME normaliser a dancer's
-  username comes from, so "Ćići", "cici" and " CICI " are one key and `Đuro`
-  can never become `uro`. A name it cannot match exactly comes back in
-  `unmatched`; the rest is still written, because a partial postava plus a
-  question beats a wrong record. Refusals are whole-call and each means the
-  request itself is wrong: an unknown performance, a role outside the
+  `normaliseNickname` on both sides — the SAME normaliser a dancer's username
+  comes from (#424), so "Ćići", "cici" and " CICI " are one key and `Đuro` can
+  never become `uro`. It is deliberately the bare normaliser rather than
+  `usernameFromNickname`, whose `moreskant` fallback would make every
+  symbol-only nickname the same person. A name it cannot match comes back in
+  `unmatched`, and one that matches **two** active dancers in `ambiguous` —
+  neither is written, because keeping the last one found would make the answer
+  depend on the roster's sort order. The rest is still written: a partial
+  postava plus a question beats a wrong record. Refusals are whole-call and each
+  means the request itself is wrong: an unknown performance, a role outside the
   vocabulary, a **confirmed** evening (press Otključaj first), and *nothing
   matched at all* — blanking a real postava because the photo was unreadable is
   the worst outcome available.
@@ -913,14 +929,17 @@ Pure functions over a DI'd store (`src/lib/mcp/tools.ts` + `store.ts`), the
   message would be one typo away from a ticket on sale for an evening nobody
   planned. The zod enum refuses it before the tool runs and the tool refuses it
   again, with a sentence pointing at `/admin`.
-- **A bad row rejects the whole batch.** Half a pasted calendar is harder to fix
-  than none of it, so the rows are validated first (the collection's own
-  `validateAndNormalisePerformance`) and the caller gets every correction at
+- **A bad row rejects the whole batch, and so does a failed write.** Half a
+  pasted calendar is harder to fix than none of it, so the rows are validated
+  first (the collection's own `validateAndNormalisePerformance`, plus a
+  calendar-day check — `2026-02-31` matches the shape and would otherwise become
+  3 March on the way through `Date`) and the caller gets every correction at
   once. What is written goes through `createPerformancesInBulk`
-  (`src/lib/performance-bulk-create.ts`), shared with `/api/shows/bulk-create`,
-  so the per-create `skipRosterPush` flag and the ONE summary push (#441 review)
-  are stated once and a season entered from Claude behaves exactly like a season
-  entered from `/admin`.
+  (`src/lib/performance-bulk-create.ts`), shared with `/api/shows/bulk-create`:
+  ONE transaction, the per-create `skipRosterPush` flag and the ONE summary push
+  (#441 review) are stated once, so a season entered from Claude behaves exactly
+  like a season entered from `/admin` and a create that throws on row nine
+  leaves nothing behind.
 - **The PII boundary holds here too**: `toMcpMoreskant` is an explicit
   projection with no mobile and no e-mail (ADR-0024, the `toAppMember` rule). A
   chat window is the last place to relax it.

@@ -54,11 +54,8 @@ CREATE INDEX IF NOT EXISTS oauth_codes_expires_idx
 --    the connection has to survive a season, and a refresh flow would be a
 --    second set of rules to get wrong for no gain.
 --
---    Revocation is a row delete — `DELETE FROM oauth_tokens WHERE user_id = …`
---    disconnects a voditelj's Claude app. It is not the only lever: the MCP
---    route re-reads the token's user and re-checks `moreska` on EVERY call, so
---    taking the permission away in `/admin` cuts access without touching this
---    table at all.
+--    Revocation is a row delete; the runbook for it is in
+--    docs/agents/deployment.md.
 --
 --    The unique index on the hash is what lets `verifyToken` be a single
 --    indexed lookup, and what makes a re-inserted token a no-op rather than a
