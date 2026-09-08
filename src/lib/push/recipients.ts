@@ -35,6 +35,21 @@ export const MIN_ALARM_TTL_SECONDS = 60
  * a message for its whole TTL, so a flat twelve hours would do exactly that.
  */
 export function alarmTtlSeconds(performance: NotifiablePerformance, nowMs: number): number {
+  return untilStartTtlSeconds(performance, nowMs)
+}
+
+/**
+ * "Hold this until the evening begins, then throw it away."
+ *
+ * The same reasoning as the alarm's TTL, and the same function: a change
+ * notification, a "nova izvedba" and a withdrawal (#436) are all statements
+ * about an evening that is still ahead, and none of them is worth waking a
+ * phone that came back online afterwards.
+ */
+export function untilStartTtlSeconds(
+  performance: NotifiablePerformance,
+  nowMs: number,
+): number {
   const start = showStartMs(performance.date, performance.time)
   if (Number.isNaN(start)) return MIN_ALARM_TTL_SECONDS
   return Math.max(MIN_ALARM_TTL_SECONDS, Math.floor((start - nowMs) / 1000))
@@ -60,6 +75,23 @@ export function alarmRecipientMembers(
 ): string[] {
   const people = options.includeNotComing ? [...count.noAnswer, ...count.notComing] : count.noAnswer
   return [...new Set(people.map((p) => p.memberId))]
+}
+
+/**
+ * The change notification's audience (#436, story 15): every moreškant on the
+ * roster EXCEPT the ones who already said "ne dolazim".
+ *
+ * Everyone else is included on purpose — someone who has not answered still has
+ * to know the pier moved, and someone who is coming most of all. "Ne dolazim"
+ * is the one answer that makes the evening none of their business, and it is
+ * also the only mute there is (the type cannot be turned off, glossary).
+ */
+export function changeRecipientMembers(
+  rosterMemberIds: readonly string[],
+  notComingMemberIds: readonly string[],
+): string[] {
+  const excluded = new Set(notComingMemberIds.map(String))
+  return [...new Set(rosterMemberIds.map(String))].filter((id) => !excluded.has(id))
 }
 
 /** The reminder's audience: no answer, and nobody else (story 14). */

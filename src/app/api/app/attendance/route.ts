@@ -5,6 +5,9 @@ import { resolveOwnMemberId, type MemberLinkReader } from '@/lib/access/attendan
 import { handleAttendanceAnswer, type ExistingAnswer } from '@/lib/attendance/answer'
 import type { Army, AttendanceMember, AttendancePerformance } from '@/lib/attendance/rules'
 import { showStartMs } from '@/lib/show-time'
+import { notifyWithdrawal } from '@/lib/push/notify'
+import { createPushDeps, type PushPayload } from '@/lib/push/push-data'
+import type { PushMessage } from '@/lib/push/send'
 
 // POST /api/app/attendance — the ONE writer of an attendance row (#422).
 //
@@ -62,6 +65,9 @@ export async function POST(req: Request) {
 
   const body = await req.json().catch(() => null)
 
+  let cached: ReturnType<typeof createPushDeps> | null = null
+  const pushDeps = () => (cached ??= createPushDeps(payload as unknown as PushPayload))
+
   const result = await handleAttendanceAnswer(body, {
     request: appRequestMeta(req, process.env.NEXT_PUBLIC_BASE_URL),
     actor: { user: user as { permissions?: unknown }, memberId: ownMemberId == null ? null : String(ownMemberId) },
@@ -81,6 +87,8 @@ export async function POST(req: Request) {
           id: String(doc.id),
           startMs: date && time ? showStartMs(date, time) : Number.NaN,
           cancelled: doc.status === 'cancelled',
+          date,
+          time,
         }
       } catch {
         return null
@@ -121,7 +129,16 @@ export async function POST(req: Request) {
         overrideAccess: true,
       })
       const row = found.docs[0] as unknown as Record<string, unknown> | undefined
-      return row ? { id: row.id as string | number, army: army(row.army) } : null
+      return row
+        ? {
+            id: row.id as string | number,
+            army: army(row.army),
+            status:
+              row.status === 'coming' || row.status === 'not_coming'
+                ? (row.status as 'coming' | 'not_coming')
+                : null,
+          }
+        : null
     },
 
     create: (row) =>
@@ -150,6 +167,41 @@ export async function POST(req: Request) {
         id,
         overrideAccess: true,
       }),
+
+    // Type (5): a "dolazim" the dancer themselves withdrew within a day of the
+    // start reaches the voditelji (#436). The RULE is `isWithdrawal`, applied
+    // inside `notifyWithdrawal`; this only supplies the facts and the deps, so
+    // the route has no opinion about when a phone should ring.
+    onAnswered: async (event) => {
+      // Built LAZILY, behind the rule: `notifyWithdrawal` only reaches for
+      // these when the answer really was a withdrawal, so an ordinary
+      // "dolazim" costs no pool lookup and no VAPID warning.
+      const push = {
+        loadVoditeljUserIds: () => pushDeps().loadVoditeljUserIds(),
+        send: (userIds: readonly string[], message: PushMessage) =>
+          pushDeps().send(userIds, message),
+      }
+      await notifyWithdrawal(
+        {
+          performance: {
+            id: event.performance.id,
+            date: event.performance.date ?? '',
+            time: event.performance.time ?? '',
+          },
+          who: {
+            memberId: event.memberId,
+            nickname: event.member?.nickname ?? null,
+            name: event.member?.name ?? null,
+          },
+          previousStatus: event.previousStatus,
+          nextStatus: event.nextStatus,
+          ownAnswer: event.ownAnswer,
+          startMs: event.performance.startMs,
+          nowMs: event.nowMs,
+        },
+        push,
+      )
+    },
   })
 
   return NextResponse.json(result.body, { status: result.status })

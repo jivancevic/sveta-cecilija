@@ -23,6 +23,7 @@ import {
   type AttendanceActor,
   type AttendanceMember,
   type AttendancePerformance,
+  type AttendanceStatus,
 } from './rules'
 import { rejectAppRequest, type AppRequestMeta } from '@/lib/app/request-guard'
 
@@ -39,6 +40,12 @@ export interface AnswerBody {
 export interface ExistingAnswer {
   id: string | number
   army: Army | null
+  /**
+   * The answer that stands before this write. Read by the withdrawal
+   * notification (#436): "a dolazim turned into anything else" is a fact about
+   * the PREVIOUS row, and once the upsert has run it is unrecoverable.
+   */
+  status?: AttendanceStatus | null
 }
 
 export interface AnswerDeps {
@@ -71,7 +78,30 @@ export interface AnswerDeps {
     },
   ) => Promise<unknown>
   remove: (id: string | number) => Promise<unknown>
+  /**
+   * Fired after a successful write, with everything the withdrawal rule needs
+   * (#436, type 5). The RULE is not here: `notifyWithdrawal`
+   * (`src/lib/push/notify.ts`) decides whether this particular change is worth
+   * a voditelj's phone, so the answer route stays a route.
+   *
+   * Awaited but never allowed to fail the answer: the row is already saved by
+   * the time this runs, and a push service having a bad minute must not turn a
+   * stored answer into a 500 the dancer will retry.
+   */
+  onAnswered?: (input: AnsweredEvent) => Promise<unknown>
   now?: () => Date
+}
+
+/** What happened, for whoever wants to notify about it. */
+export interface AnsweredEvent {
+  performance: AttendancePerformance
+  memberId: string
+  member: AttendanceMember | null
+  previousStatus: AttendanceStatus | null
+  nextStatus: AttendanceStatus | null
+  /** True when the caller answered for their OWN Member row. */
+  ownAnswer: boolean
+  nowMs: number
 }
 
 export interface AnswerResult {
@@ -144,8 +174,20 @@ export async function handleAttendanceAnswer(
     return { status: decision.status, body: { error: decision.error } }
   }
 
+  const nowMs = (deps.now?.() ?? new Date()).getTime()
+  const ownAnswer = deps.actor.memberId != null && String(deps.actor.memberId) === memberId
+
   if (decision.op === 'clear') {
     if (existing) await deps.remove(existing.id)
+    await announce(deps, {
+      performance,
+      memberId,
+      member,
+      previousStatus: existing?.status ?? null,
+      nextStatus: null,
+      ownAnswer,
+      nowMs,
+    })
     return { status: 200, body: { ok: true, status: null, army: null } }
   }
 
@@ -174,7 +216,27 @@ export async function handleAttendanceAnswer(
     }
   }
 
+  await announce(deps, {
+    performance,
+    memberId,
+    member,
+    previousStatus: existing?.status ?? null,
+    nextStatus: decision.status,
+    ownAnswer,
+    nowMs,
+  })
+
   return { status: 200, body: { ok: true, status: decision.status, army: decision.army } }
+}
+
+/** The answer is stored; telling anyone about it is best effort by contract. */
+async function announce(deps: AnswerDeps, event: AnsweredEvent): Promise<void> {
+  if (!deps.onAnswered) return
+  try {
+    await deps.onAnswered(event)
+  } catch (err) {
+    console.error('[attendance] answer notification failed', err)
+  }
 }
 
 /** Re-exported so the route file needs one import for the voditelj branch. */

@@ -11,6 +11,7 @@ import { AlarmButton } from '../../AlarmButton'
 import { AttendanceButtons } from '../../AttendanceButtons'
 import { ArmyMoveButton } from '../../ArmyMoveButton'
 import { LogoutButton } from '../../LogoutButton'
+import { NoteEditor } from '../../NoteEditor'
 
 // `/app/izvedba/[id]` — one performance in full (#423, ADR-0024 phase 3).
 //
@@ -186,6 +187,11 @@ export default async function PerformanceDetailPage({
           {p.voditeljNote}
         </p>
       )}
+
+      {/* The voditelj edits the same note from here that /admin edits (#436,
+          story 25); saving goes through the collection, so the roster gets the
+          change notification either way. A moreškant only ever reads it. */}
+      {detail.voditelj && <NoteEditor performanceId={p.id} initialNote={p.voditeljNote} />}
 
       {me && (
         <AttendanceButtons

@@ -642,3 +642,68 @@
   font-size: 13px;
   color: var(--light);
 }
+
+/* The voditelj note, edited from the phone (#436). The same card frame as the
+   alarm: both are controls that reach other people's phones. */
+.app__note-edit {
+  margin: 20px 0 4px;
+  padding: 14px;
+  border: 1px solid var(--cardEdge);
+  border-radius: var(--radius);
+}
+
+.app__textarea {
+  display: block;
+  width: 100%;
+  margin: 6px 0 12px;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 15px;
+  color: var(--light);
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--cardEdge);
+  border-radius: var(--radius);
+  resize: vertical;
+}
+
+.app__textarea:focus {
+  outline: 2px solid var(--gold);
+  outline-offset: 1px;
+}
+
+/* The shared calendar link (#433). The URL is a long token, so it wraps and
+   scrolls rather than pushing the layout wide on a phone. */
+.app__calendar {
+  margin: 28px 0 8px;
+  padding: 14px;
+  border: 1px solid var(--cardEdge);
+  border-radius: var(--radius);
+}
+
+.app__calendar-title {
+  margin: 0 0 6px;
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.app__calendar-body {
+  margin: 0 0 12px;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.app__calendar-url {
+  display: block;
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 12px;
+  color: var(--light);
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--cardEdge);
+  border-radius: var(--radius);
+  overflow-wrap: anywhere;
+}

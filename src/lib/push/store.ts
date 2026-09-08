@@ -110,6 +110,27 @@ export async function loadUserIdsByMember(
 }
 
 /**
+ * Every user holding `moreska`: the audience of the withdrawal notice (#436).
+ *
+ * Raw SQL rather than a Payload `find`, because `permissions` is a hasMany
+ * select and lives in its own `users_permissions` table — `{ permissions: {
+ * contains: 'moreska' } }` is not a query Payload's Postgres adapter expresses
+ * over a join table the way this one line does. The vocabulary itself is still
+ * `src/lib/access/permissions.ts`'s (CLAUDE.md hard rule: never re-type it);
+ * `'moreska'` here is a VALUE of that enum, passed as a parameter.
+ *
+ * Nothing filters on "has a device": the sender loads subscriptions and a
+ * voditelj without one simply contributes nothing to the fan-out.
+ */
+export async function loadVoditeljUserIds(query: PushQuery): Promise<string[]> {
+  const res = await query(
+    `SELECT DISTINCT parent_id FROM users_permissions WHERE value = $1`,
+    ['moreska'],
+  )
+  return res.rows.map((row) => String(row.parent_id))
+}
+
+/**
  * Atomically claim (performance, type): true when this caller won the insert.
  *
  * The dispute-claim pattern (`src/lib/dispute/handle-dispute.ts`). It MUST NOT
