@@ -58,16 +58,22 @@ export const APP_STRINGS = {
   card: {
     cancelled: 'Otkazano',
     noteLabel: 'Voditelj',
-    open: 'Detalji',
   },
 
-  /** The two buttons and everything that can go wrong around them (#422). */
+  /**
+   * The two buttons and everything that can go wrong around them (#422).
+   *
+   * `locked` and `cancelled` are ONE sentence each, shared by the card, the
+   * detail view and the answer route's refusal: a dancer who taps a locked
+   * button and a dancer whose POST is refused are in the same situation, and
+   * two wordings for it would only look like two different rules.
+   */
   answer: {
     coming: 'Dolazim',
     notComing: 'Ne dolazim',
     clear: 'Poništi',
-    lockedStarted: 'Izvedba je počela, odgovor je zaključan.',
-    lockedCancelled: 'Izvedba je otkazana.',
+    locked: 'Izvedba je počela, odgovori se više ne mijenjaju.',
+    cancelled: 'Izvedba je otkazana.',
     failed: 'Odgovor nije spremljen. Pokušaj ponovno.',
     saving: 'Spremam...',
   },
@@ -85,7 +91,6 @@ export const APP_STRINGS = {
     call: 'Nazovi',
     move: 'Prebaci',
     moveTo: (army: string) => `Prebaci u ${army}`,
-    readOnly: 'Izvedba je prošla. Odgovori se više ne mijenjaju.',
     missing: 'Ta izvedba ne postoji.',
   },
 

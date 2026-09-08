@@ -26,8 +26,8 @@ function place(p: RosterPerformance): { main: string; client: string | null } {
 /** The one-line reason a dancer's buttons are dead, or null when they are live. */
 function lockNote(p: RosterPerformance, voditelj: boolean): string | null {
   if (voditelj || p.canAnswer) return null
-  if (p.cancelled) return APP_STRINGS.answer.lockedCancelled
-  return APP_STRINGS.answer.lockedStarted
+  if (p.cancelled) return APP_STRINGS.answer.cancelled
+  return APP_STRINGS.answer.locked
 }
 
 function PerformanceCard({

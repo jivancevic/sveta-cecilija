@@ -14,8 +14,9 @@ import type { AttendanceStatus } from '@/lib/attendance/rules'
 // The highlight is optimistic: on a phone in the street the round trip is the
 // slow part, and the answer is a two-state toggle where guessing right is the
 // normal case. When the server disagrees the previous answer comes straight
-// back and the refusal is shown verbatim, because the refusals are Croatian
-// sentences written for exactly this spot ("Nastup je počeo...").
+// back and the refusal is shown verbatim: the route answers with the very
+// sentences this component shows on a locked button, so a refusal never reads
+// like a different rule from the one the UI already stated.
 
 export type AnswerScope = 'card' | 'row'
 

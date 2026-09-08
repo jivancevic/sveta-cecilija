@@ -196,8 +196,8 @@ export default async function PerformanceDetailPage({
             p.canAnswer
               ? null
               : p.cancelled
-                ? APP_STRINGS.answer.lockedCancelled
-                : APP_STRINGS.detail.readOnly
+                ? APP_STRINGS.answer.cancelled
+                : APP_STRINGS.answer.locked
           }
           allowClear={voditelj}
         />
