@@ -7,8 +7,8 @@
 // with a message.
 //
 // Copy rules (CONTEXT.md): "moreška" lowercase in Croatian, a dancer is a
-// "moreškant" and never a "moreškar", and no em-dashes in anything a person
-// reads.
+// "moreškant" and never a "moreškar", the event noun is "izvedba" (never
+// "nastup" or "predstava"), and no em-dashes in anything a person reads.
 
 import type { PerformanceKind } from '@/lib/show-performance'
 import type { DanceRole } from '@/lib/moreskant-profile'
@@ -17,7 +17,7 @@ import { DANCE_ROLE_LABELS } from '@/lib/moreskant-profile'
 export const APP_STRINGS = {
   /** The product name: the manifest, the header and the browser tab all use it. */
   name: 'Moreškant',
-  tagline: 'Raspored nastupa',
+  tagline: 'Raspored izvedbi',
 
   header: {
     logout: 'Odjava',
@@ -50,8 +50,8 @@ export const APP_STRINGS = {
   },
 
   list: {
-    emptyUpcoming: 'Nema više nastupa u ovoj sezoni.',
-    emptyPast: 'Ove sezone još nije bilo nastupa.',
+    emptyUpcoming: 'Nema više izvedbi u ovoj sezoni.',
+    emptyPast: 'Ove sezone još nije bilo izvedbi.',
     season: 'Sezona',
   },
 
