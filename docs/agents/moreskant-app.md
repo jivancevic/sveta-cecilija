@@ -709,3 +709,55 @@ Society-wide, like the rest of `/app`: every moreškant sees the whole table.
   query — never one query per evening — and skips that query entirely when
   nothing is confirmed, since an empty `in` list would ask for every lineup ever
   written.
+
+## Self-issued comps (#434 — phase 4 batch D)
+
+"Besplatne karte" on `/app/izvedba/[id]`: a dancer issues up to **four** free
+tickets per performance for their own family and cancels them again while the
+evening has not begun. Glossary: `CONTEXT.md` → *Moreškant comp*.
+
+**It is not a second ticket writer.** `POST /api/app/comp/issue` calls the same
+comp engine `/api/comp/issue` calls (`src/lib/comp/create-comp-issue.ts`), under
+the same per-show advisory lock, with the same order code, the same QR tokens
+and the same ticket e-mail with the PDF (#430, story 54). What `/app` adds is
+`member` forced to the caller's Member, `compIssuedBy: 'self'`, and the cap.
+Cancel reuses the void primitive whole-order (`voidOrderTickets`, reason
+`storno`), so the seats come back the moment the tickets go inactive — seats are
+COUNT(active tickets), the same self-healing the refund cascade relies on.
+
+- **`orders.compIssuedBy`** (`admin | self`, default `admin`, nullable) is the
+  only thing that tells the two kinds of comp apart. NULL predates the column
+  and reads as `admin`; only the literal `'self'` counts against the four, which
+  is story 52 — a voditelj's gift never eats a dancer's own allowance. It is a
+  column in the `/admin` Orders list (story 53). Migration:
+  `db/schema/migrate-zz-c-orders-comp-issued-by.sql` (the `-c-` is a sort key,
+  the `-b-lineups` convention), probe `scripts/probe-comp-issued-by.mjs`. The
+  column is added **without** its default and given it in a second statement:
+  `ADD COLUMN … DEFAULT` fills every existing row, which would stamp "issued by
+  admin" on every Stripe purchase in the table.
+- **The cap is counted inside the sell lock.** The route passes a `guard` into
+  the engine's `withSeatLock`, so the dancer's tally
+  (`getSelfCompTicketCount`) and the room's capacity are read under one lock and
+  the tickets are written before it is released. Two taps queue; they cannot both
+  read "three issued". Proven in `self-comp.test.ts` with a serialising fake.
+- **The refusals are one sentence each**, in `strings.ts` and spoken by both the
+  section and the routes: no Member link (403, story 55 — a voditelj who does
+  not dance sees no section at all), no Member e-mail (400, there is nowhere to
+  send the PDF), a non-public performance (400 — it sells no seats, ADR-0024),
+  cancelled (400), already started (409), the cap (409), no seats left (409).
+  The **online sales pause does not apply**: like a partner sale and an admin
+  comp, a comp is not an online sale (CLAUDE.md, Ticketing rules).
+- **The gate is `requirePermission(req, 'moreskant')` plus the access
+  decision's Member resolution** (`resolveOwnMemberId` → the Member row →
+  `isActiveMoreskant`), so a retired dancer is refused for the same reason they
+  cannot open `/app`. Both routes carry `appRequestMeta` + `rejectAppRequest`
+  like every other `/app` POST (403 cross-site, 415 non-JSON).
+- **Cancel is whole-order, own, self-issued, unscanned, before the start.** A
+  single ticket, or a voditelj cancelling someone else's comp from `/app`, are
+  out of scope and stay in `/admin`. A scanned order refuses with 409: someone
+  is already inside on that slip, and voiding it would free a seat that is
+  physically taken.
+- The section's `visible` flag lives in the loader (`buildCompView`), not in the
+  template, so a non-public or past evening cannot leak an issue button through
+  a forgotten condition — and the hidden case carries no orders in the payload
+  at all.
