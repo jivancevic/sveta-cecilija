@@ -21,6 +21,8 @@ Three existing decisions collide with it: `Members` is a login-less attribution 
 
 **The MCP server copies the Sufler pattern.** `mcp-handler` on `/api/mcp/[transport]`, hand-written OAuth 2.1 with PKCE and a fixed client, an `/authorize` page backed by Payload login and restricted to the `moreska` permission. Tools take structured text, never images: Claude reads the photo in chat and calls `set_lineup` with nicknames; the tool fuzzy-matches, writes an unconfirmed lineup and returns unmatched names instead of guessing. Bulk performance creation is also a tool.
 
+**The calendar feed is ONE shared tokenised ICS link, not one per user** (amended #433): the season's dates are noticeboard information rather than personal data, one link can be pasted in the WhatsApp group, and a per-user feed would buy a token table and a revocation story for nothing.
+
 **Moreškant comps reuse the comp channel** (ADR-0019) with `member` forced to the caller and a cap of 4 self-issued tickets per performance.
 
 ## Alternatives considered

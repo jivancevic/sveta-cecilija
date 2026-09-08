@@ -10,7 +10,8 @@ The dancer-facing surface of the roster module ([ADR-0023](../adr/0023-permissio
 - **The performance detail** `/app/izvedba/[id]`: armies against thresholds, on-behalf answers, the army move, the card headcount chip (#423).
 - **Invitations** (#424): "Pošalji pozivnicu" on a Member, `/app/set-password`, "Zaboravljena lozinka".
 
-Phase 4 batch A (#431, #435) adds **push**: see the Push section at the end. What `/app` writes is an attendance row, a push subscription, the session cookie and, through the invitation, a dancer's password.
+Phase 4 batch A (#431, #435) adds **push**, batch B (#436, #433) the triggered
+notifications, the note edit and the calendar feed: see the Push section at the end. What `/app` writes is an attendance row, a push subscription, the session cookie and, through the invitation, a dancer's password.
 
 ## Route group
 
@@ -421,3 +422,96 @@ subscribed → one muted line with the per-device off switch, which is the whole
 the per-device control (story 5). Whether **this** device is subscribed is read
 from the browser, never from the server, and the component renders nothing until
 it has looked.
+
+## Triggered notifications (#436 — phase 4 batch B)
+
+Types (3), (4) and (5) of the glossary, on top of batch A's sender. Nothing here
+is scheduled: each one is a consequence of somebody saving something.
+
+### The Shows `afterChange` hook
+
+`src/lib/push/shows-hook.ts` is Payload's calling convention; the whole decision
+is the pure `decidePerformanceNotification` (`performance-change.ts`) over two
+snapshots of the row.
+
+- **The watched set is five facts**: date, time, PLACE, cancelled status,
+  voditelj note. "Place" is one fact rather than two fields — the venue label on
+  a public row, the free-text `location` on a booking — and the rule lives in
+  `src/lib/app/performance-place.ts`, shared with the calendar feed. Everything
+  else on the row is invisible to the roster, which is what keeps a ticket sale
+  (`onlineSold` ticking on every purchase) from ringing twenty phones.
+- **A create sends "nova izvedba"**, an update sends what changed, and a
+  cancellation gets its own title because it is the one change that means "do
+  not come". Per save, no coalescing (#430, story 19).
+- **Only a performance still ahead notifies anybody** (story 20), create
+  included.
+- **Recipients**: every active moreškant *with a login*, minus the ones who
+  answered "ne dolazim" (type 3 only). A dancer without a login has no user id
+  and drops out at `toUserIds`, the single place that happens.
+- **A moved date or time releases the `alarm` and `reminder` claims** on
+  `performance_notifications` (#440 review). The claim was taken against the old
+  start instant, so without the release a rescheduled evening would never alarm
+  again. It happens even when nothing is sent — a performance dragged out of the
+  past notifies nobody and still needs its claims cleared.
+- **The hook can never fail a save.** `notifyPerformanceSaved` catches, logs and
+  returns; the hook wraps the dep construction in its own try/catch. A voditelj
+  must be able to cancel a performance while a push service is down.
+
+`Shows.test.ts` asserts the exact hook list, so a fourth hook has to be
+justified there. The hook sends push and only push: buyer email is still only
+ever sent by the explicit admin actions (ADR-0024 rejected mail as a roster
+channel).
+
+### The withdrawal (type 5)
+
+`POST /api/app/attendance` fires `deps.onAnswered` after a successful write and
+the route hands it to `notifyWithdrawal`. The rule is `isWithdrawal`
+(`src/lib/push/withdrawal.ts`): a `coming` that became anything else (including
+a *cleared* row, which is the absence of a row), answered by the DANCER for
+their own Member, within 24 hours of a start that has not happened yet. A
+voditelj correcting somebody's answer notifies nobody — they are the audience.
+The audience is every user holding `moreska`, read straight off
+`users_permissions` (`loadVoditeljUserIds`), because `permissions` is a hasMany
+select in its own table and a Payload `contains` query does not reach it. Deps
+are built lazily, so an ordinary "dolazim" costs no pool lookup.
+
+### The note edit
+
+`POST /api/app/note` (`requirePermission(req, 'moreska')` + the `/app` guard,
+`{ performanceId, note }`) saves **through the collection** with
+`payload.update`, which is the entire point: the `afterChange` hook fires and a
+note typed on the pier notifies the roster exactly as an `/admin` save does. An
+emptied note is stored as `null` so "no note" has one representation. The field
+with its Spremi button is `NoteEditor.tsx` on `/app/izvedba/[id]`, rendered for a
+voditelj only (the route refuses everyone else anyway). It never auto-saves:
+pressing the button is the moment a voditelj decides to tell the roster.
+
+## The calendar feed (#433 — phase 4 batch B)
+
+`GET /api/app/calendar/<token>.ics`, one **shared** token in
+`CALENDAR_FEED_TOKEN` (ADR-0024 amended: shared, not per user). The season's
+dates are noticeboard information, one link can be pasted in the WhatsApp group,
+and a per-user feed would buy a token table and a revocation story for nothing.
+
+- The route directory is `[token]`, not `[token].ics`: Next's App Router matches
+  whole segments, so the `.ics` suffix (which some clients read before they look
+  at the content type) is stripped in `tokenFromSegment`.
+- The token is compared with `secretMatches` (`src/lib/timing-safe.ts`, extracted
+  from `cron-auth.ts` so both share one comparison). A mismatch is **404** — to
+  anyone without the token the URL does not exist; a missing env var is **500
+  with a log**, because a silent 404 there looks exactly like a wrong link.
+- `Content-Type: text/calendar; charset=utf-8`, `Cache-Control: private,
+  max-age=3600`. `private` matters: the URL contains the secret.
+- The builder (`src/lib/calendar/ics.ts`) is pure. UID `performance-<id>@moreska.eu`
+  (stable across a reschedule, so a client updates rather than duplicates),
+  DTSTART/DTEND in **UTC** through `zagreb-time.ts` (one hour long), SEQUENCE
+  from `updatedAt` in epoch seconds, `STATUS:CANCELLED` rather than removal, RFC
+  5545 escaping and 75-**octet** folding (Croatian diacritics are multi-byte, so
+  folding by character length would both overrun and split a letter). No VALARM:
+  the app's push is the reminder.
+- The feed carries the current and future seasons, public and non-public alike
+  (the roster rule), which is why `calendar-data.ts` is on the
+  `show-performance-guard` allow-list.
+- The `/app` "Kalendar" panel (`CalendarPanel.tsx`) renders
+  `NEXT_PUBLIC_BASE_URL` + the path with a copy button, and is simply absent when
+  either half is unset.

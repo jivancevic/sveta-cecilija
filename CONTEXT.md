@@ -430,4 +430,4 @@ A comp ticket (see *Comp ticket*) a moreškant issues for themselves at a public
 Push is the only channel. (1) Alarm; (2) answer reminder at T-48h to *no answer*; (3) performance change (date, time, place, cancellation, voditelj note) to everyone except *not coming*, cannot be muted; (4) new performance to everyone; (5) to voditelji: a "coming" withdrawn within 24h. A user may hold several push subscriptions (devices).
 
 ### Calendar feed
-A per-user tokenised ICS subscription of the season's performances, for Google/Apple/Outlook calendars.
+One **shared** tokenised ICS subscription (`CALENDAR_FEED_TOKEN`, amended #433) of the current and future seasons' performances, for Google/Apple/Outlook calendars. The same URL for everybody, safe to paste in the WhatsApp group: it carries dates, places and the voditelj note, and nothing personal.
