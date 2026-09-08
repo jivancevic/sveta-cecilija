@@ -16,6 +16,8 @@ Three setup steps beyond `EnterWorktree`:
 NEXT_PUBLIC_BASE_URL=http://localhost:3424 PAYLOAD_DISABLE_PUSH=1 PORT=3424 npm run dev
 ```
 
+**Sample dancers for `/app`**: a fresh database has 14 comp-attribution Members and no moreškanti, so the roster app opens empty. `set -a && . ./.env.local && set +a && node scripts/seed-dev-moreskanti.mjs` flags six sample dancers with roles, links the dev test logins and answers the next performances of the season. It is idempotent and refuses any database not named exactly `sveta_cecilija_dev`; it lives outside `db/schema/` so bootstrap never applies it to production.
+
 If `bootstrap-db.mjs` itself fails on a stale enum and you only need to verify rendering, bypass it:
 ```sh
 set -a && . "$(pwd)/.env.local" && set +a && PORT=<port> node_modules/.bin/next dev

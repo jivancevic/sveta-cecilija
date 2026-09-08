@@ -33,7 +33,10 @@
 //                touched: an invitation is what creates a dancer's login
 //                (#424), and this script is not one.
 //   - answers  — `ON CONFLICT (performance_id, member_id) DO NOTHING`, so an
-//                answer you changed in the app stays changed.
+//                answer you changed in the app stays changed. They land on the
+//                next performances of the season (the ones a dancer sees under
+//                Nadolazeće), falling back to the last ones once the season is
+//                over.
 // Nothing is ever deleted except the sample members' own role rows.
 
 import { fileURLToPath } from 'node:url'
@@ -220,14 +223,37 @@ async function main() {
 
     // The next performances of the current season, public or not: a dancer's
     // evening is an evening either way (ADR-0024).
+    //
+    // "Next", not "first": the sample answers exist to be seen on the
+    // Nadolazeće tab, and a script run in September that answered the May
+    // performances would file every one of them under Prošle. The date is
+    // compared in Europe/Zagreb, the same clock `/app` splits upcoming from
+    // past on. Late in the season nothing is upcoming any more, so it falls
+    // back to the LAST performances instead: a demo with answers under Prošle
+    // beats a demo with none at all.
     const season = new Date().getFullYear()
-    const performances = await client.query(
+    const upcoming = await client.query(
       `SELECT id FROM shows
-        WHERE EXTRACT(YEAR FROM date) = $1 AND status <> 'cancelled'
+        WHERE EXTRACT(YEAR FROM date) = $1
+          AND status <> 'cancelled'
+          AND date >= (now() AT TIME ZONE 'Europe/Zagreb')::date
         ORDER BY date, time
         LIMIT $2`,
       [season, SAMPLE_ANSWERS.length],
     )
+    const performances =
+      upcoming.rows.length > 0
+        ? upcoming
+        : await client.query(
+            `SELECT id FROM (
+               SELECT id, date, time FROM shows
+                WHERE EXTRACT(YEAR FROM date) = $1 AND status <> 'cancelled'
+                ORDER BY date DESC, time DESC
+                LIMIT $2
+             ) AS last_of_season
+             ORDER BY date, time`,
+            [season, SAMPLE_ANSWERS.length],
+          )
 
     let answers = 0
     for (let i = 0; i < performances.rows.length; i++) {
