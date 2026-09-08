@@ -58,6 +58,35 @@ export const APP_STRINGS = {
   card: {
     cancelled: 'Otkazano',
     noteLabel: 'Voditelj',
+    open: 'Detalji',
+  },
+
+  /** The two buttons and everything that can go wrong around them (#422). */
+  answer: {
+    coming: 'Dolazim',
+    notComing: 'Ne dolazim',
+    clear: 'Poništi',
+    lockedStarted: 'Nastup je počeo, odgovor je zaključan.',
+    lockedCancelled: 'Nastup je otkazan.',
+    failed: 'Odgovor nije spremljen. Pokušaj ponovno.',
+    saving: 'Spremam...',
+  },
+
+  /** The performance detail and the voditelj's headcount (#423). */
+  detail: {
+    back: 'Natrag',
+    note: 'Poruka voditelja',
+    crni: 'Crni',
+    bili: 'Bili',
+    bula: 'Bule',
+    notComing: 'Ne dolaze',
+    noAnswer: 'Bez odgovora',
+    empty: 'Nema nikoga.',
+    call: 'Nazovi',
+    move: 'Prebaci',
+    moveTo: (army: string) => `Prebaci u ${army}`,
+    readOnly: 'Nastup je prošao. Odgovori se više ne mijenjaju.',
+    missing: 'Taj nastup ne postoji.',
   },
 
   install: {

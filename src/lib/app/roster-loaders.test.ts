@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import {
   CANCELLED_WINDOW_MS,
+  attachOwnAnswers,
   loadSeasonPerformances,
   splitSeasonPerformances,
   toRosterPerformance,
@@ -254,5 +255,96 @@ describe('loadSeasonPerformances', () => {
     expect(f.mock.calls[0][0].where.and[0]).toEqual({
       date: { greater_than_equal: '2027-01-01T00:00:00.000Z' },
     })
+  })
+})
+
+// ---------------------------------------------------------------------------
+// The viewer's own answer on the card (#422).
+// ---------------------------------------------------------------------------
+describe('attachOwnAnswers', () => {
+  const upcoming = toRosterPerformance(doc({ id: '1', date: '2026-08-20', time: '21:00' }))
+  const started = toRosterPerformance(doc({ id: '2', date: '2026-08-01', time: '21:00' }))
+  const cancelled = toRosterPerformance(
+    doc({ id: '3', date: '2026-08-20', time: '21:00', status: 'cancelled' }),
+  )
+  const now = at('2026-08-05', '12:00')
+
+  it('folds an answer onto its own performance and leaves the rest at null', () => {
+    const out = attachOwnAnswers([upcoming, started], new Map([['1', 'coming']]), now, {
+      voditelj: false,
+      hasMember: true,
+    })
+    expect(out.map((p) => p.myAnswer)).toEqual(['coming', null])
+  })
+
+  it('lets a moreškant answer an upcoming performance only', () => {
+    const out = attachOwnAnswers([upcoming, started, cancelled], new Map(), now, {
+      voditelj: false,
+      hasMember: true,
+    })
+    expect(out.map((p) => p.canAnswer)).toEqual([true, false, false])
+  })
+
+  it('lets a voditelj answer anything, started or cancelled', () => {
+    const out = attachOwnAnswers([upcoming, started, cancelled], new Map(), now, {
+      voditelj: true,
+      hasMember: true,
+    })
+    expect(out.every((p) => p.canAnswer)).toBe(true)
+  })
+
+  it('a viewer with no Member answers nothing', () => {
+    const out = attachOwnAnswers([upcoming], new Map(), now, { voditelj: true, hasMember: false })
+    expect(out[0].canAnswer).toBe(false)
+  })
+})
+
+describe('loadSeasonPerformances — own answers', () => {
+  const shows = [doc({ id: 1, date: '2026-08-20' }), doc({ id: 2, date: '2026-08-25' })]
+
+  /** Two collections, one injected `find`. */
+  const findFor = (attendance: Record<string, unknown>[]) =>
+    vi.fn(async (args: { collection?: string }) =>
+      args.collection === 'attendance' ? { docs: attendance } : { docs: shows },
+    )
+
+  it('asks only for the viewer\'s own rows and folds them in', async () => {
+    const f = findFor([{ performance: 1, member: 3, status: 'coming' }])
+    const out = await loadSeasonPerformances({
+      find: f,
+      memberId: '3',
+      now: () => new Date('2026-08-05T10:00:00.000Z'),
+    })
+    const attendanceCall = f.mock.calls.find((c) => c[0].collection === 'attendance')?.[0] as
+      | { where?: unknown }
+      | undefined
+    expect(attendanceCall?.where).toEqual({ member: { equals: '3' } })
+    expect(out.upcoming.find((p) => p.id === '1')?.myAnswer).toBe('coming')
+    expect(out.upcoming.find((p) => p.id === '2')?.myAnswer).toBeNull()
+  })
+
+  it('does not query attendance at all for a viewer with no Member link', async () => {
+    const f = findFor([])
+    await loadSeasonPerformances({ find: f, now: () => new Date('2026-08-05T10:00:00.000Z') })
+    expect(f.mock.calls.every((c) => c[0].collection === 'shows')).toBe(true)
+  })
+
+  it('reads the performance id through a populated relationship too', async () => {
+    const f = findFor([{ performance: { id: 2 }, member: { id: 3 }, status: 'not_coming' }])
+    const out = await loadSeasonPerformances({
+      find: f,
+      memberId: '3',
+      now: () => new Date('2026-08-05T10:00:00.000Z'),
+    })
+    expect(out.upcoming.find((p) => p.id === '2')?.myAnswer).toBe('not_coming')
+  })
+
+  it('carries the per-army thresholds the count needs', async () => {
+    const f = findFor([])
+    const out = await loadSeasonPerformances({
+      find: f,
+      now: () => new Date('2026-08-05T10:00:00.000Z'),
+    })
+    expect(out.upcoming[0]).toMatchObject({ thresholdCrni: 8, thresholdBili: 8 })
   })
 })

@@ -12,12 +12,16 @@ import { loadSeasonPerformances, type SeasonPerformances } from './roster-loader
 // society-wide, and the caller has already established through the `/app`
 // access decision that the viewer is a moreškant or a voditelj.
 
-export async function getSeasonPerformances(): Promise<SeasonPerformances> {
+export async function getSeasonPerformances(
+  viewer: { memberId?: string | null; voditelj?: boolean } = {},
+): Promise<SeasonPerformances> {
   const payload = await getPayload({ config })
   return loadSeasonPerformances({
     find: (args) =>
       payload.find(args as Parameters<typeof payload.find>[0]) as Promise<{
         docs: Record<string, unknown>[]
       }>,
+    memberId: viewer.memberId ?? null,
+    voditelj: viewer.voditelj === true,
   })
 }

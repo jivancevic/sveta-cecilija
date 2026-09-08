@@ -120,6 +120,19 @@ export function isAnswerableMember(member: AttendanceMember | null | undefined):
   return member.isMoreskant === true
 }
 
+/**
+ * True when a moreškant may still answer for themselves: the performance has
+ * not started and has not been cancelled. The card reads this to decide whether
+ * to render its buttons live or locked, so the lock a dancer SEES and the lock
+ * the route ENFORCES are the same sentence.
+ */
+export function moreskantMayAnswer(
+  performance: { startMs: number; cancelled: boolean },
+  nowMs: number,
+): boolean {
+  return !performance.cancelled && nowMs < performance.startMs
+}
+
 /** True when the actor holds `moreska`: the voditelj branch of every rule. */
 export function isVoditelj(actor: AttendanceActor): boolean {
   return can(actor.user, 'moreska')
@@ -183,7 +196,7 @@ export function decideAttendanceAnswer(input: {
     if (performance.cancelled) {
       return { ok: false, status: 403, error: ANSWER_ERRORS.cancelled }
     }
-    if (!(nowMs < performance.startMs)) {
+    if (!moreskantMayAnswer(performance, nowMs)) {
       return { ok: false, status: 403, error: ANSWER_ERRORS.started }
     }
   }

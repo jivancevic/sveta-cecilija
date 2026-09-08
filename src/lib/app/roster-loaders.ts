@@ -23,6 +23,7 @@ import { seasonYear } from '@/lib/member/season'
 import { isPublicPerformance, type PerformanceKind } from '@/lib/show-performance'
 import { showStartMs } from '@/lib/show-time'
 import type { ShowsFind } from '@/lib/show-loaders'
+import { moreskantMayAnswer, type AttendanceStatus } from '@/lib/attendance/rules'
 import type { Venue } from '@/lib/venues'
 
 /** One performance card. No email, ever. */
@@ -44,6 +45,13 @@ export interface RosterPerformance {
   voditeljNote: string | null
   /** Epoch ms of the start instant, Europe/Zagreb. */
   startMs: number
+  /** Minimum crni / bili moreškanti for this evening (#408). */
+  thresholdCrni: number
+  thresholdBili: number
+  /** The viewer's OWN answer, or null when they have not answered (#422). */
+  myAnswer: AttendanceStatus | null
+  /** Whether the viewer may still change that answer from the card (#422). */
+  canAnswer: boolean
 }
 
 export interface SeasonPerformances {
@@ -58,6 +66,20 @@ export interface SeasonPerformances {
  * any more is noise on a phone screen (#419, story 30).
  */
 export const CANCELLED_WINDOW_MS = 7 * 24 * 60 * 60 * 1000
+
+/** The id behind a Payload relationship value, populated or not. */
+export function relationIdOf(value: unknown): string | null {
+  if (value == null) return null
+  if (typeof value === 'object') {
+    const id = (value as { id?: unknown }).id
+    return id == null ? null : String(id)
+  }
+  return String(value)
+}
+
+function threshold(value: unknown, fallback = 8): number {
+  return typeof value === 'number' && Number.isFinite(value) ? value : fallback
+}
 
 function text(value: unknown): string | null {
   return typeof value === 'string' && value.trim() !== '' ? value.trim() : null
@@ -80,6 +102,11 @@ export function toRosterPerformance(row: Record<string, unknown>): RosterPerform
     cancelled: row.status === 'cancelled',
     voditeljNote: text(row.voditeljNote),
     startMs: date && time ? showStartMs(date, time) : Number.NaN,
+    thresholdCrni: threshold(row.thresholdCrni),
+    thresholdBili: threshold(row.thresholdBili),
+    // Filled in by attachOwnAnswers once the viewer is known.
+    myAnswer: null,
+    canAnswer: false,
   }
 }
 
@@ -112,9 +139,35 @@ export function splitSeasonPerformances(
   return { upcoming, past }
 }
 
+/**
+ * Fold the viewer's OWN answers into the cards (#422).
+ *
+ * `answers` is keyed by performance id; a missing key is "no answer", the
+ * absence of a row (glossary: *Attendance*). `canAnswer` is the same sentence
+ * the answer route enforces (`moreskantMayAnswer`), so the buttons a dancer sees
+ * disabled are exactly the ones the server would refuse. A voditelj may answer
+ * at any time, cancelled or long past (#419, story 13).
+ */
+export function attachOwnAnswers(
+  rows: RosterPerformance[],
+  answers: Map<string, AttendanceStatus>,
+  nowMs: number,
+  opts: { voditelj: boolean; hasMember: boolean },
+): RosterPerformance[] {
+  return rows.map((p) => ({
+    ...p,
+    myAnswer: answers.get(p.id) ?? null,
+    canAnswer: opts.hasMember && (opts.voditelj || moreskantMayAnswer(p, nowMs)),
+  }))
+}
+
 export interface SeasonPerformancesDeps {
   find: ShowsFind
   now?: () => Date
+  /** The viewer's own Members id, when the login has one. */
+  memberId?: string | null
+  /** True when the viewer holds `moreska`: no time lock on their own answer. */
+  voditelj?: boolean
 }
 
 /**
@@ -140,6 +193,30 @@ export async function loadSeasonPerformances(
     depth: 0,
   })
 
-  const rows = result.docs.map(toRosterPerformance)
+  let rows = result.docs.map(toRosterPerformance)
+
+  // The viewer's own answers, one query for the whole season. A voditelj with no
+  // Member link (a non-dancing voditelj, story 15) skips it entirely.
+  const answers = new Map<string, AttendanceStatus>()
+  if (deps.memberId) {
+    const mine = await deps.find({
+      collection: 'attendance',
+      where: { member: { equals: deps.memberId } },
+      limit: 1000,
+      depth: 0,
+    })
+    for (const row of mine.docs) {
+      const performance = relationIdOf(row.performance)
+      if (performance && (row.status === 'coming' || row.status === 'not_coming')) {
+        answers.set(performance, row.status)
+      }
+    }
+  }
+
+  rows = attachOwnAnswers(rows, answers, now.getTime(), {
+    voditelj: deps.voditelj === true,
+    hasMember: deps.memberId != null,
+  })
+
   return { year, ...splitSeasonPerformances(rows, now.getTime()) }
 }
