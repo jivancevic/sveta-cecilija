@@ -106,6 +106,22 @@ export const cascadeMemberAttendanceDelete: CollectionBeforeDeleteHook = async (
   })
 }
 
+// Cascade the lineup rows when a Member is deleted (#432, story 36).
+//
+// `lineups.member_id` is `ON DELETE SET NULL` on a NOT NULL column, exactly as
+// the attendance one is, so a dancer who has ever been in a postava cannot be
+// deleted while those rows exist. A deleted Member takes their lineup history
+// with them; comp attribution, which points through a NULLABLE column,
+// deliberately survives as a null (ADR-0019).
+export const cascadeMemberLineupDelete: CollectionBeforeDeleteHook = async ({ req, id }) => {
+  await req.payload.delete({
+    collection: 'lineups',
+    where: { member: { equals: id } },
+    req,
+    overrideAccess: true,
+  })
+}
+
 export const Members: CollectionConfig = {
   slug: 'members',
   labels: {
@@ -133,8 +149,8 @@ export const Members: CollectionConfig = {
     },
   },
   hooks: {
-    // Delete a member's attendance rows before the member itself.
-    beforeDelete: [cascadeMemberAttendanceDelete],
+    // Delete a member's attendance and lineup rows before the member itself.
+    beforeDelete: [cascadeMemberAttendanceDelete, cascadeMemberLineupDelete],
     // The moreškant profile invariants (ADR-0024). The rules are a pure,
     // unit-tested function in src/lib/moreskant-profile.ts; this hook only
     // merges the patch onto the stored row, loads the nicknames the uniqueness

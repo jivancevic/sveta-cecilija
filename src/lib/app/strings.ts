@@ -215,6 +215,62 @@ export const APP_STRINGS = {
     tooLong: 'Poruka je predugačka.',
   },
 
+  /**
+   * The postava (#432, glossary: *Lineup (postava)*).
+   *
+   * `locked` is the sentence behind BOTH the read-only editor and the route's
+   * 409: a voditelj who taps a dead field and one whose save is refused are in
+   * the same situation, and two wordings would look like two rules. The warning
+   * line says "spremit će se svejedno" out loud, because story 29 is precisely
+   * that an unusual role is recorded rather than refused.
+   */
+  lineup: {
+    title: 'Postava',
+    fromAttendance: 'Napravi iz prisutnosti',
+    add: 'Dodaj moreškanta',
+    addPlaceholder: 'Odaberi moreškanta',
+    remove: 'Makni',
+    save: 'Spremi postavu',
+    saving: 'Spremam...',
+    saved: 'Postava je spremljena.',
+    confirm: 'Potvrdi',
+    confirming: 'Potvrđujem...',
+    unlock: 'Otključaj',
+    unlocking: 'Otključavam...',
+    confirmed: 'Postava je potvrđena.',
+    unlocked: 'Postava je otključana.',
+    confirmedNote: 'Potvrđena postava. Otključaj je za izmjene.',
+    draftNote: 'Postava još nije potvrđena, moreškanti je ne vide.',
+    empty: 'Postava je prazna.',
+    emptyForDancer: 'Postava za ovu izvedbu još nije objavljena.',
+    warningSuffix: 'Spremit će se svejedno.',
+    nobodyToAdd: 'Svi aktivni moreškanti su već u postavi.',
+    /** The route's own refusals. */
+    rejected: 'Postavu trenutno nije moguće mijenjati.',
+    missing: 'Ta izvedba ne postoji.',
+    locked: 'Postava je potvrđena. Otključaj je pa pokušaj ponovno.',
+    badConfirm: 'Nejasno je treba li postavu potvrditi ili otključati.',
+    failed: 'Postava nije spremljena. Pokušaj ponovno.',
+  },
+
+  /** The season scoreboard (#437, glossary: *Dancer statistics*). */
+  stats: {
+    title: 'Statistika',
+    link: 'Statistika',
+    back: 'Natrag',
+    season: 'Sezona',
+    dancer: 'Moreškant',
+    performances: 'Izvedbi',
+    crniKralj: 'Crni kralj',
+    biliKralj: 'Bili kralj',
+    otmanovic: 'Otmanović',
+    bula: 'Bula',
+    byKind: 'Po vrsti izvedbe',
+    empty: 'U ovoj sezoni još nema potvrđenih postava.',
+    noRoster: 'Nema aktivnih moreškanata.',
+    hint: 'Broje se samo potvrđene postave. Dodirni redak za razradu po vrsti izvedbe.',
+  },
+
   /** The shared calendar subscription (#433, glossary: *Calendar feed*). */
   calendar: {
     title: 'Kalendar',

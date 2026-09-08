@@ -61,6 +61,17 @@ CREATE TYPE public.enum_faqs_status AS ENUM (
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 DO $$ BEGIN
+CREATE TYPE public.enum_lineups_role AS ENUM (
+    'crni',
+    'bili',
+    'crni_kralj',
+    'otmanovic',
+    'bili_kralj',
+    'bula'
+);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
 CREATE TYPE public.enum_members_primary_role AS ENUM (
     'crni',
     'bili',
@@ -256,6 +267,25 @@ CREATE SEQUENCE IF NOT EXISTS public.faqs_id_seq
 
 ALTER SEQUENCE public.faqs_id_seq OWNED BY public.faqs.id;
 
+CREATE TABLE IF NOT EXISTS public.lineups (
+    id integer NOT NULL,
+    performance_id integer NOT NULL,
+    member_id integer NOT NULL,
+    role public.enum_lineups_role NOT NULL,
+    updated_at timestamp(3) with time zone DEFAULT now() NOT NULL,
+    created_at timestamp(3) with time zone DEFAULT now() NOT NULL
+);
+
+CREATE SEQUENCE IF NOT EXISTS public.lineups_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.lineups_id_seq OWNED BY public.lineups.id;
+
 CREATE TABLE IF NOT EXISTS public.members (
     id integer NOT NULL,
     name character varying NOT NULL,
@@ -419,7 +449,8 @@ CREATE TABLE IF NOT EXISTS public.payload_locked_documents_rels (
     partners_id integer,
     members_id integer,
     promo_codes_id integer,
-    attendance_id integer
+    attendance_id integer,
+    lineups_id integer
 );
 
 CREATE SEQUENCE IF NOT EXISTS public.payload_locked_documents_rels_id_seq
@@ -554,6 +585,8 @@ CREATE TABLE IF NOT EXISTS public.shows (
     original_date timestamp(3) with time zone,
     threshold_crni numeric DEFAULT 8 NOT NULL,
     threshold_bili numeric DEFAULT 8 NOT NULL,
+    lineup_confirmed boolean DEFAULT false,
+    lineup_confirmed_at timestamp(3) with time zone,
     voditelj_note character varying,
     updated_at timestamp(3) with time zone DEFAULT now() NOT NULL,
     created_at timestamp(3) with time zone DEFAULT now() NOT NULL
@@ -651,6 +684,8 @@ ALTER TABLE ONLY public.contact_submissions ALTER COLUMN id SET DEFAULT nextval(
 
 ALTER TABLE ONLY public.faqs ALTER COLUMN id SET DEFAULT nextval('public.faqs_id_seq'::regclass);
 
+ALTER TABLE ONLY public.lineups ALTER COLUMN id SET DEFAULT nextval('public.lineups_id_seq'::regclass);
+
 ALTER TABLE ONLY public.members ALTER COLUMN id SET DEFAULT nextval('public.members_id_seq'::regclass);
 
 ALTER TABLE ONLY public.members_roles ALTER COLUMN id SET DEFAULT nextval('public.members_roles_id_seq'::regclass);
@@ -703,6 +738,13 @@ DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'faqs_pkey' AND conrelid = 'public.faqs'::regclass) THEN
     ALTER TABLE ONLY public.faqs
     ADD CONSTRAINT faqs_pkey PRIMARY KEY (id);
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'lineups_pkey' AND conrelid = 'public.lineups'::regclass) THEN
+    ALTER TABLE ONLY public.lineups
+    ADD CONSTRAINT lineups_pkey PRIMARY KEY (id);
   END IF;
 END $$;
 
@@ -850,6 +892,14 @@ CREATE INDEX IF NOT EXISTS faqs_created_at_idx ON public.faqs USING btree (creat
 
 CREATE INDEX IF NOT EXISTS faqs_updated_at_idx ON public.faqs USING btree (updated_at);
 
+CREATE INDEX IF NOT EXISTS lineups_created_at_idx ON public.lineups USING btree (created_at);
+
+CREATE INDEX IF NOT EXISTS lineups_member_idx ON public.lineups USING btree (member_id);
+
+CREATE INDEX IF NOT EXISTS lineups_performance_idx ON public.lineups USING btree (performance_id);
+
+CREATE INDEX IF NOT EXISTS lineups_updated_at_idx ON public.lineups USING btree (updated_at);
+
 CREATE INDEX IF NOT EXISTS members_created_at_idx ON public.members USING btree (created_at);
 
 CREATE INDEX IF NOT EXISTS members_roles_order_idx ON public.members_roles USING btree ("order");
@@ -895,6 +945,8 @@ CREATE INDEX IF NOT EXISTS payload_locked_documents_rels_attendance_id_idx ON pu
 CREATE INDEX IF NOT EXISTS payload_locked_documents_rels_contact_submissions_id_idx ON public.payload_locked_documents_rels USING btree (contact_submissions_id);
 
 CREATE INDEX IF NOT EXISTS payload_locked_documents_rels_faqs_id_idx ON public.payload_locked_documents_rels USING btree (faqs_id);
+
+CREATE INDEX IF NOT EXISTS payload_locked_documents_rels_lineups_id_idx ON public.payload_locked_documents_rels USING btree (lineups_id);
 
 CREATE INDEX IF NOT EXISTS payload_locked_documents_rels_members_id_idx ON public.payload_locked_documents_rels USING btree (members_id);
 
@@ -1012,6 +1064,20 @@ DO $$ BEGIN
 END $$;
 
 DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'lineups_member_id_members_id_fk' AND conrelid = 'public.lineups'::regclass) THEN
+    ALTER TABLE ONLY public.lineups
+    ADD CONSTRAINT lineups_member_id_members_id_fk FOREIGN KEY (member_id) REFERENCES public.members(id) ON DELETE SET NULL;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'lineups_performance_id_shows_id_fk' AND conrelid = 'public.lineups'::regclass) THEN
+    ALTER TABLE ONLY public.lineups
+    ADD CONSTRAINT lineups_performance_id_shows_id_fk FOREIGN KEY (performance_id) REFERENCES public.shows(id) ON DELETE SET NULL;
+  END IF;
+END $$;
+
+DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'members_roles_parent_fk' AND conrelid = 'public.members_roles'::regclass) THEN
     ALTER TABLE ONLY public.members_roles
     ADD CONSTRAINT members_roles_parent_fk FOREIGN KEY (parent_id) REFERENCES public.members(id) ON DELETE CASCADE;
@@ -1078,6 +1144,13 @@ DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'payload_locked_documents_rels_faqs_fk' AND conrelid = 'public.payload_locked_documents_rels'::regclass) THEN
     ALTER TABLE ONLY public.payload_locked_documents_rels
     ADD CONSTRAINT payload_locked_documents_rels_faqs_fk FOREIGN KEY (faqs_id) REFERENCES public.faqs(id) ON DELETE CASCADE;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'payload_locked_documents_rels_lineups_fk' AND conrelid = 'public.payload_locked_documents_rels'::regclass) THEN
+    ALTER TABLE ONLY public.payload_locked_documents_rels
+    ADD CONSTRAINT payload_locked_documents_rels_lineups_fk FOREIGN KEY (lineups_id) REFERENCES public.lineups(id) ON DELETE CASCADE;
   END IF;
 END $$;
 
