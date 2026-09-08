@@ -583,3 +583,62 @@
 .app__person-controls .app__answers {
   margin-top: 0;
 }
+
+/* ── Push: the banner switch and the voditelj's alarm (#431) ── */
+.app__hint--quiet {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 14px;
+  border-style: solid;
+}
+
+.app__hint-link {
+  background: none;
+  border: none;
+  padding: 4px 0;
+  color: var(--goldBright);
+  font-size: 13px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.app__hint-link[disabled] {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.app__hint-actions {
+  margin-top: 10px;
+}
+
+.app__button--small {
+  width: auto;
+  padding: 10px 18px;
+  font-size: 12px;
+}
+
+.app__alarm {
+  margin: 20px 0 4px;
+  padding: 14px;
+  border: 1px solid var(--cardEdge);
+  border-radius: var(--radius);
+}
+
+.app__alarm-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-size: 14px;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.app__alarm-result {
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: var(--light);
+}

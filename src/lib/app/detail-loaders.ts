@@ -40,6 +40,14 @@ export interface PerformanceDetail {
    * moreškant edits only their own, which `performance.canAnswer` decides.
    */
   canEditOthers: boolean
+  /**
+   * Whether the "Pošalji alarm" control belongs on this page (#431): a voditelj,
+   * an evening that is neither cancelled nor already begun. The route refuses
+   * the same two cases, so this only keeps the page from offering what the
+   * server will decline — and it is decided HERE rather than in the component
+   * because a `Date.now()` in render is an impure call the compiler rejects.
+   */
+  canAlarm: boolean
   /** The armies each coming dancer could be moved to. Only ever 0 or 2 entries. */
   moveTargets: Record<string, Army[]>
   /** The viewer's own Member, when they have one. */
@@ -99,11 +107,18 @@ export function buildPerformanceDetail(input: {
     if (armies.length > 1) moveTargets[String(member.id)] = armies
   }
 
+  const canAlarm =
+    input.viewer.voditelj &&
+    !performance.cancelled &&
+    !Number.isNaN(performance.startMs) &&
+    performance.startMs > input.nowMs
+
   return {
     performance: { ...performance, myAnswer, canAnswer },
     count,
     voditelj: input.viewer.voditelj,
     canEditOthers: input.viewer.voditelj,
+    canAlarm,
     moveTargets,
     myMemberId: input.viewer.memberId,
   }

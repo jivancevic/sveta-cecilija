@@ -55,6 +55,8 @@ export const ALLOW_LIST: Record<string, string> = {
     'Roster read (#423): the moreškant app covers EVERY performance of the season, public or not (ADR-0024) — filtering on the predicate would hide a ship call from the dancers who have to turn up for it. Id-addressed, behind the /app access decision.',
   'src/app/api/app/attendance/route.ts':
     'Roster write route (#422): the moreškant app covers EVERY performance of the season, public or not (ADR-0024), so filtering on the predicate would be wrong. The id-addressed read only builds the start instant and the cancelled flag for the answer rules, behind requirePermission([moreskant, moreska]).',
+  'src/lib/push/push-data.ts':
+    'Roster read (#431, #435): the moreškant notifications cover EVERY performance of the season, public or not (ADR-0024) — a ship call is an evening a dancer has to turn up for, so filtering on the predicate would silence the alarm for exactly the performances nobody has a ticket to. The sweep is bounded by the start instant and the cancelled flag, and the callers are a `moreska` route and the CRON_SECRET job.',
   'src/app/api/shows/[id]/move-to-zimsko/route.ts':
     'Id-addressed write route; its SELECT feeds the in-handler isPublicPerformance() check merged in #409, which 400s a non-public performance before anything moves.',
   'src/app/api/shows/[id]/reschedule/route.ts':

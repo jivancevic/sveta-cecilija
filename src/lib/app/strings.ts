@@ -154,6 +154,70 @@ export const APP_STRINGS = {
     body: 'Otvori izbornik preglednika i odaberi "Dodaj na početni zaslon" za ikonu Moreškant.',
     dismiss: 'Sakrij',
   },
+
+  /**
+   * Push (#431): the banner on `/app`, the per-device switch and the voditelj's
+   * manual alarm button.
+   *
+   * The iOS line is a separate sentence rather than the generic install hint,
+   * because on an uninstalled iPhone the enable button cannot work at all
+   * (Safari exposes no `PushManager` outside a home-screen app) and a button
+   * that silently does nothing is worse than an instruction (#430, story 2).
+   */
+  push: {
+    title: 'Uključi obavijesti',
+    body: 'Javit ćemo ti kad fali ljudi za izvedbu i kad treba javiti dolazak.',
+    enable: 'Uključi',
+    enabling: 'Uključujem...',
+    onTitle: 'Obavijesti su uključene na ovom uređaju.',
+    disable: 'Isključi',
+    disabling: 'Isključujem...',
+    iosTitle: 'Prvo dodaj na početni zaslon',
+    iosBody:
+      'Na iPhoneu obavijesti rade tek kad je Moreškant dodan na početni zaslon. Otvori izbornik dijeljenja i odaberi "Dodaj na početni zaslon".',
+    denied: 'Obavijesti su blokirane u postavkama preglednika. Uključi ih tamo pa pokušaj ponovno.',
+    failed: 'Uključivanje obavijesti nije uspjelo. Pokušaj ponovno.',
+    /** The `/app` POST routes answer with this when the guard refuses. */
+    rejected: 'Obavijesti trenutno nije moguće promijeniti.',
+    badRequest: 'Podaci o uređaju nisu potpuni.',
+  },
+
+  /** The voditelj's "Pošalji alarm" control on `/app/izvedba/[id]` (#431). */
+  alarm: {
+    action: 'Pošalji alarm',
+    sending: 'Šaljem...',
+    includeNotComing: 'i onima koji ne dolaze',
+    /** What the page reports back: how many devices actually rang (story 24). */
+    sent: (devices: number) =>
+      `Alarm je poslan na ${devices} ${devices === 1 ? 'uređaj' : 'uređaja'}.`,
+    noDevices: 'Nitko od njih nema uključene obavijesti, alarm nije poslan.',
+    noRecipients: 'Svi su odgovorili, nema kome poslati alarm.',
+    cancelled: 'Izvedba je otkazana, alarm se ne šalje.',
+    started: 'Izvedba je već počela, alarm se ne šalje.',
+    missing: 'Ta izvedba ne postoji.',
+    failed: 'Alarm nije poslan. Pokušaj ponovno.',
+  },
+} as const
+
+/**
+ * The alarm sentence, in one place (#431, glossary: *Alarm*).
+ *
+ * "Sokoliću" is a generic greeting, not a vocative of anyone's nickname, and
+ * the numbers are always the CURRENT headcount, never the shortfall — which is
+ * why they come straight from `countArmies` (`src/lib/attendance/army-count.ts`,
+ * the single home of the counting rule) and are never recomputed here.
+ */
+export const PUSH_MESSAGES = {
+  alarm: {
+    title: 'Sokoliću, fali nas!',
+    body: (input: { date: string; time: string; bili: number; crni: number }) =>
+      `Stanje za nastup ${formatPerformanceDate(input.date)} u ${input.time}: ${input.bili} bilih, ${input.crni} crnih`,
+  },
+  reminder: {
+    title: 'Javi dolazak',
+    body: (input: { date: string; time: string }) =>
+      `Izvedba je ${formatPerformanceDate(input.date)} u ${input.time}. Još nisi javio dolaziš li.`,
+  },
 } as const
 
 /** Croatian labels for the performance kinds (ADR-0024). */

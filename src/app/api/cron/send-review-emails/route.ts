@@ -8,6 +8,7 @@ import {
 import { sendReviewEmail } from '@/lib/email/send-review-email'
 import { signUnsubscribeToken } from '@/lib/marketing/unsubscribe-token'
 import { isEmailOptedOut } from '@/lib/marketing/opt-out'
+import { bearerMatches } from '@/lib/cron-auth'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -30,8 +31,7 @@ export async function POST(req: NextRequest) {
   if (!expected) {
     return NextResponse.json({ error: 'CRON_SECRET not configured' }, { status: 500 })
   }
-  const auth = req.headers.get('authorization') ?? ''
-  if (auth !== `Bearer ${expected}`) {
+  if (!bearerMatches(req.headers.get('authorization'), expected)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 

@@ -7,6 +7,7 @@ import { resolveAppViewer } from '@/lib/app/viewer'
 import type { ArmyTally, RosterPerson } from '@/lib/attendance/army-count'
 import type { Army } from '@/lib/attendance/rules'
 import { VENUE_LABEL } from '@/lib/venues'
+import { AlarmButton } from '../../AlarmButton'
 import { AttendanceButtons } from '../../AttendanceButtons'
 import { ArmyMoveButton } from '../../ArmyMoveButton'
 import { LogoutButton } from '../../LogoutButton'
@@ -202,6 +203,12 @@ export default async function PerformanceDetailPage({
           allowClear={voditelj}
         />
       )}
+
+      {/* The alarm is only ever about an evening still ahead (#430, story 20),
+          and the route refuses a started or cancelled one anyway; hiding the
+          button keeps the page from offering what the server will decline.
+          `canAlarm` is decided in the loader, over its own clock. */}
+      {detail.canAlarm && <AlarmButton performanceId={p.id} />}
 
       <ArmySection
         title={APP_STRINGS.detail.crni}

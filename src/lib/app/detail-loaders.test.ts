@@ -195,3 +195,30 @@ describe('loadPerformanceDetail', () => {
     expect(out?.count.crni.nicknames).toEqual(['Cici'])
   })
 })
+
+// #431 — whether the page offers "Pošalji alarm". Decided in the loader rather
+// than in the component so the clock is injected and never read during render.
+describe('canAlarm', () => {
+  const voditelj = { memberId: '1', voditelj: true }
+
+  it('is true for a voditelj on an evening that is still ahead', () => {
+    expect(build({ viewer: voditelj }).canAlarm).toBe(true)
+  })
+
+  it('is false for a moreškant, whatever the evening', () => {
+    expect(build().canAlarm).toBe(false)
+  })
+
+  it('is false once the performance has started, and for a cancelled one', () => {
+    expect(build({ viewer: voditelj, nowMs: at('2026-08-20', '21:00') }).canAlarm).toBe(false)
+    expect(
+      build({ viewer: voditelj, performanceDoc: show({ status: 'cancelled' }) }).canAlarm,
+    ).toBe(false)
+  })
+
+  it('is still true one minute before the start', () => {
+    expect(build({ viewer: voditelj, nowMs: at('2026-08-20', '21:00') - 60_000 }).canAlarm).toBe(
+      true,
+    )
+  })
+})
