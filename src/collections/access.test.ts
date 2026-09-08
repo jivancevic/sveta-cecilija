@@ -257,31 +257,53 @@ describe('PromoCodes fields', () => {
 })
 
 describe('Shows access', () => {
-  it('the backoffice and the door both read (stats + scanning)', () => {
-    expect(call(Shows.access?.read, developer)).toBe(true)
-    expect(call(Shows.access?.read, ticketAdmin)).toBe(true)
-    expect(call(Shows.access?.read, doorAccount)).toBe(true)
+  // The full phase-2 matrix (ADR-0024, #408) lives in
+  // src/lib/access/shows-access.test.ts; this block checks the wiring.
+  it('the backoffice and the voditelj read every performance', () => {
+    expect(raw(Shows.access?.read, developer)).toBe(true)
+    expect(raw(Shows.access?.read, ticketAdmin)).toBe(true)
+    expect(raw(Shows.access?.read, voditelj)).toBe(true)
   })
 
-  it('a partner, the member login, a voditelj, an empty session and anon do not read', () => {
+  it('the door reads public performances only (a Where, so findByID is covered too)', () => {
+    expect(raw(Shows.access?.read, doorAccount)).toEqual({ isPublic: { equals: true } })
+  })
+
+  it('a partner, the member login, an empty session and anon do not read', () => {
     expect(call(Shows.access?.read, partner)).toBe(false)
     expect(call(Shows.access?.read, memberAccount)).toBe(false)
-    expect(call(Shows.access?.read, voditelj)).toBe(false)
     expect(call(Shows.access?.read, noPermissions)).toBe(false)
     expect(call(Shows.access?.read, anon)).toBe(false)
   })
 
-  it('only the backoffice can mutate — the door reads but never writes', () => {
+  it('a voditelj creates and deletes non-public performances only', () => {
+    expect(raw(Shows.access?.create, voditelj)).toEqual({ isPublic: { equals: false } })
+    expect(raw(Shows.access?.delete, voditelj)).toEqual({ isPublic: { equals: false } })
+    // Update reaches every row: the roster note and thresholds belong on public
+    // shows too. The field-level locks below decide what may change there.
+    expect(raw(Shows.access?.update, voditelj)).toBe(true)
+  })
+
+  it('the backoffice mutates without a filter; the door and outsiders never write', () => {
     for (const op of CRUD) {
-      expect(call(Shows.access?.[op], developer)).toBe(true)
-      expect(call(Shows.access?.[op], ticketAdmin)).toBe(true)
-      for (const [, user] of outsiders) expect(call(Shows.access?.[op], user)).toBe(false)
+      expect(raw(Shows.access?.[op], developer)).toBe(true)
+      expect(raw(Shows.access?.[op], ticketAdmin)).toBe(true)
+      expect(call(Shows.access?.[op], doorAccount)).toBe(false)
+      expect(call(Shows.access?.[op], partner)).toBe(false)
+      expect(call(Shows.access?.[op], memberAccount)).toBe(false)
+      expect(call(Shows.access?.[op], noPermissions)).toBe(false)
+      expect(call(Shows.access?.[op], anon)).toBe(false)
     }
   })
 
-  it('is in the sidebar for the backoffice only (the door reads it, never lists it)', () => {
+  it('is in the sidebar for the backoffice and the voditelj, nobody else', () => {
     expect(hidden(Shows, ticketAdmin)).toBe(false)
-    for (const [, user] of outsiders) expect(hidden(Shows, user)).toBe(true)
+    expect(hidden(Shows, voditelj)).toBe(false)
+    expect(hidden(Shows, doorAccount)).toBe(true)
+    for (const [label, user] of outsiders) {
+      if (label === 'voditelj') continue
+      expect(hidden(Shows, user)).toBe(true)
+    }
   })
 
   it('legacyReserved is backoffice-only edit (defense-in-depth field-level access)', () => {

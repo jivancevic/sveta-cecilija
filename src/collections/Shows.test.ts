@@ -12,6 +12,8 @@ const field = (name: string) => fields.find((f) => f.name === name)
 type Hook = (args: {
   data?: Record<string, unknown>
   originalDoc?: Record<string, unknown>
+  operation?: string
+  req?: { user?: unknown }
 }) => Record<string, unknown>
 
 const beforeValidate = (Shows.hooks?.beforeValidate as unknown as Hook[])[0]
@@ -118,5 +120,131 @@ describe('Shows beforeValidate', () => {
     })
     expect(out.venue).toBeNull()
     expect(out.inPersonSold).toBe(0)
+  })
+})
+
+// The phase-2 access wiring (#408). The rules themselves are unit-tested in
+// src/lib/access/shows-access.test.ts; here we check that the collection hangs
+// them on the right fields, with the document-aware ones actually reading the
+// row.
+describe('Shows field-level locks', () => {
+  const voditelj = { permissions: ['moreska'] }
+  const ticketAdmin = { permissions: ['tickets'] }
+  const publicRow = { isPublic: true }
+  const nonPublicRow = { isPublic: false }
+
+  const fieldAccess = (name: string, op: 'read' | 'create' | 'update') => {
+    const f = field(name) as { access?: Record<string, unknown> } | undefined
+    return f?.access?.[op] as
+      | ((args: { req: { user: unknown }; doc?: Record<string, unknown> }) => boolean)
+      | undefined
+  }
+
+  it.each(['date', 'time', 'kind', 'venue', 'status', 'inPersonSold', 'legacyReserved', 'onlineSalesPaused'])(
+    'locks %s to the backoffice on a public row and opens it to the voditelj on a private one',
+    (name) => {
+      const update = fieldAccess(name, 'update')!
+      expect(update({ req: { user: ticketAdmin }, doc: publicRow })).toBe(true)
+      expect(update({ req: { user: voditelj }, doc: publicRow })).toBe(false)
+      expect(update({ req: { user: voditelj }, doc: nonPublicRow })).toBe(true)
+    },
+  )
+
+  it('lets only the backoffice set the public flag, on create and on update', () => {
+    for (const op of ['create', 'update'] as const) {
+      const access = fieldAccess('isPublic', op)!
+      expect(access({ req: { user: ticketAdmin } })).toBe(true)
+      expect(access({ req: { user: voditelj } })).toBe(false)
+    }
+  })
+
+  it.each(['thresholdCrni', 'thresholdBili', 'voditeljNote'])(
+    'hides %s from the backoffice and gives it to the voditelj',
+    (name) => {
+      for (const op of ['read', 'update'] as const) {
+        const access = fieldAccess(name, op)!
+        expect(access({ req: { user: voditelj } })).toBe(true)
+        expect(access({ req: { user: ticketAdmin } })).toBe(false)
+      }
+    },
+  )
+
+  // The schedule lock is an UPDATE lock only. A voditelj entering a new private
+  // booking has to fill the date, time, kind, location and client on the create
+  // form; only `isPublic` is pinned on create (and the beforeValidate hook
+  // forces it anyway).
+  it.each(['date', 'time', 'kind', 'venue', 'status', 'location', 'client'])(
+    'leaves %s open on create, so a voditelj can fill it on a new booking',
+    (name) => {
+      expect(fieldAccess(name, 'create')).toBeUndefined()
+    },
+  )
+
+  it.each(['location', 'client'])('lets both the backoffice and the voditelj write %s', (name) => {
+    const update = fieldAccess(name, 'update')!
+    expect(update({ req: { user: ticketAdmin }, doc: publicRow })).toBe(true)
+    expect(update({ req: { user: voditelj }, doc: publicRow })).toBe(true)
+  })
+
+  it('leaves location and client readable by every reader', () => {
+    expect(fieldAccess('location', 'read')).toBeUndefined()
+    expect(fieldAccess('client', 'read')).toBeUndefined()
+  })
+})
+
+describe('Shows beforeValidate: the voditelj can never author a public row', () => {
+  const voditelj = { permissions: ['moreska'] }
+
+  it('forces a voditelj creation non-public, even when the default said otherwise', () => {
+    // The isPublic field lock has already dropped the submitted value and
+    // Payload has fallen back to the `true` default by the time this runs.
+    const out = beforeValidate({
+      data: { isPublic: true, kind: 'redovna', date: '2026-09-20T12:00:00.000Z', time: '10:00', location: 'Zimsko kino' },
+      operation: 'create',
+      req: { user: voditelj },
+    })
+    expect(out.isPublic).toBe(false)
+    expect(out.kind).toBe('ostalo')
+    expect(out.venue).toBeNull()
+  })
+
+  it('keeps the kind a voditelj chose', () => {
+    const out = beforeValidate({
+      data: { isPublic: true, kind: 'gulliver', location: 'Ljetno kino' },
+      operation: 'create',
+      req: { user: voditelj },
+    })
+    expect(out.isPublic).toBe(false)
+    expect(out.kind).toBe('gulliver')
+  })
+
+  it('never flips a public show a voditelj is only adding a note to', () => {
+    const out = beforeValidate({
+      data: { voditeljNote: 'meet at the harbour gate at 9:30' },
+      originalDoc: { kind: 'redovna', isPublic: true, venue: 'ljetno-kino' },
+      operation: 'update',
+      req: { user: voditelj },
+    })
+    expect(out.isPublic).toBeUndefined()
+    expect(out).toEqual({ voditeljNote: 'meet at the harbour gate at 9:30' })
+  })
+
+  it('leaves a backoffice creation alone', () => {
+    const out = beforeValidate({
+      data: { isPublic: true, kind: 'redovna', venue: 'ljetno-kino' },
+      operation: 'create',
+      req: { user: { permissions: ['tickets'] } },
+    })
+    expect(out.isPublic).toBe(true)
+    expect(out.kind).toBe('redovna')
+  })
+
+  it('leaves the sessionless server paths alone (webhook, bulk create, seeds)', () => {
+    const out = beforeValidate({
+      data: { isPublic: true, kind: 'redovna', venue: 'ljetno-kino' },
+      operation: 'create',
+      req: {},
+    })
+    expect(out.isPublic).toBe(true)
   })
 })
