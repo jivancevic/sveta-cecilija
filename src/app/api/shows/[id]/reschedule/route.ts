@@ -195,7 +195,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       if (!show) return NextResponse.json({ error: 'Show not found' }, { status: 404 })
       // #409 — the test send bypasses rescheduleShow, so it needs its own gate.
       assertPublicPerformance(show as unknown as Record<string, unknown>)
-      const sample ={ orderId: 'TEST', buyer: { name: 'Ivan Horvat', email: adminEmail } }
+      const sample = { orderId: 'TEST', buyer: { name: 'Ivan Horvat', email: adminEmail } }
       const showDates = { oldDate: show.date, newDate, time: show.time, venue: show.venue }
       // Sign a real token for the sample so the CTA renders and lands on the
       // refund page (it will show the neutral "not valid" state for TEST — the

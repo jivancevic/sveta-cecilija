@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { useDocumentInfo, useTranslation } from '@payloadcms/ui'
+import { useDocumentInfo } from '@payloadcms/ui'
 import { useRouter } from 'next/navigation'
 import { useSalesActionsVisible } from './useSalesActionsVisible'
 
@@ -9,7 +9,6 @@ export function CancelShowMenuItem() {
   const { id } = useDocumentInfo()
   const visible = useSalesActionsVisible()
   const router = useRouter()
-  const { t } = useTranslation()
   const [confirming, setConfirming] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
