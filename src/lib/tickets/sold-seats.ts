@@ -52,6 +52,40 @@ export async function getActiveTicketCountForShow(
 }
 
 /**
+ * One dancer's ACTIVE, SELF-issued comp tickets on one show (#434).
+ *
+ * The number the four-ticket cap is measured against (glossary: *Moreškant
+ * comp*). Two filters carry the whole rule: `comp_issued_by = 'self'`, so an
+ * admin's comp for the same member never eats the dancer's allowance (#430,
+ * story 52), and `t.status = 'active'`, so a cancelled comp gives its
+ * allowance back exactly as it gives its seat back.
+ *
+ * The caller runs this INSIDE the per-show sell lock, next to the capacity
+ * check, so two taps cannot both read the same count and both pass.
+ */
+export async function getSelfCompTicketCount(
+  query: PoolQuery,
+  showId: number | string,
+  memberId: number | string,
+): Promise<number> {
+  const show = Number(showId)
+  const member = Number(memberId)
+  if (!Number.isFinite(show) || !Number.isFinite(member)) return 0
+  const res = await query(
+    `SELECT COUNT(*)::int AS issued
+     FROM tickets t
+     JOIN orders o ON o.id = t.order_id
+     WHERE o.show_id = $1
+       AND o.member_id = $2
+       AND o.channel = 'comp'
+       AND o.comp_issued_by = 'self'
+       AND t.status = 'active'`,
+    [show, member],
+  )
+  return Number(res.rows[0]?.issued ?? 0)
+}
+
+/**
  * Scanned (admitted) ticket count per show, keyed by stringified show id. Each
  * scanned active ticket is one person through the door (ADR-0007). Shows with
  * none are absent from the map (callers default to 0).

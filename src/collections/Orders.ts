@@ -53,7 +53,16 @@ export const Orders: CollectionConfig = {
   },
   admin: {
     useAsTitle: 'buyerName',
-    defaultColumns: ['buyerName', 'email', 'adultCount', 'childCount', 'total', 'refundStatus', 'show'],
+    defaultColumns: [
+      'buyerName',
+      'email',
+      'adultCount',
+      'childCount',
+      'total',
+      'compIssuedBy',
+      'refundStatus',
+      'show',
+    ],
     listSearchableFields: ['buyerName', 'email'],
     hidden: ({ user }) => !can(user as ReqUser, 'tickets'),
     components: {
@@ -96,6 +105,25 @@ export const Orders: CollectionConfig = {
       type: 'relationship',
       relationTo: 'members',
       admin: { readOnly: true, description: 'Member that received this order (comp channel only)' },
+    },
+    // Who issued a comp: an admin from /admin, or the moreškant themselves from
+    // /app (#434, ADR-0024 phase 4). Meaningful on comp orders only; NULL on
+    // every row that predates the column, which readers treat as 'admin' — only
+    // the literal 'self' counts against a dancer's four tickets per performance
+    // (#430, story 52), so an admin's gesture never eats their own allowance.
+    // The admin comp routes set nothing and take this default.
+    {
+      name: 'compIssuedBy',
+      type: 'select',
+      defaultValue: 'admin',
+      options: [
+        { label: 'Admin', value: 'admin' },
+        { label: 'Self (moreškant)', value: 'self' },
+      ],
+      admin: {
+        readOnly: true,
+        description: 'Who issued this comp: the backoffice, or the dancer from /app',
+      },
     },
     // Promo code applied to this online order (ADR-0018, #325). Null for
     // partner/comp and for online orders with no code. Attribution + reporting
