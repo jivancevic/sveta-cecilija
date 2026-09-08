@@ -110,6 +110,13 @@ CREATE TYPE public.enum_orders_channel AS ENUM (
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 DO $$ BEGIN
+CREATE TYPE public.enum_orders_comp_issued_by AS ENUM (
+    'admin',
+    'self'
+);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
 CREATE TYPE public.enum_orders_locale AS ENUM (
     'en',
     'hr'
@@ -354,6 +361,7 @@ CREATE TABLE IF NOT EXISTS public.orders (
     channel public.enum_orders_channel DEFAULT 'online'::public.enum_orders_channel NOT NULL,
     partner_id integer,
     member_id integer,
+    comp_issued_by public.enum_orders_comp_issued_by DEFAULT 'admin'::public.enum_orders_comp_issued_by,
     promo_code_id integer,
     buyer_name character varying,
     email character varying,

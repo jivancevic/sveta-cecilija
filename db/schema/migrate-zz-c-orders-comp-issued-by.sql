@@ -35,10 +35,17 @@ CREATE TYPE public.enum_orders_comp_issued_by AS ENUM (
 );
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
--- 2. The column itself.
+-- 2. The column itself, added WITHOUT the default and given it immediately
+--    after. `ADD COLUMN ... DEFAULT x` fills every existing row with x
+--    (Postgres 11+), which would stamp "issued by admin" on every Stripe
+--    purchase and every partner slip in the table. Two statements keep the
+--    backfill in step 3, where it can name the rows it means. New rows still
+--    take the default, so the admin comp route needs no change.
 ALTER TABLE orders
-  ADD COLUMN IF NOT EXISTS comp_issued_by public.enum_orders_comp_issued_by
-  DEFAULT 'admin'::public.enum_orders_comp_issued_by;
+  ADD COLUMN IF NOT EXISTS comp_issued_by public.enum_orders_comp_issued_by;
+
+ALTER TABLE orders
+  ALTER COLUMN comp_issued_by SET DEFAULT 'admin'::public.enum_orders_comp_issued_by;
 
 -- 3. Backfill the comp orders that predate the column. Every comp that already
 --    exists was issued by an admin — /app could not issue one until this ticket.
