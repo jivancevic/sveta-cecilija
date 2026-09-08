@@ -8,6 +8,7 @@ import {
   type MoveToZimskoDeps,
 } from '@/lib/venue-change'
 import { sendVenueChangeEmail } from '@/lib/email/send-venue-change-email'
+import { isPublicPerformance } from '@/lib/show-performance'
 import type { Venue } from '@/lib/venues'
 
 export const runtime = 'nodejs'
@@ -36,7 +37,7 @@ function buildDeps(pool: Pool, brevoApiKey: string): MoveToZimskoDeps {
         venueChangedAt: row.venue_changed_at ? new Date(row.venue_changed_at as string).toISOString() : null,
         // #409 — the move refuses on a non-public performance (it has no venue
         // and no buyers); the gate itself lives in the venue-change seam.
-        isPublic: row.is_public !== false,
+        isPublic: isPublicPerformance(row),
       }
     },
     findBuyers: async (showId): Promise<VenueChangeBuyer[]> => {

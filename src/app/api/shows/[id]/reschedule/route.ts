@@ -13,6 +13,7 @@ import { signRescheduleRefundToken } from '@/lib/refund/reschedule-refund-token'
 import { refundUrl } from '@/lib/site-url'
 import { toIsoDate } from '@/lib/to-iso-date'
 import { assertPublicPerformance } from '@/lib/show-admin-actions'
+import { isPublicPerformance } from '@/lib/show-performance'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -63,7 +64,7 @@ function buildDeps(
         id: String(row.id),
         // #409 — a non-public performance has no buyers; the reschedule seam
         // rejects it (and so does the test-send path below).
-        isPublic: row.is_public !== false,
+        isPublic: isPublicPerformance(row),
         // pg returns the timestamptz column as a JS Date — normalise to YYYY-MM-DD
         // (a raw String(date).slice would yield "Mon Jun 22" → "Invalid Date").
         date: toIsoDate(row.date),
