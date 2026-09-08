@@ -49,9 +49,21 @@ function rowsOf(result: unknown): Record<string, unknown>[] {
   return Array.isArray(rows) ? (rows as Record<string, unknown>[]) : []
 }
 
+/**
+ * A timestamp column read through raw SQL → ISO, or null.
+ *
+ * node-postgres hands `timestamptz` back as a JS `Date` through most paths and
+ * as its own text (`2026-09-08 18:23:14.643+02`) through this one, and a
+ * re-confirm answering with that text instead of an ISO string is exactly the
+ * `toIsoDate` trap `db-bootstrap.md` documents one type up. Normalised here, at
+ * the only place that reads the column raw, so the route's contract is one
+ * format whatever the driver felt like returning.
+ */
 function isoOf(value: unknown): string | null {
   if (value instanceof Date) return value.toISOString()
-  return typeof value === 'string' && value !== '' ? value : null
+  if (typeof value !== 'string' || value === '') return null
+  const parsed = new Date(value)
+  return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString()
 }
 
 export function createLineupStore(
