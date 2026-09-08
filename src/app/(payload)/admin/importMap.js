@@ -13,6 +13,7 @@ import { AdminStatsView as AdminStatsView_stats } from '@/components/payload/Adm
 import { AdminDashboardView as AdminDashboardView_dashboard } from '@/components/payload/AdminDashboardView'
 import { AdminScanView as AdminScanView_scan } from '@/components/payload/AdminScanView'
 import { AccountLogout as AccountLogout_account } from '@/components/payload/AccountLogout'
+import { InviteMoreskantMenuItem as InviteMoreskantMenuItem_invite } from '@/components/payload/InviteMoreskantMenuItem'
 
 /** @type import('payload').ImportMap */
 export const importMap = {
@@ -31,4 +32,5 @@ export const importMap = {
   "@/components/payload/AdminDashboardView#AdminDashboardView": AdminDashboardView_dashboard,
   "@/components/payload/AdminScanView#AdminScanView": AdminScanView_scan,
   "@/components/payload/AccountLogout#AccountLogout": AccountLogout_account,
+  "@/components/payload/InviteMoreskantMenuItem#InviteMoreskantMenuItem": InviteMoreskantMenuItem_invite,
 }

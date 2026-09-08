@@ -64,6 +64,19 @@ export const Users: CollectionConfig = {
       allowEmailLogin: true,
       requireEmail: false,
     },
+    // `forgotPassword.expiration` is deliberately NOT set here (#424).
+    //
+    // Payload computes a reset token's life as
+    // `collectionConfig.auth?.forgotPassword?.expiration ?? expiration ?? 3600000`
+    // (`payload/dist/auth/operations/forgotPassword.js`): the COLLECTION value
+    // wins over the argument, it is not the fallback it reads like. Setting
+    // seven days here would therefore freeze every reset at seven days and
+    // silently ignore the hour the "Zaboravljena lozinka" route asks for.
+    //
+    // So the two lengths are passed per call instead — seven days from
+    // `/api/app/invite`, one hour from `/api/app/forgot` — and the collection
+    // keeps Payload's own one-hour default for the admin's reset page.
+    // `users-auth.test.ts` guards the absence.
   },
   hooks: {
     // Seed the admin chrome language on login (issue #234, ADR-0015). A fresh
@@ -238,6 +251,21 @@ export const Users: CollectionConfig = {
       },
       access: {
         read: ({ req }) => usersHolder(req.user as ReqUser),
+        update: ({ req }) => usersHolder(req.user as ReqUser),
+        create: ({ req }) => usersHolder(req.user as ReqUser),
+      },
+    },
+    // The login name (ADR-0011). Payload adds this field itself for
+    // `loginWithUsername` and our declaration MERGES into it (unique, required
+    // and the lowercasing hook all survive) purely to carry the write lock:
+    // `Users.access.update` allows self-edit, so without it a moreškant could
+    // rename their own login out from under the invitation the voditelj issued
+    // (#419, story 42). Read stays open, as for `partner` — the value is the
+    // account's own name and shows on the account view.
+    {
+      name: 'username',
+      type: 'text',
+      access: {
         update: ({ req }) => usersHolder(req.user as ReqUser),
         create: ({ req }) => usersHolder(req.user as ReqUser),
       },

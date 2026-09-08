@@ -9,6 +9,7 @@ import {
   membersReadAccess,
   membersUpdateAccess,
 } from '@/lib/access/members-access'
+import { memberIdsWithLogin, type UserLinkFinder } from '@/lib/access/member-logins'
 import {
   DANCE_ROLES,
   DANCE_ROLE_LABELS,
@@ -119,9 +120,17 @@ export const Members: CollectionConfig = {
   },
   admin: {
     useAsTitle: 'name',
-    defaultColumns: ['name', 'nickname', 'primaryRole', 'isMoreskant', 'active'],
+    defaultColumns: ['name', 'nickname', 'primaryRole', 'isMoreskant', 'hasLogin', 'active'],
     // The comp-attribution list for the backoffice, the roster for the voditelj.
     hidden: ({ user }) => membersHiddenInAdmin(user as ReqUser),
+    components: {
+      // "Pošalji pozivnicu" (#424), the Members mirror of the five Shows
+      // edit-menu actions. It renders only on a saved moreškant row, and the
+      // route it posts to re-checks `moreska` itself.
+      edit: {
+        editMenuItems: ['@/components/payload/InviteMoreskantMenuItem#InviteMoreskantMenuItem'],
+      },
+    },
   },
   hooks: {
     // Delete a member's attendance rows before the member itself.
@@ -274,6 +283,47 @@ export const Members: CollectionConfig = {
         },
       },
       access: MORESKANT_FIELD_ACCESS,
+    },
+    // "Ima prijavu": has this dancer been invited yet (#424, #419 story 9)?
+    //
+    // Virtual, so it owns no column and cannot drift from the truth, which
+    // lives in `users.member`. The value is filled by ONE `find` per request,
+    // memoized on `req.context` and shared by every row of the list view
+    // (`src/lib/access/member-logins.ts`); a per-row lookup or a fetching Cell
+    // component would both cost a query per rendered line.
+    {
+      name: 'hasLogin',
+      type: 'checkbox',
+      virtual: true,
+      label: { en: 'Has login', hr: 'Ima prijavu' },
+      admin: {
+        readOnly: true,
+        condition: moreskantOnly,
+        description: {
+          en: 'Whether an app login already points at this member. Filled by the invitation.',
+          hr: 'Postoji li već prijava za ovog člana. Ispunjava je pozivnica.',
+        },
+      },
+      access: {
+        // Roster knowledge, like the six fields above: `moreska` only. Nothing
+        // writes it, so create and update are closed to everyone.
+        read: MORESKANT_FIELD_ACCESS.read,
+        create: () => false,
+        update: () => false,
+      },
+      hooks: {
+        afterRead: [
+          async ({ data, req }) => {
+            const memberId = data?.id
+            if (memberId == null) return false
+            const ids = await memberIdsWithLogin(
+              (req as unknown as { payload?: UserLinkFinder } | undefined)?.payload,
+              (req as unknown as { context?: Record<string, unknown> } | undefined)?.context,
+            )
+            return ids.has(String(memberId))
+          },
+        ],
+      },
     },
   ],
 }
