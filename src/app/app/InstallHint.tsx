@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useRef } from 'react'
 import { APP_STRINGS } from '@/lib/app/strings'
 
 // "Dodaj na početni zaslon" (#421, ADR-0024 story 32).
@@ -10,35 +10,40 @@ import { APP_STRINGS } from '@/lib/app/strings'
 // it and the hint has to work there most of all, so it is plain instructions
 // rather than a button that only Android would light up.
 //
+// It renders in the server HTML and HIDES itself on mount when the device has
+// already dismissed it or already installed the app. Hiding through the DOM
+// (`el.hidden`) rather than through state keeps the effect free of a cascading
+// re-render and keeps the server and client markup identical.
+//
 // Every storage access is wrapped: a private window, a browser that blocks site
-// data, or an install-prompt screenshot pass can all make localStorage throw,
-// and none of that may take the page down. It starts hidden and appears after
-// mount, so the server HTML and the first client render agree.
+// data, or a thumbnail-capture pass can each make localStorage throw, and none
+// of that may take the page down.
 
 const DISMISSED_KEY = 'moreskant.installHint.dismissed'
 
 export function InstallHint() {
-  const [show, setShow] = useState(false)
+  const ref = useRef<HTMLElement>(null)
 
   useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    let hide = false
     try {
-      if (window.localStorage.getItem(DISMISSED_KEY) === '1') return
+      hide = window.localStorage.getItem(DISMISSED_KEY) === '1'
     } catch {
       // No readable storage: show the hint, it is one line.
     }
-    // Already installed: the standalone display mode means the icon exists.
     try {
-      if (window.matchMedia?.('(display-mode: standalone)').matches) return
+      // Already installed: the standalone display mode means the icon exists.
+      hide = hide || window.matchMedia?.('(display-mode: standalone)').matches === true
     } catch {
-      // matchMedia unavailable; fall through and show it.
+      // matchMedia unavailable; leave the hint visible.
     }
-    setShow(true)
+    el.hidden = hide
   }, [])
 
-  if (!show) return null
-
   return (
-    <aside className="app__hint">
+    <aside className="app__hint" ref={ref}>
       <strong>{APP_STRINGS.install.title}</strong>
       {APP_STRINGS.install.body}
       <button
@@ -46,7 +51,7 @@ export function InstallHint() {
         className="app__hint-close"
         aria-label={APP_STRINGS.install.dismiss}
         onClick={() => {
-          setShow(false)
+          if (ref.current) ref.current.hidden = true
           try {
             window.localStorage.setItem(DISMISSED_KEY, '1')
           } catch {

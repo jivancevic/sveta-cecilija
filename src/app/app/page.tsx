@@ -1,3 +1,5 @@
+import Link from 'next/link'
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { accessMember } from '@/lib/app/access'
 import { getSeasonPerformances } from '@/lib/app/roster-data'
@@ -23,9 +25,9 @@ function DeniedPage() {
       <h1>{APP_STRINGS.denied.title}</h1>
       <p>{APP_STRINGS.denied.body}</p>
       <p>
-        <a className="app__link" href="/admin">
+        <Link className="app__link" href="/admin">
           {APP_STRINGS.denied.adminLink}
-        </a>
+        </Link>
       </p>
       <LogoutButton className="app__button" />
     </main>

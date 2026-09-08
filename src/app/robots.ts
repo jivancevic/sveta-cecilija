@@ -16,7 +16,10 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: '*',
         allow: '/',
-        disallow: ['/admin', '/admin/', '/api', '/api/', '/scan/', '/checkout/*/confirmation'],
+        // `/app` is the Moreškant roster tool (#421): internal, Croatian-only,
+        // and behind a login. It also carries `robots: noindex` in its layout
+        // and appears in no sitemap.
+        disallow: ['/admin', '/admin/', '/api', '/api/', '/app', '/app/', '/scan/', '/checkout/*/confirmation'],
       },
     ],
     sitemap: `${SITE_URL}/sitemap.xml`,
