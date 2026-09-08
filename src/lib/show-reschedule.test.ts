@@ -185,3 +185,29 @@ describe('previewReschedule', () => {
     await expect(previewReschedule('x', deps)).rejects.toThrow('Show not found')
   })
 })
+
+// #409 — a non-public performance has no buyers to notify and no tickets to
+// reissue. The menu item is hidden in the admin; the action itself refuses too.
+describe('non-public performances (#409)', () => {
+  it('refuses to reschedule a non-public performance', async () => {
+    const deps = makeDeps({ getShow: vi.fn().mockResolvedValue(show({ isPublic: false })) })
+    await expect(
+      rescheduleShow({ showId: '7', userId: '3', newDate: '2026-06-23' }, deps),
+    ).rejects.toThrow(/not a public performance/i)
+    expect(deps.claimReschedule).not.toHaveBeenCalled()
+    expect(deps.sendDateChangeEmail).not.toHaveBeenCalled()
+    expect(deps.reissueTicket).not.toHaveBeenCalled()
+  })
+
+  it('refuses to preview a reschedule of a non-public performance', async () => {
+    const deps = makeDeps({ getShow: vi.fn().mockResolvedValue(show({ isPublic: false })) })
+    await expect(previewReschedule('7', deps)).rejects.toThrow(/not a public performance/i)
+    expect(deps.findBuyers).not.toHaveBeenCalled()
+  })
+
+  it('still reschedules a row carrying no isPublic value (pre-phase-2 rows are public)', async () => {
+    const deps = makeDeps()
+    const result = await rescheduleShow({ showId: '7', userId: '3', newDate: '2026-06-23' }, deps)
+    expect(result.status).toBe('rescheduled')
+  })
+})

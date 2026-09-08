@@ -12,6 +12,8 @@ import { sendOrderTicketEmail, type OrderEmailPayload } from '@/lib/email/send-o
 import { signRescheduleRefundToken } from '@/lib/refund/reschedule-refund-token'
 import { refundUrl } from '@/lib/site-url'
 import { toIsoDate } from '@/lib/to-iso-date'
+import { assertPublicPerformance } from '@/lib/show-admin-actions'
+import { isPublicPerformance } from '@/lib/show-performance'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -53,11 +55,16 @@ function buildDeps(
 ): RescheduleDeps {
   return {
     getShow: async (showId): Promise<RescheduleShow | null> => {
-      const res = await pool.query(`SELECT id, date, time, venue FROM shows WHERE id = $1`, [Number(showId)])
+      const res = await pool.query(`SELECT id, date, time, venue, is_public FROM shows WHERE id = $1`, [
+        Number(showId),
+      ])
       const row = res.rows[0]
       if (!row) return null
       return {
         id: String(row.id),
+        // #409 — a non-public performance has no buyers; the reschedule seam
+        // rejects it (and so does the test-send path below).
+        isPublic: isPublicPerformance(row),
         // pg returns the timestamptz column as a JS Date — normalise to YYYY-MM-DD
         // (a raw String(date).slice would yield "Mon Jun 22" → "Invalid Date").
         date: toIsoDate(row.date),
@@ -187,6 +194,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     try {
       const show = await deps.getShow(id)
       if (!show) return NextResponse.json({ error: 'Show not found' }, { status: 404 })
+      // #409 — the test send bypasses rescheduleShow, so it needs its own gate.
+      assertPublicPerformance(show as unknown as Record<string, unknown>)
       const sample = { orderId: 'TEST', buyer: { name: 'Ivan Horvat', email: adminEmail } }
       const showDates = { oldDate: show.date, newDate, time: show.time, venue: show.venue }
       // Sign a real token for the sample so the CTA renders and lands on the

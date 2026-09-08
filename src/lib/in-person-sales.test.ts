@@ -6,6 +6,7 @@ function makeDeps(
   overrides: Partial<AddInPersonSalesDeps> = {},
 ): AddInPersonSalesDeps {
   return {
+    getShow: vi.fn().mockResolvedValue({ id: 'show_1', isPublic: true }),
     atomicIncrement: vi.fn().mockResolvedValue(newTotal === null ? null : { inPersonSold: newTotal }),
     ...overrides,
   }
@@ -35,6 +36,33 @@ describe('addInPersonSales', () => {
   it('throws when the show does not exist', async () => {
     const deps = makeDeps(null)
     await expect(addInPersonSales({ showId: 'missing', count: 1 }, deps)).rejects.toThrow(/not found/i)
+  })
+
+  // #409 — a non-public performance sells no tickets at all, so a door count
+  // against one is meaningless. The menu item is hidden; the action refuses too.
+  it('refuses to add sales to a non-public performance', async () => {
+    const deps = makeDeps(5, {
+      getShow: vi.fn().mockResolvedValue({ id: 'show_1', isPublic: false }),
+    })
+    await expect(addInPersonSales({ showId: 'show_1', count: 3 }, deps)).rejects.toThrow(
+      /not a public performance/i,
+    )
+    expect(deps.atomicIncrement).not.toHaveBeenCalled()
+  })
+
+  it('throws when the show lookup finds no row', async () => {
+    const deps = makeDeps(5, { getShow: vi.fn().mockResolvedValue(null) })
+    await expect(addInPersonSales({ showId: 'missing', count: 1 }, deps)).rejects.toThrow(
+      /not found/i,
+    )
+    expect(deps.atomicIncrement).not.toHaveBeenCalled()
+  })
+
+  it('adds to a row carrying no isPublic value (pre-phase-2 rows are public)', async () => {
+    const deps = makeDeps(5, { getShow: vi.fn().mockResolvedValue({ id: 'show_1' }) })
+    await expect(addInPersonSales({ showId: 'show_1', count: 3 }, deps)).resolves.toEqual({
+      inPersonSold: 5,
+    })
   })
 })
 

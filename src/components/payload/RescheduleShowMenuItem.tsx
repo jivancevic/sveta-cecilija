@@ -3,6 +3,7 @@
 import React, { useState } from 'react'
 import { useDocumentInfo } from '@payloadcms/ui'
 import { useRouter } from 'next/navigation'
+import { useSalesActionsVisible } from './useSalesActionsVisible'
 
 interface Preview {
   currentDate: string
@@ -71,7 +72,8 @@ const dateInput: React.CSSProperties = {
 }
 
 export function RescheduleShowMenuItem() {
-  const { id, collectionSlug } = useDocumentInfo()
+  const { id } = useDocumentInfo()
+  const visible = useSalesActionsVisible()
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -81,7 +83,9 @@ export function RescheduleShowMenuItem() {
   const [testResult, setTestResult] = useState<TestResult | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  if (collectionSlug !== 'shows' || !id) return null
+  // A non-public performance has no buyers to notify (#409); move its date by
+  // editing the field instead.
+  if (!visible) return null
 
   const openPreview = async () => {
     setOpen(true)

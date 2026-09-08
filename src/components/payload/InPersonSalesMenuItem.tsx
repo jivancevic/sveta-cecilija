@@ -3,9 +3,11 @@
 import React, { useState } from 'react'
 import { useDocumentInfo } from '@payloadcms/ui'
 import { useRouter } from 'next/navigation'
+import { useSalesActionsVisible } from './useSalesActionsVisible'
 
 export function InPersonSalesMenuItem() {
-  const { id, collectionSlug } = useDocumentInfo()
+  const { id } = useDocumentInfo()
+  const visible = useSalesActionsVisible()
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [count, setCount] = useState<string>('')
@@ -13,7 +15,8 @@ export function InPersonSalesMenuItem() {
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<number | null>(null)
 
-  if (collectionSlug !== 'shows') return null
+  // Saved, public Shows document only (#409).
+  if (!visible) return null
 
   const handleSubmit = async () => {
     if (!id) return

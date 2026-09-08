@@ -1,18 +1,21 @@
 'use client'
 
 import React, { useState } from 'react'
-import { useDocumentInfo, useTranslation } from '@payloadcms/ui'
+import { useDocumentInfo } from '@payloadcms/ui'
 import { useRouter } from 'next/navigation'
+import { useSalesActionsVisible } from './useSalesActionsVisible'
 
 export function CancelShowMenuItem() {
-  const { id, collectionSlug } = useDocumentInfo()
+  const { id } = useDocumentInfo()
+  const visible = useSalesActionsVisible()
   const router = useRouter()
-  const { t } = useTranslation()
   const [confirming, setConfirming] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  if (collectionSlug !== 'shows') return null
+  // On a non-public performance there is nothing to withdraw from /tickets and
+  // nobody to tell: cancel it by setting the status field to Cancelled (#409).
+  if (!visible) return null
 
   const handleCancel = async () => {
     if (!id) return

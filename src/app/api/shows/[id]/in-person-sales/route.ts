@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { addInPersonSales, incrementInPersonSold } from '@/lib/in-person-sales'
 import { requirePermission } from '@/lib/access/route-guard'
 import type { PoolQuery } from '@/lib/tickets/sold-seats'
+import { isPublicPerformance } from '@/lib/show-performance'
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const gate = await requirePermission(req, 'tickets')
@@ -24,7 +25,19 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   try {
     const result = await addInPersonSales(
       { showId: id, count },
-      { atomicIncrement: (showId, delta) => incrementInPersonSold(poolQuery, showId, delta) },
+      {
+        // #409 — a non-public performance sells no tickets, so a door count
+        // against one is rejected before the increment runs.
+        getShow: async (showId) => {
+          const res = await poolQuery('SELECT id, is_public FROM shows WHERE id = $1', [
+            Number(showId),
+          ])
+          const row = res.rows[0] as Record<string, unknown> | undefined
+          if (!row) return null
+          return { isPublic: isPublicPerformance(row) }
+        },
+        atomicIncrement: (showId, delta) => incrementInPersonSold(poolQuery, showId, delta),
+      },
     )
     return NextResponse.json({ inPersonSold: result.inPersonSold })
   } catch (err) {
