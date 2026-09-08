@@ -32,6 +32,11 @@
 //                the link is missing. NO login is created and no password is
 //                touched: an invitation is what creates a dancer's login
 //                (#424), and this script is not one.
+//   - lineups  — one CONFIRMED postava and one DRAFT, so both halves of #432
+//                are visible without typing: `ON CONFLICT DO NOTHING` on the
+//                same unique pair, and the confirmation flag is only set when
+//                the performance has no postava yet, so a lineup you edited in
+//                the app is never re-locked under you.
 //   - answers  — `ON CONFLICT (performance_id, member_id) DO NOTHING`, so an
 //                answer you changed in the app stays changed. They land on the
 //                next performances of the season (the ones a dancer sees under
@@ -113,6 +118,17 @@ const SAMPLE_ANSWERS = [
   { Cici: 'coming', Grgo: 'coming', Bepo: 'coming', Dado: 'not_coming', Mare: 'coming' },
   { Cici: 'coming', Otman: 'coming', Dado: 'coming' },
   { Bepo: 'not_coming' },
+]
+
+// The two sample postave (#432). Index 0 is the next performance of the season
+// and gets a CONFIRMED lineup, so `/app/statistika` has something to count and a
+// dancer has a confirmed postava to look at; index 1 stays a DRAFT, which is
+// what a moreškant must NOT see. Roles are deliberately mixed: Cici dances his
+// own crni_kralj, and Dado is down as a bula he has no role for, so the warning
+// line shows up in the editor without any typing.
+const SAMPLE_LINEUPS = [
+  { confirmed: true, entries: { Cici: 'crni_kralj', Grgo: 'bili', Otman: 'otmanovic', Mare: 'bula', Dado: 'bili' } },
+  { confirmed: false, entries: { Cici: 'crni', Bepo: 'bili_kralj', Dado: 'bula' } },
 ]
 
 /** The army a role counts in; `bula` counts in neither (CONTEXT.md, Army count). */
@@ -273,6 +289,42 @@ async function main() {
       }
     }
 
+    // The two sample postave. The confirmation is only applied to a performance
+    // that has no lineup rows yet, so a re-run never re-locks one you unlocked.
+    let lineupRows = 0
+    let confirmed = 0
+    for (let i = 0; i < performances.rows.length && i < SAMPLE_LINEUPS.length; i++) {
+      const performanceId = performances.rows[i].id
+      const sample = SAMPLE_LINEUPS[i]
+      const existing = await client.query(
+        'SELECT 1 FROM lineups WHERE performance_id = $1 LIMIT 1',
+        [performanceId],
+      )
+      const fresh = existing.rows.length === 0
+      for (const [nickname, role] of Object.entries(sample.entries)) {
+        const memberId = idByNickname.get(nickname)
+        if (!memberId) continue
+        const res = await client.query(
+          `INSERT INTO lineups (performance_id, member_id, role, updated_at, created_at)
+           VALUES ($1, $2, $3, now(), now())
+           ON CONFLICT (performance_id, member_id) DO NOTHING`,
+          [performanceId, memberId, role],
+        )
+        lineupRows += res.rowCount ?? 0
+      }
+      if (fresh) {
+        const res = await client.query(
+          `UPDATE shows
+              SET lineup_confirmed = $2,
+                  lineup_confirmed_at = CASE WHEN $2 THEN now() ELSE NULL END,
+                  updated_at = now()
+            WHERE id = $1`,
+          [performanceId, sample.confirmed],
+        )
+        if (sample.confirmed) confirmed += res.rowCount ?? 0
+      }
+    }
+
     await client.query('COMMIT')
 
     console.log(
@@ -281,6 +333,7 @@ async function main() {
         `Members:        ${created} created, ${refreshed} refreshed (${SAMPLE_MEMBERS.length} sample moreškanti)`,
         `Logins linked:  ${linked}`,
         `Answers added:  ${answers} on ${performances.rows.length} performance(s)`,
+        `Lineup rows:    ${lineupRows} added, ${confirmed} performance(s) confirmed`,
         '',
         'Re-run me: the counts for created, linked and answers go to 0 and nothing else moves.',
       ].join('\n'),

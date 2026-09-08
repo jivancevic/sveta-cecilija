@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { requirePermission } from '@/lib/access/route-guard'
 import { appRequestMeta } from '@/lib/app/request-guard'
 import { resolveOwnMemberId, type MemberLinkReader } from '@/lib/access/attendance-access'
+import { relationIdForWrite as relId } from '@/lib/payload-relation'
 import { handleAttendanceAnswer, type ExistingAnswer } from '@/lib/attendance/answer'
 import type { Army, AttendanceMember, AttendancePerformance } from '@/lib/attendance/rules'
 import { showStartMs } from '@/lib/show-time'
@@ -33,22 +34,6 @@ export const dynamic = 'force-dynamic'
 
 function army(value: unknown): Army | null {
   return value === 'crni' || value === 'bili' ? value : null
-}
-
-/**
- * Relationship ids as the database wants them.
- *
- * The pure handler works in strings (an id read off a URL or a JSON body is a
- * string), but the Postgres adapter's relationship columns are integers and
- * Payload validates the type on write: a `'38'` comes back as "The following
- * fields are invalid: Performance, Moreškant". Numeric-looking ids are coerced
- * here, in the wiring, because which type an id has is a database fact and not
- * a rule.
- */
-function relId(value: string | number | null): string | number | null {
-  if (value == null) return null
-  const n = Number(value)
-  return Number.isInteger(n) && String(n) === String(value).trim() ? n : value
 }
 
 export async function POST(req: Request) {

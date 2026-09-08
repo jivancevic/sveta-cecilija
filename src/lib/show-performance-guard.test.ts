@@ -63,6 +63,12 @@ export const ALLOW_LIST: Record<string, string> = {
     'Roster write route (#422): the moreškant app covers EVERY performance of the season, public or not (ADR-0024), so filtering on the predicate would be wrong. The id-addressed read only builds the start instant and the cancelled flag for the answer rules, behind requirePermission([moreskant, moreska]).',
   'src/lib/push/push-data.ts':
     'Roster read (#431, #435): the moreškant notifications cover EVERY performance of the season, public or not (ADR-0024) — a ship call is an evening a dancer has to turn up for, so filtering on the predicate would silence the alarm for exactly the performances nobody has a ticket to. The sweep is bounded by the start instant and the cancelled flag, and the callers are a `moreska` route and the CRON_SECRET job.',
+  'src/app/api/app/lineup/route.ts':
+    'Roster write route (#432): a postava is recorded for EVERY performance, public or not (ADR-0024) — a ship call has a lineup exactly like a Redovna. The id-addressed read only checks the row exists and whether the lineup is confirmed, behind requirePermission(moreska).',
+  'src/lib/lineup/lineup-store.ts':
+    'Roster write path (#432, #442 review): the id-addressed `SELECT … FOR UPDATE` that serializes the two lineup writers. A postava belongs to EVERY performance, public or not (ADR-0024), and the row is locked rather than listed — it reaches no buyer surface and both callers are behind requirePermission(moreska).',
+  'src/lib/app/stats-data.ts':
+    'Roster read (#437): the season scoreboard counts EVERY confirmed performance, public or not (ADR-0024) — a dancer who danced eight ship calls danced eight performances. Scoped to one calendar year, behind the /app access decision, and it surfaces nothing to a buyer.',
   'src/app/api/shows/[id]/move-to-zimsko/route.ts':
     'Id-addressed write route; its SELECT feeds the in-handler isPublicPerformance() check merged in #409, which 400s a non-public performance before anything moves.',
   'src/app/api/shows/[id]/reschedule/route.ts':

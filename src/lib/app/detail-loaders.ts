@@ -28,7 +28,54 @@ import {
   type AttendanceStatus,
 } from '@/lib/attendance/rules'
 import { relationIdString } from '@/lib/payload-relation'
+import { isDanceRole, type DanceRole } from '@/lib/moreskant-profile'
+import {
+  buildLineupFromAttendance,
+  compareLineupRows,
+  roleWarnings,
+  type LineupEntry,
+  type RoleWarning,
+} from '@/lib/lineup/rules'
 import { toRosterPerformance, type RosterPerformance } from './roster-loaders'
+
+/** One line of the postava, already labelled for the screen. */
+export interface LineupRow {
+  memberId: string
+  nickname: string
+  role: DanceRole
+}
+
+/** A candidate for the "Dodaj moreškanta" picker. */
+export interface LineupPerson {
+  memberId: string
+  nickname: string
+  /** The roles their profile lists, so the select can mark the unusual ones. */
+  roles: DanceRole[]
+}
+
+/**
+ * The Postava section (#432).
+ *
+ * `visible` is the story-34 rule in one field: a moreškant sees a lineup only
+ * once it is confirmed, past or future, and never a draft. `canEdit` is the
+ * story-31 rule: a voditelj edits until they press Potvrdi, and the replace
+ * route refuses the same case with a 409, so the read-only fields a voditelj
+ * SEES and the refusal the server ENFORCES are one sentence.
+ */
+export interface LineupView {
+  confirmed: boolean
+  confirmedAt: string | null
+  /** The stored postava. Empty for a dancer looking at a draft. */
+  entries: LineupRow[]
+  /** What "Napravi iz prisutnosti" would produce. Voditelj only. */
+  suggested: LineupRow[]
+  /** Roles outside a dancer's profile, for the stored entries (story 29). */
+  warnings: RoleWarning[]
+  /** Every active moreškant, for the picker. Voditelj only. */
+  roster: LineupPerson[]
+  visible: boolean
+  canEdit: boolean
+}
 
 export interface PerformanceDetail {
   performance: RosterPerformance
@@ -52,6 +99,8 @@ export interface PerformanceDetail {
   moveTargets: Record<string, Army[]>
   /** The viewer's own Member, when they have one. */
   myMemberId: string | null
+  /** The Postava section (#432). */
+  lineup: LineupView
 }
 
 /** A Payload attendance doc → the flat row the count reads. */
@@ -66,6 +115,83 @@ export function toAttendanceRow(doc: Record<string, unknown>): AttendanceRow | n
   }
 }
 
+/** A Payload lineups doc → the flat entry the rules read, or null for a bad row. */
+export function toLineupEntry(doc: Record<string, unknown>): LineupEntry | null {
+  const memberId = relationIdString(doc.member)
+  if (!memberId) return null
+  if (!isDanceRole(doc.role)) return null
+  return { memberId, role: doc.role }
+}
+
+/**
+ * The Postava section, from rows already loaded.
+ *
+ * The picker is ordered by nickname; the postava itself is ordered by ROLE and
+ * then nickname (`compareLineupRows`), so "am I kralj tonight" is answered by
+ * the top of the list and the editor and the dancer's view read alike. The
+ * suggestion is built in roster order first and then sorted the same way, so
+ * pressing the button twice cannot produce two orders.
+ */
+export function buildLineupView(input: {
+  performanceDoc: Record<string, unknown>
+  lineupDocs: Record<string, unknown>[]
+  attendanceRows: readonly AttendanceRow[]
+  members: readonly ReturnType<typeof toAttendanceMember>[]
+  voditelj: boolean
+}): LineupView {
+  const confirmed = input.performanceDoc.lineupConfirmed === true
+  const confirmedAtRaw = input.performanceDoc.lineupConfirmedAt
+  const confirmedAt =
+    typeof confirmedAtRaw === 'string'
+      ? confirmedAtRaw
+      : confirmedAtRaw instanceof Date
+        ? confirmedAtRaw.toISOString()
+        : null
+
+  const roster = [...input.members].sort((a, b) =>
+    (a.nickname ?? a.name ?? '').localeCompare(b.nickname ?? b.name ?? '', 'hr'),
+  )
+  const label = new Map(
+    roster.map((m) => [String(m.id), (m.nickname ?? m.name ?? String(m.id)).trim()]),
+  )
+
+  const stored = input.lineupDocs
+    .map(toLineupEntry)
+    .filter((e): e is LineupEntry => e !== null)
+
+  const toRow = (entry: LineupEntry): LineupRow => ({
+    memberId: entry.memberId,
+    nickname: label.get(entry.memberId) ?? `#${entry.memberId}`,
+    role: entry.role,
+  })
+  const toRows = (entries: readonly LineupEntry[]): LineupRow[] =>
+    entries.map(toRow).sort(compareLineupRows)
+
+  const visible = input.voditelj || confirmed
+
+  return {
+    confirmed,
+    confirmedAt,
+    // A dancer looking at a draft gets an EMPTY list rather than a hidden
+    // section: the shape of the payload is where story 34 is enforced, so no
+    // template can leak a draft by forgetting a condition.
+    entries: visible ? toRows(stored) : [],
+    suggested: input.voditelj
+      ? toRows(buildLineupFromAttendance(input.attendanceRows, roster))
+      : [],
+    warnings: visible ? roleWarnings(stored, roster) : [],
+    roster: input.voditelj
+      ? roster.map((m) => ({
+          memberId: String(m.id),
+          nickname: label.get(String(m.id)) ?? String(m.id),
+          roles: (m.roles ?? []).filter(isDanceRole),
+        }))
+      : [],
+    visible,
+    canEdit: input.voditelj && !confirmed,
+  }
+}
+
 /**
  * Everything the detail page renders, from rows already loaded.
  *
@@ -77,6 +203,7 @@ export function buildPerformanceDetail(input: {
   performanceDoc: Record<string, unknown>
   attendanceDocs: Record<string, unknown>[]
   memberDocs: Record<string, unknown>[]
+  lineupDocs?: Record<string, unknown>[]
   viewer: { memberId: string | null; voditelj: boolean }
   nowMs: number
 }): PerformanceDetail {
@@ -121,6 +248,13 @@ export function buildPerformanceDetail(input: {
     canAlarm,
     moveTargets,
     myMemberId: input.viewer.memberId,
+    lineup: buildLineupView({
+      performanceDoc: input.performanceDoc,
+      lineupDocs: input.lineupDocs ?? [],
+      attendanceRows: rows,
+      members,
+      voditelj: input.viewer.voditelj,
+    }),
   }
 }
 
@@ -131,6 +265,8 @@ export interface PerformanceDetailDeps {
   loadAttendance: (performanceId: string) => Promise<Record<string, unknown>[]>
   /** Every ACTIVE moreškant, login or not. */
   loadMoreskanti: () => Promise<Record<string, unknown>[]>
+  /** Every lineup row for that performance (#432). */
+  loadLineup?: (performanceId: string) => Promise<Record<string, unknown>[]>
   viewer: { memberId: string | null; voditelj: boolean }
   now?: () => Date
 }
@@ -142,15 +278,17 @@ export async function loadPerformanceDetail(
   const performanceDoc = await deps.loadPerformance(performanceId)
   if (!performanceDoc) return null
 
-  const [attendanceDocs, memberDocs] = await Promise.all([
+  const [attendanceDocs, memberDocs, lineupDocs] = await Promise.all([
     deps.loadAttendance(performanceId),
     deps.loadMoreskanti(),
+    deps.loadLineup?.(performanceId) ?? Promise.resolve([]),
   ])
 
   return buildPerformanceDetail({
     performanceDoc,
     attendanceDocs,
     memberDocs,
+    lineupDocs,
     viewer: deps.viewer,
     nowMs: (deps.now?.() ?? new Date()).getTime(),
   })

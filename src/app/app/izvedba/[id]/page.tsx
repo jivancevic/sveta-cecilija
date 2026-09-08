@@ -2,12 +2,14 @@ import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { accessMember } from '@/lib/app/access'
 import { getPerformanceDetail } from '@/lib/app/detail-data'
-import { APP_STRINGS, KIND_LABELS, formatPerformanceDate } from '@/lib/app/strings'
+import { APP_STRINGS, KIND_LABELS, ROLE_LABELS, formatPerformanceDate } from '@/lib/app/strings'
 import { resolveAppViewer } from '@/lib/app/viewer'
+import type { LineupView } from '@/lib/app/detail-loaders'
 import type { ArmyTally, RosterPerson } from '@/lib/attendance/army-count'
 import type { Army } from '@/lib/attendance/rules'
 import { VENUE_LABEL } from '@/lib/venues'
 import { AlarmButton } from '../../AlarmButton'
+import { LineupEditor } from '../../LineupEditor'
 import { AttendanceButtons } from '../../AttendanceButtons'
 import { ArmyMoveButton } from '../../ArmyMoveButton'
 import { LogoutButton } from '../../LogoutButton'
@@ -143,6 +145,36 @@ function PeopleSection({
   )
 }
 
+/**
+ * The postava as a moreškant sees it: a list, no controls (#432, story 33).
+ *
+ * It renders only when the loader says the lineup is `visible`, which for a
+ * dancer means confirmed — a draft never reaches this component with entries in
+ * it, because the loader empties them (story 34).
+ */
+function LineupList({ lineup }: { lineup: LineupView }) {
+  return (
+    <section className="app__lineup">
+      <h2 className="app__army-head">
+        <span>{APP_STRINGS.lineup.title}</span>
+        <span className="app__chip">{lineup.entries.length}</span>
+      </h2>
+      {lineup.entries.length === 0 ? (
+        <p className="app__empty">{APP_STRINGS.lineup.emptyForDancer}</p>
+      ) : (
+        <ul className="app__people">
+          {lineup.entries.map((entry) => (
+            <li key={entry.memberId} className="app__person">
+              <span className="app__person-name">{entry.nickname}</span>
+              <span className="app__lineup-role">{ROLE_LABELS[entry.role]}</span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  )
+}
+
 export default async function PerformanceDetailPage({
   params,
 }: {
@@ -252,6 +284,23 @@ export default async function PerformanceDetailPage({
         performanceId={p.id}
         withButtons={detail.canEditOthers}
       />
+
+      {/* Postava (#432). A voditelj gets the editor, confirmed or not — it
+          renders read-only when confirmed and offers Otključaj. A moreškant
+          gets a plain list, and only of a CONFIRMED lineup: the loader has
+          already emptied a draft, so no condition here can leak one. */}
+      {detail.voditelj ? (
+        <LineupEditor
+          performanceId={p.id}
+          initialEntries={detail.lineup.entries}
+          suggested={detail.lineup.suggested}
+          roster={detail.lineup.roster}
+          confirmed={detail.lineup.confirmed}
+          confirmedAt={detail.lineup.confirmedAt}
+        />
+      ) : (
+        <LineupList lineup={detail.lineup} />
+      )}
     </div>
   )
 }

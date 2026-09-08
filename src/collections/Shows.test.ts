@@ -137,18 +137,19 @@ describe('Shows non-public field conditions (#409)', () => {
     // the way to the database can reach Brevo: buyer mail is only ever sent by
     // the explicit admin actions, which refuse non-public rows.
     //
-    // The three hooks that DO exist are the beforeValidate validator, the #422
-    // attendance cascade on delete, and the #436 roster afterChange, which
-    // sends WEB PUSH to the moreškanti (never email, ADR-0024) and swallows its
-    // own failures so it cannot fail a save. This assertion is exact, so a
-    // fourth hook has to be justified here.
+    // The hooks that DO exist are the beforeValidate validator, two cascades on
+    // delete (#422 attendance and #432 lineups, both because their FK is SET
+    // NULL on a NOT NULL column), and the #436 roster afterChange, which sends
+    // WEB PUSH to the moreškanti (never email, ADR-0024) and swallows its own
+    // failures so it cannot fail a save. This assertion is exact, so another
+    // hook has to be justified here.
     expect(Object.keys(Shows.hooks ?? {}).sort()).toEqual([
       'afterChange',
       'beforeDelete',
       'beforeValidate',
     ])
     expect(Shows.hooks?.beforeValidate).toHaveLength(1)
-    expect(Shows.hooks?.beforeDelete).toHaveLength(1)
+    expect(Shows.hooks?.beforeDelete).toHaveLength(2)
     expect(Shows.hooks?.afterChange).toHaveLength(1)
   })
 })

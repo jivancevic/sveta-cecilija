@@ -79,6 +79,11 @@ export default async function MoreskantHomePage() {
 
       <p className="app__season">
         {APP_STRINGS.list.season} {season.year}
+        {/* The way to the scoreboard (#437). One link rather than a nav bar:
+            `/app` has two destinations and a bar for two is chrome. */}
+        <Link className="app__link app__season-link" href="/app/statistika">
+          {APP_STRINGS.stats.link}
+        </Link>
       </p>
 
       <PerformanceList

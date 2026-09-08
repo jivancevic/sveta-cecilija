@@ -79,6 +79,22 @@ export const cascadeShowAttendanceDelete: CollectionBeforeDeleteHook = async ({ 
   })
 }
 
+// Cascade the lineup rows when a performance is deleted (#432, story 36).
+//
+// The exact mirror of `cascadeShowAttendanceDelete` and for the same reason:
+// `lineups.performance_id` is `ON DELETE SET NULL` (Payload's generated shape)
+// on a `NOT NULL` column, so the database alone refuses to delete a performance
+// that still carries a postava. Same transaction as the delete itself, so the
+// rows and the performance commit or roll back together.
+export const cascadeShowLineupDelete: CollectionBeforeDeleteHook = async ({ req, id }) => {
+  await req.payload.delete({
+    collection: 'lineups',
+    where: { performance: { equals: id } },
+    req,
+    overrideAccess: true,
+  })
+}
+
 export const Shows: CollectionConfig = {
   slug: 'shows',
   access: {
@@ -122,8 +138,9 @@ export const Shows: CollectionConfig = {
     },
   },
   hooks: {
-    // Delete a performance's attendance rows before the performance itself.
-    beforeDelete: [cascadeShowAttendanceDelete],
+    // Delete a performance's attendance and lineup rows before the performance
+    // itself: both FKs are SET NULL on a NOT NULL column (#422, #432).
+    beforeDelete: [cascadeShowAttendanceDelete, cascadeShowLineupDelete],
     // Tell the roster what changed (#436): a create pushes "nova izvedba", a
     // save that moved the date, the time, the place, the cancelled status or
     // the voditelj note pushes what changed, and a moved start additionally
@@ -407,6 +424,30 @@ export const Shows: CollectionConfig = {
       min: 0,
       admin: {
         description: 'Minimum number of bili moreškanti for this performance. Default 8.',
+      },
+      access: { read: rosterFieldRead, update: rosterFieldUpdate },
+    },
+    // The lineup's confirmation, one flag per evening (#432, story 31). It is
+    // NOT a per-row column: a postava is confirmed as a whole, and half a
+    // confirmed evening is not a state anyone means. `/app` writes it through
+    // POST /api/app/lineup/confirm; here it is the voditelj's field like the
+    // thresholds and the note.
+    {
+      name: 'lineupConfirmed',
+      type: 'checkbox',
+      defaultValue: false,
+      admin: {
+        description:
+          'Confirmed lineup: locked against edits, visible to every moreškant, and the only kind that counts in the season statistics.',
+      },
+      access: { read: rosterFieldRead, update: rosterFieldUpdate },
+    },
+    {
+      name: 'lineupConfirmedAt',
+      type: 'date',
+      admin: {
+        description: 'When the lineup was confirmed. Cleared again when it is unlocked.',
+        date: { pickerAppearance: 'dayAndTime' },
       },
       access: { read: rosterFieldRead, update: rosterFieldUpdate },
     },
