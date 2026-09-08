@@ -51,6 +51,8 @@ export const ALLOW_LIST: Record<string, string> = {
     'Order-joined read: partner ledger page, driven by the partner’s own orders.',
   'src/lib/refund/reschedule-refund-context.ts':
     'Order-joined read: refund context for an existing order.',
+  'src/app/api/app/attendance/route.ts':
+    'Roster write route (#422): the moreškant app covers EVERY performance of the season, public or not (ADR-0024), so filtering on the predicate would be wrong. The id-addressed read only builds the start instant and the cancelled flag for the answer rules, behind requirePermission([moreskant, moreska]).',
   'src/app/api/shows/[id]/move-to-zimsko/route.ts':
     'Id-addressed write route; its SELECT feeds the in-handler isPublicPerformance() check merged in #409, which 400s a non-public performance before anything moves.',
   'src/app/api/shows/[id]/reschedule/route.ts':
