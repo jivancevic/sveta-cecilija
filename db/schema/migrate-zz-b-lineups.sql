@@ -9,12 +9,15 @@
 -- Confirmation is NOT a column here: it is one flag per performance
 -- (shows.lineup_confirmed), because a postava is confirmed as a whole.
 --
--- ORDERING: named `migrate-zz-lineups.sql` so it sorts AFTER every file that
--- creates a table it references (`members`, `shows`, `payload_locked_documents_rels`)
--- and after `migrate-zz-attendance.sql`, while staying BEFORE
+-- ORDERING: the `-b-` is a SORT KEY, not a word. bootstrap-db.mjs applies these
+-- files in plain filename order with no dependency resolution
+-- (db/schema/README.md), so this file has to land in a window with a wall on
+-- each side: AFTER `migrate-members.sql` and `migrate-shows-performance.sql`,
+-- which create the tables its foreign keys reach, and BEFORE
 -- `migrate-zz-drop-users-role.sql`, which must remain the last migrate-* file
--- (#398). bootstrap-db.mjs applies these files in plain filename order with no
--- dependency resolution (db/schema/README.md).
+-- (#398, asserted by src/lib/db-schema-safety.test.ts). A plain
+-- `migrate-zz-lineups.sql` would sort after the drop ('d' < 'l') and break that
+-- rule, so the letter buys the position: 'attendance' < 'b-lineups' < 'drop'.
 --
 -- On a fresh DB 00-base.sql has already created everything below, so this file
 -- is a no-op there; on the existing prod DB it adds the table and the columns.

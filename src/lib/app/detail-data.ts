@@ -48,6 +48,20 @@ export async function getPerformanceDetail(
       return result.docs as unknown as Record<string, unknown>[]
     },
 
+    // The postava (#432). Loaded for every viewer; whether it is SHOWN is the
+    // loader's decision (`visible`), so the confirmation rule lives in one
+    // place rather than in a query condition here as well.
+    loadLineup: async (id) => {
+      const result = await payload.find({
+        collection: 'lineups',
+        where: { performance: { equals: id } },
+        limit: 1000,
+        depth: 0,
+        overrideAccess: true,
+      })
+      return result.docs as unknown as Record<string, unknown>[]
+    },
+
     loadMoreskanti: async () => {
       const result = await payload.find({
         collection: 'members',

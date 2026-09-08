@@ -3,7 +3,7 @@
 // The sibling of `probe-attendance-schema.mjs`, for the same reason: the unit
 // suite proves the migration writes no unguarded row mutation and the drift
 // gate proves `db/schema/` reproduces what Payload push needs, but neither can
-// prove that re-applying `migrate-zz-lineups.sql` on every restart is a no-op,
+// prove that re-applying `migrate-zz-b-lineups.sql` on every restart is a no-op,
 // that it UPGRADES an older populated database, or that the unique
 // (performance, member) index — the one role per dancer per evening the
 // statistics count on — actually refuses a second row.
