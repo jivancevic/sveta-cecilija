@@ -24,7 +24,8 @@
 import { KIND_LABELS, PUSH_MESSAGES } from '@/lib/app/strings'
 import { toRosterPerformance } from '@/lib/app/roster-loaders'
 import type { PerformanceKind } from '@/lib/show-performance'
-import { VENUE_LABEL, type Venue } from '@/lib/venues'
+import { performancePlace } from '@/lib/app/performance-place'
+import type { Venue } from '@/lib/venues'
 import { showStartMs } from '@/lib/show-time'
 import { performanceUrl, untilStartTtlSeconds } from './recipients'
 import type { PushMessage } from './send'
@@ -72,11 +73,12 @@ export function toChangeSnapshot(doc: Record<string, unknown>): ChangeSnapshot {
   }
 }
 
-/** The place as a dancer reads it: the venue's Croatian label, or the location. */
-export function placeOf(snapshot: ChangeSnapshot): string {
-  if (snapshot.isPublic) return snapshot.venue ? VENUE_LABEL.hr[snapshot.venue] : ''
-  return snapshot.location ?? ''
-}
+/**
+ * The place as a dancer reads it. The rule lives in `performance-place.ts`,
+ * shared with the calendar feed (#433): "where is this" must not have two
+ * answers.
+ */
+export const placeOf = performancePlace
 
 /**
  * The watched fields that differ. Empty means "this save changed nothing the
