@@ -55,8 +55,10 @@ export function dayOf(date: string): string {
  * The offset is looked up at a first guess (the same numbers read as UTC) and
  * then re-checked at the instant that guess produces, so a reading on either
  * side of a transition resolves to the offset that actually applies to it. The
- * one genuinely ambiguous hour of the year (02:00-03:00 on the autumn switch
- * day, which happens twice) resolves to the first pass, CEST — no performance
+ * one genuinely ambiguous hour of the year — 02:00-03:00 on the autumn switch
+ * day, which happens twice — lands on the SECOND pass, CET: the CEST guess
+ * resolves to an instant that is already past the switch, so the re-check
+ * disagrees and wins (02:30 becomes 01:30Z, the later of the two). No izvedba
  * has ever started at 02:00, and picking a side beats throwing.
  */
 export function zagrebWallClockMs(date: string, time: string): number {
