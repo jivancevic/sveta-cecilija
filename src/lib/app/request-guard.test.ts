@@ -77,6 +77,35 @@ describe('appRequestMeta', () => {
     expect(appRequestMeta(req({}), 'not a url').allowedOrigins).toEqual(['https://moreska.eu'])
   })
 
+  it('trusts the proxy-forwarded origin behind the standalone server', () => {
+    // Dockerfile sets HOSTNAME=0.0.0.0, so req.url is never the public name.
+    const proxied = new Request('https://0.0.0.0:3000/api/app/login', {
+      method: 'POST',
+      headers: {
+        origin: 'https://staging.moreska.eu',
+        'x-forwarded-host': 'staging.moreska.eu',
+        'x-forwarded-proto': 'https',
+        'content-type': 'application/json',
+      },
+    })
+    const meta = appRequestMeta(proxied, undefined)
+    expect(meta.allowedOrigins).toContain('https://staging.moreska.eu')
+    expect(rejectAppRequest(meta)).toBeNull()
+  })
+
+  it('still refuses a foreign Origin behind the proxy', () => {
+    const proxied = new Request('https://0.0.0.0:3000/api/app/login', {
+      method: 'POST',
+      headers: {
+        origin: 'https://evil.example',
+        'x-forwarded-host': 'moreska.eu',
+        'x-forwarded-proto': 'https',
+        'content-type': 'application/json',
+      },
+    })
+    expect(rejectAppRequest(appRequestMeta(proxied, 'https://moreska.eu'))?.status).toBe(403)
+  })
+
   it('allows both origins when the deployment is reached under two names', () => {
     const meta = appRequestMeta(req({ origin: 'http://localhost:3426' }), 'http://localhost:3426')
     expect(rejectAppRequest({ ...meta, contentType: 'application/json' })).toBeNull()

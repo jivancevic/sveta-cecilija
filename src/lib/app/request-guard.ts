@@ -47,13 +47,31 @@ export function originOf(url: string | null | undefined): string | null {
   }
 }
 
-/** Reads the three headers off a real request; the base URL is passed in. */
+/**
+ * The origin the browser actually addressed, as the reverse proxy reports it.
+ * Behind the standalone server `req.url` is `https://0.0.0.0:3000/...`
+ * (`HOSTNAME=0.0.0.0` in the Dockerfile), so it never matches a real `Origin`;
+ * Traefik's `X-Forwarded-Host` / `X-Forwarded-Proto` carry the public name.
+ */
+export function forwardedOrigin(req: Request): string | null {
+  const host = req.headers.get('x-forwarded-host')?.split(',')[0]?.trim()
+  if (!host) return null
+  const proto = req.headers.get('x-forwarded-proto')?.split(',')[0]?.trim() || 'https'
+  return originOf(`${proto}://${host}`)
+}
+
+/**
+ * Reads the three headers off a real request; the base URL is passed in.
+ * Allowed origins: the configured base URL (the one prod relies on), the
+ * proxy-forwarded origin, and the request's own URL (only meaningful in dev,
+ * where there is no proxy and no `HOSTNAME=0.0.0.0`).
+ */
 export function appRequestMeta(req: Request, baseUrl?: string | null): AppRequestMeta {
-  // Usually the same origin twice; two entries only when the deployment is
-  // reached under a name other than its configured base URL.
   const allowed = [
     ...new Set(
-      [originOf(baseUrl), originOf(req.url)].filter((o): o is string => o !== null),
+      [originOf(baseUrl), forwardedOrigin(req), originOf(req.url)].filter(
+        (o): o is string => o !== null,
+      ),
     ),
   ]
   return {
