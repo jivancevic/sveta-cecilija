@@ -52,9 +52,9 @@ export const ALLOW_LIST: Record<string, string> = {
   'src/lib/refund/reschedule-refund-context.ts':
     'Order-joined read: refund context for an existing order.',
   'src/app/api/shows/[id]/move-to-zimsko/route.ts':
-    'Id-addressed write route, gated by #409.',
+    'Id-addressed write route; its SELECT feeds the in-handler isPublicPerformance() check merged in #409, which 400s a non-public performance before anything moves.',
   'src/app/api/shows/[id]/reschedule/route.ts':
-    'Id-addressed write route, gated by #409.',
+    'Id-addressed write route; its SELECT feeds the in-handler isPublicPerformance() check merged in #409, which refuses a non-public performance before any buyer is notified.',
 }
 
 /** Files that define or test the predicate itself. */

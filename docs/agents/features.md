@@ -2,6 +2,14 @@
 
 Deeper notes on the features whose design is non-obvious. CLAUDE.md keeps a one-line pointer to each.
 
+## Non-public performances (ADR-0024 phase 2, #404)
+
+`Shows` is the record of **every** performance, not only the ticketed ones. `kind` (`redovna | dmc | gulliver | koncert | ostalo`) says what it is; `isPublic` says whether it sells. A **public** performance is what a show has always been: venue, capacity, online and partner sales, `/tickets`, door scan, ticket statistics. A **non-public** one (a cruise-ship call, a concert, a one-off) carries a free-text `location` and an optional `client` (the ship or organiser), `venue` NULL, no capacity, no sales, and is hidden from every buyer, partner, door and ticket-statistics surface. Save-time rules (`src/lib/show-performance.ts`): `redovna` must be public, public needs a venue, non-public needs a location and gets `venue` NULL plus `inPersonSold` / `legacyReserved` zeroed and `onlineSalesPaused` false.
+
+There is exactly **one** spelling of "is public" — `PUBLIC_PERFORMANCE_WHERE`, `publicPerformanceSql()`, `isPublicPerformance()` in `src/lib/show-performance.ts` — and `src/lib/show-performance-guard.test.ts` scans `src/` and fails the build on any shows read that neither uses it nor is on the allow-list with a justification. Who may edit what: `tickets` owns public rows (dates, venue, status, sales); a `moreska` holder (the voditelj) creates, edits and deletes non-public rows and may set the roster fields (`thresholdCrni` / `thresholdBili`, default 8/8, and `voditeljNote`) on any row, but can never flip a row public or touch a public row's sales fields; `door` sees public rows only.
+
+The 14 non-public performances of 2026 were imported once by `db/schema/seed-zz-nonpublic-performances.sql` (#411). Its guard is the whole INSERT firing only while `NOT EXISTS (SELECT 1 FROM shows WHERE is_public = false)` — bootstrap re-applies every schema file on every restart, so a per-row guard would resurrect a performance the voditelj deleted. Behaviour proof: `scripts/probe-nonpublic-seed.mjs` (throwaway DB, three bootstraps). `docs/performances.md` and the print `.ods` are frozen prints from then on; the database is the source of truth.
+
 ## Bad-weather venue change, Ljetno → Zimsko (#94)
 
 Admin edit-view action `MarkMovedToZimskoMenuItem`, 2-step:

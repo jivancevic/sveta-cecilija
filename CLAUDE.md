@@ -15,7 +15,7 @@
 | Payload admin customization (v3) — component paths, importMap, CSRF gate | `docs/agents/payload-admin.md` |
 | Frontend & CSS gotchas — specificity, `backdrop-filter`, hero loading, `next/image` | `docs/agents/frontend-css.md` |
 | Assets pipeline — `public/` vs `assets/`, webp conversion | `docs/agents/assets.md` |
-| Feature design notes — #94 bad-weather venue change, show reschedule + ticket reissue (#379), #57 marketing opt-outs + review-email attendance gate (#378), Stripe disputes (#380) | `docs/agents/features.md` |
+| Feature design notes — non-public performances (`kind`/`isPublic`, ADR-0024), #94 bad-weather venue change, show reschedule + ticket reissue (#379), #57 marketing opt-outs + review-email attendance gate (#378), Stripe disputes (#380) | `docs/agents/features.md` |
 | Domain glossary | `CONTEXT.md` (single context; see `docs/agents/domain.md`) |
 | Architecture decisions | `docs/adr/` |
 
@@ -113,7 +113,7 @@ Field-level detail lives in `src/collections/*.ts` — this table is purpose + k
 
 | Collection (slug) | Purpose |
 |---|---|
-| `Shows` (`shows`) | Show schedule: date/time/venue, sold counters, `status`, bad-weather venue-move audit fields (#94). Capacity derived per venue, never stored. |
+| `Shows` (`shows`) | **Every** performance, public or not (ADR-0024): `kind` (`redovna \| dmc \| gulliver \| koncert \| ostalo`) + `isPublic` classify the row. Public = date/time/venue, sold counters, `status`, bad-weather venue-move audit fields (#94); capacity derived per venue, never stored. Non-public = free-text `location` / `client`, `venue` NULL, no sales. Roster fields (`thresholdCrni`/`thresholdBili`/`voditeljNote`) are `moreska`-only. |
 | `Orders` (`orders`) | One purchase: buyer + counts + `total` (EUR cents) + `stripePaymentIntentId` + `refundStatus` → Shows. `channel` (`online \| partner \| comp`); `partner` link for reseller scoping; `member` link for comp attribution (ADR-0019); `promoCode` link for online promo orders (ADR-0018, still `channel=online`) |
 | `OrderLookups` (`order-lookups`) | Buyer-facing order lookup support |
 | `Tickets` (`tickets`) | **Per-person** ticket + QR token → Orders; `scanned`/`scannedAt`. Seats = COUNT of active tickets (`online_sold` retired). Renamed from `qr_tokens`. |
@@ -150,7 +150,7 @@ Every decision reads the permission set via `can()` / `hasAny()` from `src/lib/a
 - **Prices:** €20 adult, €10 child (fixed).
 - **Venue capacities:** `ljetno-kino` (Summer Cinema / Ljetno kino) = 320; `zimsko-kino` (Cultural Center Korčula / Centar za kulturu) = 250. Always derived from `VENUE_CAPACITY` in `src/lib/shows.ts`; remaining = capacity − sold tickets.
 - **Public venue names differ from DB values** — EN "Summer Cinema" / "Cultural Center Korčula", HR "Ljetno kino" / "Centar za kulturu". Keys: `schedule.venue*`, `performancesPage.venue*`. Buyer-facing names come from `VENUE_LABEL` in `src/lib/venues.ts`. Venue shown on every show card; a bad-weather note tops the tickets page (zimsko is the fallback).
-- **Show types in `docs/performances.md`:** only `Redovna` (public ticketed) shows appear on `/tickets`; `Gulliver` / `Adriatic DMC` (private tour operator) and `Crveni križ` (charity) are scheduling context only, not in the DB.
+- **Every performance is a `shows` row; `kind` + `isPublic` decide what it is** (ADR-0024). Only `isPublic` rows sell tickets and reach `/tickets`, the door and ticket statistics; `dmc` / `gulliver` / `koncert` / `ostalo` rows are non-public (free-text `location`, no venue, no capacity, no sales). Filter every buyer/partner/door/stats query through `src/lib/show-performance.ts` — the guard test `show-performance-guard.test.ts` fails the build otherwise. Rules: `docs/agents/features.md`. `docs/performances.md` is a frozen print, not the source of truth.
 - **QR codes:** generated server-side at order creation, one per ticket, each encoding `https://moreska.eu/scan/[token]`. Door scanning is the browser-based `/scan/[token]` page only (Pretix dropped from MVP).
 - **Comp & promo:** admin-issued free tickets ride `channel='comp'` (`total=0`, `orders.member` attribution, kept out of revenue, capacity-guarded like a partner sell; ADR-0019). Member promo codes apply at online checkout (`adultPriceEur` override, best-of-two vs the automatic 5-for-4, never stacking; server recomputes; ADR-0018) and stay `channel='online'`.
 - **Refunds:** admin-initiated, plus buyer self-serve on a rescheduled show (ADR-0021: token-authed `/order/[token]/refund`, eligible while unscanned). Both *money-moving* paths share one idempotent, safely re-runnable engine — the route checks `refundStatus` before calling Stripe, the Stripe call carries a stable `refund:<paymentIntentId>` idempotency key (`src/lib/refund/create-stripe-refund.ts`), and a retry on an already-`refunded` order re-voids any still-active tickets (self-heal). Regression probe: `scripts/probe-refund-void.mjs`.

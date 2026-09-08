@@ -1,3 +1,19 @@
+# 2026 season schedule (FROZEN, historical print)
+
+> **The database is the source of truth.** Since September 2026 (#411, ADR-0024
+> phase 2) the `shows` table holds **every** performance of the season, public
+> and non-public: the 22 public `Redovna` shows plus the 14 non-public ones
+> below (Adriatic DMC and Gulliver ship calls, the Sv. Justina concert, the
+> Sv. Todor performance). Add, move or cancel a performance in the Payload
+> admin, never here.
+>
+> This file is a frozen print of the 2026 schedule as it stood at import time,
+> kept for provenance. It is not updated and must not be edited. The print
+> spreadsheet `docs/RASPORED ZA PRINT 2026.ods` is frozen for the same reason.
+>
+> The rows below were imported by `db/schema/seed-zz-nonpublic-performances.sql`
+> (non-public) and `db/schema/seed-shows.sql` (Redovna).
+
 Rbr.,Datum,Dan,Vrijeme,Organizator / Tip,Lokacija,Napomena
 1.,18.05.2026.,Ponedjeljak,21:00,Redovna,Ljetno kino,
 2.,25.05.2026.,Ponedjeljak,21:00,Redovna,Ljetno kino,
