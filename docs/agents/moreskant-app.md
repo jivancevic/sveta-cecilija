@@ -202,6 +202,11 @@ a crypto-random password that is never emailed and never used. A second press
 finds the same login and only mints a fresh token, which is what a lost email
 needs (#419, story 7).
 
+A mail that throws answers **502** with a sentence saying the login exists and
+the letter does not: by then the account has been created and the token minted,
+and a 500 would leave the voditelj guessing which half happened. Pressing again
+is the fix, and it is idempotent.
+
 Two decisions live here rather than in a comment somewhere:
 
 - **The Member's email wins.** A voditelj maintains a dancer's contact details on
@@ -211,16 +216,14 @@ Two decisions live here rather than in a comment somewhere:
 - **The reset token is targeted by username**, not by address: it is unique,
   stable and unaffected by an email the invitation may just have moved.
 
-### The token lengths, and why the collection sets none
+### The token lengths
 
-Payload computes a reset token's life as
-`collectionConfig.auth?.forgotPassword?.expiration ?? expiration ?? 3600000`
-(`payload/dist/auth/operations/forgotPassword.js`). **The collection value wins
-over the argument** — it is not the fallback it reads like. So `Users.auth` sets
-no `forgotPassword.expiration` at all and each caller passes its own: seven days
-from the invitation, one hour from the reset. Setting seven days on the
-collection, as the ticket first suggested, would have frozen the reset at seven
-days too and ignored the hour in silence. `access.test.ts` guards the absence.
+Seven days from the invitation, one hour from the reset, each **passed per
+call** because `Users.auth` deliberately sets no `forgotPassword.expiration` —
+Payload's precedence there is the opposite of what it reads like, and the whole
+explanation lives once next to that config in `src/collections/Users.ts`
+(guarded by `access.test.ts`). `issueAppResetToken` in
+`src/lib/app/account-data.ts` is the single caller both routes go through.
 
 `forgotPassword` is always called with `disableEmail: true`: Payload's own mail
 is English and points at `/admin/reset`, which no dancer may open. The Croatian
@@ -238,12 +241,38 @@ the password they chose two seconds ago. Minimum length is eight, enforced in
 its own. Bad token, expired token, already-used token: one 400 and one sentence,
 because for the dancer they are the same situation.
 
+Three things a reset does **not** do, each of which has surprised somebody:
+
+- It does not clear a **login lockout**. Payload locks an account after its
+  `maxLoginAttempts` and a new password does not unlock it, so a dancer who
+  guessed their way into the lockout waits it out (or a `users` holder unlocks
+  the row) even after setting a new one.
+- It does not **revoke other sessions**. Payload's sessions live in
+  `users.sessions` and `resetPassword` adds one rather than clearing the rest,
+  so a phone that was already signed in stays signed in. "Set a new password" is
+  not "sign everyone else out" here.
+- The **"Member's email wins" rule of a resend overwrites an address the dancer
+  changed themselves** on their own account page. The Member row is where a
+  voditelj maintains contact details, and the next invitation moves the login
+  back onto it; a dancer who wants a different address asks the voditelj to
+  change it on the Member.
+
 `POST /api/app/forgot` **always answers 200** with the same sentence — account
 found, not found, or found without an email — since the difference between two
 answers on a public URL is a list of who has a login. The account lookup is ours
 rather than Payload's: `forgotPassword` returns null for an unknown account and
 never tells us the address to write to, and we need that address for our own
 letter.
+
+It is **throttled** per identifier and per IP (3 and 10 an hour,
+`src/lib/rate-limit/forgot-rate-limit.ts`, the `claim-rate-limit.ts` shape),
+because otherwise it is a free mail cannon aimed at one dancer's inbox and a
+cheap way to keep invalidating the token a voditelj just issued. A throttled
+caller gets the same 200 sentence, no token and no mail: a 429 would tell them
+the guess was worth throttling. The send itself is **fire and forget** for the
+same reason the sentence is fixed — awaiting the Brevo round-trip made a hit
+measurably slower than a miss, and a stopwatch is all it takes to turn one
+answer into two.
 
 Both are unauthenticated, cookie-affecting POSTs outside Payload's CSRF list, so
 they carry `appRequestMeta` + `rejectAppRequest` exactly as the login route
@@ -259,12 +288,17 @@ list (`src/lib/access/member-logins.ts`) — an `afterRead` doing its own lookup
 or a client Cell fetching `/api/users`, would both cost a query per rendered
 line. Read is `moreska`-only like the rest of the roster half; nothing writes it.
 
+The `afterRead` hook runs on **every** read of a Member, the local API included
+(a comp-order lookup, a promo-code page), not only on the admin list. The memo
+is what keeps that cheap, and it only applies where there is a `req.context` to
+hang it on: a call without one pays for its own query.
+
 ### What a dancer cannot do to their own login
 
-`Users.access.update` allows self-edit, so every field of the invitation bundle
-carries its own lock to `users`: `permissions`, `member` and — since #424 —
-`username`, declared in the collection purely to merge that lock into Payload's
-own base field. Verified in the browser: a `moreskant` PATCHing their own row
-with a new username, a new permission set and a different member link gets a
-200 and no change at all (a denied field is dropped in silence, which is exactly
-why the locks are tested).
+Every field of the invitation bundle is locked to `users`, which is what keeps
+the bundle the voditelj issued: the rule and its reasoning live in
+`permissions.md` ("A dancer's login is issued, never self-registered").
+Browser-verified once, and worth knowing when reading a 200 in the network tab:
+a `moreskant` PATCHing their own row with a new username, permission set and
+member link gets a **200 and no change at all**, because a denied field is
+dropped in silence.
