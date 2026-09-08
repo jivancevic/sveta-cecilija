@@ -76,7 +76,7 @@ export const Users: CollectionConfig = {
     // So the two lengths are passed per call instead — seven days from
     // `/api/app/invite`, one hour from `/api/app/forgot` — and the collection
     // keeps Payload's own one-hour default for the admin's reset page.
-    // `users-auth.test.ts` guards the absence.
+    // `src/collections/access.test.ts` guards the absence.
   },
   hooks: {
     // Seed the admin chrome language on login (issue #234, ADR-0015). A fresh
