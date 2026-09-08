@@ -85,7 +85,8 @@ RNO registry updated 2026-08-17 (#369): website `https://moreska.eu/`, e-mail `i
 | `/checkout/[showId]/confirmation` | `…/confirmation/page.tsx` | Post-payment landing; looks up Order by `pi` (5×400ms retry to bridge the webhook race) |
 | `/privacy-policy`, `/cookie-policy` | `src/app/(frontend)/…/page.tsx` | Legal pages (EN+HR), via `LegalPage.tsx` |
 | `/scan/[token]` | `src/app/scan/[token]/page.tsx` (+ `scan/layout.tsx`) | Auth-aware door scan — buyer view if unauth, staff atomic mark-and-read if internal. Outside `(frontend)` (own minimal layout). Logic in `src/lib/scan-token.ts`; CSRF caveats in `payload-admin.md` |
-| `/app`, `/app/login`, `/app/izvedba/[id]`, `/app/statistika`, `/app/set-password`, `/app/forgot` | `src/app/app/…` (own route group + layout) | Moreškant roster app, Croatian only, noindex, outside `(frontend)`/`(payload)`. Access decision in `src/lib/app/access.ts`; attendance answers write through `POST /api/app/attendance`; a dancer's login is issued by the invitation (`POST /api/app/invite`), never self-registered; see `docs/agents/moreskant-app.md` |
+| `/app`, `/app/login`, `/app/izvedba/[id]`, `/app/statistika`, `/app/authorize`, `/app/set-password`, `/app/forgot` | `src/app/app/…` (own route group + layout) | Moreškant roster app, Croatian only, noindex, outside `(frontend)`/`(payload)`. Access decision in `src/lib/app/access.ts`; attendance answers write through `POST /api/app/attendance`; a dancer's login is issued by the invitation (`POST /api/app/invite`), never self-registered; `/app/authorize` is the OAuth consent screen for the MCP connector (#438); see `docs/agents/moreskant-app.md` |
+| `/api/mcp/[transport]` | `src/app/api/mcp/[transport]/route.ts` | MCP server for the Claude app (ADR-0024, #438): five roster tools behind hand-written OAuth 2.1 + PKCE (`src/lib/mcp/`, discovery under `src/app/.well-known/`). A token acts as its user and `moreska` is re-checked per call; rules in `docs/agents/moreskant-app.md` |
 | `/admin`, `/admin/stats`, `/admin/stats/[showId]` | Payload + `src/components/payload/AdminStatsView.tsx`, `AdminShowStatsView.tsx` | Admin dashboard + permission-aware stats views |
 | `/api/stripe/webhook` | `src/app/api/stripe/webhook/route.ts` | Creates Order + Tickets on payment success |
 
@@ -128,6 +129,8 @@ Field-level detail lives in `src/collections/*.ts` — this table is purpose + k
 | `Lineups` (`lineups`) | The postava of one performance (ADR-0024, #432): `performance` → Shows, `member` → Members, `role` from the dance-role enum. Unique on (performance, member); confirmation is one flag per evening (`shows.lineupConfirmed`), and only confirmed lineups reach a dancer or the season statistics. Written only by `POST /api/app/lineup`; rules in `docs/agents/moreskant-app.md`. |
 | `Posts` (`posts`) | Blog posts (heroImage may be a remote URL) |
 | `marketing_optouts` | **Raw table, NOT a Payload collection** (#57): `email` PK, `source`, `optedOutAt`. Created in `db/schema/app.sql`; see `docs/agents/features.md`. |
+| `push_subscriptions`, `performance_notifications` | **Raw tables, NOT Payload collections** (#431, #435): one row per device (endpoint unique across users) and the once-per-performance notification claim. `db/schema/migrate-push.sql`; see `docs/agents/moreskant-app.md`. |
+| `oauth_codes`, `oauth_tokens` | **Raw tables, NOT Payload collections** (#438): the MCP connector's authorization codes and access tokens, both hashed at rest, no refresh token. `db/schema/migrate-zz-d-oauth.sql`; see `docs/agents/moreskant-app.md`. |
 
 ### Permission-based access controls
 
