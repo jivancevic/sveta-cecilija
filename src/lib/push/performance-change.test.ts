@@ -1,10 +1,9 @@
 import { describe, expect, it } from 'vitest'
+import { toPerformanceFacts, type PerformanceFacts } from '@/lib/app/performance-facts'
 import {
   buildChangeMessage,
   decidePerformanceNotification,
   diffPerformance,
-  toChangeSnapshot,
-  type ChangeSnapshot,
 } from './performance-change'
 
 // #436 — the diff and the two messages a saved performance produces.
@@ -15,7 +14,7 @@ import {
 
 const AHEAD = Date.UTC(2026, 7, 1, 6, 0) // 1 Aug 2026, well before the 5th
 
-function snapshot(overrides: Partial<ChangeSnapshot> = {}): ChangeSnapshot {
+function snapshot(overrides: Partial<PerformanceFacts> = {}): PerformanceFacts {
   return {
     id: '7',
     date: '2026-08-05',
@@ -26,11 +25,12 @@ function snapshot(overrides: Partial<ChangeSnapshot> = {}): ChangeSnapshot {
     location: null,
     cancelled: false,
     voditeljNote: null,
+    updatedAt: null,
     ...overrides,
   }
 }
 
-function text(previous: ChangeSnapshot, next: ChangeSnapshot): string {
+function text(previous: PerformanceFacts, next: PerformanceFacts): string {
   const message = buildChangeMessage(next, diffPerformance(previous, next), AHEAD)
   return `${message.title} ${message.body}`
 }
@@ -145,10 +145,10 @@ describe('decidePerformanceNotification', () => {
   })
 })
 
-describe('toChangeSnapshot', () => {
+describe('toPerformanceFacts', () => {
   it('reads a Payload doc, midnight-UTC date and all', () => {
     expect(
-      toChangeSnapshot({
+      toPerformanceFacts({
         id: 7,
         date: '2026-08-05T00:00:00.000Z',
         time: '21:00',
@@ -162,7 +162,7 @@ describe('toChangeSnapshot', () => {
   })
 
   it('keeps a private booking to its location', () => {
-    const snap = toChangeSnapshot({
+    const snap = toPerformanceFacts({
       id: 9,
       date: '2026-09-01',
       time: '10:30',

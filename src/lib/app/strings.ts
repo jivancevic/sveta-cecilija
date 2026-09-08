@@ -283,6 +283,20 @@ export const PUSH_MESSAGES = {
       }. Javi dolaziš li.`,
   },
 
+  /**
+   * A whole season entered at once (#441 review).
+   *
+   * The bulk-create tool writes twenty-two Redovna shows in a loop; twenty-two
+   * separate "nova izvedba" pushes would be a phone buzzing for a minute about
+   * a schedule nobody has to answer this instant. One sentence, and the tap
+   * lands on the list rather than on any one evening.
+   */
+  createdBulk: {
+    title: 'Nove izvedbe',
+    body: (input: { count: number; firstDate: string }) =>
+      `U raspored je dodano ${input.count} ${input.count === 1 ? 'nova izvedba' : 'novih izvedbi'}, prva ${formatPerformanceDate(input.firstDate)}.`,
+  },
+
   /** Type (5), to the voditelji only: a "dolazim" withdrawn (story 18). */
   withdrawal: {
     title: 'Netko je odustao',

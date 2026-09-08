@@ -22,28 +22,11 @@
 //     ever saw.
 
 import { KIND_LABELS, PUSH_MESSAGES } from '@/lib/app/strings'
-import { toRosterPerformance } from '@/lib/app/roster-loaders'
-import type { PerformanceKind } from '@/lib/show-performance'
 import { performancePlace } from '@/lib/app/performance-place'
-import type { Venue } from '@/lib/venues'
+import type { PerformanceFacts } from '@/lib/app/performance-facts'
 import { showStartMs } from '@/lib/show-time'
 import { performanceUrl, untilStartTtlSeconds } from './recipients'
 import type { PushMessage } from './send'
-
-/** The only facts about a performance a change notification reasons about. */
-export interface ChangeSnapshot {
-  id: string
-  /** YYYY-MM-DD */
-  date: string
-  /** HH:MM, Europe/Zagreb wall clock. */
-  time: string
-  kind: PerformanceKind
-  isPublic: boolean
-  venue: Venue | null
-  location: string | null
-  cancelled: boolean
-  voditeljNote: string | null
-}
 
 /** The five watched facts, in the order a message lists them. */
 export type ChangedField = 'date' | 'time' | 'place' | 'cancelled' | 'note'
@@ -51,48 +34,18 @@ export type ChangedField = 'date' | 'time' | 'place' | 'cancelled' | 'note'
 const FIELD_ORDER: ChangedField[] = ['date', 'time', 'place', 'cancelled', 'note']
 
 /**
- * A Payload Shows doc → the snapshot.
- *
- * Built on `toRosterPerformance`, the projection `/app` already uses, so "which
- * place does this row have" is answered once for the cards, the detail page and
- * a notification alike: a public row carries a venue and no location, a private
- * one the reverse.
- */
-export function toChangeSnapshot(doc: Record<string, unknown>): ChangeSnapshot {
-  const p = toRosterPerformance(doc)
-  return {
-    id: p.id,
-    date: p.date,
-    time: p.time,
-    kind: p.kind,
-    isPublic: p.isPublic,
-    venue: p.venue,
-    location: p.location,
-    cancelled: p.cancelled,
-    voditeljNote: p.voditeljNote,
-  }
-}
-
-/**
- * The place as a dancer reads it. The rule lives in `performance-place.ts`,
- * shared with the calendar feed (#433): "where is this" must not have two
- * answers.
- */
-export const placeOf = performancePlace
-
-/**
  * The watched fields that differ. Empty means "this save changed nothing the
  * roster can see", which is the common case: every ticket sale updates a Shows
  * row.
  */
 export function diffPerformance(
-  previous: ChangeSnapshot,
-  next: ChangeSnapshot,
+  previous: PerformanceFacts,
+  next: PerformanceFacts,
 ): ChangedField[] {
   const changed: ChangedField[] = []
   if (previous.date !== next.date) changed.push('date')
   if (previous.time !== next.time) changed.push('time')
-  if (placeOf(previous) !== placeOf(next)) changed.push('place')
+  if (performancePlace(previous) !== performancePlace(next)) changed.push('place')
   if (previous.cancelled !== next.cancelled) changed.push('cancelled')
   if ((previous.voditeljNote ?? '') !== (next.voditeljNote ?? '')) changed.push('note')
   return FIELD_ORDER.filter((field) => changed.includes(field))
@@ -104,7 +57,7 @@ export function startMoved(changed: readonly ChangedField[]): boolean {
 }
 
 export function buildChangeMessage(
-  next: ChangeSnapshot,
+  next: PerformanceFacts,
   changed: readonly ChangedField[],
   nowMs: number = Date.now(),
 ): PushMessage {
@@ -126,17 +79,24 @@ export function buildChangeMessage(
     title: cancelledNow ? PUSH_MESSAGES.change.cancelledTitle : PUSH_MESSAGES.change.title,
     body,
     url: performanceUrl(next.id),
-    // One tag per performance: two saves a minute apart replace each other on
-    // the lock screen. The MESSAGES are still two (story 19) — what collapses
-    // is the notification shade, and the later one wins, which is the one that
-    // is true.
-    tag: `change-${next.id}`,
+    // A tag PER SAVE, not per performance (#441 review). A shared tag would
+    // collapse the shade, and a dancer who has not yet read "vrijeme" would
+    // find only "poruka voditelja" in its place — story 16 says every change
+    // has to say what changed, which it cannot do if it replaces the last one.
+    // The alarm keeps its collapsing tag: two alarms are the same plea twice.
+    tag: `change-${next.id}-${changeTagSuffix(next, nowMs)}`,
     ttlSeconds: untilStartTtlSeconds(next, nowMs),
   }
 }
 
+/** What makes two saves of one performance two notifications. */
+function changeTagSuffix(next: PerformanceFacts, nowMs: number): string {
+  const saved = next.updatedAt ? Date.parse(next.updatedAt) : Number.NaN
+  return String(Number.isNaN(saved) ? nowMs : saved)
+}
+
 export function buildNewPerformanceMessage(
-  next: ChangeSnapshot,
+  next: PerformanceFacts,
   nowMs: number = Date.now(),
 ): PushMessage {
   return {
@@ -145,7 +105,7 @@ export function buildNewPerformanceMessage(
       date: next.date,
       time: next.time,
       kind: KIND_LABELS[next.kind] ?? next.kind,
-      place: placeOf(next),
+      place: performancePlace(next),
     }),
     url: performanceUrl(next.id),
     tag: `new-${next.id}`,
@@ -169,8 +129,8 @@ export type PerformanceNotification =
  * past sends nothing and still needs its claims cleared (#440 review).
  */
 export function decidePerformanceNotification(input: {
-  previous: ChangeSnapshot | null
-  next: ChangeSnapshot
+  previous: PerformanceFacts | null
+  next: PerformanceFacts
   nowMs: number
 }): PerformanceNotification {
   const { previous, next, nowMs } = input

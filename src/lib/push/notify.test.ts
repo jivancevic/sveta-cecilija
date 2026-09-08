@@ -1,7 +1,12 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { AttendanceRow } from '@/lib/attendance/army-count'
 import type { AttendanceMember } from '@/lib/attendance/rules'
-import { notifyPerformanceSaved, notifyWithdrawal, type NotifyDeps } from './notify'
+import {
+  notifyBulkCreated,
+  notifyPerformanceSaved,
+  notifyWithdrawal,
+  type NotifyDeps,
+} from './notify'
 import type { PushMessage, SendPushResult } from './send'
 
 // #436 — the two triggered notifications, driven from outside: what a save or an
@@ -61,6 +66,7 @@ describe('notifyPerformanceSaved', () => {
   it('tells every moreškant with a login about a new performance', async () => {
     const { deps: d, sent } = deps()
     const outcome = await notifyPerformanceSaved({ doc: doc(), operation: 'create' }, d)
+    await outcome.sending
 
     expect(outcome.kind).toBe('created')
     expect(sent).toHaveLength(1)
@@ -76,10 +82,12 @@ describe('notifyPerformanceSaved', () => {
     ]
     const { deps: d, sent } = deps({ loadAttendance: async () => rows })
 
-    await notifyPerformanceSaved(
-      { doc: doc({ time: '20:00' }), previousDoc: doc(), operation: 'update' },
-      d,
-    )
+    await (
+      await notifyPerformanceSaved(
+        { doc: doc({ time: '20:00' }), previousDoc: doc(), operation: 'update' },
+        d,
+      )
+    ).sending
 
     expect(sent).toHaveLength(1)
     expect(sent[0]!.userIds).toEqual(['u2'])
@@ -141,8 +149,45 @@ describe('notifyPerformanceSaved', () => {
       },
     })
     const outcome = await notifyPerformanceSaved({ doc: doc(), operation: 'create' }, d)
-    expect(outcome.kind).toBe('failed')
+    // The save is already done; the fan-out swallows its own failure.
+    expect(outcome.kind).toBe('created')
+    await expect(outcome.sending).resolves.toMatchObject({ delivered: 0 })
     spy.mockRestore()
+  })
+
+  it('returns BEFORE the fan-out settles, so a save never waits on FCM', async () => {
+    let released = false
+    const { deps: d } = deps({
+      send: async () => {
+        await new Promise((resolve) => setTimeout(resolve, 25))
+        released = true
+        return SENT
+      },
+    })
+    const outcome = await notifyPerformanceSaved({ doc: doc(), operation: 'create' }, d)
+    expect(released).toBe(false)
+    await outcome.sending
+    expect(released).toBe(true)
+  })
+})
+
+describe('notifyBulkCreated', () => {
+  it('sends ONE message about the whole batch, pointing at the list', async () => {
+    const { deps: d, sent } = deps()
+    await notifyBulkCreated({ count: 22, firstDate: '2026-05-25' }, d)
+
+    expect(sent).toHaveLength(1)
+    expect(sent[0]!.userIds).toEqual(['u1', 'u2'])
+    expect(sent[0]!.message.url).toBe('/app')
+    expect(`${sent[0]!.message.title} ${sent[0]!.message.body}`).toBe(
+      'Nove izvedbe U raspored je dodano 22 novih izvedbi, prva ponedjeljak, 25. svibnja.',
+    )
+  })
+
+  it('says nothing about an empty batch', async () => {
+    const { deps: d, sent } = deps()
+    await notifyBulkCreated({ count: 0, firstDate: '2026-05-25' }, d)
+    expect(sent).toEqual([])
   })
 })
 

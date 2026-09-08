@@ -48,7 +48,12 @@ export async function POST(req: Request) {
       payload.update({
         collection: 'shows',
         id,
-        data: { voditeljNote: note } as never,
+        // Widened the way `/api/app/login` widens its credentials, and for the
+        // same reason: `data` is typed from the generated `payload-types.ts`,
+        // which this repo deliberately does not commit, so at typecheck time it
+        // is not the Shows shape. This says "a partial Shows update" out loud
+        // rather than casting to `never`, which said nothing at all.
+        data: { voditeljNote: note } as Parameters<typeof payload.update>[0]['data'],
         overrideAccess: true,
         // Carried so Payload attributes the change to the voditelj who made it,
         // the way an admin save is attributed.

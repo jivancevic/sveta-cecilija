@@ -20,11 +20,11 @@
 
 import type { AttendanceRow } from '@/lib/attendance/army-count'
 import type { AttendanceMember } from '@/lib/attendance/rules'
+import { toPerformanceFacts, type PerformanceFacts } from '@/lib/app/performance-facts'
+import { PUSH_MESSAGES } from '@/lib/app/strings'
 import {
   decidePerformanceNotification,
-  toChangeSnapshot,
   type ChangedField,
-  type ChangeSnapshot,
 } from './performance-change'
 import { changeRecipientMembers, toUserIds, type NotifiablePerformance } from './recipients'
 import type { ScheduledNotificationType } from './schedule'
@@ -62,10 +62,18 @@ export interface NotifyOutcome {
   changed: ChangedField[]
   /** True when the alarm/reminder claims were handed back. */
   claimsReleased: boolean
-  result: SendPushResult
+  /**
+   * The DETACHED fan-out, or null when there was nothing to send.
+   *
+   * Nobody in production awaits it (see below); it is returned so a test can,
+   * and so a caller that genuinely wants to wait — a script, a probe — has the
+   * option. It never rejects: a failure is caught, logged and reported as a
+   * result of zeros.
+   */
+  sending: Promise<SendPushResult> | null
 }
 
-const NO_OUTCOME: NotifyOutcome = { kind: 'none', changed: [], claimsReleased: false, result: NOTHING }
+const NO_OUTCOME: NotifyOutcome = { kind: 'none', changed: [], claimsReleased: false, sending: null }
 
 /**
  * One save of a Shows row → at most one push to the roster.
@@ -83,12 +91,32 @@ export async function notifyPerformanceSaved(
   },
   deps: NotifyDeps,
 ): Promise<NotifyOutcome> {
+  return notifyPerformanceFactsSaved(
+    {
+      next: toPerformanceFacts(input.doc),
+      previous:
+        input.operation === 'create' || !input.previousDoc
+          ? null
+          : toPerformanceFacts(input.previousDoc),
+    },
+    deps,
+  )
+}
+
+/**
+ * The same decision over facts already projected.
+ *
+ * The two admin actions that move a performance — the #379 reschedule and the
+ * #94 venue move — write with raw SQL and never touch the collection, so no
+ * hook fires for them (#441 review). They read the row before and after
+ * themselves and call this.
+ */
+export async function notifyPerformanceFactsSaved(
+  input: { previous: PerformanceFacts | null; next: PerformanceFacts },
+  deps: NotifyDeps,
+): Promise<NotifyOutcome> {
   try {
-    const next = toChangeSnapshot(input.doc)
-    const previous =
-      input.operation === 'create' || !input.previousDoc
-        ? null
-        : toChangeSnapshot(input.previousDoc)
+    const { next, previous } = input
 
     const nowMs = (deps.now?.() ?? new Date()).getTime()
     const decision = decidePerformanceNotification({ previous, next, nowMs })
@@ -102,19 +130,41 @@ export async function notifyPerformanceSaved(
     }
 
     if (decision.kind === 'none') {
-      return { kind: 'none', changed: decision.changed, claimsReleased, result: NOTHING }
+      return { kind: 'none', changed: decision.changed, claimsReleased, sending: null }
     }
 
-    const userIds = await rosterUserIds(next, decision.kind === 'changed', deps)
-    const result =
-      userIds.length === 0 ? NOTHING : await deps.send(userIds, decision.message)
+    // DETACHED, deliberately (#441 review). Payload runs `afterChange` inside
+    // the save's transaction, so awaiting a fan-out here would hold that
+    // transaction open for a round trip to FCM per device: an admin pressing
+    // Save would wait for twenty phones. The claim release above is awaited
+    // because it is one fast DELETE on the same connection and because a
+    // release that silently did not happen is the very defect this fixes.
+    const sending = detach(sendToRoster(next, decision.kind === 'changed', decision.message, deps))
 
-    return { kind: decision.kind, changed: decision.changed, claimsReleased, result }
+    return { kind: decision.kind, changed: decision.changed, claimsReleased, sending }
   } catch (err) {
     // A save must never fail because a notification could not be worked out.
     console.error('[push] performance notification failed', err)
     return { ...NO_OUTCOME, kind: 'failed' }
   }
+}
+
+/** Swallow and log, so a detached send can never become an unhandled rejection. */
+function detach(work: Promise<SendPushResult>): Promise<SendPushResult> {
+  return work.catch((err) => {
+    console.error('[push] fan-out failed', err)
+    return NOTHING
+  })
+}
+
+async function sendToRoster(
+  performance: PerformanceFacts,
+  excludeNotComing: boolean,
+  message: PushMessage,
+  deps: NotifyDeps,
+): Promise<SendPushResult> {
+  const userIds = await rosterUserIds(performance, excludeNotComing, deps)
+  return userIds.length === 0 ? NOTHING : deps.send(userIds, message)
 }
 
 /**
@@ -125,7 +175,7 @@ export async function notifyPerformanceSaved(
  * out of the fan-out — the one place that happens is `toUserIds` (#431).
  */
 async function rosterUserIds(
-  performance: ChangeSnapshot,
+  performance: PerformanceFacts,
   excludeNotComing: boolean,
   deps: NotifyDeps,
 ): Promise<string[]> {
@@ -146,6 +196,44 @@ async function rosterUserIds(
 }
 
 /**
+ * A bulk create → ONE notification (#441 review).
+ *
+ * `/api/shows/bulk-create` writes a season in a loop, and twenty-two "nova
+ * izvedba" pushes is a phone buzzing for a minute about a schedule nobody has
+ * to answer this instant. The loop sets `skipRosterPush` on the request context
+ * so the hook stays quiet, and the route calls this once afterwards.
+ *
+ * The tap lands on `/app` rather than on a performance, because there is no one
+ * performance this message is about.
+ */
+export async function notifyBulkCreated(
+  input: { count: number; firstDate: string },
+  deps: Pick<NotifyDeps, 'loadMoreskanti' | 'loadUserIdsByMember' | 'send'>,
+): Promise<SendPushResult> {
+  try {
+    if (input.count <= 0) return NOTHING
+    const members = await deps.loadMoreskanti()
+    const memberIds = [...new Set(members.map((m) => String(m.id)))]
+    if (memberIds.length === 0) return NOTHING
+    const userIds = toUserIds(memberIds, await deps.loadUserIdsByMember(memberIds))
+    if (userIds.length === 0) return NOTHING
+    return await deps.send(userIds, {
+      title: PUSH_MESSAGES.createdBulk.title,
+      body: PUSH_MESSAGES.createdBulk.body(input),
+      url: '/app',
+      tag: `bulk-${input.firstDate}`,
+      ttlSeconds: BULK_TTL_SECONDS,
+    })
+  } catch (err) {
+    console.error('[push] bulk create notification failed', err)
+    return NOTHING
+  }
+}
+
+/** A season announcement can wait out a night in a tunnel; a week is plenty. */
+export const BULK_TTL_SECONDS = 7 * 24 * 60 * 60
+
+/**
  * A withdrawn "dolazim" → the voditelji (type 5).
  *
  * The rule is `isWithdrawal`, pure and tested on its own; this half only finds
@@ -155,7 +243,7 @@ async function rosterUserIds(
 export async function notifyWithdrawal(
   input: {
     performance: NotifiablePerformance
-    who: { memberId: string; nickname: string | null; name?: string | null }
+    who: { memberId: string; nickname: string | null }
   } & WithdrawalInput,
   deps: Pick<NotifyDeps, 'loadVoditeljUserIds' | 'send'>,
 ): Promise<SendPushResult> {

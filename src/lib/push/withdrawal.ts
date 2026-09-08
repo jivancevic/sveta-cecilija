@@ -49,13 +49,16 @@ export function isWithdrawal(input: WithdrawalInput): boolean {
 
 export function buildWithdrawalMessage(
   performance: NotifiablePerformance,
-  who: { memberId: string; nickname: string | null; name?: string | null },
+  who: { memberId: string; nickname: string | null },
   nowMs: number = Date.now(),
 ): PushMessage {
   return {
     title: PUSH_MESSAGES.withdrawal.title,
     body: PUSH_MESSAGES.withdrawal.body({
-      who: who.nickname?.trim() || who.name?.trim() || PUSH_MESSAGES.withdrawal.someone,
+      // A moreškant's nickname is required and unique (#420), so the fallback
+      // is for a Member row that could not be read at all, not for a dancer
+      // without one.
+      who: who.nickname?.trim() || PUSH_MESSAGES.withdrawal.someone,
       date: performance.date,
       time: performance.time,
     }),

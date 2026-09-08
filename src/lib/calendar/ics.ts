@@ -28,26 +28,15 @@
 
 import { KIND_LABELS } from '@/lib/app/strings'
 import { performancePlace } from '@/lib/app/performance-place'
-import type { PerformanceKind } from '@/lib/show-performance'
+import type { PerformanceFacts } from '@/lib/app/performance-facts'
 import { showStartMs } from '@/lib/show-time'
-import type { Venue } from '@/lib/venues'
 
-/** One row of the feed. The projection `calendar-data.ts` fills. */
-export interface CalendarPerformance {
-  id: string
-  /** YYYY-MM-DD */
-  date: string
-  /** HH:MM, Europe/Zagreb wall clock. */
-  time: string
-  kind: PerformanceKind
-  isPublic: boolean
-  venue: Venue | null
-  location: string | null
-  cancelled: boolean
-  voditeljNote: string | null
-  /** The row's `updatedAt`, ISO. Drives SEQUENCE. */
-  updatedAt: string | null
-}
+/**
+ * One row of the feed: the SAME facts the change notification diffs
+ * (`performance-facts.ts`), of which only this consumer reads `updatedAt` — it
+ * drives SEQUENCE.
+ */
+export type CalendarPerformance = PerformanceFacts
 
 /** Every performance is one hour in the calendar (#430, story 44). */
 export const EVENT_DURATION_MS = 60 * 60 * 1000

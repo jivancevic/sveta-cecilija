@@ -1,10 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import {
-  calendarFeedUrl,
-  decideCalendarFeed,
-  toCalendarPerformance,
-  tokenFromSegment,
-} from './feed'
+import { toPerformanceFacts } from '@/lib/app/performance-facts'
+import { calendarFeedUrl, decideCalendarFeed, tokenFromSegment } from './feed'
 
 // #433 — the gate and the URL the `/app` panel shows.
 
@@ -54,10 +50,10 @@ describe('calendarFeedUrl', () => {
   })
 })
 
-describe('toCalendarPerformance', () => {
+describe('toPerformanceFacts, as the feed reads it', () => {
   it('projects a Payload doc, updatedAt included', () => {
     expect(
-      toCalendarPerformance({
+      toPerformanceFacts({
         id: 7,
         date: '2026-08-05T00:00:00.000Z',
         time: '21:00',

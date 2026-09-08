@@ -20,6 +20,7 @@
 // time and cancellation rules live and is unit-tested directly.
 
 import { seasonYear } from '@/lib/member/season'
+import { toIsoDate } from '@/lib/to-iso-date'
 import { isPublicPerformance, type PerformanceKind } from '@/lib/show-performance'
 import { showStartMs } from '@/lib/show-time'
 import type { ShowsFind } from '@/lib/show-loaders'
@@ -96,7 +97,11 @@ function text(value: unknown): string | null {
 
 /** One raw Payload doc → one card. */
 export function toRosterPerformance(row: Record<string, unknown>): RosterPerformance {
-  const date = String(row.date ?? '').slice(0, 10)
+  // `toIsoDate`, never a `String(...).slice(0, 10)`: the local API hands the
+  // date over as an ISO string, but a RAW pg read of the same column hands over
+  // a JS Date, whose `String()` is "Mon Jun 22 2026 …" — sliced to ten
+  // characters that would look like a changed date to the #436 diff.
+  const date = toIsoDate(row.date)
   const time = typeof row.time === 'string' ? row.time : ''
   const isPublic = isPublicPerformance(row)
   return {

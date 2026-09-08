@@ -17,9 +17,7 @@
 // A mismatch answers 404, not 403: to anyone without the token this URL simply
 // does not exist, and a 403 would confirm that a feed is there to be guessed at.
 
-import { toRosterPerformance } from '@/lib/app/roster-loaders'
 import { secretMatches } from '@/lib/timing-safe'
-import type { CalendarPerformance } from './ics'
 
 /** The path the `/app` panel shows and a calendar client subscribes to. */
 export function calendarFeedPath(token: string): string {
@@ -61,24 +59,6 @@ export function decideCalendarFeed(
     : 'unknown-token'
 }
 
-/**
- * A Payload Shows doc → one calendar event.
- *
- * `toRosterPerformance` again (the projection `/app` and the change
- * notification share), plus `updatedAt`, which only the feed cares about.
- */
-export function toCalendarPerformance(doc: Record<string, unknown>): CalendarPerformance {
-  const p = toRosterPerformance(doc)
-  return {
-    id: p.id,
-    date: p.date,
-    time: p.time,
-    kind: p.kind,
-    isPublic: p.isPublic,
-    venue: p.venue,
-    location: p.location,
-    cancelled: p.cancelled,
-    voditeljNote: p.voditeljNote,
-    updatedAt: typeof doc.updatedAt === 'string' ? doc.updatedAt : null,
-  }
-}
+// A Payload doc becomes a calendar event through `toPerformanceFacts`
+// (`src/lib/app/performance-facts.ts`), the projection this feed shares with
+// the change notification. There is no mapper of its own here.

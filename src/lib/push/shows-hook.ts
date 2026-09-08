@@ -14,19 +14,33 @@
 //     so this hook fires), and it is also why the diff is narrow: a sale
 //     changes nothing the diff watches and sends nothing.
 //   - Nothing it does may fail the save. `notifyPerformanceSaved` already
-//     catches its own errors; the try/catch here covers the deps themselves
-//     (a Payload instance with no pool, in a script or a test).
+//     catches its own errors and DETACHES the fan-out (it runs inside the
+//     save's transaction); the try/catch here covers the deps themselves (a
+//     Payload instance with no pool, in a script or a test).
+//   - One caller opts out: the bulk create sets `skipRosterPush` on the request
+//     context, because a season entered in a loop is ONE announcement and not
+//     twenty-two (#441 review). The flag is deliberately narrow — a boolean on
+//     `req.context`, read here and set in exactly one place.
 
 import type { CollectionAfterChangeHook } from 'payload'
 import { createPushDeps, type PushPayload } from './push-data'
 import { notifyPerformanceSaved } from './notify'
+
+/** The `req.context` flag a caller sets to write without notifying the roster. */
+export const SKIP_ROSTER_PUSH = 'skipRosterPush'
 
 export const notifyRosterOnShowChange: CollectionAfterChangeHook = async ({
   doc,
   previousDoc,
   operation,
   req,
+  context,
 }) => {
+  const ctx = (context ?? (req as { context?: Record<string, unknown> }).context) as
+    | Record<string, unknown>
+    | undefined
+  if (ctx?.[SKIP_ROSTER_PUSH] === true) return doc
+
   try {
     const deps = createPushDeps(req.payload as unknown as PushPayload)
     await notifyPerformanceSaved(

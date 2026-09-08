@@ -1,7 +1,7 @@
 import { getPayload } from 'payload'
 import config from '@payload-config'
 import { seasonYear } from '@/lib/member/season'
-import { toCalendarPerformance } from './feed'
+import { toPerformanceFacts } from '@/lib/app/performance-facts'
 import type { CalendarPerformance } from './ics'
 
 // The one Payload read behind the calendar feed (#433) — the `roster-data.ts`
@@ -32,5 +32,5 @@ export async function getCalendarPerformances(
     overrideAccess: true,
   })
 
-  return (result.docs as unknown as Record<string, unknown>[]).map(toCalendarPerformance)
+  return (result.docs as unknown as Record<string, unknown>[]).map(toPerformanceFacts)
 }

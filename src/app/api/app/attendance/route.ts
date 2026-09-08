@@ -181,18 +181,17 @@ export async function POST(req: Request) {
         send: (userIds: readonly string[], message: PushMessage) =>
           pushDeps().send(userIds, message),
       }
-      await notifyWithdrawal(
+      // DETACHED (#441 review): the dancer's answer must not wait for the
+      // voditelji's phones. `notifyWithdrawal` never rejects, and the catch is
+      // belt to those braces.
+      void notifyWithdrawal(
         {
           performance: {
             id: event.performance.id,
             date: event.performance.date ?? '',
             time: event.performance.time ?? '',
           },
-          who: {
-            memberId: event.memberId,
-            nickname: event.member?.nickname ?? null,
-            name: event.member?.name ?? null,
-          },
+          who: { memberId: event.memberId, nickname: event.member?.nickname ?? null },
           previousStatus: event.previousStatus,
           nextStatus: event.nextStatus,
           ownAnswer: event.ownAnswer,
@@ -200,7 +199,7 @@ export async function POST(req: Request) {
           nowMs: event.nowMs,
         },
         push,
-      )
+      ).catch((err) => console.error('[push] withdrawal notification failed', err))
     },
   })
 

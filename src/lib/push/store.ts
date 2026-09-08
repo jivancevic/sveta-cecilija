@@ -121,10 +121,18 @@ export async function loadUserIdsByMember(
  *
  * Nothing filters on "has a device": the sender loads subscriptions and a
  * voditelj without one simply contributes nothing to the fan-out.
+ *
+ * SHARED accounts are excluded (#441 review). `shared` is the marker of a login
+ * several people use (ADR-0022) — the society's `member` account holds `moreska`
+ * and lives on whatever phone last signed in, so a withdrawal notice addressed
+ * to it would ring a device that belongs to nobody in particular.
  */
 export async function loadVoditeljUserIds(query: PushQuery): Promise<string[]> {
   const res = await query(
-    `SELECT DISTINCT parent_id FROM users_permissions WHERE value = $1`,
+    `SELECT DISTINCT up.parent_id
+       FROM users_permissions up
+       JOIN users u ON u.id = up.parent_id
+      WHERE up.value = $1 AND u.shared IS NOT TRUE`,
     ['moreska'],
   )
   return res.rows.map((row) => String(row.parent_id))
