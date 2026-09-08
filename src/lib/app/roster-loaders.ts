@@ -23,7 +23,8 @@ import { seasonYear } from '@/lib/member/season'
 import { isPublicPerformance, type PerformanceKind } from '@/lib/show-performance'
 import { showStartMs } from '@/lib/show-time'
 import type { ShowsFind } from '@/lib/show-loaders'
-import { moreskantMayAnswer, type AttendanceStatus } from '@/lib/attendance/rules'
+import { moreskantMayAnswer, type Army, type AttendanceMember, type AttendanceStatus } from '@/lib/attendance/rules'
+import { countArmies, type AttendanceRow } from '@/lib/attendance/army-count'
 import type { Venue } from '@/lib/venues'
 
 /** One performance card. No email, ever. */
@@ -52,6 +53,17 @@ export interface RosterPerformance {
   myAnswer: AttendanceStatus | null
   /** Whether the viewer may still change that answer from the card (#422). */
   canAnswer: boolean
+  /**
+   * The per-army headcount chip a voditelj sees on the card (#423), or null for
+   * a moreškant, who gets the numbers on the detail page instead.
+   */
+  chip: ArmyChip | null
+}
+
+/** The card chip: two headcounts against two thresholds, nothing else. */
+export interface ArmyChip {
+  crni: { count: number; threshold: number; below: boolean }
+  bili: { count: number; threshold: number; below: boolean }
 }
 
 export interface SeasonPerformances {
@@ -104,9 +116,10 @@ export function toRosterPerformance(row: Record<string, unknown>): RosterPerform
     startMs: date && time ? showStartMs(date, time) : Number.NaN,
     thresholdCrni: threshold(row.thresholdCrni),
     thresholdBili: threshold(row.thresholdBili),
-    // Filled in by attachOwnAnswers once the viewer is known.
+    // Filled in by attachOwnAnswers / attachArmyChips once the viewer is known.
     myAnswer: null,
     canAnswer: false,
+    chip: null,
   }
 }
 
@@ -159,6 +172,41 @@ export function attachOwnAnswers(
     myAnswer: answers.get(p.id) ?? null,
     canAnswer: opts.hasMember && (opts.voditelj || moreskantMayAnswer(p, nowMs)),
   }))
+}
+
+/**
+ * The per-army headcount on every card (#423, voditelj story 10): a short
+ * performance has to stand out in the list, not only once you open it.
+ *
+ * The numbers come from `countArmies`, the single home of the counting rule —
+ * this function only groups the season's rows by performance and hands each
+ * bundle over, so the chip and the detail page can never disagree.
+ */
+export function attachArmyChips(
+  rows: RosterPerformance[],
+  attendance: readonly (AttendanceRow & { performanceId: string })[],
+  members: readonly AttendanceMember[],
+): RosterPerformance[] {
+  const byPerformance = new Map<string, AttendanceRow[]>()
+  for (const row of attendance) {
+    const list = byPerformance.get(row.performanceId)
+    if (list) list.push(row)
+    else byPerformance.set(row.performanceId, [row])
+  }
+
+  return rows.map((p) => {
+    const count = countArmies(byPerformance.get(p.id) ?? [], members, {
+      crni: p.thresholdCrni,
+      bili: p.thresholdBili,
+    })
+    return {
+      ...p,
+      chip: {
+        crni: { count: count.crni.count, threshold: count.crni.threshold, below: count.crni.below },
+        bili: { count: count.bili.count, threshold: count.bili.threshold, below: count.bili.below },
+      },
+    }
+  })
 }
 
 export interface SeasonPerformancesDeps {
@@ -217,6 +265,47 @@ export async function loadSeasonPerformances(
     voditelj: deps.voditelj === true,
     hasMember: deps.memberId != null,
   })
+
+  // The voditelj's headcount chips: two more queries, and only for the account
+  // that has a reason to see them. A dancer gets the numbers on the detail page.
+  if (deps.voditelj) {
+    const [all, roster] = await Promise.all([
+      deps.find({ collection: 'attendance', limit: 5000, depth: 0 }),
+      deps.find({
+        collection: 'members',
+        where: { and: [{ isMoreskant: { equals: true } }, { active: { not_equals: false } }] },
+        limit: 1000,
+        depth: 0,
+      }),
+    ])
+
+    const attendance: (AttendanceRow & { performanceId: string })[] = []
+    for (const row of all.docs) {
+      const performanceId = relationIdOf(row.performance)
+      const memberId = relationIdOf(row.member)
+      if (!performanceId || !memberId) continue
+      if (row.status !== 'coming' && row.status !== 'not_coming') continue
+      attendance.push({
+        performanceId,
+        memberId,
+        status: row.status,
+        army: row.army === 'crni' || row.army === 'bili' ? (row.army as Army) : null,
+      })
+    }
+
+    const members: AttendanceMember[] = roster.docs.map((doc) => ({
+      id: String(doc.id),
+      name: typeof doc.name === 'string' ? doc.name : null,
+      nickname: typeof doc.nickname === 'string' ? doc.nickname : null,
+      mobile: typeof doc.mobile === 'string' ? doc.mobile : null,
+      roles: Array.isArray(doc.roles) ? (doc.roles as string[]) : [],
+      primaryRole: typeof doc.primaryRole === 'string' ? doc.primaryRole : null,
+      active: doc.active !== false,
+      isMoreskant: doc.isMoreskant === true,
+    }))
+
+    rows = attachArmyChips(rows, attendance, members)
+  }
 
   return { year, ...splitSeasonPerformances(rows, now.getTime()) }
 }

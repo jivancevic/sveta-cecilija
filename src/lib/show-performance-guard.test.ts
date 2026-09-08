@@ -51,6 +51,8 @@ export const ALLOW_LIST: Record<string, string> = {
     'Order-joined read: partner ledger page, driven by the partner’s own orders.',
   'src/lib/refund/reschedule-refund-context.ts':
     'Order-joined read: refund context for an existing order.',
+  'src/lib/app/detail-data.ts':
+    'Roster read (#423): the moreškant app covers EVERY performance of the season, public or not (ADR-0024) — filtering on the predicate would hide a ship call from the dancers who have to turn up for it. Id-addressed, behind the /app access decision.',
   'src/app/api/app/attendance/route.ts':
     'Roster write route (#422): the moreškant app covers EVERY performance of the season, public or not (ADR-0024), so filtering on the predicate would be wrong. The id-addressed read only builds the start instant and the cancelled flag for the answer rules, behind requirePermission([moreskant, moreska]).',
   'src/app/api/shows/[id]/move-to-zimsko/route.ts':

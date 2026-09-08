@@ -431,3 +431,127 @@
   font-size: 13px;
   color: #f0b9b9;
 }
+
+/* ── Headcount chips + performance detail (#423) ─────────── */
+.app__card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.app__chip {
+  display: inline-block;
+  padding: 4px 8px;
+  border: 1px solid var(--cardEdge);
+  border-radius: var(--radius);
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* Below threshold: the whole point of the chip is that a short evening is
+   visible without opening it. */
+.app__chip--low {
+  border-color: #c05252;
+  background: rgba(139, 0, 0, 0.28);
+  color: #f0b9b9;
+  font-weight: 700;
+}
+
+.app__back {
+  display: inline-block;
+  margin-bottom: 6px;
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.app__back:hover,
+.app__back:focus-visible {
+  color: var(--goldBright);
+}
+
+.app__note--detail {
+  margin-top: 16px;
+}
+
+.app__army {
+  margin-top: 28px;
+}
+
+.app__army-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--cardEdge);
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--light);
+}
+
+.app__people {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.app__person {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(154, 154, 154, 0.14);
+}
+
+.app__person-call,
+.app__person-name {
+  display: flex;
+  flex-direction: column;
+  color: var(--light);
+  text-decoration: none;
+  font-size: 16px;
+}
+
+.app__person-call {
+  color: var(--goldBright);
+}
+
+.app__person-mobile {
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.app__move {
+  min-height: 36px;
+  padding: 6px 10px;
+  background: none;
+  border: 1px dashed var(--cardEdge);
+  border-radius: var(--radius);
+  color: var(--muted);
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.app__move:hover:not([disabled]),
+.app__move:focus-visible {
+  color: var(--light);
+  border-color: var(--gold);
+}

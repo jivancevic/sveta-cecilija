@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import {
   CANCELLED_WINDOW_MS,
+  attachArmyChips,
   attachOwnAnswers,
   loadSeasonPerformances,
   splitSeasonPerformances,
@@ -346,5 +347,106 @@ describe('loadSeasonPerformances — own answers', () => {
       now: () => new Date('2026-08-05T10:00:00.000Z'),
     })
     expect(out.upcoming[0]).toMatchObject({ thresholdCrni: 8, thresholdBili: 8 })
+  })
+})
+
+// ---------------------------------------------------------------------------
+// The voditelj's headcount chip (#423, story 10).
+// ---------------------------------------------------------------------------
+describe('attachArmyChips', () => {
+  const rows = [
+    toRosterPerformance(doc({ id: '1', date: '2026-08-20', thresholdCrni: 2, thresholdBili: 1 })),
+    toRosterPerformance(doc({ id: '2', date: '2026-08-25', thresholdCrni: 2, thresholdBili: 1 })),
+  ]
+  const members = [
+    { id: '1', nickname: 'Cici', roles: ['crni'], primaryRole: 'crni', active: true, isMoreskant: true },
+    { id: '2', nickname: 'Bepo', roles: ['crni'], primaryRole: 'crni', active: true, isMoreskant: true },
+    { id: '3', nickname: 'Dado', roles: ['bili'], primaryRole: 'bili', active: true, isMoreskant: true },
+  ]
+
+  it('counts each performance separately against its own thresholds', () => {
+    const out = attachArmyChips(
+      rows,
+      [
+        { performanceId: '1', memberId: '1', status: 'coming', army: 'crni' },
+        { performanceId: '1', memberId: '2', status: 'coming', army: 'crni' },
+        { performanceId: '1', memberId: '3', status: 'coming', army: 'bili' },
+        { performanceId: '2', memberId: '1', status: 'coming', army: 'crni' },
+      ],
+      members,
+    )
+    expect(out[0].chip).toEqual({
+      crni: { count: 2, threshold: 2, below: false },
+      bili: { count: 1, threshold: 1, below: false },
+    })
+    expect(out[1].chip).toEqual({
+      crni: { count: 1, threshold: 2, below: true },
+      bili: { count: 0, threshold: 1, below: true },
+    })
+  })
+
+  it('turns from below-threshold to ok when the missing dancer answers', () => {
+    const before = attachArmyChips(rows, [], members)
+    expect(before[0].chip?.crni.below).toBe(true)
+    const after = attachArmyChips(
+      rows,
+      [
+        { performanceId: '1', memberId: '1', status: 'coming', army: 'crni' },
+        { performanceId: '1', memberId: '2', status: 'coming', army: 'crni' },
+      ],
+      members,
+    )
+    expect(after[0].chip?.crni.below).toBe(false)
+  })
+
+  it('never counts a not-coming answer', () => {
+    const out = attachArmyChips(
+      rows,
+      [{ performanceId: '1', memberId: '1', status: 'not_coming', army: 'crni' }],
+      members,
+    )
+    expect(out[0].chip?.crni.count).toBe(0)
+  })
+})
+
+describe('loadSeasonPerformances — the chip is the voditelj\'s only', () => {
+  const shows = [doc({ id: 1, date: '2026-08-20' })]
+  const findFor = () =>
+    vi.fn(async (args: { collection?: string }) => {
+      if (args.collection === 'attendance') {
+        return { docs: [{ performance: 1, member: 3, status: 'coming', army: 'crni' }] }
+      }
+      if (args.collection === 'members') {
+        return {
+          docs: [
+            { id: 3, nickname: 'Cici', roles: ['crni'], primaryRole: 'crni', active: true, isMoreskant: true },
+          ],
+        }
+      }
+      return { docs: shows }
+    })
+
+  it('attaches a chip for a voditelj', async () => {
+    const out = await loadSeasonPerformances({
+      find: findFor(),
+      voditelj: true,
+      memberId: '3',
+      now: () => new Date('2026-08-05T10:00:00.000Z'),
+    })
+    expect(out.upcoming[0].chip).toEqual({
+      crni: { count: 1, threshold: 8, below: true },
+      bili: { count: 0, threshold: 8, below: true },
+    })
+  })
+
+  it('attaches none for a moreškant, and asks for no roster', async () => {
+    const f = findFor()
+    const out = await loadSeasonPerformances({
+      find: f,
+      memberId: '3',
+      now: () => new Date('2026-08-05T10:00:00.000Z'),
+    })
+    expect(out.upcoming[0].chip).toBeNull()
+    expect(f.mock.calls.some((c) => c[0].collection === 'members')).toBe(false)
   })
 })

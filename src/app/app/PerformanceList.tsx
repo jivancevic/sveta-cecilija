@@ -56,9 +56,21 @@ function PerformanceCard({
           {where.client && <span className="app__card-client"> · {where.client}</span>}
         </p>
       )}
-      <span className={`app__tag${p.cancelled ? ' app__tag--cancelled' : ''}`}>
-        {p.cancelled ? APP_STRINGS.card.cancelled : KIND_LABELS[p.kind]}
-      </span>
+      <div className="app__card-tags">
+        <span className={`app__tag${p.cancelled ? ' app__tag--cancelled' : ''}`}>
+          {p.cancelled ? APP_STRINGS.card.cancelled : KIND_LABELS[p.kind]}
+        </span>
+        {p.chip && (
+          <>
+            <span className={`app__chip${p.chip.crni.below ? ' app__chip--low' : ''}`}>
+              {APP_STRINGS.detail.crni} {p.chip.crni.count}/{p.chip.crni.threshold}
+            </span>
+            <span className={`app__chip${p.chip.bili.below ? ' app__chip--low' : ''}`}>
+              {APP_STRINGS.detail.bili} {p.chip.bili.count}/{p.chip.bili.threshold}
+            </span>
+          </>
+        )}
+      </div>
       {p.voditeljNote && (
         <p className="app__note">
           <span className="app__note-label">{APP_STRINGS.card.noteLabel}</span>
