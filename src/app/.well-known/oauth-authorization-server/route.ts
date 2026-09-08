@@ -37,6 +37,11 @@ export function GET() {
       grant_types_supported: ['authorization_code'],
       code_challenge_methods_supported: ['S256'],
       token_endpoint_auth_methods_supported: ['none'],
+      // `mcp` only. The MCP route additionally REQUIRES a `moreska` scope, but
+      // that one is not advertised and cannot be asked for: it is stamped on
+      // the token at verification time from the live permission set and never
+      // stored, so it is a permission wearing a scope's clothes rather than
+      // something a client may request (`moreskant-app.md`).
       scopes_supported: [...SUPPORTED_SCOPES],
     },
     { headers: CORS },

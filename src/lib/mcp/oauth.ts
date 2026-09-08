@@ -234,8 +234,14 @@ export interface TokenResponse {
   scope?: string
 }
 
-/** The OAuth error codes this server ever answers with. */
-export type OAuthErrorCode = 'invalid_grant' | 'invalid_request' | 'invalid_client'
+/**
+ * The OAuth error codes this server ever answers with.
+ *
+ * `invalid_client` is deliberately absent: the client is public and identified
+ * rather than authenticated, so a wrong client id is refused by the route
+ * before the grant runs and never becomes an {@link OAuthError} (#445 review).
+ */
+export type OAuthErrorCode = 'invalid_grant' | 'invalid_request'
 
 export class OAuthError extends Error {
   constructor(public readonly code: OAuthErrorCode) {
@@ -308,10 +314,16 @@ export async function verifyAccessToken(
   store: OAuthStore,
   token: string,
   now: () => number = Date.now,
+  expectedResource?: string,
 ): Promise<VerifiedToken | undefined> {
   const row = await store.findToken(sha256(token))
   if (!row) return undefined
   if (row.expiresAt < now()) return undefined
+  // RFC 8707 audience binding, actually enforced (#445 review): a token issued
+  // for another resource is not a token for this one. Without the comparison
+  // the stored value would be decoration — and a deployment whose public URL
+  // moved would keep honouring tokens minted for the old audience.
+  if (expectedResource !== undefined && row.resource !== expectedResource) return undefined
   return {
     tokenId: row.id,
     userId: row.userId,

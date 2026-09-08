@@ -25,9 +25,11 @@ import { isDanceRole } from '@/lib/moreskant-profile'
 import { loadMemberIdsWithLogin } from '@/lib/access/member-logins'
 import { replaceLineupInTransaction } from '@/lib/lineup/write-tx'
 import { createLineupStore, type LineupStorePayload } from '@/lib/lineup/lineup-store'
-import { createPerformancesInBulk } from '@/lib/performance-bulk-create'
-import { createPushDeps, type PushPayload } from '@/lib/push/push-data'
-import { notifyBulkCreated } from '@/lib/push/notify'
+import {
+  createPerformancesInBulk,
+  payloadBulkDeps,
+  type BulkCreatePayload,
+} from '@/lib/performance-bulk-create'
 import type { Venue } from '@/lib/venues'
 import type {
   McpAttendanceRow,
@@ -211,17 +213,13 @@ export function createMcpStore(payload: McpPayload, user?: unknown): McpStore {
         createLineupStore(payload as unknown as LineupStorePayload, user),
       ),
 
-    // The SAME writer `/api/shows/bulk-create` uses: one create per row with
-    // the roster-push flag, then ONE "N novih izvedbi" push (#441 review).
+    // The SAME writer `/api/shows/bulk-create` uses, transaction and all: one
+    // create per row with the roster-push flag, then ONE "N novih izvedbi"
+    // push (#441 review).
     createPerformances: (rows) =>
-      createPerformancesInBulk(rows, {
-        create: (args) => payload.create({ collection: 'shows', overrideAccess: true, user, ...args }),
-        announce: (input) => {
-          const push = createPushDeps(payload as unknown as PushPayload)
-          void notifyBulkCreated(input, push).catch((err) =>
-            console.error('[push] bulk create notification failed', err),
-          )
-        },
-      }),
+      createPerformancesInBulk(
+        rows,
+        payloadBulkDeps(payload as unknown as BulkCreatePayload, user),
+      ),
   }
 }

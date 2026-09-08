@@ -13,6 +13,9 @@
 //     can only ever land inside this app;
 //   - `//host` and `/\host` are refused, because a browser reads both as
 //     protocol-relative and would leave the site;
+//   - a `..` SEGMENT is refused (#445 review): `/app/../admin` starts with
+//     `/app/` and still resolves to `/admin`, so the prefix test alone is not
+//     the rule it looks like;
 //   - anything else — an absolute URL, a path elsewhere on the site, a
 //     backslash, an empty string — falls back to `/app`.
 //
@@ -31,5 +34,9 @@ export function safeAppNextPath(value: unknown): string {
   if (!path.startsWith('/')) return APP_HOME
   if (path.startsWith('//')) return APP_HOME
   if (path !== APP_HOME && !path.startsWith(`${APP_HOME}/`)) return APP_HOME
+  // A `..` segment climbs back out of /app even though the string starts inside
+  // it. Checked on the PATH only — the query may legitimately contain dots.
+  const [pathname] = path.split('?')
+  if (pathname!.split('/').includes('..')) return APP_HOME
   return path
 }

@@ -359,6 +359,42 @@ describe('verifyAccessToken', () => {
     expect(await verifyAccessToken(store, token, () => t0 + ACCESS_TTL_MS + 1)).toBeUndefined()
   })
 
+  it('refuses a token minted for another resource (RFC 8707, #445 review)', async () => {
+    const { store, token } = await issued()
+    // The audience is only real if it is compared. The token above was bound to
+    // moreska.eu; a deployment asking about a different resource must not
+    // accept it.
+    expect(
+      await verifyAccessToken(store, token, () => 1_000_000, 'https://other.example/api/mcp/mcp'),
+    ).toBeUndefined()
+    expect(
+      await verifyAccessToken(store, token, () => 1_000_000, 'https://moreska.eu/api/mcp/mcp'),
+    ).toBeDefined()
+  })
+
+  it('refuses a token with no resource at all when one is expected', async () => {
+    const { store } = fakeStore()
+    const verifier = 'verifier-for-the-token-tests'
+    const code = await issueAuthorizationCode(store, {
+      clientId: 'klijent-abc',
+      userId: '7',
+      redirectUri: REDIRECT,
+      codeChallenge: challengeFor(verifier),
+      codeChallengeMethod: 'S256',
+      scope: 'mcp',
+      resource: null,
+    })
+    const res = await exchangeAuthorizationCode(store, {
+      code,
+      redirectUri: REDIRECT,
+      codeVerifier: verifier,
+      clientId: 'klijent-abc',
+    })
+    expect(
+      await verifyAccessToken(store, res.access_token, Date.now, 'https://moreska.eu/api/mcp/mcp'),
+    ).toBeUndefined()
+  })
+
   it('refuses a revoked token, revocation being the row going away', async () => {
     const { store, token } = await issued()
     // What `DELETE FROM oauth_tokens WHERE user_id = …` does to the store.

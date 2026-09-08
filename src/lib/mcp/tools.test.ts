@@ -9,6 +9,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   createPerformances,
+  isRealCalendarDay,
   getPerformance,
   listMoreskanti,
   listPerformances,
@@ -91,6 +92,31 @@ describe('nicknameMatchKey', () => {
 
   it('keeps two different nicknames different', () => {
     expect(nicknameMatchKey('Cici')).not.toBe(nicknameMatchKey('Bepo'))
+  })
+
+  it('does NOT fall back to the word "moreskant" for a symbol-only nickname (#445 review)', () => {
+    // usernameFromNickname would answer `moreskant` here, which as a MATCH key
+    // would make every symbol-only name the same person.
+    expect(nicknameMatchKey('###')).toBe('')
+    expect(nicknameMatchKey('!!!')).toBe('')
+    expect(nicknameMatchKey('Moreškant')).toBe('moreskant')
+  })
+})
+
+describe('isRealCalendarDay', () => {
+  it('accepts days that exist', () => {
+    expect(isRealCalendarDay('2027-05-04')).toBe(true)
+    expect(isRealCalendarDay('2028-02-29')).toBe(true) // a leap year
+  })
+
+  it('refuses days that V8 would silently roll forward', () => {
+    expect(isRealCalendarDay('2026-02-31')).toBe(false)
+    expect(isRealCalendarDay('2027-02-29')).toBe(false) // not a leap year
+    expect(isRealCalendarDay('2027-04-31')).toBe(false)
+    expect(isRealCalendarDay('2027-13-01')).toBe(false)
+    expect(isRealCalendarDay('2027-00-10')).toBe(false)
+    expect(isRealCalendarDay('2027-05-00')).toBe(false)
+    expect(isRealCalendarDay('4.5.2027.')).toBe(false)
   })
 })
 
@@ -349,13 +375,16 @@ describe('create_performances', () => {
           { date: '4.5.2027.', time: '10:30', kind: 'dmc', location: 'Luka' },
           { date: '2027-05-05', time: '25:00', kind: 'dmc', location: 'Luka' },
           { date: '2027-05-06', time: '10:30', kind: 'koncert' },
+          { date: '2026-02-31', time: '10:30', kind: 'dmc', location: 'Luka' },
         ],
       },
       store,
     )
     if (!res.ok) throw new Error(res.error)
     expect(createdBatches).toEqual([])
-    expect(res.rejected.map((r) => r.index)).toEqual([1, 2, 3])
+    expect(res.rejected.map((r) => r.index)).toEqual([1, 2, 3, 4])
+    // 31 February would have become 3 March without the calendar check.
+    expect(res.rejected[3]!.error).toContain('ne postoji u kalendaru')
     // The last one is the collection's own invariant: no location, no booking.
     expect(res.rejected[2]!.error.toLowerCase()).toContain('location')
   })

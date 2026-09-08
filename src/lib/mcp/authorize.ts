@@ -47,6 +47,14 @@ function one(value: unknown): string {
  */
 export function parseAuthorizeRequest(
   params: Record<string, unknown>,
+  /**
+   * This deployment's MCP resource URL. When given, a request naming a
+   * DIFFERENT `resource` is refused (RFC 8707 `invalid_target`) rather than
+   * quietly re-bound to ours — a token minted for another audience is not a
+   * token for this one, and the audience is only real if it is checked (#445
+   * review). Both callers pass it.
+   */
+  resourceUrl?: string,
 ): AuthorizeRequest | null {
   const responseType = one(params.response_type) || 'code'
   const clientId = one(params.client_id)
@@ -60,13 +68,16 @@ export function parseAuthorizeRequest(
   if (codeChallengeMethod !== 'S256') return null
   if (!codeChallenge) return null
 
+  const resource = one(params.resource) || null
+  if (resource !== null && resourceUrl !== undefined && resource !== resourceUrl) return null
+
   return {
     clientId,
     redirectUri,
     state: one(params.state),
     codeChallenge,
     codeChallengeMethod: 'S256',
-    resource: one(params.resource) || null,
+    resource,
     scope: one(params.scope) || null,
   }
 }
@@ -99,7 +110,7 @@ export interface ConsentDeps {
     resource: string | null
     scope: string | null
   }) => Promise<string>
-  /** This deployment's MCP resource URL, bound to the code when the client sent none. */
+  /** This deployment's MCP resource URL: the audience every code is bound to. */
   resourceUrl: string
 }
 
@@ -127,10 +138,12 @@ export async function handleConsent(
   const rejection = rejectAppRequest(deps.request)
   if (rejection) return { status: rejection.status, body: { error: APP_STRINGS.authorize.failed } }
 
-  if (!deps.userId) return { status: 401, body: { error: APP_STRINGS.authorize.deniedBody } }
+  // Two different situations, two different sentences: "sign in" is something
+  // the caller can act on, "this account may not" is not.
+  if (!deps.userId) return { status: 401, body: { error: APP_STRINGS.authorize.signInFirst } }
   if (!deps.isVoditelj) return { status: 403, body: { error: APP_STRINGS.authorize.deniedBody } }
 
-  const request = parseAuthorizeRequest(body ?? {})
+  const request = parseAuthorizeRequest(body ?? {}, deps.resourceUrl)
   if (!request) return { status: 400, body: { error: APP_STRINGS.authorize.invalidRequest } }
 
   if (String(body?.decision ?? '') !== 'allow') {
@@ -143,9 +156,10 @@ export async function handleConsent(
     redirectUri: request.redirectUri,
     codeChallenge: request.codeChallenge,
     codeChallengeMethod: request.codeChallengeMethod,
-    // The token is bound to OUR resource when the client named none, so an
-    // access token can never be replayed against a different audience.
-    resource: request.resource ?? deps.resourceUrl,
+    // ALWAYS our own resource: `parseAuthorizeRequest` has already refused a
+    // request naming a different one, so this is the audience the token is
+    // bound to and the audience `verifyAccessToken` compares against.
+    resource: deps.resourceUrl,
     scope: grantedScope(request.scope),
   })
 

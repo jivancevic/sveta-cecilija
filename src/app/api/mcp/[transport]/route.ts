@@ -5,7 +5,12 @@ import { z } from 'zod'
 import config from '@payload-config'
 import { can, type PermissionUser } from '@/lib/access/permissions'
 import { DANCE_ROLES } from '@/lib/moreskant-profile'
-import { issuerUrl, mcpResourceUrl, sha256, verifyAccessToken } from '@/lib/mcp/oauth'
+import {
+  issuerUrl,
+  mcpResourceUrl,
+  verifyAccessToken,
+  type VerifiedToken,
+} from '@/lib/mcp/oauth'
 import { oauthStoreFor } from '@/lib/mcp/oauth-store'
 import { createMcpStore, type McpPayload } from '@/lib/mcp/store'
 import {
@@ -17,6 +22,7 @@ import {
   setLineup,
 } from '@/lib/mcp/tools'
 import { mcpRateLimiter } from '@/lib/rate-limit/mcp-rate-limit'
+import { MORESKA_SCOPE, bearerToken, isMissingUserError, mcpAuthScopes } from '@/lib/mcp/gate'
 
 // The MCP server (#438, ADR-0024): `/api/mcp/mcp`, Streamable HTTP.
 //
@@ -29,15 +35,12 @@ import { mcpRateLimiter } from '@/lib/rate-limit/mcp-rate-limit'
 // nowhere else, are the three gates:
 //
 //  1. **`verifyToken`** — bearer → identity, then a FRESH read of the account.
-//     A token is not a permission: `moreska` is re-checked on every call, so a
-//     voditelj whose permission is taken away in `/admin` loses the connector
-//     on their next sentence, without anybody hunting for a token row. Returning
-//     `undefined` is the 401, and `withMcpAuth` attaches the
-//     `WWW-Authenticate` header pointing at the resource metadata.
-//  2. **The rate limit**, per token (`mcp-rate-limit.ts`): a model in a loop is
-//     the realistic load here, not an attacker.
+//  2. **The rate limit**, on a token that has already verified.
 //  3. **Nothing else.** There is no tool that confirms a lineup, sends an
-//     alarm, answers attendance or issues a comp (#430, story 63).
+//     alarm, answers attendance or issues a comp.
+//
+// Why each of those is shaped the way it is — the 401/403 split, the audience
+// binding, the key the limit uses — is in `docs/agents/moreskant-app.md`.
 //
 // SSE is disabled: the legacy transport needs Redis, and the Claude app speaks
 // Streamable HTTP.
@@ -49,7 +52,6 @@ export const maxDuration = 60
 /** What `verifyToken` hangs on `AuthInfo.extra` for the tools to read. */
 interface McpIdentity {
   userId: string
-  tokenKey: string
 }
 
 type ToolExtra = { authInfo?: { extra?: unknown } }
@@ -126,7 +128,7 @@ const handler = createMcpHandler(
       {
         title: 'Upiši postavu',
         description:
-          'Upisuje POSTAVU izvedbe iz popisa nadimaka i uloga (npr. s fotografije papirnatog popisa). Nadimci se uspoređuju točno, bez obzira na velika slova i dijakritike; nadimak koji se ne prepozna vraća se u "unmatched" i NE pogađa se najbliži. Postava se uvijek upisuje kao NEPOTVRĐENA, a potvrđenu postavu odbija (prvo Otključaj u aplikaciji). Zamjenjuje cijelu postavu, ne dopunjuje je.',
+          'Upisuje POSTAVU izvedbe iz popisa nadimaka i uloga (npr. s fotografije papirnatog popisa). Nadimci se uspoređuju točno, bez obzira na velika slova i dijakritike; nadimak koji se ne prepozna vraća se u "unmatched", a nadimak koji odgovara dvojici moreškanata u "ambiguous". Najbliži se NIKAD ne pogađa. Postava se uvijek upisuje kao NEPOTVRĐENA, a potvrđenu postavu odbija (prvo Otključaj u aplikaciji). Zamjenjuje cijelu postavu, ne dopunjuje je.',
         inputSchema: {
           performanceId: z.string().describe('Id izvedbe.'),
           entries: z
@@ -176,17 +178,6 @@ const handler = createMcpHandler(
   },
 )
 
-/**
- * The scope that stands for "the token's user still holds `moreska`".
- *
- * It is checked as a SCOPE rather than inside `verifyToken` for one reason:
- * `withMcpAuth` turns an unknown token into 401 and a missing required scope
- * into **403**, which is exactly the distinction that matters here. An
- * exception thrown from `verifyToken` is swallowed into a 401, so "the token is
- * real, the person is no longer a voditelj" would read identically to "there is
- * no such token" — and 403 is the honest answer to the first.
- */
-const MORESKA_SCOPE = 'moreska'
 
 /**
  * Bearer token → `AuthInfo`, or `undefined` for a 401.
@@ -196,27 +187,64 @@ const MORESKA_SCOPE = 'moreska'
  * permission set — a permission taken away in `/admin` bites the next sentence
  * the voditelj types into Claude, with no token row touched.
  */
+/**
+ * One token verification per REQUEST, shared by the rate limit and by
+ * `verifyToken` (#445 review).
+ *
+ * The rate limit has to run on the token's ROW ID and therefore AFTER the
+ * lookup, but `withMcpAuth` does the lookup itself a moment later. Memoizing on
+ * the request object — a WeakMap, so nothing is retained — buys the correct
+ * ordering without a second indexed SELECT per call.
+ */
+const verifiedPerRequest = new WeakMap<Request, Promise<VerifiedToken | undefined>>()
+
+function verifyOnce(req: Request, bearer: string): Promise<VerifiedToken | undefined> {
+  const cached = verifiedPerRequest.get(req)
+  if (cached) return cached
+  const promise = (async () => {
+    if (!bearer) return undefined
+    const payload = await getPayload({ config })
+    // The audience is compared, not merely stored: a token minted for another
+    // resource is not a token for this one (RFC 8707).
+    return verifyAccessToken(oauthStoreFor(payload), bearer, Date.now, mcpResourceUrl())
+  })()
+  verifiedPerRequest.set(req, promise)
+  return promise
+}
+
 const verifyToken = async (
-  _req: Request,
-  bearerToken?: string,
+  req: Request,
+  bearer?: string,
 ): Promise<AuthInfo | undefined> => {
-  if (!bearerToken) return undefined
-  const payload = await getPayload({ config })
-  const verified = await verifyAccessToken(oauthStoreFor(payload), bearerToken)
+  if (!bearer) return undefined
+  const verified = await verifyOnce(req, bearer)
   if (!verified) return undefined
 
-  const user = await payload
-    .findByID({ collection: 'users', id: verified.userId, depth: 0, overrideAccess: true })
-    .catch(() => null)
-  const isVoditelj = can(user as PermissionUser, 'moreska')
+  const payload = await getPayload({ config })
+  let user: unknown = null
+  try {
+    user = await payload.findByID({
+      collection: 'users',
+      id: verified.userId,
+      depth: 0,
+      overrideAccess: true,
+    })
+  } catch (err) {
+    // A deleted account is "no user"; anything else is rethrown rather than
+    // read as a permission decision (`gate.ts`).
+    if (!isMissingUserError(err)) throw err
+  }
 
   return {
-    token: bearerToken,
+    token: bearer,
     clientId: verified.clientId,
-    scopes: isVoditelj ? [...verified.scopes, MORESKA_SCOPE] : verified.scopes,
+    scopes: mcpAuthScopes(verified.scopes, can(user as PermissionUser, 'moreska')),
     expiresAt: verified.expiresAt,
-    resource: new URL(verified.resource ?? mcpResourceUrl()),
-    extra: { userId: verified.userId, tokenKey: sha256(bearerToken) } satisfies McpIdentity,
+    // Safe to construct: `verifyAccessToken` has already refused any token whose
+    // stored resource is not exactly this string, so no caller-supplied value
+    // ever reaches `new URL()`.
+    resource: new URL(mcpResourceUrl()),
+    extra: { userId: verified.userId } satisfies McpIdentity,
   }
 }
 
@@ -225,19 +253,18 @@ const verifyToken = async (
 // build's route collection.
 let authHandler: ((req: Request) => Promise<Response>) | null = null
 
-function route(req: Request): Promise<Response> {
-  // The rate limit runs BEFORE the handler and keys on the raw bearer token's
-  // hash: a throttled caller must not cost a database round trip, and an
-  // authenticated caller deserves an honest 429 rather than a silent success.
-  const auth = req.headers.get('authorization')
-  const bearer = auth?.toLowerCase().startsWith('bearer ') ? auth.slice(7).trim() : ''
-  if (bearer && !mcpRateLimiter.allow(sha256(bearer))) {
-    return Promise.resolve(
-      new Response(JSON.stringify({ error: 'Previše zahtjeva. Pokušaj za koju minutu.' }), {
-        status: 429,
-        headers: { 'Content-Type': 'application/json', 'Retry-After': '60' },
-      }),
-    )
+async function route(req: Request): Promise<Response> {
+  // The rate limit runs only on a token that VERIFIED, keyed on its row id: a
+  // key derived from an unverified bearer would let a loop of random strings
+  // mint one key per request. An unknown bearer therefore adds nothing at all
+  // and falls straight through to the 401 below.
+  const bearer = bearerToken(req.headers.get('authorization'))
+  const verified = await verifyOnce(req, bearer)
+  if (verified && !mcpRateLimiter.allow(verified.tokenId)) {
+    return new Response(JSON.stringify({ error: 'Previše zahtjeva. Pokušaj za koju minutu.' }), {
+      status: 429,
+      headers: { 'Content-Type': 'application/json', 'Retry-After': '60' },
+    })
   }
 
   if (!authHandler) {

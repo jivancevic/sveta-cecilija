@@ -51,6 +51,14 @@ describe('parseAuthorizeRequest', () => {
     expect(parseAuthorizeRequest({ ...VALID, response_type: 'token' })).toBeNull()
   })
 
+  it('refuses a request naming a different resource (RFC 8707 invalid_target, #445 review)', () => {
+    const ours = 'https://moreska.eu/api/mcp/mcp'
+    expect(parseAuthorizeRequest({ ...VALID, resource: ours }, ours)).not.toBeNull()
+    expect(parseAuthorizeRequest({ ...VALID, resource: 'https://evil.example/mcp' }, ours)).toBeNull()
+    // A client that names none is fine: the code is bound to ours anyway.
+    expect(parseAuthorizeRequest(VALID, ours)?.resource).toBeNull()
+  })
+
   it('takes the first value when a parameter arrives twice', () => {
     expect(parseAuthorizeRequest({ ...VALID, state: ['prvi', 'drugi'] })?.state).toBe('prvi')
   })
@@ -98,10 +106,20 @@ describe('handleConsent', () => {
     expect(issued[0]).toMatchObject({ userId: '7', scope: 'mcp', clientId: 'klijent-abc' })
   })
 
-  it('binds the code to our own resource when the client named none', async () => {
+  it('always binds the code to our own resource', async () => {
     const { deps: d, issued } = deps()
     await handleConsent({ ...VALID, decision: 'allow' }, d)
     expect(issued[0]).toMatchObject({ resource: 'https://moreska.eu/api/mcp/mcp' })
+  })
+
+  it('refuses a consent naming a different resource, and issues nothing', async () => {
+    const { deps: d, issued } = deps()
+    const res = await handleConsent(
+      { ...VALID, resource: 'https://evil.example/mcp', decision: 'allow' },
+      d,
+    )
+    expect(res.status).toBe(400)
+    expect(issued).toEqual([])
   })
 
   it('sends access_denied back to the client on Odbij, and issues nothing', async () => {
@@ -125,9 +143,14 @@ describe('handleConsent', () => {
       status: 403,
     })
     const { deps: anonymous } = deps({ userId: null })
-    expect(await handleConsent({ ...VALID, decision: 'allow' }, anonymous)).toMatchObject({
-      status: 401,
-    })
+    const anon = await handleConsent({ ...VALID, decision: 'allow' }, anonymous)
+    expect(anon).toMatchObject({ status: 401 })
+    // Two situations, two sentences (#445 review): "sign in" is actionable,
+    // "this account may not" is not.
+    const denied = await handleConsent({ ...VALID, decision: 'allow' }, notVoditelj)
+    expect((anon.body as { error: string }).error).not.toBe(
+      (denied.body as { error: string }).error,
+    )
     expect(issued).toEqual([])
   })
 

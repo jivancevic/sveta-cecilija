@@ -23,7 +23,7 @@
 
 import { countArmies, type AttendanceRow } from '@/lib/attendance/army-count'
 import type { AttendanceMember } from '@/lib/attendance/rules'
-import { usernameFromNickname } from '@/lib/app/username'
+import { normaliseNickname } from '@/lib/app/username'
 import { compareLineupRows, type LineupEntry } from '@/lib/lineup/rules'
 import { roleWarnings } from '@/lib/lineup/rules'
 import type { LineupWriteOutcome } from '@/lib/lineup/write-tx'
@@ -289,19 +289,32 @@ export async function listMoreskanti(
  * The match key for a nickname: lowercase, diacritics transliterated the
  * Croatian way, everything else reduced to a dash.
  *
- * It is `usernameFromNickname` (#424) rather than a second normaliser, because
- * that function already answers "what is this nickname when it has to go
- * ASCII", it is exhaustively table-tested, and a second copy would be one more
- * place for `Đuro` to become `uro`. "Ćići", "cici" and " CICI " are one key.
+ * It is `normaliseNickname` (#424's normaliser, split out in the #445 review)
+ * rather than a second implementation, because that function already answers
+ * "what is this nickname when it has to go ASCII", it is exhaustively
+ * table-tested, and a copy would be one more place for `Đuro` to become `uro`.
+ * "Ćići", "cici" and " CICI " are one key.
+ *
+ * It is deliberately NOT `usernameFromNickname`, which falls back to the word
+ * `moreskant` for a nickname that reduces to nothing: a login needs an
+ * identifier, a match key must not invent one, or every symbol-only name would
+ * match the same dancer. An empty key never matches anything.
  */
 export function nicknameMatchKey(nickname: unknown): string {
-  return usernameFromNickname(typeof nickname === 'string' ? nickname : '')
+  return normaliseNickname(typeof nickname === 'string' ? nickname : '')
 }
 
 export interface SetLineupResult {
   written: { nickname: string; role: DanceRole; roleLabel: string }[]
   /** Names no active moreškant answers to. Reported, never guessed at. */
   unmatched: string[]
+  /**
+   * Names that match MORE THAN ONE active moreškant once normalised — "Ćići"
+   * and "Cici" both on the roster. Nothing is written for them, exactly as for
+   * an unmatched name: picking either dancer would be a guess, and picking the
+   * last one found would make the answer depend on the roster's sort order.
+   */
+  ambiguous: string[]
   /** Roles outside a dancer's profile, duplicates dropped: saved anyway. */
   warnings: string[]
 }
@@ -337,15 +350,21 @@ export async function setLineup(
   }
 
   const roster = await store.loadRoster()
-  const byKey = new Map<string, AttendanceMember>()
+  // A key that two active dancers share resolves to NOBODY rather than to
+  // whichever of them the roster happened to list last (#445 review). The
+  // nickname uniqueness rule is case-insensitive on the raw value (#420), so
+  // "Ćići" and "Cici" can both be on the roster and still collide here.
+  const byKey = new Map<string, AttendanceMember | 'ambiguous'>()
   for (const member of roster) {
     const key = nicknameMatchKey(member.nickname)
-    if (key) byKey.set(key, member)
+    if (!key) continue
+    byKey.set(key, byKey.has(key) ? 'ambiguous' : member)
   }
 
   const entries: LineupEntry[] = []
   const written: SetLineupResult['written'] = []
   const unmatched: string[] = []
+  const ambiguous: string[] = []
   const warnings: string[] = []
   const seen = new Set<string>()
 
@@ -360,6 +379,10 @@ export async function setLineup(
     }
 
     const member = byKey.get(nicknameMatchKey(nickname))
+    if (member === 'ambiguous') {
+      ambiguous.push(nickname)
+      continue
+    }
     if (!member) {
       unmatched.push(nickname)
       continue
@@ -381,9 +404,8 @@ export async function setLineup(
   }
 
   if (entries.length === 0) {
-    return fail(
-      `Nijedan nadimak nije prepoznat (${unmatched.join(', ')}). Postava nije promijenjena.`,
-    )
+    const named = [...unmatched, ...ambiguous].join(', ')
+    return fail(`Nijedan nadimak nije prepoznat (${named}). Postava nije promijenjena.`)
   }
 
   const outcome = await store.replaceLineup(performanceId, entries)
@@ -397,7 +419,7 @@ export async function setLineup(
 
   for (const w of roleWarnings(entries, roster)) warnings.push(w.message)
 
-  return { ok: true, written, unmatched, warnings }
+  return { ok: true, written, unmatched, ambiguous, warnings }
 }
 
 // --- create_performances ---
@@ -414,7 +436,28 @@ export const MCP_CREATABLE_KINDS = PERFORMANCE_KINDS.filter(
 )
 
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/
-const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
+const DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/
+
+/**
+ * True only for a date that exists in the calendar.
+ *
+ * The shape test is not enough (#445 review): `2026-02-31` matches the regex
+ * and `new Date()` happily rolls it forward to 3 March, so a mistyped ship call
+ * would land in the roster on a day nobody wrote down. The round trip through
+ * `Date.UTC` is what catches it — a rolled-over date no longer prints as the
+ * string it came from. It also rejects month 00/13 and day 00 for free.
+ */
+export function isRealCalendarDay(value: string): boolean {
+  const m = DATE_RE.exec(value)
+  if (!m) return false
+  const [, y, mo, d] = m
+  const date = new Date(Date.UTC(Number(y), Number(mo) - 1, Number(d)))
+  return (
+    date.getUTCFullYear() === Number(y) &&
+    date.getUTCMonth() === Number(mo) - 1 &&
+    date.getUTCDate() === Number(d)
+  )
+}
 
 /**
  * `create_performances({ rows })` — next year's cruise calls in one paste.
@@ -449,6 +492,10 @@ export async function createPerformances(
 
     if (!DATE_RE.test(date)) {
       rejected.push({ index, error: 'Datum mora biti u obliku YYYY-MM-DD.' })
+      return
+    }
+    if (!isRealCalendarDay(date)) {
+      rejected.push({ index, error: `Datum ${date} ne postoji u kalendaru.` })
       return
     }
     if (!TIME_RE.test(time)) {

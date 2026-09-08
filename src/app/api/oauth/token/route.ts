@@ -38,20 +38,6 @@ function err(code: string, status = 400) {
   return NextResponse.json({ error: code }, { status, headers: CORS })
 }
 
-/** `client_id` from the Basic header or the form body (RFC 6749 §2.3.1). */
-function clientId(req: Request, form: URLSearchParams): string | undefined {
-  const auth = req.headers.get('authorization')
-  if (auth?.startsWith('Basic ')) {
-    try {
-      const [id] = Buffer.from(auth.slice(6), 'base64').toString('utf8').split(':')
-      if (id) return id
-    } catch {
-      // falls through to the form parameter
-    }
-  }
-  return form.get('client_id') ?? undefined
-}
-
 export async function POST(req: Request) {
   let form: URLSearchParams
   try {
@@ -60,7 +46,10 @@ export async function POST(req: Request) {
     return err('invalid_request')
   }
 
-  const id = clientId(req, form)
+  // The client id comes from the form only: the metadata advertises
+  // `token_endpoint_auth_methods_supported: ["none"]`, so there is no Basic
+  // credential to parse and parsing one would suggest there is (#445 review).
+  const id = form.get('client_id')
   if (!id || !verifyClient(id)) return err('invalid_client', 401)
 
   if (form.get('grant_type') !== 'authorization_code') return err('unsupported_grant_type')

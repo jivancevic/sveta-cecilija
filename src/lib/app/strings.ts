@@ -338,6 +338,8 @@ export const APP_STRINGS = {
     allow: 'Dopusti pristup',
     deny: 'Odbij',
     working: 'Povezivanje...',
+    /** No session at all: the caller can fix this one themselves. */
+    signInFirst: 'Prijavi se u Moreškant pa pokušaj ponovno.',
     /** A dancer, or anyone else without `moreska` (story 58). */
     deniedTitle: 'Nemate pristup',
     deniedBody: 'Claude se može povezati samo s računom voditelja.',

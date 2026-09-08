@@ -3,18 +3,27 @@ import { NextRequest } from 'next/server'
 
 // #441 review — a season entered at once is ONE announcement.
 //
-// Two halves, and both matter: every `payload.create` carries the opt-out flag
-// the Shows hook honours (so the per-row notification never fires), and the
-// route sends exactly one summary afterwards, whatever the batch size.
+// Three halves now, and each matters: every `payload.create` carries the
+// opt-out flag the Shows hook honours (so the per-row notification never
+// fires), the route sends exactly one summary afterwards whatever the batch
+// size, and the whole batch is ONE transaction (#445 review), so a create that
+// throws on row two leaves nothing behind and announces nothing.
 
 type PayloadArgs = Record<string, unknown>
 const create = vi.fn<(args: PayloadArgs) => Promise<{ id: number }>>(async () => ({ id: 1 }))
 const find = vi.fn<(args: PayloadArgs) => Promise<{ docs: unknown[] }>>(async () => ({ docs: [] }))
 const send = vi.fn(async () => ({ recipients: 2, devices: 3, delivered: 3, dead: 0, failed: 0 }))
 
+// The transaction the batch runs in. `db.beginTransaction` hands back an id and
+// the writes carry it as `req.transactionID`, exactly as Payload does.
+const beginTransaction = vi.fn(async () => 'tx-1')
+const commitTransaction = vi.fn(async () => {})
+const rollbackTransaction = vi.fn(async () => {})
+const db = { beginTransaction, commitTransaction, rollbackTransaction }
+
 vi.mock('@/lib/access/route-guard', () => ({
   requirePermission: vi.fn(async () => ({
-    payload: { create, find },
+    payload: { create, find, db },
     user: { id: 8 },
     error: null,
   })),
@@ -63,7 +72,26 @@ describe('POST /api/shows/bulk-create', () => {
       expect((call[0] as unknown as { context?: Record<string, unknown> }).context).toEqual({
         [SKIP_ROSTER_PUSH]: true,
       })
+      // …and joins the batch's transaction.
+      expect((call[0] as unknown as { req?: { transactionID?: string } }).req).toEqual({
+        transactionID: 'tx-1',
+      })
     }
+    expect(beginTransaction).toHaveBeenCalledTimes(1)
+    expect(commitTransaction).toHaveBeenCalledTimes(1)
+    expect(rollbackTransaction).not.toHaveBeenCalled()
+  })
+
+  it('rolls the whole batch back when one create throws, and announces nothing', async () => {
+    create.mockImplementationOnce(async () => ({ id: 1 }))
+    create.mockImplementationOnce(async () => {
+      throw new Error('constraint violation')
+    })
+
+    await expect(POST(req(BATCH))).rejects.toThrow('constraint violation')
+    expect(rollbackTransaction).toHaveBeenCalledTimes(1)
+    expect(commitTransaction).not.toHaveBeenCalled()
+    expect(send).not.toHaveBeenCalled()
   })
 
   it('sends exactly one summary, naming the count and the first date', async () => {

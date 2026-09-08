@@ -23,25 +23,38 @@ const HARD_MAP: Record<string, string> = {
 export const USERNAME_FALLBACK = 'moreskant'
 
 /**
- * "Cici" → `cici`, "Đuro Mali" → `djuro-mali`, "Žuti #3" → `zuti-3`.
+ * THE nickname normaliser: "Cici" → `cici`, "Đuro Mali" → `djuro-mali`,
+ * "Žuti #3" → `zuti-3`, "###" → `''`.
  *
  * Anything that is not a lowercase ASCII letter or a digit becomes a single
- * dash; leading and trailing dashes are trimmed. An empty or symbol-only
- * nickname yields {@link USERNAME_FALLBACK} rather than an empty username,
- * because a login without an identifier cannot exist.
+ * dash; leading and trailing dashes are trimmed. A nickname that reduces to
+ * nothing yields the **empty string**, which is the honest answer.
+ *
+ * Split out from {@link usernameFromNickname} for the MCP matcher (#445
+ * review): a login needs a fallback identifier, but a MATCH KEY must not have
+ * one. With the fallback, every symbol-only nickname would normalise to
+ * `moreskant`, so a dictated "###" would match a dancer called "!!!" — or a
+ * dancer whose nickname really is "Moreškant".
  */
-export function usernameFromNickname(nickname: string | null | undefined): string {
+export function normaliseNickname(nickname: string | null | undefined): string {
   const source = typeof nickname === 'string' ? nickname : ''
   const mapped = [...source].map((ch) => HARD_MAP[ch] ?? ch).join('')
   const ascii = mapped
     .normalize('NFD')
     // Combining marks: the accent of an already-decomposed letter.
     .replace(/[\u0300-\u036f]/g, '')
-  const slug = ascii
+  return ascii
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-+|-+$/g, '')
-  return slug || USERNAME_FALLBACK
+}
+
+/**
+ * The same normalisation, but never empty: a login without an identifier cannot
+ * exist, so an empty or symbol-only nickname yields {@link USERNAME_FALLBACK}.
+ */
+export function usernameFromNickname(nickname: string | null | undefined): string {
+  return normaliseNickname(nickname) || USERNAME_FALLBACK
 }
 
 /**

@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requirePermission } from '@/lib/access/route-guard'
 import { PUBLIC_PERFORMANCE_WHERE } from '@/lib/show-performance'
-import { notifyBulkCreated } from '@/lib/push/notify'
-import { createPushDeps, type PushPayload } from '@/lib/push/push-data'
 import {
   createPerformancesInBulk,
+  payloadBulkDeps,
+  type BulkCreatePayload,
   type BulkPerformanceRow,
 } from '@/lib/performance-bulk-create'
 
@@ -102,19 +102,14 @@ export async function POST(req: NextRequest) {
     })
   }
 
-  // The loop, the per-create `skipRosterPush` flag and the ONE summary push all
-  // live in `performance-bulk-create.ts`, shared with the MCP
+  // The transaction, the per-create `skipRosterPush` flag and the ONE summary
+  // push all live in `performance-bulk-create.ts`, shared with the MCP
   // `create_performances` tool (#438) so a season entered from Claude behaves
   // exactly like a season entered from `/admin`.
-  const { created } = await createPerformancesInBulk(rows, {
-    create: (args) => payload.create({ collection: 'shows', ...args }),
-    announce: (input) => {
-      const push = createPushDeps(payload as unknown as PushPayload)
-      void notifyBulkCreated(input, push).catch((err) =>
-        console.error('[push] bulk create notification failed', err),
-      )
-    },
-  })
+  const { created } = await createPerformancesInBulk(
+    rows,
+    payloadBulkDeps(payload as unknown as BulkCreatePayload),
+  )
 
   return NextResponse.json({ created, skipped })
 }

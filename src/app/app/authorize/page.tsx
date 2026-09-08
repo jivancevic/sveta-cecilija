@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation'
 import { accessMember } from '@/lib/app/access'
 import { APP_STRINGS } from '@/lib/app/strings'
 import { resolveAppViewer } from '@/lib/app/viewer'
-import { authorizeReturnTo } from '@/lib/mcp/oauth'
+import { authorizeReturnTo, mcpResourceUrl } from '@/lib/mcp/oauth'
 import { parseAuthorizeRequest } from '@/lib/mcp/authorize'
 import { LogoutButton } from '../LogoutButton'
 import { ConsentButtons } from './ConsentButtons'
@@ -75,7 +75,7 @@ export default async function AuthorizePage({
     )
   }
 
-  const request = parseAuthorizeRequest(params)
+  const request = parseAuthorizeRequest(params, mcpResourceUrl())
   if (!request) {
     return (
       <Refused

@@ -18,6 +18,16 @@ describe('safeAppNextPath', () => {
     expect(safeAppNextPath('/app\\..\\admin')).toBe(APP_HOME)
   })
 
+  it('refuses a `..` segment that climbs back out of /app (#445 review)', () => {
+    expect(safeAppNextPath('/app/../admin')).toBe(APP_HOME)
+    expect(safeAppNextPath('/app/izvedba/../../admin')).toBe(APP_HOME)
+    expect(safeAppNextPath('/app/..')).toBe(APP_HOME)
+    // A dot that is not a whole segment is harmless.
+    expect(safeAppNextPath('/app/izvedba/1..2')).toBe('/app/izvedba/1..2')
+    // …and a query may say whatever it likes.
+    expect(safeAppNextPath('/app/authorize?state=..')).toBe('/app/authorize?state=..')
+  })
+
   it('refuses a path elsewhere on this site', () => {
     expect(safeAppNextPath('/admin')).toBe(APP_HOME)
     expect(safeAppNextPath('/tickets')).toBe(APP_HOME)
