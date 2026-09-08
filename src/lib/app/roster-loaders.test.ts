@@ -115,6 +115,25 @@ describe('splitSeasonPerformances — the Zagreb boundary', () => {
     expect(splitSeasonPerformances([evening], exactly + 60 * 60 * 1000).upcoming).toHaveLength(0)
   })
 
+  it('splits at the real Zagreb offset on either side of the DST switch', () => {
+    // Review fix on #426: with the old fixed +02:00 a November performance
+    // resolved an hour early and dropped into "Prošle" while it was still
+    // upcoming. Both halves of the year are asserted here.
+    const summer = toRosterPerformance(doc({ id: 's', date: '2026-07-15', time: '20:00' }))
+    const winter = toRosterPerformance(doc({ id: 'w', date: '2026-11-07', time: '20:00' }))
+    expect(summer.startMs).toBe(Date.parse('2026-07-15T18:00:00Z'))
+    expect(winter.startMs).toBe(Date.parse('2026-11-07T19:00:00Z'))
+    for (const row of [summer, winter]) {
+      // Same boundary as above: still upcoming at the start instant, past one
+      // millisecond later.
+      expect(splitSeasonPerformances([row], row.startMs).upcoming).toHaveLength(1)
+      expect(splitSeasonPerformances([row], row.startMs + 1).past).toHaveLength(1)
+    }
+    // The switch day itself (2026-10-25) is already CET.
+    const switchDay = toRosterPerformance(doc({ id: 'x', date: '2026-10-25', time: '20:00' }))
+    expect(switchDay.startMs).toBe(Date.parse('2026-10-25T19:00:00Z'))
+  })
+
   it('splits at the Zagreb wall clock, not at UTC midnight', () => {
     // 2026-08-05 22:30 UTC is already 2026-08-06 00:30 in Zagreb, so a 23:00
     // Zagreb performance on the 5th is past even though the UTC day has not
@@ -169,11 +188,18 @@ describe('splitSeasonPerformances — the ±7-day cancelled window', () => {
     expect(past).toEqual([])
   })
 
-  it('is exactly seven days wide', () => {
+  it('is exactly seven days wide on the upcoming side', () => {
     const row = cancelled('edge', '2026-08-12')
     const insideNow = row.startMs - CANCELLED_WINDOW_MS
     expect(splitSeasonPerformances([row], insideNow).upcoming).toHaveLength(1)
     expect(splitSeasonPerformances([row], insideNow - 1).upcoming).toHaveLength(0)
+  })
+
+  it('is exactly seven days wide on the past side too', () => {
+    const row = cancelled('edge', '2026-07-29')
+    const lastMoment = row.startMs + CANCELLED_WINDOW_MS
+    expect(splitSeasonPerformances([row], lastMoment).past).toHaveLength(1)
+    expect(splitSeasonPerformances([row], lastMoment + 1).past).toHaveLength(0)
   })
 
   it('never hides an ACTIVE performance, however far away', () => {

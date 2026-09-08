@@ -19,6 +19,13 @@ const baseShow: EventShowInput = {
 }
 
 describe('buildStartDate / buildEndDate', () => {
+  it('emits the offset that actually applies on the date (CET in winter)', () => {
+    // Review fix on #426: the offset used to be a hard-coded +02:00, which was
+    // an hour out for anything outside the May-September ticketed season.
+    expect(buildStartDate('2026-11-07', '20:00')).toBe('2026-11-07T20:00:00+01:00')
+    expect(buildEndDate('2026-11-07', '20:00')).toBe('2026-11-07T21:00:00+01:00')
+  })
+
   it('emits ISO with local Korčula offset', () => {
     expect(buildStartDate('2026-08-14', '21:00')).toBe('2026-08-14T21:00:00+02:00')
   })

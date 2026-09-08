@@ -1,5 +1,6 @@
 import { VENUE_CAPACITY, type Venue } from './venues'
 import { SITE_URL, ORG_LEGAL_NAME, BRAND_LAYER, DEFAULT_OG_IMAGE } from './seo'
+import { dayOf, zagrebOffsetIso } from './zagreb-time'
 
 /**
  * Schema.org Event JSON-LD generator.
@@ -26,10 +27,11 @@ const ADULT_PRICE = 20
 const CHILD_PRICE = 10
 const CURRENCY = 'EUR'
 const SHOW_DURATION_MINUTES = 60
-// Croatia is Europe/Zagreb (CET/CEST). Show times in DB are local Korčula time.
-// Use a fixed offset that matches when shows actually run (summer season → +02:00).
-// Off-season shows would emit a slightly wrong absolute timestamp; acceptable for SEO.
-const LOCAL_TZ_OFFSET = '+02:00'
+// Croatia is Europe/Zagreb (CET/CEST) and show times in the DB are local Korčula
+// wall clock. The offset is COMPUTED per date (`zagreb-time.ts`) rather than
+// pinned to the summer +02:00 it used to be: ticketed shows do run May-September,
+// but the same helpers now serve the roster's whole-year reads, and an emitted
+// timestamp that is an hour out is wrong for SEO too.
 
 const VENUE_PLACE: Record<
   Venue,
@@ -54,13 +56,12 @@ const KORCULA_ADDRESS = {
 } as const
 
 export function buildStartDate(date: string, time: string): string {
-  // Normalise date → YYYY-MM-DD
-  const day = date.length > 10 ? date.slice(0, 10) : date
-  return `${day}T${time}:00${LOCAL_TZ_OFFSET}`
+  const day = dayOf(date)
+  return `${day}T${time}:00${zagrebOffsetIso(day, time)}`
 }
 
 export function buildEndDate(date: string, time: string): string {
-  const day = date.length > 10 ? date.slice(0, 10) : date
+  const day = dayOf(date)
   const [hStr, mStr] = time.split(':')
   const h = Number(hStr)
   const m = Number(mStr)
@@ -70,7 +71,8 @@ export function buildEndDate(date: string, time: string): string {
   const endM = totalMin % 60
   const endDay = dayOverflow ? addOneDay(day) : day
   const pad = (n: number) => String(n).padStart(2, '0')
-  return `${endDay}T${pad(endH)}:${pad(endM)}:00${LOCAL_TZ_OFFSET}`
+  const endTime = `${pad(endH)}:${pad(endM)}`
+  return `${endDay}T${endTime}:00${zagrebOffsetIso(endDay, endTime)}`
 }
 
 function addOneDay(day: string): string {
