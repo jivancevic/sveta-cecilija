@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { handleLineupConfirm, handleLineupReplace, type LineupPerformance } from './replace'
+import type { LineupConfirmOutcome } from './write-tx'
 import { LINEUP_ERRORS } from './rules'
 import { APP_STRINGS } from '@/lib/app/strings'
 import type { AppRequestMeta } from '@/lib/app/request-guard'
@@ -33,7 +34,7 @@ const roster = [
 ]
 
 function deps(over: Partial<Parameters<typeof handleLineupReplace>[1]> = {}) {
-  const replaceEntries = vi.fn().mockResolvedValue(undefined)
+  const replaceEntries = vi.fn().mockResolvedValue({ written: true })
   return {
     replaceEntries,
     all: {
@@ -138,29 +139,47 @@ describe('handleLineupReplace', () => {
     const result = await handleLineupReplace({ performanceId: '10', entries: [] }, all)
     expect(result.status).toBe(415)
   })
+
+  // #442 review: the pre-check passed and a Potvrdi landed before the locked
+  // read. Only the write's own answer counts, and it must reach the voditelj as
+  // the same 409 and the same sentence a plain refusal gives.
+  it('409s when the LOCKED re-check finds the lineup confirmed after the pre-check passed', async () => {
+    const { all } = deps({
+      loadPerformance: async () => ({ id: '10', confirmed: false }),
+      replaceEntries: vi.fn().mockResolvedValue({ written: false, reason: 'confirmed' }),
+    })
+    const result = await handleLineupReplace(
+      { performanceId: '10', entries: [{ memberId: '1', role: 'crni' }] },
+      all,
+    )
+    expect(result.status).toBe(409)
+    expect(result.body).toEqual({ error: APP_STRINGS.lineup.locked })
+  })
+
+  it('400s when the performance disappeared between the pre-check and the lock', async () => {
+    const { all } = deps({
+      replaceEntries: vi.fn().mockResolvedValue({ written: false, reason: 'missing' }),
+    })
+    const result = await handleLineupReplace({ performanceId: '10', entries: [] }, all)
+    expect(result.status).toBe(400)
+    expect(result.body).toEqual({ error: APP_STRINGS.lineup.missing })
+  })
 })
 
 describe('handleLineupConfirm', () => {
-  const confirmDeps = (over: Partial<Parameters<typeof handleLineupConfirm>[1]> = {}) => {
-    const setConfirmed = vi.fn().mockResolvedValue(undefined)
-    return {
-      setConfirmed,
-      all: {
-        request: sameSite,
-        loadPerformance: async (id: string): Promise<LineupPerformance | null> =>
-          id === '10' ? { id: '10', confirmed: false } : null,
-        setConfirmed,
-        now: () => new Date('2026-08-05T19:00:00.000Z'),
-        ...over,
-      },
-    }
+  const confirmDeps = (
+    outcome: LineupConfirmOutcome = { ok: true, confirmed: true, confirmedAt: '2026-08-05T19:00:00.000Z' },
+    over: Partial<Parameters<typeof handleLineupConfirm>[1]> = {},
+  ) => {
+    const setConfirmed = vi.fn().mockResolvedValue(outcome)
+    return { setConfirmed, all: { request: sameSite, setConfirmed, ...over } }
   }
 
-  it('confirms and stamps the time', async () => {
+  it('confirms and answers with the stamp the locked write decided', async () => {
     const { all, setConfirmed } = confirmDeps()
     const result = await handleLineupConfirm({ performanceId: '10', confirmed: true }, all)
     expect(result.status).toBe(200)
-    expect(setConfirmed).toHaveBeenCalledWith('10', true, '2026-08-05T19:00:00.000Z')
+    expect(setConfirmed).toHaveBeenCalledWith('10', true)
     expect(result.body).toEqual({
       ok: true,
       confirmed: true,
@@ -168,13 +187,19 @@ describe('handleLineupConfirm', () => {
     })
   })
 
-  it('unlocks and clears the timestamp, so it never outlives the confirmation', async () => {
-    const { all, setConfirmed } = confirmDeps({
-      loadPerformance: async () => ({ id: '10', confirmed: true }),
-    })
+  it('unlocks and clears the timestamp', async () => {
+    const { all, setConfirmed } = confirmDeps({ ok: true, confirmed: false, confirmedAt: null })
     const result = await handleLineupConfirm({ performanceId: '10', confirmed: false }, all)
     expect(result.status).toBe(200)
-    expect(setConfirmed).toHaveBeenCalledWith('10', false, null)
+    expect(setConfirmed).toHaveBeenCalledWith('10', false)
+    expect(result.body).toEqual({ ok: true, confirmed: false, confirmedAt: null })
+  })
+
+  it('400s an empty postava with its own sentence', async () => {
+    const { all } = confirmDeps({ ok: false, reason: 'empty' })
+    const result = await handleLineupConfirm({ performanceId: '10', confirmed: true }, all)
+    expect(result.status).toBe(400)
+    expect(result.body).toEqual({ error: APP_STRINGS.lineup.confirmEmpty })
   })
 
   it('400s a `confirmed` that is not a real boolean, rather than unlocking by accident', async () => {
@@ -188,14 +213,14 @@ describe('handleLineupConfirm', () => {
   })
 
   it('400s an unknown performance', async () => {
-    const { all, setConfirmed } = confirmDeps()
+    const { all } = confirmDeps({ ok: false, reason: 'missing' })
     const result = await handleLineupConfirm({ performanceId: '999', confirmed: true }, all)
     expect(result.status).toBe(400)
-    expect(setConfirmed).not.toHaveBeenCalled()
+    expect(result.body).toEqual({ error: APP_STRINGS.lineup.missing })
   })
 
   it('refuses a cross-site request', async () => {
-    const { all, setConfirmed } = confirmDeps({
+    const { all, setConfirmed } = confirmDeps(undefined, {
       request: { ...sameSite, secFetchSite: 'cross-site' },
     })
     const result = await handleLineupConfirm({ performanceId: '10', confirmed: true }, all)

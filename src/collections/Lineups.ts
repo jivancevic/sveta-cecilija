@@ -14,7 +14,7 @@ type ReqUser = { id?: string | number; permissions?: unknown } | null | undefine
 // Exactly one role per member per performance (story 30, "statistics never
 // double count"), which is what the unique index on (performance, member)
 // carries — Payload's push never emits a two-column unique index, so
-// `db/schema/migrate-zz-lineups.sql` is its only home.
+// `db/schema/migrate-zz-b-lineups.sql` is its only home.
 //
 // Confirmation is NOT here: it is one flag per evening
 // (`shows.lineupConfirmed`), because a lineup is confirmed as a whole and a

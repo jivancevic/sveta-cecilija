@@ -11,9 +11,17 @@
 // sentence the app says in two places at once (the editor and the route):
 //
 //   1. buildLineupFromAttendance — "Napravi iz prisutnosti" (story 27). The
-//      army the voditelj already ASSIGNED wins over the dancer's primary role,
-//      because assigning it was a decision about this evening; a bula stays a
-//      bula, since a bula is in neither army and there is no army to map from.
+//      dancer's PRIMARY ROLE is the suggestion, and an assigned army overrides
+//      it only when the two CONTRADICT each other.
+//
+//      Story 27 reads "their primary role, or the army I already assigned", and
+//      taken literally that would demote every king in the roster: an
+//      attendance row's `army` is DERIVED from the primary role when the answer
+//      is created (`attendance/rules.ts`), so a stored `crni` against a
+//      `crni_kralj` profile is not a decision anybody made. Only an army that
+//      disagrees with the primary role proves the voditelj acted — that is the
+//      "Prebaci u ..." control, and then the plain role of the new army wins.
+//      A bula carries no army at all and always keeps their own role.
 //   2. roleWarnings — a role outside the member's profile is a WARNING and
 //      never a block (story 29): a bula danced by a crni in an emergency has to
 //      be recordable as it happened.
@@ -23,7 +31,12 @@
 //
 // No IO, no Payload, no dates.
 
-import { isDanceRole, DANCE_ROLE_LABELS, type DanceRole } from '@/lib/moreskant-profile'
+import {
+  ARMY_OF_ROLE,
+  DANCE_ROLE_LABELS,
+  isDanceRole,
+  type DanceRole,
+} from '@/lib/moreskant-profile'
 import type { Army, AttendanceMember } from '@/lib/attendance/rules'
 import type { AttendanceRow } from '@/lib/attendance/army-count'
 
@@ -37,16 +50,6 @@ export interface LineupEntry {
 const ROLE_OF_ARMY: Record<Army, DanceRole> = {
   crni: 'crni',
   bili: 'bili',
-}
-
-/** The army each dance role belongs to; a bula is in neither. */
-const ARMY_OF_ROLE: Record<DanceRole, Army | null> = {
-  crni: 'crni',
-  crni_kralj: 'crni',
-  otmanovic: 'crni',
-  bili: 'bili',
-  bili_kralj: 'bili',
-  bula: null,
 }
 
 /**
@@ -102,6 +105,40 @@ export function buildLineupFromAttendance(
     out.push({ memberId: id, role: suggestedRole(member, coming.get(id) ?? null) })
   }
   return out
+}
+
+/**
+ * The order a postava is read in (#442 review): the named parts first, then the
+ * two armies.
+ *
+ * "Am I kralj tonight" is the question a dancer opens the page with, so the
+ * kings and the otmanović belong at the top rather than wherever the alphabet
+ * puts their nickname — which is also the order the paper list on the pier is
+ * written in. Within one role it falls back to the nickname, so the list is
+ * stable between renders.
+ */
+export const LINEUP_ROLE_ORDER: readonly DanceRole[] = [
+  'crni_kralj',
+  'otmanovic',
+  'bili_kralj',
+  'bula',
+  'crni',
+  'bili',
+]
+
+const ROLE_RANK = new Map(LINEUP_ROLE_ORDER.map((role, index) => [role, index]))
+
+/**
+ * Compare two lineup lines: role order first, then nickname (Croatian
+ * collation). Shared by the voditelj's editor and the dancer's list, so the two
+ * can never present one evening in two orders.
+ */
+export function compareLineupRows(
+  a: { role: DanceRole; nickname: string },
+  b: { role: DanceRole; nickname: string },
+): number {
+  const rank = (ROLE_RANK.get(a.role) ?? 99) - (ROLE_RANK.get(b.role) ?? 99)
+  return rank !== 0 ? rank : a.nickname.localeCompare(b.nickname, 'hr')
 }
 
 /** One warning: this member's profile does not list the role they are down for. */

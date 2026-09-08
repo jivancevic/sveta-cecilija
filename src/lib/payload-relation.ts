@@ -26,3 +26,19 @@ export function relationIdString(value: unknown): string | null {
   const id = relationId(value)
   return id == null ? null : String(id)
 }
+
+/**
+ * A relationship id as the DATABASE wants it on a write.
+ *
+ * The mirror of the two readers above. Ids arrive as strings — off a URL, off a
+ * JSON body — while the Postgres adapter's relationship columns are integers
+ * and Payload validates the type on write: a `'38'` comes back as "The
+ * following fields are invalid: Performance, Moreškant". Numeric-looking ids
+ * are therefore coerced here, in one place: which type an id has is a database
+ * fact and not a rule, so no pure handler should have to know it.
+ */
+export function relationIdForWrite(value: string | number | null): string | number | null {
+  if (value == null) return null
+  const n = Number(value)
+  return Number.isInteger(n) && String(n) === String(value).trim() ? n : value
+}

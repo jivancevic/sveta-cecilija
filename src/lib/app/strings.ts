@@ -250,6 +250,7 @@ export const APP_STRINGS = {
     missing: 'Ta izvedba ne postoji.',
     locked: 'Postava je potvrđena. Otključaj je pa pokušaj ponovno.',
     badConfirm: 'Nejasno je treba li postavu potvrditi ili otključati.',
+    confirmEmpty: 'Prazna postava se ne može potvrditi. Dodaj barem jednog moreškanta.',
     failed: 'Postava nije spremljena. Pokušaj ponovno.',
   },
 

@@ -18,7 +18,7 @@
 // definition, and the caller has already scoped its query to it: this module
 // counts what it is handed and never re-derives a boundary.
 
-import type { PerformanceKind } from '@/lib/show-performance'
+import { PERFORMANCE_KINDS, type PerformanceKind } from '@/lib/show-performance'
 import { isDanceRole, type DanceRole } from '@/lib/moreskant-profile'
 import type { AttendanceMember } from '@/lib/attendance/rules'
 
@@ -52,10 +52,16 @@ export interface DancerStats {
   byKind: Record<PerformanceKind, number>
 }
 
-const KINDS: readonly PerformanceKind[] = ['redovna', 'dmc', 'gulliver', 'koncert', 'ostalo']
-
+/**
+ * The kind vocabulary is `show-performance.ts`'s, never re-typed here: a sixth
+ * kind added there has to appear in this table on the same day, and a hand-kept
+ * copy is how it would not.
+ */
 function emptyKinds(): Record<PerformanceKind, number> {
-  return { redovna: 0, dmc: 0, gulliver: 0, koncert: 0, ostalo: 0 }
+  return Object.fromEntries(PERFORMANCE_KINDS.map((k) => [k, 0])) as Record<
+    PerformanceKind,
+    number
+  >
 }
 
 function emptyRoles(): Record<StatRole, number> {
@@ -88,7 +94,10 @@ export function aggregateDancerStats(input: {
   const confirmed = new Map<string, PerformanceKind>()
   for (const p of input.performances) {
     if (!p.confirmed) continue
-    confirmed.set(String(p.id), KINDS.includes(p.kind) ? p.kind : 'ostalo')
+    confirmed.set(
+      String(p.id),
+      (PERFORMANCE_KINDS as readonly string[]).includes(p.kind) ? p.kind : 'ostalo',
+    )
   }
 
   const rows = new Map<string, DancerStats>()

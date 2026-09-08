@@ -18,7 +18,9 @@
 // same hole `attendance-access.ts` documents at length. Dancers lose nothing:
 // they never write a lineup at all, by design.
 //
-// Pure predicates, unit-tested in `src/collections/access.test.ts`;
+// Pure predicates, unit-tested in `src/collections/lineup-access.test.ts`
+// (which also covers the two cascade hooks, the way
+// `attendance-cascade-delete.test.ts` does for #422);
 // `src/collections/Lineups.ts` is only the wiring.
 
 import { can, type PermissionUser } from './permissions'

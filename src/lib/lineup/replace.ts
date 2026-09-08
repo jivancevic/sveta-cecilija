@@ -6,14 +6,23 @@
 // "these are the people who danced" is the sentence they mean when they press
 // Spremi, and a per-row API would need a delete verb the phone has no room for.
 //
-// The transaction is the ROUTE's job (`deps.replaceEntries` runs it): a replace
-// that deleted the old rows and then failed to insert the new ones would leave
-// a confirmed evening blank, and it is a database fact rather than a rule.
+// The transaction and the row lock live in `./write-tx.ts`, which `deps` wires
+// to Payload: a replace that deleted the old rows and then failed to insert the
+// new ones would leave a confirmed evening blank, and which writes are atomic
+// is a database fact rather than a rule.
 //
 // A CONFIRMED lineup refuses the replace with 409 (story 31): "Potvrdi" is
 // exactly the promise that the list cannot change by accident, and answering
 // 403 would read as "you are not allowed", which the voditelj is — after they
 // press Otključaj.
+//
+// THE 409 IS DECIDED TWICE, and only the second one counts (#442 review). The
+// pre-check below reads the flag outside the transaction, which saves a
+// transaction in the ordinary case and proves nothing about the moment of the
+// write; the locked re-check inside `replaceEntries` is what actually refuses a
+// Potvrdi that landed while the voditelj was still typing. The handler maps
+// both to the same status and the same sentence, so a race and a plain refusal
+// read identically to the person holding the phone.
 //
 // The `/app` cross-site guard runs first on both, like every other
 // cookie-authenticated `/app` POST. `requirePermission(req, 'moreska')` is the
@@ -28,6 +37,7 @@ import {
   type LineupEntry,
   type RoleWarning,
 } from './rules'
+import type { LineupConfirmOutcome, LineupWriteOutcome } from './write-tx'
 
 export interface LineupBody {
   performanceId?: unknown
@@ -51,19 +61,28 @@ export interface LineupReplaceDeps {
   /** The ACTIVE moreškanti: the set an entry's member must belong to. */
   loadRoster: () => Promise<AttendanceMember[]>
   /**
-   * Delete every row of this performance and insert these, in ONE transaction.
-   * Returns nothing: the handler answers with what it validated, not with a
-   * re-read.
+   * Delete every row of this performance and insert these, in ONE transaction
+   * that first takes the shows row lock and re-reads the confirmation flag.
+   * `replaceLineupInTransaction` is the implementation; the outcome it returns
+   * is the word the handler answers with, because only that read happened at
+   * the moment of the write.
    */
-  replaceEntries: (performanceId: string, entries: readonly LineupEntry[]) => Promise<unknown>
+  replaceEntries: (
+    performanceId: string,
+    entries: readonly LineupEntry[],
+  ) => Promise<LineupWriteOutcome>
 }
 
 export interface LineupConfirmDeps {
   request: AppRequestMeta
-  loadPerformance: (id: string) => Promise<LineupPerformance | null>
-  /** Sets `lineupConfirmed` and, when confirming, `lineupConfirmedAt`. */
-  setConfirmed: (performanceId: string, confirmed: boolean, at: string | null) => Promise<unknown>
-  now?: () => Date
+  /**
+   * Takes the same shows row lock the replace takes, reads the confirmation and
+   * the row count, applies `decideConfirmation` and writes — all inside one
+   * transaction (`setLineupConfirmationInTransaction`). The refusals it can
+   * return are "that izvedba does not exist" and "an empty postava confirms
+   * nothing".
+   */
+  setConfirmed: (performanceId: string, confirmed: boolean) => Promise<LineupConfirmOutcome>
 }
 
 export interface LineupResult {
@@ -106,7 +125,14 @@ export async function handleLineupReplace(
   const validated = validateLineupEntries(body?.entries, roster)
   if (!validated.ok) return { status: 400, body: { error: validated.error } }
 
-  await deps.replaceEntries(performanceId, validated.entries)
+  const outcome = await deps.replaceEntries(performanceId, validated.entries)
+  if (!outcome.written) {
+    // The locked re-check disagreed with the pre-check: a Potvrdi (or a delete)
+    // landed in between. Same status, same sentence as the pre-check.
+    return outcome.reason === 'confirmed'
+      ? { status: 409, body: { error: APP_STRINGS.lineup.locked } }
+      : { status: 400, body: { error: APP_STRINGS.lineup.missing } }
+  }
 
   return {
     status: 200,
@@ -123,8 +149,10 @@ export async function handleLineupReplace(
  *
  * `confirmed` must be a real boolean: an absent or string value is a caller bug
  * and a 400, never a silent "false" that would unlock an evening nobody asked
- * to unlock. The timestamp is set when confirming and cleared when unlocking,
- * so "confirmed at" never outlives the confirmation it records.
+ * to unlock. Everything else — the timestamp, the empty-postava refusal, the
+ * idempotent re-confirm — is decided under the row lock in `write-tx.ts`,
+ * because each of them is a decision about the state at the moment of the
+ * write.
  */
 export async function handleLineupConfirm(
   body: ConfirmBody | null | undefined,
@@ -139,11 +167,21 @@ export async function handleLineupConfirm(
     return { status: 400, body: { error: APP_STRINGS.lineup.badConfirm } }
   }
 
-  const performance = await deps.loadPerformance(performanceId)
-  if (!performance) return { status: 400, body: { error: APP_STRINGS.lineup.missing } }
+  const outcome = await deps.setConfirmed(performanceId, body.confirmed)
+  if (!outcome.ok) {
+    return {
+      status: 400,
+      body: {
+        error:
+          outcome.reason === 'empty'
+            ? APP_STRINGS.lineup.confirmEmpty
+            : APP_STRINGS.lineup.missing,
+      },
+    }
+  }
 
-  const confirmedAt = body.confirmed ? (deps.now?.() ?? new Date()).toISOString() : null
-  await deps.setConfirmed(performanceId, body.confirmed, confirmedAt)
-
-  return { status: 200, body: { ok: true, confirmed: body.confirmed, confirmedAt } }
+  return {
+    status: 200,
+    body: { ok: true, confirmed: outcome.confirmed, confirmedAt: outcome.confirmedAt },
+  }
 }

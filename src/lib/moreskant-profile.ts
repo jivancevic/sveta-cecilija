@@ -34,6 +34,25 @@ export const ROLE_REQUIRES: Partial<Record<DanceRole, DanceRole>> = {
   bili_kralj: 'bili',
 }
 
+/**
+ * The army each dance role belongs to; a **bula is in neither** (glossary:
+ * *Army count*).
+ *
+ * The single home of that mapping. It was written out three times before #432
+ * — the answer rules' default army, the army count and the lineup suggestion —
+ * and three copies of "which army is an otmanović in" is exactly the drift the
+ * permission vocabulary rule guards against. `null` is not "unknown": it is
+ * "neither army", the bula's whole point.
+ */
+export const ARMY_OF_ROLE: Record<DanceRole, 'crni' | 'bili' | null> = {
+  crni: 'crni',
+  crni_kralj: 'crni',
+  otmanovic: 'crni',
+  bili: 'bili',
+  bili_kralj: 'bili',
+  bula: null,
+}
+
 /** Croatian labels for the admin select and for `/app` (#421). */
 export const DANCE_ROLE_LABELS: Record<DanceRole, string> = {
   crni: 'Crni',

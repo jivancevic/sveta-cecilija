@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { APP_STRINGS, KIND_LABELS } from '@/lib/app/strings'
-import type { PerformanceKind } from '@/lib/show-performance'
+import { PERFORMANCE_KINDS } from '@/lib/show-performance'
 import type { DancerStats } from '@/lib/lineup/stats'
 
 // The season scoreboard (#437).
@@ -16,8 +16,6 @@ import type { DancerStats } from '@/lib/lineup/stats'
 // The split is a detail row rather than four more columns: on a phone the table
 // already carries five numbers, and "od toga 6 redovnih, 2 DMC" is a question
 // asked about one dancer at a time.
-
-const KINDS: PerformanceKind[] = ['redovna', 'dmc', 'gulliver', 'koncert', 'ostalo']
 
 export function StatsTable({
   rows,
@@ -96,7 +94,7 @@ export function StatsTable({
                   <tr key={`${row.memberId}-kinds`} className="app__stats-detail">
                     <td colSpan={6}>
                       <span className="app__stats-label">{APP_STRINGS.stats.byKind}</span>{' '}
-                      {KINDS.filter((kind) => row.byKind[kind] > 0)
+                      {PERFORMANCE_KINDS.filter((kind) => row.byKind[kind] > 0)
                         .map((kind) => `${row.byKind[kind]} ${KIND_LABELS[kind]}`)
                         .join(', ') || '0'}
                     </td>

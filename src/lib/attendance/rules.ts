@@ -19,7 +19,7 @@
 // row and hands them over. `answer.ts` is the route half.
 
 import { can, type PermissionUser } from '@/lib/access/permissions'
-import { isDanceRole, isMoreskantRow, type DanceRole } from '@/lib/moreskant-profile'
+import { ARMY_OF_ROLE, isDanceRole, isMoreskantRow } from '@/lib/moreskant-profile'
 import { APP_STRINGS } from '@/lib/app/strings'
 
 /** The two armies. `null` is a bula, who dances in neither. */
@@ -30,16 +30,6 @@ export type AttendanceStatus = 'coming' | 'not_coming'
 
 /** What the route accepts: an answer, or "forget my answer". */
 export type AnswerRequest = AttendanceStatus | 'clear'
-
-/** The dance roles that put a moreškant in each army. */
-const ARMY_OF_ROLE: Record<DanceRole, Army | null> = {
-  crni: 'crni',
-  crni_kralj: 'crni',
-  otmanovic: 'crni',
-  bili: 'bili',
-  bili_kralj: 'bili',
-  bula: null,
-}
 
 export function isArmy(value: unknown): value is Army {
   return value === 'crni' || value === 'bili'

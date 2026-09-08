@@ -4,6 +4,7 @@ import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { APP_STRINGS, ROLE_LABELS } from '@/lib/app/strings'
 import { DANCE_ROLES, type DanceRole } from '@/lib/moreskant-profile'
+import { compareLineupRows, roleWarnings } from '@/lib/lineup/rules'
 import type { LineupPerson, LineupRow } from '@/lib/app/detail-loaders'
 
 // The Postava section, the voditelj's half (#432).
@@ -21,9 +22,11 @@ import type { LineupPerson, LineupRow } from '@/lib/app/detail-loaders'
 // which is what "napravi" means; the voditelj then adjusts and saves.
 //
 // A role the dancer's profile does not list is a WARNING and still saves
-// (story 29). The warnings are recomputed in the browser from the same roster
-// the server used, so the line under a row appears the moment the select
-// changes rather than after a save.
+// (story 29). The warnings are recomputed in the browser by calling the SAME
+// pure function the server calls (`roleWarnings`), so the line appears the
+// moment the select changes and can never say something the route would not:
+// one rule, imported, rather than a second implementation of it that agrees
+// until somebody edits one of them.
 
 export function LineupEditor({
   performanceId,
@@ -54,16 +57,30 @@ export function LineupEditor({
   const inLineup = useMemo(() => new Set(entries.map((e) => e.memberId)), [entries])
   const available = roster.filter((p) => !inLineup.has(p.memberId))
 
-  // The same rule as `roleWarnings` on the server, over the same roster: a role
-  // the profile does not list. Recomputed live so the voditelj sees it while
-  // choosing rather than after saving.
-  function warns(entry: LineupRow): boolean {
-    const person = rosterById.get(entry.memberId)
-    return !person || !person.roles.includes(entry.role)
-  }
+  // `roleWarnings` is the server's function, imported: it is pure, so the
+  // browser can ask it the same question the route will. The roster is shaped
+  // back into the `AttendanceMember` it reads — nickname and roles are all it
+  // looks at, and there is no email anywhere near this payload (ADR-0024).
+  const warnings = useMemo(() => {
+    const members = roster.map((p) => ({
+      id: p.memberId,
+      nickname: p.nickname,
+      roles: p.roles,
+      active: true,
+      isMoreskant: true,
+    }))
+    return new Map(
+      roleWarnings(entries, members).map((w) => [w.memberId, `${w.message} ${APP_STRINGS.lineup.warningSuffix}`]),
+    )
+  }, [entries, roster])
 
+  // Every mutation re-sorts, so the list stays in the one order the dancer's
+  // view also uses (`compareLineupRows`): a role change moves a new kralj to
+  // the top instead of leaving the page in an order nothing else shares.
   function setRole(memberId: string, role: DanceRole) {
-    setEntries((rows) => rows.map((r) => (r.memberId === memberId ? { ...r, role } : r)))
+    setEntries((rows) =>
+      rows.map((r) => (r.memberId === memberId ? { ...r, role } : r)).sort(compareLineupRows),
+    )
   }
 
   function remove(memberId: string) {
@@ -73,16 +90,18 @@ export function LineupEditor({
   function add(memberId: string) {
     const person = rosterById.get(memberId)
     if (!person) return
-    setEntries((rows) => [
-      ...rows,
-      {
-        memberId,
-        nickname: person.nickname,
-        // Their first listed role is the least surprising default; a member with
-        // no roles at all falls back to crni and shows a warning until changed.
-        role: person.roles[0] ?? 'crni',
-      },
-    ])
+    setEntries((rows) =>
+      [
+        ...rows,
+        {
+          memberId,
+          nickname: person.nickname,
+          // Their first listed role is the least surprising default; a member
+          // with no roles at all falls back to crni and warns until changed.
+          role: person.roles[0] ?? 'crni',
+        },
+      ].sort(compareLineupRows),
+    )
     setPick('')
   }
 
@@ -157,7 +176,7 @@ export function LineupEditor({
         <button
           type="button"
           className="app__button app__button--small"
-          onClick={() => setEntries(suggested)}
+          onClick={() => setEntries([...suggested].sort(compareLineupRows))}
           disabled={busy !== null}
         >
           {APP_STRINGS.lineup.fromAttendance}
@@ -196,10 +215,8 @@ export function LineupEditor({
                   </button>
                 )}
               </span>
-              {warns(entry) && (
-                <span className="app__lineup-warning">
-                  {`${entry.nickname} nema ulogu "${ROLE_LABELS[entry.role]}" u svom profilu. ${APP_STRINGS.lineup.warningSuffix}`}
-                </span>
+              {warnings.has(entry.memberId) && (
+                <span className="app__lineup-warning">{warnings.get(entry.memberId)}</span>
               )}
             </li>
           ))}
@@ -240,11 +257,16 @@ export function LineupEditor({
             {busy === 'save' ? APP_STRINGS.lineup.saving : APP_STRINGS.lineup.save}
           </button>
         )}
+        {/* An empty postava may not be confirmed: "confirmed" is what publishes
+            a lineup and what lets it count in the statistics, and an evening
+            confirmed with nobody in it would show every dancer "još nije
+            objavljena" about a list that is final. The route refuses it with
+            the same sentence, under the row lock. */}
         <button
           type="button"
           className="app__button app__button--small"
           onClick={() => toggleConfirm(!confirmed)}
-          disabled={busy !== null}
+          disabled={busy !== null || (!confirmed && entries.length === 0)}
         >
           {confirmed
             ? busy === 'confirm'

@@ -31,6 +31,7 @@ import { relationIdString } from '@/lib/payload-relation'
 import { isDanceRole, type DanceRole } from '@/lib/moreskant-profile'
 import {
   buildLineupFromAttendance,
+  compareLineupRows,
   roleWarnings,
   type LineupEntry,
   type RoleWarning,
@@ -125,9 +126,11 @@ export function toLineupEntry(doc: Record<string, unknown>): LineupEntry | null 
 /**
  * The Postava section, from rows already loaded.
  *
- * Entries and the picker are ordered by the roster itself (nickname, Croatian
- * collation), so a lineup reads the same way twice running and adding somebody
- * does not shuffle the list under the voditelj's thumb.
+ * The picker is ordered by nickname; the postava itself is ordered by ROLE and
+ * then nickname (`compareLineupRows`), so "am I kralj tonight" is answered by
+ * the top of the list and the editor and the dancer's view read alike. The
+ * suggestion is built in roster order first and then sorted the same way, so
+ * pressing the button twice cannot produce two orders.
  */
 export function buildLineupView(input: {
   performanceDoc: Record<string, unknown>
@@ -155,16 +158,14 @@ export function buildLineupView(input: {
   const stored = input.lineupDocs
     .map(toLineupEntry)
     .filter((e): e is LineupEntry => e !== null)
-  const order = new Map(roster.map((m, i) => [String(m.id), i]))
-  stored.sort(
-    (a, b) => (order.get(a.memberId) ?? Infinity) - (order.get(b.memberId) ?? Infinity),
-  )
 
   const toRow = (entry: LineupEntry): LineupRow => ({
     memberId: entry.memberId,
     nickname: label.get(entry.memberId) ?? `#${entry.memberId}`,
     role: entry.role,
   })
+  const toRows = (entries: readonly LineupEntry[]): LineupRow[] =>
+    entries.map(toRow).sort(compareLineupRows)
 
   const visible = input.voditelj || confirmed
 
@@ -174,9 +175,9 @@ export function buildLineupView(input: {
     // A dancer looking at a draft gets an EMPTY list rather than a hidden
     // section: the shape of the payload is where story 34 is enforced, so no
     // template can leak a draft by forgetting a condition.
-    entries: visible ? stored.map(toRow) : [],
+    entries: visible ? toRows(stored) : [],
     suggested: input.voditelj
-      ? buildLineupFromAttendance(input.attendanceRows, roster).map(toRow)
+      ? toRows(buildLineupFromAttendance(input.attendanceRows, roster))
       : [],
     warnings: visible ? roleWarnings(stored, roster) : [],
     roster: input.voditelj

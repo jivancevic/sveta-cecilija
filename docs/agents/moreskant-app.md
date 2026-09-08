@@ -572,12 +572,74 @@ create tests the result for truthiness, so a `Where` there reads as "allowed".
 
 Replace, not patch: the editor holds the whole list in front of the voditelj, so
 "these are the people who danced" is the sentence they mean, and the route
-implements the same operation. The transaction lives in the route
-(`payload.db.beginTransaction()`), because a delete that succeeded and inserts
-that did not would leave a confirmed evening empty.
+implements the same operation.
 
 409 rather than 403 is a decision: the voditelj IS allowed, after they press
 Otključaj.
+
+### The shows row lock is what makes the 409 true
+
+Both writes read `shows.lineupConfirmed` and then act on it, and the read and
+the act are separate statements. `src/lib/lineup/write-tx.ts` therefore takes
+`SELECT lineup_confirmed, lineup_confirmed_at FROM shows WHERE id = $1 FOR
+UPDATE` **inside** the transaction that then writes, and both routes take that
+same lock on that same row. Without it (#442 review):
+
+- a Potvrdi landing between a Spremi's 409 check and its inserts leaves a
+  **confirmed** evening holding the list the voditelj was still editing — which
+  is the one thing "Potvrdi locks it" promises cannot happen;
+- two concurrent replaces interleave their delete and their inserts, and the
+  result is the union of both lists or a 500 from the unique index;
+- a double-tapped Potvrdi re-stamps `lineupConfirmedAt`.
+
+The 409 is therefore decided **twice**, and only the second one counts: the
+handler's `loadPerformance` pre-check saves a transaction in the ordinary case
+and proves nothing about the moment of the write. Both answer with the same
+status and the same sentence, so a race and a plain refusal read identically to
+whoever is holding the phone.
+
+The lock has to run on the **transaction's own connection**:
+`payload.db.sessions[transactionID].db` is the drizzle handle Payload's own
+operations use once you pass them `req: { transactionID }`, while
+`payload.db.pool` hands out a different connection whose `FOR UPDATE` would lock
+nothing and deadlock against the transaction. `lineup-store.ts` is the only
+place that knows this; `write-tx.ts` owns the order and is unit-tested over a
+fake executor that flips the flag between the pre-check and the locked read —
+the only way to test that race deterministically.
+
+The writes themselves still go through the local API with the same
+`transactionID`, never raw SQL, so the `lineups` hooks and the Shows
+`afterChange` still run.
+
+### Two rules that live under the lock
+
+- **An empty postava may not be confirmed** (400, `lineup.confirmEmpty`; the
+  button is disabled too). "Confirmed" is what publishes a lineup and what lets
+  it count in the statistics, and an evening confirmed with nobody in it only
+  makes every dancer read "još nije objavljena" about a list that is final.
+- **Re-confirming does not re-stamp** `lineupConfirmedAt`: a second tap on a
+  pressed button is not a second decision. Unlocking clears it, so the timestamp
+  never outlives the confirmation it records.
+
+Both are `decideConfirmation`, pure, over the state read under the lock.
+
+### Confirming rings nobody, on purpose
+
+The confirm route saves through the collection, so the roster `afterChange` hook
+fires on every Potvrdi and Otključaj. Its diff watches date, time, place,
+cancellation and the voditelj note only, so nothing is sent. That is a decision,
+not an accident of the current diff, and `shows-hook-lineup.test.ts` pins it: a
+"postava objavljena" notification would be a **sixth** type added deliberately
+(#430 lists five), not one leaking out of this save.
+
+### `/admin` CRUD bypasses Otključaj
+
+The `lineups` collection is in the sidebar for `moreska`, and a row edited there
+goes through neither route — so it changes a **confirmed** postava without
+anybody unlocking it, exactly as the attendance collection lets a voditelj fix a
+wrong answer. That is what it is for: repairing one wrong row without the
+developer, never the way a lineup is entered. The app is the entry surface; the
+collection is the tweezers.
 
 ### The rules are pure
 
@@ -592,9 +654,14 @@ Otključaj.
   carries no army and stays a bula.
 - **`roleWarnings`** — a role outside the member's profile is a **warning and
   still saves** (story 29): a bula danced by a crni in an emergency has to be
-  recordable as it happened. The editor recomputes the same rule in the browser
-  over the same roster, so the line appears while choosing rather than after
-  saving.
+  recordable as it happened. It is pure, so `LineupEditor.tsx` **imports and
+  calls it** rather than re-implementing the test: the line appears the moment
+  the select changes and can never say something the route would not.
+- **`compareLineupRows`** — the order a postava is read in: crni kralj,
+  otmanović, bili kralj, bula, then the two armies, and nickname within a role.
+  "Am I kralj tonight" is answered by the top of the list, which is also the
+  order the paper list on the pier is written in. Shared by the editor and the
+  dancer's view, so one evening can never be presented in two orders.
 - **`validateLineupEntries`** — the two things that are nonsense rather than
   unusual: an unknown role and a member listed twice. A member outside the
   active roster is refused too; that is about the PERSON, not the role.
