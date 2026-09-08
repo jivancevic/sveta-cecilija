@@ -15,6 +15,7 @@ function deps(overrides: Partial<ForgotDeps> = {}): ForgotDeps {
   return {
     request: sameOrigin,
     baseUrl: 'https://moreska.eu',
+    allow: vi.fn().mockReturnValue(true),
     findAccount: vi.fn().mockResolvedValue(account),
     issueResetToken: vi.fn().mockResolvedValue('tok-reset'),
     sendReset: vi.fn().mockResolvedValue(undefined),
@@ -65,11 +66,6 @@ describe('handleForgot — one answer for everyone', () => {
     expect(await handleForgot({ identifier: 'cici' }, d)).toEqual({ status: 200, body: sent })
   })
 
-  it('stays 200 when the mail fails', async () => {
-    const d = deps({ sendReset: vi.fn().mockRejectedValue(new Error('brevo down')) })
-    expect(await handleForgot({ identifier: 'cici' }, d)).toEqual({ status: 200, body: sent })
-  })
-
   it.each([
     ['no body', null],
     ['an empty identifier', { identifier: '   ' }],
@@ -110,5 +106,78 @@ describe('handleForgot — the lookup and the link', () => {
     const result = await handleForgot({ identifier: 'cici' }, d)
     expect(result.body).toEqual(sent)
     expect(d.sendReset).not.toHaveBeenCalled()
+  })
+})
+
+describe('handleForgot — the throttle', () => {
+  it('answers the same sentence when the window is spent, and does nothing else', async () => {
+    const d = deps({ allow: vi.fn().mockReturnValue(false) })
+    const result = await handleForgot({ identifier: 'cici' }, d)
+    expect(result).toEqual({ status: 200, body: sent })
+    expect(d.findAccount).not.toHaveBeenCalled()
+    expect(d.issueResetToken).not.toHaveBeenCalled()
+    expect(d.sendReset).not.toHaveBeenCalled()
+  })
+
+  it('asks the limiter about the typed identifier, once', async () => {
+    const d = deps()
+    await handleForgot({ identifier: '  Cici  ' }, d)
+    expect(d.allow).toHaveBeenCalledTimes(1)
+    expect(d.allow).toHaveBeenCalledWith('Cici')
+  })
+
+  it('never spends a hit on an empty field', async () => {
+    const d = deps()
+    await handleForgot({ identifier: '   ' }, d)
+    expect(d.allow).not.toHaveBeenCalled()
+  })
+})
+
+describe('handleForgot — a broken base URL', () => {
+  it.each([
+    ['unset', ''],
+    ['relative', '/app'],
+    ['not a URL', 'moreska.eu'],
+  ])('500s rather than mailing a %s link, before any lookup', async (_label, baseUrl) => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const d = deps({ baseUrl })
+    const result = await handleForgot({ identifier: 'cici' }, d)
+    expect(result.status).toBe(500)
+    expect(d.findAccount).not.toHaveBeenCalled()
+    expect(d.issueResetToken).not.toHaveBeenCalled()
+    expect(d.sendReset).not.toHaveBeenCalled()
+    expect(error).toHaveBeenCalled()
+    error.mockRestore()
+  })
+})
+
+describe('handleForgot — timing', () => {
+  it('answers without waiting for the mail, so a hit is not slower than a miss', async () => {
+    let settle: () => void = () => {}
+    const pending = new Promise<void>((resolve) => {
+      settle = resolve
+    })
+    const sendReset = vi.fn().mockReturnValue(pending)
+    const d = deps({ sendReset })
+
+    const result = await handleForgot({ identifier: 'cici' }, d)
+
+    // Resolved while the send is still in flight: the two paths return at the
+    // same point, so a stopwatch cannot tell a known account from an unknown one.
+    expect(result).toEqual({ status: 200, body: sent })
+    expect(sendReset).toHaveBeenCalledTimes(1)
+    settle()
+    await pending
+  })
+
+  it('swallows a send that rejects after the answer has gone out', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const d = deps({ sendReset: vi.fn().mockRejectedValue(new Error('brevo down')) })
+    expect(await handleForgot({ identifier: 'cici' }, d)).toEqual({ status: 200, body: sent })
+    // Let the rejection land on the .catch rather than on the process.
+    await Promise.resolve()
+    await Promise.resolve()
+    expect(error).toHaveBeenCalled()
+    error.mockRestore()
   })
 })

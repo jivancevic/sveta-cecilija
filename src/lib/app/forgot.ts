@@ -17,7 +17,7 @@
 import { APP_STRINGS } from './strings'
 import { rejectAppRequest, type AppRequestMeta } from './request-guard'
 import { identifierField } from './login'
-import { setPasswordLink } from './invite'
+import { isUsableBaseUrl, setPasswordLink } from './invite'
 
 /** One hour, the life of a self-service reset link. */
 export const RESET_EXPIRATION_MS = 60 * 60 * 1000
@@ -38,6 +38,12 @@ export interface ForgotResult {
 export interface ForgotDeps {
   request: AppRequestMeta
   baseUrl: string
+  /**
+   * False when this caller has spent their window
+   * (`src/lib/rate-limit/forgot-rate-limit.ts`). A blocked request gets the
+   * same 200 sentence as everything else and costs no token and no mail.
+   */
+  allow: (identifier: string) => boolean
   /** One `find` on users over `email` OR `username`; null when nothing matches. */
   findAccount: (identifier: { email?: string; username?: string }) => Promise<ForgotAccount | null>
   /** Payload's `forgotPassword`, email disabled; resolves with the token. */
@@ -63,10 +69,22 @@ export async function handleForgot(
   const rejection = rejectAppRequest(deps.request)
   if (rejection) return { status: rejection.status, body: { error: APP_STRINGS.forgot.unexpected } }
 
+  // A link that is not absolute is a link nobody can open, and a mail carrying
+  // one is worse than no mail: it burns the token and reads as a broken system.
+  // Configuration, not user input, so it fails loudly and identically for
+  // everyone (it cannot say anything about who exists).
+  if (!isUsableBaseUrl(deps.baseUrl)) {
+    console.error('[handleForgot] NEXT_PUBLIC_BASE_URL is missing or relative; no mail sent')
+    return { status: 500, body: { error: APP_STRINGS.forgot.unexpected } }
+  }
+
   const identifier = typeof input?.identifier === 'string' ? input.identifier.trim() : ''
   if (!identifier) return { status: 400, body: { error: APP_STRINGS.forgot.missing } }
 
   const sent: ForgotResult = { status: 200, body: { ok: true, message: APP_STRINGS.forgot.sent } }
+
+  // Throttled: the same sentence, no lookup, no token, no mail.
+  if (!deps.allow(identifier)) return sent
 
   // Email or username, the same fork the login form makes (ADR-0011).
   const lookup =
@@ -96,15 +114,20 @@ export async function handleForgot(
   }
   if (!token) return sent
 
-  try {
-    await deps.sendReset({
+  // Fire and forget, deliberately. Awaiting the Brevo round-trip would make a
+  // hit measurably slower than a miss, and a stopwatch is all an attacker needs
+  // to turn one sentence into two answers. Nothing downstream depends on the
+  // result: a failed send is logged by the sender and the caller is told the
+  // same thing either way.
+  void deps
+    .sendReset({
       to: email,
       greeting: typeof account.name === 'string' ? account.name.trim() : '',
       link: setPasswordLink(deps.baseUrl, token),
     })
-  } catch {
-    // The mail failed; the answer stays the same one everybody gets.
-  }
+    .catch((err) => {
+      console.error('[handleForgot] reset mail failed:', err instanceof Error ? err.message : err)
+    })
 
   return sent
 }

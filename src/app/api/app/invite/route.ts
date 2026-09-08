@@ -2,7 +2,8 @@ import crypto from 'crypto'
 import { NextResponse } from 'next/server'
 import { requirePermission } from '@/lib/access/route-guard'
 import { appRequestMeta } from '@/lib/app/request-guard'
-import { handleInvite, type InviteMember, type InviteUser } from '@/lib/app/invite'
+import { handleInvite, type InviteMember } from '@/lib/app/invite'
+import { issueAppResetToken, toInviteUser } from '@/lib/app/account-data'
 import { sendMoreskantEmail } from '@/lib/email/send-moreskant-email'
 
 // POST /api/app/invite — "Pošalji pozivnicu" (#424, ADR-0024).
@@ -17,12 +18,9 @@ import { sendMoreskantEmail } from '@/lib/email/send-moreskant-email'
 // Members and Users gates nothing here (CLAUDE.md hard rule). The edit-menu
 // item that calls it is UX, never the boundary.
 //
-// **The expiration argument only works because the Users auth config sets no
-// `forgotPassword.expiration`.** Payload reads
-// `collectionConfig.auth?.forgotPassword?.expiration ?? expiration ?? 3600000`
-// (`node_modules/payload/dist/auth/operations/forgotPassword.js`), so a
-// collection value would WIN over what this route passes and freeze the
-// invitation and the reset at one length. See the note on Users.auth.
+// The seven-day expiration below is passed per call and works only because the
+// Users auth config sets none; the reason is written once, next to that config
+// in `src/collections/Users.ts`.
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -56,7 +54,7 @@ export async function POST(req: Request) {
       }
     },
 
-    findUserByMember: async (memberId): Promise<InviteUser | null> => {
+    findUserByMember: async (memberId) => {
       const found = await payload.find({
         collection: 'users',
         where: { member: { equals: memberId } },
@@ -64,13 +62,7 @@ export async function POST(req: Request) {
         depth: 0,
         overrideAccess: true,
       })
-      const row = found.docs[0] as unknown as Record<string, unknown> | undefined
-      if (!row) return null
-      return {
-        id: row.id as string | number,
-        username: typeof row.username === 'string' ? row.username : null,
-        email: typeof row.email === 'string' ? row.email : null,
-      }
+      return toInviteUser(found.docs[0] as unknown as Record<string, unknown> | undefined)
     },
 
     usernameTaken: async (candidate) => {
@@ -90,11 +82,9 @@ export async function POST(req: Request) {
         data: data as never,
         overrideAccess: true,
       })) as unknown as Record<string, unknown>
-      return {
-        id: doc.id as string | number,
-        username: typeof doc.username === 'string' ? doc.username : null,
-        email: typeof doc.email === 'string' ? doc.email : null,
-      }
+      const user = toInviteUser(doc)
+      if (!user) throw new Error('users.create returned no id')
+      return user
     },
 
     updateUserEmail: async (id, email) => {
@@ -106,20 +96,7 @@ export async function POST(req: Request) {
       })
     },
 
-    issueResetToken: async (target, expirationMs) => {
-      const token = await payload.forgotPassword({
-        collection: 'users',
-        // Payload types `data` as `{ email }` from the generated types this repo
-        // does not commit; the operation itself reads `username` too
-        // (loginWithUsername, ADR-0011) and `target` is exactly one of the two.
-        data: target as Parameters<typeof payload.forgotPassword>[0]['data'],
-        // We send our own Croatian mail; Payload's default English one would
-        // point at /admin/reset, which no dancer may open.
-        disableEmail: true,
-        expiration: expirationMs,
-      })
-      return typeof token === 'string' ? token : null
-    },
+    issueResetToken: (target, expirationMs) => issueAppResetToken(payload, target, expirationMs),
 
     sendInvite: (mail) =>
       sendMoreskantEmail(

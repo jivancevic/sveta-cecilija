@@ -107,7 +107,10 @@ export const APP_STRINGS = {
     notMoreskant: 'Član nije označen kao moreškant. Označi ga i spremi, pa pošalji pozivnicu.',
     notActive: 'Član nije aktivan.',
     noEmail: 'Član nema e-mail adresu. Upiši je i spremi, pa pošalji pozivnicu.',
-    createFailed: 'Prijava se ne može otvoriti. Provjeri je li ta e-mail adresa već na nekom računu.',
+    createFailed:
+      'Račun nije stvoren: adresa ili korisničko ime već postoje. Provjeri podatke i pokušaj ponovno.',
+    sendFailed: 'Prijava je otvorena, ali pozivnica nije poslana. Pokušaj ponovno.',
+    baseUrlMissing: 'Poveznica se ne može izraditi jer aplikacija nije ispravno postavljena.',
     tokenFailed: 'Poveznica se ne može izraditi. Pokušaj ponovno.',
     sentNew: 'Pozivnica je poslana i prijava je otvorena.',
     sentAgain: 'Nova poveznica je poslana na e-mail člana.',

@@ -114,6 +114,13 @@ export async function handleInvite(
   const rejection = rejectAppRequest(deps.request)
   if (rejection) return fail(rejection.status, APP_STRINGS.invite.unexpected)
 
+  // Configuration, checked before anything is created: a relative link in an
+  // invitation burns the token and reads to the dancer as a broken system.
+  if (!isUsableBaseUrl(deps.baseUrl)) {
+    console.error('[handleInvite] NEXT_PUBLIC_BASE_URL is missing or relative; no invitation sent')
+    return fail(500, APP_STRINGS.invite.baseUrlMissing)
+  }
+
   const memberId = id(input?.memberId)
   if (!memberId) return fail(400, APP_STRINGS.invite.missingMember)
 
@@ -181,14 +188,25 @@ export async function handleInvite(
   }
   if (!token) return fail(500, APP_STRINGS.invite.tokenFailed)
 
-  await deps.sendInvite({
-    to: email,
-    greeting:
-      (typeof member.nickname === 'string' && member.nickname.trim()) ||
-      (typeof member.name === 'string' && member.name.trim()) ||
-      '',
-    link: setPasswordLink(deps.baseUrl, token),
-  })
+  // A send that throws must not surface as a 500 on a voditelj who has just
+  // watched an account be created: the login exists, the token is live, and the
+  // only thing that failed is the letter. Say so and let them press again.
+  try {
+    await deps.sendInvite({
+      to: email,
+      greeting:
+        (typeof member.nickname === 'string' && member.nickname.trim()) ||
+        (typeof member.name === 'string' && member.name.trim()) ||
+        '',
+      link: setPasswordLink(deps.baseUrl, token),
+    })
+  } catch (err) {
+    console.error(
+      '[handleInvite] invitation mail failed:',
+      err instanceof Error ? err.message : err,
+    )
+    return fail(502, APP_STRINGS.invite.sendFailed)
+  }
 
   return {
     status: 200,
@@ -198,6 +216,24 @@ export async function handleInvite(
       username,
       message: created ? APP_STRINGS.invite.sentNew : APP_STRINGS.invite.sentAgain,
     },
+  }
+}
+
+/**
+ * Is this base URL something a link in an email can point at?
+ *
+ * `NEXT_PUBLIC_BASE_URL` is unset in more environments than one would like (a
+ * fresh worktree, a misfiled Coolify variable), and `setPasswordLink` would
+ * then happily build `/app/set-password?token=…`, which is a live token inside
+ * a dead link. Both handlers check this before they mint anything.
+ */
+export function isUsableBaseUrl(baseUrl: string | null | undefined): boolean {
+  if (typeof baseUrl !== 'string' || !baseUrl.trim()) return false
+  try {
+    const url = new URL(baseUrl)
+    return url.protocol === 'http:' || url.protocol === 'https:'
+  } catch {
+    return false
   }
 }
 

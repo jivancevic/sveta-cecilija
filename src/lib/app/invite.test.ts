@@ -1,5 +1,11 @@
 import { describe, expect, it, vi } from 'vitest'
-import { handleInvite, INVITE_EXPIRATION_MS, setPasswordLink, type InviteDeps } from './invite'
+import {
+  handleInvite,
+  INVITE_EXPIRATION_MS,
+  isUsableBaseUrl,
+  setPasswordLink,
+  type InviteDeps,
+} from './invite'
 import { APP_STRINGS } from './strings'
 
 const sameOrigin = {
@@ -227,5 +233,56 @@ describe('setPasswordLink', () => {
     expect(setPasswordLink('https://moreska.eu/', 'a b')).toBe(
       'https://moreska.eu/app/set-password?token=a%20b',
     )
+  })
+})
+
+describe('handleInvite — the mail can fail after the account exists', () => {
+  it('502s with a message that says the login is there and the letter is not', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const d = deps({ sendInvite: vi.fn().mockRejectedValue(new Error('brevo down')) })
+    const result = await handleInvite({ memberId: '12' }, d)
+    expect(result.status).toBe(502)
+    expect(result.body).toEqual({ error: APP_STRINGS.invite.sendFailed })
+    // The login and the token are real; pressing again is the fix.
+    expect(d.createUser).toHaveBeenCalledTimes(1)
+    expect(d.issueResetToken).toHaveBeenCalledTimes(1)
+    expect(error).toHaveBeenCalled()
+    error.mockRestore()
+  })
+})
+
+describe('handleInvite — a broken base URL', () => {
+  it.each([
+    ['unset', ''],
+    ['relative', '/app'],
+    ['not a URL', 'moreska.eu'],
+    ['a mailto', 'mailto:info@moreska.eu'],
+  ])('500s on a %s base URL before touching anything', async (_label, baseUrl) => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const d = deps({ baseUrl })
+    const result = await handleInvite({ memberId: '12' }, d)
+    expect(result.status).toBe(500)
+    expect(result.body).toEqual({ error: APP_STRINGS.invite.baseUrlMissing })
+    expect(d.loadMember).not.toHaveBeenCalled()
+    expect(d.createUser).not.toHaveBeenCalled()
+    expect(d.issueResetToken).not.toHaveBeenCalled()
+    expect(error).toHaveBeenCalled()
+    error.mockRestore()
+  })
+})
+
+describe('isUsableBaseUrl', () => {
+  it.each([
+    ['https://moreska.eu', true],
+    ['http://localhost:3424', true],
+    ['', false],
+    ['   ', false],
+    ['/app', false],
+    ['moreska.eu', false],
+    ['mailto:info@moreska.eu', false],
+    [null, false],
+    [undefined, false],
+  ])('%s → %s', (value, expected) => {
+    expect(isUsableBaseUrl(value)).toBe(expected)
   })
 })

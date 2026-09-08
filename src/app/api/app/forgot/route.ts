@@ -4,6 +4,9 @@ import config from '@payload-config'
 import { handleForgot, type ForgotAccount } from '@/lib/app/forgot'
 import { appRequestMeta } from '@/lib/app/request-guard'
 import { sendMoreskantEmail } from '@/lib/email/send-moreskant-email'
+import { issueAppResetToken } from '@/lib/app/account-data'
+import { forgotRateLimiter } from '@/lib/rate-limit/forgot-rate-limit'
+import { clientIpFromHeaders } from '@/lib/rate-limit/claim-rate-limit'
 
 // POST /api/app/forgot — "Zaboravljena lozinka" (#424).
 //
@@ -17,10 +20,14 @@ import { sendMoreskantEmail } from '@/lib/email/send-moreskant-email'
 // we need the email to send our own Croatian letter, so we read the row first
 // and then ask Payload for a token targeted by username.
 //
-// The one-hour expiration passed below is honoured only because the Users auth
-// config sets no `forgotPassword.expiration` — Payload reads
-// `collectionConfig.auth?.forgotPassword?.expiration ?? expiration ?? 3600000`,
-// so a collection value would win over the argument. See the note on Users.auth.
+// The one-hour expiration is passed per call and works only because the Users
+// auth config sets none; the reason is written once, next to that config in
+// `src/collections/Users.ts`.
+//
+// It is throttled per identifier and per IP
+// (`src/lib/rate-limit/forgot-rate-limit.ts`): an unauthenticated POST that
+// makes the server send mail to somebody else's inbox is a mail cannon
+// otherwise. A throttled caller gets the same 200 sentence as everyone else.
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -32,6 +39,7 @@ export async function POST(req: Request) {
   const result = await handleForgot(body, {
     request: appRequestMeta(req, process.env.NEXT_PUBLIC_BASE_URL),
     baseUrl: process.env.NEXT_PUBLIC_BASE_URL ?? '',
+    allow: (identifier) => forgotRateLimiter.allow(identifier, clientIpFromHeaders(req.headers)),
 
     findAccount: async (identifier): Promise<ForgotAccount | null> => {
       const where: Where = identifier.email
@@ -54,17 +62,7 @@ export async function POST(req: Request) {
       }
     },
 
-    issueResetToken: async (target, expirationMs) => {
-      const token = await payload.forgotPassword({
-        collection: 'users',
-        // See the invite route: the operation reads `username` too (ADR-0011),
-        // the generated types narrow it to the email pair.
-        data: target as Parameters<typeof payload.forgotPassword>[0]['data'],
-        disableEmail: true,
-        expiration: expirationMs,
-      })
-      return typeof token === 'string' ? token : null
-    },
+    issueResetToken: (target, expirationMs) => issueAppResetToken(payload, target, expirationMs),
 
     sendReset: (mail) =>
       sendMoreskantEmail(
