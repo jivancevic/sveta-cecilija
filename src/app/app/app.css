@@ -555,3 +555,14 @@
   color: var(--light);
   border-color: var(--gold);
 }
+
+.app__person-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.app__person-controls .app__answers {
+  margin-top: 0;
+}

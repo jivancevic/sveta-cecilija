@@ -32,6 +32,22 @@ function army(value: unknown): Army | null {
   return value === 'crni' || value === 'bili' ? value : null
 }
 
+/**
+ * Relationship ids as the database wants them.
+ *
+ * The pure handler works in strings (an id read off a URL or a JSON body is a
+ * string), but the Postgres adapter's relationship columns are integers and
+ * Payload validates the type on write: a `'38'` comes back as "The following
+ * fields are invalid: Performance, Moreškant". Numeric-looking ids are coerced
+ * here, in the wiring, because which type an id has is a database fact and not
+ * a rule.
+ */
+function relId(value: string | number | null): string | number | null {
+  if (value == null) return null
+  const n = Number(value)
+  return Number.isInteger(n) && String(n) === String(value).trim() ? n : value
+}
+
 export async function POST(req: Request) {
   const gate = await requirePermission(req, ['moreskant', 'moreska'])
   if (gate.error) return gate.error
@@ -111,7 +127,12 @@ export async function POST(req: Request) {
     create: (row) =>
       payload.create({
         collection: 'attendance',
-        data: row as never,
+        data: {
+          ...row,
+          performance: relId(row.performance),
+          member: relId(row.member),
+          answeredBy: relId(row.answeredBy),
+        } as never,
         overrideAccess: true,
       }),
 
@@ -119,7 +140,7 @@ export async function POST(req: Request) {
       payload.update({
         collection: 'attendance',
         id,
-        data: row as never,
+        data: { ...row, answeredBy: relId(row.answeredBy) } as never,
         overrideAccess: true,
       }),
 

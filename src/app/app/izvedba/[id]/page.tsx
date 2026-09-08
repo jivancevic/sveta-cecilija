@@ -21,6 +21,10 @@ import { LogoutButton } from '../../LogoutButton'
 //
 // Mobile numbers are `tel:` links (story 29); emails are not in the payload at
 // all, by the shape of the loader.
+//
+// A voditelj's buttons hang off EVERY name, not only the no-answer list: the
+// record has to be correctable in both directions (#419, story 13), so a dancer
+// who is coming can be set to Ne dolazim or cleared from the same row.
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -67,12 +71,23 @@ function ArmySection({
           {tally.members.map((person) => (
             <li key={person.memberId} className="app__person">
               <Person person={person} />
-              {canEditOthers && moveTargets[person.memberId]?.includes(other) && (
-                <ArmyMoveButton
-                  performanceId={performanceId}
-                  memberId={person.memberId}
-                  target={other}
-                />
+              {canEditOthers && (
+                <span className="app__person-controls">
+                  {moveTargets[person.memberId]?.includes(other) && (
+                    <ArmyMoveButton
+                      performanceId={performanceId}
+                      memberId={person.memberId}
+                      target={other}
+                    />
+                  )}
+                  <AttendanceButtons
+                    performanceId={performanceId}
+                    memberId={person.memberId}
+                    current="coming"
+                    scope="row"
+                    allowClear
+                  />
+                </span>
               )}
             </li>
           ))}
@@ -87,11 +102,14 @@ function PeopleSection({
   people,
   performanceId,
   withButtons,
+  current = null,
 }: {
   title: string
   people: RosterPerson[]
   performanceId: string
   withButtons: boolean
+  /** The answer these people already gave, so the voditelj's buttons show it. */
+  current?: 'coming' | 'not_coming' | null
 }) {
   return (
     <section className="app__army">
@@ -110,7 +128,7 @@ function PeopleSection({
                 <AttendanceButtons
                   performanceId={performanceId}
                   memberId={person.memberId}
-                  current={null}
+                  current={current}
                   scope="row"
                   allowClear
                 />
@@ -205,13 +223,15 @@ export default async function PerformanceDetailPage({
         title={APP_STRINGS.detail.bula}
         people={detail.count.bula}
         performanceId={p.id}
-        withButtons={false}
+        withButtons={detail.canEditOthers}
+        current="coming"
       />
       <PeopleSection
         title={APP_STRINGS.detail.notComing}
         people={detail.count.notComing}
         performanceId={p.id}
         withButtons={detail.canEditOthers}
+        current="not_coming"
       />
       <PeopleSection
         title={APP_STRINGS.detail.noAnswer}
