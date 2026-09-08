@@ -798,6 +798,8 @@ CREATE INDEX IF NOT EXISTS members_created_at_idx ON public.members USING btree 
 
 CREATE INDEX IF NOT EXISTS members_updated_at_idx ON public.members USING btree (updated_at);
 
+CREATE UNIQUE INDEX IF NOT EXISTS members_moreskant_nickname_unique_idx ON public.members USING btree (lower(nickname)) WHERE ((is_moreskant = true) AND (nickname IS NOT NULL));
+
 CREATE INDEX IF NOT EXISTS members_roles_order_idx ON public.members_roles USING btree ("order");
 
 CREATE INDEX IF NOT EXISTS members_roles_parent_idx ON public.members_roles USING btree (parent_id);
