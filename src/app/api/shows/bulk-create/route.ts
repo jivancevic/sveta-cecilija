@@ -3,7 +3,10 @@ import { requirePermission } from '@/lib/access/route-guard'
 import { PUBLIC_PERFORMANCE_WHERE } from '@/lib/show-performance'
 import { notifyBulkCreated } from '@/lib/push/notify'
 import { createPushDeps, type PushPayload } from '@/lib/push/push-data'
-import { SKIP_ROSTER_PUSH } from '@/lib/push/shows-hook'
+import {
+  createPerformancesInBulk,
+  type BulkPerformanceRow,
+} from '@/lib/performance-bulk-create'
 
 export async function POST(req: NextRequest) {
   const gate = await requirePermission(req, 'tickets')
@@ -70,8 +73,8 @@ export async function POST(req: NextRequest) {
     }),
   )
 
-  const created: string[] = []
   const skipped: string[] = []
+  const rows: BulkPerformanceRow[] = []
 
   for (const date of targetDates) {
     const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
@@ -81,12 +84,8 @@ export async function POST(req: NextRequest) {
       continue
     }
 
-    await payload.create({
-      collection: 'shows',
-      // A season entered at once is ONE announcement, not twenty-two (#441
-      // review): the Shows afterChange hook honours this flag and stays quiet,
-      // and the single summary push goes out after the loop.
-      context: { [SKIP_ROSTER_PUSH]: true },
+    rows.push({
+      dateStr,
       data: {
         date: date.toISOString(),
         time,
@@ -101,20 +100,21 @@ export async function POST(req: NextRequest) {
         status: 'active',
       },
     })
-    created.push(dateStr)
   }
 
-  // One push for the whole batch, addressed to every moreškant with a login and
-  // pointing at the list rather than at any one evening. Detached and never
-  // able to fail the request: the shows are already in the database, and an
-  // admin who pressed "Create" must not see an error because a push service is
-  // down.
-  if (created.length > 0) {
-    const push = createPushDeps(payload as unknown as PushPayload)
-    void notifyBulkCreated({ count: created.length, firstDate: created[0]! }, push).catch((err) =>
-      console.error('[push] bulk create notification failed', err),
-    )
-  }
+  // The loop, the per-create `skipRosterPush` flag and the ONE summary push all
+  // live in `performance-bulk-create.ts`, shared with the MCP
+  // `create_performances` tool (#438) so a season entered from Claude behaves
+  // exactly like a season entered from `/admin`.
+  const { created } = await createPerformancesInBulk(rows, {
+    create: (args) => payload.create({ collection: 'shows', ...args }),
+    announce: (input) => {
+      const push = createPushDeps(payload as unknown as PushPayload)
+      void notifyBulkCreated(input, push).catch((err) =>
+        console.error('[push] bulk create notification failed', err),
+      )
+    },
+  })
 
   return NextResponse.json({ created, skipped })
 }

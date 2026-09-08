@@ -67,6 +67,8 @@ export const ALLOW_LIST: Record<string, string> = {
     'Roster write route (#432): a postava is recorded for EVERY performance, public or not (ADR-0024) — a ship call has a lineup exactly like a Redovna. The id-addressed read only checks the row exists and whether the lineup is confirmed, behind requirePermission(moreska).',
   'src/lib/lineup/lineup-store.ts':
     'Roster write path (#432, #442 review): the id-addressed `SELECT … FOR UPDATE` that serializes the two lineup writers. A postava belongs to EVERY performance, public or not (ADR-0024), and the row is locked rather than listed — it reaches no buyer surface and both callers are behind requirePermission(moreska).',
+  'src/lib/mcp/store.ts':
+    'Roster read + write path (#438): the MCP tools cover EVERY performance of the season, public or not (ADR-0024) — a voditelj dictates a postava for a ship call exactly as for a Redovna, and filtering on the predicate would hide those evenings from the connector. Both reads are behind an OAuth token whose user is re-checked for `moreska` on every call, and the answers carry no capacity, no sales and no buyer.',
   'src/lib/app/stats-data.ts':
     'Roster read (#437): the season scoreboard counts EVERY confirmed performance, public or not (ADR-0024) — a dancer who danced eight ship calls danced eight performances. Scoped to one calendar year, behind the /app access decision, and it surfaces nothing to a buyer.',
   'src/app/api/shows/[id]/move-to-zimsko/route.ts':
