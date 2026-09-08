@@ -94,6 +94,58 @@ export const APP_STRINGS = {
     missing: 'Ta izvedba ne postoji.',
   },
 
+  /**
+   * The invitation a voditelj sends and the two pages it leads to (#424).
+   *
+   * The four refusals are the four things a voditelj can fix themselves on the
+   * Member form, so each one names the field rather than the rule.
+   */
+  invite: {
+    action: 'Pošalji pozivnicu',
+    sending: 'Šaljem...',
+    missingMember: 'Taj član ne postoji.',
+    notMoreskant: 'Član nije označen kao moreškant. Označi ga i spremi, pa pošalji pozivnicu.',
+    notActive: 'Član nije aktivan.',
+    noEmail: 'Član nema e-mail adresu. Upiši je i spremi, pa pošalji pozivnicu.',
+    createFailed: 'Prijava se ne može otvoriti. Provjeri je li ta e-mail adresa već na nekom računu.',
+    tokenFailed: 'Poveznica se ne može izraditi. Pokušaj ponovno.',
+    sentNew: 'Pozivnica je poslana i prijava je otvorena.',
+    sentAgain: 'Nova poveznica je poslana na e-mail člana.',
+    unexpected: 'Slanje trenutno nije moguće. Pokušaj ponovno.',
+    /** The Members list column: does this member already have a login? */
+    hasLogin: 'Ima prijavu',
+  },
+
+  /** Choosing a password from an invitation or a reset link (#424). */
+  setPassword: {
+    title: 'Postavi lozinku',
+    intro: 'Odaberi lozinku za aplikaciju Moreškant.',
+    password: 'Nova lozinka',
+    repeat: 'Ponovi lozinku',
+    submit: 'Spremi i prijavi se',
+    submitting: 'Spremam...',
+    missingToken: 'Poveznica nije ispravna. Zatraži novu.',
+    tooShort: 'Lozinka mora imati barem 8 znakova.',
+    mismatch: 'Lozinke se ne podudaraju.',
+    invalidToken: 'Poveznica nije ispravna ili je istekla. Zatraži novu.',
+    unexpected: 'Spremanje trenutno nije moguće. Pokušaj ponovno.',
+  },
+
+  /** "Zaboravljena lozinka": one answer, whatever was typed (#424). */
+  forgot: {
+    title: 'Zaboravljena lozinka',
+    link: 'Zaboravljena lozinka',
+    intro: 'Upiši svoj e-mail ili korisničko ime. Ako račun postoji, poslat ćemo poveznicu za novu lozinku.',
+    identifier: 'E-mail ili korisničko ime',
+    submit: 'Pošalji poveznicu',
+    submitting: 'Šaljem...',
+    missing: 'Upiši e-mail ili korisničko ime.',
+    /** The SAME sentence for a hit and a miss: no account enumeration. */
+    sent: 'Ako račun postoji, poveznica je poslana na e-mail te osobe.',
+    unexpected: 'Slanje trenutno nije moguće. Pokušaj ponovno.',
+    backToLogin: 'Natrag na prijavu',
+  },
+
   install: {
     title: 'Dodaj na početni zaslon',
     body: 'Otvori izbornik preglednika i odaberi "Dodaj na početni zaslon" za ikonu Moreškant.',
