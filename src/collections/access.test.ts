@@ -25,6 +25,9 @@ const partnerNoLink = { id: '5', permissions: ['partner'] }
 const memberAccount = { id: '6', permissions: ['season_stats'], shared: true }
 const voditelj = { id: '7', permissions: ['moreska'] }
 const noPermissions = { id: '8' }
+// A dancer's own login (#420, ADR-0024): the `moreskant` permission plus the
+// Member link. It reaches /app and nothing in /admin.
+const moreskantAccount = { id: '9', permissions: ['moreskant'], member: 3 }
 const anon = null
 
 // Every account that is NOT the ticketing backoffice. Used to assert the
@@ -64,7 +67,6 @@ const CRUD = ['create', 'update', 'delete'] as const
 describe.each([
   ['ContactSubmissions', ContactSubmissions],
   ['PromoCodes', PromoCodes],
-  ['Members', Members],
   ['OrderLookups', OrderLookups],
 ] as const)('%s access', (_name, cfg) => {
   it('a `tickets` holder reads and mutates', () => {
@@ -256,6 +258,125 @@ describe('PromoCodes fields', () => {
   })
 })
 
+// ---------------------------------------------------------------------------
+// Members: two audiences on one table (#420, ADR-0024). `tickets` owns the
+// comp-attribution half, `moreska` the moreškant half. The rules themselves are
+// unit-tested in src/lib/access/members-access.ts; this block checks the wiring.
+// ---------------------------------------------------------------------------
+describe('Members access', () => {
+  const memberFieldOf = (name: string) =>
+    Members.fields.find((f) => 'name' in f && f.name === name) as
+      | {
+          type?: string
+          hasMany?: boolean
+          defaultValue?: unknown
+          options?: { value: string }[]
+          access?: { read?: unknown; update?: unknown; create?: unknown }
+        }
+      | undefined
+
+  const MORESKANT_FIELDS = [
+    'isMoreskant',
+    'nickname',
+    'mobile',
+    'email',
+    'roles',
+    'primaryRole',
+  ] as const
+  const ATTRIBUTION_FIELDS = ['name', 'active', 'note'] as const
+
+  it('the backoffice and the voditelj both read and mutate every row', () => {
+    for (const op of ['read', 'create', 'update'] as const) {
+      expect(call(Members.access?.[op], ticketAdmin)).toBe(true)
+      expect(call(Members.access?.[op], voditelj)).toBe(true)
+      expect(call(Members.access?.[op], developer)).toBe(true)
+    }
+  })
+
+  it('only the backoffice deletes a member (comp history hangs off the row)', () => {
+    expect(call(Members.access?.delete, ticketAdmin)).toBe(true)
+    expect(call(Members.access?.delete, developer)).toBe(true)
+    expect(call(Members.access?.delete, voditelj)).toBe(false)
+  })
+
+  it.each([
+    ['door', doorAccount],
+    ['partner', partner],
+    ['member', memberAccount],
+    ['moreškant', moreskantAccount],
+    ['no permission set', noPermissions],
+    ['anonymous', anon],
+  ] as const)('%s can neither read nor mutate', (_label, user) => {
+    for (const op of ['read', 'create', 'update', 'delete'] as const) {
+      expect(call(Members.access?.[op], user)).toBe(false)
+    }
+  })
+
+  it('the sidebar is visible to the backoffice and the voditelj only', () => {
+    expect(hidden(Members, ticketAdmin)).toBe(false)
+    expect(hidden(Members, voditelj)).toBe(false)
+    expect(hidden(Members, developer)).toBe(false)
+    for (const user of [doorAccount, partner, memberAccount, moreskantAccount, noPermissions, anon]) {
+      expect(hidden(Members, user)).toBe(true)
+    }
+  })
+
+  it.each(MORESKANT_FIELDS)(
+    '%s is read/write locked to a `moreska` holder',
+    (name) => {
+      const field = memberFieldOf(name)
+      expect(field).toBeDefined()
+      for (const op of ['read', 'update', 'create'] as const) {
+        expect(call(field?.access?.[op], voditelj)).toBe(true)
+        expect(call(field?.access?.[op], developer)).toBe(true)
+        // Tatjana holds `tickets` and never sees a dancer's data (#419, story 39).
+        expect(call(field?.access?.[op], ticketAdmin)).toBe(false)
+        expect(call(field?.access?.[op], doorAccount)).toBe(false)
+        expect(call(field?.access?.[op], anon)).toBe(false)
+      }
+    },
+  )
+
+  it.each(ATTRIBUTION_FIELDS)(
+    '%s stays readable by both but is only the backoffice’s to change',
+    (name) => {
+      const field = memberFieldOf(name)
+      expect(field).toBeDefined()
+      // Read left open: the voditelj needs the real name behind a nickname.
+      expect(field?.access?.read).toBeUndefined()
+      expect(call(field?.access?.update, ticketAdmin)).toBe(true)
+      expect(call(field?.access?.update, voditelj)).toBe(false)
+      // Create left open so a voditelj can add a dancer (`name` is required).
+      expect(field?.access?.create).toBeUndefined()
+    },
+  )
+
+  it('roles is a hasMany select over the six dance roles; primaryRole is the same vocabulary', () => {
+    const roles = memberFieldOf('roles')
+    expect(roles?.type).toBe('select')
+    expect(roles?.hasMany).toBe(true)
+    expect(roles?.options?.map((o) => o.value)).toEqual([
+      'crni',
+      'bili',
+      'crni_kralj',
+      'otmanovic',
+      'bili_kralj',
+      'bula',
+    ])
+    const primary = memberFieldOf('primaryRole')
+    expect(primary?.type).toBe('select')
+    expect(primary?.hasMany).toBeFalsy()
+    expect(primary?.options?.map((o) => o.value)).toEqual(
+      roles?.options?.map((o) => o.value),
+    )
+  })
+
+  it('isMoreskant defaults to false, so the 14 existing members stay attribution rows', () => {
+    expect(memberFieldOf('isMoreskant')?.type).toBe('checkbox')
+    expect(memberFieldOf('isMoreskant')?.defaultValue).toBe(false)
+  })
+})
+
 describe('Shows access', () => {
   // The full phase-2 matrix (ADR-0024, #408) lives in
   // src/lib/access/shows-access.test.ts; this block checks the wiring.
@@ -413,6 +534,23 @@ describe('Users access', () => {
   // #398: the legacy tier column is gone from the collection and the database.
   it('has no `role` field any more', () => {
     expect(usersFieldOf('role')).toBeUndefined()
+  })
+
+  // #420: the Member link behind a `moreskant` login. Unlike `partner`, read is
+  // locked too — nothing reads it off the session (/app re-reads it with
+  // overrideAccess) and a moreškant must never repoint themselves.
+  it('member link field: read AND write locked to a `users` holder', () => {
+    const memberField = usersFieldOf('member')
+    expect(memberField).toBeDefined()
+    expect(memberField?.type).toBe('relationship')
+    expect((memberField as { relationTo?: string } | undefined)?.relationTo).toBe('members')
+    for (const op of ['read', 'update', 'create'] as const) {
+      expect(call(memberField?.access?.[op], developer)).toBe(true)
+      expect(call(memberField?.access?.[op], ticketAdmin)).toBe(false)
+      expect(call(memberField?.access?.[op], voditelj)).toBe(false)
+      expect(call(memberField?.access?.[op], moreskantAccount)).toBe(false)
+      expect(call(memberField?.access?.[op], anon)).toBe(false)
+    }
   })
 
   it('partner link field: write locked to a `users` holder, read left open for scoping', () => {
