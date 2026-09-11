@@ -801,10 +801,17 @@ structured text, never an image**, and the matching is exact.
 
 ### Connecting
 
-A voditelj adds `https://moreska.eu/api/mcp` to the Claude app. The connector
-appends the transport segment itself, so the endpoint `mcp-handler` actually
-serves is `/api/mcp/mcp` — that URL, not the one typed, is the RFC 9728
-`resource`. From there the dance is the standard one and every step is a file:
+A voditelj adds **`https://moreska.eu/api/mcp/mcp`** to the Claude app, the
+full URL. The doubled segment is two different things: `/api/mcp` is our route
+folder, and the trailing `/mcp` is the Streamable HTTP transport that
+`mcp-handler` serves under its base path (the `[transport]` folder; `/sse` would
+be the other one, and it is disabled). The Claude app does **not** append that
+segment: typed as `/api/mcp`, OAuth still succeeds (discovery is per host) and
+the connector then fails with "no MCP server was found at the provided URL"
+(verified 2026-09-11 on prod). The full URL is also the RFC 9728 `resource`.
+In the connector dialog choose *Use your own OAuth client*, client ID
+`MCP_CLIENT_ID` (`claude`), secret blank. From there the dance is the standard
+one and every step is a file:
 
 | Step | Where |
 |---|---|

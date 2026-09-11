@@ -26,9 +26,10 @@ import { MORESKA_SCOPE, bearerToken, isMissingUserError, mcpAuthScopes } from '@
 
 // The MCP server (#438, ADR-0024): `/api/mcp/mcp`, Streamable HTTP.
 //
-// A voditelj adds `https://moreska.eu/api/mcp` to the Claude app; the connector
-// appends the transport segment itself, which is what the `[transport]` folder
-// is (an `mcp-handler` convention — `basePath` derives the endpoints from it).
+// A voditelj adds `https://moreska.eu/api/mcp/mcp` to the Claude app, the FULL
+// URL: the connector does not append the transport segment. `[transport]` is an
+// `mcp-handler` convention (`basePath` derives the endpoints from it), and the
+// bare `/api/mcp` is a 404.
 //
 // THIS FILE IS WIRING. Every rule lives in `@/lib/mcp/tools.ts`, pure over a
 // DI'd store, and every query in `@/lib/mcp/store.ts`. What belongs here, and
