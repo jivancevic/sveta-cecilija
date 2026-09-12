@@ -385,8 +385,10 @@ describe('create_performances', () => {
     expect(res.rejected.map((r) => r.index)).toEqual([1, 2, 3, 4])
     // 31 February would have become 3 March without the calendar check.
     expect(res.rejected[3]!.error).toContain('ne postoji u kalendaru')
-    // The last one is the collection's own invariant: no location, no booking.
-    expect(res.rejected[2]!.error.toLowerCase()).toContain('location')
+    // The last one is the shared input rule (#503): no place, no booking. It is
+    // said in Croatian here and in English by the collection's own invariant,
+    // because this sentence is read by a person and that one by an admin form.
+    expect(res.rejected[2]!.error.toLowerCase()).toContain('mjesto')
   })
 
   it('refuses an empty or missing list', async () => {

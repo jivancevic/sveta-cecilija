@@ -5,9 +5,12 @@
 // way. Both need the same three facts to stay true, so they live here rather
 // than in either caller:
 //
-//  1. **Every create carries `context.skipRosterPush`.** The Shows `afterChange`
-//     hook honours it and stays quiet, because twenty-two "nova izvedba"
-//     notifications for one paste is not a notification, it is a punishment.
+//  1. **Every create in a BATCH carries `context.skipRosterPush`.** The Shows
+//     `afterChange` hook honours it and stays quiet, because twenty-two "nova
+//     izvedba" notifications for one paste is not a notification, it is a
+//     punishment. A one-row call is not a batch and is exempt (#503): the
+//     voditelj adding a single cruise call from their phone means the ordinary
+//     per-performance push, with the date, the time and the place in it.
 //  2. **The batch is ONE transaction** (#445 review). The rows are validated
 //     all-or-nothing before anything is written, and the writes have to match
 //     that promise: without a transaction, a create that throws on row nine
@@ -71,10 +74,19 @@ export async function createPerformancesInBulk<Tx>(
   rows: readonly BulkPerformanceRow[],
   deps: BulkCreateDeps<Tx>,
 ): Promise<BulkCreateResult> {
+  // ONE performance is not a batch (#503). The summary exists because twenty-two
+  // "nova izvedba" pushes for one paste is a punishment; a voditelj adding a
+  // single cruise call from the pier means exactly the notification the Shows
+  // hook already sends, with the date, the time and the place in it. So a
+  // one-row call keeps the hook on and skips the summary, and every longer one
+  // does the opposite.
+  const single = rows.length === 1
+  const context = single ? {} : { [SKIP_ROSTER_PUSH]: true }
+
   const created = await deps.withTransaction(async (tx) => {
     const written: string[] = []
     for (const row of rows) {
-      await deps.create({ data: row.data, context: { [SKIP_ROSTER_PUSH]: true } }, tx)
+      await deps.create({ data: row.data, context }, tx)
       written.push(row.dateStr)
     }
     return written
@@ -82,7 +94,7 @@ export async function createPerformancesInBulk<Tx>(
 
   // After the commit, never inside it: a push that held the transaction open
   // for a round trip to FCM per phone is the mistake #441 already made once.
-  if (created.length > 0 && deps.announce) {
+  if (!single && created.length > 0 && deps.announce) {
     deps.announce({ count: created.length, firstDate: created[0]! })
   }
 
