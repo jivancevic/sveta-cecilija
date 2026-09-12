@@ -17,7 +17,7 @@ Two venues are used. Capacity is fixed per venue — no per-show overrides.
 |---|---|---|---|
 | Admin value | Croatian (public) | English (public) | Capacity | Notes |
 |---|---|---|---|---|
-| `ljetno-kino` | Ljetno kino | Summer Cinema | 320 | Default for all public ticketed shows |
+| `ljetno-kino` | Ljetno kino | Summer Cinema | 350 | Default for all public ticketed shows |
 | `zimsko-kino` | Centar za kulturu | Cultural Center Korčula | 250 | Same building as Zimsko kino. Used for private/tour-operator shows; fallback when bad weather forces a move indoors |
 
 Venue is exposed on the public-facing `Show` type — a `Redovna` show may be moved to Zimsko kino due to bad weather, and ticket buyers must see this.
@@ -66,20 +66,30 @@ One scheduled moreška event has a **single canonical user-facing noun in each l
 - **Still allowed:** the **verb** ("grupa nastupa / izvodi morešku"); the **idiom** "Showtime 21:00"; the internal **DB type/collection `Show`/`shows`** (not user-facing — do NOT rename); and **"Moreška"** as the proper-noun brand/the dance itself ("the next Moreška performance" — brand noun + generic noun stack, they don't compete). "Izvedba" was already the artistic/private-context word ("Privatne izvedbe", "prva poznata izvedba"); it now becomes universal, so that copy already fits.
 - _Avoid (HR):_ predstava, nastup (as the event noun). _Avoid (EN):_ Show (as the event noun).
 
-### Legacy reservations
-Tickets sold on the previous site (`korcula-moreska.com`) before the moreska.eu cutover. Tracked as a per-show integer `legacyReserved` on the `Shows` collection, hand-entered by admin from counts supplied by the old-site operator. Subtracted from venue capacity so the booking flow can't oversell against seats already promised on the old system:
+### Offline sale (at the door / legacy)
+A sale that produced **no `Order` and no `Ticket` row** in this system, and is therefore recorded as a **counted line** rather than as per-person rows. Two sources, one ledger (`offline_sales`, a raw table — see [ADR-0025](../docs/adr/0025-offline-sales-ledger.md)):
 
-`remaining = VENUE_CAPACITY[venue] − onlineSold − inPersonSold − legacyReserved`
+- **`door`** — paid at the entrance on the night. Croatian **"Na ulazu"**, English **"At the door"**. (Never called *box office* or *na blagajni*: there is no box office. `door` is also the *permission* name for scanner staff, a different axis, so the user-facing text never uses the bare word.)
+- **`legacy`** — sold on the previous site (`korcula-moreska.com`, WordPress + Tickera) before the 2026-06-07 cutover. Final and closed; the old store sells nothing.
 
-The field is write-once-per-show in normal use; after the old site is frozen, the count for a given show only changes if a legacy buyer is refunded by the old-site operator.
+Each line carries a **ticket type** (`adult | child`, the same two the rest of the system uses), a **quantity**, the **unit price actually charged**, and an optional **discount label** explaining why that price is below face value. A discounted seat keeps its real type: 32 pensioners at €15 are *adult* lines with a discount label, **not** a third price category. Prices are stored on the line so a later price change cannot rewrite history.
+
+The ledger is **append-only**. A miscount is corrected by appending the inverse line (negative `quantity`), never by editing or deleting, so the error and its correction both stay visible.
+
+Legacy seats **count as sold** everywhere. They were completed sales on a closed system, not reservations, and their money is real (the legacy site charged the same €20/€10 into the same Stripe account).
+
+**Cached counters.** `shows.inPersonSold` and `shows.legacyReserved` survive as a denormalised cache of the ledger, maintained in the same transaction as the insert:
+
+`inPersonSold = SUM(quantity) WHERE source='door'` · `legacyReserved = SUM(quantity) WHERE source='legacy'`
+
+They exist so the seat formula and its eight call sites keep working unchanged. Money and the adult/child split are read from the **ledger**, never from the counters.
 
 ### Seats sold / remaining capacity
 Source of truth for sold seats is the **`tickets` table**, not maintained counters. Each active ticket = one seat. The `onlineSold` counter (and any per-partner counter) is **retired**:
 
 `remaining = VENUE_CAPACITY[venue] − COUNT(active tickets for show) − inPersonSold − legacyReserved`
 
-- `inPersonSold` stays a counter — it is the artifact-less door tally that produces no `tickets` rows.
-- `legacyReserved` stays a counter — old-site seats with no rows here.
+- `inPersonSold` and `legacyReserved` stay counters — they are the **cached totals of the offline sales ledger** (see *Offline sale*), covering seats that produce no `tickets` rows. Capacity reads the counters; money and the adult/child split read the ledger.
 - A **cancelled** ticket (partner storno, or an online refund) is excluded from the active count, so the seat frees itself with no counter to decrement. This requires a ticket lifecycle state (see Ticket) — voiding is the single mechanism behind both storno and refund.
 - Consequence: the Stripe refund route must now **void the order's tickets** (previously it only set `order.refund_status`), and the webhook no longer increments `onlineSold`. Stats reads that summed `onlineSold` switch to counting tickets.
 
@@ -208,7 +218,7 @@ The `/admin` landing is **one business-language dashboard**, not a per-role rede
 **Admin language (Payload-native i18n).** The admin is localized via Payload's built-in i18n (`supportedLanguages: { en, hr }` — Croatian ships in `@payloadcms/translations`), so the *entire* admin chrome (sidebar, tables, forms) localizes, not just the custom dashboard; the custom dashboard reads the active `req.i18n.language` and renders its own copy from a small HR/EN string map. Language is a **per-user preference** with a **permission-based default** (`defaultLanguageForUser`, `src/lib/admin-i18n.ts`): **English** for a `dev` holder and for a door-only account, **Croatian** for everyone else. The default is seeded once at login but each user can override it via Payload's native language selector in account settings (the persisted `payload-lng` cookie wins — so the shared door account can still be flipped to Croatian, and a stale `hr` cookie from prior use overrides the new English default until cleared). The non-technical secretary therefore gets Croatian automatically; the developer and the door account get English. The **door-scan overlay itself is always English** regardless of this preference (short universal words — VALID/INVALID — that a guest at the door can also read).
 
 **Money on the dashboard — never the word "profit".** The system cannot know costs (musicians, venue), so any "profit" tile would be a mislabeled gross figure. The dashboard shows two distinct, separately-labeled money facts:
-- **Revenue collected** — money actually in hand: online orders (Stripe, net of refunds) + in-person cash. The current `totalRevenueCents` is *online gross only* and must not be presented as the whole.
+- **Revenue collected** — money actually in hand: online orders (Stripe, net of refunds) + the **offline sales ledger** (door and legacy lines, summed as `quantity × unit_price_cents`, so a child seat and a discounted seat are valued at what was actually charged). It is never a headcount multiplied by a flat price. The bare `totalRevenueCents` is *online gross only* and must not be presented as the whole.
 - **Partner receivable (invoiced monthly)** — tickets issued through partners and the amount we will invoice them at month-end (`(sold − cancelled) × face − commission`). This is **not cash in hand** and is always shown apart from Revenue collected so the two are never summed into a false "profit".
 
 ### Enquiry (contact submission)
@@ -255,7 +265,7 @@ One real mailbox (`info@moreska.eu`) read by Josip and the secretary; everything
 Transactional mail sends from root `moreska.eu` via Brevo. Future bulk post-show mail will send from subdomain `bilten.moreska.eu` (separate DKIM, isolated reputation) once Brevo Starter (~€9/mo) is activated. See [ADR-0004](../docs/adr/0004-email-infrastructure.md).
 
 ### Channel
-Every `Order` records the **channel** it came from: `online` (buyer paid via Stripe on moreska.eu), `partner` (a reseller sold it on their own POS), or `comp` (a complimentary ticket issued for free by an admin — see *Comp ticket*). When `channel = partner`, the order also references **which partner** (see Partner). The legacy bare-counter `inPersonSold` on `Shows` is a separate, artifact-less tally and is not an `Order` channel.
+Every `Order` records the **channel** it came from: `online` (buyer paid via Stripe on moreska.eu), `partner` (a reseller sold it on their own POS), or `comp` (a complimentary ticket issued for free by an admin — see *Comp ticket*). When `channel = partner`, the order also references **which partner** (see Partner). Seats sold **at the door** or on the **legacy site** are not `Order` channels at all: they produce no order and no ticket, and live in the offline sales ledger (see *Offline sale*). A discount on such a line is a separate axis from the channel, exactly as a promo code is on an online order.
 
 A `comp` order carries no Stripe payment (`stripePaymentIntentId = null`) and `total = 0`, so it never enters revenue math — it is deliberately a distinct channel (not a €0 `online` order) precisely so it stays out of "Revenue collected", the online channel-mix chart, and the "last Stripe webhook" health signal.
 
