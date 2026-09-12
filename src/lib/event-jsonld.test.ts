@@ -55,13 +55,13 @@ describe('deriveAvailability', () => {
   })
 
   it('returns LimitedAvailability at <=20% of capacity', () => {
-    // 20% of 320 = 64
-    expect(deriveAvailability(64, cap)).toBe('https://schema.org/LimitedAvailability')
+    // 20% of 350 = 70
+    expect(deriveAvailability(70, cap)).toBe('https://schema.org/LimitedAvailability')
     expect(deriveAvailability(1, cap)).toBe('https://schema.org/LimitedAvailability')
   })
 
   it('returns InStock above 20% capacity', () => {
-    expect(deriveAvailability(65, cap)).toBe('https://schema.org/InStock')
+    expect(deriveAvailability(71, cap)).toBe('https://schema.org/InStock')
     expect(deriveAvailability(cap, cap)).toBe('https://schema.org/InStock')
   })
 })

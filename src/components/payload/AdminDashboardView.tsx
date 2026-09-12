@@ -42,7 +42,7 @@ import type { PoolQuery } from '@/lib/tickets/sold-seats'
 import { countInquiries, type InquiryRow } from '@/lib/dashboard/inquiries'
 import { InquiriesBadge } from './InquiriesBadge'
 import { buildMemberSeason } from '@/lib/member/season'
-import { getSeasonTicketRowsByShow } from '@/lib/member/season-data'
+import { getSeasonTicketRowsByShow, getSeasonOfflineTypesByShow } from '@/lib/member/season-data'
 import { MemberSeasonDashboard } from './MemberSeasonDashboard'
 import { gatherDevDiagnostics } from '@/lib/dev-diagnostics/gather'
 import { getStripeBalanceSummary } from '@/lib/dev-diagnostics/stripe-balance'
@@ -137,12 +137,14 @@ export async function AdminDashboardView() {
   const { upcoming, past } = partitionShows({ today: input.today, shows: dashboardShows })
   const season = seasonCapacity(dashboardShows)
 
-  // Season channel mix (#242): online + partner from tickets, in-person summed
-  // from the shows' box-office counters.
+  // Season channel mix (#242): online + partner from tickets, at-the-door from
+  // the two offline counters. BOTH of them: since ADR-0025 the show cards count
+  // legacy seats as sold, so a chart that summed only `inPersonSold` would read
+  // 48 under a card reading 123 on 2026-05-18.
   const channelCounts = {
     online: channelTickets.online,
     partner: channelTickets.partner,
-    inPerson: input.shows.reduce((sum, s) => sum + s.inPersonSold, 0),
+    inPerson: input.shows.reduce((sum, s) => sum + s.inPersonSold + s.legacyReserved, 0),
   }
 
   // Live inquiries badge (#239): count `new` enquiries + the booking sub-count.
@@ -457,12 +459,20 @@ async function MemberDashboard({
   const pool = (payload.db as unknown as { pool: { query: PoolQuery } }).pool
   const poolQuery: PoolQuery = (sql, params) => pool.query(sql, params)
 
-  const [input, ticketRows] = await Promise.all([
+  const [input, ticketRows, offlineTypesByShow] = await Promise.all([
     getStatsInput(),
     getSeasonTicketRowsByShow(poolQuery),
+    // Since ADR-0025 door and legacy seats carry a ticket type, so they join the
+    // ordinary adult/child split instead of sitting in a typeless bucket.
+    getSeasonOfflineTypesByShow(poolQuery),
   ])
 
-  const season = buildMemberSeason({ today: input.today, shows: input.shows, ticketRows })
+  const season = buildMemberSeason({
+    today: input.today,
+    shows: input.shows,
+    ticketRows,
+    offlineTypesByShow,
+  })
 
   return <MemberSeasonDashboard season={season} lang={lang} />
 }

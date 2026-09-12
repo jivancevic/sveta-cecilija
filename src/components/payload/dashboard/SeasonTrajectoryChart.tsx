@@ -9,7 +9,7 @@ import { GOLD, SECTION_LABEL_STYLE, formatShowDate, shortShowDate, venueLabel } 
 // SEASON-TRAJECTORY BAR CHART (#242, ADR-0015). One bar per show across the whole
 // season, chronological: the gold fill is tickets sold, the faint track behind it
 // is that venue's capacity ceiling. All bars share one y-scale (the season's
-// tallest capacity), so a ljetno-kino (320) sell-out reads taller than a
+// tallest capacity), so a ljetno-kino (350) sell-out reads taller than a
 // zimsko-kino (250) one. Each bar links to that show's stats drill-down. Payload
 // theme tokens keep the surface dark-mode safe; only the fill uses brand gold.
 //

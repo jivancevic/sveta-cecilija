@@ -9,7 +9,9 @@
 // pure buildMemberSeason() rollup instead, where it is unit-tested.
 
 import type { PoolQuery } from '../tickets/sold-seats'
-import type { SeasonTicketRow } from './season'
+import { getOfflineTotalsByShow } from '../offline-sales/data'
+import { addOfflineTotals } from '../offline-sales/lines'
+import type { SeasonOfflineTypes, SeasonTicketRow } from './season'
 
 /**
  * Active-ticket counts per show: adult/child by ticket type, online/partner/comp
@@ -47,4 +49,30 @@ export async function getSeasonTicketRowsByShow(query: PoolQuery): Promise<Seaso
     partner: Number(row.partner) || 0,
     comp: Number(row.comp) || 0,
   }))
+}
+
+/**
+ * Per-show offline seats that carry a ticket type, from the offline sales
+ * ledger (ADR-0025). Door and legacy lines are summed together because the
+ * member view reports one "at the door" bucket; the source split matters to the
+ * secretary's money view, not to a seats-issued rollup.
+ *
+ * Returned as the small {adult, child, seats} shape `buildMemberSeason` wants,
+ * rather than the ledger's own totals type, so the pure rollup stays free of a
+ * dependency on the ledger module.
+ */
+export async function getSeasonOfflineTypesByShow(
+  query: PoolQuery,
+): Promise<Map<string, SeasonOfflineTypes>> {
+  const byShow = await getOfflineTotalsByShow(query)
+  const out = new Map<string, SeasonOfflineTypes>()
+  for (const [showId, bySource] of byShow) {
+    const combined = addOfflineTotals(bySource.door, bySource.legacy)
+    out.set(showId, {
+      adult: combined.adult,
+      child: combined.child,
+      seats: combined.seats,
+    })
+  }
+  return out
 }

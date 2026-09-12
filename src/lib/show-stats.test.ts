@@ -202,8 +202,8 @@ describe('computeShowStats — header big numbers', () => {
     )
 
     expect(out.header.legacyReserved).toBe(50)
-    // 320 − 100 − 20 − 50 = 150
-    expect(out.header.remaining).toBe(150)
+    // 350 − 100 − 20 − 50 = 180
+    expect(out.header.remaining).toBe(180)
   })
 
   it('renders remaining = 0 when legacy + online + in-person == capacity (sold-out boundary)', () => {
@@ -213,7 +213,7 @@ describe('computeShowStats — header big numbers', () => {
           venue: 'ljetno-kino',
           activeTicketCount: 100,
           inPersonSold: 20,
-          legacyReserved: 200,
+          legacyReserved: 230,
         }),
       }),
     )
@@ -229,8 +229,8 @@ describe('computeShowStats — header big numbers', () => {
       makeInput({ show: makeShow({ venue: 'zimsko-kino', activeTicketCount: 50, inPersonSold: 0 }) }),
     )
 
-    expect(ljetno.header.capacity).toBe(320)
-    expect(ljetno.header.remaining).toBe(200)
+    expect(ljetno.header.capacity).toBe(350)
+    expect(ljetno.header.remaining).toBe(230)
     expect(zimsko.header.capacity).toBe(250)
     expect(zimsko.header.remaining).toBe(200)
   })

@@ -3,7 +3,7 @@
 // One bar per show across the whole season, chronological. The bar's height is
 // tickets sold; a faint capacity ceiling sits behind it. Bars are scaled to a
 // shared y-axis (`maxCapacity`) so the busiest venue's ceiling is the tallest —
-// a ljetno-kino (320) show reads taller than a zimsko-kino (250) one, keeping
+// a ljetno-kino (350) show reads taller than a zimsko-kino (250) one, keeping
 // the comparison honest. The render math (px heights) lives in the component;
 // this module owns the testable series + the scale.
 

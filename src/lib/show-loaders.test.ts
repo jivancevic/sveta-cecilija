@@ -84,7 +84,7 @@ describe('loadUpcomingShows', () => {
       date: '2099-08-10',
       time: '21:00',
       venue: 'ljetno-kino',
-      remaining: 320 - 20 - 10 - 5,
+      remaining: 350 - 20 - 10 - 5,
     })
   })
 
