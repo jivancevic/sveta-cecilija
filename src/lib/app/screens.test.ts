@@ -63,7 +63,7 @@ describe('the screen table', () => {
       }
     }
     const live = APP_SCREENS.filter((s) => s.servesToday.length > 0)
-    expect(keys(live)).toEqual(['performances', 'leaderboard', 'scan'])
+    expect(keys(live)).toEqual(['performances', 'leaderboard', 'scan', 'sell', 'statement'])
   })
 
   it('gives refunds and dev no screen of their own', () => {
@@ -88,6 +88,13 @@ describe('unlockedScreens', () => {
 
   it('gives a partner holder without a Partner link nothing', () => {
     expect(unlockedScreens(user('partner'), ctx())).toEqual([])
+  })
+
+  it('gives a linked partner Prodaja and Obračun, both built by #505', () => {
+    expect(keys(unlockedScreens(user('partner'), ctx({ hasPartner: true })))).toEqual([
+      'sell',
+      'statement',
+    ])
   })
 
   it('gives refunds + dev alone nothing', () => {
