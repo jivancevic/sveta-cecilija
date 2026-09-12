@@ -27,11 +27,14 @@ describe('toDashboardShows', () => {
     expect(show.remaining).toBe(230) // 350 - 100 - 20 - 0
   })
 
-  it('subtracts legacyReserved from remaining but not from sold', () => {
+  it('counts legacyReserved as sold and subtracts it from remaining', () => {
+    // ADR-0025: the old site's seats were completed, paid sales on a system that
+    // is now closed, not reservations. Excluding them here disagreed with the
+    // member dashboard and hid 137 real 2026 attendees.
     const [show] = toDashboardShows([
       makeStatsShow({ venue: 'zimsko-kino', activeTicketCount: 10, inPersonSold: 0, legacyReserved: 40 }),
     ])
-    expect(show.sold).toBe(10)
+    expect(show.sold).toBe(50)
     expect(show.capacity).toBe(250)
     expect(show.remaining).toBe(200) // 250 - 10 - 0 - 40
   })

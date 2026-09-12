@@ -61,9 +61,11 @@ export interface MemberSeason {
   fillPercent: number
   shows: MemberSeasonShow[]
   /**
-   * Ticket-type split. `boxOffice` is its own bucket rather than being folded
-   * into adult/child: `inPersonSold` and `legacyReserved` are bare counters with
-   * no ticket type, so the split genuinely is not known for those seats.
+   * Ticket-type split. Since ADR-0025 the offline sales ledger carries a type
+   * for door and legacy seats too, so they fold into `adult` / `child` like any
+   * other seat. `boxOffice` survives as the RESIDUAL: offline seats sitting on a
+   * counter with no ledger line behind them, whose type genuinely is not known.
+   * It is 0 once a season has been entered through the ledger.
    */
   types: { adult: number; child: number; boxOffice: number }
   channels: { online: number; partner: number; comp: number; boxOffice: number }
@@ -80,14 +82,24 @@ export function seasonYear(today: Date): number {
   )
 }
 
+/** Per-show offline seats that DO carry a type, from the ledger (ADR-0025). */
+export interface SeasonOfflineTypes {
+  adult: number
+  child: number
+  /** Total ledger seats for the show, both sources — adult + child. */
+  seats: number
+}
+
 export function buildMemberSeason({
   today,
   shows,
   ticketRows,
+  offlineTypesByShow,
 }: {
   today: Date
   shows: StatsShow[]
   ticketRows: SeasonTicketRow[]
+  offlineTypesByShow?: Map<string, SeasonOfflineTypes>
 }): MemberSeason {
   const year = seasonYear(today)
   const prefix = `${year}-`
@@ -122,8 +134,21 @@ export function buildMemberSeason({
 
     issued += showIssued
     capacity += showCapacity
-    types.boxOffice += boxOffice
     channels.boxOffice += boxOffice
+
+    // The ledger knows the type of every seat it holds, so those fold into the
+    // ordinary adult/child split; only seats the counter claims and the ledger
+    // cannot explain stay in the typeless bucket. Clamped at 0 so a drift can
+    // never render as a negative tile — the two are written in one transaction,
+    // so the residual is 0 in practice.
+    const offline = offlineTypesByShow?.get(s.id)
+    if (offline) {
+      types.adult += offline.adult
+      types.child += offline.child
+      types.boxOffice += Math.max(0, boxOffice - offline.seats)
+    } else {
+      types.boxOffice += boxOffice
+    }
 
     const r = rowsByShow.get(s.id)
     if (r) {

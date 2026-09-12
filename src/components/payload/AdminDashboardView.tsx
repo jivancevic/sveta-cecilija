@@ -42,7 +42,7 @@ import type { PoolQuery } from '@/lib/tickets/sold-seats'
 import { countInquiries, type InquiryRow } from '@/lib/dashboard/inquiries'
 import { InquiriesBadge } from './InquiriesBadge'
 import { buildMemberSeason } from '@/lib/member/season'
-import { getSeasonTicketRowsByShow } from '@/lib/member/season-data'
+import { getSeasonTicketRowsByShow, getSeasonOfflineTypesByShow } from '@/lib/member/season-data'
 import { MemberSeasonDashboard } from './MemberSeasonDashboard'
 import { gatherDevDiagnostics } from '@/lib/dev-diagnostics/gather'
 import { getStripeBalanceSummary } from '@/lib/dev-diagnostics/stripe-balance'
@@ -457,12 +457,20 @@ async function MemberDashboard({
   const pool = (payload.db as unknown as { pool: { query: PoolQuery } }).pool
   const poolQuery: PoolQuery = (sql, params) => pool.query(sql, params)
 
-  const [input, ticketRows] = await Promise.all([
+  const [input, ticketRows, offlineTypesByShow] = await Promise.all([
     getStatsInput(),
     getSeasonTicketRowsByShow(poolQuery),
+    // Since ADR-0025 door and legacy seats carry a ticket type, so they join the
+    // ordinary adult/child split instead of sitting in a typeless bucket.
+    getSeasonOfflineTypesByShow(poolQuery),
   ])
 
-  const season = buildMemberSeason({ today: input.today, shows: input.shows, ticketRows })
+  const season = buildMemberSeason({
+    today: input.today,
+    shows: input.shows,
+    ticketRows,
+    offlineTypesByShow,
+  })
 
   return <MemberSeasonDashboard season={season} lang={lang} />
 }
