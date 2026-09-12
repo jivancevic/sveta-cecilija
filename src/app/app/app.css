@@ -2435,6 +2435,22 @@ a.app__ob-link {
   text-decoration: none;
 }
 
+/* The secondary actions here must not look like the primary one. `--quiet`
+   means "smaller" elsewhere in this app, and smaller is not enough on this row:
+   under "Potvrdi" sits "Odbij", and two identical gold buttons a thumb apart is
+   a voditelj refusing a dancer they meant to let in. Outlined, not filled. */
+.app__invite-actions .app__button--quiet {
+  background: transparent;
+  border: 1px solid var(--cardEdge);
+  color: var(--muted);
+}
+
+.app__invite-actions .app__button--quiet:hover,
+.app__invite-actions .app__button--quiet:focus-visible {
+  border-color: var(--gold);
+  color: var(--light);
+}
+
 /* The rehearsal code (#463). The QR is held up on a phone as often as it is
    printed, so it gets a white plate: a dark theme behind a QR is a QR half the
    scanners in the room will not read. */
