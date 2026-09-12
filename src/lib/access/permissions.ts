@@ -30,6 +30,15 @@ export const PERMISSIONS = [
   'moreska',
   // A moreškant's own roster view (ADR-0024). Same: reserved, gates nothing yet.
   'moreskant',
+  // Money without buyers (#476, #500): revenue collected, refunds, the partner
+  // receivable and its statements, and the counts view of Statistika. Never an
+  // order, never a buyer — the society's tajnik and blagajnik are different
+  // people by statute, so the president reads revenue without holding
+  // `tickets`.
+  'finance',
+  // Published content in the Backoffice (#476, #500): Objave (posts) and FAQ.
+  // Carved out of `tickets`, which no longer reaches either.
+  'editor',
   // Developer diagnostics: the dev strip and critical-events strip (ADR-0016).
   'dev',
 ] as const

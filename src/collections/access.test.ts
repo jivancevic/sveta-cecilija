@@ -17,7 +17,19 @@ import { Posts } from './Posts'
 // that proves an authenticated session with no set opens nothing.
 const developer = {
   id: '1',
-  permissions: ['users', 'tickets', 'refunds', 'door', 'partner', 'season_stats', 'moreska', 'moreskant', 'dev'],
+  permissions: [
+    'users',
+    'tickets',
+    'refunds',
+    'door',
+    'partner',
+    'season_stats',
+    'moreska',
+    'moreskant',
+    'finance',
+    'editor',
+    'dev',
+  ],
 }
 const ticketAdmin = { id: '2', permissions: ['tickets', 'refunds', 'door'] }
 const doorAccount = { id: '3', permissions: ['door'], shared: true }
@@ -25,6 +37,8 @@ const partner = { id: '4', permissions: ['partner'], partner: 7 }
 const partnerNoLink = { id: '5', permissions: ['partner'] }
 const memberAccount = { id: '6', permissions: ['season_stats'], shared: true }
 const voditelj = { id: '7', permissions: ['moreska'] }
+// Published content is `editor` since #500: Objave and FAQ left `tickets`.
+const editorAccount = { id: '10', permissions: ['editor'] }
 const noPermissions = { id: '8' }
 // A dancer's own login (#420, ADR-0024): the `moreskant` permission plus the
 // Member link. It reaches /app and nothing in /admin.
@@ -91,16 +105,22 @@ describe.each([
 })
 
 // ---------------------------------------------------------------------------
-// The two public-content collections: anyone reads the published rows; only
-// `tickets` sees drafts and writes.
+// The two public-content collections: anyone reads the published rows; only an
+// `editor` sees drafts and writes (#500 — `tickets` lost them).
 // ---------------------------------------------------------------------------
 describe.each([
   ['Faqs', Faqs],
   ['Posts', Posts],
 ] as const)('%s access', (_name, cfg) => {
-  it('the backoffice reads everything, drafts included (true, no filter)', () => {
-    expect(raw(cfg.access?.read, ticketAdmin)).toBe(true)
+  it('an editor reads everything, drafts included (true, no filter)', () => {
+    expect(raw(cfg.access?.read, editorAccount)).toBe(true)
     expect(raw(cfg.access?.read, developer)).toBe(true)
+  })
+
+  it('the ticketing backoffice reads as a visitor does since #500', () => {
+    const result = raw(cfg.access?.read, ticketAdmin)
+    expect(typeof result).toBe('object')
+    expect(JSON.stringify(result)).toContain('published')
   })
 
   it.each(outsiders)('%s reads as a public visitor does (published-only filter)', (_label, user) => {
@@ -109,16 +129,18 @@ describe.each([
     expect(JSON.stringify(result)).toContain('published')
   })
 
-  it('only the backoffice can create/update/delete', () => {
+  it('only an editor can create/update/delete', () => {
     for (const op of CRUD) {
-      expect(call(cfg.access?.[op], ticketAdmin)).toBe(true)
+      expect(call(cfg.access?.[op], editorAccount)).toBe(true)
       expect(call(cfg.access?.[op], developer)).toBe(true)
+      expect(call(cfg.access?.[op], ticketAdmin)).toBe(false)
       for (const [, user] of outsiders) expect(call(cfg.access?.[op], user)).toBe(false)
     }
   })
 
-  it('is in the sidebar for the backoffice only', () => {
-    expect(hidden(cfg, ticketAdmin)).toBe(false)
+  it('is in the sidebar for an editor only', () => {
+    expect(hidden(cfg, editorAccount)).toBe(false)
+    expect(hidden(cfg, ticketAdmin)).toBe(true)
     for (const [, user] of outsiders) expect(hidden(cfg, user)).toBe(true)
   })
 })
@@ -656,7 +678,7 @@ describe('Users access', () => {
     expect(showPartnerLinkField()).toBe(false)
   })
 
-  it('permissions field is a required multi-select over the nine-word vocabulary, with no default', () => {
+  it('permissions field is a required multi-select over the eleven-word vocabulary, with no default', () => {
     const field = usersFieldOf('permissions')
     expect(field).toBeDefined()
     expect(field?.type).toBe('select')
@@ -672,6 +694,8 @@ describe('Users access', () => {
       'season_stats',
       'moreska',
       'moreskant',
+      'finance',
+      'editor',
       'dev',
     ])
   })

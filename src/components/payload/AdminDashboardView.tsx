@@ -8,6 +8,7 @@ import { getStatsInput } from '@/lib/stats-data'
 import { ADMIN_LANG_COOKIE, adminT, resolveAdminLang, type AdminLang } from '@/lib/admin-i18n'
 import { partnerIdOf, type PartnerUser } from '@/lib/access/partner'
 import { dashboardBranchFor } from '@/lib/dashboard/branch'
+import { can, type PermissionUser } from '@/lib/access/permissions'
 import { getNextShow, getScannedPeopleForShow, getUpcomingShows, type NextShow } from '@/lib/shows'
 import { toDashboardShows } from '@/lib/dashboard/from-stats'
 import { partitionShows } from '@/lib/dashboard/partition'
@@ -100,6 +101,14 @@ export async function AdminDashboardView() {
     return <TehnikaDashboard signedInAs={signedInAs} lang={lang} />
   }
 
+  // An `editor` holding nothing else gets a two-link content landing (#500).
+  // Falling through to the `none` redirect would bounce between /admin and
+  // /admin/login forever, because Payload's login view sends a signed-in user
+  // straight back to /admin.
+  if (branch === 'editor') {
+    return <EditorDashboard signedInAs={signedInAs} lang={lang} />
+  }
+
   if (branch !== 'tickets') {
     redirect(`/admin/login?redirect=${encodeURIComponent('/admin')}`)
   }
@@ -115,6 +124,12 @@ export async function AdminDashboardView() {
   // stats input and the season money facts.
   const pool = (payload.db as unknown as { pool: { query: PoolQuery } }).pool
   const poolQuery: PoolQuery = (sql, params) => pool.query(sql, params)
+
+  // Money is the `finance` permission since #500, not `tickets`: the society's
+  // tajnik and blagajnik are different people by statute. Without it the query
+  // does not even run, so a secretary's dashboard reads the same as before
+  // minus the two euro tiles.
+  const showMoney = can(user as PermissionUser, 'finance')
   const [
     input,
     diagnostics,
@@ -131,7 +146,7 @@ export async function AdminDashboardView() {
     }),
     // Two season money facts (#237): revenue collected (online net of refunds +
     // in-person cash) and partner receivable, computed apart, never summed.
-    getDashboardMoney(poolQuery),
+    showMoney ? getDashboardMoney(poolQuery) : Promise.resolve(null),
     // Channel-mix chart (#242): online vs partner active-ticket counts. In-person
     // sales have no ticket rows, so they come from shows.inPersonSold below.
     getActiveTicketCountsByChannel(poolQuery),
@@ -208,8 +223,8 @@ export async function AdminDashboardView() {
       <SeasonBand
         lang={lang}
         season={season}
-        revenueCents={money.revenueCollectedCents}
-        partnerReceivableCents={money.partnerReceivableCents}
+        revenueCents={money?.revenueCollectedCents ?? null}
+        partnerReceivableCents={money?.partnerReceivableCents}
         compsIssued={channelTickets.comp}
       />
 
@@ -243,7 +258,7 @@ export async function AdminDashboardView() {
 
       {/* Promo-code reporting (#325, ADR-0018): top codes by tickets sold, with
           the partner "show 3 → show more" expand pattern. */}
-      <PromoCodeSalesPanel rows={promoCodeSales} lang={lang} />
+      <PromoCodeSalesPanel rows={promoCodeSales} lang={lang} showMoney={showMoney} />
 
       {/* Comps-per-member report (#323, ADR-0019): flat table of goodwill comp
           tickets issued per member, biggest recipient first. */}
@@ -650,3 +665,38 @@ function formatShowDate(iso: string): string {
   })
 }
 
+// Content landing for an `editor` (#500): Objave and FAQ, and nothing else.
+// Deliberately plain — the Backoffice is a raw-edit surface, and the two
+// collection links are the whole job.
+function EditorDashboard({ signedInAs, lang }: { signedInAs: string; lang: AdminLang }) {
+  const link: React.CSSProperties = {
+    display: 'block',
+    padding: '16px 18px',
+    background: 'var(--theme-elevation-50)',
+    border: '1px solid var(--theme-elevation-150)',
+    borderRadius: 8,
+    color: 'var(--theme-text)',
+    textDecoration: 'none',
+    fontSize: 18,
+    fontWeight: 600,
+  }
+  return (
+    <div style={{ padding: '24px clamp(16px, 4vw, 40px)', maxWidth: 720, margin: '0 auto' }}>
+      <h1 style={{ marginBottom: 8, fontSize: 24 }}>{adminT(lang, 'contentHeading')}</h1>
+      <p style={{ margin: '0 0 20px', color: 'var(--theme-elevation-500)', fontSize: 14 }}>
+        {adminT(lang, 'contentIntro')}
+      </p>
+      <div style={{ display: 'grid', gap: 12 }}>
+        <Link href="/admin/collections/posts" style={link}>
+          {adminT(lang, 'contentPosts')}
+        </Link>
+        <Link href="/admin/collections/faqs" style={link}>
+          {adminT(lang, 'contentFaqs')}
+        </Link>
+      </div>
+      <div style={{ marginTop: 24, fontSize: 12, color: 'var(--theme-elevation-500)' }}>
+        {adminT(lang, 'signedInAs')} {signedInAs}
+      </div>
+    </div>
+  )
+}

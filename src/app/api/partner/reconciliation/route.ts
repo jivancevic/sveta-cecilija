@@ -12,11 +12,12 @@ export const dynamic = 'force-dynamic'
 //
 // Local API runs overrideAccess, so this route re-derives the scope:
 //   - partner: ALWAYS its own partner id; a body/query partnerId is ignored.
-//   - a `tickets` holder: may pass ?partnerId= to view any partner's statement.
-// Anyone else is 403. Defaults to CSV download (text/csv attachment); pass
+//   - a `finance` holder: may pass ?partnerId= to view any partner's statement.
+// Anyone else is 403. The statement is money, so since #500 it is `finance`
+// that opens it, not `tickets`: the secretary keeps it because she holds both. Defaults to CSV download (text/csv attachment); pass
 // ?format=json for the structured statement.
 export async function GET(req: NextRequest) {
-  const gate = await requirePermission(req, ['tickets', 'partner'])
+  const gate = await requirePermission(req, ['finance', 'partner'])
   if (gate.error) return gate.error
   const { payload, user } = gate
 
@@ -31,7 +32,7 @@ export async function GET(req: NextRequest) {
   }
 
   // Resolve the partner id to report on. A partner is locked to its own id;
-  // an admin may target any partner via ?partnerId=.
+  // a `finance` holder may target any partner via ?partnerId=.
   let partnerId: number | string | undefined
   if (partner) {
     partnerId = partnerIdOf(user as { permissions?: unknown; partner?: unknown } | null)
