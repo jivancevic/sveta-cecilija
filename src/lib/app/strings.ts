@@ -993,6 +993,133 @@ export const APP_STRINGS = {
     },
   },
 
+  /**
+   * Narudžbe (#501): the blagajna's list of orders and the one order behind it.
+   *
+   * The screen Tatjana opens when a guest is standing in front of her, so the
+   * words are the ones she would use out loud: "storno" for a refunded order
+   * (the society's own word, and the DB's), "gratis" for a comp, "propuštena"
+   * for a ticket that has been through the door.
+   *
+   * Every action here is NAMED (#476): four buttons with four verbs, each
+   * behind a confirmation, and no raw edit form anywhere. The one field edit is
+   * the buyer's name and address, which is a repair rather than a decision.
+   */
+  orders: {
+    /** The search box and the two filters, above the list. */
+    searchLabel: 'Pretraži narudžbe',
+    searchPlaceholder: 'Ime, e-pošta ili kod',
+    search: 'Traži',
+    clear: 'Poništi filtre',
+    showLabel: 'Izvedba',
+    allShows: 'Sve izvedbe',
+    stateLabel: 'Stanje',
+    allStates: 'Sve narudžbe',
+    /** The four values of the state filter (`lib/app/orders-query.ts`). */
+    states: {
+      active: 'Važeće',
+      refunded: 'Stornirane',
+      partner: 'Partnerske',
+      comp: 'Gratis',
+    },
+    /** How an order was sold, as the row and the detail both say it. */
+    channels: {
+      online: 'Online',
+      partner: 'Partner',
+      comp: 'Gratis',
+    },
+    /** An online order that carried a member's promo code (ADR-0018). */
+    promo: 'Promo',
+    /** The badge on a row whose money has gone back. */
+    refunded: 'Storno',
+    /** "2 odrasle, 1 dječja" — the party, spelled for a Croatian reader. */
+    adults: (n: number) => (n === 1 ? '1 odrasla' : `${n} odraslih`),
+    children: (n: number) => (n === 1 ? '1 dječja' : `${n} dječjih`),
+    empty: 'Nema narudžbe koja odgovara pretrazi.',
+    emptyAll: 'Još nema nijedne narudžbe.',
+    /** The pager: two buttons and the one sentence between them. */
+    previous: 'Prethodna',
+    next: 'Sljedeća',
+    pageOf: (page: number, pages: number) => `Stranica ${page} od ${pages}`,
+    found: (n: number) => (n === 1 ? '1 narudžba' : `${n} narudžbi`),
+
+    /** The one order: its facts, in the order they are read. */
+    detail: {
+      back: 'Sve narudžbe',
+      noName: 'Bez imena',
+      noEmail: 'Bez e-pošte',
+      performance: 'Izvedba',
+      showGone: 'Izvedba je obrisana',
+      code: 'Kod narudžbe',
+      channel: 'Kanal',
+      soldBy: 'Prodao',
+      forMember: 'Na ime člana',
+      promoCode: 'Promo kod',
+      total: 'Iznos',
+      created: 'Zaprimljeno',
+      ticketsTitle: 'Ulaznice',
+      adult: 'Odrasla',
+      child: 'Dječja',
+      active: 'Važeća',
+      cancelled: 'Poništena',
+      /** Why a ticket was voided; the DB's own two words (ADR-0025, #379). */
+      reasonRefund: 'povrat',
+      reasonStorno: 'storno',
+      scanned: (when: string) => `Propuštena ${when}`,
+      /** The same fact with an unreadable timestamp behind it. */
+      scannedNoTime: 'Propuštena',
+      notScanned: 'Nije propuštena',
+      noTickets: 'Ova narudžba nema ulaznica.',
+      missing: 'Ova narudžba ne postoji.',
+    },
+
+    /** The four named actions. Povrat is only ever offered to `refunds`. */
+    actions: {
+      refund: 'Povrat',
+      resend: 'Pošalji ulaznice ponovno',
+      pdf: 'Otvori PDF',
+      edit: 'Uredi kupca',
+      confirm: 'Potvrdi',
+      cancel: 'Odustani',
+      working: 'Trenutak...',
+    },
+
+    refund: {
+      title: 'Povrat novca',
+      body: (amount: string) =>
+        `Vraćam ${amount} na karticu kupca i poništavam sve ulaznice ove narudžbe. Ovo se ne može opozvati.`,
+      /** A comp or a partner sale never moved money through Stripe. */
+      notPayable: 'Ova narudžba nije plaćena karticom, pa nema što vratiti.',
+      already: 'Novac je već vraćen.',
+      done: 'Novac je vraćen i ulaznice su poništene.',
+      failed: 'Povrat nije uspio. Pokušaj ponovno ili javi Josipu.',
+    },
+
+    resend: {
+      title: 'Pošalji ulaznice ponovno',
+      body: (email: string) => `Šaljem ulaznice na ${email}.`,
+      noEmail: 'Ova narudžba nema e-poštu. Prvo uredi kupca, pa pošalji.',
+      done: 'Ulaznice su poslane.',
+      failed: 'Slanje nije uspjelo. Pokušaj ponovno.',
+    },
+
+    edit: {
+      title: 'Uredi kupca',
+      body: 'Popravi ime ili e-poštu. Broj ulaznica, iznos i kanal se ovdje ne mijenjaju.',
+      nameLabel: 'Ime i prezime',
+      emailLabel: 'E-pošta',
+      emailHint: 'Ostavi prazno ako narudžba nema e-poštu.',
+      save: 'Spremi',
+      done: 'Podaci kupca su spremljeni.',
+      failed: 'Spremanje nije uspjelo. Pokušaj ponovno.',
+      nameMissing: 'Upiši ime kupca.',
+      emailInvalid: 'E-pošta nije ispravna.',
+      refunded: 'Stornirana narudžba se ne uređuje.',
+      notFound: 'Ova narudžba ne postoji.',
+      rejected: 'Zahtjev nije prihvaćen.',
+    },
+  },
+
   /** The shared calendar subscription (#433, glossary: *Calendar feed*). */
   calendar: {
     body: 'Dodaj ovu poveznicu u Google, Apple ili Outlook kalendar i sve izvedbe su ti u telefonu.',
