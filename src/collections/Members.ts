@@ -252,8 +252,8 @@ export const Members: CollectionConfig = {
       admin: {
         condition: moreskantOnly,
         description: {
-          en: 'The name shown everywhere in the Moreškant app. Required and unique among moreškanti.',
-          hr: 'Ime koje se prikazuje svugdje u aplikaciji Moreškant. Obavezan i jedinstven među moreškantima.',
+          en: 'The name shown everywhere in Cecilija. Required and unique among moreškanti.',
+          hr: 'Ime koje se prikazuje svugdje u Ceciliji. Obavezan i jedinstven među moreškantima.',
         },
       },
       access: MORESKANT_FIELD_ACCESS,

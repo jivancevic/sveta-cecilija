@@ -6,7 +6,7 @@ import { safeAppNextPath } from '@/lib/app/next-path'
 import { resolveAppViewer } from '@/lib/app/viewer'
 import { LoginForm } from './LoginForm'
 
-// /app/login — the Moreškant app's own sign-in (#421).
+// /app/login — Cecilija's own sign-in (#421).
 //
 // Never /admin/login: a dancer has no business in the Payload shell, and the
 // cookie the form's route sets is the same one either page would set.
