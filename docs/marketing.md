@@ -12,11 +12,12 @@ Living doc for the 2026 season marketing plan. Sister doc to `docs/niche.md` (le
 
 ## Sell-through baseline (for ROI math)
 
-Rough 2025 estimates (validate against real Shows data when available):
-- Off-season: ~120/320 seats sold per show (~38%)
-- Full season: ~250/320 seats sold per show (~78%)
+Measured 2026, the first season with real data (16 performances played through 2026-09-12; seats = active tickets + the `offline_sales` ledger; Ljetno kino holds 350, not the 320 assumed here until PR #448):
+- Shoulder (May, June, September): **193/350 per show (55%)**, 7 performances.
+- Peak (July, August): **263/350 per show (75%)**, 9 performances.
+- Season to date: 3715 seats over 16 performances, 232 per show (66%).
 - Competitor moreska.hr consistently runs near-full — strong signal that demand exists, capture is the problem.
-- Foregone revenue per show: ~€3,600 off-season, ~€1,260 full season.
+- Foregone revenue per show at the €20 adult face value: ~€3,100 shoulder, ~€1,700 peak.
 
 ## Budget
 
