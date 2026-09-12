@@ -62,7 +62,7 @@ There is an existing active Stripe account tied to **korcula-moreska.com**. No n
 ### 4a. ~~Create Hetzner Server~~ ✓ Done
 
 **Decommission the DigitalOcean Droplet:**
-- [ ] Site is confirmed live at `https://moreska.eu` ✓ — destroy the DO Droplet to stop billing
+- [x] ~~Site is confirmed live at `https://moreska.eu` ✓ — destroy the DO Droplet to stop billing~~ ✓ Done (Droplet destroyed 2026-09-12)
 
 ### ~~4b. Install Coolify on Hetzner~~ ✓ Done
 
@@ -88,7 +88,7 @@ There is an existing active Stripe account tied to **korcula-moreska.com**. No n
 
 **1 (Stripe):** Steps 1–2 done ✓. Steps 3–4 are post-go-live cleanup.  
 **2 (Brevo):** ✓ Done — domain verified, sender added, API key in Coolify.  
-**4a (DO Droplet):** Site confirmed live ✓ — destroy the DO Droplet now to stop billing.  
+**4a (DO Droplet):** ✓ Done (Droplet destroyed 2026-09-12, billing stopped).  
 **4c (env vars):** ✓ All set.  
 **4e (Brevo DNS):** ✓ Done.  
 
