@@ -1,0 +1,239 @@
+/* PROTOTYPE (#490) — the LOOK of Cecilija, switchable via `?theme=`.
+
+   Every theme only re-states the `.app` tokens on the `.proto` root, so the
+   same chrome (#472) is judged under four skins. Nothing here is production;
+   the winner becomes a token table in the resolution comment of #490.
+
+   noc   = the dark Moreškant theme as it ships today (reference, "too dark")
+   kamen = light, warm stone: the public site's paper + ink, full brand
+   dan   = kamen chrome, but two islands keep the night: the Izvedbe hero and
+           the whole Skener screen
+   alat  = neutral light tool (Shopify / Linear grey), brand softened: gold
+           only as the accent, Labrada only on titles, rounded corners
+   auto  = the device decides: noc in the dark, kamen in daylight */
+
+/* ── kamen: warm stone ──────────────────────────────────────────────── */
+.proto[data-theme='kamen'],
+.proto[data-theme='dan'] {
+  --bg: #f5f2ec;
+  --bgDeep: #ede9e0;
+  --card: #ffffff;
+  --cardEdge: rgba(184, 136, 26, 0.38);
+  --light: #1a140c;
+  --muted: #6b6259;
+  --gold: #b8881a;
+  --goldBright: #8f6a10;
+  --red: #8b0000;
+  --radius: 0px;
+}
+
+/* ── alat: neutral tool ─────────────────────────────────────────────── */
+.proto[data-theme='alat'] {
+  --bg: #f1f2f4;
+  --bgDeep: #ffffff;
+  --card: #ffffff;
+  --cardEdge: #e2e4e8;
+  --light: #1b1c1f;
+  --muted: #6b7078;
+  --gold: #b8881a;
+  --goldBright: #8a6512;
+  --red: #b3261e;
+  --radius: 8px;
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+.proto[data-theme='alat'] .app__brand {
+  font-size: 20px;
+}
+.proto[data-theme='alat'] .app__page-title {
+  font-size: 20px;
+}
+.proto[data-theme='alat'] .app__season,
+.proto[data-theme='alat'] .app__hero-eyebrow,
+.proto[data-theme='alat'] .app__tabbar-item,
+.proto[data-theme='alat'] .app__button,
+.proto[data-theme='alat'] .proto__ws-name,
+.proto[data-theme='alat'] .proto__side-heading {
+  font-family: inherit;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+.proto[data-theme='alat'] .app__tabbar-item {
+  font-size: 12px;
+}
+.proto[data-theme='alat'] .app__hero {
+  border: 1px solid var(--cardEdge);
+  border-left: 3px solid var(--gold);
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.06);
+}
+.proto[data-theme='alat'] .proto__card,
+.proto[data-theme='alat'] .proto__tile {
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.06);
+}
+.proto[data-theme='alat'] .app__button {
+  font-weight: 600;
+  color: #fff;
+}
+.proto[data-theme='alat'] .proto__hero-title {
+  font-size: 22px;
+}
+
+/* ── auto: the device decides ───────────────────────────────────────── */
+@media (prefers-color-scheme: light) {
+  .proto[data-theme='auto'] {
+    --bg: #f5f2ec;
+    --bgDeep: #ede9e0;
+    --card: #ffffff;
+    --cardEdge: rgba(184, 136, 26, 0.38);
+    --light: #1a140c;
+    --muted: #6b6259;
+    --gold: #b8881a;
+    --goldBright: #8f6a10;
+    --red: #8b0000;
+  }
+}
+
+/* ── Shared light fixes: the few colours app.css / prototype.css hard-code
+      for a black page. Grouped by what they fix, applied to every light
+      theme. `.proto--light` is set by the component whenever the theme
+      resolves light (auto is decided by a media query below). ── */
+.proto[data-theme='kamen'],
+.proto[data-theme='dan'],
+.proto[data-theme='alat'] {
+  background: var(--bg);
+  color: var(--light);
+}
+.proto[data-theme='kamen'] .app__input,
+.proto[data-theme='dan'] .app__input,
+.proto[data-theme='alat'] .app__input,
+.proto--auto-light .app__input {
+  background: var(--card);
+}
+.proto[data-theme='kamen'] .proto__row,
+.proto[data-theme='dan'] .proto__row,
+.proto[data-theme='alat'] .proto__row,
+.proto--auto-light .proto__row {
+  border-top-color: rgba(26, 20, 12, 0.1);
+}
+.proto[data-theme='kamen'] .proto__tile--quiet,
+.proto[data-theme='dan'] .proto__tile--quiet,
+.proto[data-theme='alat'] .proto__tile--quiet,
+.proto--auto-light .proto__tile--quiet {
+  border-color: rgba(26, 20, 12, 0.12);
+}
+.proto[data-theme='kamen'] .proto__camera,
+.proto[data-theme='alat'] .proto__camera,
+.proto--auto-light .proto__camera {
+  background: #2a2723;
+  color: #cfc8bd;
+}
+.proto[data-theme='kamen'] .proto__phone,
+.proto[data-theme='dan'] .proto__phone,
+.proto[data-theme='alat'] .proto__phone,
+.proto--auto-light .proto__phone {
+  box-shadow: 0 20px 60px rgba(26, 20, 12, 0.25);
+}
+.proto[data-theme='kamen'] .proto__state code,
+.proto[data-theme='dan'] .proto__state code,
+.proto[data-theme='alat'] .proto__state code,
+.proto--auto-light .proto__state code {
+  background: rgba(26, 20, 12, 0.08);
+}
+.proto[data-theme='kamen'] .app__button,
+.proto[data-theme='dan'] .app__button {
+  color: #14100a;
+}
+.proto[data-theme='alat'] .proto__button--ghost,
+.proto[data-theme='kamen'] .proto__button--ghost,
+.proto[data-theme='dan'] .proto__button--ghost {
+  color: var(--light);
+  border-color: var(--gold);
+}
+
+/* Auto in daylight needs the same fixes; a class the component sets from
+   matchMedia, because CSS cannot nest a media query inside an attribute. */
+@media (prefers-color-scheme: light) {
+  .proto[data-theme='auto'] {
+    background: var(--bg);
+    color: var(--light);
+  }
+}
+
+/* ── dan: the two night islands ─────────────────────────────────────── */
+/* Island 1: the Izvedbe hero keeps the dancer's evening. */
+.proto[data-theme='dan'] .app__hero {
+  --card: #131313;
+  --light: #f5f2ec;
+  --muted: #9a9a9a;
+  --goldBright: #d9a526;
+  --cardEdge: rgba(184, 136, 26, 0.28);
+  background: var(--card);
+  color: var(--light);
+  border-color: var(--goldBright);
+}
+.proto[data-theme='dan'] .app__hero .proto__button--ghost {
+  color: var(--light);
+  border-color: var(--cardEdge);
+}
+/* Island 2: the whole Skener screen (phone door mode, laptop main) is dark,
+   because it is used at the gate at 21:00 with a camera on. */
+.proto[data-theme='dan'][data-screen='scan'] .proto__phone-scroll,
+.proto[data-theme='dan'][data-screen='scan'] .proto__laptop-main {
+  --bg: #0a0a0a;
+  --bgDeep: #050505;
+  --card: #131313;
+  --light: #f5f2ec;
+  --muted: #9a9a9a;
+  --goldBright: #d9a526;
+  --cardEdge: rgba(184, 136, 26, 0.28);
+  background: var(--bg);
+  color: var(--light);
+}
+.proto[data-theme='dan'][data-screen='scan'] .proto__phone-scroll .proto__row,
+.proto[data-theme='dan'][data-screen='scan'] .proto__laptop-main .proto__row {
+  border-top-color: #1f1f1f;
+}
+.proto[data-theme='dan'][data-screen='scan'] .proto__phone-scroll .app__input,
+.proto[data-theme='dan'][data-screen='scan'] .proto__laptop-main .app__input {
+  background: rgba(0, 0, 0, 0.25);
+}
+
+/* ── density (laptop only): "udobno" is the phone rhythm, "gusto" is the
+      Shopify-style table row. ── */
+.proto[data-density='gusto'] .proto__laptop {
+  font-size: 13px;
+}
+.proto[data-density='gusto'] .proto__laptop .proto__row {
+  padding: 6px 0;
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+}
+.proto[data-density='gusto'] .proto__laptop .proto__side-item {
+  padding: 6px 10px;
+  font-size: 13px;
+}
+.proto[data-density='gusto'] .proto__laptop .proto__side-item svg {
+  width: 16px;
+  height: 16px;
+}
+.proto[data-density='gusto'] .proto__laptop .app__page-title {
+  margin-top: 12px;
+}
+.proto[data-density='gusto'] .proto__laptop .app__hero {
+  padding: 12px 14px 10px;
+}
+.proto[data-density='gusto'] .proto__laptop .proto__hero-title {
+  font-size: 22px;
+}
+.proto[data-density='gusto'] .proto__laptop .app__button {
+  padding: 8px 12px;
+  font-size: 12px;
+}
+.proto[data-density='gusto'] .proto__laptop .app__input {
+  padding: 6px 10px;
+  font-size: 13px;
+}
+.proto[data-density='gusto'] .proto__laptop .proto__laptop-head {
+  padding-top: 8px;
+  padding-bottom: 8px;
+}

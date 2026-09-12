@@ -404,3 +404,10 @@
   background: #1f1f1f;
   font-size: 12px;
 }
+
+/* #490: the second switcher row, themes + density. */
+.proto__switcher-row--theme {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255, 255, 255, 0.3);
+}

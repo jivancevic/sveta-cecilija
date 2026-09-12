@@ -1,9 +1,47 @@
 'use client'
 
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { Permission } from '@/lib/access/permissions'
 import './prototype.css'
+import './theme.css'
+
+// PROTOTYPE (#490): the same chrome under five skins, switchable via
+// `?theme=`, plus `?density=` for the laptop tables. The tokens each theme
+// re-states are the real `.app` ones (theme.css), so the winner is a token
+// table, not a mood board.
+
+type ThemeKey = 'noc' | 'kamen' | 'dan' | 'alat' | 'auto'
+type DensityKey = 'udobno' | 'gusto'
+
+const THEMES: Record<ThemeKey, { name: string; blurb: string; tokens: string }> = {
+  noc: {
+    name: 'Noć',
+    blurb: 'Današnji Moreškant: crno, zlato, oštri rubovi. Referenca, ovo je ono što je bilo pretamno.',
+    tokens: 'pozadina #0a0a0a · kartica #131313 · tekst #f5f2ec · zlato #d9a526 · radius 0',
+  },
+  kamen: {
+    name: 'Kamen',
+    blurb: 'Svijetlo i toplo: papir i tinta s javne stranice, puni brend (zlato, Labrada, oštri rubovi). Sve svijetlo, i Skener.',
+    tokens: 'pozadina #f5f2ec · kartica #fff · tekst #1a140c · zlato #8f6a10 na tekstu, #b8881a na gumbu · radius 0',
+  },
+  dan: {
+    name: 'Dan s noćnim otocima',
+    blurb: 'Kamen za sve, ali dva otoka zadrže noć: hero Izvedbi (plesač u 21 h) i cijeli Skener (vrata s kamerom).',
+    tokens: 'kao Kamen; otoci: pozadina #0a0a0a · kartica #131313 · tekst #f5f2ec · zlato #d9a526',
+  },
+  alat: {
+    name: 'Alat',
+    blurb: 'Neutralno svijetlo kao Shopify ili Linear: sivo, sistemski font, zaobljeni rubovi 8 px. Brend samo kao akcent: zlatna crta i gumb, Labrada samo na naslovima.',
+    tokens: 'pozadina #f1f2f4 · kartica #fff · rub #e2e4e8 · tekst #1b1c1f · zlato #b8881a samo akcent · radius 8',
+  },
+  auto: {
+    name: 'Kako uređaj kaže',
+    blurb: 'Noć kad je uređaj u tamnom načinu, Kamen u svijetlom. Isti ekran, dvije kože, korisnik ne bira.',
+    tokens: 'noc ILI kamen, prema prefers-color-scheme',
+  },
+}
+const THEME_KEYS: ThemeKey[] = ['noc', 'kamen', 'dan', 'alat', 'auto']
 
 // PROTOTYPE (#472): three variants of Cecilija's navigation for people who
 // hold several permissions. Nothing here talks to Payload; every "user" is a
@@ -796,6 +834,20 @@ export function NavPrototype() {
   const ws = nav.workspaces?.some((w) => w.ws === wsParam) ? wsParam : (nav.workspaces?.[0].ws ?? null)
   const screenParam = params.get('screen')
   const screen: ScreenKey = isScreenKey(screenParam) ? screenParam : nav.landing
+  const themeParam = params.get('theme') as ThemeKey | null
+  const theme: ThemeKey = themeParam && THEME_KEYS.includes(themeParam) ? themeParam : 'noc'
+  const density: DensityKey = params.get('density') === 'gusto' ? 'gusto' : 'udobno'
+
+  // `auto` follows the device; the light fixes in theme.css hang off a class
+  // because CSS cannot put a media query inside an attribute selector.
+  const [autoLight, setAutoLight] = useState(false)
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-color-scheme: light)')
+    const sync = () => setAutoLight(mq.matches)
+    sync()
+    mq.addEventListener('change', sync)
+    return () => mq.removeEventListener('change', sync)
+  }, [])
 
   const set = (patch: Record<string, string | null>) => {
     const next = new URLSearchParams(params.toString())
@@ -830,7 +882,12 @@ export function NavPrototype() {
   const overflowNow = variant === 'C' && cws ? cws.overflow : nav.overflow
 
   return (
-    <div className="proto">
+    <div
+      className={`proto${theme === 'auto' && autoLight ? ' proto--auto-light' : ''}`}
+      data-theme={theme}
+      data-screen={screen}
+      data-density={density}
+    >
       {showSwitcher && (
         <div className="proto__switcher">
           <div className="proto__switcher-row">
@@ -858,6 +915,23 @@ export function NavPrototype() {
             </button>
           </div>
           <p className="proto__switcher-blurb">{VARIANTS[variant].blurb}</p>
+          <div className="proto__switcher-row proto__switcher-row--theme">
+            <span>Izgled (#490):</span>
+            {THEME_KEYS.map((t) => (
+              <button key={t} className={t === theme ? 'proto__on' : ''} onClick={() => set({ theme: t })}>
+                {THEMES[t].name}
+              </button>
+            ))}
+            <span className="proto__switcher-sep" />
+            <span>Gustoća (laptop):</span>
+            <button className={density === 'udobno' ? 'proto__on' : ''} onClick={() => set({ density: null })}>
+              Udobno
+            </button>
+            <button className={density === 'gusto' ? 'proto__on' : ''} onClick={() => set({ density: 'gusto' })}>
+              Gusto
+            </button>
+          </div>
+          <p className="proto__switcher-blurb">{THEMES[theme].blurb}</p>
         </div>
       )}
 
@@ -895,6 +969,10 @@ export function NavPrototype() {
         <p>Više sadrži: {overflowNow.map(label).join(', ') || 'samo stalne stavke'}</p>
         <p>Početni ekran: {label(nav.landing)}</p>
         <p>Skener: {nav.scanLives}</p>
+        <p>
+          Izgled <b>{THEMES[theme].name}</b>: {THEMES[theme].tokens}
+          {theme === 'auto' && ` (sada: ${autoLight ? 'Kamen' : 'Noć'})`} · gustoća {density}
+        </p>
         <p className="proto__muted">Tipke ← → mijenjaju varijantu. URL nosi sve: persona, variant, device, screen.</p>
       </aside>
     </div>
