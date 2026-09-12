@@ -73,7 +73,18 @@ describe('dashboardBranchFor', () => {
     )
   })
 
-  it('gives an editor-only account no dashboard', () => {
-    expect(dashboardBranchFor({ permissions: ['editor'] })).toBe('none')
+  // An `editor` needs a branch of its own: `none` redirects to the login page,
+  // and Payload's login view redirects a signed-in user straight back, so a
+  // content editor with no branch would bounce between the two forever.
+  it('sends an editor-only account to the content landing', () => {
+    expect(dashboardBranchFor({ permissions: ['editor'] })).toBe('editor')
+  })
+
+  it('still sends the secretary to the backoffice when she also holds editor', () => {
+    expect(dashboardBranchFor({ permissions: ['tickets', 'editor'] })).toBe('tickets')
+  })
+
+  it('sends an editor who also works the door to the door dashboard', () => {
+    expect(dashboardBranchFor({ permissions: ['door', 'editor'] })).toBe('door')
   })
 })

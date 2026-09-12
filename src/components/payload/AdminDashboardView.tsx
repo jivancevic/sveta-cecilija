@@ -101,6 +101,14 @@ export async function AdminDashboardView() {
     return <TehnikaDashboard signedInAs={signedInAs} lang={lang} />
   }
 
+  // An `editor` holding nothing else gets a two-link content landing (#500).
+  // Falling through to the `none` redirect would bounce between /admin and
+  // /admin/login forever, because Payload's login view sends a signed-in user
+  // straight back to /admin.
+  if (branch === 'editor') {
+    return <EditorDashboard signedInAs={signedInAs} lang={lang} />
+  }
+
   if (branch !== 'tickets') {
     redirect(`/admin/login?redirect=${encodeURIComponent('/admin')}`)
   }
@@ -250,7 +258,7 @@ export async function AdminDashboardView() {
 
       {/* Promo-code reporting (#325, ADR-0018): top codes by tickets sold, with
           the partner "show 3 → show more" expand pattern. */}
-      <PromoCodeSalesPanel rows={promoCodeSales} lang={lang} />
+      <PromoCodeSalesPanel rows={promoCodeSales} lang={lang} showMoney={showMoney} />
 
       {/* Comps-per-member report (#323, ADR-0019): flat table of goodwill comp
           tickets issued per member, biggest recipient first. */}
@@ -657,3 +665,38 @@ function formatShowDate(iso: string): string {
   })
 }
 
+// Content landing for an `editor` (#500): Objave and FAQ, and nothing else.
+// Deliberately plain — the Backoffice is a raw-edit surface, and the two
+// collection links are the whole job.
+function EditorDashboard({ signedInAs, lang }: { signedInAs: string; lang: AdminLang }) {
+  const link: React.CSSProperties = {
+    display: 'block',
+    padding: '16px 18px',
+    background: 'var(--theme-elevation-50)',
+    border: '1px solid var(--theme-elevation-150)',
+    borderRadius: 8,
+    color: 'var(--theme-text)',
+    textDecoration: 'none',
+    fontSize: 18,
+    fontWeight: 600,
+  }
+  return (
+    <div style={{ padding: '24px clamp(16px, 4vw, 40px)', maxWidth: 720, margin: '0 auto' }}>
+      <h1 style={{ marginBottom: 8, fontSize: 24 }}>{adminT(lang, 'contentHeading')}</h1>
+      <p style={{ margin: '0 0 20px', color: 'var(--theme-elevation-500)', fontSize: 14 }}>
+        {adminT(lang, 'contentIntro')}
+      </p>
+      <div style={{ display: 'grid', gap: 12 }}>
+        <Link href="/admin/collections/posts" style={link}>
+          {adminT(lang, 'contentPosts')}
+        </Link>
+        <Link href="/admin/collections/faqs" style={link}>
+          {adminT(lang, 'contentFaqs')}
+        </Link>
+      </div>
+      <div style={{ marginTop: 24, fontSize: 12, color: 'var(--theme-elevation-500)' }}>
+        {adminT(lang, 'signedInAs')} {signedInAs}
+      </div>
+    </div>
+  )
+}

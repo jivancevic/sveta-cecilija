@@ -31,13 +31,17 @@ const pillBtn: React.CSSProperties = {
 export function PromoCodeSalesPanel({
   rows,
   lang,
+  showMoney = true,
 }: {
   rows: PromoCodeSalesRow[]
   lang: AdminLang
+  /** Whether the viewer holds `finance`. False drops the revenue column (#500). */
+  showMoney?: boolean
 }) {
   const [expanded, setExpanded] = useState(false)
 
   const visible = expanded ? rows : rows.slice(0, TOP_N)
+  const columns = showMoney ? MONEY_COLUMNS : COUNT_COLUMNS
   const hasMore = rows.length > TOP_N
 
   return (
@@ -55,14 +59,16 @@ export function PromoCodeSalesPanel({
           </p>
 
           {/* Header row */}
-          <div style={rowStyle(true)}>
+          <div style={rowStyle(true, columns)}>
             <span>{adminT(lang, 'promoCodeMember')}</span>
             <span style={{ textAlign: 'right' }}>{adminT(lang, 'promoCodeTickets')}</span>
-            <span style={{ textAlign: 'right' }}>{adminT(lang, 'promoCodeRevenue')}</span>
+            {showMoney ? (
+              <span style={{ textAlign: 'right' }}>{adminT(lang, 'promoCodeRevenue')}</span>
+            ) : null}
           </div>
 
           {visible.map((r) => (
-            <div key={r.promoCodeId} style={rowStyle(false)}>
+            <div key={r.promoCodeId} style={rowStyle(false, columns)}>
               <span style={{ minWidth: 0 }}>
                 <span
                   style={{
@@ -90,9 +96,17 @@ export function PromoCodeSalesPanel({
               <span style={{ textAlign: 'right', fontFamily: ACCENT_FONT, color: GOLD, fontSize: 20 }}>
                 {r.ticketsSold}
               </span>
-              <span style={{ textAlign: 'right', alignSelf: 'center', fontVariantNumeric: 'tabular-nums' }}>
-                {eur(r.revenueCents)}
-              </span>
+              {showMoney ? (
+                <span
+                  style={{
+                    textAlign: 'right',
+                    alignSelf: 'center',
+                    fontVariantNumeric: 'tabular-nums',
+                  }}
+                >
+                  {eur(r.revenueCents)}
+                </span>
+              ) : null}
             </div>
           ))}
 
@@ -107,10 +121,13 @@ export function PromoCodeSalesPanel({
   )
 }
 
-function rowStyle(header: boolean): React.CSSProperties {
+const MONEY_COLUMNS = 'minmax(0, 1fr) 90px 110px'
+const COUNT_COLUMNS = 'minmax(0, 1fr) 90px'
+
+function rowStyle(header: boolean, columns: string): React.CSSProperties {
   return {
     display: 'grid',
-    gridTemplateColumns: 'minmax(0, 1fr) 90px 110px',
+    gridTemplateColumns: columns,
     gap: 12,
     alignItems: 'center',
     padding: '10px 4px',

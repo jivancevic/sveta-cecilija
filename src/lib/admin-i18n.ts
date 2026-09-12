@@ -82,6 +82,11 @@ export const dashboardStrings = {
   en: {
     dashboard: 'Dashboard',
     doorScan: 'Door scan',
+    // Content landing for an `editor` who holds nothing else (#500)
+    contentHeading: 'Content',
+    contentIntro: 'Posts and frequently asked questions on the public site.',
+    contentPosts: 'Posts',
+    contentFaqs: 'FAQ',
     partnerDashboard: 'Partner dashboard',
     signedInAs: 'Signed in as',
     // Secretary dashboard (#238)
@@ -253,6 +258,11 @@ export const dashboardStrings = {
   hr: {
     dashboard: 'Nadzorna ploča',
     doorScan: 'Skeniranje na ulazu',
+    // Content landing for an `editor` who holds nothing else (#500)
+    contentHeading: 'Sadržaj',
+    contentIntro: 'Objave i česta pitanja na javnim stranicama.',
+    contentPosts: 'Objave',
+    contentFaqs: 'Česta pitanja',
     partnerDashboard: 'Partnerska ploča',
     signedInAs: 'Prijavljeni kao',
     // Secretary dashboard (#238)
