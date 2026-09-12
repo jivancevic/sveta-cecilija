@@ -1,0 +1,531 @@
+<!doctype html>
+<html lang="hr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Moreškant redizajn</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Labrada:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap">
+<style>
+/* PROTOTIP, bacivi kod. Tri ekrana Moreškant /app redizajna s lažnim podacima.
+   Tokeni su kopija .app scopea iz src/app/app/app.css (kamen/zlato, radius 0, Labrada). */
+
+:root{
+  --pbg:#1b1a17; --pfg:#e8e3d8; --pmuted:#8f8a80; --pedge:#2e2c27; --ppill:#f5f2ec; --ppillfg:#0a0a0a;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--pbg);color:var(--pfg);font-family:Labrada,Georgia,serif;font-size:15px}
+.proto-bar{position:sticky;top:0;z-index:50;display:flex;flex-wrap:wrap;gap:12px 28px;align-items:center;padding:12px 20px;background:rgba(27,26,23,.96);border-bottom:1px solid var(--pedge);backdrop-filter:blur(6px)}
+.proto-bar h1{margin:0;font-size:16px;font-weight:600;letter-spacing:.02em}
+.proto-bar h1 small{color:var(--pmuted);font-weight:400;margin-left:8px}
+.tg{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--pmuted)}
+.tg span{text-transform:uppercase;letter-spacing:.08em;font-size:11px}
+.tg .seg{display:inline-flex;border:1px solid var(--pfg);border-radius:999px;overflow:hidden}
+.tg button{font:inherit;font-size:13px;padding:5px 14px;background:transparent;color:var(--pfg);border:0;cursor:pointer}
+.tg button[aria-pressed="true"]{background:var(--ppill);color:var(--ppillfg)}
+.tg button:focus-visible{outline:2px solid #d9a526;outline-offset:-2px}
+.stage{display:flex;gap:40px;padding:36px 28px 60px;overflow-x:auto;align-items:flex-start}
+.slot{flex:0 0 auto;width:375px}
+.slot > h2{margin:0 0 4px;font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--pmuted)}
+.slot p.q{margin:0 0 14px;font-size:13px;color:var(--pmuted);max-width:60ch;line-height:1.4}
+.phone{width:375px;height:812px;border:1px solid #3a3733;border-radius:28px;overflow:hidden;position:relative;background:#0a0a0a;box-shadow:0 30px 60px rgba(0,0,0,.5)}
+.notch{position:absolute;top:0;left:50%;transform:translateX(-50%);width:120px;height:26px;background:#000;border-radius:0 0 18px 18px;z-index:5}
+
+/* ── .app scope: copy of the real tokens ─────────────────── */
+.app{
+  --bg:#0a0a0a; --bgDeep:#050505; --card:#131313; --cardEdge:rgba(184,136,26,.28);
+  --light:#f5f2ec; --muted:#9a9a9a; --gold:#b8881a; --goldBright:#d9a526; --red:#8b0000; --radius:0px;
+  --green:#3f7d4e; --tabH:74px;
+  height:100%;background:var(--bg);color:var(--light);font-family:Labrada,Georgia,serif;font-size:16px;line-height:1.5;
+  display:flex;flex-direction:column;position:relative;font-variant-numeric:tabular-nums;
+}
+.app button{font:inherit;color:inherit;cursor:pointer}
+.app button:focus-visible{outline:2px solid var(--goldBright);outline-offset:2px}
+.app__scroll{flex:1;overflow-y:auto;padding:52px 16px 0;scrollbar-width:none}
+.app__scroll::-webkit-scrollbar{display:none}
+.app__scroll--padded{padding-bottom:calc(var(--tabH) + 24px)}
+.app__scroll--padded2{padding-bottom:calc(var(--tabH) + 96px)}
+
+.app__header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding:8px 0 14px;border-bottom:1px solid var(--cardEdge)}
+.app__brand{font-size:26px;font-weight:600;margin:0;letter-spacing:.01em;line-height:1.1}
+.app__identity{margin:4px 0 0;font-size:13px;color:var(--muted)}
+.app__identity strong{color:var(--goldBright);font-weight:600}
+.app__season{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;text-align:right;padding-top:8px}
+
+/* Hero, "Sljedeća izvedba" (Zocdoc Up next) */
+.hero{margin:18px 0 0;background:var(--card);border:1px solid var(--goldBright);padding:16px 16px 14px}
+.hero__eyebrow{display:flex;justify-content:space-between;align-items:center;font-size:12px;text-transform:uppercase;letter-spacing:.12em;color:var(--goldBright);margin:0 0 10px}
+.hero__eyebrow em{font-style:normal;color:var(--muted);letter-spacing:.04em;text-transform:none;font-size:13px}
+.hero__date{font-size:30px;font-weight:600;line-height:1.05;margin:0}
+.hero__meta{margin:6px 0 0;font-size:15px;color:var(--light)}
+.hero__meta span{color:var(--muted)}
+.hero__army{display:inline-block;margin-top:10px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;padding:3px 10px;border:1px solid var(--cardEdge);color:var(--light)}
+.hero__army--crni{background:#000;border-color:#3a3a3a}
+.hero__army--bili{background:var(--light);color:#0a0a0a;border-color:var(--light)}
+.rsvp{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+.rsvp button{padding:14px 8px;font-size:17px;font-weight:600;background:transparent;border:1px solid var(--gold);color:var(--light);border-radius:var(--radius);min-height:54px}
+.rsvp button[aria-pressed="true"]{background:var(--gold);border-color:var(--gold);color:#0a0a0a}
+.rsvp button[aria-pressed="true"]::before{content:"✓ ";}
+.rsvp button.rsvp--no[aria-pressed="true"]{background:#2a2a2a;border-color:#2a2a2a;color:var(--light)}
+.hero__link{display:block;margin-top:12px;font-size:14px;color:var(--goldBright);text-align:right;text-decoration:none}
+
+/* end of season */
+.eos{margin:18px 0 0;padding:26px 16px;border:1px solid var(--cardEdge);background:var(--card);text-align:center}
+.eos h3{margin:0 0 6px;font-size:20px;font-weight:600}
+.eos p{margin:0 0 14px;color:var(--muted);font-size:14px}
+.eos button{background:transparent;border:1px solid var(--gold);color:var(--light);padding:10px 18px;font-size:15px}
+
+/* month groups (GroupMe Calendar) */
+.month{margin:26px 0 0}
+.month h3{margin:0 0 6px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);display:flex;justify-content:space-between}
+.month h3 b{font-weight:400;letter-spacing:.02em;text-transform:none}
+.row{display:grid;grid-template-columns:46px 1fr auto;gap:12px;align-items:center;padding:11px 0;border-top:1px solid #1f1f1f;text-decoration:none;color:inherit;cursor:pointer}
+.row:last-child{border-bottom:1px solid #1f1f1f}
+.row--past{opacity:.45}
+.tile{text-align:center;border:1px solid var(--cardEdge);padding:4px 0 3px;line-height:1}
+.tile b{display:block;font-size:20px;font-weight:600}
+.tile small{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-top:3px}
+.row__main{min-width:0}
+.row__t{font-size:16px;font-weight:600;margin:0}
+.row__t span{font-weight:400;color:var(--muted);margin-left:6px}
+.row__w{margin:1px 0 0;font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.badge{font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:3px 8px;border:1px solid var(--cardEdge);color:var(--muted);white-space:nowrap}
+.badge--yes{background:var(--gold);border-color:var(--gold);color:#0a0a0a}
+.badge--no{background:#2a2a2a;border-color:#2a2a2a;color:var(--light)}
+.badge--none{border-style:dashed}
+.badge--private{border-color:#444;color:var(--light)}
+.list-empty{padding:26px 0;text-align:center;color:var(--muted);font-size:14px}
+
+/* tab bar */
+.tabbar{position:absolute;left:0;right:0;bottom:0;height:var(--tabH);background:var(--bgDeep);border-top:1px solid var(--cardEdge);display:grid;grid-template-columns:repeat(3,1fr);padding:6px 0 18px;z-index:4}
+.tabbar button{background:none;border:0;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:3px;font-size:11px;letter-spacing:.06em;text-transform:uppercase}
+.tabbar button svg{width:26px;height:26px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.tabbar button[aria-selected="true"]{color:var(--goldBright)}
+.tabbar button[aria-selected="true"] svg{stroke-width:2}
+.homeind{position:absolute;bottom:6px;left:50%;transform:translateX(-50%);width:120px;height:4px;border-radius:2px;background:#3a3a3a;z-index:6}
+
+/* Moje */
+.stat-seg{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--cardEdge);margin:18px 0 0}
+.stat-seg button{background:none;border:0;padding:8px 0;font-size:13px;color:var(--muted)}
+.stat-seg button[aria-pressed="true"]{background:var(--card);color:var(--goldBright)}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px}
+.tile2{background:var(--card);border:1px solid #1f1f1f;padding:12px 14px}
+.tile2 b{display:block;font-size:28px;font-weight:600;line-height:1.1}
+.tile2 span{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.bars{margin-top:22px}
+.bars h4{margin:0 0 10px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.bars svg{width:100%;height:auto;display:block}
+.roles{margin-top:22px;border-top:1px solid #1f1f1f}
+.roles div{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid #1f1f1f;font-size:15px}
+.roles div span{color:var(--muted)}
+.vise a{display:flex;justify-content:space-between;padding:14px 0;border-bottom:1px solid #1f1f1f;color:inherit;text-decoration:none;font-size:16px}
+.vise a span{color:var(--muted)}
+
+/* Ekran B: detail */
+.back{display:inline-flex;align-items:center;gap:6px;color:var(--goldBright);font-size:14px;text-decoration:none;padding:6px 0 10px}
+.dh h2{margin:0;font-size:26px;font-weight:600;line-height:1.1;text-wrap:balance}
+.dh p{margin:6px 0 0;font-size:15px;color:var(--muted)}
+.dh p b{color:var(--light);font-weight:500}
+.chips{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.chip{font-size:12px;letter-spacing:.06em;text-transform:uppercase;padding:4px 10px;border:1px solid var(--cardEdge);color:var(--muted)}
+.chip--me{border-color:var(--gold);color:var(--goldBright)}
+.chip--me.is-yes{background:var(--gold);color:#0a0a0a}
+.chip--me.is-no{background:#2a2a2a;border-color:#2a2a2a;color:var(--light)}
+.segc{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--cardEdge);margin:18px 0 0;position:sticky;top:0;background:var(--bg);z-index:2}
+.segc button{background:none;border:0;padding:9px 0 7px;font-size:14px;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:0;line-height:1.2}
+.segc button b{font-size:13px;color:var(--light);font-weight:600}
+.segc button[aria-selected="true"]{background:var(--card);color:var(--goldBright);box-shadow:inset 0 -2px 0 var(--goldBright)}
+.segc button[aria-selected="true"] b{color:var(--goldBright)}
+.grp{margin-top:18px}
+.grp h4{margin:0 0 4px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);display:flex;justify-content:space-between;align-items:center}
+.grp h4 i{font-style:normal;width:10px;height:10px;display:inline-block;margin-right:8px;border:1px solid #555;vertical-align:middle}
+.grp h4 i.crni{background:#000}
+.grp h4 i.bili{background:var(--light)}
+.person{display:flex;align-items:center;gap:12px;padding:9px 0;border-top:1px solid #1f1f1f}
+.grp .person:last-child{border-bottom:1px solid #1f1f1f}
+.person__name{flex:1;min-width:0;font-size:16px}
+.person__name span{color:var(--muted);font-size:14px;margin-left:6px}
+.person__role{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.call{width:38px;height:38px;border-radius:50%;border:1px solid var(--cardEdge);background:transparent;display:grid;place-items:center;color:var(--goldBright);text-decoration:none;flex:0 0 auto}
+.call svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.person--me .person__name{color:var(--goldBright)}
+.empty{padding:34px 16px;text-align:center;border:1px dashed var(--cardEdge);margin-top:18px;color:var(--muted);font-size:14px}
+.empty b{display:block;color:var(--light);font-size:17px;font-weight:600;margin-bottom:4px}
+.empty button{margin-top:12px;background:transparent;border:1px solid var(--gold);padding:9px 16px;font-size:14px;color:var(--light)}
+.tix-head{display:flex;justify-content:space-between;align-items:baseline;margin-top:20px}
+.tix-head b{font-size:34px;font-weight:600;line-height:1}
+.tix-head b span{font-size:16px;color:var(--muted);font-weight:400}
+.tix-head p{margin:0;color:var(--muted);font-size:13px;text-align:right;max-width:18ch}
+.tix{display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-top:1px solid #1f1f1f}
+.tix:last-child{border-bottom:1px solid #1f1f1f}
+.tix span{color:var(--muted);font-size:13px}
+.tix code{font-family:ui-monospace,Menlo,monospace;font-size:13px;color:var(--goldBright)}
+.tix-add{margin-top:14px;width:100%;padding:12px;background:transparent;border:1px solid var(--gold);font-size:15px;color:var(--light)}
+.tix-add[disabled]{opacity:.4;cursor:not-allowed}
+.lead{margin-top:26px;border:1px solid var(--cardEdge);padding:12px 14px;background:var(--card)}
+.lead h4{margin:0 0 8px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--goldBright)}
+.lead button{display:block;width:100%;text-align:left;background:transparent;border:0;border-top:1px solid #1f1f1f;padding:11px 0;font-size:15px}
+.lead button small{display:block;font-size:12px;color:var(--muted)}
+.stickyrsvp{position:absolute;left:0;right:0;bottom:var(--tabH);padding:10px 16px 10px;background:linear-gradient(to top,var(--bg) 70%,transparent);z-index:3}
+.stickyrsvp .rsvp{margin-top:0}
+
+/* Ekran C: onboarding */
+.ob{padding:52px 20px 0;flex:1;display:flex;flex-direction:column}
+.ob__top{display:flex;align-items:center;gap:14px}
+.steps{flex:1;display:grid;gap:6px}
+.steps i{height:4px;background:#2a2a2a;display:block}
+.steps i.done{background:var(--gold)}
+.steps i.cur{background:var(--goldBright)}
+.skip{background:none;border:0;color:var(--muted);font-size:14px;padding:4px 0}
+.ob__body{flex:1;display:flex;flex-direction:column;justify-content:center;gap:14px;padding:10px 0 30px}
+.ob__step{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--goldBright)}
+.ob h2{margin:0;font-size:30px;font-weight:600;line-height:1.1;text-wrap:balance}
+.ob p{margin:0;color:var(--muted);font-size:15px;line-height:1.5;max-width:34ch}
+.ob p b{color:var(--light);font-weight:500}
+.illus{margin:6px 0 4px;border:1px solid var(--cardEdge);background:var(--card);padding:18px 16px}
+.ios-row{display:flex;align-items:center;gap:14px;padding:12px 14px;background:#1c1c1e;border-radius:10px;color:#fff;font-family:-apple-system,system-ui,sans-serif;font-size:16px}
+.ios-row svg{width:26px;height:26px;stroke:#fff;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:0 0 auto}
+.ios-row + .ios-row{margin-top:8px}
+.ios-row .plus{margin-left:auto;width:24px;height:24px;border:1.5px solid #fff;border-radius:6px;display:grid;place-items:center;font-size:18px;line-height:1}
+.ios-hint{margin-top:10px;font-size:12px;color:var(--muted);text-align:center}
+.notif{background:#f2f2f7;color:#111;border-radius:14px;padding:10px 12px;font-family:-apple-system,system-ui,sans-serif;display:flex;gap:10px;align-items:flex-start}
+.notif .ic{width:34px;height:34px;background:#0a0a0a;border:1px solid var(--gold);display:grid;place-items:center;color:var(--goldBright);font-family:Labrada,serif;font-weight:700;font-size:18px;border-radius:8px;flex:0 0 auto}
+.notif b{display:block;font-size:14px}
+.notif span{font-size:13px;color:#333}
+.notif small{margin-left:auto;font-size:11px;color:#777;white-space:nowrap}
+.benefits{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:4px}
+.benefits div{text-align:center;font-size:12px;color:var(--muted);line-height:1.3}
+.benefits svg{width:24px;height:24px;stroke:var(--goldBright);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;margin-bottom:4px}
+.calcard{border:1px solid var(--cardEdge);background:var(--card);padding:14px}
+.calcard h4{margin:0;font-size:16px;font-weight:600}
+.calcard p{font-size:13px;margin:4px 0 12px}
+.calcard code{display:block;font-family:ui-monospace,Menlo,monospace;font-size:12px;color:var(--goldBright);background:#0a0a0a;padding:8px 10px;border:1px solid #1f1f1f;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ob__actions{display:grid;gap:10px;padding-bottom:36px}
+.primary{width:100%;padding:15px;background:var(--gold);border:1px solid var(--gold);color:#0a0a0a;font-size:17px;font-weight:600;min-height:54px}
+.ghost{width:100%;padding:12px;background:transparent;border:1px solid var(--cardEdge);color:var(--light);font-size:15px}
+.linkbtn{background:none;border:0;color:var(--muted);font-size:14px;padding:6px}
+.ob--done .ob__body{align-items:center;text-align:center}
+.ob--done p{max-width:26ch}
+.check{width:72px;height:72px;border:1px solid var(--goldBright);border-radius:50%;display:grid;place-items:center;color:var(--goldBright);margin-bottom:8px}
+.check svg{width:36px;height:36px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.ob__toast{position:absolute;left:16px;right:16px;bottom:120px;background:var(--light);color:#0a0a0a;padding:10px 14px;font-size:14px;text-align:center;opacity:0;transition:opacity .2s}
+.ob__toast.show{opacity:1}
+@media (prefers-reduced-motion:reduce){.ob__toast{transition:none}}
+</style>
+</head>
+<body>
+
+<div class="proto-bar">
+  <h1>Moreškant redizajn <small>prototip, lažni podaci, 375 px</small></h1>
+  <div class="tg"><span>Uloga</span><div class="seg"><button data-tg="role" data-v="moreskant" aria-pressed="true">moreškant</button><button data-tg="role" data-v="moreska" aria-pressed="false">moreska</button></div></div>
+  <div class="tg"><span>Podaci</span><div class="seg"><button data-tg="data" data-v="full" aria-pressed="true">puno</button><button data-tg="data" data-v="empty" aria-pressed="false">prazno</button></div></div>
+  <div class="tg"><span>Standalone</span><div class="seg"><button data-tg="standalone" data-v="no" aria-pressed="true">ne</button><button data-tg="standalone" data-v="yes" aria-pressed="false">da</button></div></div>
+</div>
+
+<div class="stage">
+
+  <!-- ═══════════ EKRAN A ═══════════ -->
+  <section class="slot">
+    <h2>Ekran A. Početni s tab barom</h2>
+    <p class="q">Hero "Sljedeća izvedba" (Zocdoc Up next) + redovi po mjesecu (GroupMe Calendar). Tabovi rade. "Prazno" = kraj sezone.</p>
+    <div class="phone"><div class="notch"></div>
+      <div class="app" id="A">
+        <div class="app__scroll app__scroll--padded" id="A-scroll"></div>
+        <nav class="tabbar" id="A-tabs"></nav>
+        <div class="homeind"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ EKRAN B ═══════════ -->
+  <section class="slot">
+    <h2>Ekran B. Detalj izvedbe</h2>
+    <p class="q">Segmenti s brojačima (GroupMe event), poziv u redu (Granola), sticky Dolazim / Ne dolazim. "Alati za voditelja" samo za moreska. "Prazno" = postava nepotvrđena, nula odgovora, nula ulaznica.</p>
+    <div class="phone"><div class="notch"></div>
+      <div class="app" id="B">
+        <div class="app__scroll app__scroll--padded2" id="B-scroll"></div>
+        <div class="stickyrsvp"><div class="rsvp" id="B-rsvp"></div></div>
+        <nav class="tabbar" id="B-tabs"></nav>
+        <div class="homeind"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════ EKRAN C ═══════════ -->
+  <section class="slot">
+    <h2>Ekran C. Onboarding nakon prve prijave</h2>
+    <p class="q">Tri koraka, segmentirani indikator (Numo), "Preskoči" gore desno, jedan primarni gumb. "Standalone: da" preskače prvi korak.</p>
+    <div class="phone"><div class="notch"></div>
+      <div class="app" id="C">
+        <div class="ob" id="C-ob"></div>
+        <div class="ob__toast" id="C-toast"></div>
+        <div class="homeind"></div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<script>
+/* ── lažni podaci ─────────────────────────────────────────── */
+const ME = { id: 7, name: 'Ivan Marelić', nick: 'Maro', army: 'crni', role: 'Vojnik' };
+
+const PEOPLE = [
+  { id: 1, name: 'Ante Depolo',     nick: 'Depa',   tel: '+385911111111', army: 'crni', role: 'Moro' },
+  { id: 2, name: 'Marko Tvrdeić',   nick: 'Tvrdi',  tel: '+385911111112', army: 'bili', role: 'Osman' },
+  { id: 3, name: 'Petra Skokandić', nick: '',       tel: '+385911111113', army: null,   role: 'Bula' },
+  { id: 4, name: 'Luka Foretić',    nick: 'Fore',   tel: '+385911111114', army: 'crni', role: 'Otmanović' },
+  { id: 5, name: 'Josip Kalogjera', nick: 'Kale',   tel: '+385911111115', army: 'bili', role: 'Vojnik' },
+  { id: 6, name: 'Frano Bakica',    nick: '',       tel: '+385911111116', army: 'crni', role: 'Vojnik' },
+  { id: 7, name: 'Ivan Marelić',    nick: 'Maro',   tel: '+385911111117', army: 'crni', role: 'Vojnik' },
+  { id: 8, name: 'Nikola Šegedin',  nick: 'Šego',   tel: '+385911111118', army: 'bili', role: 'Vojnik' },
+  { id: 9, name: 'Toni Curać',      nick: '',       tel: '+385911111119', army: 'bili', role: 'Vojnik' },
+  { id:10, name: 'Vicko Lozica',    nick: 'Vice',   tel: '+385911111120', army: 'crni', role: 'Vojnik' },
+  { id:11, name: 'Dino Sardelić',   nick: '',       tel: '+385911111121', army: 'bili', role: 'Vojnik' },
+  { id:12, name: 'Roko Peručić',    nick: 'Rokac',  tel: '+385911111122', army: null,   role: 'Vojnik' },
+];
+
+const PERFS = [
+  { id: 'p1', d: '2026-09-17', dow: 'čet', day: 17, mon: 'ruj', time: '21:00', venue: 'Ljetno kino', kind: 'redovna', title: 'Redovna izvedba', me: 'yes' },
+  { id: 'p2', d: '2026-09-21', dow: 'pon', day: 21, mon: 'ruj', time: '21:00', venue: 'Ljetno kino', kind: 'redovna', title: 'Redovna izvedba', me: null },
+  { id: 'p3', d: '2026-09-24', dow: 'čet', day: 24, mon: 'ruj', time: '21:00', venue: 'Ljetno kino', kind: 'redovna', title: 'Redovna izvedba', me: 'no' },
+  { id: 'p4', d: '2026-10-03', dow: 'sub', day: 3,  mon: 'lis', time: '19:30', venue: 'Hotel Marko Polo', kind: 'privatna', title: 'Privatna izvedba, Hotel Marko Polo', me: null },
+  { id: 'p5', d: '2026-10-10', dow: 'sub', day: 10, mon: 'lis', time: '20:00', venue: 'Centar za kulturu', kind: 'redovna', title: 'Redovna izvedba', me: null },
+];
+const MONTHS = { ruj: 'Rujan', lis: 'Listopad' };
+
+/* stanje u memoriji */
+const S = {
+  role: 'moreskant', data: 'full', standalone: 'no',
+  answers: Object.fromEntries(PERFS.map(p => [p.id, p.me])),
+  homeTab: 'izvedbe', statPeriod: 'sezona',
+  detail: 'p1', seg: 'dolaze', comps: 2,
+  obStep: 1, obDone: false,
+};
+
+/* ikone */
+const I = {
+  izvedbe: '<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>',
+  moje: '<svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-7 8-7s8 3 8 7"/></svg>',
+  vise: '<svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16"/></svg>',
+  phone: '<svg viewBox="0 0 24 24"><path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/></svg>',
+  back: '<svg viewBox="0 0 24 24" width="16" height="16" style="stroke:currentColor;fill:none;stroke-width:2"><path d="M15 5l-7 7 7 7"/></svg>',
+  share: '<svg viewBox="0 0 24 24"><path d="M12 3v12M8 7l4-4 4 4"/><path d="M5 11v9h14v-9"/></svg>',
+  bell: '<svg viewBox="0 0 24 24"><path d="M6 16V11a6 6 0 0 1 12 0v5l2 2H4z"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>',
+  bolt: '<svg viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>',
+  users: '<svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2 20c0-3.5 3-6 7-6s7 2.5 7 6"/><circle cx="17" cy="9" r="2.5"/><path d="M17 14c3 0 5 2 5 5"/></svg>',
+  cal: '<svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>',
+  ok: '<svg viewBox="0 0 24 24"><path d="M5 12l5 5 9-10"/></svg>',
+};
+
+const ansBadge = a => a === 'yes' ? '<span class="badge badge--yes">Dolazim</span>'
+                    : a === 'no'  ? '<span class="badge badge--no">Ne dolazim</span>'
+                                  : '<span class="badge badge--none">Bez odgovora</span>';
+const perfDate = p => `${p.dow}, ${p.day}. ${MONTHS[p.mon].toLowerCase().replace('rujan','rujna').replace('listopad','listopada')}`;
+
+function tabbar(el, active, screen) {
+  el.innerHTML = ['izvedbe','moje','vise'].map(t =>
+    `<button data-tab="${t}" aria-selected="${t===active}">${I[t]}${{izvedbe:'Izvedbe',moje:'Moje',vise:'Više'}[t]}</button>`).join('');
+  el.querySelectorAll('button').forEach(b => b.onclick = () => {
+    S.homeTab = b.dataset.tab; renderA();
+    if (screen === 'B') el.closest('.slot').previousElementSibling && document.getElementById('A').scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
+  });
+}
+
+function rsvp(id, pid) {
+  const a = S.answers[pid];
+  return `<div class="rsvp" id="${id}">
+    <button class="rsvp--yes" data-a="yes" aria-pressed="${a==='yes'}">Dolazim</button>
+    <button class="rsvp--no"  data-a="no"  aria-pressed="${a==='no'}">Ne dolazim</button></div>`;
+}
+function wireRsvp(root, pid) {
+  root.querySelectorAll('.rsvp button').forEach(b => b.onclick = () => {
+    S.answers[pid] = S.answers[pid] === b.dataset.a ? null : b.dataset.a;
+    renderA(); renderB();
+  });
+}
+
+/* ── EKRAN A ─────────────────────────────────────────────── */
+function renderA() {
+  const sc = document.getElementById('A-scroll');
+  const head = `<header class="app__header"><div><h1 class="app__brand">Moreškant</h1>
+    <p class="app__identity">Prijavljen kao <strong>${ME.name}</strong></p></div><div class="app__season">Sezona 2026</div></header>`;
+  let body = '';
+
+  if (S.homeTab === 'izvedbe') {
+    if (S.data === 'empty') {
+      body = `<div class="eos"><h3>Sezona je završila</h3><p>Zadnja izvedba bila je 10. listopada. Nova sezona počinje u svibnju 2027.</p>
+        <button onclick="S.homeTab='moje';renderA()">Pogledaj svoju sezonu</button></div>
+        <div class="list-empty">Nema nadolazećih izvedbi.</div>`;
+    } else {
+      const n = PERFS[0], a = S.answers[n.id];
+      const army = ME.army ? `<span class="hero__army hero__army--${ME.army}">${ME.army === 'crni' ? 'Crna vojska' : 'Bila vojska'}</span>` : '';
+      body = `<section class="hero"><p class="hero__eyebrow">Sljedeća izvedba <em>za 5 dana</em></p>
+        <p class="hero__date">Četvrtak, 17. rujna</p>
+        <p class="hero__meta">${n.time} <span>·</span> ${n.venue} <span>· okupljanje 20:15</span></p>
+        ${army}${rsvp('A-rsvp', n.id)}
+        <a class="hero__link" href="#" onclick="S.detail='p1';renderB();return false">Tko dolazi, postava, ulaznice ›</a></section>`;
+      const groups = {};
+      PERFS.forEach(p => (groups[p.mon] ||= []).push(p));
+      body += Object.entries(groups).map(([m, list]) => `<section class="month"><h3>${MONTHS[m]} <b>${list.length} ${list.length===1?'izvedba':'izvedbe'}</b></h3>
+        ${list.map(p => `<a class="row" onclick="S.detail='${p.id}';S.seg='dolaze';renderB();return false" href="#">
+          <div class="tile"><b>${p.day}</b><small>${p.dow}</small></div>
+          <div class="row__main"><p class="row__t">${p.time}<span>${p.venue}</span></p>
+            <p class="row__w">${p.kind === 'privatna' ? 'Privatna izvedba' : 'Redovna izvedba'}${p.kind==='privatna' ? ' · zatvoreno za publiku' : ''}</p></div>
+          ${ansBadge(S.answers[p.id])}</a>`).join('')}</section>`).join('');
+    }
+  }
+
+  if (S.homeTab === 'moje') {
+    const empty = S.data === 'empty';
+    body = `<div class="stat-seg">${['sezona','2025','sve'].map(k=>`<button aria-pressed="${S.statPeriod===k}" onclick="S.statPeriod='${k}';renderA()">${k==='sezona'?'Sezona 2026':k==='2025'?'2025':'Sve'}</button>`).join('')}</div>`;
+    if (empty) {
+      body += `<div class="empty"><b>Još nisi plesao ove sezone</b>Prva potvrđena postava pojavit će se ovdje.<br><button onclick="S.homeTab='izvedbe';renderA()">Odgovori na sljedeću izvedbu</button></div>`;
+    } else {
+      body += `<div class="tiles"><div class="tile2"><b>14</b><span>izvedbi</span></div><div class="tile2"><b>11</b><span>u postavi</span></div>
+        <div class="tile2"><b>9</b><span>Crna vojska</span></div><div class="tile2"><b>2</b><span>Otmanović</span></div></div>
+        <div class="bars"><h4>Po mjesecu</h4>
+        <svg viewBox="0 0 340 120" role="img" aria-label="Izvedbe po mjesecu">
+          ${[['svi',2,1],['lip',4,3],['srp',5,4],['kol',5,4],['ruj',3,1],['lis',2,0]].map(([m,t,d],i)=>{const x=20+i*54;const h=t*14,hd=d*14;
+            return `<rect x="${x}" y="${100-h}" width="34" height="${h}" fill="#1f1f1f" stroke="#2c2c2c"/>
+                    <rect x="${x}" y="${100-hd}" width="34" height="${hd}" fill="#b8881a"/>
+                    <text x="${x+17}" y="114" font-size="11" text-anchor="middle" fill="#9a9a9a" font-family="Labrada,serif">${m}</text>
+                    <text x="${x+17}" y="${100-h-4}" font-size="11" text-anchor="middle" fill="#f5f2ec" font-family="Labrada,serif">${d}/${t}</text>`;}).join('')}
+        </svg><p style="margin:6px 0 0;font-size:12px;color:var(--muted)">Zlatno: u potvrđenoj postavi. Sivo: sve izvedbe sezone.</p></div>
+        <div class="roles"><div>Vojnik, Crna vojska <span>9×</span></div><div>Otmanović <span>2×</span></div><div>Vojnik, Bila vojska <span>0×</span></div></div>`;
+    }
+  }
+
+  if (S.homeTab === 'vise') {
+    body = `<div class="vise" style="margin-top:14px">
+      <a href="#">Statistika sezone <span>›</span></a>
+      <a href="#">Obavijesti <span>uključene</span></a>
+      <a href="#">Kalendar izvedbi <span>pretplaćen</span></a>
+      <a href="#">Moji podaci <span>Maro · +385 91…</span></a>
+      ${S.role==='moreska' ? '<a href="#">Moreškanti <span>12</span></a><a href="#">Nova izvedba <span>›</span></a>' : ''}
+      <a href="#" style="color:var(--muted)">Odjava</a></div>`;
+  }
+
+  sc.innerHTML = head + body;
+  wireRsvp(sc, 'p1');
+  tabbar(document.getElementById('A-tabs'), S.homeTab, 'A');
+}
+
+/* ── EKRAN B ─────────────────────────────────────────────── */
+function renderB() {
+  const sc = document.getElementById('B-scroll');
+  const p = PERFS.find(x => x.id === S.detail);
+  const empty = S.data === 'empty';
+  const my = S.answers[p.id];
+
+  // odgovori ostalih (lažni)
+  const others = empty ? {} : { 1:'yes',2:'yes',3:'yes',4:'yes',5:'no',6:'yes',8:'yes',9:null,10:'yes',11:null,12:'yes' };
+  const ans = id => id === ME.id ? my : (others[id] ?? null);
+  const coming = PEOPLE.filter(x => ans(x.id) === 'yes');
+  const crni = coming.filter(x => x.army === 'crni'), bili = coming.filter(x => x.army === 'bili'), noArmy = coming.filter(x => !x.army);
+  const none = PEOPLE.filter(x => ans(x.id) === null);
+  const notComing = PEOPLE.filter(x => ans(x.id) === 'no');
+  const lineupConfirmed = !empty && p.id === 'p1';
+  const lineup = lineupConfirmed ? PEOPLE.filter(x => ans(x.id) === 'yes') : [];
+  const comps = empty ? 0 : S.comps;
+
+  const person = x => `<div class="person ${x.id===ME.id?'person--me':''}"><div class="person__name">${x.name}${x.nick?`<span>${x.nick}</span>`:''}</div>
+    <a class="call" href="tel:${x.tel}" aria-label="Nazovi ${x.name}">${I.phone}</a></div>`;
+  const group = (title, cls, list) => list.length ? `<section class="grp"><h4><span><i class="${cls}"></i>${title}</span><span>${list.length}</span></h4>${list.map(person).join('')}</section>` : '';
+
+  let seg = '';
+  if (S.seg === 'dolaze') {
+    seg = coming.length || none.length
+      ? group('Crni', 'crni', crni) + group('Bili', 'bili', bili) + group('Bez vojske', '', noArmy) + group('Bez odgovora', '', none) + group('Ne dolaze', '', notComing)
+      : `<div class="empty"><b>Još nitko nije odgovorio</b>Odgovori prvi, ostali vide tko dolazi.</div>`;
+  }
+  if (S.seg === 'postava') {
+    if (!lineupConfirmed) {
+      seg = `<div class="empty"><b>Postava još nije potvrđena</b>Voditelj je slaže na dan izvedbe. Dobit ćeš obavijest.${S.role==='moreska'?'<br><button onclick="S.seg=\'postava\';alert(\'PROTOTIP: otvorio bi editor postave\')">Složi postavu</button>':''}</div>`;
+    } else {
+      const byRole = r => lineup.filter(x => x.role === r);
+      const roleGrp = (r, list) => `<section class="grp"><h4><span>${r}</span><span>${list.length}</span></h4>${list.length ? list.map(x=>`<div class="person ${x.id===ME.id?'person--me':''}"><div class="person__name">${x.name}${x.nick?`<span>${x.nick}</span>`:''}</div><span class="person__role">${x.army==='crni'?'crni':x.army==='bili'?'bili':''}</span></div>`).join('') : '<div class="person" style="color:var(--muted)">nije dodijeljeno</div>'}</section>`;
+      seg = `<p style="margin:14px 0 0;font-size:13px;color:var(--goldBright)">Potvrđena danas u 16:40</p>` +
+        ['Moro','Bula','Osman','Otmanović'].map(r => roleGrp(r, byRole(r))).join('') +
+        `<section class="grp"><h4><span><i class="crni"></i>Vojnici, crni</span><span>${byRole('Vojnik').filter(x=>x.army==='crni').length}</span></h4>${byRole('Vojnik').filter(x=>x.army==='crni').map(person).join('')}</section>` +
+        `<section class="grp"><h4><span><i class="bili"></i>Vojnici, bili</span><span>${byRole('Vojnik').filter(x=>x.army==='bili').length}</span></h4>${byRole('Vojnik').filter(x=>x.army==='bili').map(person).join('')}</section>`;
+    }
+  }
+  if (S.seg === 'ulaznice') {
+    const list = [['MRK-7Q2P','odrasla · Ana Marelić'],['MRK-7Q2R','odrasla · Mate Marelić'],['MRK-8A1C','dječja · Lucija'],['MRK-8A1D','odrasla']].slice(0, comps);
+    seg = `<div class="tix-head"><b>${comps}<span> / 4</span></b><p>besplatnih ulaznica za ovu izvedbu</p></div>` +
+      (comps ? list.map(([c,w])=>`<div class="tix"><div><code>${c}</code><br><span>${w}</span></div><span>QR ›</span></div>`).join('') : `<div class="empty"><b>Još nemaš ulaznica</b>Do četiri besplatne ulaznice po izvedbi, za obitelj i prijatelje.</div>`) +
+      `<button class="tix-add" ${comps>=4||p.kind==='privatna'?'disabled':''} onclick="S.comps=Math.min(4,S.comps+1);renderB()">${p.kind==='privatna'?'Privatna izvedba, nema ulaznica':'Izdaj ulaznicu'}</button>`;
+  }
+
+  const lead = S.role === 'moreska' ? `<section class="lead"><h4>Alati za voditelja</h4>
+    <button onclick="alert('PROTOTIP: potvrda postave')">${lineupConfirmed ? 'Uredi postavu' : 'Potvrdi postavu'}<small>${lineupConfirmed ? 'potvrđena, ' + lineup.length + ' u postavi' : coming.length + ' dolazi, ' + none.length + ' bez odgovora'}</small></button>
+    <button onclick="alert('PROTOTIP: alarm')">Pošalji alarm<small>push svima koji nisu odgovorili</small></button>
+    <button onclick="alert('PROTOTIP: comp na vratima')">Ulaznica na vratima<small>izdaj comp za gosta koji je već tu</small></button></section>` : '';
+
+  sc.innerHTML = `<a class="back" href="#" onclick="return false">${I.back} Izvedbe</a>
+    <header class="dh"><h2>${p.title}</h2><p><b>${perfDate(p)} · ${p.time}</b><br>${p.venue}${p.kind==='redovna'?' · okupljanje 20:15':''}</p>
+    <div class="chips"><span class="chip chip--me ${my==='yes'?'is-yes':my==='no'?'is-no':''}">${my==='yes'?'Dolazim':my==='no'?'Ne dolazim':'Bez odgovora'}</span>
+    ${ME.army?`<span class="chip">${ME.army==='crni'?'Crna vojska':'Bila vojska'}</span>`:''}${p.kind==='privatna'?'<span class="chip">Privatna</span>':''}</div></header>
+    <div class="segc">
+      <button aria-selected="${S.seg==='dolaze'}" onclick="S.seg='dolaze';renderB()">Dolaze <b>${coming.length}</b></button>
+      <button aria-selected="${S.seg==='postava'}" onclick="S.seg='postava';renderB()">Postava <b>${lineupConfirmed ? lineup.length : '–'}</b></button>
+      <button aria-selected="${S.seg==='ulaznice'}" onclick="S.seg='ulaznice';renderB()">Ulaznice <b>${comps}/4</b></button>
+    </div>${seg}${lead}`;
+  document.getElementById('B-rsvp').outerHTML = rsvp('B-rsvp', p.id);
+  wireRsvp(document.getElementById('B').querySelector('.stickyrsvp'), p.id);
+  tabbar(document.getElementById('B-tabs'), 'izvedbe', 'B');
+}
+
+/* ── EKRAN C ─────────────────────────────────────────────── */
+function toast(t) { const el = document.getElementById('C-toast'); el.textContent = t; el.classList.add('show'); setTimeout(()=>el.classList.remove('show'), 1600); }
+function renderC() {
+  const ob = document.getElementById('C-ob');
+  const steps = S.standalone === 'yes' ? [2,3] : [1,2,3];
+  if (!steps.includes(S.obStep) && !S.obDone) S.obStep = steps[0];
+  const idx = steps.indexOf(S.obStep);
+  ob.classList.toggle('ob--done', S.obDone);
+  const top = S.obDone ? '' : `<div class="ob__top"><div class="steps">${steps.map((s,i)=>`<i class="${i<idx?'done':i===idx?'cur':''}"></i>`).join('')}</div>
+    <button class="skip" onclick="S.obDone=true;renderC()">Preskoči</button></div>`;
+  const next = () => { const n = steps[idx+1]; if (n) S.obStep = n; else S.obDone = true; renderC(); };
+  window.__next = next;
+  let body = '';
+
+  if (S.obDone) {
+    body = `<div class="ob__body"><div class="check">${I.ok}</div><h2>Spremno</h2><p>Sljedeća izvedba je u četvrtak, 17. rujna. Reci nam dolaziš li.</p></div>
+      <div class="ob__actions"><button class="primary" onclick="S.obDone=false;S.obStep=${steps[0]};renderC();document.getElementById('A').scrollIntoView({behavior:'smooth',inline:'center',block:'nearest'})">Na izvedbe</button></div>`;
+  } else if (S.obStep === 1) {
+    body = `<div class="ob__body"><span class="ob__step">Korak 1 od ${steps.length}</span><h2>Dodaj Moreškanta na početni zaslon</h2>
+      <p>Otvara se kao aplikacija, bez adresne trake, i može ti slati obavijesti.</p>
+      <div class="illus">
+        <div class="ios-row">${I.share}<span>Dodirni <b>Podijeli</b> u Safariju</span></div>
+        <div class="ios-row"><span style="width:26px"></span><span>Dodaj na početni zaslon</span><span class="plus">+</span></div>
+        <p class="ios-hint">Ikona Podijeli je na dnu Safarija, u sredini.</p></div></div>
+      <div class="ob__actions"><button class="primary" onclick="__next()">Dodao sam</button><button class="linkbtn" onclick="__next()">Kasnije</button></div>`;
+  } else if (S.obStep === 2) {
+    body = `<div class="ob__body"><span class="ob__step">Korak ${idx+1} od ${steps.length}</span><h2>Uključi obavijesti</h2>
+      <p>Javljamo samo kad se nešto tiče tebe. Bez reklama, bez podsjetnika svaki dan.</p>
+      <div class="illus"><div class="notif"><div class="ic">M</div><div><b>Moreškant</b><span>Postava za subotu je potvrđena. Plešeš Otmanovića, Crna vojska.</span></div><small>prije 2 min</small></div></div>
+      <div class="benefits"><div>${I.users}<br>Postava je potvrđena</div><div>${I.bolt}<br>Alarm od voditelja</div><div>${I.cal}<br>Promjena mjesta ili sata</div></div></div>
+      <div class="ob__actions"><button class="primary" onclick="toast('PROTOTIP: ovdje iOS pita za dozvolu');__next()">Uključi obavijesti</button><button class="linkbtn" onclick="__next()">Ne sada</button></div>`;
+  } else {
+    body = `<div class="ob__body"><span class="ob__step">Korak ${idx+1} od ${steps.length}</span><h2>Izvedbe u tvom kalendaru</h2>
+      <p>Pretplata se sama osvježava kad se raspored promijeni. Radi u Apple i Google kalendaru.</p>
+      <div class="calcard"><h4>Kalendar izvedbi 2026</h4><p style="color:var(--muted)">22 redovne izvedbe + privatne na koje si pozvan</p>
+        <code>webcal://moreska.eu/app/kalendar/ab12…f9.ics</code></div></div>
+      <div class="ob__actions"><button class="primary" onclick="toast('PROTOTIP: otvara webcal://');__next()">Pretplati se na kalendar</button>
+        <button class="ghost" onclick="toast('Link kopiran')">Kopiraj link</button><button class="linkbtn" onclick="__next()">Ne sada</button></div>`;
+  }
+  ob.innerHTML = top + body;
+}
+
+/* ── prekidači ───────────────────────────────────────────── */
+document.querySelectorAll('[data-tg]').forEach(b => b.onclick = () => {
+  S[b.dataset.tg] = b.dataset.v;
+  document.querySelectorAll(`[data-tg="${b.dataset.tg}"]`).forEach(x => x.setAttribute('aria-pressed', x === b));
+  if (b.dataset.tg === 'standalone') { S.obDone = false; S.obStep = S.standalone === 'yes' ? 2 : 1; }
+  renderA(); renderB(); renderC();
+});
+renderA(); renderB(); renderC();
+</script>
+</body>
+</html>
