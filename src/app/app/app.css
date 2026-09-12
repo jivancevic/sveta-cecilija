@@ -348,21 +348,100 @@
   margin-bottom: 2px;
 }
 
-.app__hint-close {
-  position: absolute;
-  top: 6px;
-  right: 8px;
-  background: none;
-  border: none;
+/* ── Install (#421, rewritten in #452) ──────────────────── */
+/* The × is gone: "Kasnije" is a word, and it means tomorrow rather than never.
+   Its row sits at the foot of the card, next to the link to the full guide. */
+.app__hint-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  margin-top: 10px;
+}
+
+.app__install-steps {
+  margin: 10px 0 0;
+  padding: 0 0 0 20px;
+  display: grid;
+  gap: 8px;
+  font-size: 13px;
   color: var(--muted);
-  font-size: 20px;
-  line-height: 1;
-  padding: 4px 8px;
+}
+
+.app__install-step {
+  padding-left: 2px;
+}
+
+.app__install-step::marker {
+  color: var(--goldBright);
+  font-family: var(--font-ibm-plex-mono), ui-monospace, monospace;
+}
+
+/* The iOS share icon, sitting on the text baseline of its own step. */
+.app__install-glyph {
+  width: 15px;
+  height: 15px;
+  vertical-align: -3px;
+  margin-right: 6px;
+  color: var(--goldBright);
+}
+
+.app__install-one-tap {
+  margin-top: 10px;
+}
+
+.app__install-how {
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.app__install-done {
+  margin: 0 0 12px;
+  color: var(--goldBright);
+  font-size: 14px;
+}
+
+.app__install-outro {
+  margin-top: 24px;
+  font-size: 14px;
+}
+
+/* The platform switch on `/app/instalacija`: a voditelj at a rehearsal is
+   holding somebody else's phone half the time. */
+.app__install-devices {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 20px;
+  padding-top: 14px;
+  border-top: 1px solid var(--cardEdge);
+}
+
+.app__install-devices-label {
+  width: 100%;
+  font-size: 12px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.app__install-device {
+  background: none;
+  border: 1px solid var(--cardEdge);
+  border-radius: var(--radius);
+  padding: 8px 14px;
+  color: var(--muted);
+  font: inherit;
+  font-size: 13px;
   cursor: pointer;
 }
 
-.app__hint-close:hover {
-  color: var(--light);
+.app__install-device--on {
+  color: var(--bg);
+  background: var(--goldBright);
+  border-color: var(--goldBright);
 }
 
 /* ── Attendance answers (#422) ──────────────────────────── */

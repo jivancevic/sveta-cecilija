@@ -1,37 +1,55 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import Link from 'next/link'
+import { useCallback, useEffect, useState } from 'react'
+import { decideInstallStep, type AppPlatform, type InstallStep } from '@/lib/app/platform'
 import { APP_STRINGS } from '@/lib/app/strings'
+import { InstallSteps, type StepPlatform } from './InstallSteps'
+import {
+  isSnoozed,
+  pushSupported,
+  readPlatform,
+  snooze,
+  useInstallPrompt,
+  webviewHostIsIos,
+} from './use-install'
 
-// The one banner under the season list: "Dodaj na početni zaslon" (#421) and,
-// since #431, "Uključi obavijesti".
+// The one banner under the season list: install (#421), notifications (#431),
+// and since #455 the platform it is actually talking to.
 //
-// ONE component rather than two stacked banners, because the two questions are
-// really one question asked in order (#430, stories 1-3): on an uninstalled
-// iPhone there is no `PushManager` at all, so the honest first answer is "add
-// it to the home screen"; everywhere else the offer is the notification switch;
-// and once this device is subscribed the offer disappears and leaves a single
-// muted line with the off switch, which is the whole of the per-device control
-// (story 5).
+// ONE component rather than several stacked banners, because these are one
+// question asked in the right order. What changed in #455 is which order, and
+// that the order is now a decision in `src/lib/app/platform.ts` rather than a
+// chain of ifs here:
+//
+//   - a webview (Viber, WhatsApp, Messenger) can neither install nor subscribe,
+//     so it gets the way out and nothing else;
+//   - an uninstalled iPhone is asked to install, because on iOS that IS the
+//     notification switch;
+//   - an Android tab is offered notifications FIRST, because they work in a
+//     plain tab there, with installing as a one-tap bonus rather than a toll.
+//     The old order never reached the install offer on Android at all: Chrome
+//     always has a `PushManager`, so the branch that mentioned installing was
+//     dead code on the platform where it is easiest.
 //
 // The state is READ FROM THE BROWSER, never from the server: whether this
 // particular device holds a subscription is a fact of this browser profile, and
 // asking the server would answer for some other phone. Which is also why the
-// component renders nothing until it has looked (`state === 'unknown'`) — a
-// banner that flashes "turn on notifications" at somebody who turned them on
-// last week is worse than a beat of silence.
-//
-// Every storage / permission access is wrapped: a private window, a browser
-// that blocks site data and a thumbnail-capture pass can each throw, and none
-// of that may take `/app` down.
+// component renders nothing until it has looked - a banner that flashes "turn
+// on notifications" at somebody who turned them on last week is worse than a
+// beat of silence.
 
-const DISMISSED_KEY = 'moreskant.installHint.dismissed'
 // The worker script lives at the ROOT so it can claim `/app` itself, not only
 // `/app/…` — see the header of `public/moreskant-sw.js`.
 const SW_URL = '/moreskant-sw.js'
 const SW_SCOPE = '/app'
 
-type BannerState = 'unknown' | 'install' | 'offer' | 'on' | 'hidden'
+/** `installed` and `inapp` never reach the step list; the rest map straight through. */
+function stepPlatform(platform: AppPlatform): StepPlatform {
+  if (platform === 'ios') return 'ios'
+  if (platform === 'android') return 'android'
+  return 'desktop'
+}
 
 /**
  * base64url application server key → the bytes `subscribe()` wants.
@@ -49,61 +67,71 @@ function urlBase64ToBytes(base64: string): ArrayBuffer {
   return out.buffer as ArrayBuffer
 }
 
-function pushSupported(): boolean {
-  return (
-    typeof window !== 'undefined' &&
-    'serviceWorker' in navigator &&
-    'PushManager' in window &&
-    'Notification' in window
-  )
-}
-
-function standalone(): boolean {
-  try {
-    return (
-      window.matchMedia?.('(display-mode: standalone)').matches === true ||
-      (navigator as unknown as { standalone?: boolean }).standalone === true
-    )
-  } catch {
-    return false
-  }
-}
-
-function dismissed(): boolean {
-  try {
-    return window.localStorage.getItem(DISMISSED_KEY) === '1'
-  } catch {
-    return false
-  }
-}
-
 export function InstallHint({ vapidPublicKey }: { vapidPublicKey?: string | null }) {
-  const [state, setState] = useState<BannerState>('unknown')
+  const [platform, setPlatform] = useState<AppPlatform | null>(null)
+  const [subscribed, setSubscribed] = useState(false)
+  const [snoozed, setSnoozed] = useState(false)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
+  const { canPrompt, install } = useInstallPrompt()
 
+  // `platform === null` is "has not looked yet" and renders nothing.
   useEffect(() => {
     let cancelled = false
-    const decide = async () => {
-      // No keys configured on this deployment: fall back to the plain install
-      // hint, which is what `/app` showed before push existed.
-      if (!vapidPublicKey || !pushSupported()) {
-        if (!cancelled) setState(standalone() || dismissed() ? 'hidden' : 'install')
-        return
+    const look = async () => {
+      const here = readPlatform()
+      const later = isSnoozed()
+      let hasSubscription = false
+      if (vapidPublicKey && pushSupported()) {
+        try {
+          const registration = await navigator.serviceWorker.getRegistration(SW_SCOPE)
+          hasSubscription = (await registration?.pushManager.getSubscription()) != null
+        } catch {
+          hasSubscription = false
+        }
       }
-      try {
-        const registration = await navigator.serviceWorker.getRegistration(SW_SCOPE)
-        const subscription = await registration?.pushManager.getSubscription()
-        if (!cancelled) setState(subscription ? 'on' : 'offer')
-      } catch {
-        if (!cancelled) setState('offer')
-      }
+      if (cancelled) return
+      setSubscribed(hasSubscription)
+      setSnoozed(later)
+      setPlatform(here)
     }
-    void decide()
+    void look()
     return () => {
       cancelled = true
     }
   }, [vapidPublicKey])
+
+  const later = useCallback(() => {
+    snooze()
+    setSnoozed(true)
+  }, [])
+
+  async function runInstall() {
+    if (busy) return
+    setBusy(true)
+    setError(null)
+    const accepted = await install()
+    setBusy(false)
+    if (accepted) {
+      // The tab itself is not standalone after an Android install, but for this
+      // banner the question is answered: the icon exists, so move on to the
+      // notification offer rather than keep asking for the icon.
+      setPlatform('installed')
+      return
+    }
+    setError(APP_STRINGS.install.failed)
+  }
+
+  async function copyLink() {
+    try {
+      await navigator.clipboard.writeText(window.location.href)
+      setCopied(true)
+    } catch {
+      setCopied(false)
+      setError(APP_STRINGS.install.failed)
+    }
+  }
 
   async function enable() {
     if (busy || !vapidPublicKey) return
@@ -136,7 +164,7 @@ export function InstallHint({ vapidPublicKey }: { vapidPublicKey?: string | null
         setError(APP_STRINGS.push.failed)
         return
       }
-      setState('on')
+      setSubscribed(true)
     } catch {
       setError(APP_STRINGS.push.failed)
     } finally {
@@ -159,7 +187,7 @@ export function InstallHint({ vapidPublicKey }: { vapidPublicKey?: string | null
         }).catch(() => {})
         await subscription.unsubscribe().catch(() => {})
       }
-      setState('offer')
+      setSubscribed(false)
     } catch {
       setError(APP_STRINGS.push.failed)
     } finally {
@@ -167,9 +195,25 @@ export function InstallHint({ vapidPublicKey }: { vapidPublicKey?: string | null
     }
   }
 
-  if (state === 'unknown' || state === 'hidden') return null
+  if (platform === null) return null
 
-  if (state === 'on') {
+  const step: InstallStep = decideInstallStep({
+    platform,
+    pushSupported: Boolean(vapidPublicKey) && pushSupported(),
+    subscribed,
+    snoozed,
+  })
+
+  if (step === 'none') return null
+
+  /** "Kasnije" plus, on the install card, the link to the full guide. */
+  const laterButton = (
+    <button type="button" className="app__hint-link" onClick={later}>
+      {APP_STRINGS.install.snooze}
+    </button>
+  )
+
+  if (step === 'on') {
     return (
       <aside className="app__hint app__hint--quiet">
         <span>{APP_STRINGS.push.onTitle}</span>
@@ -180,33 +224,50 @@ export function InstallHint({ vapidPublicKey }: { vapidPublicKey?: string | null
     )
   }
 
-  if (state === 'install') {
-    // Two audiences, one line: a phone that cannot do push yet (iOS, no home
-    // screen icon) and a deployment with no keys. Both need the same sentence.
-    const ios = pushSupported() === false && /iPad|iPhone|iPod/.test(navigator.userAgent)
+  if (step === 'inapp') {
     return (
       <aside className="app__hint">
-        <strong>{ios ? APP_STRINGS.push.iosTitle : APP_STRINGS.install.title}</strong>
-        {ios ? APP_STRINGS.push.iosBody : APP_STRINGS.install.body}
-        <button
-          type="button"
-          className="app__hint-close"
-          aria-label={APP_STRINGS.install.dismiss}
-          onClick={() => {
-            setState('hidden')
-            try {
-              window.localStorage.setItem(DISMISSED_KEY, '1')
-            } catch {
-              // Not remembered this time; the hint simply comes back.
-            }
-          }}
-        >
-          ×
-        </button>
+        <strong>{APP_STRINGS.install.inappTitle}</strong>
+        {APP_STRINGS.install.inappBody}
+        <p className="app__install-how">
+          {webviewHostIsIos() ? APP_STRINGS.install.inappIos : APP_STRINGS.install.inappAndroid}
+        </p>
+        <div className="app__hint-actions">
+          <button type="button" className="app__button app__button--small" onClick={copyLink}>
+            {APP_STRINGS.install.inappCopy}
+          </button>
+        </div>
+        {copied && <p className="app__install-how">{APP_STRINGS.install.inappCopied}</p>}
+        {error && <p className="app__answer-error">{error}</p>}
+        <div className="app__hint-foot">{laterButton}</div>
       </aside>
     )
   }
 
+  if (step === 'install') {
+    return (
+      <aside className="app__hint">
+        <strong>{APP_STRINGS.install.title}</strong>
+        {APP_STRINGS.install.why}
+        <InstallSteps
+          platform={stepPlatform(platform)}
+          canPrompt={canPrompt}
+          busy={busy}
+          error={error}
+          onInstall={runInstall}
+        />
+        <div className="app__hint-foot">
+          <Link className="app__hint-link" href="/app/instalacija">
+            {APP_STRINGS.install.guideTitle}
+          </Link>
+          {laterButton}
+        </div>
+      </aside>
+    )
+  }
+
+  // 'push': notifications are the offer, and on a Chromium tab that has not
+  // been installed yet the one-tap install rides along underneath.
   return (
     <aside className="app__hint">
       <strong>{APP_STRINGS.push.title}</strong>
@@ -217,6 +278,15 @@ export function InstallHint({ vapidPublicKey }: { vapidPublicKey?: string | null
         </button>
       </div>
       {error && <p className="app__answer-error">{error}</p>}
+      {canPrompt && platform !== 'installed' && (
+        <div className="app__hint-foot">
+          <button type="button" className="app__hint-link" disabled={busy} onClick={runInstall}>
+            {busy ? APP_STRINGS.install.acting : APP_STRINGS.install.title}
+          </button>
+          {laterButton}
+        </div>
+      )}
+      {(!canPrompt || platform === 'installed') && <div className="app__hint-foot">{laterButton}</div>}
     </aside>
   )
 }
