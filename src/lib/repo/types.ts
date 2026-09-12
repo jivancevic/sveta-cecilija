@@ -23,7 +23,7 @@
 //      raw-table stores). They take `db.query` / `db.execute` / `db.connect`
 //      instead of reaching into `payload.db`; the statements do not move.
 
-import type { AuthRepo, SessionUser } from './auth'
+import type { AuthRepo, SessionUser, WriteCtx } from './auth'
 import type { DbRepo } from './db'
 import type { OrdersRepo } from './orders'
 import type { PerformancePatch, PerformanceRow, ShowsRepo } from './shows'

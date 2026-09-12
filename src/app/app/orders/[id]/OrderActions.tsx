@@ -56,11 +56,21 @@ export function OrderActions({
     setDone(null)
   }
 
+  /**
+   * One request, and the Croatian sentence it can fail with.
+   *
+   * `failure` is a FUNCTION of the status rather than a string, because the
+   * three routes answer differently and two of them answer in English: the
+   * refund and the resend predate Cecilija and serve `/admin` too, so their
+   * `error` field is developer text ("Order has no Stripe payment intent") and
+   * must never reach a phone at the door. Only the `/app` route, whose refusals
+   * are APP_STRINGS to begin with, is allowed to speak for itself.
+   */
   async function call(
     url: string,
     init: RequestInit,
     success: string,
-    failure: string,
+    failure: (status: number, body: { error?: string } | null) => string,
   ): Promise<boolean> {
     if (busy) return false
     setBusy(true)
@@ -69,7 +79,7 @@ export function OrderActions({
       const res = await fetch(url, init)
       const body = (await res.json().catch(() => null)) as { error?: string } | null
       if (!res.ok) {
-        setError(body?.error ?? failure)
+        setError(failure(res.status, body))
         return false
       }
       setDone(success)
@@ -77,7 +87,8 @@ export function OrderActions({
       router.refresh()
       return true
     } catch {
-      setError(failure)
+      // A network failure has no status; 0 is the shape every mapper handles.
+      setError(failure(0, null))
       return false
     } finally {
       setBusy(false)
@@ -85,11 +96,9 @@ export function OrderActions({
   }
 
   const confirmRefund = () =>
-    void call(
-      `/api/orders/${orderId}/refund`,
-      { method: 'POST' },
-      S.refund.done,
-      S.refund.failed,
+    void call(`/api/orders/${orderId}/refund`, { method: 'POST' }, S.refund.done, (status) =>
+      // 404 is the order, not the refund: a stale tab on a deleted row.
+      status === 404 ? S.detail.missing : S.refund.failed,
     )
 
   const confirmResend = () =>
@@ -97,7 +106,9 @@ export function OrderActions({
       `/api/orders/${orderId}/resend-ticket-email`,
       { method: 'POST' },
       S.resend.done,
-      S.resend.failed,
+      // The route's own two outcomes: 400 is "no address on file", which has a
+      // repair the reader can make, and everything else is "it did not send".
+      (status) => (status === 400 ? S.resend.noEmail : S.resend.failed),
     )
 
   const confirmEdit = () =>
@@ -109,7 +120,9 @@ export function OrderActions({
         body: JSON.stringify({ buyerName: name, email: address }),
       },
       S.edit.done,
-      S.edit.failed,
+      // This one IS ours: its refusals are the Croatian sentences in
+      // `orders-buyer.ts`, and they name the field that was wrong.
+      (_status, body) => body?.error ?? S.edit.failed,
     )
 
   return (

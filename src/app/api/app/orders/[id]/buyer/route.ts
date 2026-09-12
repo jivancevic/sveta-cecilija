@@ -28,6 +28,7 @@ export const dynamic = 'force-dynamic'
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const gate = await requirePermission(req, 'tickets')
   if (gate.error) return gate.error
+  const { user } = gate
 
   const { id } = await params
   const body = await req.json().catch(() => null)
@@ -41,7 +42,9 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
       return order ? { refunded: order.refunded } : null
     },
 
-    saveBuyer: (orderId, buyer) => repo.orders.updateBuyer(orderId, buyer),
+    // The write context: Payload's hooks and its attribution see who edited,
+    // exactly as they do for a Backoffice save.
+    saveBuyer: (orderId, buyer) => repo.orders.updateBuyer(orderId, buyer, { user }),
   })
 
   return NextResponse.json(result.body, { status: result.status })

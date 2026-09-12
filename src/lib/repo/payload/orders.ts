@@ -12,17 +12,14 @@ import type {
   LookupAuditEntry,
   MatchedOrder,
   NormalizedQuery,
-  OrderChannel,
   OrderDetailRow,
   OrderListResult,
-  OrderPerformance,
-  OrderRow,
   OrdersRepo,
-  OrderTicketRow,
   OrderToken,
 } from '../orders'
 import { payloadClient, type PayloadClient } from './client'
 import { idForQuery, whereForOrderList } from './orders-where'
+import { isNotFound, toOrderRow, toTicketRow, type Doc } from './orders-map'
 
 export function whereForLookup(q: NormalizedQuery, showId: string | number): Where {
   const and: Where[] = [{ show: { equals: idForQuery(showId) } }]
@@ -34,82 +31,6 @@ export function whereForLookup(q: NormalizedQuery, showId: string | number): Whe
     for (const term of q.terms) and.push({ buyerName: { like: term } })
   }
   return { and }
-}
-
-// ── Narudžbe's projections (#501) ──────────────────────────────────────────
-//
-// A Payload document is never handed upward: these three functions are where a
-// row stops being Payload's and starts being the domain's. `depth: 1` populates
-// the four relationships the screen names (show, partner, member, promo code),
-// so one `find` answers the whole list rather than N+1 lookups per row.
-
-type Doc = Record<string, unknown>
-
-/** A relationship at `depth: 1` is the document; at depth 0 it is the id. */
-function related(value: unknown): Doc | null {
-  return value && typeof value === 'object' ? (value as Doc) : null
-}
-
-function text(value: unknown): string | null {
-  return typeof value === 'string' && value.trim() !== '' ? value : null
-}
-
-function num(value: unknown): number {
-  const n = Number(value)
-  return Number.isFinite(n) ? n : 0
-}
-
-/** The `dayOnly` column comes back as a Date; the app passes days as strings. */
-function performanceOf(value: unknown): OrderPerformance | null {
-  const doc = related(value)
-  if (!doc || doc.id == null) return null
-  const raw = doc.date
-  const date = raw instanceof Date ? raw.toISOString().slice(0, 10) : String(raw ?? '').slice(0, 10)
-  return {
-    id: String(doc.id),
-    date,
-    time: typeof doc.time === 'string' ? doc.time : '',
-    venue: typeof doc.venue === 'string' ? doc.venue : '',
-  }
-}
-
-function toOrderRow(doc: Doc): OrderRow {
-  const channel = doc.channel === 'partner' || doc.channel === 'comp' ? doc.channel : 'online'
-  const created = doc.createdAt
-  return {
-    id: String(doc.id),
-    code: text(doc.code),
-    buyerName: text(doc.buyerName),
-    email: text(doc.email),
-    adultCount: num(doc.adultCount),
-    childCount: num(doc.childCount),
-    totalCents: num(doc.total),
-    channel: channel as OrderChannel,
-    refunded: doc.refundStatus === 'refunded',
-    partnerName: text(related(doc.partner)?.name),
-    memberName: text(related(doc.member)?.name),
-    promoCode: text(related(doc.promoCode)?.code),
-    hasPayment: text(doc.stripePaymentIntentId) !== null,
-    createdAt: created instanceof Date ? created.toISOString() : String(created ?? ''),
-    show: performanceOf(doc.show),
-  }
-}
-
-function toTicketRow(doc: Doc): OrderTicketRow {
-  const reason = doc.cancelReason
-  return {
-    id: String(doc.id),
-    type: doc.type === 'child' ? 'child' : 'adult',
-    cancelled: doc.status === 'cancelled',
-    cancelReason: reason === 'refund' || reason === 'storno' ? reason : null,
-    scanned: doc.scanned === true,
-    scannedAt:
-      doc.scannedAt instanceof Date
-        ? doc.scannedAt.toISOString()
-        : typeof doc.scannedAt === 'string'
-          ? doc.scannedAt
-          : null,
-  }
 }
 
 export function createOrdersRepo(load: () => Promise<PayloadClient> = payloadClient): OrdersRepo {
@@ -191,7 +112,14 @@ export function createOrdersRepo(load: () => Promise<PayloadClient> = payloadCli
           depth: 1,
           overrideAccess: true,
         })) as unknown as Doc
-      } catch {
+      } catch (err) {
+        // ONLY not-found becomes null. A bare `catch { return null }` would
+        // turn a database outage into "Ova narudžba ne postoji" — the screen
+        // would calmly tell Tatjana a real order is gone, and the buyer
+        // standing in front of her would be told the same. Anything that is
+        // not Payload's NotFound is re-thrown and becomes a 500, which is what
+        // an outage actually is.
+        if (!isNotFound(err)) throw err
         return null
       }
       if (!order) return null
@@ -214,7 +142,7 @@ export function createOrdersRepo(load: () => Promise<PayloadClient> = payloadCli
       }
     },
 
-    async updateBuyer(id, buyer) {
+    async updateBuyer(id, buyer, ctx) {
       const payload = await load()
       await payload.update({
         collection: 'orders',
@@ -227,6 +155,9 @@ export function createOrdersRepo(load: () => Promise<PayloadClient> = payloadCli
           typeof payload.update
         >[0]['data'],
         overrideAccess: true,
+        // Carried so the Orders hooks and Payload's own attribution see who
+        // made the edit, exactly as a Backoffice save is attributed.
+        user: ctx.user as Parameters<typeof payload.update>[0]['user'],
       })
     },
 

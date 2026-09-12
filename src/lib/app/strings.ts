@@ -1070,9 +1070,14 @@ export const APP_STRINGS = {
    * Narudžbe (#501): the blagajna's list of orders and the one order behind it.
    *
    * The screen Tatjana opens when a guest is standing in front of her, so the
-   * words are the ones she would use out loud: "storno" for a refunded order
-   * (the society's own word, and the DB's), "gratis" for a comp, "propuštena"
-   * for a ticket that has been through the door.
+   * words are the ones she would use out loud: "gratis" for a comp,
+   * "propuštena" for a ticket that has been through the door.
+   *
+   * **Povrat and storno are two different events and this screen says so.** A
+   * refund gave the money back; a *storno* voided a partner or comp seat with
+   * no money in it (CONTEXT.md, `tickets.cancel_reason`). The badge, the state
+   * filter and the ticket line all use *povrat* for the first, and *storno*
+   * stays reserved for the second.
    *
    * Every action here is NAMED (#476): four buttons with four verbs, each
    * behind a confirmation, and no raw edit form anywhere. The one field edit is
@@ -1088,10 +1093,18 @@ export const APP_STRINGS = {
     allShows: 'Sve izvedbe',
     stateLabel: 'Stanje',
     allStates: 'Sve narudžbe',
-    /** The four values of the state filter (`lib/app/orders-query.ts`). */
+    /**
+     * The four values of the state filter (`lib/app/orders-query.ts`).
+     *
+     * "Vraćene", NOT "stornirane": in this project *storno* is a specific
+     * thing — a ticket voided with `cancel_reason='storno'`, where no money
+     * moved (CONTEXT.md, the partner and comp void). A refunded order is the
+     * opposite: the money went back. Calling it storno on the one screen that
+     * handles both would teach the blagajna the wrong word for the wrong event.
+     */
     states: {
       active: 'Važeće',
-      refunded: 'Stornirane',
+      refunded: 'Vraćene',
       partner: 'Partnerske',
       comp: 'Gratis',
     },
@@ -1103,8 +1116,12 @@ export const APP_STRINGS = {
     },
     /** An online order that carried a member's promo code (ADR-0018). */
     promo: 'Promo',
-    /** The badge on a row whose money has gone back. */
-    refunded: 'Storno',
+    /**
+     * The badge on a row whose money has gone back — the same word the ticket
+     * line uses ("Poništena · povrat"), never *storno*, which is the void that
+     * moved no money.
+     */
+    refunded: 'Povrat',
     /**
      * "2 odrasle, 1 dječja" — the party, and the result count above it.
      *
@@ -1145,7 +1162,11 @@ export const APP_STRINGS = {
       child: 'Dječja',
       active: 'Važeća',
       cancelled: 'Poništena',
-      /** Why a ticket was voided; the DB's own two words (ADR-0025, #379). */
+      /**
+       * Why a ticket was voided — the DB's own two `cancel_reason` values, and
+       * two different events: *povrat* gave the money back, *storno* voided a
+       * partner or comp seat with no money involved (CONTEXT.md).
+       */
       reasonRefund: 'povrat',
       reasonStorno: 'storno',
       scanned: (when: string) => `Propuštena ${when}`,

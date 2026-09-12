@@ -13,6 +13,7 @@
 
 import type { OrderDetails } from '@/lib/scan-token'
 import type { LookupMode, MatchedOrder, NormalizedQuery, OrderToken } from '@/lib/order-lookup'
+import type { WriteCtx } from './auth'
 
 export interface LookupAuditEntry {
   userId: string | number
@@ -112,11 +113,16 @@ export interface OrdersRepo {
   /**
    * The buyer's name and address, and nothing else (#501).
    *
-   * Goes through the collection inside the seam so the Orders hooks run. The
-   * rules — a name is required, a blank address is NULL, a refunded order is
-   * closed — live in `lib/app/orders-buyer.ts`, never here.
+   * Goes through the collection inside the seam so the Orders hooks run, and
+   * carries the `WriteCtx` so Payload attributes the edit to whoever made it.
+   * The rules — a name is required, a blank address is NULL, a refunded order
+   * is closed — live in `lib/app/orders-buyer.ts`, never here.
    */
-  updateBuyer(id: string | number, buyer: { buyerName: string; email: string | null }): Promise<void>
+  updateBuyer(
+    id: string | number,
+    buyer: { buyerName: string; email: string | null },
+    ctx: WriteCtx,
+  ): Promise<void>
   /**
    * The door's manual-admit search, scoped to ONE performance.
    *

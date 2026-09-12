@@ -3471,12 +3471,13 @@ a.app__ob-link {
 
 /* ── One row of the list ────────────────────────────────── */
 .app__order-row {
-  padding-block: var(--rowY);
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
-  padding: 12px 0;
+  /* The #490 row rhythm, which tightens on a laptop. Never a fixed px pair:
+     that is what the token is for. */
+  padding: var(--rowY) 0;
   border-top: 1px solid var(--rule);
   color: inherit;
   text-decoration: none;
@@ -3644,17 +3645,6 @@ a.app__ob-link {
   text-align: center;
 }
 
-/* Povrat moves real money and is the one button on the screen that cannot be
-   undone, so it is the one button that is not gold. */
-.app__button--danger {
-  background: var(--red);
-  color: #fff;
-}
-
-.app__button--danger:hover {
-  background: #6f0000;
-}
-
 .app__order-note,
 .app__order-hint {
   margin: 0;
@@ -3725,11 +3715,10 @@ a.app__ob-link {
 }
 
 .app__order-ticket {
-  padding-block: var(--rowY);
   display: grid;
   grid-template-columns: minmax(0, auto) minmax(0, 1fr);
   gap: 2px 12px;
-  padding: 10px 0;
+  padding: var(--rowY) 0;
   border-top: 1px solid var(--rule);
   font-size: 15px;
 }
@@ -3931,6 +3920,9 @@ a.app__ob-link {
   color: var(--ink);
 }
 
+/* The one face for a button that cannot be undone: Otkaži izvedbu (#503) and
+   Povrat (#501). Tokens, never a hex — a night island re-points `--warn` and
+   `--card`, and a hardcoded colour would not follow it. */
 .app__button--danger {
   background: var(--warn);
   color: var(--card);

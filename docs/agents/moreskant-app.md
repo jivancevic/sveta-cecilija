@@ -1745,6 +1745,13 @@ refund, and the Backoffice keeps the raw edit for a `dev` holder.
 column: a SUM across the join to tickets multiplies the amount by the party size,
 which is a bug this project has already had once.
 
+**Povrat is not storno, and the screen says so.** The badge on a refunded row
+reads *Povrat* and the state filter reads *Vraćene*, because in this project
+*storno* names a specific different event: a ticket voided with
+`cancel_reason='storno'`, where no money moved (CONTEXT.md, the partner and comp
+void). The ticket line is where both can appear, as "Poništena · povrat" and
+"Poništena · storno".
+
 The screen reaches the database only through `getRepo()` (ADR-0027 decision 5),
 so it adds no entry to the repo guard's allow-list. It grew the seam by four
 methods: `orders.listForStaff`, `orders.staffDetailById`, `orders.updateBuyer`
