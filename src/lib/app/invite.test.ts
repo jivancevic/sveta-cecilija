@@ -1,10 +1,11 @@
 import { describe, expect, it, vi } from 'vitest'
 import {
   handleInvite,
+  handleInviteLink,
   INVITE_EXPIRATION_MS,
   isDancerLogin,
   isUsableBaseUrl,
-  setPasswordLink,
+  signInLink,
   type InviteDeps,
 } from './invite'
 import { APP_STRINGS } from './strings'
@@ -275,7 +276,7 @@ describe('handleInvite — the token and the mail', () => {
     expect(d.sendInvite).toHaveBeenCalledWith({
       to: 'cici@example.com',
       greeting: 'Cici',
-      link: 'https://moreska.eu/app/set-password?token=tok-abc',
+      link: 'https://moreska.eu/app/prijava?token=tok-abc',
     })
   })
 
@@ -294,16 +295,16 @@ describe('handleInvite — the token and the mail', () => {
   })
 })
 
-describe('setPasswordLink', () => {
+describe('signInLink', () => {
   it('builds the one link both mails carry', () => {
-    expect(setPasswordLink('https://moreska.eu', 'abc')).toBe(
-      'https://moreska.eu/app/set-password?token=abc',
+    expect(signInLink('https://moreska.eu', 'abc')).toBe(
+      'https://moreska.eu/app/prijava?token=abc',
     )
   })
 
   it('tolerates a trailing slash and escapes the token', () => {
-    expect(setPasswordLink('https://moreska.eu/', 'a b')).toBe(
-      'https://moreska.eu/app/set-password?token=a%20b',
+    expect(signInLink('https://moreska.eu/', 'a b')).toBe(
+      'https://moreska.eu/app/prijava?token=a%20b',
     )
   })
 })
@@ -356,5 +357,100 @@ describe('isUsableBaseUrl', () => {
     [undefined, false],
   ])('%s → %s', (value, expected) => {
     expect(isUsableBaseUrl(value)).toBe(expected)
+  })
+})
+
+/**
+ * "Kopiraj pozivnicu" (#463): the same invitation, handed to the voditelj.
+ *
+ * The point of these is that this is NOT a second invitation rule. Both
+ * channels run `mintInvitation`, so what is worth asserting is the one
+ * difference (an address is optional) and that everything else — the bundle,
+ * the takeover guard, the seven-day token — still holds when no letter is sent.
+ */
+describe('handleInviteLink', () => {
+  const noEmail = { ...cici, email: null, mobile: '091 234 5678' }
+  const link = 'https://moreska.eu/app/prijava?token=tok-abc'
+
+  it('mints a link for a dancer with no e-mail at all', async () => {
+    const d = deps({ loadMember: vi.fn().mockResolvedValue(noEmail) })
+    const result = await handleInviteLink({ memberId: '12' }, d)
+    expect(result.status).toBe(200)
+    expect(result.body).toEqual({
+      ok: true,
+      created: true,
+      username: 'cici',
+      link,
+      message: APP_STRINGS.inviteLink.message('Cici', link),
+      mobile: '091 234 5678',
+      name: 'Cici',
+    })
+    expect(d.sendInvite).not.toHaveBeenCalled()
+  })
+
+  it('creates the login WITHOUT an email key, so two address-less dancers both fit', async () => {
+    const d = deps({ loadMember: vi.fn().mockResolvedValue(noEmail) })
+    await handleInviteLink({ memberId: '12' }, d)
+    expect(d.createUser).toHaveBeenCalledWith({
+      username: 'cici',
+      password: 'a-very-random-password',
+      permissions: ['moreskant'],
+      member: 12,
+    })
+  })
+
+  it('asks for the same seven-day token as the letter', async () => {
+    const d = deps({ loadMember: vi.fn().mockResolvedValue(noEmail) })
+    await handleInviteLink({ memberId: '12' }, d)
+    expect(d.issueResetToken).toHaveBeenCalledWith({ username: 'cici' }, INVITE_EXPIRATION_MS)
+  })
+
+  it('still moves the e-mail onto the Member’s when there is one', async () => {
+    const d = deps({
+      findUserByMember: vi
+        .fn()
+        .mockResolvedValue({ id: 99, username: 'cici', email: 'staro@example.com' }),
+    })
+    const result = await handleInviteLink({ memberId: '12' }, d)
+    expect(result.status).toBe(200)
+    expect(d.updateUserEmail).toHaveBeenCalledWith(99, 'cici@example.com')
+  })
+
+  // A copied sign-in link is a session in a text message, so aiming one at a
+  // colleague's staff account is the #462 takeover by a quieter route.
+  it('409s when the Member’s login is a staff account', async () => {
+    const d = deps({
+      findUserByMember: vi.fn().mockResolvedValue({
+        id: 4,
+        username: 'ana',
+        email: 'ana@example.com',
+        permissions: ['tickets'],
+      }),
+    })
+    const result = await handleInviteLink({ memberId: '12' }, d)
+    expect(result.status).toBe(409)
+    expect(result.body).toEqual({ error: APP_STRINGS.invite.staffLogin })
+    expect(d.issueResetToken).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    [
+      'a member who is not a moreškant',
+      { ...noEmail, isMoreskant: false },
+      APP_STRINGS.invite.notMoreskant,
+    ],
+    ['an inactive member', { ...noEmail, active: false }, APP_STRINGS.invite.notActive],
+  ])('400s on %s', async (_label, member, message) => {
+    const d = deps({ loadMember: vi.fn().mockResolvedValue(member) })
+    const result = await handleInviteLink({ memberId: '12' }, d)
+    expect(result.status).toBe(400)
+    expect(result.body).toEqual({ error: message })
+  })
+
+  it('403s a cross-site POST', async () => {
+    const d = deps({ request: { ...sameOrigin, secFetchSite: 'cross-site' } })
+    const result = await handleInviteLink({ memberId: '12' }, d)
+    expect(result.status).toBe(403)
+    expect(d.loadMember).not.toHaveBeenCalled()
   })
 })

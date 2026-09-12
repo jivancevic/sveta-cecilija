@@ -1,7 +1,7 @@
 import crypto from 'crypto'
 import type { getPayload } from 'payload'
 import { issueAppResetToken, toInviteUser } from './account-data'
-import type { InviteDeps, InviteMember } from './invite'
+import type { EnsureLoginDeps, InviteDeps, InviteMember } from './invite'
 import type { AppRequestMeta } from './request-guard'
 import { sendMoreskantEmail } from '@/lib/email/send-moreskant-email'
 
@@ -20,29 +20,19 @@ import { sendMoreskantEmail } from '@/lib/email/send-moreskant-email'
 
 type PayloadClient = Awaited<ReturnType<typeof getPayload>>
 
-export function createInviteDeps(payload: PayloadClient, request: AppRequestMeta): InviteDeps {
+/**
+ * The account half on its own: everything `ensureDancerLogin` needs and nothing
+ * else (#463).
+ *
+ * A voditelj approving a join claim at a rehearsal opens the same login an
+ * invitation would, but has no use for a mailer, a base URL or a member load —
+ * it is holding the Member already. Splitting it here rather than writing four
+ * more `payload.find` calls in `join-data.ts` is the same argument that moved
+ * these out of the invite route in #462: two hand-copied sets of Payload calls
+ * is how one door starts granting something the other does not.
+ */
+export function createLoginDeps(payload: PayloadClient): EnsureLoginDeps {
   return {
-    request,
-    baseUrl: process.env.NEXT_PUBLIC_BASE_URL ?? '',
-
-    loadMember: async (id): Promise<InviteMember | null> => {
-      const doc = (await payload.findByID({
-        collection: 'members',
-        id,
-        depth: 0,
-        overrideAccess: true,
-      })) as unknown as Record<string, unknown> | null
-      if (!doc) return null
-      return {
-        id: doc.id as string | number,
-        name: typeof doc.name === 'string' ? doc.name : null,
-        nickname: typeof doc.nickname === 'string' ? doc.nickname : null,
-        email: typeof doc.email === 'string' ? doc.email : null,
-        isMoreskant: doc.isMoreskant === true,
-        active: doc.active !== false,
-      }
-    },
-
     findUserByMember: async (memberId) => {
       const found = await payload.find({
         collection: 'users',
@@ -85,6 +75,40 @@ export function createInviteDeps(payload: PayloadClient, request: AppRequestMeta
       })
     },
 
+    // Never emailed, never used: since #463 the dancer signs in from the link
+    // or the approval, and sets a password only if they ever want one. It
+    // exists because Payload's local strategy requires one on create.
+    randomPassword: () => crypto.randomBytes(32).toString('hex'),
+  }
+}
+
+export function createInviteDeps(payload: PayloadClient, request: AppRequestMeta): InviteDeps {
+  return {
+    ...createLoginDeps(payload),
+    request,
+    baseUrl: process.env.NEXT_PUBLIC_BASE_URL ?? '',
+
+    loadMember: async (id): Promise<InviteMember | null> => {
+      const doc = (await payload.findByID({
+        collection: 'members',
+        id,
+        depth: 0,
+        overrideAccess: true,
+      })) as unknown as Record<string, unknown> | null
+      if (!doc) return null
+      return {
+        id: doc.id as string | number,
+        name: typeof doc.name === 'string' ? doc.name : null,
+        nickname: typeof doc.nickname === 'string' ? doc.nickname : null,
+        email: typeof doc.email === 'string' ? doc.email : null,
+        // For the SMS deep link of "Kopiraj pozivnicu" (#463); unused by the
+        // mail channel, which addresses the letter with the e-mail above.
+        mobile: typeof doc.mobile === 'string' ? doc.mobile : null,
+        isMoreskant: doc.isMoreskant === true,
+        active: doc.active !== false,
+      }
+    },
+
     issueResetToken: (target, expirationMs) => issueAppResetToken(payload, target, expirationMs),
 
     // `handleInvite` reads a THROW as "the letter did not go" and answers 502
@@ -101,10 +125,5 @@ export function createInviteDeps(payload: PayloadClient, request: AppRequestMeta
       )
       if (!sent) throw new Error('Brevo refused the invitation mail')
     },
-
-    // Never emailed, never used: the dancer sets their own from the link. It
-    // exists only because Payload's local strategy requires a password on
-    // create.
-    randomPassword: () => crypto.randomBytes(32).toString('hex'),
   }
 }

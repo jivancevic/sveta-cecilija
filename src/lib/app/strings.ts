@@ -35,6 +35,34 @@ export const APP_STRINGS = {
     missingFields: 'Upiši e-mail ili korisničko ime i lozinku.',
     failed: 'Neispravni podaci za prijavu.',
     unexpected: 'Prijava trenutno nije moguća. Pokušaj ponovno.',
+    /**
+     * The way in for everybody who never set a password (#463), which after the
+     * passwordless invitation is most of the roster. It sits UNDER the form
+     * rather than over it, because the dancer who reads this screen at all is
+     * usually the one who does have a password and typed it wrong.
+     */
+    magicLink: 'Pošalji mi link za prijavu',
+  },
+
+  /**
+   * Signing in from a link (#463): what `/app/prijava` says while it works and
+   * when it cannot.
+   *
+   * The screen has no form, so every sentence here is either a spinner or a
+   * dead end, and each dead end names the way out rather than the cause.
+   */
+  signIn: {
+    title: 'Prijava',
+    working: 'Prijavljujem te...',
+    /** Unknown, expired or malformed: one situation for the person holding it. */
+    invalidToken: 'Poveznica nije ispravna ili je istekla. Zatraži novu.',
+    /** ADR-0022: a login several people hold is nobody in particular. */
+    sharedAccount: 'Ovu prijavu koristi više osoba, pa se ne može otvoriti poveznicom.',
+    notAppAccount:
+      'Ta prijava nije za aplikaciju Moreškant. Lozinku za nju postavi u administraciji.',
+    unexpected: 'Prijava trenutno nije moguća. Pokušaj ponovno.',
+    retry: 'Zatraži novu poveznicu',
+    toLogin: 'Prijava lozinkom',
   },
 
   denied: {
@@ -337,6 +365,104 @@ export const APP_STRINGS = {
   },
 
   /**
+   * "Kopiraj pozivnicu" (#463): the invitation a voditelj sends themselves.
+   *
+   * Seventy-six moreškanti, one e-mail address between them, so the letter was
+   * never going to be the way most of the roster got in. This is the same
+   * invitation handed over by phone, and every sentence here is aimed at the
+   * voditelj holding it, not at the dancer receiving it.
+   */
+  inviteLink: {
+    title: 'Pozivnice',
+    /** The second half of the screen: the roster, one invitation at a time. */
+    listTitle: 'Pošalji pozivnicu',
+    intro:
+      'Kopiraj pozivnicu i pošalji je SMS-om. Poveznica prijavljuje moreškanta bez lozinke i vrijedi 7 dana.',
+    /** The one sentence that decides whether the app can be installed at all. */
+    channelHint:
+      'Šalji SMS-om. WhatsApp i Viber otvaraju poveznicu u svom pregledniku, gdje se aplikacija ne može dodati na zaslon.',
+    action: 'Kopiraj pozivnicu',
+    working: 'Pripremam...',
+    copy: 'Kopiraj',
+    copied: (name: string) => `Pozivnica za ${name} je kopirana. Pošalji je SMS-om.`,
+    /** The clipboard is refused in more browsers than one expects; show the text. */
+    copyFailed: 'Kopiranje nije uspjelo. Označi poruku i kopiraj je ručno.',
+    copiedShort: 'Kopirano',
+    sms: 'SMS',
+    whatsapp: 'WhatsApp',
+    noMobile: 'nema mobitel',
+    empty: 'Svi aktivni moreškanti već imaju prijavu.',
+    /** The ones already in, kept on the list because re-sending is the fix. */
+    joined: (count: number) => `Već imaju prijavu (${count})`,
+    failed: 'Pozivnica nije izrađena. Pokušaj ponovno.',
+    /** The message itself, as it lands in the dancer's inbox. */
+    message: (greeting: string, link: string) =>
+      `${greeting ? `Bok ${greeting}, ` : 'Bok, '}ovo je tvoja pozivnica za aplikaciju Moreškant, gdje se vidi raspored izvedbi i javlja dolazak: ${link} Otvori poveznicu i odmah si prijavljen, bez lozinke. Vrijedi 7 dana.`,
+  },
+
+  /**
+   * The rehearsal join code (#463): `/app/join/<kod>` and the voditelj's half.
+   *
+   * The dancer's side of this screen is read by somebody who has never used the
+   * app, standing in a hall, on a phone somebody else may be holding. So it
+   * says what will happen before it happens ("javit ćemo voditelju"), and every
+   * dead end names the person to ask rather than the rule that was broken.
+   */
+  join: {
+    title: 'Pridruži se',
+    intro: 'Odaberi svoje ime s popisa. Voditelj će potvrditi i aplikacija se otvara.',
+    /** The code is dead or was never real: the voditelj has a new one. */
+    badCode: 'Kod nije ispravan ili je istekao. Zatraži novi od voditelja.',
+    badMember: 'Taj član nije na popisu aktivnih moreškanata.',
+    alreadyHasLogin: 'Taj moreškant već ima prijavu. Zatraži poveznicu od voditelja.',
+    alreadyPending:
+      'Zahtjev za tog moreškanta već čeka potvrdu. Ako to nisi ti, reci voditelju da ga odbije.',
+    throttled: 'Previše pokušaja. Pričekaj malo pa probaj ponovno.',
+    empty: 'Svi aktivni moreškanti već imaju prijavu.',
+    loading: 'Trenutak...',
+    /** The wait, which is the screen a dancer actually sits on. */
+    waiting: 'Javili smo voditelju. Čekaj potvrdu, ne zatvaraj ovu stranicu.',
+    /**
+     * The pairing number (#463 review). The voditelj taps a NAME, and a name is
+     * what anybody holding the code can also tap; this is how the person in
+     * front of them proves the waiting phone is theirs.
+     */
+    pairingLabel: 'Reci voditelju ovaj broj:',
+    approved: 'Potvrđeno. Otvaram aplikaciju...',
+    rejected: 'Zahtjev nije potvrđen. Javi se voditelju.',
+    expired: 'Zahtjev je istekao. Odaberi svoje ime ponovno.',
+    unexpected: 'Trenutno nije moguće. Pokušaj ponovno.',
+
+    /** The voditelj's half, on `/app/pozivnice`. */
+    codeTitle: 'Kod za probu',
+    codeIntro:
+      'Pokaži ovaj QR ili kod na probi. Moreškant odabere svoje ime, ti potvrdiš i ulazi bez lozinke.',
+    codeNone: 'Nema aktivnog koda.',
+    codeCreate: 'Napravi kod',
+    codeRotate: 'Novi kod',
+    codeWorking: 'Radim...',
+    codeValid: (until: string) => `Vrijedi do ${until}`,
+    codeFailed: 'Kod nije napravljen. Pokušaj ponovno.',
+    /** Rotating kills the old one, which is the point: say so before the tap. */
+    rotateHint: 'Novi kod poništava stari, pa stara slika QR-a više ne vrijedi.',
+    pendingTitle: 'Čekaju potvrdu',
+    /** Shown beside the name: it must match the number on the dancer's screen. */
+    pairingCheck: (code: string) => `broj ${code}`,
+    pairingHint: 'Potvrdi tek kad ti moreškant pročita isti broj koji piše uz njegovo ime.',
+    pendingNone: 'Nema zahtjeva.',
+    approve: 'Potvrdi',
+    reject: 'Odbij',
+    deciding: 'Šaljem...',
+    badClaim: 'Taj zahtjev ne postoji.',
+    decided: 'O tom zahtjevu je već odlučeno.',
+    claimExpired: 'Zahtjev je istekao. Neka moreškant odabere svoje ime ponovno.',
+    loginFailed: 'Prijava nije otvorena. Pokušaj ponovno.',
+    approveFailed:
+      'Prijava je otvorena, ali zahtjev nije potvrđen. Pošalji mu pozivnicu s popisa ispod.',
+    decideFailed: 'Nije uspjelo. Pokušaj ponovno.',
+  },
+
+  /**
    * "Poveži svoj račun s članom" (#462).
    *
    * A voditelj who also dances has no way to fill `Users.member` in: the field
@@ -373,32 +499,56 @@ export const APP_STRINGS = {
     failed: 'Povezivanje nije uspjelo. Pokušaj ponovno.',
   },
 
-  /** Choosing a password from an invitation or a reset link (#424). */
+  /**
+   * Choosing a password (#424, rewritten in #463).
+   *
+   * It is no longer the end of a mail: the link signs the dancer in, so this is
+   * a row in Više they open when they want a password and never if they do not.
+   * That is why the intro says what a password BUYS rather than asking for one:
+   * on a phone that stays signed in for thirty days, a dancer who sets none is
+   * not neglecting anything.
+   */
   setPassword: {
     title: 'Postavi lozinku',
-    intro: 'Odaberi lozinku za aplikaciju Moreškant.',
+    intro:
+      'Lozinka nije obavezna: u aplikaciju uvijek možeš ući poveznicom koju ti pošaljemo. Postavi je ako se želiš prijavljivati bez čekanja poruke.',
     password: 'Nova lozinka',
     repeat: 'Ponovi lozinku',
-    submit: 'Spremi i prijavi se',
+    submit: 'Spremi lozinku',
     submitting: 'Spremam...',
-    missingToken: 'Poveznica nije ispravna. Zatraži novu.',
     tooShort: 'Lozinka mora imati barem 8 znakova.',
     mismatch: 'Lozinke se ne podudaraju.',
-    invalidToken: 'Poveznica nije ispravna ili je istekla. Zatraži novu.',
+    saved: 'Lozinka je spremljena.',
+    /** ADR-0022 again: one holder of a shared login may not rotate it. */
+    sharedAccount:
+      'Ovu prijavu koristi više osoba, pa lozinku mijenja administrator.',
     unexpected: 'Spremanje trenutno nije moguće. Pokušaj ponovno.',
   },
 
-  /** "Zaboravljena lozinka": one answer, whatever was typed (#424). */
+  /**
+   * "Pošalji mi link za prijavu": one answer, whatever was typed (#424, #463).
+   *
+   * The route and the URL are still the "zaboravljena lozinka" ones, because
+   * the token and the silence are the same; only what arrives changed. A
+   * password is no longer the thing being recovered, so neither is the wording.
+   */
   forgot: {
-    title: 'Zaboravljena lozinka',
-    link: 'Zaboravljena lozinka',
-    intro: 'Upiši svoj e-mail ili korisničko ime. Ako račun postoji, poslat ćemo poveznicu za novu lozinku.',
+    title: 'Prijava poveznicom',
+    link: 'Pošalji mi link za prijavu',
+    intro:
+      'Upiši svoj e-mail ili korisničko ime. Ako račun ima e-mail, poslat ćemo poveznicu koja te odmah prijavljuje.',
     identifier: 'E-mail ili korisničko ime',
     submit: 'Pošalji poveznicu',
     submitting: 'Šaljem...',
     missing: 'Upiši e-mail ili korisničko ime.',
     /** The SAME sentence for a hit and a miss: no account enumeration. */
     sent: 'Ako račun postoji, poveznica je poslana na e-mail te osobe.',
+    /**
+     * The dancer with no e-mail on their Member row is the reason #463 exists,
+     * and this screen is where they would otherwise wait for a letter nobody
+     * can send. It names the way out instead of apologising.
+     */
+    noEmailHint: 'Nemaš e-mail kod nas? Zatraži poveznicu od voditelja.',
     unexpected: 'Slanje trenutno nije moguće. Pokušaj ponovno.',
     backToLogin: 'Natrag na prijavu',
   },

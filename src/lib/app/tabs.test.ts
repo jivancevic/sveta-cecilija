@@ -16,16 +16,19 @@ describe('activeAppTab', () => {
     expect(activeAppTab('/app/moje')).toBe('mine')
   })
 
-  it('lights Više for its own page and for the scoreboard reached from it', () => {
+  it('lights Više for its own page and for the pages reached from it', () => {
     expect(activeAppTab('/app/vise')).toBe('more')
     expect(activeAppTab('/app/statistika')).toBe('more')
     expect(activeAppTab('/app/statistika/')).toBe('more')
+    // #463: the optional password, and the voditelj's invitations screen.
+    expect(activeAppTab('/app/set-password')).toBe('more')
+    expect(activeAppTab('/app/pozivnice')).toBe('more')
   })
 
   it('lights nothing on the pages that carry no bar', () => {
     expect(activeAppTab('/app/login')).toBeNull()
     expect(activeAppTab('/app/forgot')).toBeNull()
-    expect(activeAppTab('/app/set-password')).toBeNull()
+    expect(activeAppTab('/app/prijava')).toBeNull()
     expect(activeAppTab('/app/authorize')).toBeNull()
   })
 })

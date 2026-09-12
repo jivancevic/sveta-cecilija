@@ -54,6 +54,30 @@ Two names, used in different contexts. See [ADR-0003](../docs/adr/0003-brand-lay
 
 Reason: competitor `moreska.hr` owns the "Moreška Korčula" experience keyword in search. The brand layer reclaims share of voice while preserving the 143-year heritage differentiator.
 
+### Product surfaces: Cecilija / Web / Backoffice
+The society runs three software surfaces, each with exactly one name (decided in [Cecilija: rebrand surfaces](https://github.com/jivancevic/sveta-cecilija/issues/477), map #471):
+
+- **Cecilija**: the staff and member app at `/app`. Everyone who works for or dances in the society uses it: the secretary, the door crew, partners, voditelji and moreškanti. It replaces both the old *Moreškant* app name and, screen by screen, the Backoffice as a daily tool.
+- **Web**: the public site at `moreska.eu`, where visitors read about the society and buy tickets.
+- **Backoffice**: the raw-edit administration behind the `dev` permission (the Payload admin at `/admin`). Once Cecilija covers a screen, nobody but the developer opens the Backoffice for it.
+
+_Avoid_: **admin** as a name for any surface. For months it would mean both the Backoffice and the new app; say Cecilija or Backoffice. **Moreškant** is no longer the name of an app: it names a person and a section of Cecilija (see below).
+
+**Rename rule (Moreškant → Cecilija):** anything named after the *product* takes the name Cecilija (the app title, its icon, its install and sign-in copy, its account mails, its home-screen entry). Anything named after the *section* or the *person* keeps "moreškant" (the permissions, the dancer profile, the roster's tab, the roster's alarm). When in doubt ask "is this the app, or the dancers?".
+
+**Declension:** "Cecilija" is a Croatian feminine noun and declines like a name in every text: "Dodaj Ceciliju na ekran", "Prijavi se u Ceciliju", "Pozivnica za Ceciliju", "u Ceciliji". Never keep it invariant as if it were a foreign brand. English copy, if any, keeps "Cecilija" unchanged.
+
+### Screen (ekran) and landing screen (ulazni ekran)
+A screen is one place in Cecilija with one address and one Croatian label (Narudžbe, Izvedbe, Ljestvica, Skener, Prodaja, Obračun, Upiti, Gratis, Korisnici, Statistika, Više). A permission unlocks screens; an account is inside Cecilija when its permissions unlock at least one, and the **landing screen** is the first of them in the bar order. Izvedbe is one screen for everyone who has it: what it shows depends on the permissions, never on a second address. Statistika is the sales screen; dancer statistics live on *Ljestvica*.
+_Avoid_: page, view, module, "admin screen".
+
+### Nemate pristup (no access)
+What a signed-in account sees when its permissions unlock no screen, or when it opens a screen it does not unlock: the sentence naming the situation, a way back to the landing screen, and Odjava. Never a silent redirect and never a "not found". The Backoffice link appears only for a `dev` holder.
+
+### Sandučić obavijesti (notification inbox)
+Every notification Cecilija sends a person is also kept for them to read later: a bell in the header of every screen shows how many are unread, and the inbox lists them. Kept per account, not per device, so the count is the same on the phone and the laptop. Roster notifications (see *Notification types*) go to moreškanti and voditelji; a `tickets` holder also gets a new inquiry and a new card dispute, never every order.
+_Avoid_: feed, activity log, message centre.
+
 ### Croatian capitalisation: moreška
 "moreška" and its declensions (moreške, morešku, moreškom…) are always **lowercase** in Croatian — it is a common noun (a type of dance), not a proper name. Use uppercase only when it is the **leading word of a unit that is sentence-cased**: the start of a sentence, or the first word of a standalone title / heading / card-name label (a card whose name is "Moreška" or "Moreška iskustvo"). Keep it lowercase **mid-sentence, mid-title** (e.g. "Privatna moreška", "Nastanak moreške"), and in **mid-list descriptor fragments** (e.g. the programme note "1 sat · nastup klape · moreška uz živi puhaći orkestar" — not a title). In English, "Moreška" is treated as a proper name and capitalised throughout, so a `name` field reads "Moreška" in `en.json` but "moreška" mid-phrase in `hr.json` by design — that EN↔HR asymmetry is correct, not a bug.
 
@@ -387,7 +411,7 @@ A small **curated sink** the app writes to at known failure seams that would oth
 
 ## Moreškant (dancer roster app)
 
-Terms for the roster / attendance / lineup module ([ADR-0023](docs/adr/0023-permissions-replace-roles-app-surface.md), [ADR-0024](docs/adr/0024-moreskant-roster-domain.md)). The product name is **Moreškant**; it lives at `/app`.
+Terms for the roster / attendance / lineup module ([ADR-0023](docs/adr/0023-permissions-replace-roles-app-surface.md), [ADR-0024](docs/adr/0024-moreskant-roster-domain.md)). The module lives inside **Cecilija** (see *Product surfaces*) at `/app`; "Moreškant" was the app's name until 2026-09 and now names only the dancer and this section.
 
 ### Permission
 A named capability granted to a user; a user holds a *set* of them. Replaces the role tier. Vocabulary: `users`, `tickets`, `refunds`, `door`, `partner`, `season_stats`, `moreska`, `moreskant`, `dev`. "Superadmin" is no longer an entity, only shorthand for "all permissions". `partner` requires a Partner link; `moreskant` requires a Member link.
@@ -440,8 +464,8 @@ _Avoid_: cast, roster (roster = the whole membership).
 Per season (calendar year, as in ADR-0022): confirmed performances per moreškant, and how many times each danced `crni_kralj`, `bili_kralj`, `otmanovic`, `bula`. Past seasons selectable. Confirmed lineups of past performances are visible to every moreškant.
 
 ### Ljestvica (leaderboard)
-The season's moreškanti ranked by confirmed performances, the same count as *Dancer statistics*, shown in full with nicknames: every active moreškant is on it, equal counts share a rank. The count is a lineup fact, never an attendance answer, so saying "coming" moves nobody. Milestones (5, 10, 15 and 20 performances, and **puna sezona** = danced every confirmed performance of the season) are read off that same count. No streaks. Past seasons selectable.
-_Avoid_: points, streak, ranking by answers.
+The dancer's own tab in Cecilija (decided in [Cecilija: route map](https://github.com/jivancevic/sveta-cecilija/issues/473)): a moreškant's own season on one side and the season's moreškanti ranked by confirmed performances on the other, the same count as *Dancer statistics*, shown in full with nicknames. A voditelj sees the whole table there; the tab replaces the former "Moje" tab and the separate dancer statistics page. Every active moreškant is on it, equal counts share a rank. The count is a lineup fact, never an attendance answer, so saying "coming" moves nobody. Milestones (5, 10, 15 and 20 performances, and **puna sezona** = danced every confirmed performance of the season) are read off that same count. No streaks. Past seasons selectable.
+_Avoid_: points, streak, ranking by answers, "Moje", statistika (that word is the sales screen).
 
 ### Dobrodošlica (onboarding)
 The three-step walkthrough a moreškant sees once per device after signing in: add to the home screen (left out when the app is already opened as an installed app), turn on notifications, subscribe to the calendar feed. Every step can be skipped and skipping counts as seen. Remembered on the device only, so a new phone shows it again.
@@ -451,7 +475,7 @@ _Avoid_: tutorial, wizard, setup.
 A comp ticket (see *Comp ticket*) a moreškant issues for themselves at a public performance, attributed to their own Member row, capped at **4 tickets per performance** for self-issued ones only; admin-issued comps do not count. Cancelable by the moreškant until the performance starts, while unscanned.
 
 ### Notification types
-Push is the only channel. (1) Alarm; (2) answer reminder at T-48h to *no answer*, and its window **closes 24 hours later** — a performance entered inside T-24h gets no reminder at all, the alarm covers it; (3) performance change (date, time, place, cancellation, voditelj note) to everyone except *not coming*, cannot be muted; (4) new performance to everyone; (5) to voditelji: a "coming" withdrawn within 24h. A user may hold several push subscriptions, **one per device**: the endpoint is unique across the whole table, not per user, so a shared phone rings for whoever signed in last rather than for both.
+Push is the only channel that reaches a phone; since the route map decision every notification is also kept in the *Sandučić obavijesti* for reading later. (1) Alarm; (2) answer reminder at T-48h to *no answer*, and its window **closes 24 hours later** — a performance entered inside T-24h gets no reminder at all, the alarm covers it; (3) performance change (date, time, place, cancellation, voditelj note) to everyone except *not coming*, cannot be muted; (4) new performance to everyone; (5) to voditelji: a "coming" withdrawn within 24h. A user may hold several push subscriptions, **one per device**: the endpoint is unique across the whole table, not per user, so a shared phone rings for whoever signed in last rather than for both.
 
 ### Calendar feed
 One **shared** tokenised ICS subscription (`CALENDAR_FEED_TOKEN`, amended #433) of the current and future seasons' performances, for Google/Apple/Outlook calendars. The same URL for everybody, safe to paste in the WhatsApp group: it carries dates, places and the voditelj note, and nothing personal.

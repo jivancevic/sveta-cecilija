@@ -1,17 +1,24 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
+import { redirect } from 'next/navigation'
+import { accessMember } from '@/lib/app/access'
 import { APP_STRINGS } from '@/lib/app/strings'
+import { resolveAppViewer } from '@/lib/app/viewer'
+import { AppShell } from '../AppShell'
+import { DeniedPage } from '../DeniedPage'
 import { SetPasswordForm } from './SetPasswordForm'
 
-// /app/set-password?token=… — where both account mails land (#424).
+// /app/set-password — "Postavi lozinku", a row in Više (#424, rewritten #463).
 //
-// The invitation and "Zaboravljena lozinka" carry the same link; only the life
-// of the token differs (seven days against one hour). The page renders the form
-// whatever the token looks like: whether it is live is Payload's answer, given
-// on submit, and a "this link is dead" page shown before the dancer has typed
-// anything would only be a second place to say it.
+// It was the landing page of both account mails until #463: the link carried a
+// token, the form spent it, and the session came out the other side. The link
+// now opens the session itself (`/app/prijava`), so what is left is an optional
+// convenience for a dancer who would rather type a password than wait for a
+// message, reached from Više and from nowhere else.
 //
-// A signed-in dancer is deliberately NOT redirected away: changing a password
-// while signed in on another device is exactly what the reset mail is for.
+// It therefore takes no `?token=` and is behind the ordinary access decision. A
+// dead invitation from before this deploy lands here signed out and is sent to
+// `/app/login`, which is the right ending for a link of that age anyway.
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -21,20 +28,19 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 }
 
-export default async function SetPasswordPage({
-  searchParams,
-}: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>
-}) {
-  const params = await searchParams
-  const raw = params.token
-  const token = Array.isArray(raw) ? (raw[0] ?? '') : (raw ?? '')
+export default async function SetPasswordPage() {
+  const viewer = await resolveAppViewer()
+  if (!viewer.signedIn) redirect('/app/login')
+  if (viewer.access.kind === 'denied') return <DeniedPage />
 
   return (
-    <main className="app__panel">
-      <h1>{APP_STRINGS.name}</h1>
-      <p>{APP_STRINGS.setPassword.intro}</p>
-      <SetPasswordForm token={token} />
-    </main>
+    <AppShell me={accessMember(viewer.access)}>
+      <Link className="app__back" href="/app/vise">
+        ‹ {APP_STRINGS.tabs.more}
+      </Link>
+      <h2 className="app__page-title">{APP_STRINGS.setPassword.title}</h2>
+      <p className="app__comp-intro">{APP_STRINGS.setPassword.intro}</p>
+      <SetPasswordForm />
+    </AppShell>
   )
 }

@@ -1,5 +1,6 @@
 import { withPayload } from '@payloadcms/next/withPayload'
 import type { NextConfig } from 'next'
+import { appSubdomainRedirects } from './src/lib/app-subdomain'
 
 const securityHeaders = [
   { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
@@ -29,13 +30,18 @@ const nextConfig: NextConfig = {
   async headers() {
     return [{ source: '/:path*', headers: [...securityHeaders, ...stagingHeaders] }]
   },
-  // #481: URL path segments are English. These two API routes were renamed
-  // (`storno` → `cancel`, `move-to-zimsko` → `move-to-indoor`); a 308 keeps any
-  // still-deployed client working for one release. 308 (permanent: true) is the
-  // only correct code here — it preserves the POST method and body, unlike 301.
-  // Drop these once the season is over and nothing calls the old paths.
   async redirects() {
     return [
+      // Host-scoped first (#479): these carry a `has` host condition, so they
+      // only ever match `app.moreska.eu` and must be given the chance to match
+      // before the host-agnostic rules below.
+      ...appSubdomainRedirects(),
+      // #481: URL path segments are English. These three API routes were renamed
+      // (`storno` → `cancel`, `move-to-zimsko` → `move-to-indoor`); a 308 keeps
+      // any still-deployed client working for one release. 308 (permanent: true)
+      // is the only correct code here — it preserves the POST method and body,
+      // unlike the 301 the vanity-host rules use, which only ever see GETs.
+      // Drop these once the season is over and nothing calls the old paths.
       { source: '/api/partner/storno', destination: '/api/partner/cancel', permanent: true },
       { source: '/api/partner/storno/undo', destination: '/api/partner/cancel/undo', permanent: true },
       {
