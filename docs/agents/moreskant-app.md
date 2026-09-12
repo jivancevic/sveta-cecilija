@@ -2,6 +2,94 @@
 
 The dancer-facing surface of the roster module ([ADR-0023](../adr/0023-permissions-replace-roles-app-surface.md), [ADR-0024](../adr/0024-moreskant-roster-domain.md); phase 3 = #419). Croatian only, mobile first, no ticketing. Glossary in `CONTEXT.md` → *Moreškant*.
 
+## Cecilija route map (#473)
+
+Decided 2026-09-12 under the Cecilija map (#471), after the navigation
+decision (#472). This is the **target** table: every screen keeps its Croatian
+label and gets an English path segment (the #481 rule), renamed **screen by
+screen** as each build ticket lands, never in one sweep. Until a row is built,
+the "Today" path is still the live one.
+
+### Screens and the permission that unlocks each
+
+Rank is the bar order from #472: the first four screens a person's permissions
+unlock are tabs, the rest live under Više, and Izvedbe jumps to the front for a
+`moreskant` holder.
+
+| Rank | Screen (label) | Route | Unlocked by | Today | Old path |
+|---|---|---|---|---|---|
+| | landing | `/app` | any screen | `/app` is the Izvedbe list | 307 to the person's first tab |
+| 1 | Narudžbe | `/app/orders`, `/app/orders/[id]` | `tickets` | `/admin/collections/orders` | none, the Backoffice keeps its list |
+| 2 | Izvedbe (one screen, content by `can()`) | `/app/performances`, `/app/performances/[id]` | `tickets`, `moreska`, `moreskant` | `/app`, `/app/izvedba/[id]` | 308 (push messages carry `/app/izvedba/<id>`) |
+| 3 | Ljestvica (own season + roster ranking; voditelj sees the full table) | `/app/leaderboard?season=2026&part=mine\|all` | `moreskant`, `moreska` | `/app/moje?sezona=&dio=`, `/app/statistika` | 308 from both |
+| 4 | Skener (camera, code entry, door list) | `/app/scan` | `door` | `/admin/scan` | 308; the ticket QR stays `/scan/[token]`, whose staff buttons point at `/app/scan` |
+| 5 | Prodaja | `/app/sell` | `partner` | partner view in `/admin` | none |
+| 6 | Obračun | `/app/statement` | `partner` | partner view in `/admin` | none |
+| 7 | Upiti | `/app/inquiries` | `tickets` | `/admin/collections/contact-submissions` | none |
+| 8 | Gratis (comp tickets; promo codes stay in the Backoffice for v1) | `/app/comp` | `tickets` | comp menu item on an order | none |
+| 9 | Korisnici | `/app/users`, `/app/users/[id]` | `users` | `/admin/collections/users` | none |
+| 10 | Statistika (sales only; the single-show drill-down folds into `/app/performances/[id]`) | `/app/stats?season=2026` | `tickets`, `season_stats` | `/admin/stats`, `/admin/stats/[id]` | 308 from both |
+| last | Više (a list, always the last tab) | `/app/more` | any screen | `/app/vise` | 308 |
+
+Rows under Više, after the overflow screens:
+
+| Row | Route | Unlocked by | Today | Old path |
+|---|---|---|---|---|
+| Kalendar | `/app/calendar` | `moreskant`, `moreska` | a row in Više | new |
+| Pozivnice | `/app/invitations` | `moreska` | `/app/pozivnice` | 308 |
+| Moj račun (password, member link, push on/off) | `/app/account` | any screen | `/app/set-password`, `/app/povezi` | 308 from both |
+| Backoffice (link to `/admin`) | `/admin` | `dev` only | a row for every voditelj | the general link disappears |
+| Odjava | `POST /api/app/logout` | any screen | same | unchanged |
+
+Screens that are not rows: **Obavijesti** is a bell in the header of every
+screen with the unread count, opening the inbox at `/app/notifications` (see
+the inbox ticket under the map); **Dobrodošlica** at `/app/welcome` (was
+`/app/dobrodosli`, 308) is shown once per device and only to a `moreskant`
+holder, everyone else lands straight on their first tab.
+
+Public pages, no session:
+
+| Page | Route | Today | Old path |
+|---|---|---|---|
+| Instalacija (the rehearsal QR target) | `/app/install` | `/app/instalacija` | 308 **kept permanently**: the QR may hang on a wall |
+| sign-in by link (invitation, new password) | `/app/session?token=` | `/app/prijava?token=` | 308 **kept permanently**: the link is in SMS and mail |
+| `/app/login`, `/app/forgot`, `/app/set-password`, `/app/authorize`, `/app/join/[code]` | unchanged | | |
+
+Every other 308 follows the #481 rule: one release, dropped after the season.
+
+### The access rule
+
+**A signed-in account is in when its permission set unlocks at least one
+screen.** The permission → screen table above lives in one module
+(`src/lib/app/screens.ts`, to be written by the shell ticket) and the bar, the
+sidebar, the active-tab highlighter and every page's gate read it; nothing
+re-types it. `decideAppAccess` generalises from `voditelj | moreskant | denied`
+to `{ kind: 'ok', screens, self, partnerId } | { kind: 'denied' }`:
+
+- `moreskant` unlocks nothing unless the linked Member is an active moreškant
+  (today's "access follows the roster" rule, unchanged).
+- `partner` unlocks nothing without a Partner link.
+- `refunds` and `dev` unlock no screen on their own: a refund is an action
+  inside an order, `dev` is the diagnostics strip and the Backoffice link.
+- "Is there a dancer here" stays a separate question (`self`), answered by the
+  linked Member exactly as now.
+
+A signed-in account that unlocks no screen sees the "Nemate pristup" page:
+"Tvoj račun još nema pristup nijednom dijelu Cecilije. Javi se tajnici ili
+voditelju." plus Odjava, and a Backoffice link **only** for a `dev` holder. An
+account that unlocks screens but types a route it does not unlock sees the same
+panel with a link back to its landing screen: never a silent redirect (hides a
+stale bookmark) and never a 404 (lies). No `/app` page links to `/admin` for
+anyone but `dev`: the denied page, Više, the consent screen and the staff
+buttons on `/scan/[token]` all lose it.
+
+### Header
+
+Every screen carries a thin header: the screen's title on the left, the
+notification bell with the unread count on the right, on the phone and on the
+laptop alike. The count is per account, not per device, so it agrees across a
+person's devices.
+
 ## What ships in phase 3 (#420 → #424)
 
 - Moreškant identity on `Members` and the `Users.member` link (#420).
