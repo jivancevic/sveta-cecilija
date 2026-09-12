@@ -54,6 +54,19 @@ Two names, used in different contexts. See [ADR-0003](../docs/adr/0003-brand-lay
 
 Reason: competitor `moreska.hr` owns the "Moreška Korčula" experience keyword in search. The brand layer reclaims share of voice while preserving the 143-year heritage differentiator.
 
+### Product surfaces: Cecilija / Web / Backoffice
+The society runs three software surfaces, each with exactly one name (decided in [Cecilija: rebrand surfaces](https://github.com/jivancevic/sveta-cecilija/issues/477), map #471):
+
+- **Cecilija**: the staff and member app at `/app`. Everyone who works for or dances in the society uses it: the secretary, the door crew, partners, voditelji and moreškanti. It replaces both the old *Moreškant* app name and, screen by screen, the Backoffice as a daily tool.
+- **Web**: the public site at `moreska.eu`, where visitors read about the society and buy tickets.
+- **Backoffice**: the raw-edit administration behind the `dev` permission (the Payload admin at `/admin`). Once Cecilija covers a screen, nobody but the developer opens the Backoffice for it.
+
+_Avoid_: **admin** as a name for any surface. For months it would mean both the Backoffice and the new app; say Cecilija or Backoffice. **Moreškant** is no longer the name of an app: it names a person and a section of Cecilija (see below).
+
+**Rename rule (Moreškant → Cecilija):** anything named after the *product* takes the name Cecilija (the app title, its icon, its install and sign-in copy, its account mails, its home-screen entry). Anything named after the *section* or the *person* keeps "moreškant" (the permissions, the dancer profile, the roster's tab, the roster's alarm). When in doubt ask "is this the app, or the dancers?".
+
+**Declension:** "Cecilija" is a Croatian feminine noun and declines like a name in every text: "Dodaj Ceciliju na ekran", "Prijavi se u Ceciliju", "Pozivnica za Ceciliju", "u Ceciliji". Never keep it invariant as if it were a foreign brand. English copy, if any, keeps "Cecilija" unchanged.
+
 ### Croatian capitalisation: moreška
 "moreška" and its declensions (moreške, morešku, moreškom…) are always **lowercase** in Croatian — it is a common noun (a type of dance), not a proper name. Use uppercase only when it is the **leading word of a unit that is sentence-cased**: the start of a sentence, or the first word of a standalone title / heading / card-name label (a card whose name is "Moreška" or "Moreška iskustvo"). Keep it lowercase **mid-sentence, mid-title** (e.g. "Privatna moreška", "Nastanak moreške"), and in **mid-list descriptor fragments** (e.g. the programme note "1 sat · nastup klape · moreška uz živi puhaći orkestar" — not a title). In English, "Moreška" is treated as a proper name and capitalised throughout, so a `name` field reads "Moreška" in `en.json` but "moreška" mid-phrase in `hr.json` by design — that EN↔HR asymmetry is correct, not a bug.
 
@@ -387,7 +400,7 @@ A small **curated sink** the app writes to at known failure seams that would oth
 
 ## Moreškant (dancer roster app)
 
-Terms for the roster / attendance / lineup module ([ADR-0023](docs/adr/0023-permissions-replace-roles-app-surface.md), [ADR-0024](docs/adr/0024-moreskant-roster-domain.md)). The product name is **Moreškant**; it lives at `/app`.
+Terms for the roster / attendance / lineup module ([ADR-0023](docs/adr/0023-permissions-replace-roles-app-surface.md), [ADR-0024](docs/adr/0024-moreskant-roster-domain.md)). The module lives inside **Cecilija** (see *Product surfaces*) at `/app`; "Moreškant" was the app's name until 2026-09 and now names only the dancer and this section.
 
 ### Permission
 A named capability granted to a user; a user holds a *set* of them. Replaces the role tier. Vocabulary: `users`, `tickets`, `refunds`, `door`, `partner`, `season_stats`, `moreska`, `moreskant`, `dev`. "Superadmin" is no longer an entity, only shorthand for "all permissions". `partner` requires a Partner link; `moreskant` requires a Member link.
