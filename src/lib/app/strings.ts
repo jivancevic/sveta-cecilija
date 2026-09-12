@@ -352,6 +352,67 @@ export const APP_STRINGS = {
   },
 
   /**
+   * Dodaj / Uredi / Otkaži an izvedba (#503).
+   *
+   * The refusals that a route also speaks are one sentence each, the way the
+   * answer and comp sections do it: a control that is not offered and a POST
+   * that is refused are the same rule, and two wordings would read as two.
+   *
+   * `publicRow` is the one a voditelj is most likely to meet, so it says what
+   * to do rather than what went wrong. Cancelling a Redovna refunds every
+   * buyer and mails them (#497), which is the blagajna's action and not a
+   * harder version of this one.
+   */
+  performance: {
+    add: 'Dodaj izvedbu',
+    addTitle: 'Nova izvedba',
+    adding: 'Dodajem...',
+    added: 'Izvedba je dodana.',
+    close: 'Odustani',
+    kind: 'Vrsta',
+    date: 'Datum',
+    time: 'Vrijeme',
+    location: 'Mjesto',
+    locationPlaceholder: 'npr. Luka ili Sv. Justina',
+    client: 'Naručitelj',
+    clientPlaceholder: 'npr. Le Ponant',
+    clientOptional: 'nije obavezno',
+    edit: 'Uredi izvedbu',
+    editTitle: 'Podaci o izvedbi',
+    save: 'Spremi izmjene',
+    saving: 'Spremam...',
+    saved: 'Izmjene su spremljene.',
+    cancelAction: 'Otkaži izvedbu',
+    cancelling: 'Otkazujem...',
+    cancelConfirm: 'Otkazati ovu izvedbu? Moreškanti dobivaju obavijest.',
+    cancelled: 'Izvedba je otkazana.',
+    /** Already cancelled: the voditelj got what they wanted, so this is not an error. */
+    alreadyCancelled: 'Izvedba je već otkazana.',
+    publicRow:
+      'Ovo je javna izvedba. Njezin datum, mjesto i otkazivanje vodi blagajna, jer o tome ovise prodane ulaznice.',
+    missing: 'Ta izvedba ne postoji.',
+    failed: 'Izvedba nije spremljena. Pokušaj ponovno.',
+    rejected: 'Zahtjev nije prihvaćen. Pokušaj ponovno iz aplikacije.',
+  },
+
+  /**
+   * The two army thresholds of one evening (#408, #503).
+   *
+   * A stepper and never a native number input: on a phone that control is a
+   * tiny spinner next to a keyboard that opens over the page, and the answer is
+   * always a small whole number.
+   */
+  thresholds: {
+    title: 'Pragovi',
+    hint: 'Najmanji broj crnih i bilih za ovu izvedbu. Ispod praga brojka pocrveni.',
+    save: 'Spremi pragove',
+    saving: 'Spremam...',
+    saved: 'Pragovi su spremljeni.',
+    outOfRange: (max: number) => `Prag mora biti cijeli broj između 0 i ${max}.`,
+    failed: 'Pragovi nisu spremljeni. Pokušaj ponovno.',
+  },
+
+  /**
    * The invitation a voditelj sends and the two pages it leads to (#424).
    *
    * The four refusals are the four things a voditelj can fix themselves on the
