@@ -98,3 +98,48 @@ describe('db/schema safety', () => {
     expect(findUnguardedMutations(payload)).toHaveLength(2)
   })
 })
+
+// #398 (ADR-0023): the legacy `role` column and its enum are gone from the
+// schema. These assertions are the regression guard for the ordering that makes
+// the drop safe on a database that is upgraded straight from a pre-permissions
+// image — bootstrap-db.mjs applies db/schema/*.sql in plain filename order on
+// every restart, so the drop must sort AFTER everything that still reads the
+// column, and those readers must be no-ops once it is gone.
+describe('the dropped users.role column', () => {
+  const base = readFileSync(path.join(SCHEMA_DIR, '00-base.sql'), 'utf-8')
+  const files = readdirSync(SCHEMA_DIR).filter((f) => f.endsWith('.sql')).sort()
+  const DROP_FILE = 'migrate-zz-drop-users-role.sql'
+
+  it('is not declared in the base schema, and neither is its enum', () => {
+    const cleaned = stripComments(base)
+    expect(cleaned).not.toMatch(/enum_users_role/)
+    const usersTable = cleaned.match(/CREATE TABLE IF NOT EXISTS public\.users \(([\s\S]*?)\n\);/)?.[1] ?? ''
+    expect(usersTable).not.toMatch(/^\s*role\s/m)
+  })
+
+  it('is dropped column-first then type, both guarded with IF EXISTS', () => {
+    const drop = stripComments(readFileSync(path.join(SCHEMA_DIR, DROP_FILE), 'utf-8'))
+    expect(drop).toMatch(/ALTER TABLE public\.users DROP COLUMN IF EXISTS role;/i)
+    expect(drop).toMatch(/DROP TYPE IF EXISTS public\.enum_users_role;/i)
+    expect(drop.indexOf('DROP COLUMN')).toBeLessThan(drop.indexOf('DROP TYPE'))
+  })
+
+  it('the drop sorts last among the migrate-* files', () => {
+    const migrations = files.filter((f) => f.startsWith('migrate-'))
+    expect(migrations[migrations.length - 1]).toBe(DROP_FILE)
+  })
+
+  it('every remaining reader of the column is behind an existence guard', () => {
+    for (const file of files) {
+      if (file === DROP_FILE) continue
+      const sql = stripComments(readFileSync(path.join(SCHEMA_DIR, file), 'utf-8'))
+      // `role::text` / `enum_users_role` are the only ways the column is read;
+      // the bare word appears in seed prose, which is not SQL.
+      if (!/role::text|enum_users_role/.test(sql)) continue
+      // The guard: an information_schema lookup for users.role, and dynamic
+      // EXECUTE so the statements are never parsed without the column.
+      const guarded = /information_schema\.columns[\s\S]*?column_name = 'role'/.test(sql)
+      expect(guarded, `${file} reads users.role without an existence guard`).toBe(true)
+    }
+  })
+})

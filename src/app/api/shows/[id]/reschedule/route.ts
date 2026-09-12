@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { isAdminTier } from '@/lib/access/roles'
-import { requireRole } from '@/lib/access/route-guard'
+import { requirePermission } from '@/lib/access/route-guard'
 import {
   rescheduleShow,
   previewReschedule,
@@ -9,16 +8,22 @@ import {
   type RescheduleDeps,
 } from '@/lib/show-reschedule'
 import { sendDateChangeEmail } from '@/lib/email/send-date-change-email'
+import { sendOrderTicketEmail, type OrderEmailPayload } from '@/lib/email/send-order-ticket-email'
 import { signRescheduleRefundToken } from '@/lib/refund/reschedule-refund-token'
 import { refundUrl } from '@/lib/site-url'
 import { toIsoDate } from '@/lib/to-iso-date'
+import { assertPublicPerformance } from '@/lib/show-admin-actions'
+import { isPublicPerformance } from '@/lib/show-performance'
+import { createPushDeps, type PushPayload } from '@/lib/push/push-data'
+import { loadPerformanceFacts, notifyRawPerformanceSave } from '@/lib/push/raw-save'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 // Admin-only "Reschedule show & notify buyers" workflow.
 //   GET  → preview: current date + affected online-buyer count + sample emails.
-//   POST { newDate }            → confirm: atomically move the date + audit, then notify buyers.
+//   POST { newDate }            → confirm: atomically move the date + audit, notify buyers,
+//                                 then reissue each affected order's ticket email/PDF/ICS (#379).
 //   POST { newDate, test:true } → send the EN+HR preview to the logged-in admin only; no writes, no buyer mail.
 
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/
@@ -33,14 +38,35 @@ function buildRefundUrl(orderId: string, secret: string): string | undefined {
   return refundUrl(signRescheduleRefundToken(orderId, secret))
 }
 
-function buildDeps(pool: Pool, brevoApiKey: string, secret: string): RescheduleDeps {
+// Orders that get a reissued ticket after the move (#379). Same scope as the
+// notice — an emailable, unrefunded order on this show — but deliberately NOT
+// deduped by email: the notice is one-per-person, a ticket is one-per-ORDER
+// because each order carries its own QR codes and its own PDF.
+const REISSUE_ORDER_SCOPE = `
+  FROM orders
+  WHERE show_id = $1
+    AND channel IN ('online', 'comp')
+    AND email IS NOT NULL
+    AND refund_status = 'none'`
+
+function buildDeps(
+  pool: Pool,
+  payload: OrderEmailPayload,
+  brevoApiKey: string,
+  secret: string,
+): RescheduleDeps {
   return {
     getShow: async (showId): Promise<RescheduleShow | null> => {
-      const res = await pool.query(`SELECT id, date, time, venue FROM shows WHERE id = $1`, [Number(showId)])
+      const res = await pool.query(`SELECT id, date, time, venue, is_public FROM shows WHERE id = $1`, [
+        Number(showId),
+      ])
       const row = res.rows[0]
       if (!row) return null
       return {
         id: String(row.id),
+        // #409 — a non-public performance has no buyers; the reschedule seam
+        // rejects it (and so does the test-send path below).
+        isPublic: isPublicPerformance(row),
         // pg returns the timestamptz column as a JS Date — normalise to YYYY-MM-DD
         // (a raw String(date).slice would yield "Mon Jun 22" → "Invalid Date").
         date: toIsoDate(row.date),
@@ -101,16 +127,35 @@ function buildDeps(pool: Pool, brevoApiKey: string, secret: string): RescheduleD
         },
         { fetch: globalThis.fetch, brevoApiKey },
       ),
+    findReissueOrderIds: async (showId): Promise<string[]> => {
+      const res = await pool.query(`SELECT id ${REISSUE_ORDER_SCOPE} ORDER BY id`, [Number(showId)])
+      return res.rows.map((r) => String(r.id))
+    },
+    reissueTicket: async (orderId): Promise<boolean> => {
+      // Re-reads the order + its EXISTING ticket rows through the local API and
+      // re-renders the PDF/ICS from the show row we just moved, so the buyer gets
+      // the new date on the same QR tokens. Never writes; never throws (it maps
+      // every failure to a status). 'skipped' means no email on file — the
+      // findReissueOrderIds scope already excludes those, so treat it as a
+      // failure only if it ever happens (it would mean the row changed under us).
+      const result = await sendOrderTicketEmail(payload, orderId, { brevoApiKey })
+      return result.status === 'sent'
+    },
   }
 }
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const gate = await requireRole(req, isAdminTier)
+  const gate = await requirePermission(req, 'tickets')
   if (gate.error) return gate.error
   const { payload } = gate
   const { id } = await params
   const pool = (payload.db as unknown as { pool: Pool }).pool
-  const deps = buildDeps(pool, process.env.BREVO_API_KEY ?? '', process.env.PAYLOAD_SECRET ?? '')
+  const deps = buildDeps(
+    pool,
+    payload as unknown as OrderEmailPayload,
+    process.env.BREVO_API_KEY ?? '',
+    process.env.PAYLOAD_SECRET ?? '',
+  )
   try {
     const preview = await previewReschedule(id, deps)
     return NextResponse.json(preview)
@@ -121,7 +166,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 }
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const gate = await requireRole(req, isAdminTier)
+  const gate = await requirePermission(req, 'tickets')
   if (gate.error) return gate.error
   const { payload, user } = gate
   const { id } = await params
@@ -139,7 +184,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
   const secret = process.env.PAYLOAD_SECRET ?? ''
   const pool = (payload.db as unknown as { pool: Pool }).pool
-  const deps = buildDeps(pool, brevoApiKey, secret)
+  const deps = buildDeps(pool, payload as unknown as OrderEmailPayload, brevoApiKey, secret)
 
   // Test mode: send the EN + HR preview to the admin's own inbox. No DB write,
   // no buyer notification — the "let me see it first" path.
@@ -151,6 +196,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     try {
       const show = await deps.getShow(id)
       if (!show) return NextResponse.json({ error: 'Show not found' }, { status: 404 })
+      // #409 — the test send bypasses rescheduleShow, so it needs its own gate.
+      assertPublicPerformance(show as unknown as Record<string, unknown>)
       const sample = { orderId: 'TEST', buyer: { name: 'Ivan Horvat', email: adminEmail } }
       const showDates = { oldDate: show.date, newDate, time: show.time, venue: show.venue }
       // Sign a real token for the sample so the CTA renders and lands on the
@@ -170,8 +217,18 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     }
   }
 
+  const push = createPushDeps(payload as unknown as PushPayload)
+  const before = await loadPerformanceFacts(push.query, id)
   try {
     const result = await rescheduleShow({ showId: id, userId: String(user.id), newDate }, deps)
+
+    // The write is a raw `UPDATE … RETURNING` claim, so no Payload hook fires
+    // for it (#441 review): the roster is told here instead, from the row as it
+    // stood before the claim and as it stands after. Never fails the request —
+    // the buyers have already been emailed by the time this runs.
+    // A moved date also invalidates the alarm and reminder claims, which is
+    // the #440 defect this route would otherwise still have.
+    await notifyRawPerformanceSave(id, before, push)
     return NextResponse.json(result)
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Reschedule failed'

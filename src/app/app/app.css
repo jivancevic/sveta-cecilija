@@ -1,0 +1,2536 @@
+/* ─────────────────────────────────────────────────────────────
+   Cecilija (#421, ADR-0023) — its own scope, `.app`.
+
+   Deliberately NOT `.hp` or `.inner-page`: those two scopes belong to the
+   public site and share `globals.css` with Tailwind. This is a mobile-first
+   tool for a dancer standing in the street, so it carries its own tokens
+   (the same brand values as `.t-stone`), its own type scale and nothing else.
+   No Tailwind, no `globals.css` import.
+   ───────────────────────────────────────────────────────────── */
+
+.app {
+  --bg: #0a0a0a;
+  --bgDeep: #050505;
+  --card: #131313;
+  --cardEdge: rgba(184, 136, 26, 0.28);
+  --light: #f5f2ec;
+  --muted: #9a9a9a;
+  --gold: #b8881a;
+  --goldBright: #d9a526;
+  --red: #8b0000;
+  --radius: 0px;
+  /* The bottom bar's own height; the safe area is added wherever it matters. */
+  --tabH: 64px;
+
+  margin: 0;
+  min-height: 100dvh;
+  background: var(--bg);
+  color: var(--light);
+  font-family: var(--font-inter), system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-text-size-adjust: 100%;
+}
+
+.app *,
+.app *::before,
+.app *::after {
+  box-sizing: border-box;
+}
+
+/* One visible focus ring for everything a keyboard can land on (#457 review).
+   The per-class `:hover, :focus-visible` rules further down only change colour,
+   which a sighted keyboard user cannot reliably tell from a hover; this is the
+   ring itself and it is stated once. Text inputs are deliberately left out:
+   `.app__field input` lights its own border instead, and two treatments on one
+   field would read as two states. */
+.app a:focus-visible,
+.app summary:focus-visible,
+.app button:focus-visible,
+.app select:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 1px;
+}
+
+/* The bar is fixed, so the content ends above it: bar + the iPhone's home
+   indicator + a thumb's worth of air, or the last row sits under the bar.
+
+   The top inset is the same story at the other end. `viewport-fit=cover` plus
+   `black-translucent` (layout.tsx) means the installed app's web view starts at
+   y=0, under the clock and the Dynamic Island, so the header needs the inset
+   added or "Moreškant" renders behind the status bar. Safari adds 0px here, so
+   the browser tab is unchanged. */
+.app__shell {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: env(safe-area-inset-top) 16px calc(var(--tabH) + env(safe-area-inset-bottom) + 24px);
+}
+
+/* ── Header ─────────────────────────────────────────────── */
+.app__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 0 16px;
+  border-bottom: 1px solid var(--cardEdge);
+}
+
+.app__brand {
+  font-family: var(--font-bodoni), Georgia, serif;
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  margin: 0;
+  color: var(--light);
+}
+
+.app__identity {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.app__identity strong {
+  color: var(--goldBright);
+  font-weight: 600;
+}
+
+.app__logout {
+  flex: 0 0 auto;
+  background: none;
+  border: 1px solid var(--cardEdge);
+  border-radius: var(--radius);
+  color: var(--muted);
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.app__logout:hover,
+.app__logout:focus-visible {
+  color: var(--light);
+  border-color: var(--gold);
+}
+
+/* ── Season line ────────────────────────────────────────── */
+.app__season {
+  margin: 0;
+  padding-top: 8px;
+  flex: 0 0 auto;
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-align: right;
+  color: var(--muted);
+}
+
+.app__page-title {
+  margin: 22px 0 4px;
+  font-family: var(--font-bodoni), Georgia, serif;
+  font-size: 22px;
+  font-weight: 600;
+}
+
+/* ── The bottom bar (#457) ──────────────────────────────── */
+.app__tabbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  height: calc(var(--tabH) + env(safe-area-inset-bottom));
+  padding-bottom: env(safe-area-inset-bottom);
+  background: var(--bgDeep);
+  border-top: 1px solid var(--cardEdge);
+}
+
+.app__tabbar-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  color: var(--muted);
+  text-decoration: none;
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.app__tabbar-item svg {
+  width: 26px;
+  height: 26px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.app__tabbar-item--on {
+  color: var(--goldBright);
+}
+
+.app__tabbar-item--on svg {
+  stroke-width: 2;
+}
+
+/* ── Hero: the next evening (#457) ──────────────────────── */
+.app__hero {
+  margin: 18px 0 0;
+  padding: 16px 16px 14px;
+  background: var(--card);
+  border: 1px solid var(--goldBright);
+  border-radius: var(--radius);
+}
+
+.app__hero-eyebrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 10px;
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--goldBright);
+}
+
+.app__hero-eyebrow em {
+  font-style: normal;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  text-transform: none;
+  color: var(--muted);
+}
+
+.app__hero-date {
+  margin: 0;
+  font-family: var(--font-bodoni), Georgia, serif;
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 1.05;
+}
+
+.app__hero-meta {
+  margin: 6px 0 0;
+  font-size: 15px;
+  color: var(--light);
+}
+
+.app__hero-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.app__hero-tags:empty {
+  margin-top: 0;
+}
+
+/* The army of THIS evening, filled in its own colour: a dancer reading it in
+   the dark should not have to parse a word to know which side they are on. */
+.app__hero-army {
+  display: inline-block;
+  padding: 3px 10px;
+  border: 1px solid var(--cardEdge);
+  border-radius: var(--radius);
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--light);
+}
+
+.app__hero-army--crni {
+  background: #000;
+  border-color: #3a3a3a;
+}
+
+.app__hero-army--bili {
+  background: var(--light);
+  border-color: var(--light);
+  color: #0a0a0a;
+}
+
+/* The two answer buttons, hero-sized: this is the one tap the screen exists
+   for, so they are thumb-height and read as words rather than as chrome. */
+.app__hero-answers .app__answer-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.app__hero-answers .app__answer {
+  min-height: 54px;
+  font-family: var(--font-inter), system-ui, sans-serif;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--light);
+  border-color: var(--gold);
+}
+
+.app__hero-answers .app__answer--on::before {
+  content: '✓ ';
+}
+
+.app__hero-link {
+  display: block;
+  margin-top: 12px;
+  font-size: 14px;
+  text-align: right;
+  color: var(--goldBright);
+  text-decoration: none;
+}
+
+/* ── End of season, and the empty own-season card ───────── */
+.app__eos {
+  margin: 18px 0 0;
+  padding: 26px 16px;
+  background: var(--card);
+  border: 1px solid var(--cardEdge);
+  border-radius: var(--radius);
+  text-align: center;
+}
+
+.app__eos h2 {
+  margin: 0 0 6px;
+  font-family: var(--font-bodoni), Georgia, serif;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.app__eos p {
+  margin: 0 0 14px;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+/* ── The agenda, by month ───────────────────────────────── */
+.app__month {
+  margin: 26px 0 0;
+}
+
+.app__month-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 6px;
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.app__month-head b {
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+
+.app__row {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 11px 0;
+  border-top: 1px solid #1f1f1f;
+  color: inherit;
+  text-decoration: none;
+}
+
+.app__row:last-child {
+  border-bottom: 1px solid #1f1f1f;
+}
+
+.app__row--cancelled .app__row-time,
+.app__row--cancelled .app__row-tile b {
+  text-decoration: line-through;
+}
+
+.app__row--cancelled {
+  opacity: 0.55;
+}
+
+.app__row-tile {
+  display: block;
+  padding: 4px 0 3px;
+  border: 1px solid var(--cardEdge);
+  line-height: 1;
+  text-align: center;
+}
+
+.app__row-tile b {
+  display: block;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.app__row-tile small {
+  display: block;
+  margin-top: 3px;
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.app__row-main {
+  display: block;
+  min-width: 0;
+}
+
+.app__row-time {
+  display: block;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.app__row-time span {
+  margin-left: 6px;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.app__row-sub {
+  display: block;
+  margin-top: 1px;
+  font-size: 13px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.app__badge {
+  padding: 3px 8px;
+  border: 1px solid var(--cardEdge);
+  border-radius: var(--radius);
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.app__badge--yes {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: #0a0a0a;
+}
+
+.app__badge--no {
+  background: #2a2a2a;
+  border-color: #2a2a2a;
+  color: var(--light);
+}
+
+/* Nobody has answered yet: dashed, so an unanswered row is visibly unfinished
+   rather than quietly the same shape as an answered one. */
+.app__badge--none {
+  border-style: dashed;
+}
+
+.app__badge--lineup {
+  border-color: var(--gold);
+  color: var(--goldBright);
+}
+
+/* Past evenings: present, but behind one tap, because this app is read
+   forwards. */
+.app__past {
+  margin: 30px 0 0;
+  border-top: 1px solid #1f1f1f;
+}
+
+.app__past > summary {
+  padding: 14px 0;
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.app__past .app__row {
+  opacity: 0.7;
+}
+
+.app__note {
+  margin: 12px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 14px;
+  color: var(--light);
+}
+
+.app__note-label {
+  display: block;
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 2px;
+}
+
+.app__empty {
+  padding: 32px 4px;
+  color: var(--muted);
+  text-align: center;
+}
+
+/* ── Login + denied ─────────────────────────────────────── */
+/* Same top inset as `.app__shell`: /app/instalacija is opened from a QR code
+   and the auth panels are reachable inside an already-installed app. */
+.app__panel {
+  max-width: 420px;
+  margin: 0 auto;
+  padding: calc(env(safe-area-inset-top) + 48px) 16px 64px;
+}
+
+.app__panel h1 {
+  font-family: var(--font-bodoni), Georgia, serif;
+  font-size: 30px;
+  font-weight: 600;
+  margin: 0 0 8px;
+}
+
+.app__panel p {
+  color: var(--muted);
+  margin: 0 0 24px;
+}
+
+.app__field {
+  display: block;
+  margin-bottom: 16px;
+}
+
+.app__field span {
+  display: block;
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.app__field input {
+  width: 100%;
+  padding: 12px;
+  font-size: 16px; /* 16px keeps iOS Safari from zooming on focus */
+  font-family: inherit;
+  color: var(--light);
+  background: var(--bgDeep);
+  border: 1px solid var(--cardEdge);
+  border-radius: var(--radius);
+}
+
+.app__field input:focus-visible {
+  outline: none;
+  border-color: var(--gold);
+}
+
+.app__button {
+  width: 100%;
+  padding: 14px;
+  background: var(--gold);
+  border: none;
+  border-radius: var(--radius);
+  color: #14100a;
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.app__button[disabled] {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.app__error {
+  margin: 0 0 16px;
+  padding: 10px 12px;
+  border: 1px solid var(--red);
+  border-radius: var(--radius);
+  color: #f0b9b9;
+  font-size: 14px;
+}
+
+.app__link {
+  color: var(--goldBright);
+}
+
+/* The counterpart of .app__error: "the mail is on its way" (#424). */
+.app__notice {
+  margin: 0 0 16px;
+  padding: 10px 12px;
+  border: 1px solid var(--gold);
+  border-radius: var(--radius);
+  color: var(--goldBright);
+  font-size: 14px;
+}
+
+/* Under the login form: one quiet line, not a second call to action. */
+.app__aside {
+  margin: 18px 0 0;
+  font-size: 14px;
+  text-align: center;
+}
+
+/* ── Add to home screen hint ────────────────────────────── */
+.app__hint {
+  position: relative;
+  margin: 20px 0 0;
+  padding: 12px 40px 12px 14px;
+  border: 1px dashed var(--cardEdge);
+  border-radius: var(--radius);
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.app__hint strong {
+  display: block;
+  color: var(--light);
+  font-size: 14px;
+  margin-bottom: 2px;
+}
+
+/* ── Install (#421, rewritten in #452) ──────────────────── */
+/* The × is gone: "Kasnije" is a word, and it means tomorrow rather than never.
+   Its row sits at the foot of the card, next to the link to the full guide. */
+.app__hint-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  margin-top: 10px;
+}
+
+.app__install-steps {
+  margin: 10px 0 0;
+  padding: 0 0 0 20px;
+  display: grid;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.app__install-step {
+  padding-left: 2px;
+}
+
+.app__install-step::marker {
+  color: var(--goldBright);
+  font-family: var(--font-ibm-plex-mono), ui-monospace, monospace;
+}
+
+/* The iOS share icon, sitting on the text baseline of its own step. */
+.app__install-glyph {
+  width: 15px;
+  height: 15px;
+  vertical-align: -3px;
+  margin-right: 6px;
+  color: var(--goldBright);
+}
+
+.app__install-one-tap {
+  margin-top: 10px;
+}
+
+.app__install-how {
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.app__install-done {
+  margin: 0 0 12px;
+  color: var(--goldBright);
+  font-size: 14px;
+}
+
+.app__install-outro {
+  margin-top: 24px;
+  font-size: 14px;
+}
+
+/* The platform switch on `/app/instalacija`: a voditelj at a rehearsal is
+   holding somebody else's phone half the time. */
+.app__install-devices {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 20px;
+  padding-top: 14px;
+  border-top: 1px solid var(--cardEdge);
+}
+
+.app__install-devices-label {
+  width: 100%;
+  font-size: 12px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.app__install-device {
+  background: none;
+  border: 1px solid var(--cardEdge);
+  border-radius: var(--radius);
+  padding: 8px 14px;
+  color: var(--muted);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.app__install-device--on {
+  color: var(--bg);
+  background: var(--goldBright);
+  border-color: var(--goldBright);
+}
+
+/* ── Attendance answers (#422) ──────────────────────────── */
+.app__answers {
+  margin-top: 14px;
+}
+
+.app__answer-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.app__answer {
+  flex: 1 1 0;
+  min-height: 44px; /* thumb-sized: this is tapped standing in the street */
+  padding: 10px 12px;
+  background: none;
+  border: 1px solid var(--cardEdge);
+  border-radius: var(--radius);
+  color: var(--muted);
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.app__answer:hover:not([disabled]),
+.app__answer:focus-visible {
+  color: var(--light);
+  border-color: var(--gold);
+}
+
+.app__answer--on.app__answer--yes {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: #101010;
+  font-weight: 700;
+}
+
+.app__answer--on.app__answer--no {
+  background: #2a2a2a;
+  border-color: var(--muted);
+  color: var(--light);
+  font-weight: 700;
+}
+
+.app__answer[disabled] {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.app__answer--small {
+  flex: 0 0 auto;
+  min-height: 36px;
+  padding: 6px 10px;
+  font-size: 11px;
+}
+
+.app__answer--clear {
+  border-style: dashed;
+}
+
+.app__answer-note {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.app__answer-error {
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: #f0b9b9;
+}
+
+/* ── Headcount chips + performance detail (#423) ─────────── */
+.app__chip {
+  display: inline-block;
+  padding: 4px 8px;
+  border: 1px solid var(--cardEdge);
+  border-radius: var(--radius);
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* Below threshold: the whole point of the chip is that a short evening is
+   visible without opening it. */
+.app__chip--low {
+  border-color: #c05252;
+  background: rgba(139, 0, 0, 0.28);
+  color: #f0b9b9;
+  font-weight: 700;
+}
+
+.app__back {
+  display: inline-block;
+  padding: 14px 0 10px;
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  color: var(--goldBright);
+  text-decoration: none;
+}
+
+.app__back:hover,
+.app__back:focus-visible {
+  color: var(--light);
+}
+
+.app__note--detail {
+  margin-top: 16px;
+}
+
+.app__army-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--cardEdge);
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--light);
+}
+
+.app__people {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* A name, and under it the voditelj's controls when there are any: the row is a
+   column so a phone never has to choose between a readable name and a reachable
+   button. */
+.app__person {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 9px 0;
+  border-top: 1px solid #1f1f1f;
+}
+
+.app__people .app__person:last-child {
+  border-bottom: 1px solid #1f1f1f;
+}
+
+.app__person-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.app__person-name {
+  min-width: 0;
+  color: var(--light);
+  font-size: 16px;
+}
+
+/* The viewer's own name, in gold: a list of twenty nicknames is scanned for
+   one of them. */
+.app__person--me .app__person-name {
+  color: var(--goldBright);
+}
+
+/* The number itself is dropped: it is a `tel:` href, and a dancer taps the
+   button rather than reading the digits off the screen. */
+.app__call {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--cardEdge);
+  border-radius: 50%;
+  color: var(--goldBright);
+  text-decoration: none;
+}
+
+.app__call:hover,
+.app__call:focus-visible {
+  border-color: var(--gold);
+  color: var(--light);
+}
+
+.app__call-icon {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.app__move {
+  min-height: 36px;
+  padding: 6px 10px;
+  background: none;
+  border: 1px dashed var(--cardEdge);
+  border-radius: var(--radius);
+  color: var(--muted);
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.app__move:hover:not([disabled]),
+.app__move:focus-visible {
+  color: var(--light);
+  border-color: var(--gold);
+}
+
+.app__person-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.app__person-controls .app__answers {
+  margin-top: 0;
+}
+
+/* ── Push: the banner switch and the voditelj's alarm (#431) ── */
+.app__hint--quiet {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 14px;
+  border-style: solid;
+}
+
+/* An unsubscribe that failed says so on its own line, under the switch it did
+   not move (#457 review), instead of squeezing in beside it. */
+.app__hint--quiet .app__answer-error {
+  flex-basis: 100%;
+  margin: 0;
+}
+
+.app__hint-link {
+  background: none;
+  border: none;
+  padding: 4px 0;
+  color: var(--goldBright);
+  font-size: 13px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.app__hint-link[disabled] {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.app__hint-actions {
+  margin-top: 10px;
+}
+
+.app__button--small {
+  width: auto;
+  padding: 10px 18px;
+  font-size: 12px;
+}
+
+.app__alarm {
+  margin: 20px 0 4px;
+  padding: 14px;
+  border: 1px solid var(--cardEdge);
+  border-radius: var(--radius);
+}
+
+.app__alarm-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  font-size: 14px;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.app__alarm-result {
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: var(--light);
+}
+
+/* The voditelj note, edited from the phone (#436). The same card frame as the
+   alarm: both are controls that reach other people's phones. */
+.app__note-edit {
+  margin: 20px 0 4px;
+  padding: 14px;
+  border: 1px solid var(--cardEdge);
+  border-radius: var(--radius);
+}
+
+.app__textarea {
+  display: block;
+  width: 100%;
+  margin: 6px 0 12px;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 15px;
+  color: var(--light);
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--cardEdge);
+  border-radius: var(--radius);
+  resize: vertical;
+}
+
+.app__textarea:focus {
+  outline: 2px solid var(--gold);
+  outline-offset: 1px;
+}
+
+/* The shared calendar link (#433). The URL is a long token, so it wraps and
+   scrolls rather than pushing the layout wide on a phone. */
+.app__calendar {
+  margin: 28px 0 8px;
+  padding: 14px;
+  border: 1px solid var(--cardEdge);
+  border-radius: var(--radius);
+}
+
+.app__calendar-body {
+  margin: 0 0 12px;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.app__calendar-url {
+  display: block;
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  font-family: var(--font-ibm-plex-mono), monospace;
+  font-size: 12px;
+  color: var(--light);
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--cardEdge);
+  border-radius: var(--radius);
+  overflow-wrap: anywhere;
+}
+
+/* ── Postava and the season scoreboard (#432, #437) ──
+   The lineup reuses the army-section frame (.app__army-head, .app__people): it
+   is the same kind of list, so it should not look like a different feature. */
+.app__lineup {
+  margin: 28px 0 8px;
+  padding: 14px;
+  border: 1px solid var(--cardEdge);
+  border-radius: var(--radius);
+}
+
+.app__lineup-state {
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.app__lineup-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(154, 154, 154, 0.14);
+}
+
+/* The role a dancer's profile does not list: a warning, not a refusal, so it
+   sits under the row in the same red as an error but never blocks the save. */
+.app__lineup-warning {
+  flex-basis: 100%;
+  font-size: 12px;
+  color: #f0b9b9;
+}
+
+.app__lineup-role {
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--goldBright);
+}
+
+.app__lineup-add {
+  margin: 12px 0;
+}
+
+.app__lineup-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.app__select {
+  min-height: 40px;
+  padding: 8px 10px;
+  font: inherit;
+  font-size: 14px;
+  color: var(--light);
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--cardEdge);
+  border-radius: var(--radius);
+}
+
+.app__stats-season {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 16px 0 8px;
+}
+
+.app__stats-label {
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.app__stats-hint {
+  margin: 0 0 14px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* Five numbers next to a nickname on a phone: the columns are narrow and
+   right-aligned so the digits line up, and the whole row is the tap target for
+   the kind split. */
+.app__stats {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 15px;
+}
+
+.app__stats th,
+.app__stats td {
+  padding: 10px 4px;
+  text-align: right;
+  border-bottom: 1px solid rgba(154, 154, 154, 0.14);
+}
+
+.app__stats thead th {
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.app__stats tbody th[scope='row'],
+.app__stats thead th:first-child {
+  text-align: left;
+  color: var(--light);
+  font-weight: 400;
+}
+
+.app__stats-row {
+  cursor: pointer;
+}
+
+.app__stats-detail td {
+  text-align: left;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* Besplatne karte (#434). The same card frame as the alarm and the note: a
+   control on the performance page that has a consequence beyond this screen.
+   The steppers are big enough for a thumb on the pier (44px targets) and the
+   allowance chip sits in the heading, where the army counts sit on the sections
+   above, so "još 2 od 4" reads as a headcount rather than as a warning. */
+.app__comp {
+  margin: 20px 0 4px;
+  padding: 14px;
+  border: 1px solid var(--cardEdge);
+  border-radius: var(--radius);
+}
+
+.app__comp-intro {
+  margin: 0 0 12px;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.app__comp-orders {
+  list-style: none;
+  margin: 0 0 14px;
+  padding: 0;
+}
+
+.app__comp-order {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(154, 154, 154, 0.14);
+}
+
+.app__comp-code {
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  color: var(--goldBright);
+}
+
+.app__comp-note {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.app__comp-steppers {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.app__stepper {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.app__stepper-label {
+  flex: 1;
+  font-size: 15px;
+  color: var(--light);
+}
+
+.app__stepper-button {
+  width: 44px;
+  height: 44px;
+  font: inherit;
+  font-size: 20px;
+  line-height: 1;
+  color: var(--light);
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--cardEdge);
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.app__stepper-button[disabled] {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.app__stepper-value {
+  min-width: 24px;
+  text-align: center;
+  font-size: 17px;
+  color: var(--light);
+}
+
+.app__comp-name {
+  display: block;
+  margin-bottom: 4px;
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.app__input {
+  display: block;
+  width: 100%;
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 15px;
+  color: var(--light);
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--cardEdge);
+  border-radius: var(--radius);
+}
+
+.app__input:focus {
+  outline: 2px solid var(--gold);
+  outline-offset: 1px;
+}
+
+.app__button--quiet {
+  width: auto;
+  padding: 8px 14px;
+  font-size: 12px;
+}
+
+/* A link that has to read as the card's one action (the end-of-season card, the
+   empty own-season card). Same face as .app__button, but an anchor. */
+.app__button--link {
+  display: inline-block;
+  width: auto;
+  padding: 11px 18px;
+  background: none;
+  border: 1px solid var(--gold);
+  color: var(--light);
+  text-decoration: none;
+}
+
+/* ── Moje: one dancer's own season (#457) ───────────────── */
+.app__seasons {
+  display: flex;
+  flex-wrap: wrap;
+  margin: 18px 0 0;
+  border: 1px solid var(--cardEdge);
+}
+
+.app__seasons-item {
+  flex: 1 1 0;
+  min-width: 64px;
+  padding: 9px 4px;
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 13px;
+  text-align: center;
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.app__seasons-item--on {
+  background: var(--card);
+  color: var(--goldBright);
+}
+
+.app__tiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.app__tile2 {
+  padding: 12px 14px;
+  background: var(--card);
+  border: 1px solid #1f1f1f;
+  border-radius: var(--radius);
+}
+
+.app__tile2 b {
+  display: block;
+  font-family: var(--font-bodoni), Georgia, serif;
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.app__tile2 span {
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.app__bars {
+  margin-top: 24px;
+}
+
+.app__bars-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  font-family: var(--font-inter), system-ui, sans-serif;
+  fill: var(--light);
+}
+
+.app__bars-axis {
+  fill: var(--muted);
+}
+
+.app__bars-legend {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.app__roles {
+  margin-top: 24px;
+}
+
+.app__roles-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 0;
+  border-top: 1px solid #1f1f1f;
+  font-size: 15px;
+}
+
+.app__roles-row:last-child {
+  border-bottom: 1px solid #1f1f1f;
+}
+
+.app__roles-row span {
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  color: var(--muted);
+}
+
+/* ── Više: the once-a-season things (#457) ──────────────── */
+.app__more {
+  margin-top: 18px;
+}
+
+.app__more-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 0;
+  border-bottom: 1px solid #1f1f1f;
+  font-size: 16px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.app__more-row span {
+  font-size: 14px;
+  color: var(--muted);
+  text-align: right;
+}
+
+.app__more-row--static {
+  cursor: default;
+}
+
+.app__more-block {
+  margin-top: 28px;
+}
+
+.app__more-block .app__hint,
+.app__more-block .app__calendar {
+  margin-top: 10px;
+}
+
+.app__more-block .app__calendar {
+  border: none;
+  padding: 0;
+}
+
+.app__more-logout {
+  margin: 32px 0 8px;
+  text-align: center;
+}
+
+/* ── One evening: head, segments, panels (#457) ──────────── */
+.app__detail-head {
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--cardEdge);
+}
+
+.app__detail-title {
+  margin: 0;
+  font-family: var(--font-bodoni), Georgia, serif;
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.1;
+  text-wrap: balance;
+}
+
+.app__detail-when {
+  margin: 6px 0 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--light);
+}
+
+.app__detail-where {
+  margin: 2px 0 0;
+  font-size: 15px;
+  color: var(--muted);
+}
+
+.app__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.app__chip--yes {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: #0a0a0a;
+  font-weight: 700;
+}
+
+.app__chip--no {
+  background: #2a2a2a;
+  border-color: #2a2a2a;
+  color: var(--light);
+}
+
+/* Unanswered reads as unfinished, the same dashed border the list badge uses. */
+.app__chip--none {
+  border-style: dashed;
+}
+
+.app__chip--cancelled {
+  border-color: #c05252;
+  color: #f0b9b9;
+}
+
+.app__chip--lineup {
+  border-color: var(--gold);
+  color: var(--goldBright);
+}
+
+/* The segmented control sticks to the top of the scroll: on a long Dolaze list
+   the way back to Postava must never be a scroll away. */
+.app__segments {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 16px 0 0;
+  border: 1px solid var(--cardEdge);
+  background: var(--bg);
+}
+
+.app__segment {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 9px 4px 7px;
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.2;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.app__segment b {
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--light);
+}
+
+.app__segment--on {
+  background: var(--card);
+  color: var(--goldBright);
+  box-shadow: inset 0 -2px 0 var(--goldBright);
+}
+
+.app__segment--on b {
+  color: var(--goldBright);
+}
+
+.app__group {
+  margin-top: 18px;
+}
+
+.app__group-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 4px;
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.app__group-count {
+  letter-spacing: 0.06em;
+}
+
+/* Below the threshold: the whole point of the number is that a short army is
+   visible without counting the names under it. */
+.app__group-count--low {
+  color: #f0b9b9;
+  font-weight: 700;
+}
+
+/* The army colour as a square, so "crni" and "bili" are readable in the dark
+   without parsing a word. */
+.app__swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 8px;
+  border: 1px solid #555;
+  vertical-align: middle;
+}
+
+.app__swatch--crni {
+  background: #000;
+}
+
+.app__swatch--bili {
+  background: var(--light);
+}
+
+.app__group-empty {
+  margin: 0;
+  padding: 9px 0;
+  border-top: 1px solid #1f1f1f;
+  border-bottom: 1px solid #1f1f1f;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+/* A panel with nothing in it says why, and what happens next. Dashed, because
+   it is a state rather than a card. */
+.app__empty-state {
+  margin-top: 18px;
+  padding: 28px 16px;
+  border: 1px dashed var(--cardEdge);
+  border-radius: var(--radius);
+  font-size: 14px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.app__empty-state b {
+  display: block;
+  margin-bottom: 4px;
+  font-family: var(--font-bodoni), Georgia, serif;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--light);
+}
+
+.app__lineup-confirmed {
+  margin: 14px 0 0;
+  font-size: 13px;
+  color: var(--goldBright);
+}
+
+/* The Ulaznice panel's headline: the count carries the cap, so the sentence
+   beside it does not have to. */
+.app__tix-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 6px;
+}
+
+.app__tix-head b {
+  font-family: var(--font-bodoni), Georgia, serif;
+  font-size: 34px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.app__tix-head b span {
+  font-size: 16px;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.app__tix-head p {
+  margin: 0;
+  max-width: 18ch;
+  font-size: 13px;
+  color: var(--muted);
+  text-align: right;
+}
+
+/* The voditelj's tools, gathered: the rarer job, and it belongs to the evening
+   rather than to any one segment. */
+.app__lead {
+  margin-top: 26px;
+  padding: 12px 14px;
+  background: var(--card);
+  border: 1px solid var(--cardEdge);
+  border-radius: var(--radius);
+}
+
+.app__lead-head {
+  margin: 0 0 8px;
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--goldBright);
+}
+
+.app__lead-row {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+  padding: 12px 0;
+  background: none;
+  border: none;
+  border-top: 1px solid #1f1f1f;
+  font-family: inherit;
+  font-size: 15px;
+  color: var(--light);
+  text-align: left;
+  cursor: pointer;
+}
+
+.app__lead-note {
+  margin: 12px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid #1f1f1f;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.app__lead .app__alarm,
+.app__lead .app__note-edit {
+  margin: 0;
+  padding: 12px 0 0;
+  border: none;
+  border-top: 1px solid #1f1f1f;
+}
+
+/* ── The answer, always under the thumb (#457) ───────────── */
+.app__sticky {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(var(--tabH) + env(safe-area-inset-bottom));
+  z-index: 15;
+  padding: 10px 16px;
+  background: linear-gradient(to top, var(--bg) 70%, transparent);
+}
+
+.app__sticky .app__answers {
+  /* The shell is 640px wide with 16px of padding either side: match its content box. */
+  max-width: 608px;
+  margin: 0 auto;
+}
+
+.app__sticky .app__answer-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.app__sticky .app__answer {
+  min-height: 54px;
+  font-family: var(--font-inter), system-ui, sans-serif;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--light);
+  border-color: var(--gold);
+}
+
+.app__sticky .app__answer--on::before {
+  content: '✓ ';
+}
+
+/* Poništi is the voditelj's third button; it gets its own row rather than
+   squeezing the two that matter. */
+.app__sticky .app__answer--clear {
+  grid-column: 1 / -1;
+  min-height: 40px;
+  font-size: 13px;
+}
+
+.app__sticky .app__answer-note,
+.app__sticky .app__answer-error {
+  margin-top: 6px;
+  text-align: center;
+}
+
+/* Bar + gradient: what the last row of a panel has to clear.
+
+   Sized for the TALLEST variant (#457 review), not the common one: the bar is
+   two 48px buttons, and for a voditelj it also carries the full-width Poništi
+   row, plus a lock note on an evening that has begun. 86px cleared only the
+   plain dancer's bar and left the voditelj's last group under it. Too much air
+   at the bottom of a scroll costs nothing; too little hides a name. The spacer
+   is rendered only when the bar is (see the page), so a viewer with no Member
+   row gets neither. */
+.app__sticky-spacer {
+  height: 130px;
+}
+
+/* ── Dobrodošlica, the three-step walkthrough (#457) ─────── */
+
+/* No shell around it: the walkthrough owns the whole viewport, because every
+   step ends in a system dialog and a tab bar underneath would be an invitation
+   to answer none of them. */
+.app__ob {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: calc(env(safe-area-inset-top) + 28px) 20px calc(env(safe-area-inset-bottom) + 20px);
+}
+
+.app__ob-top {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+/* One bar per step: where the reader is, and how much is left, without a
+   number to read. */
+.app__steps {
+  flex: 1;
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 6px;
+}
+
+.app__steps i {
+  display: block;
+  height: 4px;
+  background: #2a2a2a;
+}
+
+.app__steps i.is-done {
+  background: var(--gold);
+}
+
+.app__steps i.is-current {
+  background: var(--goldBright);
+}
+
+.app__ob-skip {
+  padding: 4px 0;
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.app__ob-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 14px;
+  padding: 10px 0 30px;
+}
+
+.app__ob-step {
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--goldBright);
+}
+
+.app__ob h1 {
+  margin: 0;
+  font-family: var(--font-bodoni), Georgia, serif;
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 1.1;
+  text-wrap: balance;
+}
+
+.app__ob p {
+  margin: 0;
+  max-width: 34ch;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.app__ob--done .app__ob-body {
+  align-items: center;
+  text-align: center;
+}
+
+.app__ob--done p {
+  max-width: 26ch;
+}
+
+.app__ob-check {
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  margin-bottom: 8px;
+  border: 1px solid var(--goldBright);
+  border-radius: 50%;
+  color: var(--goldBright);
+}
+
+.app__ob-check svg {
+  width: 36px;
+  height: 36px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.app__ob-illus {
+  margin: 6px 0 4px;
+  padding: 18px 16px;
+  border: 1px solid var(--cardEdge);
+  background: var(--card);
+}
+
+/* The same box, empty, for the beat before the browser has said which phone
+   this is: it holds the height so step 1 does not jump (#457 review). */
+.app__ob-illus--wait {
+  min-height: 170px;
+}
+
+/* A light card in a dark app on purpose: a notification is the system's, not
+   the app's, and it has to look like one to be recognised as the promise. */
+.app__notif {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: #f2f2f7;
+  color: #111;
+  font-family: -apple-system, system-ui, sans-serif;
+}
+
+.app__notif-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--gold);
+  border-radius: 8px;
+  background: #0a0a0a;
+  color: var(--goldBright);
+  font-family: var(--font-bodoni), Georgia, serif;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.app__notif-text b {
+  display: block;
+  font-size: 14px;
+}
+
+.app__notif-text span {
+  font-size: 13px;
+  color: #333;
+}
+
+.app__notif small {
+  margin-left: auto;
+  font-size: 11px;
+  color: #777;
+  white-space: nowrap;
+}
+
+.app__benefits {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.app__benefits div {
+  font-size: 12px;
+  line-height: 1.3;
+  color: var(--muted);
+  text-align: center;
+}
+
+.app__benefits svg {
+  display: block;
+  width: 24px;
+  height: 24px;
+  margin: 0 auto 4px;
+  stroke: var(--goldBright);
+  fill: none;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.app__calcard {
+  padding: 14px;
+  border: 1px solid var(--cardEdge);
+  background: var(--card);
+}
+
+.app__calcard h2 {
+  margin: 0;
+  font-family: var(--font-bodoni), Georgia, serif;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.app__calcard p {
+  margin: 4px 0 12px;
+  font-size: 13px;
+}
+
+/* The feed URL: one line, ellipsised, never wrapped. A token broken over two
+   lines is a token somebody retypes wrong. */
+.app__calcard code {
+  display: block;
+  padding: 8px 10px;
+  border: 1px solid #1f1f1f;
+  background: #0a0a0a;
+  font-family: var(--font-ibm-plex-mono), ui-monospace, monospace;
+  font-size: 12px;
+  color: var(--goldBright);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.app__ob-actions {
+  display: grid;
+  gap: 10px;
+  padding-bottom: 20px;
+}
+
+.app__ob-primary {
+  width: 100%;
+  min-height: 54px;
+  padding: 15px;
+  background: var(--gold);
+  border: 1px solid var(--gold);
+  color: #0a0a0a;
+  font-family: inherit;
+  font-size: 17px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.app__ob-primary[disabled] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.app__ob-ghost {
+  width: 100%;
+  padding: 12px;
+  background: transparent;
+  border: 1px solid var(--cardEdge);
+  color: var(--light);
+  font-family: inherit;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.app__ob-link {
+  padding: 6px;
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+/* The same clothes on an anchor: the quiet way from step 1 to the full install
+   guide at `/app/instalacija` (#455). */
+a.app__ob-link {
+  display: inline-block;
+  margin-top: 10px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.app__ob-note {
+  margin: 0;
+  margin-inline: auto;
+  font-size: 13px;
+  color: var(--goldBright);
+  text-align: center;
+}
+
+.app__ob-toast {
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  bottom: calc(env(safe-area-inset-bottom) + 120px);
+  padding: 10px 14px;
+  background: var(--light);
+  color: #0a0a0a;
+  font-size: 14px;
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+
+.app__ob-toast.is-shown {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app__ob-toast {
+    transition: none;
+  }
+}
+
+/* ── Ljestvica, the second panel of Moje (#457) ──────────── */
+
+.app__segments--two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.app__segments--two .app__segment {
+  padding: 11px 4px;
+}
+
+/* The reader's own standing, before the list: the one number they opened the
+   panel for should not be somewhere down a scroll of thirty nicknames. */
+.app__board-me {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 16px;
+  padding: 14px 16px;
+  border: 1px solid var(--goldBright);
+  background: var(--card);
+}
+
+.app__board-mine {
+  text-align: center;
+  line-height: 1;
+}
+
+.app__board-mine b {
+  display: block;
+  font-family: var(--font-bodoni), Georgia, serif;
+  font-size: 34px;
+  font-weight: 600;
+  color: var(--goldBright);
+}
+
+.app__board-mine small {
+  display: block;
+  margin-top: 4px;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.app__board-says {
+  min-width: 0;
+}
+
+.app__board-says p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.app__board-says .app__board-count-mine {
+  font-size: 16px;
+  color: var(--light);
+}
+
+.app__board-says .app__board-milestone-line {
+  margin-top: 4px;
+  color: var(--goldBright);
+}
+
+/* Three tiles, the winner in the middle and tallest: a podium read left to
+   right would put second place first. */
+.app__podium {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  align-items: end;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.app__podium-tile {
+  padding: 12px 8px 10px;
+  border: 1px solid #1f1f1f;
+  background: var(--card);
+  text-align: center;
+}
+
+.app__podium-tile--first {
+  padding-top: 24px;
+  border-color: var(--gold);
+}
+
+.app__podium-tile b {
+  display: block;
+  font-family: var(--font-bodoni), Georgia, serif;
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.app__podium-tile span {
+  display: block;
+  margin-top: 2px;
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app__podium-tile small {
+  display: block;
+  margin-top: 4px;
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.app__board-rows {
+  margin-top: 20px;
+}
+
+.app__board-row {
+  display: grid;
+  grid-template-columns: 32px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 0;
+  border-top: 1px solid #1f1f1f;
+}
+
+.app__board-row:last-child {
+  border-bottom: 1px solid #1f1f1f;
+}
+
+.app__board-rank {
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 14px;
+  color: var(--muted);
+  text-align: right;
+}
+
+.app__board-main {
+  min-width: 0;
+}
+
+.app__board-name {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  font-size: 16px;
+}
+
+.app__board-row--me .app__board-name {
+  color: var(--goldBright);
+}
+
+.app__board-chip {
+  padding: 2px 7px;
+  border: 1px solid var(--cardEdge);
+  font-size: 11px;
+  font-style: normal;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.app__board-chip--me {
+  border-color: var(--gold);
+  color: var(--goldBright);
+}
+
+/* A reached milestone, as a small gold square with its number in it. */
+.app__board-milestone {
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  background: var(--gold);
+  color: #0a0a0a;
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 600;
+}
+
+.app__board-bar {
+  display: block;
+  height: 3px;
+  margin-top: 6px;
+  background: #1f1f1f;
+}
+
+.app__board-bar i {
+  display: block;
+  height: 100%;
+  background: var(--gold);
+}
+
+.app__board-count {
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.app__board-footer {
+  margin: 16px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* ── Poveži svoj račun s članom (#462) ──────────────────── */
+/* The rows ARE .app__more-row: one tap, a chevron, a hairline under it. Only
+   the button reset and the two-line name are new. */
+.app__pick {
+  margin-top: 18px;
+}
+
+.app__pick-row {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid #1f1f1f;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.app__pick-row[disabled] {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* Scoped through the row, not written as `.app__pick-name`: the name is a
+   <span> inside .app__more-row, and `.app__more-row span` (the chevron rule)
+   would otherwise win on specificity and right-align it in muted grey. */
+.app__pick-row .app__pick-name {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 16px;
+  color: var(--light);
+  text-align: left;
+}
+
+.app__pick-row .app__pick-name strong {
+  font-weight: 600;
+}
+
+.app__pick-row .app__pick-name small {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* The way in, where the two answer buttons would have been (#462). Quiet: a
+   voditelj who does not dance is in a perfectly valid state and must not read
+   this as something they are late on. */
+.app__hero-link--link-self {
+  margin-top: 4px;
+}
+
+/* `/app/pozivnice` (#463): the voditelj hands an invitation over by phone.
+
+   The SMS sentence is the one piece of advice on the screen that changes the
+   outcome (a messenger's webview cannot install the app), so it is a framed
+   note rather than another line of muted intro text. */
+.app__invite-hint {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border: 1px solid var(--cardEdge);
+  border-left: 3px solid var(--gold);
+  border-radius: var(--radius);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+/* A row that has been minted: the message the voditelj is about to send, then
+   the three ways to send it. It replaces the tappable row in place, so the list
+   keeps its order and nothing jumps under the thumb. */
+.app__invite-row {
+  padding: 12px 0;
+  border-bottom: 1px solid #1f1f1f;
+}
+
+.app__invite-who {
+  margin: 0 0 6px;
+  font-size: 16px;
+  color: var(--light);
+}
+
+.app__invite-message {
+  margin: 0 0 10px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--muted);
+  /* A link with a token is one long unbreakable word on a 360px screen. */
+  overflow-wrap: anywhere;
+}
+
+.app__invite-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.app__invite-actions .app__button {
+  flex: 1 1 auto;
+  min-width: 96px;
+  text-align: center;
+  text-decoration: none;
+}
+
+/* The secondary actions here must not look like the primary one. `--quiet`
+   means "smaller" elsewhere in this app, and smaller is not enough on this row:
+   under "Potvrdi" sits "Odbij", and two identical gold buttons a thumb apart is
+   a voditelj refusing a dancer they meant to let in. Outlined, not filled. */
+.app__invite-actions .app__button--quiet {
+  background: transparent;
+  border: 1px solid var(--cardEdge);
+  color: var(--muted);
+}
+
+.app__invite-actions .app__button--quiet:hover,
+.app__invite-actions .app__button--quiet:focus-visible {
+  border-color: var(--gold);
+  color: var(--light);
+}
+
+/* The rehearsal code (#463). The QR is held up on a phone as often as it is
+   printed, so it gets a white plate: a dark theme behind a QR is a QR half the
+   scanners in the room will not read. */
+.app__join-code {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.app__join-qr {
+  width: 220px;
+  height: 220px;
+  padding: 10px;
+  background: #fff;
+  border-radius: var(--radius);
+}
+
+.app__join-code-value {
+  margin: 0;
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 28px;
+  letter-spacing: 0.22em;
+  /* The code is read off a screen across a room: it is the biggest thing here
+     after the QR, and the letters are drawn from an alphabet with no 0/O. */
+  color: var(--goldBright);
+}
+
+.app__join-code-url,
+.app__join-code-valid {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+/* The pairing number (#463 review). On the waiting dancer's screen it is the
+   only thing they have to do, so it is the biggest thing on it; beside the name
+   in the voditelj's queue it is a chip, because there it is a comparison rather
+   than an instruction. */
+.app__join-pairing {
+  margin-top: 18px;
+  text-align: center;
+}
+
+.app__join-pairing .app__join-pairing-label {
+  margin: 0 0 4px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* Scoped through the wrapper, not written as a bare class: this screen is a
+   `.app__panel`, and `.app__panel p` (0,1,1) would otherwise win on specificity
+   and paint the number muted grey — the trap `.app__more-row span` set for the
+   #462 list, one screen over. */
+.app__join-pairing .app__join-pairing-value {
+  margin: 0;
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 44px;
+  letter-spacing: 0.14em;
+  color: var(--goldBright);
+}
+
+.app__join-pairing-chip {
+  margin-left: 8px;
+  padding: 2px 8px;
+  border: 1px solid var(--cardEdge);
+  border-radius: 999px;
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 12px;
+  color: var(--goldBright);
+  white-space: nowrap;
+}

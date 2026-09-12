@@ -7,7 +7,7 @@ import type { Locale } from '@/proxy';
 interface Props {
   locale: Locale;
   dict: Dictionary;
-  page: Dictionary['privacyPage'] | Dictionary['cookiePage'] | Dictionary['refundPage'];
+  page: Dictionary['privacyPage'] | Dictionary['cookiePage'] | Dictionary['refundPage'] | Dictionary['impressumPage'];
   heroImage: string;
 }
 

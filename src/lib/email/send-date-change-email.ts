@@ -10,6 +10,12 @@
 // a SECONDARY self-serve refund CTA for the buyer who can't make the new date
 // (ADR-0021) — replacing the old "reply to this email and we'll find a solution"
 // line, since the link IS the solution.
+//
+// The notice is only half the story (#379): show-reschedule.ts also reissues the
+// ticket itself as a second message. The `reissue` copy line announces that and
+// states the one fact the buyer needs to not panic about the two versions in
+// their inbox — the QR codes did not change, so either copy scans. Keep the two
+// messages consistent: if the reissue is ever dropped, drop this line with it.
 import { VENUE_LABEL, type Venue } from '../venues'
 import { postBrevoEmail } from './post-brevo-email'
 
@@ -56,6 +62,8 @@ const COPY = {
     greeting: (name: string) => `Hi ${name},`,
     intro:
       "We're sorry, we've had to reschedule this Moreška sword dance performance. Your tickets are automatically valid for the new date, there's nothing you need to do.",
+    reissue:
+      'We are also sending your ticket again in a separate email, with the new date printed on it. Your QR codes have not changed, so an older copy will still scan at the door.',
     verify: 'You can confirm this change yourself on our official website:',
     escapeHatch:
       "If the new date no longer works for you, you can cancel your tickets and get a refund yourself, no need to contact us:",
@@ -71,6 +79,8 @@ const COPY = {
     greeting: (name: string) => `Poštovani ${name},`,
     intro:
       'Žao nam je, morali smo pomaknuti ovu izvedbu Moreške (mačevni ples) na novi datum. Vaše ulaznice automatski vrijede za novi termin, ne morate ništa poduzimati.',
+    reissue:
+      'Ulaznicu vam ponovno šaljemo u zasebnoj poruci, s ispisanim novim datumom. QR kodovi se nisu promijenili, pa će i starija kopija proći na ulazu.',
     verify: 'Ovu promjenu možete sami provjeriti na našoj službenoj stranici:',
     escapeHatch:
       'Ako vam novi termin više ne odgovara, ovdje možete sami otkazati ulaznice i zatražiti povrat novca, bez kontaktiranja nas:',
@@ -160,7 +170,8 @@ function renderHtml(input: SendDateChangeEmailInput, locale: 'en' | 'hr'): strin
         <tr><td style="padding:36px 44px 6px 44px;background:#ffffff;">
           <h1 style="font-family:${fontHeading};font-size:28px;line-height:1.2;margin:0 0 20px 0;color:${ink};text-align:center;">${c.heading}</h1>
           <p style="margin:0 0 16px 0;font-size:16px;line-height:1.6;color:${bodyText};">${c.greeting(buyer.name)}</p>
-          <p style="margin:0 0 8px 0;font-size:16px;line-height:1.6;color:${bodyText};">${c.intro}</p>
+          <p style="margin:0 0 12px 0;font-size:16px;line-height:1.6;color:${bodyText};">${c.intro}</p>
+          <p style="margin:0 0 8px 0;font-size:16px;line-height:1.6;color:${bodyText};">${c.reissue}</p>
         </td></tr>
 
         <!-- old → new date -->

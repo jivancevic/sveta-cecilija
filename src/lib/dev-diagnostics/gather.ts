@@ -1,10 +1,10 @@
-// Single entry point + gating chokepoint for the superadmin dev strip (#244).
-// Returns null for anyone who is not a superadmin (so the caller renders nothing
-// and, crucially, never even runs the diagnostic queries for admin/tehnika/
-// partner). For a superadmin it bundles every section, with each sub-fetch
-// independently fail-soft so one broken probe can't blank the whole strip or
-// break the dashboard.
-import { isSuperadmin, type RoleUser } from '../access/roles'
+// Single entry point + gating chokepoint for the dev strip (#244, ADR-0016).
+// Returns null for anyone without the `dev` permission (so the caller renders
+// nothing and, crucially, never even runs the diagnostic queries for a ticket
+// admin, the door account or a partner). For a `dev` holder it bundles every
+// section, with each sub-fetch independently fail-soft so one broken probe
+// can't blank the whole strip or break the dashboard.
+import { can, type PermissionUser } from '../access/permissions'
 import type { PoolQuery } from '../tickets/sold-seats'
 import { resolveEnvInfo, type EnvInfo } from './env-info'
 import { getDataIntegrity, type DataIntegrity } from './data-integrity'
@@ -36,10 +36,10 @@ const EMPTY_INTEGRITY: DataIntegrity = {
 const EMPTY_HEALTH: IntegrationHealth = { lastOnlineOrderAt: null, lastReviewEmailAt: null }
 
 export async function gatherDevDiagnostics(
-  user: RoleUser,
+  user: PermissionUser,
   deps: GatherDevDiagnosticsDeps,
 ): Promise<DevDiagnostics | null> {
-  if (!isSuperadmin(user)) return null
+  if (!can(user, 'dev')) return null
 
   const [integrity, health, balance, criticalEvents] = await Promise.all([
     getDataIntegrity(deps.query).catch((err) => softFail('data integrity', err, EMPTY_INTEGRITY)),

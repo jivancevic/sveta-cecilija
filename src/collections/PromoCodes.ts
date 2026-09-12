@@ -1,18 +1,18 @@
 import type { CollectionConfig } from 'payload'
-import { isAdminTier } from '@/lib/access/roles'
+import { can } from '@/lib/access/permissions'
 
-type ReqUser = { id?: string | number; role?: string; partner?: unknown } | null | undefined
+type ReqUser = { id?: string | number; permissions?: unknown; partner?: unknown } | null | undefined
 
-const adminOnly = ({ req }: { req: { user: unknown } }) =>
-  isAdminTier(req.user as ReqUser)
+const backoffice = ({ req }: { req: { user: unknown } }) =>
+  can(req.user as ReqUser, 'tickets')
 
 // Member promo codes (ADR-0018). An admin creates a vanity code attributed to a
 // society Member; the guest types it at online checkout and an adult ticket
 // drops to `adultPriceEur` (child stays €10). No member portal, no login, no
 // usage cap, no expiry — only the `active` kill-switch (v1). A member may own
 // more than one code. This slice is the collection + admin CRUD ONLY; the
-// pricing/checkout engine lands in a later slice (#324). Admin-tier CRUD;
-// hidden from tehnika/partner sidebars.
+// pricing/checkout engine lands in a later slice (#324). `tickets` holders do
+// the CRUD; hidden from every other sidebar.
 export const PromoCodes: CollectionConfig = {
   slug: 'promo-codes',
   labels: {
@@ -20,16 +20,16 @@ export const PromoCodes: CollectionConfig = {
     plural: { en: 'Promo codes', hr: 'Promo kodovi' },
   },
   access: {
-    read: adminOnly,
-    create: adminOnly,
-    update: adminOnly,
-    delete: adminOnly,
+    read: backoffice,
+    create: backoffice,
+    update: backoffice,
+    delete: backoffice,
   },
   admin: {
     useAsTitle: 'code',
     defaultColumns: ['code', 'member', 'adultPriceEur', 'active'],
-    // Only admin-tier manage promo codes; never shown to tehnika or partner.
-    hidden: ({ user }) => !isAdminTier(user as ReqUser),
+    // Only the ticketing backoffice manages promo codes; hidden from everyone else.
+    hidden: ({ user }) => !can(user as ReqUser, 'tickets'),
   },
   fields: [
     {

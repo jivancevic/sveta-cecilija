@@ -106,6 +106,25 @@ COPY --from=build /app/package.json ./package.json
 
 EXPOSE 3000
 
+# Liveness probe, in the image rather than in Coolify's UI (#451). Two reasons,
+# both learned the hard way on staging 2026-09-12:
+#
+#   1. Coolify's own HTTP health check is generated as
+#      `curl … || wget … || exit 1`, and THIS IMAGE HAS NEITHER. It is a slim
+#      standalone runtime with node and nothing else, which is also why the
+#      Coolify scheduled tasks run `node -e fetch` instead of curl. A perfectly
+#      healthy container was marked unhealthy and its deploy failed.
+#   2. Coolify's CMD-type health check rejects this command as "format is
+#      invalid" in 4.1.1. A probe that lives in the repo is reviewed like code,
+#      is identical on staging and production, and cannot drift in a UI.
+#
+# Liveness, not readiness: `/api/health` answers 200 whenever the server is up
+# and reports `dbOk` in the body without letting it change the status code. See
+# src/lib/health/health.ts. Arrow functions are avoided so the same string can
+# be pasted into Coolify's CMD field, which forbids `>`.
+HEALTHCHECK --interval=10s --timeout=5s --start-period=40s --retries=6 \
+  CMD node -e "fetch('http://localhost:3000/api/health').then(function(r){process.exit(r.ok?0:1)}).catch(function(){process.exit(1)})"
+
 # Apply schema, then start the standalone server. Replaces `npm start`
 # (= bootstrap-db.mjs + next start) — next start becomes `node server.js`.
 CMD ["sh", "-c", "node scripts/bootstrap-db.mjs && node server.js"]

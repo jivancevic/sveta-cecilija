@@ -11,21 +11,11 @@
 // Both are pure functions over plain rows (no DB), so they unit-test without a
 // database. All money is integer EUR cents.
 
-import { ADULT_PRICE_EUR } from '../pricing'
 import {
   buildReconciliationStatement,
   type ReconTicketRow,
   type TicketType,
 } from '../partner/partner-reconciliation'
-
-const CENTS_PER_EUR = 100
-
-// In-person door sales are recorded as a flat per-show count (shows.in_person_sold,
-// see src/lib/in-person-sales.ts) with no adult/child split. We therefore value
-// each in-person ticket at the €20 adult face price — the door audience is
-// overwhelmingly adults, and the adult price is the conservative-upper of the two
-// faces, so "Revenue collected" is never understated by this approximation.
-export const IN_PERSON_PRICE_CENTS = ADULT_PRICE_EUR * CENTS_PER_EUR
 
 export type RefundStatus = 'none' | 'pending' | 'failed' | 'refunded'
 
@@ -38,16 +28,24 @@ export interface CollectedOrderRow {
 
 export interface RevenueCollectedInput {
   orders: CollectedOrderRow[]
-  /** shows.in_person_sold summed across the season (a flat headcount). */
-  inPersonCount: number
+  /**
+   * Money taken outside the order system, summed from the offline sales ledger
+   * as Σ(quantity × unit_price_cents) — door and legacy lines both (ADR-0025).
+   *
+   * This used to be a headcount multiplied by the flat €20 adult face price,
+   * which overstated every child seat by €10 and could not represent a
+   * discounted one at all. The ledger stores the price actually charged, so
+   * this figure is now exact rather than an upper bound.
+   */
+  offlineRevenueCents: number
 }
 
-/** Cash actually collected: online order totals net of refunds + in-person cash. */
-export function revenueCollectedCents({ orders, inPersonCount }: RevenueCollectedInput): number {
+/** Cash actually collected: online order totals net of refunds + offline sales. */
+export function revenueCollectedCents({ orders, offlineRevenueCents }: RevenueCollectedInput): number {
   const onlineNet = orders
     .filter((o) => o.refundStatus !== 'refunded')
     .reduce((sum, o) => sum + o.totalCents, 0)
-  return onlineNet + inPersonCount * IN_PERSON_PRICE_CENTS
+  return onlineNet + offlineRevenueCents
 }
 
 // One partner's tickets for the season; `commissionPercent` is the partner's own

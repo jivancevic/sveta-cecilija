@@ -3,11 +3,14 @@
 import React from 'react'
 import { useDocumentInfo } from '@payloadcms/ui'
 import Link from 'next/link'
+import { useSalesActionsVisible } from './useSalesActionsVisible'
 
 export function ViewOrdersForShowMenuItem() {
-  const { id, collectionSlug } = useDocumentInfo()
+  const { id } = useDocumentInfo()
+  const visible = useSalesActionsVisible()
 
-  if (collectionSlug !== 'shows' || !id) return null
+  // A non-public performance has no orders at all (#409).
+  if (!visible) return null
 
   const href = `/admin/collections/orders?where[show][equals]=${id}`
 

@@ -54,7 +54,7 @@
 // -------------------------------------
 // Seeds throwaway accounts so /admin, authed /scan + stats, and the partner
 // dashboard are exercisable (the staging DB otherwise has 0 users). One fixture
-// partner + a partner-role login bound to it. Emails, password and partner are
+// partner + a `partner` login bound to it. Emails, password and partner are
 // obviously fake; see the SEED_USERS / SEED_PARTNER block below for the exact
 // credentials and how to log in.
 //
@@ -93,7 +93,7 @@ const { Client } = pg
 const SEED_TIME_MARKER = '00:01' // sentinel time; no real show is scheduled here
 const PI_PREFIX = 'pi_TEST_seed_'
 const TOKEN_PREFIX = 'TEST_seed_'
-const VENUE_CAPACITY = { 'ljetno-kino': 320, 'zimsko-kino': 250 }
+const VENUE_CAPACITY = { 'ljetno-kino': 350, 'zimsko-kino': 250 }
 const ADULT_CENTS = 2000 // €20
 const CHILD_CENTS = 1000 // €10
 
@@ -105,16 +105,19 @@ const CHILD_CENTS = 1000 // €10
 // keeps them off prod/local. Rotate is irrelevant — these only ever live on the
 // synthetic staging DB. To log in at https://dev.moreska.eu/admin :
 //
-//   admin@staging.local    / staging-dev-pw   role=admin    → full /admin
-//   tehnika@staging.local  / staging-dev-pw   role=tehnika  → authed /scan + stats
-//   partner@staging.local  / staging-dev-pw   role=partner  → partner dashboard
+//   admin@staging.local    / staging-dev-pw   tickets+refunds+door → full /admin
+//   tehnika@staging.local  / staging-dev-pw   door                 → /scan + door stats
+//   partner@staging.local  / staging-dev-pw   partner              → partner dashboard
 //                                                              (linked to the
 //                                                               Kaleta fixture)
 const SEED_PASSWORD = 'staging-dev-pw'
+// `permissions` is the access model (ADR-0023) and the only thing seeded: the
+// legacy `role` column was dropped in #398.
 const SEED_USERS = [
-  { email: 'admin@staging.local', role: 'admin' },
-  { email: 'tehnika@staging.local', role: 'tehnika' },
-  { email: 'partner@staging.local', role: 'partner' }, // partner_id wired below
+  { email: 'admin@staging.local', permissions: ['tickets', 'refunds', 'door'] },
+  { email: 'tehnika@staging.local', permissions: ['door'], shared: true },
+  // partner_id wired below
+  { email: 'partner@staging.local', permissions: ['partner'] },
 ]
 // Fixture reseller (ADR-0008). Idempotency key is the (recognizably-fake) name.
 const SEED_PARTNER = {
@@ -251,37 +254,49 @@ async function upsertPartner(client, p) {
 }
 
 /**
- * Idempotently upsert a Payload-auth user (raw SQL). `role` is the
- * enum_users_role label (superadmin|admin|tehnika|partner — see
- * src/lib/access/roles.ts; the app.sql DDL header is stale). `partnerId` links
- * a partner-role login to its partners row via users.partner_id.
+ * Idempotently upsert a Payload-auth user (raw SQL). `permissions` is the
+ * access model (see src/lib/access/permissions.ts) and is rewritten from
+ * scratch on every run. `partnerId` links a partner login to its partners row
+ * via users.partner_id.
  *
- * Only the columns we're certain of are written: email, hash, salt, role,
+ * Only the columns we're certain of are written: email, hash, salt,
  * partner_id, updated_at, created_at. Payload's other auth columns
  * (reset_password_*, login_attempts, lock_until) are nullable and left to their
  * DB defaults. The password is re-hashed on every run so the documented dev
  * credential always wins, even if someone changed it through /admin.
  */
-async function upsertUser(client, { email, role, partnerId = null }) {
+async function upsertUser(client, { email, permissions, partnerId = null, shared = false }) {
   const { salt, hash } = payloadPasswordSaltHash(SEED_PASSWORD)
   const existing = await client.query(`SELECT id FROM users WHERE email = $1`, [email])
+  let id
   if (existing.rows.length > 0) {
-    const id = existing.rows[0].id
+    id = existing.rows[0].id
     await client.query(
       `UPDATE users
-         SET hash = $2, salt = $3, role = $4, partner_id = $5, updated_at = now()
+         SET hash = $2, salt = $3, partner_id = $4, shared = $5, updated_at = now()
        WHERE id = $1`,
-      [id, hash, salt, role, partnerId],
+      [id, hash, salt, partnerId, shared],
     )
-    return id
+  } else {
+    const res = await client.query(
+      `INSERT INTO users (email, hash, salt, partner_id, shared)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING id`,
+      [email, hash, salt, partnerId, shared],
+    )
+    id = res.rows[0].id
   }
-  const res = await client.query(
-    `INSERT INTO users (email, hash, salt, role, partner_id)
-     VALUES ($1, $2, $3, $4, $5)
-     RETURNING id`,
-    [email, hash, salt, role, partnerId],
-  )
-  return res.rows[0].id
+  // Replace the set rather than merge it: the fixture is the source of truth
+  // for these throwaway accounts, and a stale extra permission on staging would
+  // silently diverge from what the same bundle grants on prod.
+  await client.query(`DELETE FROM users_permissions WHERE parent_id = $1`, [id])
+  for (const [i, value] of permissions.entries()) {
+    await client.query(
+      `INSERT INTO users_permissions ("order", parent_id, value) VALUES ($1, $2, $3)`,
+      [i + 1, id, value],
+    )
+  }
+  return id
 }
 
 async function main() {
@@ -446,9 +461,10 @@ async function main() {
     for (const u of SEED_USERS) {
       const id = await upsertUser(client, {
         email: u.email,
-        role: u.role,
-        // Only the partner-role login is bound to the fixture partner.
-        partnerId: u.role === 'partner' ? partnerId : null,
+        permissions: u.permissions,
+        shared: u.shared ?? false,
+        // Only the partner login is bound to the fixture partner.
+        partnerId: u.permissions.includes('partner') ? partnerId : null,
       })
       seededUsers.push({ ...u, id })
     }
@@ -461,8 +477,10 @@ async function main() {
     )
     console.log('[seed-staging] logins (all password "' + SEED_PASSWORD + '"):')
     for (const u of seededUsers) {
-      const link = u.role === 'partner' ? ` → partner_id=${partnerId}` : ''
-      console.log(`[seed-staging]   ${u.email}  role=${u.role}  id=${u.id}${link}`)
+      const link = u.permissions.includes('partner') ? ` → partner_id=${partnerId}` : ''
+      console.log(
+        `[seed-staging]   ${u.email}  [${u.permissions.join(', ')}]  id=${u.id}${link}`,
+      )
     }
 
     console.log('[seed-staging] orders + per-person tickets:')

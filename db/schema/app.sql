@@ -25,10 +25,6 @@ DO $$ BEGIN
   CREATE TYPE enum_orders_refund_status AS ENUM ('none', 'refunded');
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
-DO $$ BEGIN
-  CREATE TYPE enum_users_role AS ENUM ('admin', 'door-staff');
-EXCEPTION WHEN duplicate_object THEN NULL; END $$;
-
 -- Per-person ticket model (ADR-0007) + partner channel (ADR-0008).
 DO $$ BEGIN
   CREATE TYPE enum_tickets_type AS ENUM ('adult', 'child');
@@ -75,12 +71,6 @@ DO $$ BEGIN
     ALTER TABLE payload_locked_documents_rels RENAME COLUMN qr_tokens_id TO tickets_id;
   END IF;
 END $$;
-
--- ─── users ────────────────────────────────────────────────────────────
--- Auth table owned by Payload; we only add the role column. Existing rows
--- default to 'admin' so existing accounts keep their current capabilities.
-
-ALTER TABLE users ADD COLUMN IF NOT EXISTS role enum_users_role NOT NULL DEFAULT 'admin';
 
 -- ─── shows ────────────────────────────────────────────────────────────
 -- Table exists from the original deploy; only the post-#4 columns need
@@ -162,7 +152,7 @@ ALTER TABLE orders ALTER COLUMN buyer_name DROP NOT NULL;
 ALTER TABLE orders ALTER COLUMN email      DROP NOT NULL;
 
 -- ─── partners (reseller channel) ──────────────────────────────────────
--- First-class reseller entity (ADR-0008). A partner-role login links here via
+-- First-class reseller entity (ADR-0008). A `partner` login links here via
 -- users.partner_id and may read only its own record/orders/tickets. Created
 -- here (idempotent) so the orders.partner_id FK below resolves; on a fresh DB
 -- instrumentation.ts creates it first instead.
@@ -385,3 +375,23 @@ CREATE TABLE IF NOT EXISTS critical_events (
 
 CREATE INDEX IF NOT EXISTS critical_events_created_at_idx
   ON critical_events (created_at DESC);
+
+-- Stripe dispute events (#380) additionally use this table as an IDEMPOTENCY
+-- LEDGER: the handler claims a (kind, disputeId) pair with
+-- `INSERT … ON CONFLICT DO NOTHING RETURNING id` and only acts if it won the
+-- insert, so Stripe's at-least-once (and concurrent) redelivery cannot raise a
+-- second admin alert. That claim is only atomic if the pair is unique, hence
+-- this index. It is PARTIAL on purpose: ordinary critical events legitimately
+-- repeat (the same enquiry can fail to send twice) and must stay unconstrained.
+-- Doubles as the lookup index for the claim itself.
+CREATE UNIQUE INDEX IF NOT EXISTS critical_events_dispute_id_idx
+  ON critical_events (kind, (context->>'disputeId'))
+  WHERE context ? 'disputeId';
+
+-- ─── online sales pause (Shows) ───────────────────────────────────────
+-- Admin toggle: pause ONLINE checkout for one show while leaving it listed
+-- on /tickets, and leaving partner/comp sales, door scanning and stats
+-- untouched. Enforced server-side in src/lib/checkout/purchasability.ts.
+
+ALTER TABLE shows
+  ADD COLUMN IF NOT EXISTS online_sales_paused boolean DEFAULT false;

@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
-  defaultLanguageForRole,
+  defaultLanguageForUser,
   normalizeAdminLang,
   resolveAdminLang,
   seedAdminLangCookie,
@@ -9,27 +9,39 @@ import {
   ADMIN_LANGS,
 } from './admin-i18n'
 
-describe('defaultLanguageForRole', () => {
-  it('defaults the secretary (admin) to Croatian', () => {
-    expect(defaultLanguageForRole('admin')).toBe('hr')
+const developer = { permissions: ['users', 'tickets', 'refunds', 'door', 'partner', 'season_stats', 'moreska', 'moreskant', 'dev'] }
+const ticketAdmin = { permissions: ['tickets', 'refunds', 'door'] }
+const doorAccount = { permissions: ['door'] }
+const partnerAccount = { permissions: ['partner'] }
+const memberAccount = { permissions: ['season_stats'] }
+
+describe('defaultLanguageForUser', () => {
+  it('defaults the secretary (tickets) to Croatian, even though she also scans', () => {
+    expect(defaultLanguageForUser(ticketAdmin)).toBe('hr')
   })
 
-  it('defaults the door account (tehnika) to English', () => {
-    expect(defaultLanguageForRole('tehnika')).toBe('en')
+  it('defaults a door-only account to English (the scan overlay faces the guest)', () => {
+    expect(defaultLanguageForUser(doorAccount)).toBe('en')
   })
 
   it('defaults a partner login to Croatian', () => {
-    expect(defaultLanguageForRole('partner')).toBe('hr')
+    expect(defaultLanguageForUser(partnerAccount)).toBe('hr')
   })
 
-  it('defaults the developer (superadmin) to English', () => {
-    expect(defaultLanguageForRole('superadmin')).toBe('en')
+  it('defaults the shared society-membership login to Croatian (ADR-0022)', () => {
+    expect(defaultLanguageForUser(memberAccount)).toBe('hr')
   })
 
-  it('falls back to Croatian for an unknown or missing role', () => {
-    expect(defaultLanguageForRole(undefined)).toBe('hr')
-    expect(defaultLanguageForRole(null)).toBe('hr')
-    expect(defaultLanguageForRole('something-else')).toBe('hr')
+  it('defaults a `dev` holder to English', () => {
+    expect(defaultLanguageForUser(developer)).toBe('en')
+    expect(defaultLanguageForUser({ permissions: ['dev'] })).toBe('en')
+  })
+
+  it('falls back to Croatian for an empty, missing or unknown set', () => {
+    expect(defaultLanguageForUser({ permissions: [] })).toBe('hr')
+    expect(defaultLanguageForUser(undefined)).toBe('hr')
+    expect(defaultLanguageForUser(null)).toBe('hr')
+    expect(defaultLanguageForUser({ permissions: ['something-else'] })).toBe('hr')
   })
 })
 
@@ -48,38 +60,38 @@ describe('normalizeAdminLang', () => {
 })
 
 describe('resolveAdminLang', () => {
-  it('lets an explicit saved choice win over the role default', () => {
-    // superadmin's role default is English, but the saved cookie says Croatian
-    expect(resolveAdminLang({ cookieLang: 'hr', role: 'superadmin' })).toBe('hr')
-    // admin's role default is Croatian, but the saved cookie says English
-    expect(resolveAdminLang({ cookieLang: 'en', role: 'admin' })).toBe('en')
+  it('lets an explicit saved choice win over the permission default', () => {
+    // the developer's default is English, but the saved cookie says Croatian
+    expect(resolveAdminLang({ cookieLang: 'hr', user: developer })).toBe('hr')
+    // the secretary's default is Croatian, but the saved cookie says English
+    expect(resolveAdminLang({ cookieLang: 'en', user: ticketAdmin })).toBe('en')
   })
 
-  it('falls back to the role default when no choice is saved', () => {
-    expect(resolveAdminLang({ cookieLang: null, role: 'admin' })).toBe('hr')
-    expect(resolveAdminLang({ cookieLang: undefined, role: 'superadmin' })).toBe('en')
+  it('falls back to the permission default when no choice is saved', () => {
+    expect(resolveAdminLang({ cookieLang: null, user: ticketAdmin })).toBe('hr')
+    expect(resolveAdminLang({ cookieLang: undefined, user: developer })).toBe('en')
   })
 
-  it('ignores an unsupported saved value and uses the role default', () => {
-    expect(resolveAdminLang({ cookieLang: 'de', role: 'admin' })).toBe('hr')
+  it('ignores an unsupported saved value and uses the permission default', () => {
+    expect(resolveAdminLang({ cookieLang: 'de', user: ticketAdmin })).toBe('hr')
   })
 })
 
 describe('seedAdminLangCookie', () => {
-  it('seeds the role default when no cookie is set yet', () => {
-    expect(seedAdminLangCookie({ existing: null, role: 'admin' })).toBe('hr')
-    expect(seedAdminLangCookie({ existing: undefined, role: 'tehnika' })).toBe('en')
-    expect(seedAdminLangCookie({ existing: null, role: 'superadmin' })).toBe('en')
+  it('seeds the permission default when no cookie is set yet', () => {
+    expect(seedAdminLangCookie({ existing: null, user: ticketAdmin })).toBe('hr')
+    expect(seedAdminLangCookie({ existing: undefined, user: doorAccount })).toBe('en')
+    expect(seedAdminLangCookie({ existing: null, user: developer })).toBe('en')
   })
 
   it('leaves a valid saved choice untouched (saved choice wins)', () => {
-    expect(seedAdminLangCookie({ existing: 'en', role: 'admin' })).toBeNull()
-    expect(seedAdminLangCookie({ existing: 'hr', role: 'superadmin' })).toBeNull()
+    expect(seedAdminLangCookie({ existing: 'en', user: ticketAdmin })).toBeNull()
+    expect(seedAdminLangCookie({ existing: 'hr', user: developer })).toBeNull()
   })
 
   it('re-seeds when the existing cookie value is not a supported language', () => {
-    expect(seedAdminLangCookie({ existing: 'de', role: 'admin' })).toBe('hr')
-    expect(seedAdminLangCookie({ existing: '', role: 'superadmin' })).toBe('en')
+    expect(seedAdminLangCookie({ existing: 'de', user: ticketAdmin })).toBe('hr')
+    expect(seedAdminLangCookie({ existing: '', user: developer })).toBe('en')
   })
 })
 

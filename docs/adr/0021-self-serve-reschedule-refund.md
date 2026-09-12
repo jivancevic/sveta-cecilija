@@ -30,7 +30,7 @@ A refund is allowed when: the show was rescheduled, `channel='online'` (has a St
 - **Page:** `/order/[token]/refund`, outside the `(frontend)` route group with its own minimal branded layout (like `/scan/[token]`). Renders the order summary, a **secondary** (not dominant) "Cancel & refund" CTA, and an explicit confirm step before firing — the action is irreversible. Distinct states: eligible, already-refunded, not-eligible (scanned / non-online), invalid token. Bilingual via `orders.locale`.
 - **Route:** `POST /api/order/[token]/refund` — verify token → **re-check every eligibility condition in the handler** (never trust the client) → call the existing `refundOrder()` engine (Stripe refund → mark refunded → void tickets → existing refund email). No new refund logic. Rate-limited per-token + per-IP, reusing the `/api/scan/[token]/claim` limiter precedent.
 
-This is a **token/signature-authed public mutation** — the CLAUDE.md `requireRole` hard rule explicitly exempts this class (Stripe webhook, claim, unsubscribe, cron). It is a sanctioned exception, not a violation, because possession of an HMAC token bound to a specific order *is* the authorization.
+This is a **token/signature-authed public mutation** — the CLAUDE.md `requirePermission` hard rule (`requireRole` when this ADR was written; renamed in #397, ADR-0023) explicitly exempts this class (Stripe webhook, claim, unsubscribe, cron). It is a sanctioned exception, not a violation, because possession of an HMAC token bound to a specific order *is* the authorization.
 
 ### The reschedule email is rebuilt to the current brand standard
 

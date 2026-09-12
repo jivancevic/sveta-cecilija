@@ -1,0 +1,31 @@
+-- Per-order "the show was cancelled and we told this buyer" stamp (#497).
+--
+-- Cancelling a public performance refunds every online order and mails every
+-- buyer with an address on file. Both halves have to survive a half-finished
+-- run: a Brevo hiccup or a Stripe timeout in the middle of 300 orders must be
+-- fixable by pressing the button again, never by hand-reconciling money.
+--
+-- The money half is already re-runnable without a column: `refund_status`
+-- records it, and the refund engine is idempotent (`refund:<paymentIntentId>`).
+-- The MAIL half had no such record, so a second run would either re-mail every
+-- buyer (and burn the 300/day Brevo quota) or skip the ones it never reached.
+-- This column is that record: NULL = this order still needs the cancellation
+-- notice, a timestamp = it went out and a re-run must leave it alone.
+--
+-- Nullable, no default, exactly like `review_email_sent_at` above it: every
+-- order that predates this file belongs to a show nobody cancelled, so NULL
+-- ("not notified") is the truthful value for all of them and there is nothing
+-- to backfill.
+--
+-- ORDERING: `-dc-` is a SORT KEY, not a word (the `migrate-zz-b-lineups.sql`
+-- convention). bootstrap-db.mjs applies these files in plain filename order,
+-- and `migrate-zz-drop-users-role.sql` must stay LAST (#398, asserted by
+-- src/lib/db-schema-safety.test.ts): 'db-join' < 'dc-orders-cancel-notified'
+-- < 'drop-users-role'. It touches only `orders`, which 00-base.sql creates, so
+-- it needs no wall on the left.
+--
+-- On a fresh DB 00-base.sql has already added the column and this is a no-op;
+-- on the live DB it adds it. Safe to re-run on every restart.
+
+ALTER TABLE orders
+  ADD COLUMN IF NOT EXISTS cancel_notified_at timestamp(3) with time zone;

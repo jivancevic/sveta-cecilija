@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { randomInt } from 'crypto'
-import { partnerIdOf, isPartner } from '@/lib/access/roles'
-import { requireRole } from '@/lib/access/route-guard'
+import { partnerIdOf } from '@/lib/access/partner'
+import { requirePermission } from '@/lib/access/route-guard'
 import {
   createPartnerSale,
   PartnerSaleError,
   type PartnerSaleShow,
 } from '@/lib/partner/create-partner-sale'
 import { VENUE_CAPACITY, type Venue } from '@/lib/venues'
+import { isPublicPerformance } from '@/lib/show-performance'
 import { getActiveTicketCountForShow, type PoolQuery } from '@/lib/tickets/sold-seats'
 import { withShowSellLock, type SellLockPool } from '@/lib/tickets/sell-lock'
 import { generateQrToken } from '@/lib/qr-token'
@@ -20,11 +21,11 @@ export const dynamic = 'force-dynamic'
 // Local API runs overrideAccess, so this route re-checks the caller is a partner
 // and binds the sale to THEIR own partner id (never trusts a body-supplied one).
 export async function POST(req: NextRequest) {
-  const gate = await requireRole(req, isPartner)
+  const gate = await requirePermission(req, 'partner')
   if (gate.error) return gate.error
   const { payload, user } = gate
 
-  const partnerId = partnerIdOf(user as { role?: string; partner?: unknown } | null)
+  const partnerId = partnerIdOf(user as { permissions?: unknown; partner?: unknown } | null)
   if (partnerId == null) {
     return NextResponse.json({ error: 'Account not linked to a partner' }, { status: 403 })
   }
@@ -66,6 +67,10 @@ export async function POST(req: NextRequest) {
             id: Number(doc.id),
             date: doc.date as string,
             status: doc.status as 'active' | 'cancelled',
+            // ADR-0024: the ONE "is public" spelling lives in show-performance.
+            isPublic: isPublicPerformance(doc as Record<string, unknown>),
+            // Undefined for a non-public performance (it has no venue), which is
+            // harmless: the pure flow rejects it before any seat maths runs.
             capacity: VENUE_CAPACITY[venue],
             inPersonSold: (doc.inPersonSold as number) ?? 0,
             legacyReserved: (doc.legacyReserved as number) ?? 0,

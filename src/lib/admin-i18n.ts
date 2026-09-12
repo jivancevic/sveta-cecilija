@@ -10,20 +10,27 @@
 // renders from. Every later dashboard slice reuses `adminT` so its copy tracks
 // the same active language as the Payload chrome.
 
+import { can, permissionsOf, type PermissionUser } from './access/permissions'
+
 export type AdminLang = 'en' | 'hr'
 
 // The languages we ship in the admin. Mirror this in `i18n.supportedLanguages`.
 export const ADMIN_LANGS: readonly AdminLang[] = ['en', 'hr'] as const
 
-// Role-based default language for a freshly created / first-logging-in user.
-// The developer (`superadmin`) and the shared door account (`tehnika`) default
-// to English: the door account is shared by whoever is on the gate, and its
-// scan overlay shows guest-readable English to the ticket holder being admitted.
-// The secretary (`admin`) and reseller (`partner`) work in Croatian, as do
-// unknown/missing roles — the safe default for the Croatian-speaking staff this
+// Default language for a freshly created / first-logging-in user, derived from
+// the permission set (ADR-0023, #395).
+//
+// English for two kinds of account: a `dev` holder (the developer, who reads the
+// diagnostics in English) and a door-only account (`door` and nothing else — the
+// shared gate login, whose scan overlay shows guest-readable English to the
+// ticket holder being admitted). Everyone else works in Croatian, as does an
+// empty or unknown set: the safe default for the Croatian-speaking staff this
 // panel is built for.
-export function defaultLanguageForRole(role: string | null | undefined): AdminLang {
-  return role === 'superadmin' || role === 'tehnika' ? 'en' : 'hr'
+export function defaultLanguageForUser(user: PermissionUser): AdminLang {
+  if (can(user, 'dev')) return 'en'
+  const perms = permissionsOf(user)
+  if (perms.length === 1 && perms[0] === 'door') return 'en'
+  return 'hr'
 }
 
 // Narrow an arbitrary string (cookie value, header) to a supported admin
@@ -34,16 +41,17 @@ export function normalizeAdminLang(value: string | null | undefined): AdminLang 
 
 // Resolve the active admin language for the custom dashboard. An explicit saved
 // choice (the `payload-lng` cookie, written by the native selector) always wins;
-// otherwise fall back to the role-based default. This mirrors how Payload's own
-// chrome resolves language, so switching in account settings flips both.
+// otherwise fall back to the permission-based default. This mirrors how
+// Payload's own chrome resolves language, so switching in account settings flips
+// both.
 export function resolveAdminLang({
   cookieLang,
-  role,
+  user,
 }: {
   cookieLang?: string | null
-  role?: string | null
+  user?: PermissionUser
 }): AdminLang {
-  return normalizeAdminLang(cookieLang) ?? defaultLanguageForRole(role)
+  return normalizeAdminLang(cookieLang) ?? defaultLanguageForUser(user)
 }
 
 // Cookie that drives the Payload admin chrome language. Payload derives it from
@@ -53,18 +61,18 @@ export const ADMIN_LANG_COOKIE = 'payload-lng'
 
 // Decide what (if anything) to seed the language cookie to on login. A valid
 // saved choice is left untouched (it always wins); only when no usable choice is
-// present do we seed the role-based default. Returns null = leave the cookie be.
-// The afterLogin hook does the actual cookie write; this keeps the decision pure
-// and unit-testable.
+// present do we seed the permission-based default. Returns null = leave the
+// cookie be. The afterLogin hook does the actual cookie write; this keeps the
+// decision pure and unit-testable.
 export function seedAdminLangCookie({
   existing,
-  role,
+  user,
 }: {
   existing?: string | null
-  role?: string | null
+  user?: PermissionUser
 }): AdminLang | null {
   if (normalizeAdminLang(existing)) return null
-  return defaultLanguageForRole(role)
+  return defaultLanguageForUser(user)
 }
 
 // HR/EN copy for the custom dashboard. Keep the two maps structurally identical
@@ -74,6 +82,11 @@ export const dashboardStrings = {
   en: {
     dashboard: 'Dashboard',
     doorScan: 'Door scan',
+    // Content landing for an `editor` who holds nothing else (#500)
+    contentHeading: 'Content',
+    contentIntro: 'Posts and frequently asked questions on the public site.',
+    contentPosts: 'Posts',
+    contentFaqs: 'FAQ',
     partnerDashboard: 'Partner dashboard',
     signedInAs: 'Signed in as',
     // Secretary dashboard (#238)
@@ -95,13 +108,22 @@ export const dashboardStrings = {
     findOrder: 'Find order',
     // Inline per-show in-person sale control (#243)
     addSale: '+ Sale',
-    addSaleHeading: 'In-person sale',
-    addSaleHint: 'Tickets sold at the door. Adds to the total.',
+    addSaleHeading: 'Sale at the door',
+    addSaleHint: 'Tickets sold at the entrance. Use a negative number to correct an earlier entry.',
     addSaleCount: 'Tickets',
+    addSaleAdults: 'Adults',
+    addSaleChildren: 'Children',
+    addSaleDiscountToggle: '+ Discounted tickets',
+    addSaleDiscountCount: 'Adults at a discount',
+    addSaleDiscountPrice: 'Price each (€)',
+    addSaleDiscountLabel: 'Reason for the discount',
+    addSaleDiscountLabelHint: 'e.g. pensioners (group discount)',
     add: 'Add',
     adding: 'Adding…',
     cancel: 'Cancel',
-    saleErrorPositive: 'Enter a positive whole number.',
+    saleErrorPositive: 'Enter a whole number that is not zero.',
+    saleErrorEmpty: 'Enter at least one ticket count.',
+    saleErrorDiscountReason: 'A discounted price needs a reason.',
     saleErrorGeneric: 'Could not record the sale.',
     saleErrorNetwork: 'Network error. Please try again.',
     inquiries: 'Inquiries',
@@ -121,8 +143,10 @@ export const dashboardStrings = {
     seasonTrajectory: 'Season trajectory',
     salesChannels: 'Sales channels',
     channelOnline: 'Online',
-    channelInPerson: 'In person',
+    channelInPerson: 'At the door',
     channelPartner: 'Partners',
+    // Seat origin, not a sales channel — stacked trajectory bars only.
+    channelComp: 'Comp',
     noSalesYet: 'No sales yet.',
     // Comps on the dashboards (#322, ADR-0019): a count, never a money figure.
     compSold: 'Comp', // per-show seat-reconciliation column
@@ -217,10 +241,28 @@ export const dashboardStrings = {
     compsChild: 'Child',
     compsTotal: 'Total',
     noComps: 'No comps issued yet.',
+    // Member season dashboard (#362, ADR-0022). "Issued", never "sold": the
+    // headline counts comps, unlike every figure on the secretary dashboard.
+    memberSeasonTitle: 'Season',
+    memberIssued: 'Tickets issued',
+    memberSeasonFill: 'Season capacity filled',
+    memberPerShow: 'By performance',
+    memberTicketTypes: 'Ticket types',
+    memberChannels: 'Where the tickets came from',
+    memberChannelBoxOffice: 'At the door',
+    memberBoxOfficeNote: 'Includes tickets sold at the door and on the previous site.',
+    memberNoShows: 'No performances scheduled for this season yet.',
+    memberIntro:
+      'Tickets issued this season, including complimentary tickets. Cancelled and refunded tickets are not counted.',
   },
   hr: {
     dashboard: 'Nadzorna ploča',
     doorScan: 'Skeniranje na ulazu',
+    // Content landing for an `editor` who holds nothing else (#500)
+    contentHeading: 'Sadržaj',
+    contentIntro: 'Objave i česta pitanja na javnim stranicama.',
+    contentPosts: 'Objave',
+    contentFaqs: 'Česta pitanja',
     partnerDashboard: 'Partnerska ploča',
     signedInAs: 'Prijavljeni kao',
     // Secretary dashboard (#238)
@@ -242,13 +284,22 @@ export const dashboardStrings = {
     findOrder: 'Pronađi narudžbu',
     // Inline per-show in-person sale control (#243)
     addSale: '+ Prodaja',
-    addSaleHeading: 'Prodaja na blagajni',
-    addSaleHint: 'Ulaznice prodane na ulazu. Dodaje se na ukupno.',
+    addSaleHeading: 'Prodaja na ulazu',
+    addSaleHint: 'Ulaznice prodane na ulazu. Negativan broj ispravlja raniji unos.',
     addSaleCount: 'Ulaznice',
+    addSaleAdults: 'Odrasli',
+    addSaleChildren: 'Djeca',
+    addSaleDiscountToggle: '+ Ulaznice s popustom',
+    addSaleDiscountCount: 'Odraslih s popustom',
+    addSaleDiscountPrice: 'Cijena po komadu (€)',
+    addSaleDiscountLabel: 'Razlog popusta',
+    addSaleDiscountLabelHint: 'npr. umirovljenici (grupni popust)',
     add: 'Dodaj',
     adding: 'Dodajem…',
     cancel: 'Odustani',
-    saleErrorPositive: 'Unesite pozitivan cijeli broj.',
+    saleErrorPositive: 'Unesite cijeli broj različit od nule.',
+    saleErrorEmpty: 'Unesite barem jedan broj ulaznica.',
+    saleErrorDiscountReason: 'Snižena cijena treba razlog.',
     saleErrorGeneric: 'Prodaja nije zabilježena.',
     saleErrorNetwork: 'Greška u mreži. Pokušajte ponovno.',
     inquiries: 'Upiti',
@@ -268,8 +319,10 @@ export const dashboardStrings = {
     seasonTrajectory: 'Kretanje sezone',
     salesChannels: 'Prodajni kanali',
     channelOnline: 'Online',
-    channelInPerson: 'Na blagajni',
+    channelInPerson: 'Na ulazu',
     channelPartner: 'Partneri',
+    // Seat origin, not a sales channel — stacked trajectory bars only.
+    channelComp: 'Gratis',
     noSalesYet: 'Još nema prodaje.',
     // Comps on the dashboards (#322, ADR-0019): a count, never a money figure.
     compSold: 'Gratis', // per-show seat-reconciliation column
@@ -364,6 +417,19 @@ export const dashboardStrings = {
     compsChild: 'Djeca',
     compsTotal: 'Ukupno',
     noComps: 'Još nema izdanih besplatnih ulaznica.',
+    // Member season dashboard (#362, ADR-0022). "Izdano", nikad "prodano":
+    // brojka uključuje gratis ulaznice, za razliku od tajničke ploče.
+    memberSeasonTitle: 'Sezona',
+    memberIssued: 'Izdano ulaznica',
+    memberSeasonFill: 'Popunjenost sezone',
+    memberPerShow: 'Po izvedbi',
+    memberTicketTypes: 'Vrste ulaznica',
+    memberChannels: 'Odakle su ulaznice',
+    memberChannelBoxOffice: 'Na ulazu',
+    memberBoxOfficeNote: 'Uključuje ulaznice prodane na ulazu i na prethodnoj stranici.',
+    memberNoShows: 'Za ovu sezonu još nema zakazanih izvedbi.',
+    memberIntro:
+      'Izdane ulaznice u ovoj sezoni, uključujući gratis ulaznice. Otkazane i vraćene ulaznice se ne broje.',
   },
 } as const
 

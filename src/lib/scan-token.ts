@@ -1,3 +1,5 @@
+import { hasAny, type PermissionUser } from './access/permissions'
+
 export interface OrderDetails {
   buyerName: string
   adultCount: number
@@ -89,6 +91,21 @@ export type ScanResult =
   | { status: 'INVALID' }
 
 export type ScanViewer = 'buyer' | 'staff'
+
+/**
+ * Which half of `/scan/[token]` a caller sees.
+ *
+ * The page is deliberately public: a buyer following the QR from their own
+ * ticket gets the read-only buyer view, while somebody working the door gets
+ * the atomic mark-and-read plus the staff actions. That split is a permission
+ * question, not a session question — `door` is the door account's whole bundle
+ * and a ticket admin holds it too, so either one opens the staff view. Anything
+ * else (a partner login, the shared member account, no session at all) is a
+ * buyer. Fail-safe direction: the buyer view leaks nothing and marks nothing.
+ */
+export function scanViewerFor(user: PermissionUser): ScanViewer {
+  return hasAny(user, ['door', 'tickets']) ? 'staff' : 'buyer'
+}
 
 export const UNDO_WINDOW_MS = 2 * 60 * 1000
 

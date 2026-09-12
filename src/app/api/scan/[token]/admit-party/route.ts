@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { sql } from '@payloadcms/db-postgres'
 import { admitParty } from '@/lib/scan-token'
-import { isAuthed } from '@/lib/access/roles'
-import { requireRole } from '@/lib/access/route-guard'
+import { requirePermission } from '@/lib/access/route-guard'
 import { scanRedirectUrl } from '@/lib/site-url'
 
 export const runtime = 'nodejs'
@@ -20,7 +19,7 @@ export const dynamic = 'force-dynamic'
 // `status='active'` filter excludes cancelled tickets, and there's no buyer
 // path to it. Party-admit is an explicit staff judgment call (ADR-0007).
 export async function POST(req: NextRequest, { params }: { params: Promise<{ token: string }> }) {
-  const gate = await requireRole(req, isAuthed)
+  const gate = await requirePermission(req, ['door', 'tickets'])
   if (gate.error) return gate.error
   const { payload } = gate
 

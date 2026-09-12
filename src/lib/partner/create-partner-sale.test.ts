@@ -113,6 +113,28 @@ describe('createPartnerSale — validation', () => {
     ).rejects.toMatchObject({ code: 'SHOW_INACTIVE' })
   })
 
+  // #407 (ADR-0024): a non-public performance (cruise call, concert, one-off)
+  // has no venue, no capacity and no sales. The form never offers it, but a
+  // stale client or a hand-rolled POST must still be rejected.
+  it('rejects a non-public performance', async () => {
+    const d = deps({ loadShow: vi.fn(async () => ({ ...SHOW, isPublic: false })) })
+    await expect(createPartnerSale(base, d)).rejects.toMatchObject({
+      code: 'SHOW_NOT_PUBLIC',
+    })
+    expect(d.persist as ReturnType<typeof vi.fn>).not.toHaveBeenCalled()
+  })
+
+  it('accepts an explicitly public performance and a row with no isPublic key', async () => {
+    const explicit = await createPartnerSale(
+      base,
+      deps({ loadShow: vi.fn(async () => ({ ...SHOW, isPublic: true })) }),
+    )
+    expect(explicit.tickets).toHaveLength(3)
+    // Rows that predate the expand carry no flag; they are public by definition.
+    const legacy = await createPartnerSale(base, deps())
+    expect(legacy.tickets).toHaveLength(3)
+  })
+
   it('rejects a past show but allows a show on today', async () => {
     await expect(
       createPartnerSale({ ...base, today: '2026-07-13' }, deps()), // show is 2026-07-12

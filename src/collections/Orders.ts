@@ -1,11 +1,11 @@
 import type { CollectionBeforeDeleteHook, CollectionConfig } from 'payload'
-import { isAdminTier } from '@/lib/access/roles'
+import { can } from '@/lib/access/permissions'
 import { partnerOwnOrdersWhere } from '@/lib/access/partner'
 
-type ReqUser = { role?: string; partner?: unknown } | null | undefined
+type ReqUser = { permissions?: unknown; partner?: unknown } | null | undefined
 
-const adminOnly = ({ req }: { req: { user: unknown } }) =>
-  isAdminTier(req.user as ReqUser)
+const backoffice = ({ req }: { req: { user: unknown } }) =>
+  can(req.user as ReqUser, 'tickets')
 
 // Cascade a per-person ticket delete when its order is deleted.
 //
@@ -35,17 +35,17 @@ export const cascadeOrderTicketsDelete: CollectionBeforeDeleteHook = async ({ re
 export const Orders: CollectionConfig = {
   slug: 'orders',
   access: {
-    // Admin-tier reads every order; a partner reads only orders it sold
-    // (orders.partner = self). Tehnika has no collection read (door lookups go
-    // through the audited /api/orders/lookup route, not this access).
+    // The backoffice (`tickets`) reads every order; a partner reads only orders
+    // it sold (orders.partner = self). A door account has no collection read —
+    // door lookups go through the audited /api/orders/lookup route, not this.
     read: ({ req }) => {
       const user = req.user as ReqUser
-      if (isAdminTier(user)) return true
+      if (can(user, 'tickets')) return true
       return partnerOwnOrdersWhere(user)
     },
-    create: adminOnly,
-    update: adminOnly,
-    delete: adminOnly,
+    create: backoffice,
+    update: backoffice,
+    delete: backoffice,
   },
   hooks: {
     // Delete an order's tickets before the order itself (see hook comment).
@@ -53,9 +53,18 @@ export const Orders: CollectionConfig = {
   },
   admin: {
     useAsTitle: 'buyerName',
-    defaultColumns: ['buyerName', 'email', 'adultCount', 'childCount', 'total', 'refundStatus', 'show'],
+    defaultColumns: [
+      'buyerName',
+      'email',
+      'adultCount',
+      'childCount',
+      'total',
+      'compIssuedBy',
+      'refundStatus',
+      'show',
+    ],
     listSearchableFields: ['buyerName', 'email'],
-    hidden: ({ user }) => !isAdminTier(user as { role?: string } | null),
+    hidden: ({ user }) => !can(user as ReqUser, 'tickets'),
     components: {
       edit: {
         editMenuItems: [
@@ -96,6 +105,31 @@ export const Orders: CollectionConfig = {
       type: 'relationship',
       relationTo: 'members',
       admin: { readOnly: true, description: 'Member that received this order (comp channel only)' },
+    },
+    // Who issued a comp: an admin from /admin, or the moreškant themselves from
+    // /app (#434, ADR-0024 phase 4). Meaningful on comp orders only; NULL on
+    // every row that predates the column and on every online/partner order,
+    // which readers treat as 'admin' — only the literal 'self' counts against a
+    // dancer's four tickets per performance (#430, story 52), so an admin's
+    // gesture never eats their own allowance.
+    //
+    // NO `defaultValue`, deliberately: it would label every Stripe purchase
+    // "Admin" in the list. Both comp routes write the value explicitly through
+    // `buildCompIssueDeps`. A `tickets` holder can still change it by hand,
+    // which is how the backoffice resets a dancer's cap on purpose.
+    {
+      name: 'compIssuedBy',
+      type: 'select',
+      options: [
+        { label: 'Admin', value: 'admin' },
+        { label: 'Self (moreškant)', value: 'self' },
+      ],
+      admin: {
+        // Editable, unlike the attribution links above: a `tickets` holder
+        // changing 'self' to 'admin' is how the backoffice gives a dancer their
+        // four back on purpose. Nobody else reaches the collection.
+        description: 'Who issued this comp: the backoffice, or the dancer from /app',
+      },
     },
     // Promo code applied to this online order (ADR-0018, #325). Null for
     // partner/comp and for online orders with no code. Attribution + reporting
@@ -139,6 +173,20 @@ export const Orders: CollectionConfig = {
       ],
       admin: {
         description: 'Buyer locale captured at checkout; drives post-purchase email language',
+      },
+    },
+    // #497 — the per-order half of the show-cancellation flow's re-runnability.
+    // The money half re-runs off `refundStatus`; this is the mail half, so a
+    // second press of "Cancel show" retries only the buyers Brevo never reached
+    // instead of mailing all of them twice. NULL = still owed the notice.
+    {
+      name: 'cancelNotifiedAt',
+      type: 'date',
+      admin: {
+        readOnly: true,
+        description:
+          'Timestamp the "this performance is cancelled" email was sent to this buyer. NULL = not sent (a re-run of the cancellation will try again).',
+        date: { pickerAppearance: 'dayAndTime' },
       },
     },
     {
