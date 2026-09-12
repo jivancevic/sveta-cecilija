@@ -70,6 +70,10 @@ export const ALLOW_LIST: Record<string, string> = {
     'The session resolution every /app page opens with: payload.auth plus the re-read of the account and its Member. Retired with repo.auth (#475, seam research 2.5) — it is the same swap as the sign-in routes above, not a screen’s.',
   'src/lib/app/session-data.ts':
     'The invitation link that IS the authentication (#463): payload.resetPassword mints the session the token stands for. Retired with repo.auth (#475, seam research 2.4).',
+  'src/lib/app/session-guard.ts':
+    'The inbox routes’ session guard (#496): payload.auth composed with decideAppAccess, because a notification is addressed to an ACCOUNT rather than to a permission. Retired with repo.auth (#475) — it asks the same "who is asking" question as viewer.ts and swaps with it.',
+  'src/lib/app/notifications-data.ts':
+    'The inbox store loader (#496): a raw-table read that takes poolQuery off the Payload instance the request already has. Retired when repo.db replaces that, alongside the rest of repo.auth’s app-session work (#475).',
   'src/lib/app/invite-data.ts':
     'Issues a dancer login (creates the Users row and mints the reset token, #424/#463). Half of it is repo.users and half is repo.auth, so it lands with Članovi (#511), which owns the invitation, once repo.auth exists.',
 
