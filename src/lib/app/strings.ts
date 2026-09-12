@@ -44,15 +44,118 @@ export const APP_STRINGS = {
     logout: 'Odjavi se',
   },
 
+  /** The three tabs of the bottom bar (#457): three real pages, not a toggle. */
   tabs: {
-    upcoming: 'Nadolazeće',
-    past: 'Prošle',
+    performances: 'Izvedbe',
+    mine: 'Moje',
+    more: 'Više',
   },
 
   list: {
     emptyUpcoming: 'Nema više izvedbi u ovoj sezoni.',
     emptyPast: 'Ove sezone još nije bilo izvedbi.',
     season: 'Sezona',
+  },
+
+  /**
+   * The home screen (#457): one hero for the next evening, then the agenda by
+   * month, then the past behind a disclosure.
+   *
+   * `inDays` declines "dan" the way Croatian does (1, 21, 31 → "dan"), and the
+   * three count words are the three Croatian plural buckets; `countLabel` in
+   * `roster-loaders.ts` picks between them, so the rule is tested once.
+   */
+  home: {
+    next: 'Sljedeća izvedba',
+    today: 'danas',
+    tomorrow: 'sutra',
+    inDays: (days: number) =>
+      `za ${days} ${days % 10 === 1 && days % 100 !== 11 ? 'dan' : 'dana'}`,
+    detailLink: 'Tko dolazi, postava, ulaznice ›',
+    count: { one: 'izvedba', few: 'izvedbe', many: 'izvedbi' },
+    answerYes: 'Dolazim',
+    answerNo: 'Ne dolazim',
+    answerNone: 'Bez odgovora',
+    armyCrni: 'Crna vojska',
+    armyBili: 'Bila vojska',
+    cancelled: 'otkazano',
+    past: (count: number) => `Prošle izvedbe (${count})`,
+    lineupConfirmed: 'Postava potvrđena',
+    eosTitle: 'Sezona je završila',
+    eosBody: (date: string) => `Zadnja izvedba bila je ${date}.`,
+    eosNothing: 'Ove sezone još nije bilo izvedbi.',
+    eosLink: 'Pogledaj svoju sezonu',
+  },
+
+  /** The "Moje" tab: one dancer's own season (#457). */
+  mySeason: {
+    title: 'Moje',
+    season: 'Sezona',
+    mine: 'u postavi',
+    total: 'izvedbi u sezoni',
+    crni: 'Crna vojska',
+    bili: 'Bila vojska',
+    byMonth: 'Po mjesecu',
+    chartLabel: 'Izvedbe po mjesecu',
+    legend: 'Zlatno: u potvrđenoj postavi. Sivo: sve potvrđene izvedbe sezone.',
+    roles: 'Uloge',
+    times: (count: number) => `${count}×`,
+    emptyTitle: 'Još nisi plesao ove sezone',
+    emptyBody: 'Prva potvrđena postava pojavit će se ovdje.',
+    emptyLink: 'Odgovori na sljedeću izvedbu',
+    noMember: 'Tvoja prijava nije povezana s moreškantom, pa nema što prikazati.',
+  },
+
+  /** The "Više" tab: everything that is not an evening (#457). */
+  more: {
+    title: 'Više',
+    stats: 'Statistika sezone',
+    notifications: 'Obavijesti',
+    calendar: 'Kalendar izvedbi',
+    profile: 'Moji podaci',
+    nickname: 'Nadimak',
+    roles: 'Uloge',
+    mobile: 'Mobitel',
+    missing: 'nije upisano',
+    admin: 'Administracija',
+    members: 'Moreškanti',
+  },
+
+  /**
+   * The date vocabulary the list needs beside `formatPerformanceDate`: month
+   * names in the NOMINATIVE for a heading ("Rujan", not "rujna"), plus the short
+   * forms of the month and the weekday for the date tile and the bar chart.
+   */
+  date: {
+    months: [
+      'Siječanj',
+      'Veljača',
+      'Ožujak',
+      'Travanj',
+      'Svibanj',
+      'Lipanj',
+      'Srpanj',
+      'Kolovoz',
+      'Rujan',
+      'Listopad',
+      'Studeni',
+      'Prosinac',
+    ],
+    monthsShort: [
+      'sij',
+      'velj',
+      'ožu',
+      'tra',
+      'svi',
+      'lip',
+      'srp',
+      'kol',
+      'ruj',
+      'lis',
+      'stu',
+      'pro',
+    ],
+    weekdaysShort: ['ned', 'pon', 'uto', 'sri', 'čet', 'pet', 'sub'],
   },
 
   card: {
@@ -478,4 +581,43 @@ export function formatPerformanceDate(date: string): string {
   const d = new Date(`${date}T12:00:00.000Z`)
   if (Number.isNaN(d.getTime())) return date
   return `${WEEKDAYS[d.getUTCDay()]}, ${d.getUTCDate()}. ${MONTHS[d.getUTCMonth()]}`
+}
+
+/** UTC noon, so no timezone can shift the calendar day out from under a label. */
+function atNoon(date: string): Date | null {
+  const d = new Date(`${date}T12:00:00.000Z`)
+  return Number.isNaN(d.getTime()) ? null : d
+}
+
+/**
+ * "Četvrtak, 17. rujna" — the hero's headline (#457).
+ *
+ * The same sentence `formatPerformanceDate` builds, with the weekday
+ * capitalised because here it opens a line rather than sitting inside one.
+ */
+export function formatPerformanceDateLong(date: string): string {
+  const text = formatPerformanceDate(date)
+  return text.charAt(0).toUpperCase() + text.slice(1)
+}
+
+/** "čet" — the weekday of the date tile in the month list. */
+export function shortWeekday(date: string): string {
+  const d = atNoon(date)
+  return d ? APP_STRINGS.date.weekdaysShort[d.getUTCDay()] : ''
+}
+
+/** The day number of the date tile, as a string ("17"). */
+export function dayOfMonth(date: string): string {
+  const d = atNoon(date)
+  return d ? String(d.getUTCDate()) : ''
+}
+
+/** "Rujan" from a 1-12 month number; the heading of a month section. */
+export function monthLabel(month: number): string {
+  return APP_STRINGS.date.months[month - 1] ?? ''
+}
+
+/** "ruj" from a 1-12 month number; the bar chart's axis. */
+export function shortMonthLabel(month: number): string {
+  return APP_STRINGS.date.monthsShort[month - 1] ?? ''
 }

@@ -3,7 +3,11 @@ import {
   CANCELLED_WINDOW_MS,
   attachArmyChips,
   attachOwnAnswers,
+  countLabel,
+  daysUntil,
+  groupByMonth,
   loadSeasonPerformances,
+  pickNextPerformance,
   splitSeasonPerformances,
   toRosterPerformance,
 } from './roster-loaders'
@@ -464,5 +468,118 @@ describe('loadSeasonPerformances — the chip is the voditelj\'s only', () => {
     })
     expect(out.upcoming[0].chip).toBeNull()
     expect(f.mock.calls.some((c) => c[0].collection === 'members')).toBe(false)
+  })
+})
+
+describe('myArmy', () => {
+  it("carries the army of the viewer's own answer onto the row", async () => {
+    const out = await loadSeasonPerformances({
+      find: vi.fn(async (args: { collection?: string }) =>
+        args.collection === 'attendance'
+          ? { docs: [{ performance: 1, member: 3, status: 'coming', army: 'bili' }] }
+          : { docs: [doc({ id: 1, date: '2026-08-20' })] },
+      ),
+      memberId: '3',
+      now: () => new Date('2026-08-05T10:00:00.000Z'),
+    })
+    expect(out.upcoming[0].myArmy).toBe('bili')
+  })
+
+  it('is null without a row, and null when the row carries no army', () => {
+    const rows = [toRosterPerformance(doc({ id: 1 })), toRosterPerformance(doc({ id: 2 }))]
+    const out = attachOwnAnswers(
+      rows,
+      new Map([['1', 'coming' as const]]),
+      at('2026-08-01', '12:00'),
+      { voditelj: false, hasMember: true },
+      new Map(),
+    )
+    expect(out.map((p) => p.myArmy)).toEqual([null, null])
+  })
+})
+
+describe('lineupConfirmed', () => {
+  it('is true only for an explicitly confirmed performance', () => {
+    expect(toRosterPerformance(doc({ lineupConfirmed: true })).lineupConfirmed).toBe(true)
+    expect(toRosterPerformance(doc({ lineupConfirmed: false })).lineupConfirmed).toBe(false)
+    expect(toRosterPerformance(doc()).lineupConfirmed).toBe(false)
+  })
+})
+
+describe('pickNextPerformance', () => {
+  const p = (id: number, date: string, cancelled = false) =>
+    toRosterPerformance(doc({ id, date, status: cancelled ? 'cancelled' : 'active' }))
+
+  it('picks the first upcoming performance', () => {
+    expect(pickNextPerformance([p(1, '2026-08-05'), p(2, '2026-08-09')])?.id).toBe('1')
+  })
+
+  it('skips a cancelled one and picks the next live evening', () => {
+    expect(pickNextPerformance([p(1, '2026-08-05', true), p(2, '2026-08-09')])?.id).toBe('2')
+  })
+
+  it('is null when there is nothing, or nothing but cancellations', () => {
+    expect(pickNextPerformance([])).toBeNull()
+    expect(pickNextPerformance([p(1, '2026-08-05', true)])).toBeNull()
+  })
+})
+
+describe('groupByMonth', () => {
+  const p = (id: number, date: string) => toRosterPerformance(doc({ id, date }))
+
+  it('groups by calendar month in the order it is handed, with Croatian labels', () => {
+    const groups = groupByMonth([p(1, '2026-09-17'), p(2, '2026-09-21'), p(3, '2026-10-03')])
+    expect(groups.map((g) => [g.label, g.month, g.year, g.performances.length])).toEqual([
+      ['Rujan', 9, 2026, 2],
+      ['Listopad', 10, 2026, 1],
+    ])
+  })
+
+  it('keeps two Septembers a year apart apart', () => {
+    const groups = groupByMonth([p(1, '2025-09-17'), p(2, '2026-09-17')])
+    expect(groups).toHaveLength(2)
+    expect(groups.map((g) => g.year)).toEqual([2025, 2026])
+  })
+
+  it('is empty for an empty list', () => {
+    expect(groupByMonth([])).toEqual([])
+  })
+})
+
+describe('daysUntil', () => {
+  const now = at('2026-08-05', '09:00')
+
+  it('counts calendar days, not 24 hour buckets', () => {
+    expect(daysUntil(at('2026-08-05', '21:00'), now)).toBe(0)
+    expect(daysUntil(at('2026-08-06', '21:00'), now)).toBe(1)
+    expect(daysUntil(at('2026-08-10', '21:00'), now)).toBe(5)
+  })
+
+  it('calls an evening later tonight "today" even from close to midnight', () => {
+    expect(daysUntil(at('2026-08-05', '23:30'), at('2026-08-05', '23:00'))).toBe(0)
+    // Half an hour later, but a different Zagreb day: that is tomorrow.
+    expect(daysUntil(at('2026-08-06', '00:15'), at('2026-08-05', '23:45'))).toBe(1)
+  })
+
+  it('goes negative for something already past', () => {
+    expect(daysUntil(at('2026-08-03', '21:00'), now)).toBe(-2)
+  })
+})
+
+describe('countLabel', () => {
+  it('picks the three Croatian plural buckets', () => {
+    expect(countLabel(1)).toBe('1 izvedba')
+    expect(countLabel(2)).toBe('2 izvedbe')
+    expect(countLabel(4)).toBe('4 izvedbe')
+    expect(countLabel(5)).toBe('5 izvedbi')
+    expect(countLabel(0)).toBe('0 izvedbi')
+  })
+
+  it('gets the teens and the twenties right', () => {
+    expect(countLabel(11)).toBe('11 izvedbi')
+    expect(countLabel(12)).toBe('12 izvedbi')
+    expect(countLabel(21)).toBe('21 izvedba')
+    expect(countLabel(22)).toBe('22 izvedbe')
+    expect(countLabel(25)).toBe('25 izvedbi')
   })
 })

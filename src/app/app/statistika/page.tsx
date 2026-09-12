@@ -1,9 +1,9 @@
-import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import { accessMember } from '@/lib/app/access'
 import { APP_STRINGS } from '@/lib/app/strings'
 import { getSeasonStats } from '@/lib/app/stats-data'
 import { resolveAppViewer } from '@/lib/app/viewer'
-import { LogoutButton } from '../LogoutButton'
+import { AppShell } from '../AppShell'
 import { StatsTable } from './StatsTable'
 
 // `/app/statistika` — the season scoreboard (#437, ADR-0024 phase 4).
@@ -30,25 +30,18 @@ export default async function StatistikaPage({
   if (!viewer.signedIn) redirect('/app/login')
   if (viewer.access.kind === 'denied') redirect('/app')
 
+  const me = accessMember(viewer.access)
   const params = await searchParams
   const requested = Array.isArray(params.sezona) ? params.sezona[0] : params.sezona
   const stats = await getSeasonStats(requested)
 
   return (
-    <div className="app__shell">
-      <header className="app__header">
-        <div>
-          <Link className="app__back" href="/app">
-            {APP_STRINGS.stats.back}
-          </Link>
-          <h1 className="app__brand">{APP_STRINGS.stats.title}</h1>
-        </div>
-        <LogoutButton />
-      </header>
+    <AppShell me={me} season={stats.season}>
+      <h2 className="app__page-title">{APP_STRINGS.stats.title}</h2>
 
       {stats.confirmedPerformances === 0 && <p className="app__empty">{APP_STRINGS.stats.empty}</p>}
 
       <StatsTable rows={stats.rows} season={stats.season} seasons={stats.seasons} />
-    </div>
+    </AppShell>
   )
 }
