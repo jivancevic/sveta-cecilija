@@ -1,6 +1,6 @@
 # ADR-0022: Member season dashboard (fifth role, shared read-only login)
 
-**Status:** Accepted
+**Status:** Accepted, amended 2026-09-12 by [ADR-0025](./0025-offline-sales-ledger.md) (see *Amendment* at the end)
 **Date:** 2026-08-01
 
 ## Context
@@ -69,3 +69,12 @@ The last point was put to the requester explicitly and the tradeoff was accepted
 - **One more consumer of the admin HR/EN string map** ([ADR-0015](./0015-role-shaped-admin-dashboards.md) already flags this as a surface that drifts if neglected).
 - **No audit of member access.** Nobody knows who looked or when — an accepted consequence of the shared account, and the reason a leak can only be answered by rotating the password.
 - **A schema change is required after all**, small but easy to get wrong: `enum_users_role` is a real Postgres enum (`db/schema/00-base.sql`), and its `CREATE TYPE` is wrapped in a `duplicate_object`-swallowing `DO` block — so on any existing database it will **not** pick up a new value. Per [ADR-0013](./0013-schema-management-bootstrap-sql-drift-gate.md) this needs **both** an `ALTER TYPE … ADD VALUE 'member'` migration file *and* the value added to `00-base.sql` for fresh databases. Bootstrap applies `migrate-*.sql` in **alphabetical** order, so the filename must sort after anything it depends on, and the value must be added in a statement separate from its first use.
+
+## Amendment, 2026-09-12 ([ADR-0025](./0025-offline-sales-ledger.md))
+
+Two statements above are no longer true, and a reader acting on them would get the member dashboard wrong:
+
+- **The channel slice called *box office* is now "Na ulazu" / "At the door".** There is no box office; people pay at the entrance. The words *box office* and *blagajna* are retired from every user-facing surface.
+- **It is no longer a typeless counter, so the adult/child split no longer excludes it.** Door and legacy seats are lines in the `offline_sales` ledger, each carrying a ticket type, and they fold into the split. `shows.inPersonSold` / `legacyReserved` survive only as a cached per-source `SUM(quantity)` that capacity reads; the type split and all money read the ledger.
+
+Unrelated to that ledger but read by the capacity-fill figures here: Ljetno kino's `VENUE_CAPACITY` is **350**, corrected from the 320 that was recorded when this ADR was written.

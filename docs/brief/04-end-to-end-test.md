@@ -128,7 +128,7 @@ Prijavite se kao admin na `https://moreska.eu/admin`.
 3. Trebali biste vidjeti:
    - **Online prodano:** 1
    - **Skenirano:** 1 (ili 0 ako ste napravili Undo)
-   - **Preostalo:** 319 (Ljetno kino 320 - 1)
+   - **Preostalo:** 349 (Ljetno kino 350 - 1)
    - **Prihod:** €20
 
 ### 5d. Pregledajte detalj predstave
