@@ -1060,13 +1060,14 @@ export const APP_STRINGS = {
       sameShow: 'sve narudžbe',
       email: 'E-pošta',
       code: 'Kod narudžbe',
+      /** The channel line carries the partner or the member with it. */
       channel: 'Kanal',
-      soldBy: 'Prodao',
-      forMember: 'Na ime člana',
       promoCode: 'Promo kod',
       total: 'Iznos',
       created: 'Zaprimljeno',
-      ticketsTitle: 'Ulaznice',
+      /** The party, as a fact; the panel below lists the seats one by one. */
+      party: 'Ulaznice',
+      ticketsTitle: 'Pojedinačne ulaznice',
       adult: 'Odrasla',
       child: 'Dječja',
       active: 'Važeća',

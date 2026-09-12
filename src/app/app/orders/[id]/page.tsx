@@ -93,7 +93,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
         {order.code && <Fact label={D.code}>{order.code}</Fact>}
         <Fact label={D.channel}>{channelLabel(order)}</Fact>
         {order.promoCode && <Fact label={D.promoCode}>{order.promoCode}</Fact>}
-        <Fact label={D.ticketsTitle}>{partyLabel(order.adultCount, order.childCount)}</Fact>
+        <Fact label={D.party}>{partyLabel(order.adultCount, order.childCount)}</Fact>
         <Fact label={D.total}>
           <span className="app__order-amount">{amount}</span>
           {order.refunded && <span className="app__badge app__badge--refunded">{S.refunded}</span>}
