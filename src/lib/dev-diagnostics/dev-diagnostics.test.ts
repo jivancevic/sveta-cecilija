@@ -4,6 +4,7 @@ import { getDataIntegrity } from './data-integrity'
 import { getIntegrationHealth } from './integration-health'
 import { summarizeStripeBalance, createStripeBalanceCache } from './stripe-balance'
 import { gatherDevDiagnostics } from './gather'
+import { publicPerformanceSql } from '../show-performance'
 
 describe('resolveEnvInfo', () => {
   it('classifies staging before production (NEXT_PUBLIC_ENV wins)', () => {
@@ -67,6 +68,8 @@ describe('getDataIntegrity', () => {
     const anomalySql = query.mock.calls[0][0]
     expect(anomalySql).toMatch(/orders_without_tickets/)
     expect(anomalySql).toMatch(/past_active_shows/)
+    // #406: a past non-public performance is a calendar record, not an anomaly.
+    expect(anomalySql).toContain(publicPerformanceSql())
     expect(anomalySql).toMatch(/refund_status = 'refunded'/)
     expect(res.anomalies).toEqual({
       ordersWithoutTickets: 2,
@@ -148,29 +151,35 @@ describe('stripe balance', () => {
   })
 })
 
-describe('gatherDevDiagnostics (superadmin gating)', () => {
+describe('gatherDevDiagnostics (`dev` permission gating)', () => {
   const deps = () => ({
     query: vi.fn().mockResolvedValue({ rows: [{}] }),
     stripeBalance: vi.fn().mockResolvedValue(null),
     env: { NODE_ENV: 'development', DATABASE_URL: 'postgresql://h/sveta_cecilija_dev' },
   })
 
+  const devHolder = { permissions: ['users', 'tickets', 'dev'] }
+
   it.each([
-    ['admin'],
-    ['tehnika'],
-    ['partner'],
-    [undefined],
-  ])('returns null and runs no queries for role=%s', async (role) => {
+    ['ticket admin', { permissions: ['tickets', 'refunds', 'door'] }],
+    ['door account', { permissions: ['door'] }],
+    ['partner', { permissions: ['partner'] }],
+    ['member', { permissions: ['season_stats'] }],
+    ['empty set', { permissions: [] }],
+    ['malformed set', { permissions: 'dev' }],
+    ['no permission set at all', {} as { permissions?: unknown }],
+    ['anonymous', null],
+  ])('returns null and runs no queries for %s', async (_label, user) => {
     const d = deps()
-    const result = await gatherDevDiagnostics(role ? { role } : null, d)
+    const result = await gatherDevDiagnostics(user, d)
     expect(result).toBeNull()
     expect(d.query).not.toHaveBeenCalled()
     expect(d.stripeBalance).not.toHaveBeenCalled()
   })
 
-  it('bundles every section for a superadmin', async () => {
+  it('bundles every section for a `dev` holder', async () => {
     const d = deps()
-    const result = await gatherDevDiagnostics({ role: 'superadmin' }, d)
+    const result = await gatherDevDiagnostics(devHolder, d)
     expect(result).not.toBeNull()
     expect(result!.env.environment).toBe('development')
     expect(result!.integrity).toBeDefined()
@@ -182,7 +191,7 @@ describe('gatherDevDiagnostics (superadmin gating)', () => {
   it('one failing probe degrades to a fallback, not a thrown dashboard', async () => {
     const d = deps()
     d.query.mockRejectedValue(new Error('db down'))
-    const result = await gatherDevDiagnostics({ role: 'superadmin' }, d)
+    const result = await gatherDevDiagnostics(devHolder, d)
     expect(result).not.toBeNull()
     expect(result!.integrity.anomalies.ordersWithoutTickets).toBe(0)
     expect(result!.criticalEvents).toEqual([])

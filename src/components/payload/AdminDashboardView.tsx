@@ -6,7 +6,9 @@ import { getPayload } from 'payload'
 import config from '@payload-config'
 import { getStatsInput } from '@/lib/stats-data'
 import { ADMIN_LANG_COOKIE, adminT, resolveAdminLang, type AdminLang } from '@/lib/admin-i18n'
-import { isAdminTier, isAuthed, isPartner, partnerIdOf } from '@/lib/access/roles'
+import { partnerIdOf, type PartnerUser } from '@/lib/access/partner'
+import { dashboardBranchFor } from '@/lib/dashboard/branch'
+import { can, type PermissionUser } from '@/lib/access/permissions'
 import { getNextShow, getScannedPeopleForShow, getUpcomingShows, type NextShow } from '@/lib/shows'
 import { toDashboardShows } from '@/lib/dashboard/from-stats'
 import { partitionShows } from '@/lib/dashboard/partition'
@@ -22,6 +24,7 @@ import { CompMemberCountsPanel } from './dashboard/CompMemberCountsPanel'
 import {
   getActiveTicketCountsByChannel,
   getActiveTicketCountsByPromoCode,
+  getActiveTicketCountsByShowAndChannel,
   getCompCountsByMember,
 } from '@/lib/tickets/sold-seats'
 import { doorProgress, type DoorProgress } from '@/lib/dashboard/door-progress'
@@ -32,7 +35,7 @@ import type { CompMember } from './CompIssueForm'
 import { PartnerRecentSales } from './PartnerRecentSales'
 import { getPartnerRecentSalesPage } from '@/lib/partner/recent-sales-page'
 import { PartnerSalesPanel } from './PartnerSalesPanel'
-import { getPartnerSeasonStats } from '@/lib/partner/partner-data'
+import { getPartnerSeasonStats, getStatistikaShows } from '@/lib/partner/partner-data'
 import { buildStatistikaBars } from '@/lib/partner/partner-stats'
 import { getPartnerMonthToDate } from '@/lib/partner/month-to-date'
 import { monthKeyInZagreb } from '@/lib/partner/partner-reconciliation'
@@ -40,6 +43,9 @@ import { PartnerMonthToDateCard } from './PartnerMonthToDateCard'
 import type { PoolQuery } from '@/lib/tickets/sold-seats'
 import { countInquiries, type InquiryRow } from '@/lib/dashboard/inquiries'
 import { InquiriesBadge } from './InquiriesBadge'
+import { buildMemberSeason } from '@/lib/member/season'
+import { getSeasonTicketRowsByShow, getSeasonOfflineTypesByShow } from '@/lib/member/season-data'
+import { MemberSeasonDashboard } from './MemberSeasonDashboard'
 import { gatherDevDiagnostics } from '@/lib/dev-diagnostics/gather'
 import { getStripeBalanceSummary } from '@/lib/dev-diagnostics/stripe-balance'
 import { SuperadminDevStrip } from './SuperadminDevStrip'
@@ -52,10 +58,14 @@ const VENUE_LABEL: Record<string, string> = {
 }
 
 // Replaces Payload's default collection-card dashboard. Rendered for /admin.
-// Branches on role:
-//   - tehnika: next-show-only block + Scan-a-ticket button. No season aggregate,
-//              no revenue, no other shows. See ADR-0006 / CONTEXT.md "Stats dashboard".
-//   - admin/superadmin: season aggregate + action row + show table.
+// Branches on the permission set through the pure dashboardBranchFor() (#395):
+//   - partner:      own sell form, own sales, own stats. Never org data.
+//   - season_stats: the shared society season view (ADR-0022). Read-only.
+//   - door:         next-show-only block + Scan-a-ticket button. No season
+//                   aggregate, no revenue, no other shows (ADR-0006 /
+//                   CONTEXT.md "Stats dashboard").
+//   - tickets:      season aggregate + action row + show table.
+//   - none:         nothing to show — back to the login page.
 export async function AdminDashboardView() {
   const payload = await getPayload({ config })
   const { user } = await payload.auth({ headers: await headers() })
@@ -65,48 +75,86 @@ export async function AdminDashboardView() {
   // This mirrors how Payload's chrome resolves language, so switching in account
   // settings flips both the chrome and this custom copy. (Issue #234, ADR-0015.)
   const cookieLang = (await cookies()).get(ADMIN_LANG_COOKIE)?.value
-  const lang = resolveAdminLang({ cookieLang, role: (user as { role?: string } | null)?.role })
+  const lang = resolveAdminLang({ cookieLang, user: user as { permissions?: unknown } | null })
 
-  // Partner is authenticated but is NOT internal staff (isAuthed excludes it),
-  // so branch here before the staff-only login guard below.
-  if (isPartner(user as { role?: string } | null)) {
+  // Who the footer line names. The permission set is not a job title, so the
+  // account's own username is what "Signed in as" shows now.
+  const signedInAs =
+    (user as { username?: string; email?: string } | null)?.username ??
+    (user as { email?: string } | null)?.email ??
+    ''
+
+  const branch = dashboardBranchFor(user as { permissions?: unknown } | null)
+
+  // A partner or the shared society login is authenticated but is NOT internal
+  // staff, so each gets its own scoped view; `none` means an authenticated
+  // account with no dashboard at all, which goes back to the login page.
+  if (branch === 'partner') {
     return <PartnerDashboard payload={payload} user={user} lang={lang} />
   }
 
-  if (!isAuthed(user as { role?: string } | null)) {
-    redirect(`/admin/login?redirect=${encodeURIComponent('/admin')}`)
+  if (branch === 'season_stats') {
+    return <MemberDashboard payload={payload} lang={lang} />
   }
 
-  const role = (user as { role?: string }).role
-  const adminTier = isAdminTier(user as { role?: string })
+  if (branch === 'door') {
+    return <TehnikaDashboard signedInAs={signedInAs} lang={lang} />
+  }
 
-  if (!adminTier) {
-    return <TehnikaDashboard role={role} lang={lang} />
+  // An `editor` holding nothing else gets a two-link content landing (#500).
+  // Falling through to the `none` redirect would bounce between /admin and
+  // /admin/login forever, because Payload's login view sends a signed-in user
+  // straight back to /admin.
+  if (branch === 'editor') {
+    return <EditorDashboard signedInAs={signedInAs} lang={lang} />
+  }
+
+  if (branch !== 'tickets') {
+    redirect(`/admin/login?redirect=${encodeURIComponent('/admin')}`)
   }
 
   // Upcoming-show-first secretary dashboard (#238, ADR-0015). The whole season
   // (un-windowed) is partitioned into upcoming vs past; the hero leads with the
   // next show + fill bar + remaining seats, the season band persists on top.
   //
-  // Superadmin-only dev strip (#235/#244, ADR-0016): gatherDevDiagnostics is the
-  // gating chokepoint — it returns null (and runs no queries) for admin/tehnika/
-  // partner, so the work only happens for a superadmin, and each probe inside is
-  // fail-soft so it can never break the dashboard. Fetched in parallel with the
+  // Dev-only dev strip (#235/#244, ADR-0016): gatherDevDiagnostics is the
+  // gating chokepoint — it returns null (and runs no queries) for anyone
+  // without the `dev` permission, so the work only happens for a `dev` holder,
+  // and each probe inside is fail-soft so it can never break the dashboard. Fetched in parallel with the
   // stats input and the season money facts.
   const pool = (payload.db as unknown as { pool: { query: PoolQuery } }).pool
   const poolQuery: PoolQuery = (sql, params) => pool.query(sql, params)
-  const [input, diagnostics, money, channelTickets, promoCodeSales, compsByMember] = await Promise.all([
+
+  // Money is the `finance` permission since #500, not `tickets`: the society's
+  // tajnik and blagajnik are different people by statute. Without it the query
+  // does not even run, so a secretary's dashboard reads the same as before
+  // minus the two euro tiles.
+  const showMoney = can(user as PermissionUser, 'finance')
+  const [
+    input,
+    diagnostics,
+    money,
+    channelTickets,
+    channelTicketsByShow,
+    promoCodeSales,
+    compsByMember,
+  ] = await Promise.all([
     getStatsInput(),
-    gatherDevDiagnostics(user as { role?: string } | null, {
+    gatherDevDiagnostics(user as { permissions?: unknown } | null, {
       query: poolQuery,
       stripeBalance: getStripeBalanceSummary,
     }),
     // Two season money facts (#237): revenue collected (online net of refunds +
     // in-person cash) and partner receivable, computed apart, never summed.
-    getDashboardMoney(poolQuery),
+    showMoney ? getDashboardMoney(poolQuery) : Promise.resolve(null),
     // Channel-mix chart (#242): online vs partner active-ticket counts. In-person
     // sales have no ticket rows, so they come from shows.inPersonSold below.
     getActiveTicketCountsByChannel(poolQuery),
+    // The same split PER SHOW, for the stacked season-trajectory bars: it is
+    // what turns each bar from one flat total into online / at the door /
+    // partner / comp. At-the-door seats have no ticket rows, so the chart
+    // derives them as the remainder of the show's `sold`.
+    getActiveTicketCountsByShowAndChannel(poolQuery),
     // Promo-code reporting panel (#325, ADR-0018): per-code whole-party active
     // tickets + revenue, top draw first. Cancelled/refunded excluded upstream.
     getActiveTicketCountsByPromoCode(poolQuery),
@@ -118,12 +166,14 @@ export async function AdminDashboardView() {
   const { upcoming, past } = partitionShows({ today: input.today, shows: dashboardShows })
   const season = seasonCapacity(dashboardShows)
 
-  // Season channel mix (#242): online + partner from tickets, in-person summed
-  // from the shows' box-office counters.
+  // Season channel mix (#242): online + partner from tickets, at-the-door from
+  // the two offline counters. BOTH of them: since ADR-0025 the show cards count
+  // legacy seats as sold, so a chart that summed only `inPersonSold` would read
+  // 48 under a card reading 123 on 2026-05-18.
   const channelCounts = {
     online: channelTickets.online,
     partner: channelTickets.partner,
-    inPerson: input.shows.reduce((sum, s) => sum + s.inPersonSold, 0),
+    inPerson: input.shows.reduce((sum, s) => sum + s.inPersonSold + s.legacyReserved, 0),
   }
 
   // Live inquiries badge (#239): count `new` enquiries + the booking sub-count.
@@ -173,8 +223,8 @@ export async function AdminDashboardView() {
       <SeasonBand
         lang={lang}
         season={season}
-        revenueCents={money.revenueCollectedCents}
-        partnerReceivableCents={money.partnerReceivableCents}
+        revenueCents={money?.revenueCollectedCents ?? null}
+        partnerReceivableCents={money?.partnerReceivableCents}
         compsIssued={channelTickets.comp}
       />
 
@@ -199,12 +249,16 @@ export async function AdminDashboardView() {
       </div>
 
       {/* Season charts (#242): per-show sold trajectory + season channel mix. */}
-      <SeasonTrajectoryChart shows={dashboardShows} lang={lang} />
+      <SeasonTrajectoryChart
+        shows={dashboardShows}
+        channelsByShow={channelTicketsByShow}
+        lang={lang}
+      />
       <ChannelMixChart counts={channelCounts} lang={lang} />
 
       {/* Promo-code reporting (#325, ADR-0018): top codes by tickets sold, with
           the partner "show 3 → show more" expand pattern. */}
-      <PromoCodeSalesPanel rows={promoCodeSales} lang={lang} />
+      <PromoCodeSalesPanel rows={promoCodeSales} lang={lang} showMoney={showMoney} />
 
       {/* Comps-per-member report (#323, ADR-0019): flat table of goodwill comp
           tickets issued per member, biggest recipient first. */}
@@ -213,7 +267,7 @@ export async function AdminDashboardView() {
       {diagnostics && <SuperadminDevStrip data={diagnostics} />}
 
       <p style={{ fontSize: 11, color: 'var(--theme-elevation-400)', marginTop: 24 }}>
-        {adminT(lang, 'signedInAs')} {role}.
+        {adminT(lang, 'signedInAs')} {signedInAs}.
       </p>
     </div>
   )
@@ -259,7 +313,7 @@ function AdminActions({ lang }: { lang: AdminLang }) {
 // queue leads with the action: a large live admitted/sold progress hero for the
 // active door show, then a dominant full-width scan button opening the in-page
 // html5-qrcode viewfinder (never a native-camera-first flow). No revenue, no PII.
-async function TehnikaDashboard({ role, lang }: { role?: string; lang: AdminLang }) {
+async function TehnikaDashboard({ signedInAs, lang }: { signedInAs: string; lang: AdminLang }) {
   const next = await getNextShow()
   const scanned = next ? await getScannedPeopleForShow(next.id) : 0
   const progress = doorProgress(next, scanned)
@@ -312,7 +366,7 @@ async function TehnikaDashboard({ role, lang }: { role?: string; lang: AdminLang
       ) : null}
 
       <p style={{ fontSize: 11, color: 'var(--theme-elevation-400)', marginTop: 24 }}>
-        {adminT(lang, 'signedInAs')} {role}.
+        {adminT(lang, 'signedInAs')} {signedInAs}.
       </p>
     </div>
   )
@@ -414,7 +468,49 @@ function DoorProgressHero({
   )
 }
 
-// Scoped dashboard shell for the `partner` role (ADR-0008, ADR-0006 pattern).
+// Season ticket view for the shared `member` login (#362, ADR-0022).
+//
+// Two reads, both already-established seams: getStatsInput for the season's
+// performances (raw per-show counters, with `date` normalized to YYYY-MM-DD) and
+// one grouped ticket query for the adult/child + channel split. The season
+// filter, the box-office sum and every rollup live in the pure
+// buildMemberSeason(); this function only wires data to it.
+//
+// Note it feeds buildMemberSeason the RAW StatsShow rows, not toDashboardShows()
+// — the secretary dashboard's `sold` drops legacyReserved, which still occupies
+// a seat and so must count here (ADR-0022).
+//
+// Deliberately does NOT reuse the secretary dashboard's money/action pieces: no
+// figure on this page is derived from `orders.total`, and it renders no links.
+async function MemberDashboard({
+  payload,
+  lang,
+}: {
+  payload: Awaited<ReturnType<typeof getPayload>>
+  lang: AdminLang
+}) {
+  const pool = (payload.db as unknown as { pool: { query: PoolQuery } }).pool
+  const poolQuery: PoolQuery = (sql, params) => pool.query(sql, params)
+
+  const [input, ticketRows, offlineTypesByShow] = await Promise.all([
+    getStatsInput(),
+    getSeasonTicketRowsByShow(poolQuery),
+    // Since ADR-0025 door and legacy seats carry a ticket type, so they join the
+    // ordinary adult/child split instead of sitting in a typeless bucket.
+    getSeasonOfflineTypesByShow(poolQuery),
+  ])
+
+  const season = buildMemberSeason({
+    today: input.today,
+    shows: input.shows,
+    ticketRows,
+    offlineTypesByShow,
+  })
+
+  return <MemberSeasonDashboard season={season} lang={lang} />
+}
+
+// Scoped dashboard shell for a `partner` login (ADR-0008, ADR-0006 pattern).
 // This slice (#143) establishes the role, the scoped landing, and the empty
 // sidebar; the sell form, own-stats and same-day storno land in later slices.
 // The layout here is HITL-reviewed before #143 is considered done.
@@ -429,7 +525,7 @@ async function PartnerDashboard({
   user: unknown
   lang: AdminLang
 }) {
-  const partnerId = partnerIdOf(user as { role?: string; partner?: unknown } | null)
+  const partnerId = partnerIdOf(user as PartnerUser)
 
   let partner: PartnerRecord | null = null
   if (partnerId != null) {
@@ -498,22 +594,16 @@ async function PartnerDashboard({
   const now = new Date()
   const { year, month } = monthKeyInZagreb(now.toISOString())
 
-  const [recentPage, seasonStats, monthToDate, allShowsRes] = await Promise.all([
+  const [recentPage, seasonStats, monthToDate, allShows] = await Promise.all([
     getPartnerRecentSalesPage(poolQuery, numericPartnerId, { page: 1, pageSize: 3 }),
     getPartnerSeasonStats(poolQuery, numericPartnerId),
     getPartnerMonthToDate(poolQuery, { partnerId: numericPartnerId, commissionPercent, year, month }),
-    // ALL active season performances (Statistika shows every izvedba, not only
-    // the ones this partner sold).
-    poolQuery(`SELECT id, date FROM shows WHERE status = 'active' ORDER BY date`, []),
+    // Every active PUBLIC season performance (Statistika shows every izvedba the
+    // partner could sell, not only the ones they did — and never a non-public
+    // one, which they could never sell; #407).
+    getStatistikaShows(poolQuery),
   ])
 
-  const allShows = allShowsRes.rows.map((r) => {
-    const d = (r as { id: unknown; date: unknown }).date
-    return {
-      showId: String((r as { id: unknown }).id),
-      showDate: d instanceof Date ? d.toISOString().slice(0, 10) : String(d ?? '').slice(0, 10),
-    }
-  })
   const statBars = buildStatistikaBars(allShows, seasonStats.perShow)
 
   const monthLabel = now.toLocaleDateString(lang === 'hr' ? 'hr-HR' : 'en-GB', {
@@ -575,3 +665,38 @@ function formatShowDate(iso: string): string {
   })
 }
 
+// Content landing for an `editor` (#500): Objave and FAQ, and nothing else.
+// Deliberately plain — the Backoffice is a raw-edit surface, and the two
+// collection links are the whole job.
+function EditorDashboard({ signedInAs, lang }: { signedInAs: string; lang: AdminLang }) {
+  const link: React.CSSProperties = {
+    display: 'block',
+    padding: '16px 18px',
+    background: 'var(--theme-elevation-50)',
+    border: '1px solid var(--theme-elevation-150)',
+    borderRadius: 8,
+    color: 'var(--theme-text)',
+    textDecoration: 'none',
+    fontSize: 18,
+    fontWeight: 600,
+  }
+  return (
+    <div style={{ padding: '24px clamp(16px, 4vw, 40px)', maxWidth: 720, margin: '0 auto' }}>
+      <h1 style={{ marginBottom: 8, fontSize: 24 }}>{adminT(lang, 'contentHeading')}</h1>
+      <p style={{ margin: '0 0 20px', color: 'var(--theme-elevation-500)', fontSize: 14 }}>
+        {adminT(lang, 'contentIntro')}
+      </p>
+      <div style={{ display: 'grid', gap: 12 }}>
+        <Link href="/admin/collections/posts" style={link}>
+          {adminT(lang, 'contentPosts')}
+        </Link>
+        <Link href="/admin/collections/faqs" style={link}>
+          {adminT(lang, 'contentFaqs')}
+        </Link>
+      </div>
+      <div style={{ marginTop: 24, fontSize: 12, color: 'var(--theme-elevation-500)' }}>
+        {adminT(lang, 'signedInAs')} {signedInAs}
+      </div>
+    </div>
+  )
+}

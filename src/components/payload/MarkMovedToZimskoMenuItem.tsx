@@ -3,6 +3,7 @@
 import React, { useState } from 'react'
 import { useDocumentInfo } from '@payloadcms/ui'
 import { useRouter } from 'next/navigation'
+import { useSalesActionsVisible } from './useSalesActionsVisible'
 
 interface Preview {
   alreadyMoved: boolean
@@ -51,7 +52,8 @@ const secondaryBtn: React.CSSProperties = {
 }
 
 export function MarkMovedToZimskoMenuItem() {
-  const { id, collectionSlug } = useDocumentInfo()
+  const { id } = useDocumentInfo()
+  const visible = useSalesActionsVisible()
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -59,7 +61,8 @@ export function MarkMovedToZimskoMenuItem() {
   const [result, setResult] = useState<MoveResult | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  if (collectionSlug !== 'shows' || !id) return null
+  // A non-public performance has no venue to move and no buyers to notify (#409).
+  if (!visible) return null
 
   const openPreview = async () => {
     setOpen(true)
@@ -67,7 +70,7 @@ export function MarkMovedToZimskoMenuItem() {
     setError(null)
     setResult(null)
     try {
-      const res = await fetch(`/api/shows/${id}/move-to-zimsko`, { method: 'GET' })
+      const res = await fetch(`/api/shows/${id}/move-to-indoor`, { method: 'GET' })
       const data = await res.json()
       if (!res.ok) {
         setError(data.error || 'Could not load preview.')
@@ -85,7 +88,7 @@ export function MarkMovedToZimskoMenuItem() {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch(`/api/shows/${id}/move-to-zimsko`, { method: 'POST' })
+      const res = await fetch(`/api/shows/${id}/move-to-indoor`, { method: 'POST' })
       const data = await res.json()
       if (!res.ok) {
         setError(data.error || 'Move failed.')

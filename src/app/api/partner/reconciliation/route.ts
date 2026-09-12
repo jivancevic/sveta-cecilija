@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { isAdminTier, isPartner, partnerIdOf } from '@/lib/access/roles'
-import { requireRole } from '@/lib/access/route-guard'
+import { actsAsPartner, partnerIdOf } from '@/lib/access/partner'
+import { requirePermission } from '@/lib/access/route-guard'
 import { type PoolQuery } from '@/lib/tickets/sold-seats'
 import { getPartnerReconciliation } from '@/lib/partner/partner-data'
 import { reconciliationToCsv } from '@/lib/partner/reconciliation-csv'
@@ -12,15 +12,16 @@ export const dynamic = 'force-dynamic'
 //
 // Local API runs overrideAccess, so this route re-derives the scope:
 //   - partner: ALWAYS its own partner id; a body/query partnerId is ignored.
-//   - admin-tier: may pass ?partnerId= to view any partner's statement.
-// Anyone else is 403. Defaults to CSV download (text/csv attachment); pass
+//   - a `finance` holder: may pass ?partnerId= to view any partner's statement.
+// Anyone else is 403. The statement is money, so since #500 it is `finance`
+// that opens it, not `tickets`: the secretary keeps it because she holds both. Defaults to CSV download (text/csv attachment); pass
 // ?format=json for the structured statement.
 export async function GET(req: NextRequest) {
-  const gate = await requireRole(req, (u) => isAdminTier(u) || isPartner(u))
+  const gate = await requirePermission(req, ['finance', 'partner'])
   if (gate.error) return gate.error
   const { payload, user } = gate
 
-  const partner = isPartner(user as { role?: string })
+  const partner = actsAsPartner(user as { permissions?: unknown; partner?: unknown } | null)
 
   const url = new URL(req.url)
   const year = Number(url.searchParams.get('year'))
@@ -31,10 +32,10 @@ export async function GET(req: NextRequest) {
   }
 
   // Resolve the partner id to report on. A partner is locked to its own id;
-  // an admin may target any partner via ?partnerId=.
+  // a `finance` holder may target any partner via ?partnerId=.
   let partnerId: number | string | undefined
   if (partner) {
-    partnerId = partnerIdOf(user as { role?: string; partner?: unknown } | null)
+    partnerId = partnerIdOf(user as { permissions?: unknown; partner?: unknown } | null)
   } else {
     const requested = url.searchParams.get('partnerId')
     partnerId = requested ? Number(requested) : undefined

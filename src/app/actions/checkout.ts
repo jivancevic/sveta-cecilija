@@ -12,6 +12,7 @@ import { createPaymentIntentWithPmcFallback } from '@/lib/checkout/create-paymen
 import { getStripe } from '@/lib/stripe'
 import type { PurchasableShow } from '@/lib/checkout/purchasability'
 import { getActiveTicketCountForShow, type PoolQuery } from '@/lib/tickets/sold-seats'
+import { isPublicPerformance } from '@/lib/show-performance'
 import type { Payload } from 'payload'
 
 // Resolve a typed promo code to its record. Read with overrideAccess because
@@ -74,6 +75,10 @@ export async function startCheckout(input: CheckoutInput) {
             inPersonSold: (doc.inPersonSold as number) ?? 0,
             legacyReserved: (doc.legacyReserved as number) ?? 0,
             status: doc.status as 'active' | 'cancelled',
+            onlineSalesPaused: Boolean(doc.onlineSalesPaused),
+            // Non-public performances (ADR-0024) are rejected by
+            // assertPurchasable before any venue/capacity maths runs.
+            isPublic: isPublicPerformance(doc as Record<string, unknown>),
           }
         } catch {
           return null

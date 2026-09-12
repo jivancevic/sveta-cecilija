@@ -12,11 +12,12 @@ Living doc for the 2026 season marketing plan. Sister doc to `docs/niche.md` (le
 
 ## Sell-through baseline (for ROI math)
 
-Rough 2025 estimates (validate against real Shows data when available):
-- Off-season: ~120/320 seats sold per show (~38%)
-- Full season: ~250/320 seats sold per show (~78%)
+Measured 2026, the first season with real data (16 performances played through 2026-09-12; seats = active tickets + the `offline_sales` ledger; Ljetno kino holds 350, not the 320 assumed here until PR #448):
+- Shoulder (May, June, September): **193/350 per show (55%)**, 7 performances.
+- Peak (July, August): **263/350 per show (75%)**, 9 performances.
+- Season to date: 3715 seats over 16 performances, 232 per show (66%).
 - Competitor moreska.hr consistently runs near-full — strong signal that demand exists, capture is the problem.
-- Foregone revenue per show: ~€3,600 off-season, ~€1,260 full season.
+- Foregone revenue per show at the €20 adult face value: ~€3,100 shoulder, ~€1,700 peak.
 
 ## Budget
 
@@ -30,9 +31,9 @@ Rough 2025 estimates (validate against real Shows data when available):
 Which HGD email registers each listing determines who can manage it long-term. Set this deliberately, because ownership transfers on these platforms are painful.
 
 - **`info@moreska.eu`** is for operational / transactional accounts. Brevo sends from it, ticket + contact replies land here, and **Google Business Profile** is already registered to it (transferred 2026-05-26, with josip.ivancevic00@gmail.com as backup).
-- **`pr@moreska.eu`** is for outward marketing listings owned long-term by the HGD campaign manager rather than the developer: **TripAdvisor** (#35), OTAs (#39), and any future review/press platforms. Register the listing's business account under this alias so ownership re-points by changing the ImprovMX forwarding target, not by recovering a personal account.
+- **`pr@moreska.eu`** is for outward marketing listings owned long-term by the HGD campaign manager rather than the developer: **TripAdvisor** (#35), OTAs (#39), and any future review/press platforms. Register the listing's business account under this alias so ownership re-points by changing where that address delivers, not by recovering a personal account.
 
-Both are ImprovMX forwarding aliases (no real mailbox), so adding one is near-zero cost. Verification on these platforms is normally phone-based (`+385 92 1532305`), so the email domain does not need to match the listed website. GBP staying on `info@` is the one intentional exception to "marketing goes on pr@"; keep *new* marketing listings on `pr@` so the split stays clean.
+`info@` is a real Google Workspace mailbox; `pr@` has no mailbox of its own and currently arrives via the Gmail catch-all (ImprovMX was retired in #223, see ADR-0004). Adding an address is still near-zero cost, but note that **`pr@` also carries social-platform account recovery**, so it must keep delivering — promote it to a Workspace alias if the catch-all is ever removed. Verification on these platforms is normally phone-based (`+385 92 1532305`), so the email domain does not need to match the listed website. GBP staying on `info@` is the one intentional exception to "marketing goes on pr@"; keep *new* marketing listings on `pr@` so the split stays clean.
 
 ### 1. Google Business Profile (HIGHEST PRIORITY — 2-week lead time)
 

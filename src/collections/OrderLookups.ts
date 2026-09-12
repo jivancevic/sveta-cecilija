@@ -1,26 +1,26 @@
 import type { CollectionConfig } from 'payload'
-import { isAdminTier } from '@/lib/access/roles'
+import { can, type PermissionUser } from '@/lib/access/permissions'
 
-const adminOnly = ({ req }: { req: { user: unknown } }) =>
-  isAdminTier(req.user as { role?: string } | null)
+const backoffice = ({ req }: { req: { user: unknown } }) =>
+  can(req.user as PermissionUser, 'tickets')
 
 // Audit log of door-side ticket lookups. Tehnika needs to find buyers by
 // email or name when an email didn't arrive — that widens read scope, so
-// every lookup is recorded for admin review. Visible to admins only;
-// hidden from the sidebar for tehnika.
+// every lookup is recorded for review by the backoffice. Read + sidebar are
+// `tickets`-only; a door account never sees the audit log it writes.
 export const OrderLookups: CollectionConfig = {
   slug: 'order-lookups',
   access: {
-    read: adminOnly,
+    read: backoffice,
     // System-created via the lookup API route (uses local API,
     // overrideAccess: true). Manual create/update/delete is admin-only.
-    create: adminOnly,
-    update: adminOnly,
-    delete: adminOnly,
+    create: backoffice,
+    update: backoffice,
+    delete: backoffice,
   },
   admin: {
     defaultColumns: ['user', 'show', 'query', 'matchedOrderId', 'createdAt'],
-    hidden: ({ user }) => !isAdminTier(user as { role?: string } | null),
+    hidden: ({ user }) => !can(user as PermissionUser, 'tickets'),
   },
   fields: [
     { name: 'user', type: 'relationship', relationTo: 'users' },

@@ -21,7 +21,9 @@ export function SeasonBand({
 }: {
   lang: AdminLang
   season: SeasonCapacity
-  revenueCents: number
+  /** Cash collected (cents), or null when the viewer has no `finance`
+   *  permission — the money tiles are then simply absent (#500). */
+  revenueCents?: number | null
   partnerReceivableCents?: number
   /** Season comp (goodwill) seats issued (#322, ADR-0019). A COUNT only —
    *  rendered apart from the money tiles and never summed into any total. */
@@ -61,12 +63,16 @@ export function SeasonBand({
           alignItems: 'end',
         }}
       >
-        {/* money figures (#237) graft here — MoneyFigures owns the two euro tiles */}
-        <MoneyFigures
-          lang={lang}
-          revenueCents={revenueCents}
-          partnerReceivableCents={partnerReceivableCents}
-        />
+        {/* money figures (#237) graft here — MoneyFigures owns the two euro
+            tiles. Since #500 money is the `finance` permission: a `tickets`
+            holder without it gets the band with counts only. */}
+        {revenueCents != null ? (
+          <MoneyFigures
+            lang={lang}
+            revenueCents={revenueCents}
+            partnerReceivableCents={partnerReceivableCents}
+          />
+        ) : null}
 
         <div style={{ minWidth: 0 }}>
           <div

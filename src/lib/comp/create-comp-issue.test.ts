@@ -128,6 +128,27 @@ describe('createCompIssue — validation + oversell', () => {
       createCompIssue({ ...base, today: '2026-07-13' }, deps()),
     ).rejects.toMatchObject({ code: 'SHOW_PAST' })
   })
+
+  // #407 (ADR-0024): comps consume real seats, so they are only issuable for a
+  // public performance. The form never offers a non-public one; the guard here
+  // catches a stale client or a hand-rolled POST.
+  it('rejects a non-public performance', async () => {
+    const d = deps({ loadShow: vi.fn(async () => ({ ...SHOW, isPublic: false })) })
+    await expect(createCompIssue(base, d)).rejects.toMatchObject({
+      code: 'SHOW_NOT_PUBLIC',
+    })
+    expect(d.persist as ReturnType<typeof vi.fn>).not.toHaveBeenCalled()
+  })
+
+  it('accepts an explicitly public performance and a row with no isPublic key', async () => {
+    const explicit = await createCompIssue(
+      base,
+      deps({ loadShow: vi.fn(async () => ({ ...SHOW, isPublic: true })) }),
+    )
+    expect(explicit.tickets).toHaveLength(3)
+    const legacy = await createCompIssue(base, deps())
+    expect(legacy.tickets).toHaveLength(3)
+  })
 })
 
 describe('createCompIssue — seat lock serialization (#179)', () => {

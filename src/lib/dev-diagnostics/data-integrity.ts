@@ -7,8 +7,11 @@
 //                            that silently dropped its seats).
 //   - ticketsWithoutOrder  : a ticket whose order_id points at nothing (the FK
 //                            should prevent this; the probe catches a broken DB).
-//   - pastActiveShows      : a show whose date is in the past but is still
-//                            status='active' (never cancelled/closed out).
+//   - pastActiveShows      : a PUBLIC show whose date is in the past but is
+//                            still status='active' (never cancelled/closed out).
+//                            Non-public performances (ADR-0024) are excluded:
+//                            they are a calendar record with no seats to close
+//                            out, so leaving them active is not an anomaly.
 //   - incompleteRefunds    : an order marked refund_status='refunded' that STILL
 //                            has active tickets — the refund didn't void its
 //                            seats. NOTE: the issue asked for "refunds stuck
@@ -16,6 +19,7 @@
 //                            has 'none'|'refunded' (no pending/failed state), so
 //                            this is the representable, meaningful equivalent.
 import type { PoolQuery } from '../tickets/sold-seats'
+import { publicPerformanceSql } from '../show-performance'
 
 export interface DataIntegrity {
   anomalies: {
@@ -51,7 +55,8 @@ export async function getDataIntegrity(query: PoolQuery): Promise<DataIntegrity>
         (SELECT count(*) FROM tickets t
            WHERE NOT EXISTS (SELECT 1 FROM orders o WHERE o.id = t.order_id)) AS tickets_without_order,
         (SELECT count(*) FROM shows
-           WHERE status = 'active' AND date < now()) AS past_active_shows,
+           WHERE status = 'active' AND date < now()
+             AND ${publicPerformanceSql()}) AS past_active_shows,
         (SELECT count(*) FROM orders o
            WHERE o.refund_status = 'refunded'
              AND EXISTS (SELECT 1 FROM tickets t WHERE t.order_id = o.id AND t.status = 'active')) AS incomplete_refunds

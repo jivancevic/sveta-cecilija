@@ -25,20 +25,24 @@ function renderSubject(locale: 'en' | 'hr', amount: string): string {
     : `Your refund of ${amount} - HGD Sveta Cecilija`
 }
 
+// Say "original payment method", never "your card": the Payment Element also
+// takes PayPal, Link and Revolut Pay, and Stripe reverses a refund down the same
+// rail it was charged on (a PayPal charge refunds as `pyr_`, not `re_`). Telling
+// a PayPal buyer to watch their card sends them looking in the wrong place.
 function renderHtml(input: SendRefundEmailInput, locale: 'en' | 'hr'): string {
   const amount = formatEur(input.amountCents)
   const venueLabel = VENUE_LABEL[locale][input.show.venue]
   if (locale === 'hr') {
     return `
       <p>Poštovani ${input.buyer.name},</p>
-      <p>Vaš povrat u iznosu od <strong>${amount}</strong> je obrađen i pojavit će se na vašoj kartici za 5–10 radnih dana.</p>
+      <p>Vaš povrat u iznosu od <strong>${amount}</strong> je obrađen i bit će vraćen na isti način plaćanja kojim ste platili, u roku od 5–10 radnih dana.</p>
       <p>Izvedba: ${input.show.date} u ${input.show.time}, ${venueLabel}.</p>
       <p>Hvala vam i ispričavamo se na neugodnosti.</p>
     `.trim()
   }
   return `
     <p>Hi ${input.buyer.name},</p>
-    <p>Your refund of <strong>${amount}</strong> has been processed and will appear on your card in 5–10 business days.</p>
+    <p>Your refund of <strong>${amount}</strong> has been processed and will be returned to your original payment method within 5–10 business days.</p>
     <p>Performance: ${input.show.date} at ${input.show.time}, ${venueLabel}.</p>
     <p>Thank you, and we apologise for the inconvenience.</p>
   `.trim()

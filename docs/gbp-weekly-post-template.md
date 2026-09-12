@@ -32,7 +32,7 @@ Adult €20 · Child €10
 
 **Description (HR)**
 ```
-Korčulanska viteška igra mačevima, izvedba HGD Sveta Cecilija, najstarijeg aktivnog moreškarskog ansambla u Hrvatskoj (od 1883.).
+Korčulanska viteška igra mačevima, izvedba HGD Sveta Cecilija, najstarijeg aktivnog moreškantskog ansambla u Hrvatskoj (od 1883.).
 
 📅 [Dan, datum]
 🕘 [Vrijeme]
@@ -84,7 +84,7 @@ Schedule and tickets: moreska.eu/tickets
 
 **HR**
 ```
-Moreškarska sezona 2026. otvara se [datum] u Ljetnom kinu. 500 godina mačeva, bratstva i princeze za koju se vrijedi boriti. Svaka izvedba je nova, nijedna nije ista.
+Moreškantska sezona 2026. otvara se [datum] u Ljetnom kinu. 500 godina mačeva, bratstva i princeze za koju se vrijedi boriti. Svaka izvedba je nova, nijedna nije ista.
 
 Raspored i ulaznice: moreska.eu/tickets
 ```

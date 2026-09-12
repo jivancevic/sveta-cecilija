@@ -17,15 +17,24 @@ const organizationJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'Organization',
   name: ORG_LEGAL_NAME,
+  // The name exactly as it stands in the Croatian associations register (RNO
+  // 0163001, OIB 52537805408). Reviewers at Google, Meta and the payment
+  // providers tie moreska.eu to the society through this, so it has to be the
+  // registered spelling, not the brand shorthand.
+  legalName: 'HRVATSKO GLAZBENO DRUŠTVO SV.CECILIJA - KORČULA',
   alternateName: BRAND_LAYER,
   foundingDate: '1883',
   url: SITE_URL,
   logo: `${SITE_URL}/cecilija-logo.webp`,
   slogan: TAGLINE,
   email: 'info@moreska.eu',
+  telephone: '+385 92 1532305',
+  taxID: '52537805408',
   address: {
     '@type': 'PostalAddress',
+    streetAddress: 'Knežev prolaz 1',
     addressLocality: 'Korčula',
+    postalCode: '20260',
     addressCountry: 'HR',
   },
   areaServed: {

@@ -19,6 +19,22 @@ knew about, plus a set of deprecated `t-com.hr` email aliases.
 | `moreska.eu` | Totohost | Hetzner DNS (`hydrogen/oxygen/helium.ns.hetzner.com`) | **Active — primary** | Nameserver delegation handed to Hetzner. Production site. |
 | `korcula-moreska.com` | Totohost (assumed) | — | **Active — legacy WP** | Old WordPress site. Stays up read-only through end of 2026 season so `checkinera` keeps scanning legacy QRs (`docs/todo.md` §0). 301 → `moreska.eu` planned at/after cutover (#11). |
 
+### Subdomains on the `moreska.eu` zone
+
+`A` records pointing at the one Hetzner box, `178.105.206.9`:
+
+| Host | Resolves? | Serves |
+|---|---|---|
+| `www` | yes | prod. Traefik strips the `www` (Coolify's per-app redirect setting, a 307). |
+| `dev` | yes | staging. Second Coolify app on the same box, tracks `main`. |
+| `app` | **no, parked by decision (2026-09-12, #479)** | nothing, see below |
+
+**`app.moreska.eu` is deliberately not live.** The redirect code shipped (`src/lib/app-subdomain.ts`, wired into `next.config.ts` `redirects()`, PR #485) and sits inert on prod because the host does not resolve. Josip's call when the ticket came up: `moreska.eu/app` is enough, because staff reach the app through the rehearsal QR, the installed PWA icon and the invitation link, never by typing an address. A vanity host buys nothing technical, only a shorter string to print or say out loud.
+
+Turning it on is two clicks whenever a poster wants the short name: add the `app` `A` record here, then append `https://app.moreska.eu` to the prod Coolify app's Domains field. DNS first, or Let's Encrypt cannot answer the HTTP-01 challenge. Every path then 301s to `https://moreska.eu/app`.
+
+**If you do turn it on, keep the redirect in code.** Coolify regenerates an app's Traefik labels whenever the domain list changes, so a hand-written `redirectregex` middleware disappears silently on the next domain edit. Config `redirects()` also runs *before* `src/proxy.ts`, which is what keeps the locale cookie off the vanity host.
+
 ### Regica — UNKNOWN, needs human login (issue #107, Task 1)
 
 A second registrar ("Regica") was discovered via `cecilija-passes/Password za Regica domene.txt`.
@@ -37,7 +53,7 @@ after the #11 cutover. For each domain found, decide whether to 301 → `moreska
 
 ## 2. Legacy org email addresses
 
-Canonical address is now **`info@moreska.eu`** (ImprovMX forwarder → personal inbox; see CLAUDE.md).
+Canonical address is now **`info@moreska.eu`** (real Google Workspace mailbox since 2026-08-13; see CLAUDE.md).
 All addresses below are **deprecated** and should be replaced with `info@moreska.eu` wherever found.
 
 Full inventory after the 2026-06-02 sweep (repo + live web). The `@korcula-moreska.com`
@@ -69,7 +85,7 @@ A fourth, `tickets@korcula-moreska.com` (old Tickera/WooCommerce ticketing addre
 > So cPanel tried to deliver `info@moreska.eu` locally (where no `info@` mailbox exists) and
 > refused the forwarder with *"already sends that email to the default address."* Fix: cPanel →
 > Email → **Email Routing** → `moreska.eu` → set to **Remote Mail Exchanger** (so the server
-> honours moreska.eu's real MX = ImprovMX). After that the forwarders save and reach the real
+> honours moreska.eu's real MX, which was ImprovMX at the time and is Google since #223). After that the forwarders save and reach the real
 > inbox. If you ever add another `@korcula-moreska.com` forwarder, this stays fixed — it's a
 > one-time per-domain setting.
 
@@ -95,13 +111,12 @@ wrong):**
    `hi.t-com.hr`. Awaiting reply; test each forward once HT confirms. (Contact channels: Moj Telekom
    Poslovni portal chat/ticket, or phone 0800 0005 / 0800 0900.)
 
-> **Interim caveat (ties to #173):** `info@moreska.eu` is currently just an ImprovMX forward to a
-> personal inbox — it is *not* a real shared mailbox yet, and has no reply-as. So forwarding the
-> society's main inbox there dumps all org mail into one personal inbox and replies won't come
-> *from* the org identity. That's acceptable as a "don't lose inquiries" stopgap, but it's exactly
-> the gap #173 (Google Workspace shared `info@`) closes. Keep-a-copy ON in HT so nothing is lost
-> while Workspace is provisioned; watch the destination spam folder (chained forwards can trip
-> spam filters).
+> **Resolved 2026-08-13 (#223).** This used to warn that `info@moreska.eu` was only an ImprovMX
+> forward into a personal inbox, with no shared mailbox and no reply-as. That gap is closed:
+> `info@` is a real Google Workspace mailbox (ADR-0010), so forwarding a legacy address here now
+> lands in the org inbox and replies go out *from* the org identity. Keep-a-copy ON at the source
+> is still sensible, and still watch the destination spam folder — chained forwards trip spam
+> filters regardless of who hosts the mailbox.
 
 ### Sweep status (Task 2)
 
@@ -109,8 +124,14 @@ wrong):**
   on the live `korcula-moreska.com` site or in the public business registry (fininfo.hr). The only
   address publicly published on the old site is **`sv.cecilija@korcula-moreska.com`** (homepage
   footer + `/contacts/`), which is also cited as the media contact on third-party tourism pages.
-- ✅ **Public registry (fininfo.hr):** lists website `www.korcula-moreska.com`, **no email**.
-  Website field still needs updating to `moreska.eu` post-cutover (already noted in CLAUDE.md).
+- ✅ **Public registry — fixed 2026-08-17 (#369).** The official record is the **RNO** (Registar
+  neprofitnih organizacija, RNO broj `0163001`, https://banovac.mfin.hr/rnoprt/, searchable by OIB,
+  no login). It now reads website `https://moreska.eu/` and e-mail `info@moreska.eu`. Changed by
+  e-mailing a signed **Obrazac RNO-P** to `neprofitno.racunovodstvo@mfin.hr` — free, no attachments
+  beyond the form, no county office; the ministry confirmed the entry the next working day.
+  The `fininfo.hr` mirror is a **third party that lags** and still showed
+  `www.korcula-moreska.com` as of 2026-08-21 — cite banovac, not fininfo, when a platform reviewer
+  needs to tie the society to the domain.
 - ☐ **Legacy WP DB grep — NOT done (needs human/DB access).** The `wpbp_*` tables can only be
   reached via Totohost cPanel/phpMyAdmin or a DB export; neither is available to an agent. Given
   the old site is going read-only and will be 301'd, editing its stored content is low value —
@@ -163,7 +184,8 @@ The original gap analysis:
 What exists:
 
 - **#53 (closed)** — provisioned the *new* `moreska.eu` aliases (`tickets@`, `pr@`, `bookings@`,
-  `press@`, `dev@` → `info@`). Forward-only model per **ADR-0004**.
+  `press@`, `dev@` → `info@`). Forward-only model per **ADR-0004**; that mechanism was replaced in
+  **#223** (Workspace alias for `tickets@`, Gmail catch-all for the rest).
 - **#65 (closed)** — created the HGD-controlled Google account on `info@moreska.eu`.
 - **#107 (this)** — *audits* the legacy addresses. It does not own a forwarding decision.
 - **#11 (cutover)** — sets up a **301 HTTP redirect** `korcula-moreska.com` → `moreska.eu`.
@@ -179,8 +201,10 @@ forward `sv.cecilija@korcula-moreska.com` → `info@moreska.eu`. Mechanism depen
 domain's mail lives post-cutover:
 - If `korcula-moreska.com` stays on Totohost cPanel through 2026 (it does, per `docs/todo.md` §0):
   add a cPanel **forwarder** now, zero cost.
-- If/when the domain's DNS moves to Hetzner: re-point MX to ImprovMX and add the forward there
-  (same pattern as `info@moreska.eu`), OR keep a catch-all forward.
+- If/when the domain's DNS moves to Hetzner: **do not reach for ImprovMX** — it was retired for
+  `moreska.eu` in #223 and reintroducing it re-opens the spam vector that motivated the removal
+  (senders target the highest-numbered MX to dodge filtering). Point that domain's MX at Google
+  too and add the address as an alias on `info@`, or keep a catch-all forward at the old host.
 - Decide the same for `klapa@` / `glazba@` (likely just retire — low/no current traffic).
 
 This is small but genuinely load-bearing for the cutover. Worth its own `ready-for-human` issue

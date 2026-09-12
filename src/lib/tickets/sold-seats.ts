@@ -52,6 +52,40 @@ export async function getActiveTicketCountForShow(
 }
 
 /**
+ * One dancer's ACTIVE, SELF-issued comp tickets on one show (#434).
+ *
+ * The number the four-ticket cap is measured against (glossary: *Moreškant
+ * comp*). Two filters carry the whole rule: `comp_issued_by = 'self'`, so an
+ * admin's comp for the same member never eats the dancer's allowance (#430,
+ * story 52), and `t.status = 'active'`, so a cancelled comp gives its
+ * allowance back exactly as it gives its seat back.
+ *
+ * The caller runs this INSIDE the per-show sell lock, next to the capacity
+ * check, so two taps cannot both read the same count and both pass.
+ */
+export async function getSelfCompTicketCount(
+  query: PoolQuery,
+  showId: number | string,
+  memberId: number | string,
+): Promise<number> {
+  const show = Number(showId)
+  const member = Number(memberId)
+  if (!Number.isFinite(show) || !Number.isFinite(member)) return 0
+  const res = await query(
+    `SELECT COUNT(*)::int AS issued
+     FROM tickets t
+     JOIN orders o ON o.id = t.order_id
+     WHERE o.show_id = $1
+       AND o.member_id = $2
+       AND o.channel = 'comp'
+       AND o.comp_issued_by = 'self'
+       AND t.status = 'active'`,
+    [show, member],
+  )
+  return Number(res.rows[0]?.issued ?? 0)
+}
+
+/**
  * Scanned (admitted) ticket count per show, keyed by stringified show id. Each
  * scanned active ticket is one person through the door (ADR-0007). Shows with
  * none are absent from the map (callers default to 0).
@@ -249,4 +283,44 @@ export async function getScannedTicketCountForShow(
     [numericId],
   )
   return Number(res.rows[0]?.scanned ?? 0)
+}
+
+/**
+ * Active ticket counts split by order channel, PER SHOW (#242 follow-up), keyed
+ * by stringified show id. The per-show sibling of
+ * getActiveTicketCountsByChannel: same active-only tickets⋈orders join, grouped
+ * by show as well as channel, so the season-trajectory bars can be stacked by
+ * where each seat came from instead of rendering one flat total.
+ *
+ * Same channel folding as the season version — `partner` and `comp` are their
+ * own buckets, anything else (including legacy NULLs) folds into `online` — and
+ * the same rule applies: `comp` is a seat, never a sale, so it must stay out of
+ * every money total. At-the-door seats have no ticket rows at all, so they are
+ * NOT in this map; the caller derives them from the show's offline counters.
+ * Shows with no tickets are absent (callers default to zeroes).
+ */
+export type ShowChannelCounts = { online: number; partner: number; comp: number }
+
+export async function getActiveTicketCountsByShowAndChannel(
+  query: PoolQuery,
+): Promise<Map<string, ShowChannelCounts>> {
+  const res = await query(`
+    SELECT o.show_id AS show_id, o.channel AS channel, COUNT(*)::int AS sold
+    FROM tickets t
+    JOIN orders o ON o.id = t.order_id
+    WHERE t.status = 'active'
+    GROUP BY o.show_id, o.channel
+  `)
+  const byShow = new Map<string, ShowChannelCounts>()
+  for (const row of res.rows) {
+    const showId = String(row.show_id)
+    const count = Number(row.sold) || 0
+    const channel = String(row.channel)
+    const entry = byShow.get(showId) ?? { online: 0, partner: 0, comp: 0 }
+    if (channel === 'partner') entry.partner += count
+    else if (channel === 'comp') entry.comp += count // goodwill, not a sales channel
+    else entry.online += count
+    byShow.set(showId, entry)
+  }
+  return byShow
 }

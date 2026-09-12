@@ -105,3 +105,36 @@ describe('previewVenueMove', () => {
     expect(result.venueChangedAt).toBe('2026-07-14T18:00:00Z')
   })
 })
+
+// #409 — a non-public performance (ship call, concert) has no venue, no buyers
+// and no tickets, so the bad-weather move must not run on one even when a stale
+// admin tab or a hand-built request asks for it.
+describe('non-public performances (#409)', () => {
+  it('refuses to move a non-public performance', async () => {
+    const deps = makeDeps({ getShow: vi.fn().mockResolvedValue(show({ isPublic: false })) })
+    await expect(moveShowToZimsko({ showId: '7', userId: '3' }, deps)).rejects.toThrow(
+      /not a public performance/i,
+    )
+    expect(deps.claimMove).not.toHaveBeenCalled()
+    expect(deps.sendVenueChangeEmail).not.toHaveBeenCalled()
+  })
+
+  it('refuses to preview a non-public performance', async () => {
+    const deps = makeDeps({ getShow: vi.fn().mockResolvedValue(show({ isPublic: false })) })
+    await expect(previewVenueMove('7', deps)).rejects.toThrow(/not a public performance/i)
+    expect(deps.findBuyers).not.toHaveBeenCalled()
+  })
+
+  it('still moves a row carrying no isPublic value (pre-phase-2 rows are public)', async () => {
+    const bare: VenueChangeShow = {
+      id: '7',
+      date: '2026-07-15',
+      time: '21:00',
+      venue: 'ljetno-kino',
+      venueChangedAt: null,
+    }
+    const deps = makeDeps({ getShow: vi.fn().mockResolvedValue(bare) })
+    const result = await moveShowToZimsko({ showId: '7', userId: '3' }, deps)
+    expect(result.status).toBe('moved')
+  })
+})

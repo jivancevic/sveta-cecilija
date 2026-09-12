@@ -9,6 +9,7 @@
 // boundary by converting created_at to the Zagreb zone before comparing.
 
 import type { PoolQuery } from '../tickets/sold-seats'
+import { publicPerformanceSql } from '../show-performance'
 import {
   buildReconciliationStatement,
   type ReconStatement,
@@ -74,6 +75,32 @@ async function loadPartnerTicketRows(
     status: r.status as 'active' | 'cancelled',
     cancelReason: (r.cancel_reason ?? null) as 'storno' | 'refund' | null,
     orderCreatedAt: r.order_created_at ? new Date(r.order_created_at as string).toISOString() : '',
+  }))
+}
+
+/**
+ * Every season performance the Statistika bars should draw: active AND public
+ * (#407, ADR-0024). A non-public performance (cruise call, concert, one-off) is
+ * something the partner could never have sold, so a zero bar for it would only
+ * make the chart disagree with the sell form. The public predicate comes from
+ * the one place it is spelled (`publicPerformanceSql`).
+ *
+ * Note the partner ledger / reconciliation queries above are order-joined
+ * (`FROM tickets JOIN orders`), so they can only ever surface shows the partner
+ * actually sold — they need no filter and stay untouched.
+ */
+export async function getStatistikaShows(
+  query: PoolQuery,
+): Promise<Array<{ showId: string; showDate: string }>> {
+  const res = await query(
+    `SELECT id, date FROM shows
+      WHERE status = 'active' AND ${publicPerformanceSql()}
+      ORDER BY date`,
+    [],
+  )
+  return res.rows.map((r) => ({
+    showId: String((r as { id: unknown }).id),
+    showDate: toIsoShowDate((r as { date: unknown }).date),
   }))
 }
 

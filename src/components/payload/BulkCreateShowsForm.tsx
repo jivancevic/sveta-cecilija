@@ -158,7 +158,7 @@ export function BulkCreateShowsForm() {
               required
               style={inputStyle}
             >
-              <option value="ljetno-kino">Ljetno kino (320)</option>
+              <option value="ljetno-kino">Ljetno kino (350)</option>
               <option value="zimsko-kino">Zimsko kino / Centar za kulturu (250)</option>
             </select>
           </div>

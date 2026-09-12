@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { Posts } from './Posts'
 
-type ReadAccess = (args: { req: { user: unknown } }) => unknown
 type FieldHook = (args: { value?: unknown; data?: unknown }) => unknown
 type Field = {
   name: string
@@ -21,57 +20,8 @@ describe('Posts collection', () => {
     expect(Posts.slug).toBe('posts')
   })
 
-  describe('access.read', () => {
-    const read = Posts.access!.read as ReadAccess
-
-    it('admin-tier sees everything (returns true, no where filter)', () => {
-      expect(read({ req: { user: { role: 'superadmin' } } })).toBe(true)
-      expect(read({ req: { user: { role: 'admin' } } })).toBe(true)
-    })
-
-    it('tehnika is treated as public (no admin bypass) — published-only filter applied', () => {
-      const result = read({ req: { user: { role: 'tehnika' } } })
-      expect(typeof result).toBe('object')
-      const where = result as { and: Array<Record<string, unknown>> }
-      expect(where.and).toEqual(
-        expect.arrayContaining([
-          { status: { equals: 'published' } },
-        ]),
-      )
-    })
-
-    it('anonymous visitor gets a published-only, dated-in-the-past filter', () => {
-      const result = read({ req: { user: null } }) as {
-        and: Array<Record<string, unknown>>
-      }
-      expect(result.and).toEqual(
-        expect.arrayContaining([
-          { status: { equals: 'published' } },
-        ]),
-      )
-      const datedFilter = result.and.find((f) => 'publishedAt' in f) as
-        | { publishedAt: { less_than_equal: string } }
-        | undefined
-      expect(datedFilter).toBeDefined()
-      // The filter is a snapshot of "now" at access time. Verify shape only.
-      expect(datedFilter!.publishedAt.less_than_equal).toMatch(
-        /^\d{4}-\d{2}-\d{2}T/,
-      )
-    })
-  })
-
-  describe('access.create/update/delete', () => {
-    it.each(['create', 'update', 'delete'] as const)(
-      '%s is admin-tier-only — tehnika is rejected',
-      (op) => {
-        const fn = Posts.access![op] as ReadAccess
-        expect(fn({ req: { user: { role: 'tehnika' } } })).toBe(false)
-        expect(fn({ req: { user: { role: 'admin' } } })).toBe(true)
-        expect(fn({ req: { user: { role: 'superadmin' } } })).toBe(true)
-        expect(fn({ req: { user: null } })).toBe(false)
-      },
-    )
-  })
+  // Access is permission-driven since #395 and is covered, for every verb and
+  // every bundle, by collections/access.test.ts.
 
   describe('slug field', () => {
     const field = findField('slug')

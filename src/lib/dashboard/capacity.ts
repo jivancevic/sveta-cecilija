@@ -40,7 +40,15 @@ export interface SeasonCapacity {
   percent: number
 }
 
-/** Season-wide sold / capacity rollup. Cancelled shows are excluded. */
+/**
+ * Season-wide sold / capacity rollup. Cancelled shows are excluded.
+ *
+ * NOTE "season" here means every show in the table, un-windowed — correct only
+ * while the database holds a single season. The member dashboard defines a real
+ * season (current calendar year) in `lib/member/season.ts`; migrating this
+ * figure onto it would change the secretary dashboard's historical totals, so
+ * it is a deliberate separate change (ADR-0022 Consequences), not a drive-by.
+ */
 export function seasonCapacity(shows: DashboardShow[]): SeasonCapacity {
   let totalSold = 0
   let totalCapacity = 0

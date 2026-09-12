@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { assertPurchasable, type PurchasableShow } from './purchasability'
+import { assertPurchasable, CheckoutValidationError, type PurchasableShow } from './purchasability'
 
 // Pin the clock. Several cases build "today"/"tomorrow" shows and assert
 // whether they're past the online-sale cutoff (start +1h, Europe/Zagreb). Left
@@ -47,6 +47,18 @@ describe('assertPurchasable', () => {
     expect(() => assertPurchasable(baseShow({ status: 'cancelled' }), { adults: 1, children: 0 })).toThrow(/cancelled/i)
   })
 
+  it('rejects a show whose online sales are paused', () => {
+    expect(() =>
+      assertPurchasable(baseShow({ onlineSalesPaused: true }), { adults: 1, children: 0 }),
+    ).toThrow(/closed/i)
+  })
+
+  it('allows a purchase when onlineSalesPaused is explicitly false', () => {
+    expect(() =>
+      assertPurchasable(baseShow({ onlineSalesPaused: false }), { adults: 1, children: 0 }),
+    ).not.toThrow()
+  })
+
   it('rejects a show that already started', () => {
     const past = new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString()
     expect(() => assertPurchasable(baseShow({ date: past }), { adults: 1, children: 0 })).toThrow(/past/i)
@@ -79,47 +91,74 @@ describe('assertPurchasable', () => {
   })
 
   it('rejects when requested quantity exceeds remaining capacity', () => {
-    // ljetno-kino capacity = 320, activeTicketCount = 319 → remaining 1
+    // ljetno-kino capacity = 350, activeTicketCount = 349 → remaining 1
     expect(() =>
-      assertPurchasable(baseShow({ activeTicketCount: 319 }), { adults: 2, children: 0 }),
+      assertPurchasable(baseShow({ activeTicketCount: 349 }), { adults: 2, children: 0 }),
     ).toThrow(/capacity|remaining/i)
   })
 
   it('rejects when sold out', () => {
     expect(() =>
-      assertPurchasable(baseShow({ activeTicketCount: 320 }), { adults: 1, children: 0 }),
+      assertPurchasable(baseShow({ activeTicketCount: 350 }), { adults: 1, children: 0 }),
     ).toThrow(/sold out|capacity|remaining/i)
   })
 
   it('counts both online and in-person sales against capacity', () => {
     expect(() =>
-      assertPurchasable(baseShow({ activeTicketCount: 200, inPersonSold: 121 }), { adults: 1, children: 0 }),
+      assertPurchasable(baseShow({ activeTicketCount: 200, inPersonSold: 151 }), { adults: 1, children: 0 }),
     ).toThrow()
   })
 
   it('defaults legacyReserved to 0 when omitted (back-compat with pre-#60 callers)', () => {
-    // ljetno-kino capacity = 320; sold = 319; legacy unset → remaining 1, 1 ticket allowed
+    // ljetno-kino capacity = 350; sold = 349; legacy unset → remaining 1, 1 ticket allowed
     expect(() =>
-      assertPurchasable(baseShow({ activeTicketCount: 319 }), { adults: 1, children: 0 }),
+      assertPurchasable(baseShow({ activeTicketCount: 349 }), { adults: 1, children: 0 }),
     ).not.toThrow()
   })
 
   it('subtracts legacyReserved from venue capacity', () => {
-    // 320 − 0 − 0 − 100 = 220 remaining
+    // 350 − 0 − 0 − 100 = 250 remaining
     expect(() =>
-      assertPurchasable(baseShow({ legacyReserved: 100 }), { adults: 220, children: 0 }),
+      assertPurchasable(baseShow({ legacyReserved: 100 }), { adults: 250, children: 0 }),
     ).not.toThrow()
     expect(() =>
-      assertPurchasable(baseShow({ legacyReserved: 100 }), { adults: 221, children: 0 }),
+      assertPurchasable(baseShow({ legacyReserved: 100 }), { adults: 251, children: 0 }),
     ).toThrow(/capacity|remaining/i)
   })
 
   it('treats legacy + online + in-person == capacity as sold out', () => {
     expect(() =>
       assertPurchasable(
-        baseShow({ activeTicketCount: 100, inPersonSold: 20, legacyReserved: 200 }),
+        baseShow({ activeTicketCount: 100, inPersonSold: 20, legacyReserved: 230 }),
         { adults: 1, children: 0 },
       ),
     ).toThrow(/capacity|remaining|sold out/i)
+  })
+  it('rejects a non-public performance (ADR-0024): it has no seats to sell', () => {
+    expect(() =>
+      assertPurchasable(baseShow({ isPublic: false }), { adults: 1, children: 0 }),
+    ).toThrow(/not on sale|non-public|not available/i)
+  })
+
+  it('reports NOT_PUBLIC as the error code for a non-public performance', () => {
+    try {
+      assertPurchasable(baseShow({ isPublic: false }), { adults: 1, children: 0 })
+      throw new Error('expected assertPurchasable to throw')
+    } catch (err) {
+      expect((err as CheckoutValidationError).code).toBe('NOT_PUBLIC')
+    }
+  })
+
+  it('rejects a non-public performance before any capacity maths runs (venue may be null)', () => {
+    expect(() =>
+      assertPurchasable(
+        baseShow({ isPublic: false, venue: null as unknown as 'ljetno-kino' }),
+        { adults: 1, children: 0 },
+      ),
+    ).toThrow(/not on sale|non-public|not available/i)
+  })
+
+  it('treats a show with no isPublic key as public (pre-expand rows and older fixtures)', () => {
+    expect(() => assertPurchasable(baseShow({}), { adults: 1, children: 0 })).not.toThrow()
   })
 })

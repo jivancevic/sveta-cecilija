@@ -15,6 +15,16 @@ export interface SendTicketEmailInput {
   // orderId only for legacy callers without a code.
   orderCode?: string
   locale: 'en' | 'hr'
+  // Optional PDF-rendering flags passed straight through to renderTicketsPdf.
+  // The online webhook omits these (defaults render a paid slip). Comp/partner
+  // sends set them so an emailed comp slip reads "Complimentary" (never a
+  // €-price) and a partner slip carries its SOLD BY row — parity with the
+  // downloadable /api/orders/[id]/tickets.pdf.
+  pdf?: {
+    free?: boolean
+    seller?: { name: string }
+    showClaimPrompt?: boolean
+  }
 }
 
 export interface SendTicketEmailDeps {
@@ -83,6 +93,9 @@ export async function sendTicketEmail(
         // the email body itself stays in the buyer's locale.
         locale: 'en',
         orderRef: input.orderCode ?? input.orderId,
+        free: input.pdf?.free,
+        seller: input.pdf?.seller,
+        showClaimPrompt: input.pdf?.showClaimPrompt,
       },
       { generateQrPng: deps.generateQrPng },
     )

@@ -11,11 +11,13 @@
 
 import { issueTickets, type IssuedOrder, type TicketType } from '../tickets/ticket-issuance'
 import { assertCanSell } from '../tickets/seat-availability'
+import { isPublicPerformance } from '../show-performance'
 
 export type CompIssueErrorCode =
   | 'INVALID_QUANTITY'
   | 'MEMBER_REQUIRED'
   | 'SHOW_NOT_FOUND'
+  | 'SHOW_NOT_PUBLIC'
   | 'SHOW_INACTIVE'
   | 'SHOW_PAST'
   | 'OVERSELL'
@@ -35,6 +37,11 @@ export interface CompIssueShow {
   /** YYYY-MM-DD (or ISO; only the date part is compared). */
   date: string
   status: 'active' | 'cancelled'
+  /**
+   * Public performance flag (ADR-0024). Omitted on rows that predate the expand
+   * (and on older fixtures), which are public by definition.
+   */
+  isPublic?: boolean
   /** VENUE_CAPACITY[venue], resolved by the caller. */
   capacity: number
   inPersonSold: number
@@ -111,6 +118,15 @@ export async function createCompIssue(
   const show = await deps.loadShow(showId)
   if (!show) {
     throw new CompIssueError('SHOW_NOT_FOUND', 'Show not found')
+  }
+  // Comps consume real seats, so they exist only for public performances
+  // (ADR-0024, #407). The form offers public ones only; this catches a stale
+  // client or a hand-rolled POST.
+  if (!isPublicPerformance(show as unknown as Record<string, unknown>)) {
+    throw new CompIssueError(
+      'SHOW_NOT_PUBLIC',
+      'This performance is not a public show; comp tickets cannot be issued for it',
+    )
   }
   if (show.status !== 'active') {
     throw new CompIssueError('SHOW_INACTIVE', 'This show is cancelled and cannot be issued')

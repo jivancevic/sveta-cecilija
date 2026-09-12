@@ -1,4 +1,5 @@
 import type { Venue } from './venues'
+import { assertPublicPerformance } from './show-admin-actions'
 
 // Pure orchestration for the bad-weather "move a show Ljetno → Zimsko" admin
 // action (#94). The route wires the real DB + Brevo; this stays DI + testable.
@@ -23,6 +24,11 @@ export interface VenueChangeShow {
   time: string
   venue: Venue
   venueChangedAt: string | null
+  /**
+   * #409 — absent on pre-phase-2 rows, which are public by definition. A
+   * non-public performance has no venue and no buyers, so the move refuses.
+   */
+  isPublic?: boolean | null
 }
 
 export interface VenueChangeBuyer {
@@ -57,6 +63,7 @@ export async function moveShowToZimsko(
 ): Promise<MoveToZimskoResult> {
   const show = await deps.getShow(input.showId)
   if (!show) throw new Error('Show not found')
+  assertPublicPerformance(show as unknown as Record<string, unknown>)
 
   if (show.venueChangedAt) {
     return { status: 'already-moved', venueChangedAt: show.venueChangedAt }
@@ -98,6 +105,7 @@ export async function previewVenueMove(
 ): Promise<PreviewVenueMoveResult> {
   const show = await deps.getShow(showId)
   if (!show) throw new Error('Show not found')
+  assertPublicPerformance(show as unknown as Record<string, unknown>)
   const buyers = await deps.findBuyers(showId)
   return {
     alreadyMoved: !!show.venueChangedAt,

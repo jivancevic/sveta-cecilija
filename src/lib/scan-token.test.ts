@@ -2,6 +2,7 @@ import { describe, it, expect, vi } from 'vitest'
 import {
   scanToken,
   canUndoScan,
+  scanViewerFor,
   undoScan,
   admitParty,
   UNDO_WINDOW_MS,
@@ -315,5 +316,31 @@ describe('admitParty', () => {
     const atomicAdmitParty = vi.fn().mockResolvedValue(0)
     const result = await admitParty('ord_1', { atomicAdmitParty })
     expect(result).toEqual({ status: 'ADMITTED', admitted: 0 })
+  })
+})
+
+
+// The /scan/[token] staff-vs-buyer split (#396). `door` is the door account's
+// whole bundle and a ticket admin holds it too, so either opens the staff view.
+describe('scanViewerFor', () => {
+  it.each([
+    ['the door account', { permissions: ['door'] }],
+    ['a ticket admin', { permissions: ['tickets', 'refunds', 'door'] }],
+    ['a tickets-only holder', { permissions: ['tickets'] }],
+    ['the users holder', { permissions: ['users', 'tickets', 'refunds', 'door', 'partner', 'dev'] }],
+  ])('gives %s the staff view', (_label, user) => {
+    expect(scanViewerFor(user)).toBe('staff')
+  })
+
+  it.each([
+    ['a partner login', { permissions: ['partner'] }],
+    ['the shared member account', { permissions: ['season_stats'] }],
+    ['an empty set', { permissions: [] }],
+    ['a malformed set', { permissions: 'door' }],
+    ['an unknown word only', { permissions: ['doorman'] }],
+    ['a session with no permission set at all', {} as { permissions?: unknown }],
+    ['no session at all', null],
+  ])('gives %s the buyer view', (_label, user) => {
+    expect(scanViewerFor(user)).toBe('buyer')
   })
 })

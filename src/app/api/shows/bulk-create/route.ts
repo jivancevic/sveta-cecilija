@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { requireRole } from '@/lib/access/route-guard'
-import { isAdminTier } from '@/lib/access/roles'
+import { requirePermission } from '@/lib/access/route-guard'
+import { PUBLIC_PERFORMANCE_WHERE } from '@/lib/show-performance'
+import {
+  createPerformancesInBulk,
+  payloadBulkDeps,
+  type BulkCreatePayload,
+  type BulkPerformanceRow,
+} from '@/lib/performance-bulk-create'
 
 export async function POST(req: NextRequest) {
-  const gate = await requireRole(req, isAdminTier)
+  const gate = await requirePermission(req, 'tickets')
   if (gate.error) return gate.error
   const { payload } = gate
 
@@ -44,11 +50,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ created: [], skipped: [], message: 'No dates match the selected days in that range' })
   }
 
-  // Fetch existing shows in range to detect duplicates
+  // Fetch existing shows in range to detect duplicates. Only PUBLIC ones count:
+  // a non-public performance (a ship call, a concert) on the same day is not a
+  // duplicate of a Redovna and must not suppress it (ADR-0024).
   const existingShows = await payload.find({
     collection: 'shows',
     where: {
       and: [
+        PUBLIC_PERFORMANCE_WHERE,
         { date: { greater_than_equal: start.toISOString() } },
         { date: { less_than_equal: new Date(endDate + 'T23:59:59Z').toISOString() } },
       ],
@@ -64,8 +73,8 @@ export async function POST(req: NextRequest) {
     }),
   )
 
-  const created: string[] = []
   const skipped: string[] = []
+  const rows: BulkPerformanceRow[] = []
 
   for (const date of targetDates) {
     const dateStr = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
@@ -75,19 +84,32 @@ export async function POST(req: NextRequest) {
       continue
     }
 
-    await payload.create({
-      collection: 'shows',
+    rows.push({
+      dateStr,
       data: {
         date: date.toISOString(),
         time,
         venue,
+        // Bulk create is the ticket backoffice's tool: it only ever produces
+        // public Redovna shows (ADR-0024). `kind` and `isPublic` are written
+        // here, never read from the request body.
+        kind: 'redovna',
+        isPublic: true,
         onlineSold: 0,
         inPersonSold: 0,
         status: 'active',
       },
     })
-    created.push(dateStr)
   }
+
+  // The transaction, the per-create `skipRosterPush` flag and the ONE summary
+  // push all live in `performance-bulk-create.ts`, shared with the MCP
+  // `create_performances` tool (#438) so a season entered from Claude behaves
+  // exactly like a season entered from `/admin`.
+  const { created } = await createPerformancesInBulk(
+    rows,
+    payloadBulkDeps(payload as unknown as BulkCreatePayload),
+  )
 
   return NextResponse.json({ created, skipped })
 }

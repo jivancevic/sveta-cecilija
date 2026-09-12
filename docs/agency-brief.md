@@ -1,0 +1,17 @@
+Sastanak agencija Kaleta
+- dosad su imali svoj profil na tickets.korcula-moreska.com
+    - ne zele pisat ime prezime i mail svaki put, gostima to nije bitno, oni samo isprintaju kartu s QR kodom
+- dosad: jedna karta, jedan pdf. Jedna karta po osobi (to bi trebalo implementirati i za sve karte). Žele kad se printaju karte, da bude jedan pdf za sve karte tako da imaju samo jedan dokument za isprintat po grupi.
+- agencije
+    - prodaju, preko svog POS-a, karte za istu cijenu kao na stranici (20€ odrasli, 10€ djeca)
+    - Cecilija izda račun umanjen za proviziju
+        - izračuna se koliko karata su prodali, koliko su zaradili, ispostavi im se račun umanjen za proviziju (za njih je 10%)
+        - na kraju miseca
+- karte za agenciju
+    - govori da je A4 za kartu veliko, ima rezač, razmišlja da bi bilo najbolje 2 karte na A4 papiru
+- voljela bi vidit statistiku
+    - vidit po sezoni koliko su karata prodali
+    - vidit po nastupu koliko su karata prodali
+    - vidit zadnjih par prodanih karata
+- moze se stornirat karta
+    - na dan nastup
