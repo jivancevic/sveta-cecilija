@@ -1,6 +1,7 @@
+import { shortShowDay } from '@/lib/app/partner-screen'
 import { loadStatementScreen } from '@/lib/app/statement-data'
 import type { StatBar } from '@/lib/partner/partner-stats'
-import { APP_STRINGS, formatPerformanceDate } from '@/lib/app/strings'
+import { APP_STRINGS } from '@/lib/app/strings'
 import { AppShell } from '../AppShell'
 import { PartnerNotice } from '../PartnerNotice'
 import { openScreen } from '../gate'
@@ -72,7 +73,7 @@ function SeasonBars({ bars }: { bars: StatBar[] }) {
       <ul className="app__statbars">
         {bars.map((bar) => (
           <li key={bar.showId} className="app__statbar">
-            <span className="app__statbar-date">{formatPerformanceDate(bar.showDate)}</span>
+            <span className="app__statbar-date">{shortShowDay(bar.showDate)}</span>
             <span className="app__statbar-track">
               <i className="app__statbar-adults" style={{ width: `${(bar.adults / max) * 100}%` }} />
               <i

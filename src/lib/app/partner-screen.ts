@@ -13,7 +13,7 @@
 
 import { ADULT_PRICE_EUR, CHILD_PRICE_EUR } from '@/lib/pricing'
 import { VENUE_LABEL, type Venue } from '@/lib/venues'
-import { formatPerformanceDateLong } from './strings'
+import { formatPerformanceDateLong, shortMonthLabel } from './strings'
 
 const CENTS_PER_EUR = 100
 
@@ -94,6 +94,20 @@ export function sellOptions(shows: readonly SellShowInput[]): SellOption[] {
  */
 export function stepperMax(remaining: number, other: number): number {
   return Math.max(0, remaining - other)
+}
+
+/**
+ * "24. ruj" — a performance day short enough for a dense row.
+ *
+ * Both partner screens put an izvedba date inside a line that already carries a
+ * code, a clock, a headcount and a price, where the full "četvrtak, 24. rujna"
+ * wraps on a phone. A calendar date is a string, never an instant, so this
+ * splits it rather than going through `Date` and risking a timezone shift.
+ */
+export function shortShowDay(isoDate: string): string {
+  const [, month, day] = (isoDate ?? '').split('-').map(Number)
+  if (!month || !day) return isoDate ?? ''
+  return `${day}. ${shortMonthLabel(month)}`
 }
 
 /** What a party costs, in EUR cents. Prices are fixed (CLAUDE.md hard rule). */

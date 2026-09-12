@@ -3,6 +3,7 @@ import {
   partnerScreenState,
   saleTotalCents,
   sellOptions,
+  shortShowDay,
   stepperMax,
   type SellShowInput,
 } from './partner-screen'
@@ -72,6 +73,24 @@ describe('stepperMax', () => {
   it('never goes below zero, whatever the other category holds', () => {
     expect(stepperMax(4, 9)).toBe(0)
     expect(stepperMax(0, 0)).toBe(0)
+  })
+})
+
+describe('shortShowDay', () => {
+  it('shortens a calendar date to the day and the short month', () => {
+    expect(shortShowDay('2026-09-24')).toBe('24. ruj')
+    expect(shortShowDay('2026-07-01')).toBe('1. srp')
+  })
+
+  it('never goes through a Date, so no zone can move the day', () => {
+    // 31 December at UTC midnight is 1 January in Zagreb; a calendar date must
+    // survive that unchanged, because it is a day and not an instant.
+    expect(shortShowDay('2026-12-31')).toBe('31. pro')
+  })
+
+  it('hands back anything that is not a date rather than printing NaN', () => {
+    expect(shortShowDay('')).toBe('')
+    expect(shortShowDay('nije datum')).toBe('nije datum')
   })
 })
 

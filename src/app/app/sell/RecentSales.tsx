@@ -3,7 +3,8 @@
 import { Fragment, useCallback, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { RecentSalePageRow } from '@/lib/partner/recent-sales-page'
-import { APP_STRINGS, formatPerformanceDate } from '@/lib/app/strings'
+import { shortShowDay } from '@/lib/app/partner-screen'
+import { APP_STRINGS, shortMonthLabel } from '@/lib/app/strings'
 import { DrainBanner } from '../DrainBanner'
 
 // "Zadnje prodaje" (#505), ported from `PartnerRecentSales`.
@@ -36,17 +37,25 @@ type Undo = { orderId: string; ticketId?: string; label: string; ms: number }
 
 const eur = (cents: number) => `${(cents / 100).toFixed(2).replace('.', ',')} €`
 
-/** "17. 7. u 14:32" — when the sale was rung up, in Zagreb time. */
+/** "17. srp 14:32" — when the sale was rung up, in Zagreb time. */
 function soldAt(iso: string): string {
   if (!iso) return ''
-  return new Date(iso).toLocaleString('hr-HR', {
-    day: 'numeric',
-    month: 'numeric',
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  // en-CA + the Zagreb zone yields YYYY-MM-DD, which is the only locale-stable
+  // way to get the LOCAL calendar day out of an instant.
+  const [, month, day] = d
+    .toLocaleDateString('en-CA', { timeZone: 'Europe/Zagreb' })
+    .split('-')
+    .map(Number)
+  const clock = d.toLocaleTimeString('hr-HR', {
     hour: '2-digit',
     minute: '2-digit',
     timeZone: 'Europe/Zagreb',
   })
+  return `${day}. ${shortMonthLabel(month)} ${clock}`
 }
+
 
 export function RecentSales({ initial }: { initial: RecentPage }) {
   const router = useRouter()
@@ -203,7 +212,7 @@ export function RecentSales({ initial }: { initial: RecentPage }) {
               <>
                 <b>{sale.code}</b>
                 <span className="app__sale-meta">
-                  {soldAt(sale.createdAt)} · {formatPerformanceDate(sale.showDate)} ·{' '}
+                  {soldAt(sale.createdAt)} · {shortShowDay(sale.showDate)} ·{' '}
                   {sale.adultCount + sale.childCount}
                 </span>
                 <span className="app__sale-money">{eur(sale.totalCents)}</span>
