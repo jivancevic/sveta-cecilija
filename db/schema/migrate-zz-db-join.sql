@@ -63,10 +63,19 @@ CREATE TABLE IF NOT EXISTS app_join_claims (
     member_id   integer NOT NULL REFERENCES members(id) ON DELETE CASCADE,
     code        text,
     secret_hash text NOT NULL,
-    -- pending | approved | rejected | expired. Plain text rather than an enum
-    -- for the `performance_notifications.type` reason: these are our own
-    -- values, never a Payload select field, and widening a text column costs
-    -- nothing while widening an enum needs its own migration (db-bootstrap.md).
+    -- Three digits the dancer reads off their own screen and the voditelj sees
+    -- beside the name (#463 review). NOT a secret and not derived from one: it
+    -- exists because approval is a tap on a NAME, and the person whose name it
+    -- is has no other way to prove the waiting phone is theirs. A stranger with
+    -- the code who taps somebody's name first gets a different number, which is
+    -- the whole check.
+    pairing     text,
+    -- pending | approving | approved | rejected | expired | used. Plain text
+    -- rather than an enum for the `performance_notifications.type` reason:
+    -- these are our own values, never a Payload select field, and widening a
+    -- text column costs nothing while widening an enum needs its own migration
+    -- (db-bootstrap.md). `approving` is the atomic claim a decision takes
+    -- before it creates a login, so two voditelji cannot both create one.
     status      text NOT NULL DEFAULT 'pending',
     user_id     integer REFERENCES users(id) ON DELETE SET NULL,
     created_at  timestamp(3) with time zone DEFAULT now() NOT NULL,
@@ -88,3 +97,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS app_join_claims_one_pending_idx
 
 CREATE INDEX IF NOT EXISTS app_join_claims_status_idx
   ON app_join_claims USING btree (status, created_at);
+
+-- Added after the table shipped in the same PR, so a database bootstrapped from
+-- the first version of this file gains the column on the next restart.
+ALTER TABLE app_join_claims ADD COLUMN IF NOT EXISTS pairing text;

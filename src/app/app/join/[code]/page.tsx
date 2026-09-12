@@ -30,9 +30,18 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 }
 
+/** A path segment that is not valid percent-encoding is simply not a code. */
+function decodeSegment(raw: string): string {
+  try {
+    return decodeURIComponent(raw)
+  } catch {
+    return ''
+  }
+}
+
 export default async function JoinPage({ params }: { params: Promise<{ code: string }> }) {
   const { code: raw } = await params
-  const code = normalizeJoinCode(decodeURIComponent(raw ?? ''))
+  const code = normalizeJoinCode(decodeSegment(raw ?? ''))
 
   const live = code ? await joinCodeIsLive(code) : false
   if (!live) {

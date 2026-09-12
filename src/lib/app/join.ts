@@ -102,6 +102,8 @@ export interface JoinClaim {
   memberId: string | number
   status: string
   userId: string | number | null
+  /** The three digits this device is showing; handed back so a reload keeps them. */
+  pairing?: string | null
   expiresAt: Date | string
 }
 
@@ -125,7 +127,7 @@ export function codeIsLive(code: JoinCode | null | undefined, now: number): bool
 
 export interface JoinClaimResult {
   status: number
-  body: { ok: true; status: 'pending' } | { error: string }
+  body: { ok: true; status: 'pending'; pairing: string } | { error: string }
   /** The device credential, to be set as an httpOnly cookie by the route. */
   secret?: string
 }
@@ -151,6 +153,17 @@ export interface JoinClaimDeps {
   /** A fresh, unguessable device credential. */
   makeSecret: () => string
   /**
+   * Three digits the dancer reads off their own screen (#463 review).
+   *
+   * Not a credential and never checked by the server: the voditelj checks it,
+   * by eye, against the person in front of them. It exists because approval is
+   * a tap on a NAME, and a name is exactly what a stranger holding the code can
+   * also tap. Without it the dancer whose name was taken reads "somebody is
+   * already waiting for this name", assumes it is their own request, and asks
+   * the voditelj to approve the stranger's phone.
+   */
+  makePairing: () => string
+  /**
    * Writes the claim. Resolves false when the partial unique index refused it,
    * which means this Member already has a pending claim: somebody in the room
    * (possibly this dancer, on their other phone) got there first.
@@ -159,6 +172,7 @@ export interface JoinClaimDeps {
     memberId: string | number
     code: string
     secret: string
+    pairing: string
     expiresAtMs: number
   }) => Promise<boolean>
 }
@@ -225,12 +239,14 @@ export async function handleJoinClaim(
   if (hasLogin) return { status: 409, body: { error: APP_STRINGS.join.alreadyHasLogin } }
 
   const secret = deps.makeSecret()
+  const pairing = deps.makePairing()
   let written = false
   try {
     written = await deps.insertClaim({
       memberId: member.id,
       code,
       secret,
+      pairing,
       expiresAtMs: now + JOIN_CLAIM_TTL_MS,
     })
   } catch {
@@ -238,7 +254,7 @@ export async function handleJoinClaim(
   }
   if (!written) return { status: 409, body: { error: APP_STRINGS.join.alreadyPending } }
 
-  return { status: 200, body: { ok: true, status: 'pending' }, secret }
+  return { status: 200, body: { ok: true, status: 'pending', pairing }, secret }
 }
 
 // ---------------------------------------------------------------------------
@@ -247,7 +263,13 @@ export async function handleJoinClaim(
 
 export interface JoinStatusResult {
   status: number
-  body: { status: JoinStatus }
+  /**
+   * `pairing` rides along with a pending answer so a phone that reloaded (or
+   * was locked and reopened) can show the dancer their number again. It is the
+   * claim's own, and the caller proved that with the claim secret in its
+   * cookie, so this hands the device nothing it did not already have.
+   */
+  body: { status: JoinStatus; pairing?: string | null }
   /** The session cookie, on approval only. */
   setCookie?: string
   /** True once the claim is spent, so the route clears the join cookie. */
@@ -260,8 +282,12 @@ export interface JoinStatusDeps {
   /** The plaintext secret from the device's httpOnly cookie, if any. */
   secret: string | null
   loadClaimBySecret: (secret: string) => Promise<JoinClaim | null>
-  /** Marks the claim spent, so one approval opens exactly one session. */
-  markClaimUsed: (claimId: string | number) => Promise<void>
+  /**
+   * Spends the claim, and reports whether THIS call is the one that spent it.
+   * False means another poll got there first (#463 review), and this one must
+   * open nothing: the phone's poll does not wait for its own last request.
+   */
+  markClaimUsed: (claimId: string | number) => Promise<boolean>
   openSession: (userId: string | number) => Promise<string>
 }
 
@@ -298,15 +324,22 @@ export async function handleJoinStatus(deps: JoinStatusDeps): Promise<JoinStatus
   if (expired(claim.expiresAt, deps.now()) || claim.status === 'expired' || claim.status === 'used') {
     return { status: 200, body: { status: 'expired' }, clearJoinCookie: true }
   }
+  // `approving` is a decision in flight: the voditelj has tapped and the login
+  // is being opened. It is still a wait from the phone's point of view.
   if (claim.status !== 'approved' || claim.userId == null) {
-    return { status: 200, body: { status: 'pending' } }
+    return { status: 200, body: { status: 'pending', pairing: claim.pairing ?? null } }
   }
 
+  let spent = false
   try {
-    await deps.markClaimUsed(claim.id)
+    spent = await deps.markClaimUsed(claim.id)
   } catch {
     return { status: 500, body: { status: 'pending' } }
   }
+  // Somebody else already turned this approval into a session — on this same
+  // device, one poll ago. Saying `expired` rather than minting a second session
+  // is what makes "one approval, one session" true rather than aspirational.
+  if (!spent) return { status: 200, body: { status: 'expired' }, clearJoinCookie: true }
 
   let cookie: string
   try {
@@ -342,6 +375,16 @@ export interface JoinDecideDeps {
   now: () => number
   caller: { id: string | number }
   loadClaim: (claimId: string) => Promise<JoinClaim | null>
+  /**
+   * Takes the decision atomically: false when somebody else already has it.
+   * Everything after this point CREATES an account, so two voditelji tapping
+   * the same row a second apart must not both get past here (#463 review).
+   */
+  claimDecision: (claimId: string | number, deciderId: string | number) => Promise<boolean>
+  /** Hands it back when the login could not be opened after all. */
+  releaseDecision: (claimId: string | number) => Promise<void>
+  /** Marks a claim nobody answered in time, so it stops blocking the Member. */
+  expireClaim: (claimId: string | number) => Promise<void>
   loadMember: (memberId: string) => Promise<JoinMember | null>
   memberHasLogin: (memberId: string) => Promise<boolean>
   /**
@@ -390,6 +433,15 @@ export async function handleJoinDecide(
   if (!claim) return { status: 404, body: { error: APP_STRINGS.join.badClaim } }
   if (claim.status !== 'pending') return { status: 409, body: { error: APP_STRINGS.join.decided } }
   if (expired(claim.expiresAt, deps.now())) {
+    // Mark it, do not merely refuse it: a row left `pending` past its expiry is
+    // one the Member can never replace, because the partial unique index counts
+    // it (#463 review). The claim route sweeps these too; this is the other
+    // door to the same state.
+    try {
+      await deps.expireClaim(claim.id)
+    } catch {
+      // The refusal below is the answer either way.
+    }
     return { status: 409, body: { error: APP_STRINGS.join.claimExpired } }
   }
 
@@ -402,6 +454,27 @@ export async function handleJoinDecide(
     return { status: 200, body: { ok: true, decision } }
   }
 
+  // From here on the decision creates an account, so take it exclusively first.
+  let mine = false
+  try {
+    mine = await deps.claimDecision(claim.id, deps.caller.id)
+  } catch {
+    return { status: 500, body: { error: APP_STRINGS.join.unexpected } }
+  }
+  if (!mine) return { status: 409, body: { error: APP_STRINGS.join.decided } }
+
+  // Every refusal below has to hand the claim back, or a voditelj who taps on a
+  // dancer that turns out to be ineligible leaves the row stuck in `approving`,
+  // where nothing can see it and nothing can decide it.
+  const release = async (result: JoinDecideResult): Promise<JoinDecideResult> => {
+    try {
+      await deps.releaseDecision(claim!.id)
+    } catch {
+      // Nothing better to do: the answer to the voditelj is unchanged.
+    }
+    return result
+  }
+
   const memberId = String(claim.memberId)
   let member: JoinMember | null = null
   try {
@@ -410,16 +483,16 @@ export async function handleJoinDecide(
     member = null
   }
   if (!member || member.isMoreskant !== true || member.active === false) {
-    return { status: 400, body: { error: APP_STRINGS.join.badMember } }
+    return release({ status: 400, body: { error: APP_STRINGS.join.badMember } })
   }
 
   let hasLogin = true
   try {
     hasLogin = await deps.memberHasLogin(memberId)
   } catch {
-    return { status: 500, body: { error: APP_STRINGS.join.unexpected } }
+    return release({ status: 500, body: { error: APP_STRINGS.join.unexpected } })
   }
-  if (hasLogin) return { status: 409, body: { error: APP_STRINGS.join.alreadyHasLogin } }
+  if (hasLogin) return release({ status: 409, body: { error: APP_STRINGS.join.alreadyHasLogin } })
 
   let login: JoinLoginOutcome
   try {
@@ -430,9 +503,11 @@ export async function handleJoinDecide(
   if (!login.ok) {
     // The takeover guard (#462 review) speaks for itself; anything else is a
     // write that did not happen, and pressing again is the fix.
-    return login.reason === 'staff-login'
-      ? { status: 409, body: { error: APP_STRINGS.invite.staffLogin } }
-      : { status: 500, body: { error: APP_STRINGS.join.loginFailed } }
+    return release(
+      login.reason === 'staff-login'
+        ? { status: 409, body: { error: APP_STRINGS.invite.staffLogin } }
+        : { status: 500, body: { error: APP_STRINGS.join.loginFailed } },
+    )
   }
 
   try {

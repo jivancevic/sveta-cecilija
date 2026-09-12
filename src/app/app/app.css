@@ -2488,3 +2488,41 @@ a.app__ob-link {
   color: var(--muted);
   overflow-wrap: anywhere;
 }
+
+/* The pairing number (#463 review). On the waiting dancer's screen it is the
+   only thing they have to do, so it is the biggest thing on it; beside the name
+   in the voditelj's queue it is a chip, because there it is a comparison rather
+   than an instruction. */
+.app__join-pairing {
+  margin-top: 18px;
+  text-align: center;
+}
+
+.app__join-pairing .app__join-pairing-label {
+  margin: 0 0 4px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* Scoped through the wrapper, not written as a bare class: this screen is a
+   `.app__panel`, and `.app__panel p` (0,1,1) would otherwise win on specificity
+   and paint the number muted grey — the trap `.app__more-row span` set for the
+   #462 list, one screen over. */
+.app__join-pairing .app__join-pairing-value {
+  margin: 0;
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 44px;
+  letter-spacing: 0.14em;
+  color: var(--goldBright);
+}
+
+.app__join-pairing-chip {
+  margin-left: 8px;
+  padding: 2px 8px;
+  border: 1px solid var(--cardEdge);
+  border-radius: 999px;
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 12px;
+  color: var(--goldBright);
+  white-space: nowrap;
+}

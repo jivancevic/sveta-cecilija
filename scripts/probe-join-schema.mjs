@@ -21,6 +21,11 @@
 //   2. second bootstrap → no error, nothing duplicated (the restart case);
 //   3. one PENDING claim per Member: a second is refused, while a second claim
 //      after the first was decided is allowed (the retry case);
+//   3b. the expiry sweep: a claim nobody answered is marked `expired` by the
+//      next claim for that Member, so the partial index stops blocking them.
+//      Without this a two-hour-old row locks a dancer out of the join flow for
+//      good, and a stranger with a live code could do it to the whole roster
+//      (#463 review);
 //   4. the secret hash is unique across the whole table;
 //   5. deleting a Member takes their claims; deleting a login leaves the claim
 //      with a NULL user_id rather than deleting the history;
@@ -73,6 +78,7 @@ async function assertShape(client, label) {
       'member_id',
       'code',
       'secret_hash',
+      'pairing',
       'status',
       'user_id',
       'created_at',
@@ -181,8 +187,8 @@ async function main() {
     )
     const claim = (hash) =>
       client.query(
-        `INSERT INTO app_join_claims (member_id, code, secret_hash, expires_at)
-         VALUES ($1, 'ABC123', $2, now() + interval '2 hours')
+        `INSERT INTO app_join_claims (member_id, code, secret_hash, pairing, expires_at)
+         VALUES ($1, 'ABC123', $2, '473', now() + interval '2 hours')
          ON CONFLICT DO NOTHING
          RETURNING id`,
         [member, hash],
@@ -199,6 +205,34 @@ async function main() {
     const third = await claim('hash-three')
     check('a new claim IS allowed once the first was decided', third.rowCount === 1)
 
+    // --- 3b. the expiry sweep frees the Member -------------------------------
+    console.log('[probe] an unanswered claim stops blocking the Member')
+    // Clear the pending row step 3 left behind, so this section starts from the
+    // one state it is about: a Member with a single, expired, pending claim.
+    await client.query(`UPDATE app_join_claims SET status = 'rejected' WHERE id = $1`, [
+      third.rows[0].id,
+    ])
+    const stale = await scalar(
+      client,
+      `INSERT INTO app_join_claims (member_id, code, secret_hash, pairing, expires_at)
+       VALUES ($1, 'ABC123', 'hash-stale', '111', now() - interval '1 minute')
+       RETURNING id AS v`,
+      [member],
+    )
+    check('the stale claim is written (it replaced the decided one)', stale != null)
+    // What `insertJoinClaim` does before every INSERT.
+    const swept = await client.query(
+      `UPDATE app_join_claims SET status = 'expired'
+        WHERE member_id = $1 AND status = 'pending' AND expires_at <= now()`,
+      [member],
+    )
+    check('the sweep marks exactly the expired row', swept.rowCount === 1)
+    const afterSweep = await claim('hash-four')
+    check('the dancer can claim again once it is swept', afterSweep.rowCount === 1)
+    await client.query(`UPDATE app_join_claims SET status = 'rejected' WHERE id = $1`, [
+      afterSweep.rows[0].id,
+    ])
+
     // --- 4. the secret hash is unique ---------------------------------------
     console.log('[probe] the claim secret hash is unique')
     const other = await scalar(
@@ -209,8 +243,8 @@ async function main() {
     let duplicateRefused = false
     try {
       await client.query(
-        `INSERT INTO app_join_claims (member_id, code, secret_hash, expires_at)
-         VALUES ($1, 'ABC123', 'hash-three', now() + interval '2 hours')`,
+        `INSERT INTO app_join_claims (member_id, code, secret_hash, pairing, expires_at)
+         VALUES ($1, 'ABC123', 'hash-three', '473', now() + interval '2 hours')`,
         [other],
       )
     } catch {

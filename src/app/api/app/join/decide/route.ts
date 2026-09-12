@@ -2,7 +2,15 @@ import { NextResponse } from 'next/server'
 import { requirePermission } from '@/lib/access/route-guard'
 import { appRequestMeta } from '@/lib/app/request-guard'
 import { handleJoinDecide } from '@/lib/app/join'
-import { approveJoinClaim, findClaimById, poolQuery, rejectJoinClaim } from '@/lib/app/join-store'
+import {
+  approveJoinClaim,
+  claimJoinDecision,
+  expireJoinClaim,
+  findClaimById,
+  poolQuery,
+  rejectJoinClaim,
+  releaseJoinDecision,
+} from '@/lib/app/join-store'
 import { ensureJoinLogin, loadJoinMember, memberHasLogin } from '@/lib/app/join-data'
 
 // POST /api/app/join/decide — the voditelj's one tap (#463).
@@ -35,6 +43,9 @@ export async function POST(req: Request) {
     now: () => Date.now(),
     caller: { id: user.id },
     loadClaim: (claimId) => findClaimById(query, claimId),
+    claimDecision: (claimId, deciderId) => claimJoinDecision(query, claimId, deciderId),
+    releaseDecision: (claimId) => releaseJoinDecision(query, claimId),
+    expireClaim: (claimId) => expireJoinClaim(query, claimId),
     loadMember: (memberId) => loadJoinMember(payload, memberId),
     memberHasLogin: (memberId) => memberHasLogin(payload, memberId),
     ensureLogin: (member) => ensureJoinLogin(payload, member),

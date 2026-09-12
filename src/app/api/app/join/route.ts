@@ -3,7 +3,13 @@ import { getPayload } from 'payload'
 import config from '@payload-config'
 import { appRequestMeta } from '@/lib/app/request-guard'
 import { handleJoinClaim, JOIN_CLAIM_TTL_MS } from '@/lib/app/join'
-import { findJoinCode, insertJoinClaim, makeJoinSecret, poolQuery } from '@/lib/app/join-store'
+import {
+  findJoinCode,
+  insertJoinClaim,
+  makeJoinPairing,
+  makeJoinSecret,
+  poolQuery,
+} from '@/lib/app/join-store'
 import { loadJoinMember, memberHasLogin } from '@/lib/app/join-data'
 import { joinClaimCookie } from '@/lib/app/join-cookie'
 import { joinRateLimiter } from '@/lib/rate-limit/join-rate-limit'
@@ -41,6 +47,7 @@ export async function POST(req: Request) {
     loadMember: (memberId) => loadJoinMember(payload, memberId),
     memberHasLogin: (memberId) => memberHasLogin(payload, memberId),
     makeSecret: makeJoinSecret,
+    makePairing: makeJoinPairing,
     insertClaim: (row) => insertJoinClaim(query, row),
   })
 

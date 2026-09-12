@@ -75,6 +75,7 @@ function claimDeps(overrides: Partial<JoinClaimDeps> = {}): JoinClaimDeps {
     loadMember: vi.fn().mockResolvedValue(cici),
     memberHasLogin: vi.fn().mockResolvedValue(false),
     makeSecret: () => 'secret-abc',
+    makePairing: () => '473',
     insertClaim: vi.fn().mockResolvedValue(true),
     ...overrides,
   }
@@ -171,12 +172,13 @@ describe('handleJoinClaim — success', () => {
     const d = claimDeps()
     const result = await handleJoinClaim({ code: ' abc123 ', memberId: '12' }, d)
     expect(result.status).toBe(200)
-    expect(result.body).toEqual({ ok: true, status: 'pending' })
+    expect(result.body).toEqual({ ok: true, status: 'pending', pairing: '473' })
     expect(result.secret).toBe('secret-abc')
     expect(d.insertClaim).toHaveBeenCalledWith({
       memberId: 12,
       code: 'ABC123',
       secret: 'secret-abc',
+      pairing: '473',
       expiresAtMs: NOW + JOIN_CLAIM_TTL_MS,
     })
   })
@@ -196,7 +198,7 @@ function statusDeps(overrides: Partial<JoinStatusDeps> = {}): JoinStatusDeps {
       userId: null,
       expiresAt: new Date(NOW + 3_600_000),
     }),
-    markClaimUsed: vi.fn().mockResolvedValue(undefined),
+    markClaimUsed: vi.fn().mockResolvedValue(true),
     openSession: vi.fn().mockResolvedValue('payload-token=jwt; Path=/; HttpOnly'),
     ...overrides,
   }
@@ -220,7 +222,7 @@ describe('handleJoinStatus', () => {
 
   it('keeps the phone waiting while the claim is pending', async () => {
     const result = await handleJoinStatus(statusDeps())
-    expect(result.body).toEqual({ status: 'pending' })
+    expect(result.body).toEqual({ status: 'pending', pairing: null })
     expect(result.setCookie).toBeUndefined()
   })
 
@@ -254,6 +256,7 @@ describe('handleJoinStatus', () => {
       loadClaimBySecret: vi.fn().mockResolvedValue(approved),
       markClaimUsed: vi.fn(async () => {
         order.push('used')
+        return true
       }),
       openSession: vi.fn(async () => {
         order.push('session')
@@ -264,12 +267,38 @@ describe('handleJoinStatus', () => {
     expect(order).toEqual(['used', 'session'])
   })
 
+  // The poll is a plain setInterval that does not await its own last request, so
+  // on a bad connection two overlap. Only the one that actually spent the claim
+  // may mint a session (#463 review).
+  it('signs nobody in when another poll already spent the claim', async () => {
+    const d = statusDeps({
+      loadClaimBySecret: vi.fn().mockResolvedValue(approved),
+      markClaimUsed: vi.fn().mockResolvedValue(false),
+    })
+    const result = await handleJoinStatus(d)
+    expect(result.body).toEqual({ status: 'expired' })
+    expect(result.clearJoinCookie).toBe(true)
+    expect(d.openSession).not.toHaveBeenCalled()
+  })
+
+  it('keeps the phone waiting while a decision is in flight', async () => {
+    const d = statusDeps({
+      loadClaimBySecret: vi
+        .fn()
+        .mockResolvedValue({ ...approved, status: 'approving', userId: null, pairing: '473' }),
+    })
+    const result = await handleJoinStatus(d)
+    // The number rides along so a phone that reloaded can show it again.
+    expect(result.body).toEqual({ status: 'pending', pairing: '473' })
+    expect(d.openSession).not.toHaveBeenCalled()
+  })
+
   it('does not sign anybody in for an approved claim with no login on it', async () => {
     const d = statusDeps({
       loadClaimBySecret: vi.fn().mockResolvedValue({ ...approved, userId: null }),
     })
     const result = await handleJoinStatus(d)
-    expect(result.body).toEqual({ status: 'pending' })
+    expect(result.body).toEqual({ status: 'pending', pairing: null })
     expect(d.openSession).not.toHaveBeenCalled()
   })
 })
@@ -288,6 +317,9 @@ function decideDeps(overrides: Partial<JoinDecideDeps> = {}): JoinDecideDeps {
       userId: null,
       expiresAt: new Date(NOW + 3_600_000),
     }),
+    claimDecision: vi.fn().mockResolvedValue(true),
+    releaseDecision: vi.fn().mockResolvedValue(undefined),
+    expireClaim: vi.fn().mockResolvedValue(undefined),
     loadMember: vi.fn().mockResolvedValue(cici),
     memberHasLogin: vi.fn().mockResolvedValue(false),
     ensureLogin: vi.fn().mockResolvedValue({ ok: true, id: 99, username: 'cici' }),
@@ -380,5 +412,80 @@ describe('handleJoinDecide', () => {
     const result = await handleJoinDecide({ claimId: '5', decision: 'approve' }, d)
     expect(result.status).toBe(403)
     expect(d.loadClaim).not.toHaveBeenCalled()
+  })
+})
+
+/**
+ * The three things the #463 review found, each of which was a way to leave a
+ * dancer stuck or to mint two accounts for one person.
+ */
+describe('handleJoinDecide — the decision is taken exclusively', () => {
+  it('creates nothing when somebody else already took the decision', async () => {
+    const d = decideDeps({ claimDecision: vi.fn().mockResolvedValue(false) })
+    const result = await handleJoinDecide({ claimId: '5', decision: 'approve' }, d)
+    expect(result.status).toBe(409)
+    expect(result.body).toEqual({ error: APP_STRINGS.join.decided })
+    expect(d.ensureLogin).not.toHaveBeenCalled()
+    expect(d.approve).not.toHaveBeenCalled()
+  })
+
+  it('takes the decision BEFORE it opens a login', async () => {
+    const order: string[] = []
+    const d = decideDeps({
+      claimDecision: vi.fn(async () => {
+        order.push('claim')
+        return true
+      }),
+      ensureLogin: vi.fn(async () => {
+        order.push('login')
+        return { ok: true as const, id: 99, username: 'cici' }
+      }),
+    })
+    await handleJoinDecide({ claimId: '5', decision: 'approve' }, d)
+    expect(order).toEqual(['claim', 'login'])
+  })
+
+  // A claim left in `approving` is invisible to the list and undecidable, which
+  // is the same lockout by another door.
+  it.each([
+    ['the member retired', { loadMember: vi.fn().mockResolvedValue({ ...cici, active: false }) }],
+    ['the member already has a login', { memberHasLogin: vi.fn().mockResolvedValue(true) }],
+    [
+      'the login turns out to be staff',
+      { ensureLogin: vi.fn().mockResolvedValue({ ok: false, reason: 'staff-login' }) },
+    ],
+    [
+      'the login could not be created',
+      { ensureLogin: vi.fn().mockResolvedValue({ ok: false, reason: 'create-failed' }) },
+    ],
+  ])('hands the claim back when %s', async (_label, overrides) => {
+    const d = decideDeps(overrides)
+    await handleJoinDecide({ claimId: '5', decision: 'approve' }, d)
+    expect(d.releaseDecision).toHaveBeenCalledWith(5)
+  })
+
+  it('does not hand it back on success', async () => {
+    const d = decideDeps()
+    await handleJoinDecide({ claimId: '5', decision: 'approve' }, d)
+    expect(d.releaseDecision).not.toHaveBeenCalled()
+  })
+
+  // Nothing else writes `expired`, and a `pending` row past its expiry still
+  // counts against the one-pending index: leaving it would lock the Member out
+  // of the join flow for good (#463 review).
+  it('marks an expired claim expired rather than only refusing it', async () => {
+    const d = decideDeps({
+      loadClaim: vi.fn().mockResolvedValue({
+        id: 5,
+        memberId: 12,
+        status: 'pending',
+        userId: null,
+        expiresAt: new Date(NOW - 1),
+      }),
+    })
+    const result = await handleJoinDecide({ claimId: '5', decision: 'approve' }, d)
+    expect(result.status).toBe(409)
+    expect(d.expireClaim).toHaveBeenCalledWith(5)
+    expect(d.claimDecision).not.toHaveBeenCalled()
   })
 })

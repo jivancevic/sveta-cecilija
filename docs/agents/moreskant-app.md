@@ -561,8 +561,10 @@ QUEUE, not a door — which is also what makes it safe to print.
 | the page | public like `/app/instalacija` and for the same reason, but it WRITES. Names only — no mobile, no e-mail, no roles (`getJoinCandidates` is where that projection is stated) |
 | who is listed | active moreškanti with no login, which is `memberEligibility` (#462), not a second definition |
 | one claim | a **partial unique index** on `member_id WHERE status='pending'`, so two phones cannot queue one dancer twice and mint two logins. The route reads the refusal as "somebody already asked" |
-| the claim secret | the device's credential: httpOnly cookie (`Path=/`, both halves of the flow need it), SHA-256 in the database, spent BEFORE the session is minted so one approval opens exactly one session |
-| the approval | re-checks eligibility, because minutes pass between the tap in the hall and the tap on the voditelj's phone: in that gap the dancer may have been invited by SMS, retired or un-flagged |
+| the claim secret | the device's credential: httpOnly cookie (`Path=/`, both halves of the flow need it), SHA-256 in the database, spent BEFORE the session is minted. `markJoinClaimUsed` REPORTS whether this call is the one that spent it, and a caller told "no" opens nothing — the phone's poll is a plain `setInterval` that does not wait for its own last request, so on a bad connection two overlap |
+| the pairing number | three digits on the waiting phone and beside the name in the queue. Approval is a tap on a NAME, which is exactly what a stranger holding the code can also tap; the number is how the person in front of the voditelj proves the waiting phone is theirs. The server never checks it — it is a check between two people — and it rides back with a pending status so a reloaded phone can still read it out |
+| the approval | takes the claim ATOMICALLY first (`status='approving'`), then re-checks eligibility, then creates the login. Both halves matter: without the atomic take, two voditelji a second apart both find no login and both create one (there is deliberately no unique index on `users.member`), and without the re-check an approval minutes later can mint a second account for a dancer who was invited by SMS in the meantime. Every refusal after the take hands the claim back |
+| a claim nobody answers | is marked `expired` lazily, by whoever trips over it: the dancer's next claim sweeps it, and a voditelj's late tap marks it. That is not tidying — a `pending` row past its expiry still counts against the partial unique index, so leaving it would lock that Member out of the join flow **for good**, and a stranger with a live code could do that to the whole roster in one pass (#463 review) |
 | the throttle | sized for the room: a hall of dancers is ONE NAT, so 60/hour per IP and 200/hour per code (`join-rate-limit.ts`). A blocked caller is told plainly, unlike `/api/app/forgot` — whoever holds a live code is already looking at the list |
 
 Two raw tables, `app_join_codes` and `app_join_claims`
@@ -571,6 +573,11 @@ OAuth tables follow. `scripts/probe-join-schema.mjs` proves the partial index,
 the unique secret, both cascades and the restart/upgrade paths against a real
 throwaway Postgres; the pure rules are `join.ts` + `join.test.ts`, the SQL is
 `join-store.ts`, and the Payload half is `join-data.ts`.
+
+The dancer's page **asks for its own status before it renders anything**, so a
+phone that reloaded, or was locked and reopened, rejoins the wait instead of
+being shown the list and refused with "somebody is already waiting for this
+name" — which was itself, one minute earlier (#463 review).
 
 **Recovery, when something goes wrong mid-flow**: the failure that leaves a
 trace is an approval whose login was opened but whose claim write failed. The

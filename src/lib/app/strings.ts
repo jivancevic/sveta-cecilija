@@ -415,11 +415,19 @@ export const APP_STRINGS = {
     badCode: 'Kod nije ispravan ili je istekao. Zatraži novi od voditelja.',
     badMember: 'Taj član nije na popisu aktivnih moreškanata.',
     alreadyHasLogin: 'Taj moreškant već ima prijavu. Zatraži poveznicu od voditelja.',
-    alreadyPending: 'Zahtjev za tog moreškanta već čeka potvrdu.',
+    alreadyPending:
+      'Zahtjev za tog moreškanta već čeka potvrdu. Ako to nisi ti, reci voditelju da ga odbije.',
     throttled: 'Previše pokušaja. Pričekaj malo pa probaj ponovno.',
     empty: 'Svi aktivni moreškanti već imaju prijavu.',
+    loading: 'Trenutak...',
     /** The wait, which is the screen a dancer actually sits on. */
     waiting: 'Javili smo voditelju. Čekaj potvrdu, ne zatvaraj ovu stranicu.',
+    /**
+     * The pairing number (#463 review). The voditelj taps a NAME, and a name is
+     * what anybody holding the code can also tap; this is how the person in
+     * front of them proves the waiting phone is theirs.
+     */
+    pairingLabel: 'Reci voditelju ovaj broj:',
     approved: 'Potvrđeno. Otvaram aplikaciju...',
     rejected: 'Zahtjev nije potvrđen. Javi se voditelju.',
     expired: 'Zahtjev je istekao. Odaberi svoje ime ponovno.',
@@ -438,6 +446,9 @@ export const APP_STRINGS = {
     /** Rotating kills the old one, which is the point: say so before the tap. */
     rotateHint: 'Novi kod poništava stari, pa stara slika QR-a više ne vrijedi.',
     pendingTitle: 'Čekaju potvrdu',
+    /** Shown beside the name: it must match the number on the dancer's screen. */
+    pairingCheck: (code: string) => `broj ${code}`,
+    pairingHint: 'Potvrdi tek kad ti moreškant pročita isti broj koji piše uz njegovo ime.',
     pendingNone: 'Nema zahtjeva.',
     approve: 'Potvrdi',
     reject: 'Odbij',

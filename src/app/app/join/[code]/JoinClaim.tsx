@@ -11,22 +11,27 @@ import type { JoinCandidate } from '@/lib/app/join-data'
 // list, and then the wait that ends with the app opening by itself. The wait is
 // a poll rather than a push, since the device has no account yet and therefore
 // no subscription; five seconds is well inside how long a voditelj takes to
-// look at their phone, and the page is in the foreground the whole time because
-// the dancer is watching it.
+// look at their phone, and the page is in the foreground because the dancer is
+// watching it.
 //
-// The poll stops on every terminal answer and after `MAX_POLLS` (ten minutes),
-// so a phone left on a bench does not sit there asking forever.
+// **It asks once on mount, before showing anything.** A phone that already has
+// a pending claim in its cookie — reloaded, locked and reopened, or back after
+// the ten-minute cap — would otherwise be shown the list again, and its tap
+// would be refused as "somebody is already waiting for this name" (which is
+// itself, one minute ago). That was a dead end the dancer could not get out of
+// (#463 review).
 
 /** Five seconds: the voditelj is in the room, not in another timezone. */
 const POLL_MS = 5000
 /** Ten minutes of waiting is not a wait any more, it is a misunderstanding. */
 const MAX_POLLS = 120
 
-type Phase = 'list' | 'waiting' | 'approved' | 'rejected' | 'expired'
+type Phase = 'loading' | 'list' | 'waiting' | 'approved' | 'rejected' | 'expired'
 
 export function JoinClaim({ code, candidates }: { code: string; candidates: JoinCandidate[] }) {
   const router = useRouter()
-  const [phase, setPhase] = useState<Phase>('list')
+  const [phase, setPhase] = useState<Phase>('loading')
+  const [pairing, setPairing] = useState<string | null>(null)
   const [busyId, setBusyId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const polls = useRef(0)
@@ -37,13 +42,37 @@ export function JoinClaim({ code, candidates }: { code: string; candidates: Join
       headers: { 'Content-Type': 'application/json' },
       body: '{}',
     })
-    const body = (await res.json().catch(() => null)) as { status?: string } | null
+    const body = (await res.json().catch(() => null)) as
+      | { status?: string; pairing?: string | null }
+      | null
+    // The number comes back with a pending answer, so a phone that reloaded can
+    // show the dancer what to read out. It is this device's own claim.
+    if (body?.pairing) setPairing(body.pairing)
     return body?.status ?? 'pending'
   }, [])
 
-  // The wait. It starts when a name has been tapped and ends on any answer that
-  // is not "pending": on `approved` the status route has already set the
-  // session cookie, so all this has to do is go to `/app`.
+  // Does this device already have a claim in flight? Asked once, before the
+  // list is rendered, so a reload rejoins the wait instead of starting a second
+  // request that the index would refuse.
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      try {
+        const status = await poll()
+        if (cancelled) return
+        setPhase(status === 'pending' ? 'waiting' : 'list')
+      } catch {
+        if (!cancelled) setPhase('list')
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [poll])
+
+  // The wait. It ends on any answer that is not "pending": on `approved` the
+  // status route has already set the session cookie, so all this has to do is
+  // go to `/app`.
   useEffect(() => {
     if (phase !== 'waiting') return
     let cancelled = false
@@ -92,12 +121,15 @@ export function JoinClaim({ code, candidates }: { code: string; candidates: Join
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code, memberId: candidate.id }),
       })
-      const body = (await res.json().catch(() => null)) as { error?: string } | null
+      const body = (await res.json().catch(() => null)) as
+        | { error?: string; pairing?: string }
+        | null
       if (!res.ok) {
         setError(body?.error ?? APP_STRINGS.join.unexpected)
         setBusyId(null)
         return
       }
+      setPairing(body?.pairing ?? null)
       setPhase('waiting')
     } catch {
       setError(APP_STRINGS.join.unexpected)
@@ -105,11 +137,30 @@ export function JoinClaim({ code, candidates }: { code: string; candidates: Join
     setBusyId(null)
   }
 
+  if (phase === 'loading') {
+    return (
+      <p className="app__lead" role="status">
+        {APP_STRINGS.join.loading}
+      </p>
+    )
+  }
+
   if (phase === 'waiting' || phase === 'approved') {
     return (
-      <p className="app__notice" role="status">
-        {phase === 'approved' ? APP_STRINGS.join.approved : APP_STRINGS.join.waiting}
-      </p>
+      <>
+        <p className="app__notice" role="status">
+          {phase === 'approved' ? APP_STRINGS.join.approved : APP_STRINGS.join.waiting}
+        </p>
+        {/* The number the voditelj has to see next to the name before they
+            approve. It is what separates "this phone asked for Ivan" from
+            "somebody asked for Ivan" (#463 review). */}
+        {phase === 'waiting' && pairing && (
+          <div className="app__join-pairing">
+            <p className="app__join-pairing-label">{APP_STRINGS.join.pairingLabel}</p>
+            <p className="app__join-pairing-value">{pairing}</p>
+          </div>
+        )}
+      </>
     )
   }
 

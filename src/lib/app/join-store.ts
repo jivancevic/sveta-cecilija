@@ -42,6 +42,17 @@ export function makeJoinSecret(): string {
   return randomBytes(32).toString('hex')
 }
 
+/**
+ * Three digits, 100-999, for the dancer's screen and the voditelj's eye.
+ *
+ * Not a credential: the server never checks it, so it needs no entropy budget.
+ * It needs to be sayable across a room and different from the number the other
+ * phone is showing, which three digits are.
+ */
+export function makeJoinPairing(): string {
+  return String(100 + randomInt(900))
+}
+
 /** A fresh code off the unambiguous alphabet, drawn with the CSPRNG. */
 export function freshJoinCode(): string {
   return makeJoinCode((max) => randomInt(max))
@@ -97,20 +108,35 @@ export async function findJoinCode(query: JoinQuery, code: string): Promise<Join
 /**
  * Write a claim. False when the partial unique index refused it, which means
  * this Member already has one pending: the index is the rule, not a handler.
+ *
+ * The UPDATE first is **load-bearing, not tidying** (#463 review). Nothing else
+ * ever writes `expired`, so without it a claim nobody answered stays `pending`
+ * for good: the voditelj's list hides it (it filters on `expires_at`), a
+ * decision on it is refused, and the index then refuses the dancer's next tap
+ * as well. The dancer would be locked out of the join flow permanently, and a
+ * stranger with a live code could do that to the whole roster in one pass by
+ * claiming every name and waiting two hours.
  */
 export async function insertJoinClaim(
   query: JoinQuery,
-  row: { memberId: string | number; code: string; secret: string; expiresAtMs: number },
+  row: { memberId: string | number; code: string; secret: string; pairing: string; expiresAtMs: number },
 ): Promise<boolean> {
+  await query(
+    `UPDATE app_join_claims
+        SET status = 'expired'
+      WHERE member_id = $1 AND status = 'pending' AND expires_at <= now()`,
+    [Number(row.memberId)],
+  )
   const res = await query(
-    `INSERT INTO app_join_claims (member_id, code, secret_hash, expires_at)
-     VALUES ($1, $2, $3, $4)
+    `INSERT INTO app_join_claims (member_id, code, secret_hash, pairing, expires_at)
+     VALUES ($1, $2, $3, $4, $5)
      ON CONFLICT DO NOTHING
      RETURNING id`,
     [
       Number(row.memberId),
       normalizeJoinCode(row.code),
       hashJoinSecret(row.secret),
+      row.pairing,
       new Date(row.expiresAtMs).toISOString(),
     ],
   )
@@ -123,6 +149,7 @@ function toClaim(row: Record<string, unknown>): JoinClaim {
     memberId: Number(row.member_id),
     status: String(row.status),
     userId: row.user_id == null ? null : Number(row.user_id),
+    pairing: typeof row.pairing === 'string' ? row.pairing : null,
     expiresAt: row.expires_at as Date,
   }
 }
@@ -133,7 +160,7 @@ export async function findClaimBySecret(
   secret: string,
 ): Promise<JoinClaim | null> {
   const res = await query(
-    `SELECT id, member_id, status, user_id, expires_at
+    `SELECT id, member_id, status, user_id, pairing, expires_at
        FROM app_join_claims WHERE secret_hash = $1`,
     [hashJoinSecret(secret)],
   )
@@ -146,7 +173,7 @@ export async function findClaimById(query: JoinQuery, id: string): Promise<JoinC
   const numeric = Number(id)
   if (!Number.isFinite(numeric)) return null
   const res = await query(
-    `SELECT id, member_id, status, user_id, expires_at FROM app_join_claims WHERE id = $1`,
+    `SELECT id, member_id, status, user_id, pairing, expires_at FROM app_join_claims WHERE id = $1`,
     [numeric],
   )
   const row = res.rows[0]
@@ -159,19 +186,23 @@ export interface PendingClaim {
   memberId: string
   name: string
   nickname: string | null
+  /** The three digits on the waiting dancer's own screen (#463 review). */
+  pairing: string | null
   createdAt: Date
 }
 
 /**
  * Everything still waiting, newest last, joined to the Member for the name.
  *
- * Expired rows are left out by the query rather than swept by a job: a claim
- * nobody answered in two hours is not a row to clean up, it is a dancer who
- * will tap their name again.
+ * Expired rows are left out by the `expires_at` test rather than swept by a
+ * job. They ARE marked `expired` eventually, but lazily and by whoever trips
+ * over them first (the dancer's next claim, or a voditelj's late tap), because
+ * a `pending` row past its expiry still counts against the partial unique index
+ * and would otherwise lock that Member out for good (#463 review).
  */
 export async function pendingJoinClaims(query: JoinQuery): Promise<PendingClaim[]> {
   const res = await query(
-    `SELECT c.id, c.member_id, c.created_at, m.name, m.nickname
+    `SELECT c.id, c.member_id, c.created_at, c.pairing, m.name, m.nickname
        FROM app_join_claims c
        JOIN members m ON m.id = c.member_id
       WHERE c.status = 'pending' AND c.expires_at > now()
@@ -183,8 +214,47 @@ export async function pendingJoinClaims(query: JoinQuery): Promise<PendingClaim[
     memberId: String(row.member_id),
     name: typeof row.name === 'string' ? row.name : '',
     nickname: typeof row.nickname === 'string' ? row.nickname : null,
+    pairing: typeof row.pairing === 'string' ? row.pairing : null,
     createdAt: row.created_at as Date,
   }))
+}
+
+/**
+ * Take the decision, atomically, before anything is created (#463 review).
+ *
+ * False means somebody else got there first. Without this the whole decision
+ * was check-then-act: two voditelji (or two tabs) could both read `pending`,
+ * both find no login for the Member and both CREATE one, leaving two accounts
+ * for one dancer with only the second losing its UPDATE. There is deliberately
+ * no unique index on `users.member` to catch that (`link-self.ts`), so the
+ * claim row is where the race has to be settled: the same `INSERT … ON CONFLICT`
+ * shape the dispute guard and the push claim use, spelled as an UPDATE.
+ */
+export async function claimJoinDecision(
+  query: JoinQuery,
+  claimId: string | number,
+  deciderId: string | number,
+): Promise<boolean> {
+  const res = await query(
+    `UPDATE app_join_claims
+        SET status = 'approving', decided_by = $2
+      WHERE id = $1 AND status = 'pending'
+      RETURNING id`,
+    [Number(claimId), Number(deciderId)],
+  )
+  return (res.rowCount ?? 0) > 0
+}
+
+/** Hand the claim back when the login could not be opened after all. */
+export async function releaseJoinDecision(
+  query: JoinQuery,
+  claimId: string | number,
+): Promise<void> {
+  await query(
+    `UPDATE app_join_claims SET status = 'pending', decided_by = NULL
+      WHERE id = $1 AND status = 'approving'`,
+    [Number(claimId)],
+  )
 }
 
 /** The voditelj said yes: record which login the claim ended in. */
@@ -197,7 +267,7 @@ export async function approveJoinClaim(
   await query(
     `UPDATE app_join_claims
         SET status = 'approved', user_id = $2, decided_by = $3, decided_at = now()
-      WHERE id = $1 AND status = 'pending'`,
+      WHERE id = $1 AND status = 'approving'`,
     [Number(claimId), Number(userId), Number(deciderId)],
   )
 }
@@ -216,13 +286,30 @@ export async function rejectJoinClaim(
   )
 }
 
-/** Spent: one approval opens exactly one session (`handleJoinStatus`). */
+/** Mark a claim nobody answered in time, so it stops blocking the Member. */
+export async function expireJoinClaim(query: JoinQuery, claimId: string | number): Promise<void> {
+  await query(
+    `UPDATE app_join_claims SET status = 'expired' WHERE id = $1 AND status = 'pending'`,
+    [Number(claimId)],
+  )
+}
+
+/**
+ * Spend the claim. **False means somebody already spent it**, and the caller
+ * must then open nothing (#463 review): the poll on the dancer's phone is a
+ * plain `setInterval` that does not wait for its own last request, so on a bad
+ * connection in a hall two of them overlap, and "one approval, one session"
+ * only holds if this reports whether the row was actually still `approved`.
+ */
 export async function markJoinClaimUsed(
   query: JoinQuery,
   claimId: string | number,
-): Promise<void> {
-  await query(
-    `UPDATE app_join_claims SET status = 'used' WHERE id = $1 AND status = 'approved'`,
+): Promise<boolean> {
+  const res = await query(
+    `UPDATE app_join_claims SET status = 'used'
+      WHERE id = $1 AND status = 'approved'
+      RETURNING id`,
     [Number(claimId)],
   )
+  return (res.rowCount ?? 0) > 0
 }

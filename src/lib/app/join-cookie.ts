@@ -49,7 +49,14 @@ export function clearJoinClaimCookie(req: Request): string {
   return parts.join('; ')
 }
 
-/** The secret this request carries, if any. Parsed off the raw header. */
+/**
+ * The secret this request carries, if any. Parsed off the raw header.
+ *
+ * `decodeURIComponent` throws on a malformed escape (`moreskant_join=%`), which
+ * would turn a junk cookie into a 500 on the status route rather than a plain
+ * "no claim" (#463 review). A value that cannot be decoded is not a secret we
+ * issued, so it is treated as no cookie at all.
+ */
 export function joinSecretFrom(req: Request): string | null {
   const header = req.headers.get('cookie')
   if (!header) return null
@@ -57,7 +64,12 @@ export function joinSecretFrom(req: Request): string | null {
     const [name, ...rest] = part.trim().split('=')
     if (name === JOIN_COOKIE) {
       const value = rest.join('=')
-      return value ? decodeURIComponent(value) : null
+      if (!value) return null
+      try {
+        return decodeURIComponent(value)
+      } catch {
+        return null
+      }
     }
   }
   return null
