@@ -87,11 +87,20 @@ export function createInviteDeps(payload: PayloadClient, request: AppRequestMeta
 
     issueResetToken: (target, expirationMs) => issueAppResetToken(payload, target, expirationMs),
 
-    sendInvite: (mail) =>
-      sendMoreskantEmail(
+    // `handleInvite` reads a THROW as "the letter did not go" and answers 502
+    // with `invite.sendFailed`, which is the honest ending: the login exists and
+    // the token is live, only the mail is missing, so pressing again is the fix.
+    // The sender itself never throws (its caller has already created an
+    // account by then), so the boolean is turned back into one here (#462
+    // review). Without this a Brevo 401 or a rate limit reported success, and
+    // the bulk action counted a dancer as invited who never heard from us.
+    sendInvite: async (mail) => {
+      const sent = await sendMoreskantEmail(
         { kind: 'invite', ...mail },
         { fetch, brevoApiKey: process.env.BREVO_API_KEY ?? '' },
-      ),
+      )
+      if (!sent) throw new Error('Brevo refused the invitation mail')
+    },
 
     // Never emailed, never used: the dancer sets their own from the link. It
     // exists only because Payload's local strategy requires a password on

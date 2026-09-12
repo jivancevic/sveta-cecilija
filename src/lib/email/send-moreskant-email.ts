@@ -89,14 +89,22 @@ export function renderMoreskantEmailHtml(input: MoreskantEmailInput): string {
 }
 
 /**
- * Sends one of the two mails. Failures are logged, never thrown: the invitation
- * route has already created the login and minted the token by the time it calls
- * this, and a voditelj can press the button again.
+ * Sends one of the two mails. Failures are logged and **reported**, never
+ * thrown: the invitation route has already created the login and minted the
+ * token by the time it calls this, so a throw here would read to the caller as
+ * "nothing happened" when in fact an account exists.
+ *
+ * Returns whether the letter actually left. It used to return nothing, which
+ * made a Brevo 401 or a rate limit indistinguishable from a delivery: the
+ * invitation answered "Pozivnica je poslana" while the log said otherwise, and
+ * `APP_STRINGS.invite.sendFailed` was unreachable (#462 review). A caller with
+ * nothing to say about it — the "Zaboravljena lozinka" route, which answers the
+ * same sentence either way on purpose — can go on ignoring the value.
  */
 export async function sendMoreskantEmail(
   input: MoreskantEmailInput,
   deps: MoreskantEmailDeps,
-): Promise<void> {
+): Promise<boolean> {
   const body = {
     sender: { email: 'info@moreska.eu', name: 'HGD Sveta Cecilija' },
     to: [{ email: input.to, ...(input.greeting ? { name: input.greeting } : {}) }],
@@ -113,9 +121,12 @@ export async function sendMoreskantEmail(
       console.error(
         `[sendMoreskantEmail] Brevo error kind=${input.kind} status=${res.status} body=${text}`,
       )
+      return false
     }
+    return true
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err)
     console.error(`[sendMoreskantEmail] fetch failed kind=${input.kind} error=${msg}`)
+    return false
   }
 }

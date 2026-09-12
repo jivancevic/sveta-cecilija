@@ -64,11 +64,16 @@ export async function POST(req: Request) {
 
     issueResetToken: (target, expirationMs) => issueAppResetToken(payload, target, expirationMs),
 
-    sendReset: (mail) =>
-      sendMoreskantEmail(
+    // The value `sendMoreskantEmail` reports is deliberately dropped here: this
+    // route answers the SAME sentence whether the address existed or not, so it
+    // has nothing to say about whether the letter left either. A failed send is
+    // in the log; the invitation is the one that reports it (#462 review).
+    sendReset: async (mail) => {
+      await sendMoreskantEmail(
         { kind: 'reset', ...mail },
         { fetch, brevoApiKey: process.env.BREVO_API_KEY ?? '' },
-      ),
+      )
+    },
   })
 
   return NextResponse.json(result.body, { status: result.status })
