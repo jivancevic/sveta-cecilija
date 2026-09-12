@@ -121,7 +121,6 @@ describe('decideAppAccess — everybody else', () => {
   it.each([
     ['anonymous', null],
     ['an authenticated account with no permission set', { id: '2', permissions: undefined }],
-    ['tickets (Tatjana), until the blagajna screens are built', user('tickets', 'refunds')],
     ['a partner POS', user('partner')],
     ['the society season dashboard', user('season_stats')],
     ['a dev-only account', user('dev')],
@@ -136,12 +135,14 @@ describe('decideAppAccess — everybody else', () => {
     expect(decideAppAccess(user('voditelj'), dancer())).toEqual({ kind: 'denied' })
   })
 
-  it('never lets a single permission other than moreska/moreskant in (sweep)', () => {
+  it('lets in exactly the permissions whose screens are built (sweep)', () => {
     // Today's live table. Every screen ticket that flips a `servesToday` word
     // moves one of these to `true`, and this line is where that shows up:
-    // `door` joined the list when Skener landed (#504).
+    // `door` joined when Skener landed (#504) and `tickets` when Narudžbe did
+    // (#501).
+    const live = ['moreska', 'moreskant', 'door', 'tickets']
     for (const p of PERMISSIONS) {
-      const expected = p === 'moreska' || p === 'moreskant' || p === 'door'
+      const expected = live.includes(p)
       expect(decideAppAccess(user(p), dancer()).kind === 'ok', `permission ${p}`).toBe(expected)
     }
   })

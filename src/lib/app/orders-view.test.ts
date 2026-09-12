@@ -120,9 +120,8 @@ describe('refundOffer', () => {
   })
 
   it('reports an order there is nothing to refund on', () => {
-    expect(refundOffer({ ...ONLINE, channel: 'comp', totalCents: 0, hasPayment: false }, true)).toBe(
-      'not-payable',
-    )
+    const comp: OrderRow = { ...ONLINE, channel: 'comp', totalCents: 0, hasPayment: false }
+    expect(refundOffer(comp, true)).toBe('not-payable')
   })
 })
 

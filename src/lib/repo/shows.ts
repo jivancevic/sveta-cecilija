@@ -11,6 +11,16 @@
 
 import type { ShowDetails } from '@/lib/scan-token'
 
+/** One entry of Narudžbe's performance filter (#501). */
+export interface TicketedPerformance {
+  id: string
+  /** YYYY-MM-DD. */
+  date: string
+  time: string
+  /** The DB slug; `VENUE_LABEL` turns it into a name people say. */
+  venue: string
+}
+
 export interface ShowsRepo {
   /**
    * Date / time / venue of one performance, or null when the row is gone.
@@ -19,6 +29,15 @@ export interface ShowsRepo {
    * non-public performance (which sells nothing) cannot surface here.
    */
   detailsById(id: string | number): Promise<ShowDetails | null>
+  /**
+   * Every performance that sells tickets, newest first (#501).
+   *
+   * Only the ticketed ones, because this fills a filter over ORDERS and a
+   * non-public performance has none (ADR-0024). The predicate comes from
+   * `show-performance.ts` rather than being spelled here, which is the rule.
+   * Not the buyer's schedule: that is `getUpcomingShows()` and it ends today.
+   */
+  ticketedPerformances(): Promise<TicketedPerformance[]>
 }
 
 export type { ShowDetails }

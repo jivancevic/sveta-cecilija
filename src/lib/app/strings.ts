@@ -1050,6 +1050,9 @@ export const APP_STRINGS = {
       noEmail: 'Bez e-pošte',
       performance: 'Izvedba',
       showGone: 'Izvedba je obrisana',
+      /** The one link the detail builds: the rest of that evening's orders. */
+      sameShow: 'sve narudžbe',
+      email: 'E-pošta',
       code: 'Kod narudžbe',
       channel: 'Kanal',
       soldBy: 'Prodao',
