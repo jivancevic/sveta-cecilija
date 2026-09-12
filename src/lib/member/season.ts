@@ -46,7 +46,7 @@ export interface MemberSeasonShow {
   date: string // YYYY-MM-DD
   time: string
   venue: Venue
-  /** Seats issued: active tickets + box office. Comps included. */
+  /** Seats issued: active tickets + offline (door and legacy). Comps included. */
   issued: number
   capacity: number
   /** issued as a whole-number % of capacity, clamped to 0..100. */
@@ -126,8 +126,11 @@ export function buildMemberSeason({
   let capacity = 0
 
   const seasonShows: MemberSeasonShow[] = inSeason.map((s) => {
-    // Both counters take a real seat (remainingSeats subtracts each), and
-    // neither carries a ticket type — that is exactly the box office.
+    // Both counters take a real seat (remainingSeats subtracts each) and
+    // neither carries a ticket type; the ledger below supplies the type for
+    // every seat it can explain (ADR-0025). The `boxOffice` identifier is kept
+    // as an internal name only — every human-readable label says "Na ulazu" /
+    // "At the door".
     const boxOffice = s.inPersonSold + s.legacyReserved
     const showIssued = s.activeTicketCount + boxOffice
     const showCapacity = VENUE_CAPACITY[s.venue]
