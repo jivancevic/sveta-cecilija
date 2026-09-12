@@ -1,0 +1,147 @@
+name: Docker
+
+# The gate that replaces the manual "Redeploy" click (ADR-0026).
+#
+# CI's `build` job runs `next build` on an ubuntu runner with setup-node. That is
+# NOT what Coolify runs. Coolify runs `docker build` against the repo-root
+# Dockerfile on node:22-slim, and the failures that class produces (a
+# .dockerignore that hides a font next/font resolves at build time, a runtime
+# dependency Next's standalone trace missed, a glibc-only binary) pass `build`
+# and fail the deploy. Until now the only thing catching them was staging plus a
+# human looking at it before clicking Redeploy. With production auto-deploying,
+# this job is that human.
+#
+# It goes one step further than `docker build` and actually BOOTS the image
+# against a throwaway Postgres, because the container's CMD is
+# `bootstrap-db.mjs && server.js`: a schema file that does not apply cleanly
+# takes production down at startup with a green build behind it. Booting here
+# exercises the same path a fresh prod/DR database takes.
+#
+# NOT path-filtered, deliberately. `schema-drift.yml` is filtered and is
+# therefore not a required check — GitHub reads a skipped required check as
+# forever-pending and wedges the PR. This job always runs and decides internally
+# whether there is anything to build, so it always reports and can be required.
+# The skip list is narrow on purpose: anything that is not docs builds.
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  docker:
+    name: docker
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Docs-only changes skip the build but still report success, which is what
+      # lets this be a required check. Default is ALWAYS to build: a diff we
+      # cannot classify (first push to a branch, missing base) builds.
+      - name: Decide whether to build
+        id: scope
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            base="${{ github.event.pull_request.base.sha }}"
+            head="${{ github.event.pull_request.head.sha }}"
+          else
+            base="${{ github.event.before }}"
+            head="${{ github.sha }}"
+          fi
+
+          decision=build
+          if [ -n "$base" ] && [ "$base" != "0000000000000000000000000000000000000000" ] \
+             && git cat-file -e "$base^{commit}" 2>/dev/null; then
+            changed=$(git diff --name-only "$base" "$head")
+            if [ -n "$changed" ] && ! echo "$changed" | grep -qvE '(^docs/|\.md$)'; then
+              decision=skip
+            fi
+            echo "Changed files:"; echo "$changed"
+          else
+            echo "No usable base sha ($base) — building."
+          fi
+
+          echo "decision=$decision" >> "$GITHUB_OUTPUT"
+          echo "head=$head" >> "$GITHUB_OUTPUT"
+          echo "Decision: $decision"
+
+      - name: Docs-only change, nothing to build
+        if: steps.scope.outputs.decision == 'skip'
+        run: echo "Only docs/** and *.md changed — skipping the image build."
+
+      # Postgres 18 to match the prod container, on a user-defined network so
+      # the app container can reach it by name. A GitHub `services:` Postgres is
+      # reachable from the job, not from a container we start ourselves.
+      - name: Start a throwaway Postgres
+        if: steps.scope.outputs.decision == 'build'
+        run: |
+          set -euo pipefail
+          docker network create ci-net
+          docker run -d --name ci-pg --network ci-net \
+            -e POSTGRES_PASSWORD=postgres postgres:18-alpine
+          for i in $(seq 1 30); do
+            if docker exec ci-pg pg_isready -U postgres >/dev/null 2>&1; then
+              echo "Postgres ready"; exit 0
+            fi
+            sleep 2
+          done
+          echo "Postgres never became ready"; docker logs ci-pg; exit 1
+
+      - name: Build the image Coolify builds
+        if: steps.scope.outputs.decision == 'build'
+        run: docker build -t moreska-ci .
+
+      - name: Boot the container against the throwaway database
+        if: steps.scope.outputs.decision == 'build'
+        run: |
+          set -euo pipefail
+          docker run -d --name ci-app --network ci-net -p 3000:3000 \
+            -e DATABASE_URL=postgres://postgres:postgres@ci-pg:5432/postgres \
+            -e PAYLOAD_SECRET=ci_dummy_secret_not_a_real_one_32chars \
+            -e SOURCE_COMMIT=${{ steps.scope.outputs.head }} \
+            moreska-ci
+
+          ok=
+          for i in $(seq 1 60); do
+            code=$(curl -s -o body.json -w '%{http_code}' http://localhost:3000/api/health || true)
+            if [ "$code" = "200" ]; then ok=1; break; fi
+            if [ -z "$(docker ps -q -f name=ci-app)" ]; then
+              echo "Container exited before answering /api/health"; break
+            fi
+            sleep 2
+          done
+          [ -n "$ok" ] || { echo "::error::/api/health never returned 200"; exit 1; }
+
+          echo "Health body:"; cat body.json; echo
+          grep -q '"ok":true' body.json || { echo "::error::unexpected health body"; exit 1; }
+          grep -q '"dbOk":true' body.json || { echo "::error::app is up but cannot reach Postgres"; exit 1; }
+
+      # Proves bootstrap-db.mjs actually applied db/schema/*.sql rather than
+      # logging a failure and being ignored. This is the fresh-database path
+      # (prod on a restart, and a DR restore), not something `next build` sees.
+      - name: Assert the schema bootstrapped
+        if: steps.scope.outputs.decision == 'build'
+        run: |
+          set -euo pipefail
+          if docker logs ci-app 2>&1 | grep -q '\[bootstrap-db\] failed'; then
+            echo "::error::bootstrap-db reported a failure"; exit 1
+          fi
+          for table in shows orders tickets users; do
+            found=$(docker exec ci-pg psql -U postgres -tAc "select to_regclass('public.$table')")
+            [ "$found" = "$table" ] || { echo "::error::table $table missing after bootstrap"; exit 1; }
+            echo "ok: $table"
+          done
+
+      - name: Container logs on failure
+        if: failure() && steps.scope.outputs.decision == 'build'
+        run: docker logs ci-app 2>&1 | tail -100 || true
+
+      - name: Clean up
+        if: always()
+        run: |
+          docker rm -f ci-app ci-pg >/dev/null 2>&1 || true
+          docker network rm ci-net >/dev/null 2>&1 || true

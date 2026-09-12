@@ -32,6 +32,8 @@
 - **Secrets (Stripe live keys, `BREVO_API_KEY`, `PAYLOAD_SECRET`) never appear in any committed file or chat** — runtime env only (Coolify); if one leaks, rotate it.
 - **`.gitignore` blocks every `.env*` except `.env.example`** (the committed template).
 - **Don't relax the security baseline** — `next.config.ts` security headers + `payload.config.ts` fail-fast on missing `PAYLOAD_SECRET`. That baseline is what lets `/scan/[token]` be safely public.
+- **An agent opens the PR and stops; merging to `main` is a human decision.** No `gh pr merge`, no `--auto`, not even on an agent's own green PR. The manual Coolify Redeploy that used to sit between a merge and the live site is being replaced by CI (ADR-0026), which makes the merge click the last human checkpoint in front of a system taking real card payments. Nothing at the GitHub level enforces this (a solo maintainer cannot approve their own PR, and an agent authenticates with the same token), so it is a rule, not a lock.
+- **Never gate a deploy on a health check that fails when the database blips.** `/api/health` is liveness, never readiness: it answers 200 whenever the server is up and reports `dbOk` in the body without letting it change the status code. A failed `bootstrap-db.mjs` is already caught, because the container's `CMD` means `server.js` never starts. Rationale in `src/lib/health/health.ts`.
 
 ---
 
