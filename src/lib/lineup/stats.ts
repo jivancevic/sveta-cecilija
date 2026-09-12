@@ -137,7 +137,7 @@ export function aggregateDancerStats(input: {
 }
 
 /**
- * The season a `?sezona=` query string asks for.
+ * The season a `?season=` query string asks for.
  *
  * Anything that is not a four-digit year inside the known range falls back to
  * the current season (story: "invalid season falls back"), because a mistyped

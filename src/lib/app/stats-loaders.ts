@@ -73,7 +73,7 @@ export interface SeasonStatsDeps {
 /**
  * One season's table.
  *
- * `requested` is the raw `?sezona=` value. An unparseable or unknown year falls
+ * `requested` is the raw `?season=` value. An unparseable or unknown year falls
  * back to the current season rather than erroring: a mistyped URL should show
  * this year's table, not a stack trace.
  */

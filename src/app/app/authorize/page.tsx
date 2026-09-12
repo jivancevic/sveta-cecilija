@@ -1,7 +1,5 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { accessMember } from '@/lib/app/access'
 import { APP_STRINGS } from '@/lib/app/strings'
 import { resolveAppViewer } from '@/lib/app/viewer'
 import { authorizeReturnTo, mcpResourceUrl } from '@/lib/mcp/oauth'

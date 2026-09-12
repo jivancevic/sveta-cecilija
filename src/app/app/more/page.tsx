@@ -63,12 +63,16 @@ export default async function MorePage() {
           <span aria-hidden="true">›</span>
         </Link>
 
-        {/* The walkthrough, replayable: the page sets the cookie only when it
-            is finished or skipped, so opening it again changes nothing. */}
-        <Link className="app__more-row" href="/app/welcome">
-          {APP_STRINGS.more.onboarding}
-          <span aria-hidden="true">›</span>
-        </Link>
+        {/* The walkthrough, replayable, and only for somebody it was written
+            for: it talks about evenings and postave, and the route map shows
+            it to a dancer (#473). The page sets the cookie only when it is
+            finished or skipped, so opening it again changes nothing. */}
+        {viewer.me && (
+          <Link className="app__more-row" href="/app/welcome">
+            {APP_STRINGS.more.onboarding}
+            <span aria-hidden="true">›</span>
+          </Link>
+        )}
 
         {/* The same guide the Dobrodošlica's first step shows, full screen
             (#455). It lives here too because a dancer who skipped the

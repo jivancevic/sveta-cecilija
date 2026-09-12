@@ -14,7 +14,7 @@
 //     in the season total nor in anybody's count, whatever its lineup says.
 //
 // The season vocabulary (`seasonOptions`, `resolveSeason`) is `lib/lineup/stats`'s
-// and is never re-derived here, so `?sezona=` means the same thing on both tabs.
+// and is never re-derived here, so `?season=` means the same thing on both tabs.
 
 import { seasonYear } from '@/lib/member/season'
 import { ARMY_OF_ROLE, DANCE_ROLES, isDanceRole, type DanceRole } from '@/lib/moreskant-profile'
@@ -166,7 +166,7 @@ export interface MySeasonDeps {
 /**
  * One dancer's season.
  *
- * `requested` is the raw `?sezona=` value; an unparseable or unknown year falls
+ * `requested` is the raw `?season=` value; an unparseable or unknown year falls
  * back to the current season, so a mistyped URL shows this year rather than an
  * error page. The lineup query asks for the confirmed evenings only, and not at
  * all when there are none: an empty `in` list would ask the database for every

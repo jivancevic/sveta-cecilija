@@ -16,6 +16,20 @@ describe('the Croatian → English renames', () => {
     }
   })
 
+  it('carries the season over where the query was renamed too', () => {
+    const withSeason = APP_ROUTE_RENAMES.filter((r) => r.has)
+    expect(withSeason.map((r) => r.source)).toEqual(['/app/moje', '/app/statistika'])
+    for (const rename of withSeason) {
+      expect(rename.destination).toContain(':sezona')
+      // The capturing entry must be matched BEFORE the plain one, or the plain
+      // one swallows every request and the year is lost anyway.
+      const plain = APP_ROUTE_RENAMES.findIndex(
+        (r) => r.source === rename.source && !r.has,
+      )
+      expect(APP_ROUTE_RENAMES.indexOf(rename)).toBeLessThan(plain)
+    }
+  })
+
   it('has no source that is still a page of its own', () => {
     for (const { source } of APP_ROUTE_RENAMES) {
       expect(existsSync(pagePath(source)), source).toBe(false)

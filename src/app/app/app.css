@@ -395,6 +395,7 @@
 }
 
 .app__row {
+  padding-block: var(--rowY);
   display: grid;
   grid-template-columns: 46px minmax(0, 1fr) auto;
   gap: 12px;
@@ -1080,7 +1081,7 @@
   font: inherit;
   font-size: 15px;
   color: var(--ink);
-  background: rgba(0, 0, 0, 0.25);
+  background: var(--sunk);
   border: 1px solid var(--cardEdge);
   border-radius: var(--radius);
   resize: vertical;
@@ -1113,7 +1114,7 @@
   font-family: var(--font-ibm-plex-mono), monospace;
   font-size: 12px;
   color: var(--ink);
-  background: rgba(0, 0, 0, 0.25);
+  background: var(--sunk);
   border: 1px solid var(--cardEdge);
   border-radius: var(--radius);
   overflow-wrap: anywhere;
@@ -1179,7 +1180,7 @@
   font: inherit;
   font-size: 14px;
   color: var(--ink);
-  background: rgba(0, 0, 0, 0.25);
+  background: var(--sunk);
   border: 1px solid var(--cardEdge);
   border-radius: var(--radius);
 }
@@ -1318,7 +1319,7 @@
   font-size: 20px;
   line-height: 1;
   color: var(--ink);
-  background: rgba(0, 0, 0, 0.25);
+  background: var(--sunk);
   border: 1px solid var(--cardEdge);
   border-radius: var(--radius);
   cursor: pointer;
@@ -1354,7 +1355,7 @@
   font: inherit;
   font-size: 15px;
   color: var(--ink);
-  background: rgba(0, 0, 0, 0.25);
+  background: var(--sunk);
   border: 1px solid var(--cardEdge);
   border-radius: var(--radius);
 }
@@ -1440,6 +1441,17 @@
   margin-top: 24px;
 }
 
+/* Numeric columns and dense rows use the utility face with tabular figures
+   (#490): a serif at 13 px in a column of counts does not scan. */
+.app__stats-table td,
+.app__stats-table th,
+.app__tile2 b,
+.app__board-count,
+.app__board-rank {
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+
 .app__bars-svg {
   display: block;
   width: 100%;
@@ -1486,6 +1498,7 @@
 }
 
 .app__more-row {
+  padding-block: calc(var(--rowY) + 3px);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -2682,6 +2695,9 @@ a.app__ob-link {
   --rule: rgba(245, 242, 236, 0.14);
   --sunk: #1f1f1f;
   --onGold: #14100a;
+  /* The island's own warning red. Paper's `#a8321f` is 2.6:1 on #131313, and
+     the one thing the chip exists for is an army that is short tonight. */
+  --warn: #f0b9b9;
   background: #131313;
   color: var(--ink);
   border-color: #d9a526;

@@ -35,7 +35,7 @@ unlock are tabs, the rest live under Više, and Izvedbe jumps to the front for a
 | | landing | `/app` | any screen | **307 to the person's first tab** (#495) | done |
 | 1 | Narudžbe | `/app/orders`, `/app/orders/[id]` | `tickets` | `/admin/collections/orders` | none, the Backoffice keeps its list |
 | 2 | Izvedbe (one screen, content by `can()`) | `/app/performances`, `/app/performances/[id]` | `tickets`, `moreska`, `moreskant` | **live for `moreska` + `moreskant`** (#495); the blagajna's half is #502 | 308 from `/app/izvedba/[id]`; push messages now carry the new path |
-| 2.5 | Članovi (dancer profiles, invitations, join code; absorbs Pozivnice, added by #476) | `/app/members` | `moreska` | `/admin/collections/members`, `/app/invitations` | 308 from `/app/pozivnice` is already in place; `/app/invitations` folds in with #511 |
+| 2.5 | Članovi (dancer profiles, invitations, join code; absorbs Pozivnice, added by #476) | `/app/members` | `moreska` | `/admin/collections/members`, `/app/invitations` | `/app/pozivnice` already 308s to `/app/invitations` (#495); **#511 repoints that 308 at `/app/members`** and folds the screen in |
 | 3 | Ljestvica (own season + roster ranking; voditelj sees the full table) | `/app/leaderboard?season=2026&part=mine\|all` | `moreskant`, `moreska` | **live** (#495): both panels on one screen, the voditelj's *Ljestvica* panel is the old scoreboard | 308 from `/app/moje` and `/app/statistika` |
 | 4 | Skener (camera, code entry, door list) | `/app/scan` | `door` | `/admin/scan` | 308; the ticket QR stays `/scan/[token]`, whose staff buttons point at `/app/scan` |
 | 5 | Prodaja | `/app/sell` | `partner` | partner view in `/admin` | none |
@@ -69,7 +69,8 @@ Public pages, no session:
 |---|---|---|---|
 | Instalacija (the rehearsal QR target) | `/app/install` | **live** (#495) | 308 from `/app/instalacija` **kept permanently**: the QR may hang on a wall |
 | sign-in by link (invitation, new password) | `/app/session?token=` | **live** (#495); invitations are issued on the new path | 308 from `/app/prijava` **kept permanently**: the link is in SMS and mail |
-| `/app/login`, `/app/forgot`, `/app/set-password`, `/app/authorize`, `/app/join/[code]` | unchanged | | |
+| `/app/login`, `/app/forgot`, `/app/authorize`, `/app/join/[code]` | unchanged | | 
+| ~~`/app/set-password`~~ | the signed-in password form folded into `/app/account` (#495); only `POST /api/app/set-password` keeps the name | 308 | |
 
 Every other 308 follows the #481 rule: one release, dropped after the season.
 
@@ -414,13 +415,15 @@ letters are ours (`src/lib/email/send-moreskant-email.ts`, from
 `info@moreska.eu` — the society's identity, not the `tickets@` show stream —
 subjects "Pozivnica za Moreškant" and "Nova lozinka za Moreškant").
 
-### `/app/set-password` and `/app/forgot`
+### The password form and `/app/forgot`
 
-> **Changed by #463.** The link now opens the session by itself
-> (`/app/prijava` → `POST /api/app/session`) and `/app/set-password` is an
-> optional row in Više that takes no token. The paragraphs below describe the
-> #424 shape and are kept for the three surprises at the end, which still hold.
-> The current flow is [Passwordless onboarding (#463)](#passwordless-onboarding-463).
+> **Changed by #463, renamed by #495.** The link opens the session by itself
+> (`/app/session?token=` → `POST /api/app/session`), and the password form is
+> an optional section of **`/app/account`** that takes no token; the API route
+> keeps its name, `POST /api/app/set-password`. The paragraphs below describe
+> the #424 shape and are kept for the three surprises at the end, which still
+> hold. The current flow is
+> [Passwordless onboarding (#463)](#passwordless-onboarding-463).
 
 `POST /api/app/set-password` ran Payload's `resetPassword`, which stores the
 hash **and opens a session**, so the route set the same cookie the login route
