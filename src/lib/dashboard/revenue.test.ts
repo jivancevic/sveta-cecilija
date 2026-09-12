@@ -2,12 +2,11 @@ import { describe, it, expect } from 'vitest'
 import {
   revenueCollectedCents,
   partnerReceivableCents,
-  IN_PERSON_PRICE_CENTS,
   type CollectedOrderRow,
   type PartnerReceivableInput,
 } from './revenue'
 
-// --- Revenue collected: online (net of refunds) + in-person cash ---------------
+// --- Revenue collected: online (net of refunds) + the offline sales ledger ----
 
 describe('revenueCollectedCents', () => {
   it('sums non-refunded online order totals', () => {
@@ -15,7 +14,7 @@ describe('revenueCollectedCents', () => {
       { totalCents: 4000, refundStatus: 'none' },
       { totalCents: 2000, refundStatus: 'none' },
     ]
-    expect(revenueCollectedCents({ orders, inPersonCount: 0 })).toBe(6000)
+    expect(revenueCollectedCents({ orders, offlineRevenueCents: 0 })).toBe(6000)
   })
 
   it('nets out refunded orders (excludes their total from collected revenue)', () => {
@@ -23,7 +22,7 @@ describe('revenueCollectedCents', () => {
       { totalCents: 4000, refundStatus: 'none' },
       { totalCents: 2000, refundStatus: 'refunded' }, // refunded -> not in hand
     ]
-    expect(revenueCollectedCents({ orders, inPersonCount: 0 })).toBe(4000)
+    expect(revenueCollectedCents({ orders, offlineRevenueCents: 0 })).toBe(4000)
   })
 
   it('treats only fully-refunded orders as removed; pending/failed refunds are still collected', () => {
@@ -33,27 +32,27 @@ describe('revenueCollectedCents', () => {
       { totalCents: 1000, refundStatus: 'refunded' },
     ]
     // Only the 'refunded' one leaves the till; pending/failed money is still in hand.
-    expect(revenueCollectedCents({ orders, inPersonCount: 0 })).toBe(2000)
+    expect(revenueCollectedCents({ orders, offlineRevenueCents: 0 })).toBe(2000)
   })
 
-  it('adds in-person cash valued at the in-person face price per ticket', () => {
-    expect(revenueCollectedCents({ orders: [], inPersonCount: 3 })).toBe(3 * IN_PERSON_PRICE_CENTS)
+  it('adds offline cash exactly as the ledger priced it, not as a headcount', () => {
+    // ADR-0025: the ledger sums quantity x the price actually charged, so a
+    // child seat and a discounted seat are worth what was taken for them. The
+    // old model multiplied a headcount by the flat EUR 20 adult face value and
+    // could represent neither.
+    expect(revenueCollectedCents({ orders: [], offlineRevenueCents: 5300 })).toBe(5300)
   })
 
-  it('combines online (net of refunds) with in-person cash', () => {
+  it('combines online (net of refunds) with offline cash', () => {
     const orders: CollectedOrderRow[] = [
       { totalCents: 4000, refundStatus: 'none' },
       { totalCents: 9999, refundStatus: 'refunded' },
     ]
-    expect(revenueCollectedCents({ orders, inPersonCount: 2 })).toBe(4000 + 2 * IN_PERSON_PRICE_CENTS)
+    expect(revenueCollectedCents({ orders, offlineRevenueCents: 3500 })).toBe(7500)
   })
 
-  it('values in-person at the €20 adult face price (documented assumption)', () => {
-    expect(IN_PERSON_PRICE_CENTS).toBe(2000)
-  })
-
-  it('is zero with no orders and no in-person sales', () => {
-    expect(revenueCollectedCents({ orders: [], inPersonCount: 0 })).toBe(0)
+  it('is zero with no orders and no offline sales', () => {
+    expect(revenueCollectedCents({ orders: [], offlineRevenueCents: 0 })).toBe(0)
   })
 })
 

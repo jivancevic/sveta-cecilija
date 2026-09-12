@@ -81,7 +81,7 @@ describe('buildMemberSeason', () => {
 
     expect(result.shows.map((s) => s.showId)).toEqual(['1'])
     expect(result.issued).toBe(100)
-    expect(result.capacity).toBe(320)
+    expect(result.capacity).toBe(350)
     expect(result.channels.online).toBe(100)
   })
 
@@ -103,7 +103,7 @@ describe('buildMemberSeason', () => {
     expect(result.channels).toEqual({ online: 60, partner: 10, comp: 0, boxOffice: 70 })
     // Box office has no ticket type, so it is reported apart from adult/child.
     expect(result.types).toEqual({ adult: 50, child: 20, boxOffice: 70 })
-    expect(result.shows[0]).toMatchObject({ issued: 140, capacity: 320, percent: 44 })
+    expect(result.shows[0]).toMatchObject({ issued: 140, capacity: 350, percent: 40 })
   })
 
   it('counts comps in the headline and keeps them visible as their own channel', () => {
@@ -122,16 +122,16 @@ describe('buildMemberSeason', () => {
     const result = buildMemberSeason({
       today,
       shows: [
-        show({ id: '1', date: '2026-07-01', activeTicketCount: 160 }),
+        show({ id: '1', date: '2026-07-01', activeTicketCount: 175 }),
         show({ id: '2', date: '2026-07-02', activeTicketCount: 125, venue: 'zimsko-kino' }),
       ],
       ticketRows: [],
     })
 
-    expect(result.issued).toBe(285)
-    expect(result.capacity).toBe(570)
+    expect(result.issued).toBe(300)
+    expect(result.capacity).toBe(600)
     expect(result.fillPercent).toBe(50)
-    expect(result.shows[0]).toMatchObject({ showId: '1', issued: 160, capacity: 320, percent: 50 })
+    expect(result.shows[0]).toMatchObject({ showId: '1', issued: 175, capacity: 350, percent: 50 })
     expect(result.shows[1]).toMatchObject({ showId: '2', issued: 125, capacity: 250, percent: 50 })
   })
 
@@ -211,7 +211,7 @@ describe('buildMemberSeason', () => {
     })
 
     expect(season.shows.map((s) => s.showId)).toEqual(['1'])
-    expect(season.capacity).toBe(320)
+    expect(season.capacity).toBe(350)
     expect(season.issued).toBe(40)
   })
 

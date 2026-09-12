@@ -23,8 +23,8 @@ describe('toDashboardShows', () => {
       makeStatsShow({ venue: 'ljetno-kino', activeTicketCount: 100, inPersonSold: 20, legacyReserved: 0 }),
     ])
     expect(show.sold).toBe(120)
-    expect(show.capacity).toBe(320)
-    expect(show.remaining).toBe(200) // 320 - 100 - 20 - 0
+    expect(show.capacity).toBe(350)
+    expect(show.remaining).toBe(230) // 350 - 100 - 20 - 0
   })
 
   it('subtracts legacyReserved from remaining but not from sold', () => {

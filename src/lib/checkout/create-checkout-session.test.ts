@@ -80,7 +80,7 @@ describe('createCheckoutSession', () => {
     await expect(
       createCheckoutSession(
         { showId: '1', adults: 5, children: 0, buyer: { name: 'X', email: 'x@y.z' } },
-        makeDeps({ show: { ...baseShow, activeTicketCount: 318 } }),
+        makeDeps({ show: { ...baseShow, activeTicketCount: 348 } }),
       ),
     ).rejects.toThrow(/2 seats remaining/i)
   })

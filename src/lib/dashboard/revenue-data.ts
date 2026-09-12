@@ -3,7 +3,7 @@
 // all the arithmetic and are unit-tested without a DB.
 
 import type { PoolQuery } from '../tickets/sold-seats'
-import { publicPerformanceSql } from '../show-performance'
+import { getSeasonOfflineTotals } from '../offline-sales/data'
 import {
   revenueCollectedCents,
   partnerReceivableCents,
@@ -25,15 +25,15 @@ export interface DashboardMoney {
  */
 export async function getDashboardMoney(query: PoolQuery): Promise<DashboardMoney> {
   // Three independent reads — fire them concurrently.
-  const [orderRes, inPersonRes, partnerRes] = await Promise.all([
+  const [orderRes, offlineTotals, partnerRes] = await Promise.all([
     // Online orders: total + refund status (the pure fn drops only 'refunded').
     query(`SELECT total, refund_status FROM orders`),
-    // In-person cash: a flat per-show headcount summed across the season, over
-    // PUBLIC performances only (ADR-0024, #406) — a non-public performance has
-    // no venue, no capacity and no box office, so it can never contribute cash.
-    query(
-      `SELECT COALESCE(SUM(in_person_sold), 0)::bigint AS count FROM shows WHERE ${publicPerformanceSql()}`,
-    ),
+    // Money taken outside the order system: the offline sales ledger, summed as
+    // Σ(quantity × unit price actually charged) rather than a headcount times a
+    // flat face value (ADR-0025). Already scoped to PUBLIC performances
+    // (ADR-0024, #406) — a non-public performance has no venue, no capacity and
+    // no door, so it can never contribute cash.
+    getSeasonOfflineTotals(query),
     // Partner receivable: every partner-channel ticket with its partner's rate.
     query(
       `SELECT p.id AS partner_id,
@@ -51,7 +51,9 @@ export async function getDashboardMoney(query: PoolQuery): Promise<DashboardMone
     refundStatus: (r.refund_status as RefundStatus) ?? 'none',
   }))
 
-  const inPersonCount = Number(inPersonRes.rows[0]?.count ?? 0)
+  // Door and legacy money are both cash collected, so both belong in the one
+  // "Revenue collected" figure; the ledger keeps them separable for display.
+  const offlineRevenueCents = offlineTotals.door.revenueCents + offlineTotals.legacy.revenueCents
 
   const byPartner = new Map<string, PartnerReceivableInput>()
   for (const r of partnerRes.rows) {
@@ -68,7 +70,7 @@ export async function getDashboardMoney(query: PoolQuery): Promise<DashboardMone
   }
 
   return {
-    revenueCollectedCents: revenueCollectedCents({ orders, inPersonCount }),
+    revenueCollectedCents: revenueCollectedCents({ orders, offlineRevenueCents }),
     partnerReceivableCents: partnerReceivableCents([...byPartner.values()]),
   }
 }
