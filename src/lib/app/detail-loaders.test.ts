@@ -128,6 +128,20 @@ describe('buildPerformanceDetail', () => {
     expect(build().performance.myAnswer).toBe('coming')
     expect(build({ viewer: { memberId: '2', voditelj: false } }).performance.myAnswer).toBeNull()
   })
+
+  it('reports the army of the viewer’s own answer, not of their profile (#457)', () => {
+    // Cici's profile says crni; this evening's row says bili, and the chip on
+    // the screen has to say bili.
+    const out = build({ attendanceDocs: [answer(1, 'coming', 'bili')] })
+    expect(out.performance.myArmy).toBe('bili')
+  })
+
+  it('has no army for a bula, for a no, and for no answer at all', () => {
+    expect(build({ attendanceDocs: [answer(4, 'coming', null)], viewer: { memberId: '4', voditelj: false } }).performance.myArmy).toBeNull()
+    expect(build({ attendanceDocs: [answer(1, 'not_coming', 'crni')] }).performance.myArmy).toBeNull()
+    expect(build({ attendanceDocs: [] }).performance.myArmy).toBeNull()
+    expect(build({ viewer: { memberId: null, voditelj: true } }).performance.myArmy).toBeNull()
+  })
 })
 
 describe('buildPerformanceDetail — who may edit', () => {

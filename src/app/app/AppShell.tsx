@@ -30,31 +30,40 @@ export function identityLine(member: {
 export function AppShell({
   me,
   season,
+  header,
   children,
 }: {
   me: AppMember | null
   /** The season label on the right of the header; omitted where it means nothing. */
   season?: number | null
+  /**
+   * A page that introduces itself (the performance detail, #457) passes its own
+   * header and the brand line steps aside: one screen, one title, and the app's
+   * name is already on the tab bar underneath.
+   */
+  header?: React.ReactNode
   children: React.ReactNode
 }) {
   return (
     <>
       <div className="app__shell">
-        <header className="app__header">
-          <div>
-            <h1 className="app__brand">{APP_STRINGS.name}</h1>
-            {me?.nickname && (
-              <p className="app__identity">
-                <strong>{me.nickname}</strong> · {identityLine(me)}
+        {header ?? (
+          <header className="app__header">
+            <div>
+              <h1 className="app__brand">{APP_STRINGS.name}</h1>
+              {me?.nickname && (
+                <p className="app__identity">
+                  <strong>{me.nickname}</strong> · {identityLine(me)}
+                </p>
+              )}
+            </div>
+            {season != null && (
+              <p className="app__season">
+                {APP_STRINGS.list.season} {season}
               </p>
             )}
-          </div>
-          {season != null && (
-            <p className="app__season">
-              {APP_STRINGS.list.season} {season}
-            </p>
-          )}
-        </header>
+          </header>
+        )}
 
         {children}
       </div>

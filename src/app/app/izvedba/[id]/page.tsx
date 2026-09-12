@@ -2,83 +2,154 @@ import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { accessMember } from '@/lib/app/access'
 import { getPerformanceDetail } from '@/lib/app/detail-data'
-import { APP_STRINGS, KIND_LABELS, ROLE_LABELS, formatPerformanceDate } from '@/lib/app/strings'
+import {
+  compUnavailableReason,
+  formatConfirmedAt,
+  groupLineupByRole,
+  parseSegment,
+  type DetailSegment,
+} from '@/lib/app/detail-view'
+import { performancePlace } from '@/lib/app/performance-place'
+import {
+  APP_STRINGS,
+  KIND_LABELS,
+  ROLE_LABELS,
+  formatPerformanceDateLong,
+} from '@/lib/app/strings'
 import { resolveAppViewer } from '@/lib/app/viewer'
-import type { LineupView } from '@/lib/app/detail-loaders'
+import type { LineupView, PerformanceDetail } from '@/lib/app/detail-loaders'
 import type { ArmyTally, RosterPerson } from '@/lib/attendance/army-count'
 import type { Army } from '@/lib/attendance/rules'
-import { VENUE_LABEL } from '@/lib/venues'
 import { AlarmButton } from '../../AlarmButton'
+import { AppShell } from '../../AppShell'
 import { LineupEditor } from '../../LineupEditor'
 import { AttendanceButtons } from '../../AttendanceButtons'
 import { CompTickets } from '../../CompTickets'
 import { ArmyMoveButton } from '../../ArmyMoveButton'
-import { LogoutButton } from '../../LogoutButton'
 import { NoteEditor } from '../../NoteEditor'
+import { DetailSegments } from './DetailSegments'
 
-// `/app/izvedba/[id]` — one performance in full (#423, ADR-0024 phase 3).
+// `/app/izvedba/[id]` — one evening, in three segments (#423, #457, ADR-0024).
 //
-// The question the page answers is "are we short?", so the armies come first,
-// each with its headcount against the threshold, then the bula, then who is not
-// coming, then who has not answered — which for a voditelj is a list of buttons
-// rather than a list of names, because that list is what they work through on
-// the phone (#419, story 11).
+// The old page stacked everything a performance has onto one scroll: the
+// headcounts, the postava, the free tickets, the voditelj's controls. That is
+// four questions in a column, and the one a dancer actually opens the page with
+// ("are we short, and am I dancing") was the one they had to scroll for. It is
+// now three segments — Dolaze, Postava, Ulaznice — with the answer buttons
+// pinned above the tab bar, so the tap the page exists for is always under the
+// thumb whichever segment is open.
 //
-// Mobile numbers are `tel:` links (story 29); emails are not in the payload at
-// all, by the shape of the loader.
+// Everything below is server-rendered and handed to `DetailSegments` as
+// children; that component only chooses which of the three is on screen. The
+// voditelj's tools are one card at the bottom, because they are the rarer job
+// and they belong to the evening rather than to any one segment.
 //
-// A voditelj's buttons hang off EVERY name, not only the no-answer list: the
-// record has to be correctable in both directions (#419, story 13), so a dancer
-// who is coming can be set to Ne dolazim or cleared from the same row.
+// A voditelj's answer buttons hang off EVERY name, not only the no-answer list:
+// the record has to be correctable in both directions (#419, story 13). Mobile
+// numbers are a `tel:` link on a round call button and nothing else is printed;
+// emails are not in the payload at all, by the shape of the loader.
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-function Person({ person }: { person: RosterPerson }) {
-  return person.mobile ? (
-    <a className="app__person-call" href={`tel:${person.mobile}`}>
-      {person.nickname}
-      <span className="app__person-mobile">{person.mobile}</span>
-    </a>
-  ) : (
-    <span className="app__person-name">{person.nickname}</span>
+const PHONE_ICON = (
+  <svg className="app__call-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+    <path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2" />
+  </svg>
+)
+
+/** One name, with the call button when there is a number to call. */
+function PersonRow({
+  person,
+  isMe,
+  children,
+}: {
+  person: RosterPerson
+  isMe: boolean
+  /** The voditelj's controls, on their own line under the name. */
+  children?: React.ReactNode
+}) {
+  return (
+    <li className={`app__person${isMe ? ' app__person--me' : ''}`}>
+      <span className="app__person-line">
+        <span className="app__person-name">{person.nickname}</span>
+        {person.mobile && (
+          <a
+            className="app__call"
+            href={`tel:${person.mobile}`}
+            aria-label={APP_STRINGS.detail.callAria(person.nickname)}
+          >
+            {PHONE_ICON}
+          </a>
+        )}
+      </span>
+      {children && <span className="app__person-controls">{children}</span>}
+    </li>
   )
 }
 
-function ArmySection({
+/**
+ * One group of the Dolaze panel.
+ *
+ * An army shows `count/threshold` and turns red below it; the other three show
+ * a plain number, because there is no threshold for "who said no". An empty
+ * group keeps its heading and says so in one muted word: the shape of the
+ * evening is the five groups, and hiding the empty ones would make a screen
+ * whose sections move around.
+ */
+function Group({
   title,
+  swatch,
   tally,
+  people,
+  emptyLabel,
   performanceId,
+  myMemberId,
+  canEditOthers,
   moveTargets,
   army,
-  canEditOthers,
+  current,
 }: {
   title: string
-  tally: ArmyTally
+  swatch?: Army
+  /** Set for an army: the heading then reads "3/8" and can go red. */
+  tally?: ArmyTally
+  people: RosterPerson[]
+  emptyLabel: string
   performanceId: string
-  moveTargets: Record<string, Army[]>
-  army: Army
+  myMemberId: string | null
   canEditOthers: boolean
+  moveTargets: Record<string, Army[]>
+  /** The army these people are in, so the move button knows the other one. */
+  army?: Army
+  /** The answer they already gave, so the voditelj's buttons show it. */
+  current: 'coming' | 'not_coming' | null
 }) {
-  const other: Army = army === 'crni' ? 'bili' : 'crni'
+  const other: Army | null = army ? (army === 'crni' ? 'bili' : 'crni') : null
   return (
-    <section className="app__army">
-      <h2 className="app__army-head">
-        <span>{title}</span>
-        <span className={`app__chip${tally.below ? ' app__chip--low' : ''}`}>
-          {tally.count}/{tally.threshold}
+    <section className="app__group">
+      <h2 className="app__group-head">
+        <span>
+          {swatch && <i className={`app__swatch app__swatch--${swatch}`} aria-hidden="true" />}
+          {title}
+        </span>
+        <span className={tally?.below ? 'app__group-count app__group-count--low' : 'app__group-count'}>
+          {tally ? `${tally.count}/${tally.threshold}` : people.length}
         </span>
       </h2>
-      {tally.members.length === 0 ? (
-        <p className="app__empty">{APP_STRINGS.detail.empty}</p>
+      {people.length === 0 ? (
+        <p className="app__group-empty">{emptyLabel}</p>
       ) : (
         <ul className="app__people">
-          {tally.members.map((person) => (
-            <li key={person.memberId} className="app__person">
-              <Person person={person} />
+          {people.map((person) => (
+            <PersonRow
+              key={person.memberId}
+              person={person}
+              isMe={person.memberId === myMemberId}
+            >
               {canEditOthers && (
-                <span className="app__person-controls">
-                  {moveTargets[person.memberId]?.includes(other) && (
+                <>
+                  {other && moveTargets[person.memberId]?.includes(other) && (
                     <ArmyMoveButton
                       performanceId={performanceId}
                       memberId={person.memberId}
@@ -88,13 +159,13 @@ function ArmySection({
                   <AttendanceButtons
                     performanceId={performanceId}
                     memberId={person.memberId}
-                    current="coming"
+                    current={current}
                     scope="row"
                     allowClear
                   />
-                </span>
+                </>
               )}
-            </li>
+            </PersonRow>
           ))}
         </ul>
       )}
@@ -102,86 +173,166 @@ function ArmySection({
   )
 }
 
-function PeopleSection({
-  title,
-  people,
-  performanceId,
-  withButtons,
-  current = null,
-}: {
-  title: string
-  people: RosterPerson[]
-  performanceId: string
-  withButtons: boolean
-  /** The answer these people already gave, so the voditelj's buttons show it. */
-  current?: 'coming' | 'not_coming' | null
-}) {
+/** The Dolaze panel: the five groups, in the order a voditelj works through them. */
+function ComingPanel({ detail }: { detail: PerformanceDetail }) {
+  const { count } = detail
+  const shared = {
+    performanceId: detail.performance.id,
+    myMemberId: detail.myMemberId,
+    canEditOthers: detail.canEditOthers,
+    moveTargets: detail.moveTargets,
+  }
+  const nothing =
+    count.crni.count === 0 &&
+    count.bili.count === 0 &&
+    count.bula.length === 0 &&
+    count.notComing.length === 0
+
   return (
-    <section className="app__army">
-      <h2 className="app__army-head">
-        <span>{title}</span>
-        <span className="app__chip">{people.length}</span>
-      </h2>
-      {people.length === 0 ? (
-        <p className="app__empty">{APP_STRINGS.detail.empty}</p>
-      ) : (
-        <ul className="app__people">
-          {people.map((person) => (
-            <li key={person.memberId} className="app__person">
-              <Person person={person} />
-              {withButtons && (
-                <AttendanceButtons
-                  performanceId={performanceId}
-                  memberId={person.memberId}
-                  current={current}
-                  scope="row"
-                  allowClear
-                />
-              )}
-            </li>
-          ))}
-        </ul>
+    <>
+      {/* Not "there is nobody": nobody has said anything yet, which is a thing
+          the first dancer to open the page can fix in one tap. */}
+      {nothing && (
+        <div className="app__empty-state">
+          <b>{APP_STRINGS.detail.noAnswersTitle}</b>
+          {APP_STRINGS.detail.noAnswersBody}
+        </div>
       )}
-    </section>
+
+      <Group
+        {...shared}
+        title={APP_STRINGS.detail.crni}
+        swatch="crni"
+        army="crni"
+        tally={count.crni}
+        people={count.crni.members}
+        emptyLabel={APP_STRINGS.detail.nobody}
+        current="coming"
+      />
+      <Group
+        {...shared}
+        title={APP_STRINGS.detail.bili}
+        swatch="bili"
+        army="bili"
+        tally={count.bili}
+        people={count.bili.members}
+        emptyLabel={APP_STRINGS.detail.nobody}
+        current="coming"
+      />
+      <Group
+        {...shared}
+        title={APP_STRINGS.detail.bula}
+        people={count.bula}
+        emptyLabel={APP_STRINGS.detail.nobody}
+        current="coming"
+      />
+      <Group
+        {...shared}
+        title={APP_STRINGS.detail.notComing}
+        people={count.notComing}
+        emptyLabel={APP_STRINGS.detail.nobody}
+        current="not_coming"
+      />
+      <Group
+        {...shared}
+        title={APP_STRINGS.detail.noAnswer}
+        people={count.noAnswer}
+        emptyLabel={APP_STRINGS.detail.allAnswered}
+        current={null}
+      />
+    </>
   )
 }
 
 /**
- * The postava as a moreškant sees it: a list, no controls (#432, story 33).
+ * The Postava panel as a dancer sees it: a list by role, no controls (#432,
+ * story 33).
  *
- * It renders only when the loader says the lineup is `visible`, which for a
- * dancer means confirmed — a draft never reaches this component with entries in
- * it, because the loader empties them (story 34).
+ * The loader empties a draft before it ever reaches this component, so an
+ * unconfirmed evening cannot leak a name; the `confirmed` check here is about
+ * WORDING, not about access.
  */
-function LineupList({ lineup }: { lineup: LineupView }) {
+function LineupPanel({ lineup, myMemberId }: { lineup: LineupView; myMemberId: string | null }) {
+  if (!lineup.confirmed) {
+    return (
+      <div className="app__empty-state">
+        <b>{APP_STRINGS.lineup.notConfirmedTitle}</b>
+        {APP_STRINGS.lineup.notConfirmedBody}
+      </div>
+    )
+  }
+
+  const when = formatConfirmedAt(lineup.confirmedAt)
   return (
-    <section className="app__lineup">
-      <h2 className="app__army-head">
-        <span>{APP_STRINGS.lineup.title}</span>
-        <span className="app__chip">{lineup.entries.length}</span>
-      </h2>
-      {lineup.entries.length === 0 ? (
-        <p className="app__empty">{APP_STRINGS.lineup.emptyForDancer}</p>
-      ) : (
-        <ul className="app__people">
-          {lineup.entries.map((entry) => (
-            <li key={entry.memberId} className="app__person">
-              <span className="app__person-name">{entry.nickname}</span>
-              <span className="app__lineup-role">{ROLE_LABELS[entry.role]}</span>
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
+    <>
+      {when && <p className="app__lineup-confirmed">{APP_STRINGS.lineup.confirmedAt(when)}</p>}
+      {groupLineupByRole(lineup.entries).map((group) => (
+        <section className="app__group" key={group.role}>
+          <h2 className="app__group-head">
+            <span>{ROLE_LABELS[group.role]}</span>
+            <span className="app__group-count">{group.entries.length}</span>
+          </h2>
+          {group.entries.length === 0 ? (
+            <p className="app__group-empty">{APP_STRINGS.lineup.unassigned}</p>
+          ) : (
+            <ul className="app__people">
+              {group.entries.map((entry) => (
+                <li
+                  key={entry.memberId}
+                  className={`app__person${entry.memberId === myMemberId ? ' app__person--me' : ''}`}
+                >
+                  <span className="app__person-line">
+                    <span className="app__person-name">{entry.nickname}</span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      ))}
+    </>
+  )
+}
+
+/** The Ulaznice panel: the dancer's own four free seats, or why there are none. */
+function TicketsPanel({
+  detail,
+  nowMs,
+}: {
+  detail: PerformanceDetail
+  nowMs: number
+}) {
+  if (detail.comps.visible) {
+    return <CompTickets performanceId={detail.performance.id} comps={detail.comps} />
+  }
+
+  const reason = compUnavailableReason(detail.performance, detail.myMemberId, nowMs)
+  const sentence =
+    reason === 'private'
+      ? APP_STRINGS.comp.privateNoTickets
+      : reason === 'cancelled'
+        ? APP_STRINGS.answer.cancelled
+        : reason === 'past'
+          ? APP_STRINGS.comp.past
+          : APP_STRINGS.comp.noMemberShort
+
+  return (
+    <div className="app__empty-state">
+      <b>{APP_STRINGS.comp.title}</b>
+      {sentence}
+    </div>
   )
 }
 
 export default async function PerformanceDetailPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   const { id } = await params
+  const { dio } = await searchParams
   const viewer = await resolveAppViewer()
   if (!viewer.signedIn) redirect('/app/login')
   if (viewer.access.kind === 'denied') redirect('/app')
@@ -192,27 +343,59 @@ export default async function PerformanceDetailPage({
   if (!detail) notFound()
 
   const p = detail.performance
-  const where = p.isPublic
-    ? p.venue
-      ? VENUE_LABEL.hr[p.venue]
-      : ''
-    : [p.location, p.client].filter(Boolean).join(' · ')
+  const segment: DetailSegment = parseSegment(typeof dio === 'string' ? dio : undefined)
+  const place = performancePlace(p)
+  // A public evening is named by its kind; a booking is named by who booked it,
+  // because "Brod" alone is three different evenings in one season.
+  const title = !p.isPublic && p.client ? `${KIND_LABELS[p.kind]}, ${p.client}` : KIND_LABELS[p.kind]
 
-  return (
-    <div className="app__shell">
-      <header className="app__header">
-        <div>
-          <Link className="app__back" href="/app">
-            {APP_STRINGS.detail.back}
-          </Link>
-          <h1 className="app__brand">{formatPerformanceDate(p.date)}</h1>
-          <p className="app__identity">
-            {p.time}
-            {where && ` · ${where}`} · {p.cancelled ? APP_STRINGS.card.cancelled : KIND_LABELS[p.kind]}
-          </p>
-        </div>
-        <LogoutButton />
-      </header>
+  const coming = detail.count.crni.count + detail.count.bili.count + detail.count.bula.length
+  const counts: Record<DetailSegment, string> = {
+    dolaze: String(coming),
+    // `visible` is "confirmed, or the voditelj's own draft": exactly the case
+    // where there is a list to count. A dancer waiting on the postava gets a
+    // dash, not a zero, because zero would read as "nobody is dancing".
+    postava: detail.lineup.visible
+      ? String(detail.lineup.entries.length)
+      : APP_STRINGS.detail.noCount,
+    ulaznice: detail.comps.visible
+      ? `${detail.comps.issued}/4`
+      : APP_STRINGS.detail.noCount,
+  }
+
+  const answerChip =
+    p.myAnswer === 'coming'
+      ? { cls: 'app__chip--yes', label: APP_STRINGS.home.answerYes }
+      : p.myAnswer === 'not_coming'
+        ? { cls: 'app__chip--no', label: APP_STRINGS.home.answerNo }
+        : { cls: 'app__chip--none', label: APP_STRINGS.home.answerNone }
+
+  const header = (
+    <header className="app__detail-head">
+      <Link className="app__back" href="/app">
+        ‹ {APP_STRINGS.detail.back}
+      </Link>
+      <h1 className="app__detail-title">{title}</h1>
+      <p className="app__detail-when">
+        {formatPerformanceDateLong(p.date)}
+        {p.time && ` · ${p.time}`}
+      </p>
+      {place && <p className="app__detail-where">{place}</p>}
+
+      <div className="app__chips">
+        {me && <span className={`app__chip ${answerChip.cls}`}>{answerChip.label}</span>}
+        {p.myArmy && (
+          <span className="app__chip">
+            {p.myArmy === 'crni' ? APP_STRINGS.home.armyCrni : APP_STRINGS.home.armyBili}
+          </span>
+        )}
+        {p.cancelled && (
+          <span className="app__chip app__chip--cancelled">{APP_STRINGS.card.cancelled}</span>
+        )}
+        {detail.lineup.confirmed && (
+          <span className="app__chip app__chip--lineup">{APP_STRINGS.home.lineupConfirmed}</span>
+        )}
+      </div>
 
       {p.voditeljNote && (
         <p className="app__note app__note--detail">
@@ -220,94 +403,85 @@ export default async function PerformanceDetailPage({
           {p.voditeljNote}
         </p>
       )}
+    </header>
+  )
 
-      {/* The voditelj edits the same note from here that /admin edits (#436,
-          story 25); saving goes through the collection, so the roster gets the
-          change notification either way. A moreškant only ever reads it. */}
-      {detail.voditelj && <NoteEditor performanceId={p.id} initialNote={p.voditeljNote} />}
+  return (
+    <AppShell me={me} header={header}>
+      <DetailSegments
+        initial={segment}
+        counts={counts}
+        dolaze={<ComingPanel detail={detail} />}
+        postava={
+          detail.voditelj ? (
+            <>
+              {!detail.lineup.confirmed && (
+                <p className="app__lineup-hint">{APP_STRINGS.lineup.notConfirmedTitle}</p>
+              )}
+              <LineupEditor
+                performanceId={p.id}
+                initialEntries={detail.lineup.entries}
+                suggested={detail.lineup.suggested}
+                roster={detail.lineup.roster}
+                confirmed={detail.lineup.confirmed}
+                confirmedAt={detail.lineup.confirmedAt}
+              />
+            </>
+          ) : (
+            <LineupPanel lineup={detail.lineup} myMemberId={detail.myMemberId} />
+          )
+        }
+        ulaznice={<TicketsPanel detail={detail} nowMs={detail.nowMs} />}
+        tools={
+          detail.voditelj ? (
+            <>
+              {/* The same note `/admin` edits (#436, story 25): saving goes
+                  through the collection, so the roster is notified either way. */}
+              <NoteEditor performanceId={p.id} initialNote={p.voditeljNote} />
+              {/* The alarm is only ever about an evening still ahead (#430,
+                  story 20); the route refuses the other two cases anyway, so a
+                  hidden button is replaced by the reason it is hidden. */}
+              {detail.canAlarm ? (
+                <AlarmButton performanceId={p.id} />
+              ) : (
+                <p className="app__lead-note">
+                  {p.cancelled ? APP_STRINGS.alarm.cancelled : APP_STRINGS.alarm.started}
+                </p>
+              )}
+            </>
+          ) : undefined
+        }
+        lineupState={
+          detail.voditelj
+            ? detail.lineup.confirmed
+              ? APP_STRINGS.lead.lineupConfirmed(detail.lineup.entries.length)
+              : APP_STRINGS.lead.lineupDraft(coming, detail.count.noAnswer.length)
+            : null
+        }
+      />
+
+      {/* The sticky bar covers the bottom of the scroll; without this the last
+          group of the longest panel would sit under it. */}
+      <div className="app__sticky-spacer" aria-hidden="true" />
 
       {me && (
-        <AttendanceButtons
-          performanceId={p.id}
-          memberId={me.id}
-          current={p.myAnswer}
-          disabled={!p.canAnswer}
-          lockNote={
-            p.canAnswer
-              ? null
-              : p.cancelled
-                ? APP_STRINGS.answer.cancelled
-                : APP_STRINGS.answer.locked
-          }
-          allowClear={voditelj}
-        />
+        <div className="app__sticky">
+          <AttendanceButtons
+            performanceId={p.id}
+            memberId={me.id}
+            current={p.myAnswer}
+            disabled={!p.canAnswer}
+            lockNote={
+              p.canAnswer
+                ? null
+                : p.cancelled
+                  ? APP_STRINGS.answer.cancelled
+                  : APP_STRINGS.answer.locked
+            }
+            allowClear={voditelj}
+          />
+        </div>
       )}
-
-      {/* The alarm is only ever about an evening still ahead (#430, story 20),
-          and the route refuses a started or cancelled one anyway; hiding the
-          button keeps the page from offering what the server will decline.
-          `canAlarm` is decided in the loader, over its own clock. */}
-      {detail.canAlarm && <AlarmButton performanceId={p.id} />}
-
-      {/* Besplatne karte (#434). The loader decides `visible` - a Member link,
-          a public performance, not cancelled, still ahead - so the section is
-          absent for a voditelj without a Member link and for every non-public
-          evening, and the two routes refuse the same cases anyway. */}
-      {detail.comps.visible && <CompTickets performanceId={p.id} comps={detail.comps} />}
-
-      <ArmySection
-        title={APP_STRINGS.detail.crni}
-        tally={detail.count.crni}
-        army="crni"
-        performanceId={p.id}
-        moveTargets={detail.moveTargets}
-        canEditOthers={detail.canEditOthers}
-      />
-      <ArmySection
-        title={APP_STRINGS.detail.bili}
-        tally={detail.count.bili}
-        army="bili"
-        performanceId={p.id}
-        moveTargets={detail.moveTargets}
-        canEditOthers={detail.canEditOthers}
-      />
-      <PeopleSection
-        title={APP_STRINGS.detail.bula}
-        people={detail.count.bula}
-        performanceId={p.id}
-        withButtons={detail.canEditOthers}
-        current="coming"
-      />
-      <PeopleSection
-        title={APP_STRINGS.detail.notComing}
-        people={detail.count.notComing}
-        performanceId={p.id}
-        withButtons={detail.canEditOthers}
-        current="not_coming"
-      />
-      <PeopleSection
-        title={APP_STRINGS.detail.noAnswer}
-        people={detail.count.noAnswer}
-        performanceId={p.id}
-        withButtons={detail.canEditOthers}
-      />
-
-      {/* Postava (#432). A voditelj gets the editor, confirmed or not — it
-          renders read-only when confirmed and offers Otključaj. A moreškant
-          gets a plain list, and only of a CONFIRMED lineup: the loader has
-          already emptied a draft, so no condition here can leak one. */}
-      {detail.voditelj ? (
-        <LineupEditor
-          performanceId={p.id}
-          initialEntries={detail.lineup.entries}
-          suggested={detail.lineup.suggested}
-          roster={detail.lineup.roster}
-          confirmed={detail.lineup.confirmed}
-          confirmedAt={detail.lineup.confirmedAt}
-        />
-      ) : (
-        <LineupList lineup={detail.lineup} />
-      )}
-    </div>
+    </AppShell>
   )
 }

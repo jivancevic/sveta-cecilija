@@ -712,26 +712,21 @@
 
 .app__back {
   display: inline-block;
-  margin-bottom: 6px;
+  padding: 14px 0 10px;
   font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
-  font-size: 12px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--muted);
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  color: var(--goldBright);
   text-decoration: none;
 }
 
 .app__back:hover,
 .app__back:focus-visible {
-  color: var(--goldBright);
+  color: var(--light);
 }
 
 .app__note--detail {
   margin-top: 16px;
-}
-
-.app__army {
-  margin-top: 28px;
 }
 
 .app__army-head {
@@ -756,33 +751,68 @@
   padding: 0;
 }
 
+/* A name, and under it the voditelj's controls when there are any: the row is a
+   column so a phone never has to choose between a readable name and a reachable
+   button. */
 .app__person {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 10px 0;
-  border-bottom: 1px solid rgba(154, 154, 154, 0.14);
+  flex-direction: column;
+  gap: 6px;
+  padding: 9px 0;
+  border-top: 1px solid #1f1f1f;
 }
 
-.app__person-call,
-.app__person-name {
+.app__people .app__person:last-child {
+  border-bottom: 1px solid #1f1f1f;
+}
+
+.app__person-line {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.app__person-name {
+  min-width: 0;
   color: var(--light);
-  text-decoration: none;
   font-size: 16px;
 }
 
-.app__person-call {
+/* The viewer's own name, in gold: a list of twenty nicknames is scanned for
+   one of them. */
+.app__person--me .app__person-name {
   color: var(--goldBright);
 }
 
-.app__person-mobile {
-  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
-  font-size: 12px;
-  color: var(--muted);
+/* The number itself is dropped: it is a `tel:` href, and a dancer taps the
+   button rather than reading the digits off the screen. */
+.app__call {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--cardEdge);
+  border-radius: 50%;
+  color: var(--goldBright);
+  text-decoration: none;
+}
+
+.app__call:hover,
+.app__call:focus-visible {
+  border-color: var(--gold);
+  color: var(--light);
+}
+
+.app__call-icon {
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .app__move {
@@ -1097,12 +1127,6 @@
   padding: 0;
 }
 
-.app__comp-total {
-  padding-bottom: 6px;
-  font-size: 14px;
-  color: var(--light);
-}
-
 .app__comp-order {
   display: flex;
   align-items: center;
@@ -1356,4 +1380,339 @@
 .app__more-logout {
   margin: 32px 0 8px;
   text-align: center;
+}
+
+/* ── One evening: head, segments, panels (#457) ──────────── */
+.app__detail-head {
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--cardEdge);
+}
+
+.app__detail-title {
+  margin: 0;
+  font-family: var(--font-bodoni), Georgia, serif;
+  font-size: 26px;
+  font-weight: 600;
+  line-height: 1.1;
+  text-wrap: balance;
+}
+
+.app__detail-when {
+  margin: 6px 0 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--light);
+}
+
+.app__detail-where {
+  margin: 2px 0 0;
+  font-size: 15px;
+  color: var(--muted);
+}
+
+.app__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.app__chip--yes {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: #0a0a0a;
+  font-weight: 700;
+}
+
+.app__chip--no {
+  background: #2a2a2a;
+  border-color: #2a2a2a;
+  color: var(--light);
+}
+
+/* Unanswered reads as unfinished, the same dashed border the list badge uses. */
+.app__chip--none {
+  border-style: dashed;
+}
+
+.app__chip--cancelled {
+  border-color: #c05252;
+  color: #f0b9b9;
+}
+
+.app__chip--lineup {
+  border-color: var(--gold);
+  color: var(--goldBright);
+}
+
+/* The segmented control sticks to the top of the scroll: on a long Dolaze list
+   the way back to Postava must never be a scroll away. */
+.app__segments {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 16px 0 0;
+  border: 1px solid var(--cardEdge);
+  background: var(--bg);
+}
+
+.app__segment {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 9px 4px 7px;
+  background: none;
+  border: none;
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.2;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.app__segment b {
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--light);
+}
+
+.app__segment--on {
+  background: var(--card);
+  color: var(--goldBright);
+  box-shadow: inset 0 -2px 0 var(--goldBright);
+}
+
+.app__segment--on b {
+  color: var(--goldBright);
+}
+
+.app__group {
+  margin-top: 18px;
+}
+
+.app__group-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 4px;
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.app__group-count {
+  letter-spacing: 0.06em;
+}
+
+/* Below the threshold: the whole point of the number is that a short army is
+   visible without counting the names under it. */
+.app__group-count--low {
+  color: #f0b9b9;
+  font-weight: 700;
+}
+
+/* The army colour as a square, so "crni" and "bili" are readable in the dark
+   without parsing a word. */
+.app__swatch {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  margin-right: 8px;
+  border: 1px solid #555;
+  vertical-align: middle;
+}
+
+.app__swatch--crni {
+  background: #000;
+}
+
+.app__swatch--bili {
+  background: var(--light);
+}
+
+.app__group-empty {
+  margin: 0;
+  padding: 9px 0;
+  border-top: 1px solid #1f1f1f;
+  border-bottom: 1px solid #1f1f1f;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+/* A panel with nothing in it says why, and what happens next. Dashed, because
+   it is a state rather than a card. */
+.app__empty-state {
+  margin-top: 18px;
+  padding: 28px 16px;
+  border: 1px dashed var(--cardEdge);
+  border-radius: var(--radius);
+  font-size: 14px;
+  color: var(--muted);
+  text-align: center;
+}
+
+.app__empty-state b {
+  display: block;
+  margin-bottom: 4px;
+  font-family: var(--font-bodoni), Georgia, serif;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--light);
+}
+
+.app__lineup-confirmed {
+  margin: 14px 0 0;
+  font-size: 13px;
+  color: var(--goldBright);
+}
+
+.app__lineup-hint {
+  margin: 14px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* The Ulaznice panel's headline: the count carries the cap, so the sentence
+   beside it does not have to. */
+.app__tix-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 6px;
+}
+
+.app__tix-head b {
+  font-family: var(--font-bodoni), Georgia, serif;
+  font-size: 34px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.app__tix-head b span {
+  font-size: 16px;
+  font-weight: 400;
+  color: var(--muted);
+}
+
+.app__tix-head p {
+  margin: 0;
+  max-width: 18ch;
+  font-size: 13px;
+  color: var(--muted);
+  text-align: right;
+}
+
+/* The voditelj's tools, gathered: the rarer job, and it belongs to the evening
+   rather than to any one segment. */
+.app__lead {
+  margin-top: 26px;
+  padding: 12px 14px;
+  background: var(--card);
+  border: 1px solid var(--cardEdge);
+  border-radius: var(--radius);
+}
+
+.app__lead-head {
+  margin: 0 0 8px;
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--goldBright);
+}
+
+.app__lead-row {
+  display: block;
+  width: 100%;
+  margin-top: 4px;
+  padding: 12px 0;
+  background: none;
+  border: none;
+  border-top: 1px solid #1f1f1f;
+  font-family: inherit;
+  font-size: 15px;
+  color: var(--light);
+  text-align: left;
+  cursor: pointer;
+}
+
+.app__lead-note {
+  margin: 12px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid #1f1f1f;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.app__lead .app__alarm,
+.app__lead .app__note-edit {
+  margin: 0;
+  padding: 12px 0 0;
+  border: none;
+  border-top: 1px solid #1f1f1f;
+}
+
+/* ── The answer, always under the thumb (#457) ───────────── */
+.app__sticky {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: calc(var(--tabH) + env(safe-area-inset-bottom));
+  z-index: 15;
+  padding: 10px 16px;
+  background: linear-gradient(to top, var(--bg) 70%, transparent);
+}
+
+.app__sticky .app__answers {
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.app__sticky .app__answer-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.app__sticky .app__answer {
+  min-height: 54px;
+  font-family: var(--font-inter), system-ui, sans-serif;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--light);
+  border-color: var(--gold);
+}
+
+.app__sticky .app__answer--on::before {
+  content: '✓ ';
+}
+
+/* Poništi is the voditelj's third button; it gets its own row rather than
+   squeezing the two that matter. */
+.app__sticky .app__answer--clear {
+  grid-column: 1 / -1;
+  min-height: 40px;
+  font-size: 13px;
+}
+
+.app__sticky .app__answer-note,
+.app__sticky .app__answer-error {
+  margin-top: 6px;
+  text-align: center;
+}
+
+/* Bar + gradient: what the last row of a panel has to clear. */
+.app__sticky-spacer {
+  height: 86px;
 }

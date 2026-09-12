@@ -181,20 +181,48 @@ export const APP_STRINGS = {
     saving: 'Spremam...',
   },
 
-  /** The performance detail and the voditelj's headcount (#423). */
+  /**
+   * The performance detail and the voditelj's headcount (#423, redesigned in
+   * #457 into three segments).
+   *
+   * The segment labels are also what a push deep-link means by `?dio=`, so the
+   * three words and the three URL values are read off the same object.
+   */
   detail: {
-    back: 'Natrag',
+    back: 'Izvedbe',
     note: 'Poruka voditelja',
     crni: 'Crni',
     bili: 'Bili',
     bula: 'Bule',
     notComing: 'Ne dolaze',
     noAnswer: 'Bez odgovora',
-    empty: 'Nema nikoga.',
     call: 'Nazovi',
     move: 'Prebaci',
     moveTo: (army: string) => `Prebaci u ${army}`,
     missing: 'Ta izvedba ne postoji.',
+    /** The three segments (#457). */
+    segments: {
+      dolaze: 'Dolaze',
+      postava: 'Postava',
+      ulaznice: 'Ulaznice',
+    },
+    /** A counter with nothing to count: a dash, never a zero that means "none". */
+    noCount: '–',
+    /** One muted line under an empty group heading. */
+    nobody: 'nitko',
+    /** The one empty group that is good news. */
+    allAnswered: 'Svi su odgovorili',
+    noAnswersTitle: 'Još nitko nije odgovorio',
+    noAnswersBody: 'Odgovori prvi, ostali vide tko dolazi.',
+    callAria: (nickname: string) => `Nazovi ${nickname}`,
+  },
+
+  /** The voditelj's tools, gathered at the bottom of the detail page (#457). */
+  lead: {
+    title: 'Alati za voditelja',
+    lineupConfirmed: (inLineup: number) => `Postava: potvrđena, ${inLineup} u postavi`,
+    lineupDraft: (coming: number, noAnswer: number) =>
+      `Postava: nije potvrđena, ${coming} dolazi, ${noAnswer} bez odgovora`,
   },
 
   /**
@@ -345,7 +373,12 @@ export const APP_STRINGS = {
     confirmedNote: 'Potvrđena postava. Otključaj je za izmjene.',
     draftNote: 'Postava još nije potvrđena, moreškanti je ne vide.',
     empty: 'Postava je prazna.',
-    emptyForDancer: 'Postava za ovu izvedbu još nije objavljena.',
+    /** The dancer's Postava segment before the voditelj has locked the list (#457). */
+    notConfirmedTitle: 'Postava još nije potvrđena',
+    notConfirmedBody: 'Voditelj je slaže na dan izvedbe. Dobit ćeš obavijest.',
+    confirmedAt: (when: string) => `Potvrđena ${when}`,
+    /** A named role nobody is dancing tonight. */
+    unassigned: 'nije dodijeljeno',
     warningSuffix: 'Spremit će se svejedno.',
     nobodyToAdd: 'Svi aktivni moreškanti su već u postavi.',
     /** The route's own refusals. */
@@ -387,15 +420,12 @@ export const APP_STRINGS = {
     intro: 'Do 4 karte po izvedbi. Stižu ti na e-mail kao PDF, s QR kodom za ulaz.',
     adults: 'Odrasli',
     children: 'Djeca',
-    /** The allowance still left, next to the steppers (#430, story 48). */
-    remaining: (left: number) => `još ${left} od 4`,
     nameLabel: 'Ime na karti',
     namePlaceholder: 'Ime i prezime',
     issue: 'Izdaj karte',
     issuing: 'Izdajem...',
     issued: 'Karte su izdane i poslane na tvoj e-mail.',
     issuedNoEmail: 'Karte su izdane, ali e-mail nije otišao. Javi voditelju.',
-    mine: (count: number) => `Moje karte: ${count}`,
     cancel: 'Otkaži',
     cancelling: 'Otkazujem...',
     cancelled: 'Karte su otkazane.',
@@ -419,6 +449,16 @@ export const APP_STRINGS = {
     notFound: 'Karte nisu pronađene.',
     failed: 'Karte nisu izdane. Pokušaj ponovno.',
     cancelFailed: 'Otkazivanje nije uspjelo. Pokušaj ponovno.',
+    /**
+     * The Ulaznice segment's own words (#457): the big count's caption, the
+     * line that replaces the form once the four are gone, and one sentence per
+     * reason there is nothing to issue (`compUnavailableReason`).
+     */
+    headline: 'besplatnih ulaznica za ovu izvedbu',
+    allUsed: 'Iskoristio si sve četiri.',
+    privateNoTickets: 'Privatna izvedba, nema ulaznica.',
+    past: 'Izvedba je prošla.',
+    noMemberShort: 'Ulaznice može izdati samo moreškant s povezanim profilom.',
   },
 
   /** The shared calendar subscription (#433, glossary: *Calendar feed*). */

@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { APP_STRINGS } from '@/lib/app/strings'
-import { MAX_SELF_COMP_NAME } from '@/lib/comp/self-comp'
+import { MAX_SELF_COMP_NAME, SELF_COMP_CAP } from '@/lib/comp/self-comp'
 import type { CompView } from '@/lib/app/detail-loaders'
 
 // "Besplatne karte" — a moreškant's own free tickets (#434, stories 47 to 51).
@@ -129,15 +129,19 @@ export function CompTickets({
 
   return (
     <section className="app__comp">
-      <h2 className="app__army-head">
-        <span>{APP_STRINGS.comp.title}</span>
-        <span className="app__chip">{APP_STRINGS.comp.remaining(comps.remaining)}</span>
-      </h2>
-      <p className="app__comp-intro">{APP_STRINGS.comp.intro}</p>
+      {/* The count first, big: "how many have I given away" is the question a
+          dancer opens this segment with, and "/ 4" beside it is the whole cap
+          rule without a sentence (#457). */}
+      <div className="app__tix-head">
+        <b>
+          {comps.issued}
+          <span> / {SELF_COMP_CAP}</span>
+        </b>
+        <p>{APP_STRINGS.comp.headline}</p>
+      </div>
 
       {comps.orders.length > 0 && (
         <ul className="app__comp-orders">
-          <li className="app__comp-total">{APP_STRINGS.comp.mine(comps.issued)}</li>
           {comps.orders.map((order) => (
             <li key={order.orderId} className="app__comp-order">
               <span className="app__comp-code">
@@ -164,9 +168,10 @@ export function CompTickets({
         // A comp holds a real seat, so a full room has none to give (story 47).
         <p className="app__empty">{APP_STRINGS.comp.soldOut}</p>
       ) : comps.remaining === 0 ? (
-        <p className="app__empty">{APP_STRINGS.comp.capReached}</p>
+        <p className="app__comp-note">{APP_STRINGS.comp.allUsed}</p>
       ) : (
         <>
+          <p className="app__comp-intro">{APP_STRINGS.comp.intro}</p>
           <div className="app__comp-steppers">
             <Stepper
               label={APP_STRINGS.comp.adults}
