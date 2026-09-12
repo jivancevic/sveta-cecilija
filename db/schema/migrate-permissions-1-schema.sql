@@ -29,6 +29,8 @@ CREATE TYPE public.enum_users_permissions AS ENUM (
     'season_stats',
     'moreska',
     'moreskant',
+    'finance',
+    'editor',
     'dev'
 );
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;

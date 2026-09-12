@@ -55,4 +55,25 @@ describe('dashboardBranchFor', () => {
   it('gives a session with no permission set at all no branch', () => {
     expect(dashboardBranchFor({} as never)).toBe('none')
   })
+
+  // #500: `finance` is money without buyers. Until the Financije screen ships
+  // in Cecilija, its holder gets the read-only counts view, and it outranks
+  // `door` so the president does not land on the door dashboard.
+  it('sends a finance holder to the counts view', () => {
+    expect(dashboardBranchFor({ permissions: ['finance'] })).toBe('season_stats')
+  })
+
+  it('sends Velebit, who holds finance and door, to the counts view', () => {
+    expect(dashboardBranchFor({ permissions: ['finance', 'door'] })).toBe('season_stats')
+  })
+
+  it('still sends the secretary to the backoffice when she also holds finance', () => {
+    expect(dashboardBranchFor({ permissions: ['tickets', 'refunds', 'door', 'finance'] })).toBe(
+      'tickets',
+    )
+  })
+
+  it('gives an editor-only account no dashboard', () => {
+    expect(dashboardBranchFor({ permissions: ['editor'] })).toBe('none')
+  })
 })

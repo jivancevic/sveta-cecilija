@@ -6,11 +6,11 @@ A user holds a **set** of permissions. There is no role tier, no `isAdminTier`, 
 
 ## The vocabulary
 
-Nine words, listed once in `src/lib/access/permissions.ts`. Never re-type the list in a collection, a route or a component; import `PERMISSIONS` or the `Permission` type.
+Eleven words, listed once in `src/lib/access/permissions.ts`. Never re-type the list in a collection, a route or a component; import `PERMISSIONS` or the `Permission` type.
 
 | Permission | Grants |
 |---|---|
-| `users` | Account administration: create, delete and edit users and their permission sets. The only permission that can grant permissions, so "superadmin" just means holding all nine. |
+| `users` | Account administration: create, delete and edit users and their permission sets. The only permission that can grant permissions, so "superadmin" just means holding every one of them. |
 | `tickets` | The ticketing backoffice: orders, shows, tickets, partners, members, promo codes, contact submissions, order lookups. |
 | `refunds` | Issuing a refund. |
 | `door` | Scanning a ticket, looking a code up, the door dashboard. Reads shows and tickets, nothing else. |
@@ -18,9 +18,11 @@ Nine words, listed once in `src/lib/access/permissions.ts`. Never re-type the li
 | `season_stats` | The shared read-only season ticket dashboard (ADR-0022). |
 | `moreska` | Moreška roster tools, the voditelj's view (ADR-0024). Gates the Shows collection since #408: every performance is readable, non-public ones are the voditelj's to create and delete, and the roster fields are theirs alone. |
 | `moreskant` | A moreškant's own roster view at `/app` (ADR-0024). Since #421 it is the dancer half of the `/app` access decision; since #422 it also scopes the `attendance` collection to the dancer's own rows. On Members and Users it grants nothing, so a `moreskant` login reaches no collection but its own row and its own answers. It is never chosen by hand: the invitation (#424) issues it as the whole bundle of a dancer's login. |
+| `finance` | Money without buyers (#500): revenue collected, refunds, the partner receivable and its monthly statement (`GET /api/partner/reconciliation`), plus the counts view of Statistika. It never opens an order or a buyer. It exists because the society's tajnik and blagajnik are different people by statute: the president reads revenue without holding `tickets`. Until the Financije screen ships, a holder without `tickets` lands on the read-only counts dashboard, which `dashboardBranchFor` reaches before the door branch. |
+| `editor` | Objave (posts) and FAQ in the Backoffice (#500). Carved out of `tickets`, which no longer reaches either collection, drafts included. |
 | `dev` | Developer diagnostics: the dev strip and the critical-events strip (ADR-0016). |
 
-**Decided, not yet in code (2026-09-12, [#476](https://github.com/jivancevic/sveta-cecilija/issues/476), ships with #500):** `finance` (money without buyers: the Financije screen, Statistika, partner statements) and `editor` (Objave and FAQ in the Backoffice; `tickets` loses them). Until #500 lands, `permissions.ts` is still the nine-word list above.
+**In code since [#500](https://github.com/jivancevic/sveta-cecilija/issues/500) (2026-09-12):** `finance` and `editor`, the two words the Cecilija inventory ([#476](https://github.com/jivancevic/sveta-cecilija/issues/476)) asked for. Their database enum values are appended by `db/schema/migrate-permissions-3-finance-editor.sql`.
 
 ## The predicates
 
@@ -52,7 +54,7 @@ An unknown permission string is dropped rather than fatal, so a stale or hand-ed
 - **A dancer's login is issued, never self-registered** (#424, still true after #463). `POST /api/app/invite` is a `moreska` route that creates the account with `permissions: ['moreskant']` and the `member` link, so a voditelj never picks a permission and cannot pick a wrong one. #463 added two more doors to the same room and no third bundle: "Kopiraj pozivnicu" and a voditelj approving a rehearsal join claim both go through `ensureDancerLogin`, the one function that says what a dancer's login is. The claim a dancer files at `/app/join/<kod>` is a REQUEST and grants nothing until a `moreska` holder approves it. Every field of that bundle is field-locked to `users` — `permissions`, `member` and, since #424, `username`, which is declared on the collection only to merge that lock into Payload's own base field. `Users.access.update` allows self-edit, so those locks are the whole of what stops a dancer rewriting the login they were given, and a denied field is dropped in **silence**: a dancer's PATCH answers 200 and changes nothing. Flow: `moreskant-app.md`.
 - **Reset-token lengths are passed per call, and `Users.auth` must keep setting no `forgotPassword.expiration`** — Payload's precedence is the opposite of what it reads like, and adding one there silently overrides both callers. The full explanation is the comment beside that config in `src/collections/Users.ts`; `access.test.ts` guards the absence.
 
-- **Email is required for a named individual**, decided from the set, not a tier: `users`, `tickets` or `moreska` (`src/lib/access/user-email-policy.ts`). Door, partner and season_stats accounts are username-only. A `moreskant` was on that list from #420 (the invitation was an e-mail, so an inbox was part of the bundle) and came off it in **#463**, when the invitation became a link a voditelj hands over by SMS or a dancer claims from the rehearsal QR: the requirement was refusing a login to 75 of the 76 moreškanti on the roster. Flow: `moreskant-app.md`.
+- **Email is required for a named individual**, decided from the set, not a tier: `users`, `tickets`, `moreska` and, since #500, `finance` or `editor` (`src/lib/access/user-email-policy.ts`) — the last two are people by construction, never a shared login. Door, partner and season_stats accounts are username-only. A `moreskant` was on that list from #420 (the invitation was an e-mail, so an inbox was part of the bundle) and came off it in **#463**, when the invitation became a link a voditelj hands over by SMS or a dancer claims from the rehearsal QR: the requirement was refusing a login to 75 of the 76 moreškanti on the roster. Flow: `moreskant-app.md`.
 - **Admin chrome language** defaults from the set too (`src/lib/admin-i18n.ts`): English for a `dev` holder or a door-only account, Croatian otherwise. The user's own `payload-lng` choice always wins.
 
 ## The legacy `role` column is gone
@@ -67,10 +69,12 @@ The drop file is named `migrate-zz-…` deliberately. `bootstrap-db.mjs` applies
 
 | Old role | Permissions | `shared` |
 |---|---|---|
-| `superadmin` | all nine | |
+| `superadmin` | every permission of the day (the nine of #393; `finance` and `editor` came later and were granted by hand) | |
 | `admin` | `tickets`, `refunds`, `door` | |
 | `tehnika` | `door` | ✓ |
 | `partner` | `partner` | |
 | `member` | `season_stats` | ✓ |
+
+**Second bundle, applied by hand on production (#500, 2026-09-12).** The backfill above only fires on an empty set, so the four accounts `finance` and `editor` touched were changed with a one-off SQL script against the prod database rather than a `db/schema` file, which would fight every later edit made in the Backoffice. What prod now carries: `josip.ivancevic00` gained `finance` + `editor`; `ttvigna` gained `finance`; `bbazdaric4` gained `finance` + `moreska` + `moreskant` and a `member` link to Members id 3; `vele` became `finance` + `door`, dropping `tickets` and `refunds`. Re-apply the same shape by hand if another money or content holder appears; there is no migration file to run.
 
 After the first bootstrap the set is never empty again, so an edit made in `/admin` sticks across restarts. Since #398 the whole file is a no-op unless the column is still there, which only a database upgraded straight from a pre-permissions image can be.

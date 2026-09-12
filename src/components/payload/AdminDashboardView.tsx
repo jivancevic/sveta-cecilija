@@ -8,6 +8,7 @@ import { getStatsInput } from '@/lib/stats-data'
 import { ADMIN_LANG_COOKIE, adminT, resolveAdminLang, type AdminLang } from '@/lib/admin-i18n'
 import { partnerIdOf, type PartnerUser } from '@/lib/access/partner'
 import { dashboardBranchFor } from '@/lib/dashboard/branch'
+import { can, type PermissionUser } from '@/lib/access/permissions'
 import { getNextShow, getScannedPeopleForShow, getUpcomingShows, type NextShow } from '@/lib/shows'
 import { toDashboardShows } from '@/lib/dashboard/from-stats'
 import { partitionShows } from '@/lib/dashboard/partition'
@@ -115,6 +116,12 @@ export async function AdminDashboardView() {
   // stats input and the season money facts.
   const pool = (payload.db as unknown as { pool: { query: PoolQuery } }).pool
   const poolQuery: PoolQuery = (sql, params) => pool.query(sql, params)
+
+  // Money is the `finance` permission since #500, not `tickets`: the society's
+  // tajnik and blagajnik are different people by statute. Without it the query
+  // does not even run, so a secretary's dashboard reads the same as before
+  // minus the two euro tiles.
+  const showMoney = can(user as PermissionUser, 'finance')
   const [
     input,
     diagnostics,
@@ -131,7 +138,7 @@ export async function AdminDashboardView() {
     }),
     // Two season money facts (#237): revenue collected (online net of refunds +
     // in-person cash) and partner receivable, computed apart, never summed.
-    getDashboardMoney(poolQuery),
+    showMoney ? getDashboardMoney(poolQuery) : Promise.resolve(null),
     // Channel-mix chart (#242): online vs partner active-ticket counts. In-person
     // sales have no ticket rows, so they come from shows.inPersonSold below.
     getActiveTicketCountsByChannel(poolQuery),
@@ -208,8 +215,8 @@ export async function AdminDashboardView() {
       <SeasonBand
         lang={lang}
         season={season}
-        revenueCents={money.revenueCollectedCents}
-        partnerReceivableCents={money.partnerReceivableCents}
+        revenueCents={money?.revenueCollectedCents ?? null}
+        partnerReceivableCents={money?.partnerReceivableCents}
         compsIssued={channelTickets.comp}
       />
 

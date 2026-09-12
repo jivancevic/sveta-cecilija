@@ -1,13 +1,15 @@
 import type { CollectionConfig, Where } from 'payload'
 import { can, type PermissionUser } from '@/lib/access/permissions'
 
-const backoffice = ({ req }: { req: { user: unknown } }) =>
-  can(req.user as PermissionUser, 'tickets')
+// Published content is the `editor` permission since #500 (Cecilija, #476):
+// `tickets` is the ticketing backoffice and no longer reaches Objave or FAQ.
+const contentEditor = ({ req }: { req: { user: unknown } }) =>
+  can(req.user as PermissionUser, 'editor')
 
-// Public reads: only published posts. The backoffice sees everything (drafts +
-// scheduled); a door account reads as a visitor does.
+// Public reads: only published posts. An `editor` sees everything (drafts +
+// scheduled); everyone else, staff included, reads as a visitor does.
 const publicRead = ({ req }: { req: { user: unknown } }): true | Where => {
-  if (can(req.user as PermissionUser, 'tickets')) return true
+  if (can(req.user as PermissionUser, 'editor')) return true
   return {
     and: [
       { status: { equals: 'published' } },
@@ -31,16 +33,16 @@ export const Posts: CollectionConfig = {
   slug: 'posts',
   access: {
     read: publicRead,
-    create: backoffice,
-    update: backoffice,
-    delete: backoffice,
+    create: contentEditor,
+    update: contentEditor,
+    delete: contentEditor,
   },
   admin: {
     useAsTitle: 'title',
     defaultColumns: ['title', 'locale', 'status', 'publishedAt'],
     description:
       'Blog posts. Author = HGD Sveta Cecilija. Pick a locale; posts only appear on the public /blog of that locale.',
-    hidden: ({ user }) => !can(user as PermissionUser, 'tickets'),
+    hidden: ({ user }) => !can(user as PermissionUser, 'editor'),
   },
   fields: [
     { name: 'title', type: 'text', required: true },
