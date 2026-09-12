@@ -16,7 +16,6 @@ import {
   nicknameKey,
   validateAndNormaliseMoreskant,
 } from './moreskant-profile'
-// @ts-expect-error - plain .mjs data script, no type declarations
 import { ROSTER } from '../../scripts/import-moreskanti-2026.mjs'
 
 interface RosterEntry {
