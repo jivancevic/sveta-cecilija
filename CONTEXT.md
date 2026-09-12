@@ -401,6 +401,10 @@ _Avoid_: admin, coach, leader.
 A person who dances the Moreška. Modelled as a **Member** with `isMoreskant`, plus nickname, mobile, email, dance roles and a primary role. A moreškant need not have a login (a guest in a lineup is still a Member row). A moreškant with a login holds the `moreskant` permission and a Member link. Sees nicknames and mobiles of other moreškanti, never emails.
 _Avoid_: dancer (in code names only), performer, user.
 
+### Active moreškant
+A moreškant is **active** when they are dancing this season. `active: false` does not mean "left the society": it means *in the system, not dancing now* — the person keeps their profile, their lineup history and their statistics, but drops out of the postava and attendance pickers, so nobody waits on an answer that is never coming. That is the same `active` flag ADR-0019 uses to retire a comp-attribution Member, read for the roster; six of the 2026 roster carry it.
+_Avoid_: retired, inactive member, former moreškant.
+
 ### Nadimak (nickname)
 The name shown everywhere in the app for a moreškant ("Cici" for Ivan Fabris). Full name is kept for the voditelj and for comp attribution. Required and **unique among moreškanti, case-insensitively** ("cici" and "Cici" are one person), which is also where a dancer's username comes from when they are invited (`Cici` → `cici`, a second one → `cici2`).
 
