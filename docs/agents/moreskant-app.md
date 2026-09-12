@@ -96,6 +96,14 @@ What this replaced, and why each half was wrong: the old banner asked "push supp
 
 **`/app/instalacija`** is the same guide full screen, and deliberately **not** behind the access decision: it is the target of the QR code a voditelj puts on the wall at a rehearsal, and the person scanning it has not signed in yet. Its platform switch exists because the voditelj is holding somebody else's phone half the time.
 
+### Why not the App Store or Google Play (#455)
+
+Asked and answered in the same pass, so it does not get re-litigated every season.
+
+- **App Store: no.** 99 EUR/year with no waiver (Apple's fee waiver is limited to a country list Croatia is not on, whatever the RNO registration says), guideline 4.2 "minimum functionality" rejection risk for what is a webview of an existing site, guideline 5.1.1(v) would force an in-app account-deletion flow the roster has no use for, plus an EU DSA trader declaration that publishes the society's address and phone on the store page. Every release would then wait on review, instead of shipping with the site.
+- **Google Play: cheap but not free of work.** 25 USD once, and a Trusted Web Activity built by PWABuilder is genuinely just this PWA in a Play wrapper, with `assetlinks.json` on the domain and no review risk (TWA is Google's own mechanism). An organisation account needs a D-U-N-S number, which the society does not have; organisation accounts are exempt from the "12 testers for 14 days" rule, which applies only to personal accounts created after 2023-11-13.
+- **What a store would actually buy**: on iPhone, installing from a store listing instead of the share sheet. Nothing else: push already works in the PWA, and on Android the one-tap `beforeinstallprompt` button is the same gesture. That is one screen's worth of difference, which is why the screen got fixed instead.
+
 ## Attendance (#422, #423)
 
 One row per (performance, moreškant) in the `attendance` collection: `status`
