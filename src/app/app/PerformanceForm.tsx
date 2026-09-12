@@ -299,6 +299,18 @@ export function PerformanceEditor({
     }
   }
 
+  // A cancelled booking has no controls, only the sentence saying so. Uredi is
+  // refused by the route with a 409 (moving it would push "premještena" at a
+  // roster that was told the evening is off) and Otkaži has nothing left to do,
+  // so offering either would be offering a dead end.
+  if (cancelled) {
+    return (
+      <section className="app__perf-edit">
+        <p className="app__lead-note">{APP_STRINGS.performance.cancelledNotEditable}</p>
+      </section>
+    )
+  }
+
   return (
     <section className="app__perf-edit">
       {open ? (
@@ -336,9 +348,7 @@ export function PerformanceEditor({
         </button>
       )}
 
-      {cancelled ? (
-        <p className="app__lead-note">{APP_STRINGS.performance.alreadyCancelled}</p>
-      ) : arming ? (
+      {arming ? (
         <div className="app__perf-confirm">
           <p>{APP_STRINGS.performance.cancelConfirm}</p>
           <div className="app__perf-actions">

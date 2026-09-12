@@ -127,7 +127,19 @@ export async function handleCreatePerformance(
   return ok({ date: parsed.fields.dateStr })
 }
 
-/** PATCH /api/app/performances/[id] — Uredi. Non-public rows only. */
+/**
+ * PATCH /api/app/performances/[id] — Uredi. Non-public rows only, and not a
+ * cancelled one.
+ *
+ * The cancelled case is a **409** rather than a 400: the request is
+ * well-formed and the row is the voditelj's, it is simply in a state where
+ * this edit is not allowed — the same code and the same shape of refusal as a
+ * confirmed postava. It matters because the Shows `afterChange` hook pushes
+ * "izvedba je premještena" on a moved date, and pushing that at a roster that
+ * has already been told the evening is off is worse than no edit at all. A
+ * cancelled performance is a record; an evening that turns out to be back on
+ * is a new one.
+ */
 export async function handleEditPerformance(
   rawId: unknown,
   body: unknown,
@@ -138,6 +150,9 @@ export async function handleEditPerformance(
 
   const found = await loadOwned(rawId, deps, { nonPublicOnly: true })
   if ('refusal' in found) return found.refusal
+  if (found.row.cancelled) {
+    return refuse(409, APP_STRINGS.performance.cancelledNotEditable)
+  }
 
   const parsed = parseNonPublicPerformance(body)
   if (!parsed.ok) return refuse(400, parsed.error)

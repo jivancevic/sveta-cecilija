@@ -389,8 +389,17 @@ export const APP_STRINGS = {
     cancelYes: 'Da, otkaži',
     cancelNo: 'Ne',
     cancelled: 'Izvedba je otkazana.',
-    /** Already cancelled: the voditelj got what they wanted, so this is not an error. */
-    alreadyCancelled: 'Izvedba je već otkazana.',
+    /**
+     * A cancelled booking, in one sentence for both halves of it.
+     *
+     * Cancelling again is a no-op the route answers 200 to, but EDITING is
+     * refused with a 409: moving a cancelled evening would push "premještena"
+     * at a roster that has been told it is off. So the tools card drops both
+     * controls and says this instead, naming the way forward rather than the
+     * rule.
+     */
+    cancelledNotEditable:
+      'Izvedba je otkazana, pa se više ne mijenja. Ako se ipak održava, dodaj novu izvedbu.',
     publicRow:
       'Ovo je javna izvedba. Njezin datum, mjesto i otkazivanje vodi blagajna, jer o tome ovise prodane ulaznice.',
     missing: 'Ta izvedba ne postoji.',

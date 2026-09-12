@@ -932,8 +932,11 @@ snapshots of the row.
   matter most. Each reads the row before and after its claim and calls
   `notifyPerformanceFactsSaved`, so the decision is not duplicated.
 - **A bulk create is ONE announcement.** `/api/shows/bulk-create` writes a season
-  in a loop; each `payload.create` carries `context.skipRosterPush`, the hook
-  honours it, and the route sends a single "N novih izvedbi" pointing at `/app`.
+  in a loop; for a batch of two or more each `payload.create` carries
+  `context.skipRosterPush`, the hook honours it, and the route sends a single
+  "N novih izvedbi" pointing at `/app`. A **one-row call leaves the hook on**
+  (#503) and sends no summary: a voditelj adding a single cruise call means the
+  ordinary "Nova izvedba", with the date, the time and the place in it.
 - **The hook can never fail a save.** `notifyPerformanceSaved` catches, logs and
   returns; the hook wraps the dep construction in its own try/catch. A voditelj
   must be able to cancel a performance while a push service is down.
@@ -983,7 +986,7 @@ else.**
 | Route | Guard | Does |
 |---|---|---|
 | `POST /api/app/performances` | `requirePermission('moreska')` + `/app` guard | one non-public performance: kind, date, time, location, client, optional note |
-| `PATCH /api/app/performances/[id]` | same | the same five fields on an existing row; **403 on a public row** |
+| `PATCH /api/app/performances/[id]` | same | the same five fields on an existing row; **403 on a public row**, **409 on a cancelled one** |
 | `POST /api/app/performances/[id]/cancel` | same | `status = 'cancelled'` and nothing else; **403 on a public row**; a row that is already cancelled is a 200 with no write |
 | `POST /api/app/performances/[id]/thresholds` | same | `{ crni, bili }`, both or neither, 0 to `MAX_THRESHOLD` (40). The one voditelj write that DOES reach a public row |
 
@@ -994,6 +997,16 @@ else.**
   404, because the voditelj can see the evening and simply may not do this to
   it. Cancelling a Redovna refunds every buyer and mails them and is
   `POST /api/shows/[id]/cancel` (#497), not a harder version of this.
+- **A cancelled booking is not editable, and that is a 409.** The request is
+  well-formed and the row is the voditelj's; it is simply in a state where the
+  edit is not allowed, the same shape of refusal as a confirmed postava. The
+  reason is the hook: a moved date pushes "izvedba je premještena", and pushing
+  that at a roster already told the evening is off is worse than no edit at
+  all. A cancelled performance is a record; an evening that turns out to be
+  back on is a new one. The tools card drops both controls and says so, so the
+  409 is a backstop rather than something a voditelj meets. Cancelling an
+  already-cancelled row stays a 200 with no write — that one is the outcome the
+  presser wanted.
 - **Pragovi reaches every row on purpose.** How many crni and bili an evening
   needs is a fact about the dance, not about the ticket shop, and the
   collection agrees: `canEditRosterField` asks only for `moreska` and never
@@ -1523,11 +1536,14 @@ Pure functions over a DI'd store (`src/lib/mcp/tools.ts` + `store.ts`), the
   calendar-day check — `2026-02-31` matches the shape and would otherwise become
   3 March on the way through `Date`) and the caller gets every correction at
   once. What is written goes through `createPerformancesInBulk`
-  (`src/lib/performance-bulk-create.ts`), shared with `/api/shows/bulk-create`:
-  ONE transaction, the per-create `skipRosterPush` flag and the ONE summary push
-  (#441 review) are stated once, so a season entered from Claude behaves exactly
+  (`src/lib/performance-bulk-create.ts`), shared with `/api/shows/bulk-create`
+  and with the voditelj's own Dodaj (#503): ONE transaction, and — for a batch of
+  two or more — the per-create `skipRosterPush` flag plus the ONE summary push
+  (#441 review), stated once, so a season entered from Claude behaves exactly
   like a season entered from `/admin` and a create that throws on row nine
-  leaves nothing behind.
+  leaves nothing behind. A one-row call leaves the hook on and sends no summary
+  (#503), so a single cruise call pasted into the chat announces itself like any
+  other save.
 - **The PII boundary holds here too**: `toMcpMoreskant` is an explicit
   projection with no mobile and no e-mail (ADR-0024, the `toAppMember` rule). A
   chat window is the last place to relax it.

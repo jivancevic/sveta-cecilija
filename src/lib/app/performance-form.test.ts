@@ -161,6 +161,17 @@ describe('handleEditPerformance', () => {
     expect(updated).toEqual([])
   })
 
+  it('refuses a CANCELLED performance with a 409', async () => {
+    const { deps: d, updated } = deps({ ...BOOKING, cancelled: true })
+    const res = await handleEditPerformance('7', { ...GOOD_BODY, date: '2027-05-06' }, d)
+
+    // Moving a cancelled evening would push "izvedba je premještena" at a
+    // roster that was told it is off. A cancelled row is a record, not a
+    // draft: to move it, make a new one.
+    expect(res.status).toBe(409)
+    expect(updated).toEqual([])
+  })
+
   it('refuses an id that is not a performance', async () => {
     const { deps: d, updated } = deps(null)
     const res = await handleEditPerformance('404', GOOD_BODY, d)
