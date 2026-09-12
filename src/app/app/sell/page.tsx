@@ -1,0 +1,76 @@
+import { loadSellScreen } from '@/lib/app/sell-data'
+import { APP_STRINGS } from '@/lib/app/strings'
+import { AppShell } from '../AppShell'
+import { PartnerNotice } from '../PartnerNotice'
+import { openScreen } from '../gate'
+import { RecentSales } from './RecentSales'
+import { SellForm } from './SellForm'
+
+// `/app/sell` — Prodaja (#505), the reseller's screen.
+//
+// A port of the Backoffice partner dashboard into the Cecilija shell, not a
+// redesign: the same picker, the same two steppers, the same "Izdaj ulaznice"
+// that opens the PDF the sell route returns, the same recent-sales list with
+// its delete-then-undo cancel, and the same live month card. The four routes
+// behind it (`/api/partner/sell`, `/api/partner/cancel`,
+// `/api/partner/cancel/undo`, `/api/partner/sales`) are untouched — they were
+// already guarded and already scoped by `src/lib/access/partner.ts`.
+//
+// What DID change is the order of the page. On a phone the sell form is the
+// whole job, so it opens the screen; the standing card that used to sit above
+// the season chart now closes it, because "what do I owe" is a question asked
+// once a month and "sell two adults" is asked forty times an evening.
+//
+// The partner id comes off the access decision, never off the request: the
+// screen cannot be pointed at another reseller's sales even by a caller who
+// edits the URL, because there is no id in the URL to edit.
+
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+
+const eur = (cents: number) => `${(cents / 100).toFixed(2).replace('.', ',')} €`
+
+export default async function SellPage() {
+  const { viewer, refusal } = await openScreen('sell')
+  if (refusal) return refusal
+
+  const partnerId = viewer.access.kind === 'ok' ? viewer.access.partnerId : null
+  const screen = await loadSellScreen(partnerId)
+
+  if (screen.state.kind !== 'ok') {
+    return (
+      <AppShell viewer={viewer} screen="sell">
+        <PartnerNotice state={screen.state} />
+      </AppShell>
+    )
+  }
+
+  return (
+    <AppShell viewer={viewer} screen="sell" title={screen.state.partner.name}>
+      <SellForm shows={screen.shows} />
+      <RecentSales initial={screen.recent} />
+
+      <section className="app__partner-month">
+        <h2 className="app__month-head">
+          <span>{APP_STRINGS.sell.monthTitle}</span>
+          <b>{screen.monthLabel}</b>
+        </h2>
+        <div className="app__tiles">
+          <div className="app__tile2">
+            <b>{screen.month.ticketsSold}</b>
+            <span>{APP_STRINGS.sell.monthTickets}</span>
+          </div>
+          <div className="app__tile2 app__tile2--money">
+            <b>{eur(screen.month.owedCents)}</b>
+            <span>{APP_STRINGS.sell.monthOwed}</span>
+          </div>
+          <div className="app__tile2 app__tile2--money">
+            <b>{eur(screen.month.commissionCents)}</b>
+            <span>{APP_STRINGS.sell.monthCommission}</span>
+          </div>
+        </div>
+        <p className="app__partner-note">{APP_STRINGS.sell.monthNote}</p>
+      </section>
+    </AppShell>
+  )
+}
