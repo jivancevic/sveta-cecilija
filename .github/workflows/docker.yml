@@ -120,6 +120,32 @@ jobs:
           grep -q '"ok":true' body.json || { echo "::error::unexpected health body"; exit 1; }
           grep -q '"dbOk":true' body.json || { echo "::error::app is up but cannot reach Postgres"; exit 1; }
 
+      # The probe must run INSIDE this image, not just from the runner. Coolify
+      # gates a deploy on the container's own health status, and the runtime
+      # image is a slim standalone tree — on 2026-09-12 a healthy staging
+      # container was failed by a probe built on curl, which this image does not
+      # have. Asserting `healthy` here means a probe that cannot execute in the
+      # image fails the PR instead of the deploy.
+      - name: Assert the image's own HEALTHCHECK reports healthy
+        if: steps.scope.outputs.decision == 'build'
+        run: |
+          set -euo pipefail
+          probe=$(docker inspect --format '{{json .Config.Healthcheck}}' moreska-ci)
+          [ "$probe" != "null" ] || { echo "::error::the image declares no HEALTHCHECK"; exit 1; }
+          echo "Image probe: $probe"
+
+          for i in $(seq 1 45); do
+            status=$(docker inspect --format '{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' ci-app)
+            case "$status" in
+              healthy) echo "container reports healthy"; exit 0 ;;
+              unhealthy) echo "::error::container reports unhealthy"; docker inspect --format '{{json .State.Health}}' ci-app; exit 1 ;;
+            esac
+            sleep 2
+          done
+          echo "::error::container never reported healthy (last status: ${status:-unknown})"
+          docker inspect --format '{{json .State.Health}}' ci-app
+          exit 1
+
       # Proves bootstrap-db.mjs actually applied db/schema/*.sql rather than
       # logging a failure and being ignored. This is the fresh-database path
       # (prod on a restart, and a DR restore), not something `next build` sees.
