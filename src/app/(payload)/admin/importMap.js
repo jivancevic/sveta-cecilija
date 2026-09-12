@@ -15,6 +15,7 @@ import { AdminScanView as AdminScanView_scan } from '@/components/payload/AdminS
 import { AccountLogout as AccountLogout_account } from '@/components/payload/AccountLogout'
 import { InviteMoreskantMenuItem as InviteMoreskantMenuItem_invite } from '@/components/payload/InviteMoreskantMenuItem'
 import { InviteAllMoreskantiMenuItem as InviteAllMoreskantiMenuItem_invite_all } from '@/components/payload/InviteAllMoreskantiMenuItem'
+import { CopyInviteMenuItem as CopyInviteMenuItem_copy_invite } from '@/components/payload/CopyInviteMenuItem'
 
 /** @type import('payload').ImportMap */
 export const importMap = {
@@ -35,4 +36,5 @@ export const importMap = {
   "@/components/payload/AccountLogout#AccountLogout": AccountLogout_account,
   "@/components/payload/InviteMoreskantMenuItem#InviteMoreskantMenuItem": InviteMoreskantMenuItem_invite,
   "@/components/payload/InviteAllMoreskantiMenuItem#InviteAllMoreskantiMenuItem": InviteAllMoreskantiMenuItem_invite_all,
+  "@/components/payload/CopyInviteMenuItem#CopyInviteMenuItem": CopyInviteMenuItem_copy_invite,
 }

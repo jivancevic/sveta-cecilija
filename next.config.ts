@@ -1,5 +1,6 @@
 import { withPayload } from '@payloadcms/next/withPayload'
 import type { NextConfig } from 'next'
+import { appSubdomainRedirects } from './src/lib/app-subdomain'
 
 const securityHeaders = [
   { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
@@ -28,6 +29,9 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   async headers() {
     return [{ source: '/:path*', headers: [...securityHeaders, ...stagingHeaders] }]
+  },
+  async redirects() {
+    return appSubdomainRedirects()
   },
 }
 

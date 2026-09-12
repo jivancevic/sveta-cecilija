@@ -17,7 +17,7 @@
 import { APP_STRINGS } from './strings'
 import { rejectAppRequest, type AppRequestMeta } from './request-guard'
 import { identifierField } from './login'
-import { isUsableBaseUrl, setPasswordLink } from './invite'
+import { isUsableBaseUrl, signInLink } from './invite'
 
 /** One hour, the life of a self-service reset link. */
 export const RESET_EXPIRATION_MS = 60 * 60 * 1000
@@ -123,7 +123,7 @@ export async function handleForgot(
     .sendReset({
       to: email,
       greeting: typeof account.name === 'string' ? account.name.trim() : '',
-      link: setPasswordLink(deps.baseUrl, token),
+      link: signInLink(deps.baseUrl, token),
     })
     .catch((err) => {
       console.error('[handleForgot] reset mail failed:', err instanceof Error ? err.message : err)
