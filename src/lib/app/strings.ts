@@ -237,8 +237,10 @@ export const APP_STRINGS = {
     roles: 'Uloge',
     mobile: 'Mobitel',
     missing: 'nije upisano',
-    admin: 'Administracija',
-    members: 'Moreškanti',
+    /* The raw Payload UI is the **Backoffice** and never "administracija"
+       (ADR-0027): Cecilija is what everyone else works in, and only a `dev`
+       holder is offered this row at all. */
+    admin: 'Backoffice',
   },
 
   /**

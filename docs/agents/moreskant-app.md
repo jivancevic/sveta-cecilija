@@ -14,6 +14,16 @@ label and gets an English path segment (the #481 rule), renamed **screen by
 screen** as each build ticket lands, never in one sweep. Until a row is built,
 the "Today" path is still the live one.
 
+**The shell shipped in #495.** Every screen that existed before it now answers
+on its English route with a 308 from the old one, and the table below says so
+in the *Today* column. The table itself lives in code as
+`src/lib/app/screens.ts`: label, route, rank, the permissions that unlock it
+and the sidebar group, read by the phone bar, the laptop sidebar, the
+active-tab highlighter and every page gate. A screen that is not built yet
+carries an empty `servesToday`, so the bar never offers a tab that 404s; **the
+one thing a screen ticket changes in that file is moving its permission from
+`unlockedBy` into `servesToday`.**
+
 ### Screens and the permission that unlocks each
 
 Rank is the bar order from #472: the first four screens a person's permissions
@@ -22,11 +32,11 @@ unlock are tabs, the rest live under Više, and Izvedbe jumps to the front for a
 
 | Rank | Screen (label) | Route | Unlocked by | Today | Old path |
 |---|---|---|---|---|---|
-| | landing | `/app` | any screen | `/app` is the Izvedbe list | 307 to the person's first tab |
+| | landing | `/app` | any screen | **307 to the person's first tab** (#495) | done |
 | 1 | Narudžbe | `/app/orders`, `/app/orders/[id]` | `tickets` | `/admin/collections/orders` | none, the Backoffice keeps its list |
-| 2 | Izvedbe (one screen, content by `can()`) | `/app/performances`, `/app/performances/[id]` | `tickets`, `moreska`, `moreskant` | `/app`, `/app/izvedba/[id]` | 308 (push messages carry `/app/izvedba/<id>`) |
-| 2.5 | Članovi (dancer profiles, invitations, join code; absorbs Pozivnice, added by #476) | `/app/members` | `moreska` | `/admin/collections/members`, `/app/pozivnice` | 308 from `/app/pozivnice` |
-| 3 | Ljestvica (own season + roster ranking; voditelj sees the full table) | `/app/leaderboard?season=2026&part=mine\|all` | `moreskant`, `moreska` | `/app/moje?sezona=&dio=`, `/app/statistika` | 308 from both |
+| 2 | Izvedbe (one screen, content by `can()`) | `/app/performances`, `/app/performances/[id]` | `tickets`, `moreska`, `moreskant` | **live for `moreska` + `moreskant`** (#495); the blagajna's half is #502 | 308 from `/app/izvedba/[id]`; push messages now carry the new path |
+| 2.5 | Članovi (dancer profiles, invitations, join code; absorbs Pozivnice, added by #476) | `/app/members` | `moreska` | `/admin/collections/members`, `/app/invitations` | 308 from `/app/pozivnice` is already in place; `/app/invitations` folds in with #511 |
+| 3 | Ljestvica (own season + roster ranking; voditelj sees the full table) | `/app/leaderboard?season=2026&part=mine\|all` | `moreskant`, `moreska` | **live** (#495): both panels on one screen, the voditelj's *Ljestvica* panel is the old scoreboard | 308 from `/app/moje` and `/app/statistika` |
 | 4 | Skener (camera, code entry, door list) | `/app/scan` | `door` | `/admin/scan` | 308; the ticket QR stays `/scan/[token]`, whose staff buttons point at `/app/scan` |
 | 5 | Prodaja | `/app/sell` | `partner` | partner view in `/admin` | none |
 | 6 | Obračun | `/app/statement` | `partner` | partner view in `/admin` | none |
@@ -35,7 +45,7 @@ unlock are tabs, the rest live under Više, and Izvedbe jumps to the front for a
 | 9 | Korisnici | `/app/users`, `/app/users/[id]` | `users` | `/admin/collections/users` | none |
 | 10 | Statistika (counts only; the single-show drill-down folds into `/app/performances/[id]`) | `/app/stats?season=2026` | `tickets`, `season_stats`, `finance` | `/admin/stats`, `/admin/stats/[id]` | 308 from both |
 | 11 | Financije (money without buyers, added by #476) | `/app/finance` | `finance` | money band on the Backoffice dashboard | none |
-| last | Više (a list, always the last tab) | `/app/more` | any screen | `/app/vise` | 308 |
+| last | Više (a list, always the last tab) | `/app/more` | any screen | **live** (#495): the overflow screens, then the standing rows | 308 from `/app/vise` |
 
 Rows under Više, after the overflow screens:
 
@@ -43,8 +53,8 @@ Rows under Više, after the overflow screens:
 |---|---|---|---|---|
 | Kalendar | `/app/calendar` | `moreskant`, `moreska` | a row in Više | new |
 | Pozivnice | folds into Članovi (`/app/members`, #476) | `moreska` | `/app/pozivnice` | 308 to `/app/members` |
-| Moj račun (password, member link, push on/off) | `/app/account` | any screen | `/app/set-password`, `/app/povezi` | 308 from both |
-| Backoffice (link to `/admin`) | `/admin` | `dev` only | a row for every voditelj | the general link disappears |
+| Moj račun (password, member link, push on/off) | `/app/account` | any screen | **live** (#495): profile, install + push, self-link, password | 308 from `/app/set-password` and `/app/povezi` |
+| Backoffice (link to `/admin`) | `/admin` | `dev` only | **live** (#495): the row, the denied panel and the consent screen all lost their general `/admin` link | done |
 | Odjava | `POST /api/app/logout` | any screen | same | unchanged |
 
 Screens that are not rows: **Obavijesti** is a bell in the header of every
@@ -57,8 +67,8 @@ Public pages, no session:
 
 | Page | Route | Today | Old path |
 |---|---|---|---|
-| Instalacija (the rehearsal QR target) | `/app/install` | `/app/instalacija` | 308 **kept permanently**: the QR may hang on a wall |
-| sign-in by link (invitation, new password) | `/app/session?token=` | `/app/prijava?token=` | 308 **kept permanently**: the link is in SMS and mail |
+| Instalacija (the rehearsal QR target) | `/app/install` | **live** (#495) | 308 from `/app/instalacija` **kept permanently**: the QR may hang on a wall |
+| sign-in by link (invitation, new password) | `/app/session?token=` | **live** (#495); invitations are issued on the new path | 308 from `/app/prijava` **kept permanently**: the link is in SMS and mail |
 | `/app/login`, `/app/forgot`, `/app/set-password`, `/app/authorize`, `/app/join/[code]` | unchanged | | |
 
 Every other 308 follows the #481 rule: one release, dropped after the season.
@@ -67,10 +77,11 @@ Every other 308 follows the #481 rule: one release, dropped after the season.
 
 **A signed-in account is in when its permission set unlocks at least one
 screen.** The permission → screen table above lives in one module
-(`src/lib/app/screens.ts`, to be written by the shell ticket) and the bar, the
-sidebar, the active-tab highlighter and every page's gate read it; nothing
-re-types it. `decideAppAccess` generalises from `voditelj | moreskant | denied`
-to `{ kind: 'ok', screens, self, partnerId } | { kind: 'denied' }`:
+(`src/lib/app/screens.ts`, written by #495) and the bar, the sidebar, the
+active-tab highlighter and every page's gate read it; nothing re-types it.
+`decideAppAccess` returns `{ kind: 'ok', screens, nav, self, partnerId } |
+{ kind: 'denied' }`, and a page opens with `openScreen('<key>')`
+(`src/app/app/gate.tsx`), which answers all three cases in one place:
 
 - `moreskant` unlocks nothing unless the linked Member is an active moreškant
   (today's "access follows the roster" rule, unchanged).
@@ -85,7 +96,9 @@ A signed-in account that unlocks no screen sees the "Nemate pristup" page:
 voditelju." plus Odjava, and a Backoffice link **only** for a `dev` holder. An
 account that unlocks screens but types a route it does not unlock sees the same
 panel with a link back to its landing screen: never a silent redirect (hides a
-stale bookmark) and never a 404 (lies). No `/app` page links to `/admin` for
+stale bookmark) and never a 404 (lies). That second panel is unreachable while
+only Izvedbe and Ljestvica are built, because the same two permissions unlock
+both; the first screen ticket that lands makes it reachable. No `/app` page links to `/admin` for
 anyone but `dev`: the denied page, Više, the consent screen and the staff
 buttons on `/scan/[token]` all lose it.
 
@@ -94,7 +107,25 @@ buttons on `/scan/[token]` all lose it.
 Every screen carries a thin header: the screen's title on the left, the
 notification bell with the unread count on the right, on the phone and on the
 laptop alike. The count is per account, not per device, so it agrees across a
-person's devices.
+person's devices. `AppShell` renders the title from the screen table and leaves
+the right-hand slot (`actions`) empty until the inbox lands (#496).
+
+### The look
+
+The palette is #490's, declared once in the `.app` block of
+`src/app/app/app.css`: paper `#f5f2ec`, ink `#1a140c`, gold `#b8881a` with
+`--goldText #8f6a10` wherever gold carries text, radius 0, and `--rowY` as the
+row rhythm (11 px on the phone, 6 px from 1024 px up). There is no dark mode
+and no toggle. **Two night islands, and only two**: the "next performance" hero
+card, which re-points the tokens on `.app__hero`, and the whole Skener screen
+when it lands (#504). An island overrides the TOKENS, never the colours, so
+everything inside it follows without knowing where it is.
+
+### The frame
+
+One responsive layout (ADR-0027), in `AppShell`: the laptop gets the grouped
+sidebar from 1024 px up and the phone keeps the fixed bottom bar. Both read the
+same `AppNav` the server computed, so a phone never ships the permission table.
 
 ## What ships in phase 3 (#420 → #424)
 

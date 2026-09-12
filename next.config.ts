@@ -1,6 +1,7 @@
 import { withPayload } from '@payloadcms/next/withPayload'
 import type { NextConfig } from 'next'
 import { appSubdomainRedirects } from './src/lib/app-subdomain'
+import { appRouteRedirects } from './src/lib/app/route-renames'
 
 const securityHeaders = [
   { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
@@ -53,26 +54,12 @@ const nextConfig: NextConfig = {
       // ── Cecilija's Croatian segments (#473, #495) ──────────────────────
       //
       // The app's screens were renamed to English paths in one deploy, so
-      // every old path 308s to its new one. A 308 keeps the method and the
-      // query string, which is what makes `?token=` and `?sezona=` survive.
-      //
-      // TWO OF THEM ARE PERMANENT and must never be dropped: the install
-      // guide is the target of a QR code that may hang on a wall for years,
-      // and the sign-in link is in SMS and mail that nobody can edit after
-      // sending. The rest follow the #481 rule — one release, dropped after
-      // the season.
-      { source: '/app/instalacija', destination: '/app/install', permanent: true },
-      { source: '/app/prijava', destination: '/app/session', permanent: true },
-
-      // One release only. Drop this block after the 2026 season.
-      { source: '/app/izvedba/:id', destination: '/app/performances/:id', permanent: true },
-      { source: '/app/moje', destination: '/app/leaderboard', permanent: true },
-      { source: '/app/statistika', destination: '/app/leaderboard?part=all', permanent: true },
-      { source: '/app/vise', destination: '/app/more', permanent: true },
-      { source: '/app/set-password', destination: '/app/account', permanent: true },
-      { source: '/app/povezi', destination: '/app/account', permanent: true },
-      { source: '/app/pozivnice', destination: '/app/invitations', permanent: true },
-      { source: '/app/dobrodosli', destination: '/app/welcome', permanent: true },
+      // every old path 308s to its new one. The table lives in
+      // `src/lib/app/route-renames.ts`, where each entry also records whether
+      // it may ever be dropped: two of them are permanent, because a QR code
+      // on a rehearsal-room wall and a link inside a sent SMS cannot be
+      // edited. The rest follow the #481 rule, one release.
+      ...appRouteRedirects(),
     ]
   },
 }

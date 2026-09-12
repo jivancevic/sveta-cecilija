@@ -68,7 +68,7 @@ _Avoid_: **admin** as a name for any surface. For months it would mean both the 
 **Declension:** "Cecilija" is a Croatian feminine noun and declines like a name in every text: "Dodaj Ceciliju na ekran", "Prijavi se u Ceciliju", "Pozivnica za Ceciliju", "u Ceciliji". Never keep it invariant as if it were a foreign brand. English copy, if any, keeps "Cecilija" unchanged.
 
 ### Screen (ekran) and landing screen (ulazni ekran)
-A screen is one place in Cecilija with one address and one Croatian label (Narudžbe, Izvedbe, Ljestvica, Skener, Prodaja, Obračun, Upiti, Gratis, Korisnici, Statistika, Više). A permission unlocks screens; an account is inside Cecilija when its permissions unlock at least one, and the **landing screen** is the first of them in the bar order. Izvedbe is one screen for everyone who has it: what it shows depends on the permissions, never on a second address. Statistika is the sales screen; dancer statistics live on *Ljestvica*.
+A screen is one place in Cecilija with one address and one Croatian label (Narudžbe, Izvedbe, Ljestvica, Skener, Prodaja, Obračun, Upiti, Gratis, Korisnici, Statistika, Više). A permission unlocks screens; an account is inside Cecilija when its permissions unlock at least one, and the **landing screen** is the first of them in the bar order. Izvedbe is one screen for everyone who has it: what it shows depends on the permissions, never on a second address. Statistika is the sales screen; dancer statistics live on *Ljestvica*. In code the screens are one table, `src/lib/app/screens.ts` (#495): a screen the app has not built yet is in that table with an empty `servesToday`, so it is named and ranked without being offered.
 _Avoid_: page, view, module, "admin screen".
 
 ### Nemate pristup (no access)

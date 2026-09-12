@@ -59,8 +59,8 @@ function MonthChart({ months }: { months: MySeasonMonth[] }) {
               y={CHART.base - total}
               width={barWidth}
               height={total}
-              fill="#1f1f1f"
-              stroke="#2c2c2c"
+              fill="#e9e4d9"
+              stroke="#ddd6c8"
             />
             {mine > 0 && (
               <rect x={x} y={CHART.base - mine} width={barWidth} height={mine} fill="#b8881a" />
