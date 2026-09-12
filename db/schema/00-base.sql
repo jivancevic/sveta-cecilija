@@ -375,6 +375,7 @@ CREATE TABLE IF NOT EXISTS public.orders (
     show_id integer NOT NULL,
     locale public.enum_orders_locale,
     review_email_sent_at timestamp(3) with time zone,
+    cancel_notified_at timestamp(3) with time zone,
     updated_at timestamp(3) with time zone DEFAULT now() NOT NULL,
     created_at timestamp(3) with time zone DEFAULT now() NOT NULL
 );
