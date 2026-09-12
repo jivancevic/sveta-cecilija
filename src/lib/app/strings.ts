@@ -101,7 +101,8 @@ export const APP_STRINGS = {
     },
     season: 'Sezona',
     mine: 'u postavi',
-    total: 'izvedbi u sezoni',
+    /** Pluralised by the count on the tile: "1 izvedba u sezoni", "22 izvedbi u sezoni". */
+    total: { one: 'izvedba u sezoni', few: 'izvedbe u sezoni', many: 'izvedbi u sezoni' },
     crni: 'Crna vojska',
     bili: 'Bila vojska',
     byMonth: 'Po mjesecu',
@@ -141,6 +142,8 @@ export const APP_STRINGS = {
     fullSeason: 'puna sezona',
     /** The chip that says which row is the reader's own. */
     you: 'ti',
+    /** The caption under a podium tile, so the rank reads as a place and not as a second count. */
+    place: (rank: number) => `${rank}. mjesto`,
     confirmedCount: {
       one: 'potvrđena izvedba',
       few: 'potvrđene izvedbe',

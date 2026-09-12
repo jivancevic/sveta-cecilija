@@ -281,12 +281,17 @@ export function pluralize(
   count: number,
   words: { one: string; few: string; many: string },
 ): string {
+  return `${count} ${words[pluralForm(count)]}`
+}
+
+/** Which of the three Croatian plural forms a count takes, for a label shown apart from its number. */
+export function pluralForm(count: number): 'one' | 'few' | 'many' {
   const mod100 = Math.abs(count) % 100
   const mod10 = Math.abs(count) % 10
-  if (mod100 >= 11 && mod100 <= 14) return `${count} ${words.many}`
-  if (mod10 === 1) return `${count} ${words.one}`
-  if (mod10 >= 2 && mod10 <= 4) return `${count} ${words.few}`
-  return `${count} ${words.many}`
+  if (mod100 >= 11 && mod100 <= 14) return 'many'
+  if (mod10 === 1) return 'one'
+  if (mod10 >= 2 && mod10 <= 4) return 'few'
+  return 'many'
 }
 
 /** "3 izvedbe" — the count beside a month heading. */

@@ -94,7 +94,7 @@ export function Board({ board }: { board: Leaderboard }) {
             >
               <b>{row.performances}</b>
               <span>{row.nickname}</span>
-              <small>{row.rank}</small>
+              <small>{APP_STRINGS.board.place(row.rank)}</small>
             </div>
           ))}
         </div>

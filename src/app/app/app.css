@@ -1674,7 +1674,8 @@
 }
 
 .app__sticky .app__answers {
-  max-width: 640px;
+  /* The shell is 640px wide with 16px of padding either side: match its content box. */
+  max-width: 608px;
   margin: 0 auto;
 }
 

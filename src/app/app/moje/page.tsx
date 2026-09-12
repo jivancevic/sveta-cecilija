@@ -5,6 +5,7 @@ import { getMySeason } from '@/lib/app/my-season-data'
 import { getSeasonStats } from '@/lib/app/stats-data'
 import { buildLeaderboard, parseMojeSegment } from '@/lib/app/leaderboard-loaders'
 import type { MySeasonMonth } from '@/lib/app/my-season-loaders'
+import { pluralForm } from '@/lib/app/roster-loaders'
 import { APP_STRINGS, ROLE_LABELS } from '@/lib/app/strings'
 import { DANCE_ROLES } from '@/lib/moreskant-profile'
 import { resolveAppViewer } from '@/lib/app/viewer'
@@ -146,7 +147,7 @@ export default async function MySeasonPage({
               </div>
               <div className="app__tile2">
                 <b>{mine.confirmedTotal}</b>
-                <span>{APP_STRINGS.mySeason.total}</span>
+                <span>{APP_STRINGS.mySeason.total[pluralForm(mine.confirmedTotal)]}</span>
               </div>
               <div className="app__tile2">
                 <b>{mine.armyCrni}</b>
