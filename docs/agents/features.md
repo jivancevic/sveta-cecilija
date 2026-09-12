@@ -81,6 +81,39 @@ So after the claim + notice, `rescheduleShow` **reissues the ticket itself** as 
 
 Items 2 (follow-up to non-openers via Brevo `opened` events) and 3 (admin view of non-openers) of #379 ship separately.
 
+## Cancel a show + refund and notify every buyer (#497)
+
+Admin edit-view action `CancelShowMenuItem`, the harsher sibling of the reschedule flow. Before #497 it was a bare `PATCH /api/shows/<id> {status:'cancelled'}`: the row left `/tickets` and **nothing else happened** — every ticket stayed `active`, no buyer heard, no money moved, and the secretary was left to find and refund each order by hand.
+
+1. **Preview** (`GET /api/shows/[id]/cancel`, readable by `tickets` **or** `refunds`) — money to refund, partner + comp seats to void, buyers to mail, sample addresses, whether the row is **already cancelled**, and a warning when the sends alone could exhaust a day of Brevo. No writes.
+2. **Send test to me** — the EN+HR notice (online buyer's version, the one that carries money) to the caller's own inbox. No writes, no buyer mail. The only rehearsal available for an action that cannot be undone.
+3. **Confirm** (`POST /api/shows/[id]/cancel`, gated **`refunds`** because money moves):
+   ```sql
+   UPDATE shows SET status='cancelled', updated_at=NOW()
+   WHERE id=$show AND status <> 'cancelled' RETURNING id
+   ```
+   The claim runs **first**, so the show stops selling before a single refund does. Losing the claim is *not* a reason to stop: an already-cancelled row means an earlier run may have died halfway, and finishing that job is the point.
+
+Then, per order (`src/lib/show-cancel.ts`, pure DI; route wires DB + Stripe + Brevo):
+
+- **online** → full refund through the shared idempotent engine (`refund:<paymentIntentId>`), which also voids the tickets with `cancel_reason='refund'`. The engine's own generic "your refund of €X" email is **replaced** by the cancellation notice, so the buyer gets one message that explains itself instead of two that don't.
+- **partner / comp** → `voidOrderTickets(…, 'storno')`. Storno, not refund: that is what takes a partner's seats off the **monthly statement** (ADR-0008). No money moves — a partner charged the buyer, so the partner returns it.
+- **mail** → one notice per order with an address on file, in the buyer's locale, **transactional** (never checks `marketing_optouts`). Deliberately *not* deduped by email the way the reschedule notice is: each order carries its own money, and a buyer with two orders is owed two refund lines. Three money blocks by channel: refunded to the original payment method / returned at the point of sale / nothing to return.
+
+**Re-runnability is the design constraint**, not a nicety: a Brevo hiccup or a Stripe timeout partway through 300 orders must be fixable by pressing the button again, never by hand-reconciling money. Each half carries its own durable record of "done" and is skipped when it says so:
+
+| half | record |
+|---|---|
+| money | `orders.refund_status` (+ Stripe's idempotency key) |
+| seats | `tickets.status` (the void targets `status='active'` only) |
+| mail | `orders.cancel_notified_at` (#497, `db/schema/migrate-zz-dc-orders-cancel-notified.sql`) |
+
+Two rules inside that loop are worth keeping: a buyer whose refund just **failed** is *not* mailed (never promise money that did not move — the retry mails them), and the notify stamp is written **after** a confirmed send, so the one thing a failure can cause is a duplicate notice rather than a lost one. Every failure is written to `critical_events` (`show_cancel_refund_failed`, `show_cancel_void_failed`, `show_cancel_email_failed`, `show_cancel_stamp_failed`) and counted in the response the modal prints.
+
+Brevo's free tier is **300 mails/day** and there is no queue in v1: the route sends sequentially and the preview warns. It cannot see how much of today's quota is already spent, so the warning is about the day's ceiling and the copy says so.
+
+Like the reschedule, the cancel is a raw claim, so **no Payload hook fires**: the route calls `notifyRawPerformanceSave` itself (#441) and the roster hears that the evening is off. A **non-public** performance is refused (#409) — cancel one of those by setting the status field by hand.
+
 ## Marketing-class email + opt-outs (#57)
 
 Only the **post-show review email** is marketing-class. Everything else (ticket confirmation, refund, venue-change) is **transactional** and never checks the opt-out list — it concerns a ticket the buyer already holds.
