@@ -142,7 +142,7 @@ function navA(p: Persona): Nav {
 
 function navB(p: Persona): Nav {
   const all = unlocked(p).map((s) => s.key)
-  const primaries = all.filter((k) => k !== 'scan' && k !== 'doorlist').slice(0, 2)
+  const primaries: ScreenKey[] = all.filter((k) => k !== 'scan' && k !== 'doorlist').slice(0, 2)
   const overflow = all.filter((k) => !primaries.includes(k))
   return {
     tabs: ['home', ...primaries, 'more'],
