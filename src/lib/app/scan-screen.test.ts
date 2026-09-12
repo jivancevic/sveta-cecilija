@@ -46,40 +46,63 @@ describe('extractScanToken', () => {
 })
 
 describe('isDoorShowToday', () => {
-  // Korčula is UTC+2 in season; the show day is a calendar day, not an instant,
-  // so the comparison is on the local date of `now`.
-  const at = (iso: string) => new Date(iso)
+  // The show day is a calendar day in KORČULA, never an instant and never the
+  // server's date: the container runs UTC. Every instant below is written in
+  // UTC (the `Z`) so the test says the same thing wherever it runs.
+  const utc = (iso: string) => new Date(iso)
 
-  it('is true when the show is on the same calendar day as now', () => {
-    expect(isDoorShowToday('2026-08-14', at('2026-08-14T10:00:00'))).toBe(true)
-    expect(isDoorShowToday('2026-08-14', at('2026-08-14T23:30:00'))).toBe(true)
+  it('is true through the Zagreb day, from morning to just before midnight', () => {
+    expect(isDoorShowToday('2026-08-14', utc('2026-08-14T08:00:00Z'))).toBe(true)
+    // 23:30 Zagreb, which is 21:30 UTC in summer.
+    expect(isDoorShowToday('2026-08-14', utc('2026-08-14T21:30:00Z'))).toBe(true)
   })
 
   it('is false for tomorrow and for yesterday', () => {
-    expect(isDoorShowToday('2026-08-15', at('2026-08-14T21:00:00'))).toBe(false)
-    expect(isDoorShowToday('2026-08-13', at('2026-08-14T00:10:00'))).toBe(false)
+    expect(isDoorShowToday('2026-08-15', utc('2026-08-14T19:00:00Z'))).toBe(false)
+    expect(isDoorShowToday('2026-08-13', utc('2026-08-14T10:00:00Z'))).toBe(false)
+  })
+
+  it('reads 00:30 Zagreb as the new day, not as the server’s yesterday', () => {
+    // 00:30 on the 15th in Zagreb is 22:30 on the 14th in UTC. A server-local
+    // comparison answers "the 14th" here, which would put the strip on the
+    // night AFTER the izvedba and hide it on the morning of the next one.
+    const justAfterMidnightZagreb = utc('2026-08-14T22:30:00Z')
+    expect(isDoorShowToday('2026-08-15', justAfterMidnightZagreb)).toBe(true)
+    expect(isDoorShowToday('2026-08-14', justAfterMidnightZagreb)).toBe(false)
+  })
+
+  it('holds in winter too, when Zagreb is UTC+1', () => {
+    // 00:30 on 2 November Zagreb = 23:30 on 1 November UTC.
+    expect(isDoorShowToday('2026-11-02', utc('2026-11-01T23:30:00Z'))).toBe(true)
   })
 
   it('is false with no active door show at all', () => {
-    expect(isDoorShowToday(null, at('2026-08-14T10:00:00'))).toBe(false)
+    expect(isDoorShowToday(null, utc('2026-08-14T08:00:00Z'))).toBe(false)
   })
 })
 
 describe('partyBreakdown', () => {
   // The result card stays English: a guest reads it over the volunteer's
-  // shoulder (#476).
+  // shoulder (#476). The separator is a middle dot, because the no-em-dash rule
+  // covers every line a person reads, English ones included.
   it('names one ticket in the singular', () => {
-    expect(partyBreakdown(1, 0)).toBe('1 ticket — 1 adult')
+    expect(partyBreakdown(1, 0)).toBe('1 ticket · 1 adult')
   })
 
   it('names adults and children when the party has both', () => {
-    expect(partyBreakdown(2, 1)).toBe('3 tickets — 2 adults, 1 child')
-    expect(partyBreakdown(1, 3)).toBe('4 tickets — 1 adult, 3 children')
+    expect(partyBreakdown(2, 1)).toBe('3 tickets · 2 adults, 1 child')
+    expect(partyBreakdown(1, 3)).toBe('4 tickets · 1 adult, 3 children')
   })
 
   it('names only the half that exists', () => {
-    expect(partyBreakdown(0, 2)).toBe('2 tickets — 2 children')
-    expect(partyBreakdown(4, 0)).toBe('4 tickets — 4 adults')
+    expect(partyBreakdown(0, 2)).toBe('2 tickets · 2 children')
+    expect(partyBreakdown(4, 0)).toBe('4 tickets · 4 adults')
+  })
+
+  it('carries no em dash, whatever the party', () => {
+    for (const [a, c] of [[1, 0], [0, 1], [2, 3], [7, 0]] as const) {
+      expect(partyBreakdown(a, c)).not.toContain('\u2014')
+    }
   })
 })
 

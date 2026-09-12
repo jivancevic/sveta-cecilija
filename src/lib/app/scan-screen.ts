@@ -49,11 +49,12 @@ export function extractScanToken(decoded: string): string | null {
  */
 export function isDoorShowToday(date: string | null | undefined, now: Date = new Date()): boolean {
   if (!date) return false
-  const today = [
-    now.getFullYear(),
-    String(now.getMonth() + 1).padStart(2, '0'),
-    String(now.getDate()).padStart(2, '0'),
-  ].join('-')
+  // Zagreb, never the server's local date: the container runs UTC, so between
+  // midnight and 02:00 Zagreb time the server's "today" is still yesterday and
+  // the strip would appear on the night AFTER the izvedba. `en-CA` is the
+  // locale whose short date is already `YYYY-MM-DD`, which is what `shows.date`
+  // is. Same pattern as `src/lib/app/comp-data.ts`.
+  const today = now.toLocaleDateString('en-CA', { timeZone: 'Europe/Zagreb' })
   return date === today
 }
 
@@ -61,13 +62,18 @@ function plural(n: number, one: string, many: string): string {
   return `${n} ${n === 1 ? one : many}`
 }
 
-/** "3 tickets — 2 adults, 1 child". English: the guest reads it too. */
+/**
+ * "3 tickets · 2 adults, 1 child". English: the guest reads it too.
+ *
+ * A middle dot, not an em dash: no em dashes in anything a person reads
+ * (CONTEXT.md copy rules), and the rule does not stop at the Croatian half.
+ */
 export function partyBreakdown(adultCount: number, childCount: number): string {
   const total = adultCount + childCount
   const parts: string[] = []
   if (adultCount > 0) parts.push(plural(adultCount, 'adult', 'adults'))
   if (childCount > 0) parts.push(plural(childCount, 'child', 'children'))
-  return `${plural(total, 'ticket', 'tickets')} — ${parts.join(', ')}`
+  return `${plural(total, 'ticket', 'tickets')} · ${parts.join(', ')}`
 }
 
 /** The four answers a scanned ticket can give (`scan-token.ts`, staff viewer). */

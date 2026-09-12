@@ -281,6 +281,11 @@ export function ScanStation({
     await startCamera(false)
   }, [stopCamera, startCamera])
 
+  // `Accept: application/json` is load-bearing, not politeness (#504 review).
+  // Without it the route answers 303 to `/scan/[token]`, `fetch` follows it,
+  // and a staff GET of that page marks the ticket scanned again — the undo
+  // undoes itself. The status is in the body because both outcomes are 200:
+  // branching on `res.ok` reported a rejected undo as a successful one.
   const handleUndo = useCallback(async () => {
     if (!scan) return
     setUndoState('sending')
@@ -288,8 +293,14 @@ export function ScanStation({
       const res = await fetch(`/api/scan/${encodeURIComponent(scan.token)}/undo`, {
         method: 'POST',
         credentials: 'same-origin',
+        headers: { Accept: 'application/json' },
       })
-      setUndoState(res.ok ? 'done' : 'rejected')
+      if (!res.ok) {
+        setUndoState('rejected')
+        return
+      }
+      const json = (await res.json()) as { status?: string }
+      setUndoState(json.status === 'UNDONE' ? 'done' : 'rejected')
     } catch {
       setUndoState('rejected')
     }

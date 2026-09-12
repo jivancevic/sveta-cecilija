@@ -17,8 +17,15 @@ import { describe, expect, it } from 'vitest'
 
 const SRC_DIR = path.resolve(__dirname, '../..')
 
-/** The directories the rule covers: Cecilija's pages and Cecilija's routes. */
-const SCANNED_PREFIXES = ['src/app/app/', 'src/app/api/app/'] as const
+/**
+ * The directories the rule covers: Cecilija's pages, Cecilija's routes, and the
+ * `*-data.ts` modules behind them.
+ *
+ * `src/lib/app/` is in the list because that is where the data access actually
+ * lives (seam research 6.4): a page that imports no Payload but calls a
+ * `*-data.ts` that does has moved the import, not removed it.
+ */
+const SCANNED_PREFIXES = ['src/app/app/', 'src/app/api/app/', 'src/lib/app/'] as const
 
 /** The one directory allowed to import Payload. */
 const SEAM_DIR = 'src/lib/repo/payload/'
@@ -26,12 +33,18 @@ const SEAM_DIR = 'src/lib/repo/payload/'
 /**
  * Files that still import Payload directly, each naming what retires it.
  *
- * Every entry here is an `/app` route that has no session yet by nature (the
- * sign-in paths of seam research section 2) or authenticates a caller before
- * there is a session to guard. They move when `repo.auth` grows the login
- * operations — `login`, `logout`, `issueResetToken`, `resetPassword` — which is
- * tracked by #475 and belongs to no single screen ticket, because no screen
- * owns signing in.
+ * Three groups:
+ *
+ *  - **The sign-in paths** (seam research section 2), which have no session yet
+ *    by nature or authenticate a caller before there is one to guard. They move
+ *    when `repo.auth` grows the login operations — `login`, `logout`,
+ *    `issueResetToken`, `resetPassword` — which is tracked by #475 and belongs
+ *    to no screen ticket, because no screen owns signing in.
+ *  - **The `*-data.ts` modules of screens that already shipped** under the old
+ *    shape. Each names the screen ticket that rewrites it (seam research 6.4:
+ *    a call site migrates when ITS screen is rebuilt, never in a sweep).
+ *  - **The two roster loaders with no screen ticket left** — Ljestvica is
+ *    finished, so they wait for phase B.
  *
  * Adding an entry is a deliberate act: name the ticket that removes it, don't
  * just silence the test.
@@ -51,6 +64,32 @@ export const ALLOW_LIST: Record<string, string> = {
     'Rehearsal-QR poll (#463): same store as the claim route above, same owner (#503).',
   'src/app/api/app/authorize/route.ts':
     'MCP consent screen (#438): authenticates the caller itself before there is a session to guard, and writes the oauth_codes store. Retired with repo.auth (#475, seam research 2.8).',
+
+  // ── The session, and the link that opens one without a password ──────────
+  'src/lib/app/viewer.ts':
+    'The session resolution every /app page opens with: payload.auth plus the re-read of the account and its Member. Retired with repo.auth (#475, seam research 2.5) — it is the same swap as the sign-in routes above, not a screen’s.',
+  'src/lib/app/session-data.ts':
+    'The invitation link that IS the authentication (#463): payload.resetPassword mints the session the token stands for. Retired with repo.auth (#475, seam research 2.4).',
+  'src/lib/app/invite-data.ts':
+    'Issues a dancer login (creates the Users row and mints the reset token, #424/#463). Half of it is repo.users and half is repo.auth, so it lands with Članovi (#511), which owns the invitation, once repo.auth exists.',
+
+  // ── Screens that shipped before the seam, each with its rebuild ticket ───
+  'src/lib/app/roster-data.ts':
+    'The Izvedbe season list (#421). Retired by #502, which rebuilds that screen for the blagajna and is the ticket that adds sales to this loader.',
+  'src/lib/app/detail-data.ts':
+    'The performance detail (#423). Retired by #502 (the blagajna’s per-show numbers on the same page); #503 touches the same loader for the voditelj’s half, so whichever lands first moves it.',
+  'src/lib/app/invite-list-data.ts':
+    'The invitations list (#463), which folds into Članovi. Retired by #511.',
+  'src/lib/app/join-data.ts':
+    'The rehearsal join code and its claims (#463), which fold into Članovi. Retired by #511, the same ticket as the two join routes above.',
+  'src/lib/app/link-self-data.ts':
+    'The self-link list on /app/account (#462). No screen ticket owns that page, so it moves with the Members repo that #511 is the first to need.',
+
+  // ── Finished screens with no ticket left: phase B ────────────────────────
+  'src/lib/app/my-season-data.ts':
+    'A dancer’s own season on Ljestvica (#457). That screen is finished and no v1 ticket rebuilds it, so it waits for phase B (seam research 6.4).',
+  'src/lib/app/stats-data.ts':
+    'The roster scoreboard on Ljestvica (#437). Finished screen, no v1 ticket rebuilds it; waits for phase B. Note Statistika (#508) is the SALES screen and does not touch this loader.',
 }
 
 // ---------------------------------------------------------------------------
@@ -110,10 +149,14 @@ describe('Cecilija code reaches Payload only through the seam', () => {
     walk(path.resolve(SRC_DIR, '..', prefix)),
   ).sort()
 
-  it('scans both Cecilija directories (sanity)', () => {
-    expect(files.length).toBeGreaterThan(30)
-    expect(files.map(relPath).some((f) => f.startsWith('src/app/app/'))).toBe(true)
-    expect(files.map(relPath).some((f) => f.startsWith('src/app/api/app/'))).toBe(true)
+  it('scans every Cecilija directory (sanity)', () => {
+    // A mistyped prefix would silently switch a third of the rule off, and the
+    // suite would still be green — so each one has to have found files.
+    expect(files.length).toBeGreaterThan(50)
+    const rels = files.map(relPath)
+    for (const prefix of SCANNED_PREFIXES) {
+      expect(rels.some((f) => f.startsWith(prefix)), `${prefix} matched no files`).toBe(true)
+    }
   })
 
   const offenders: string[] = []
