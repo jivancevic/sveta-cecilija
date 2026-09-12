@@ -118,7 +118,7 @@ describe('cancelShow', () => {
   })
 
   it('tells each channel the truth about its money', async () => {
-    const send = vi.fn(async () => true)
+    const send = vi.fn<(...a: unknown[]) => Promise<boolean>>(async () => true)
     await cancelShow(
       { showId: '7', userId: '1' },
       deps({

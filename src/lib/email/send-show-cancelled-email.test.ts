@@ -71,11 +71,11 @@ describe('sendShowCancelledEmail', () => {
   const ok = { ok: true, status: 201, text: async () => '' } as unknown as Response
 
   it('sends one message to one buyer from tickets@, replying to info@', async () => {
-    const fetchMock = vi.fn(async () => ok)
+    const fetchMock = vi.fn<(...a: unknown[]) => Promise<Response>>(async () => ok)
     const sent = await sendShowCancelledEmail(base, { fetch: fetchMock as unknown as typeof fetch, brevoApiKey: 'k' })
 
     expect(sent).toBe(true)
-    const body = JSON.parse((fetchMock.mock.calls[0][1] as { body: string }).body)
+    const body = JSON.parse((fetchMock.mock.calls[0] as unknown as [string, { body: string }])[1].body)
     expect(body.to).toEqual([{ email: 'ana@example.com', name: 'Ana Horvat' }])
     expect(body.sender.email).toBe('tickets@moreska.eu')
     expect(body.replyTo.email).toBe('info@moreska.eu')

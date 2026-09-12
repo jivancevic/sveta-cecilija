@@ -14,17 +14,27 @@ import type { CancelShowDeps } from '@/lib/show-cancel'
 //     raw `UPDATE … RETURNING` claim (#441);
 //   * the test-send path, which bypasses the seam and needs its own #409 gate.
 
-const cancelShow = vi.fn(async () => ({ status: 'cancelled', notified: 2 }))
-const previewCancel = vi.fn(async () => ({ alreadyCancelled: false, toNotify: 2 }))
-const refundOrder = vi.fn(async () => ({ refunded: true, amountCents: 4000 }))
-const voidOrderTickets = vi.fn(async () => ({ voided: 2 }))
-const sendShowCancelledEmail = vi.fn(async () => true)
-const recordCriticalEvent = vi.fn(async () => {})
-const poolQuery = vi.fn(async () => ({ rows: [] as Record<string, unknown>[] }))
+const cancelShow = vi.fn<(...a: unknown[]) => Promise<{ status: string; notified: number }>>(async () => ({
+  status: 'cancelled',
+  notified: 2,
+}))
+const previewCancel = vi.fn<(...a: unknown[]) => Promise<{ alreadyCancelled: boolean; toNotify: number }>>(
+  async () => ({ alreadyCancelled: false, toNotify: 2 }),
+)
+const refundOrder = vi.fn<(...a: unknown[]) => Promise<{ refunded: boolean; amountCents: number }>>(async () => ({
+  refunded: true,
+  amountCents: 4000,
+}))
+const voidOrderTickets = vi.fn<(...a: unknown[]) => Promise<{ voided: number }>>(async () => ({ voided: 2 }))
+const sendShowCancelledEmail = vi.fn<(...a: unknown[]) => Promise<boolean>>(async () => true)
+const recordCriticalEvent = vi.fn<(...a: unknown[]) => Promise<void>>(async () => {})
+const poolQuery = vi.fn<(...a: unknown[]) => Promise<{ rows: Record<string, unknown>[] }>>(async () => ({
+  rows: [],
+}))
 const pushQuery = vi.fn()
 const send = vi.fn(async () => ({ recipients: 1, devices: 1, delivered: 1, dead: 0, failed: 0 }))
 const release = vi.fn(async () => {})
-const requirePermission = vi.fn(async () => ({
+const requirePermission = vi.fn<(...a: unknown[]) => Promise<Record<string, unknown>>>(async () => ({
   payload: { db: { pool: { query: poolQuery }, drizzle: { execute: vi.fn() } } },
   user: { id: 8, email: 'tatjana@moreska.eu' },
   error: null,
