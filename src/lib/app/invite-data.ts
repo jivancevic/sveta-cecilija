@@ -38,6 +38,9 @@ export function createInviteDeps(payload: PayloadClient, request: AppRequestMeta
         name: typeof doc.name === 'string' ? doc.name : null,
         nickname: typeof doc.nickname === 'string' ? doc.nickname : null,
         email: typeof doc.email === 'string' ? doc.email : null,
+        // For the SMS deep link of "Kopiraj pozivnicu" (#463); unused by the
+        // mail channel, which addresses the letter with the e-mail above.
+        mobile: typeof doc.mobile === 'string' ? doc.mobile : null,
         isMoreskant: doc.isMoreskant === true,
         active: doc.active !== false,
       }

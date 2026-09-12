@@ -70,7 +70,7 @@ export async function POST(req: Request) {
     // in the log; the invitation is the one that reports it (#462 review).
     sendReset: async (mail) => {
       await sendMoreskantEmail(
-        { kind: 'reset', ...mail },
+        { kind: 'signin', ...mail },
         { fetch, brevoApiKey: process.env.BREVO_API_KEY ?? '' },
       )
     },

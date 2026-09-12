@@ -1,7 +1,7 @@
-// The two Moreškant account mails (#424): the invitation and the reset link.
+// The two Moreškant account mails (#424): the invitation and the sign-in link.
 //
 // One module, because they are one letter with two openings: both carry the
-// same `/app/set-password?token=…` link, both are Croatian, both go from
+// same `/app/prijava?token=…` link, both are Croatian, both go from
 // `info@moreska.eu` — the society's own identity, not the `tickets@` show
 // stream, because this is a mail to a member of the society rather than to a
 // buyer (ADR-0024; the Brevo daily cap is irrelevant at 20 dancers a season).
@@ -16,7 +16,12 @@
 
 import { postBrevoEmail } from './post-brevo-email'
 
-export type MoreskantEmailKind = 'invite' | 'reset'
+/**
+ * `invite` is the voditelj opening a login; `signin` is the dancer asking for a
+ * way in. It was called `reset` until #463, when the link stopped setting a
+ * password and started opening a session (`src/lib/app/token-login.ts`).
+ */
+export type MoreskantEmailKind = 'invite' | 'signin'
 
 export interface MoreskantEmailInput {
   kind: MoreskantEmailKind
@@ -24,7 +29,7 @@ export interface MoreskantEmailInput {
   to: string
   /** Nickname (or full name) for the greeting; may be empty. */
   greeting: string
-  /** `https://moreska.eu/app/set-password?token=…` */
+  /** `https://moreska.eu/app/prijava?token=…` */
   link: string
 }
 
@@ -35,7 +40,7 @@ export interface MoreskantEmailDeps {
 
 export const MORESKANT_EMAIL_SUBJECTS: Record<MoreskantEmailKind, string> = {
   invite: 'Pozivnica za Moreškant',
-  reset: 'Nova lozinka za Moreškant',
+  signin: 'Poveznica za prijavu u Moreškant',
 }
 
 function escapeHtml(value: string): string {
@@ -56,12 +61,12 @@ function renderBody(kind: MoreskantEmailKind): string[] {
   if (kind === 'invite') {
     return [
       'Otvorena ti je prijava za aplikaciju Moreškant, gdje se vidi raspored izvedbi i javlja dolazak.',
-      'Klikni na poveznicu i postavi svoju lozinku. Poveznica vrijedi 7 dana.',
+      'Klikni na poveznicu i odmah si prijavljen, bez lozinke. Poveznica vrijedi 7 dana.',
     ]
   }
   return [
-    'Zatražena je nova lozinka za tvoju prijavu u aplikaciju Moreškant.',
-    'Klikni na poveznicu i postavi novu lozinku. Poveznica vrijedi 1 sat.',
+    'Zatražena je poveznica za prijavu u aplikaciju Moreškant.',
+    'Klikni na poveznicu i prijavljujemo te. Poveznica vrijedi 1 sat.',
   ]
 }
 

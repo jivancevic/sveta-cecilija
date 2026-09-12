@@ -1,16 +1,19 @@
-// Choosing a password from an invitation or a reset link (#424).
+// Setting a password (#424, rewritten in #463).
 //
-// The link in both mails points at `/app/set-password?token=…`; this is what
-// the form behind it posts to. It runs Payload's `resetPassword`, which both
-// stores the new hash and opens a session, so the dancer lands on `/app`
-// already signed in rather than on a login form asking for the password they
-// typed two seconds ago.
+// It used to be the last step of both account mails: the link led here, the
+// form ran Payload's `resetPassword`, and that call both stored the hash and
+// opened the session. Which means the password was never what signed anybody
+// in — it was a toll on the way to a session the token had already earned.
 //
-// It is an unauthenticated, cookie-SETTING POST, the same shape as the login
-// route, so it carries the same cross-site guard (./request-guard.ts).
+// Since #463 the link opens the session itself (`token-login.ts`), and this is
+// what is left: an action a signed-in dancer may take in Više whenever they
+// want to stop waiting for a message, or never. So it takes no token, sets no
+// cookie, and asks for no current password — there frequently is none to type,
+// and the caller is already holding a live session on this device, which is
+// strictly more than a password proves.
 //
-// Pure + DI: the four refusals and the cookie are decided here and tested in
-// set-password.test.ts; `src/app/api/app/set-password/route.ts` is the wiring.
+// Pure + DI; the route (`src/app/api/app/set-password/route.ts`) is the wiring
+// and the permission chokepoint.
 
 import { APP_STRINGS } from './strings'
 import { rejectAppRequest, type AppRequestMeta } from './request-guard'
@@ -19,35 +22,28 @@ import { rejectAppRequest, type AppRequestMeta } from './request-guard'
  * The shortest password `/app` accepts.
  *
  * The Users collection sets no minimum (Payload enforces only "not empty"), so
- * the rule has to live somewhere; eight characters is the floor the invitation
- * flow puts on a dancer's own choice. It is deliberately not a complexity rule:
- * a phone keyboard and a required symbol produce written-down passwords.
+ * the rule has to live somewhere; eight characters is the floor `/app` puts on
+ * a dancer's own choice. It is deliberately not a complexity rule: a phone
+ * keyboard and a required symbol produce written-down passwords.
  */
 export const MIN_PASSWORD_LENGTH = 8
 
 export interface SetPasswordInput {
-  token?: unknown
   password?: unknown
   repeat?: unknown
 }
 
 export interface SetPasswordResult {
   status: number
-  body: { ok: true } | { error: string }
-  setCookie?: string
+  body: { ok: true; message: string } | { error: string }
 }
 
 export interface SetPasswordDeps {
   request: AppRequestMeta
-  /**
-   * Payload's local `resetPassword` (`data: { token, password }`,
-   * `overrideAccess: true`). Resolves with a session token; throws a 403
-   * "Token is either invalid or has expired" when the token does not match a
-   * live row.
-   */
-  resetPassword: (data: { token: string; password: string }) => Promise<{ token?: string | null }>
-  /** Payload's `generatePayloadCookie` for the users collection. */
-  cookie: (token: string) => string
+  /** The signed-in caller, as the route's guard resolved them. */
+  caller: { id: string | number; shared?: unknown }
+  /** `payload.update` on the caller's own row with `{ password }`. */
+  setPassword: (userId: string | number, password: string) => Promise<void>
 }
 
 function str(value: unknown): string {
@@ -57,21 +53,28 @@ function str(value: unknown): string {
 /**
  * POST /api/app/set-password.
  *
- * 403/415 cross-site or non-JSON, 400 for a missing token, a short password, a
- * mismatched repeat or a token Payload refuses, 200 + the session cookie on
- * success. Every failure answers with the same Croatian sentence a bad link
- * would produce, because "expired" and "already used" are the same situation
- * for the dancer: ask for a new one.
+ * 403/415 cross-site or non-JSON, 403 for a shared login, 400 for a short or
+ * mismatched password, 200 otherwise. The session is untouched: Payload's
+ * update adds no session and revokes none, so the other devices of the same
+ * dancer stay signed in, which is what somebody setting a password on a phone
+ * expects of their tablet.
  */
 export async function handleSetPassword(
   input: SetPasswordInput | null | undefined,
   deps: SetPasswordDeps,
 ): Promise<SetPasswordResult> {
   const rejection = rejectAppRequest(deps.request)
-  if (rejection) return { status: rejection.status, body: { error: APP_STRINGS.setPassword.unexpected } }
+  if (rejection) {
+    return { status: rejection.status, body: { error: APP_STRINGS.setPassword.unexpected } }
+  }
 
-  const token = str(input?.token).trim()
-  if (!token) return { status: 400, body: { error: APP_STRINGS.setPassword.missingToken } }
+  // A shared login may not rotate its own password (ADR-0022, and the same rule
+  // `Users.access.update` enforces in `/admin`): one volunteer changing it locks
+  // out everybody else who holds it. This route runs `overrideAccess: true`, so
+  // the collection rule does not reach it and the check has to be here.
+  if (deps.caller.shared === true) {
+    return { status: 403, body: { error: APP_STRINGS.setPassword.sharedAccount } }
+  }
 
   // A password is used verbatim, spaces included: only its length is judged.
   const password = str(input?.password)
@@ -83,14 +86,11 @@ export async function handleSetPassword(
     return { status: 400, body: { error: APP_STRINGS.setPassword.mismatch } }
   }
 
-  let session: string | null | undefined
   try {
-    const result = await deps.resetPassword({ token, password })
-    session = result?.token
+    await deps.setPassword(deps.caller.id, password)
   } catch {
-    return { status: 400, body: { error: APP_STRINGS.setPassword.invalidToken } }
+    return { status: 500, body: { error: APP_STRINGS.setPassword.unexpected } }
   }
-  if (!session) return { status: 400, body: { error: APP_STRINGS.setPassword.invalidToken } }
 
-  return { status: 200, body: { ok: true }, setCookie: deps.cookie(session) }
+  return { status: 200, body: { ok: true, message: APP_STRINGS.setPassword.saved } }
 }
