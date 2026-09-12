@@ -3557,7 +3557,10 @@ a.app__ob-link {
   margin-top: 20px;
 }
 
-.app__orders-pager .app__button--quiet {
+/* Quiet, outlined: a pager is a way to keep reading, not a call to action, and
+   two gold blocks at the bottom of a list would out-shout every row above. */
+.app__orders-pager .app__button--link {
+  padding: 9px 16px;
   text-decoration: none;
   text-align: center;
   line-height: 1.2;

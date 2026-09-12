@@ -88,7 +88,7 @@ export default async function OrdersPage({
         <nav className="app__orders-pager" aria-label={S.pageOf(query.page, pages)}>
           {query.page > 1 ? (
             <Link
-              className="app__button app__button--quiet"
+              className="app__button app__button--link app__button--quiet"
               href={ordersHref({ ...query, page: query.page - 1 })}
             >
               {S.previous}
@@ -99,7 +99,7 @@ export default async function OrdersPage({
           <span className="app__orders-page">{S.pageOf(query.page, pages)}</span>
           {query.page < pages ? (
             <Link
-              className="app__button app__button--quiet"
+              className="app__button app__button--link app__button--quiet"
               href={ordersHref({ ...query, page: query.page + 1 })}
             >
               {S.next}
