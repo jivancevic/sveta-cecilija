@@ -23,6 +23,7 @@ import { CompMemberCountsPanel } from './dashboard/CompMemberCountsPanel'
 import {
   getActiveTicketCountsByChannel,
   getActiveTicketCountsByPromoCode,
+  getActiveTicketCountsByShowAndChannel,
   getCompCountsByMember,
 } from '@/lib/tickets/sold-seats'
 import { doorProgress, type DoorProgress } from '@/lib/dashboard/door-progress'
@@ -114,7 +115,15 @@ export async function AdminDashboardView() {
   // stats input and the season money facts.
   const pool = (payload.db as unknown as { pool: { query: PoolQuery } }).pool
   const poolQuery: PoolQuery = (sql, params) => pool.query(sql, params)
-  const [input, diagnostics, money, channelTickets, promoCodeSales, compsByMember] = await Promise.all([
+  const [
+    input,
+    diagnostics,
+    money,
+    channelTickets,
+    channelTicketsByShow,
+    promoCodeSales,
+    compsByMember,
+  ] = await Promise.all([
     getStatsInput(),
     gatherDevDiagnostics(user as { permissions?: unknown } | null, {
       query: poolQuery,
@@ -126,6 +135,11 @@ export async function AdminDashboardView() {
     // Channel-mix chart (#242): online vs partner active-ticket counts. In-person
     // sales have no ticket rows, so they come from shows.inPersonSold below.
     getActiveTicketCountsByChannel(poolQuery),
+    // The same split PER SHOW, for the stacked season-trajectory bars: it is
+    // what turns each bar from one flat total into online / at the door /
+    // partner / comp. At-the-door seats have no ticket rows, so the chart
+    // derives them as the remainder of the show's `sold`.
+    getActiveTicketCountsByShowAndChannel(poolQuery),
     // Promo-code reporting panel (#325, ADR-0018): per-code whole-party active
     // tickets + revenue, top draw first. Cancelled/refunded excluded upstream.
     getActiveTicketCountsByPromoCode(poolQuery),
@@ -220,7 +234,11 @@ export async function AdminDashboardView() {
       </div>
 
       {/* Season charts (#242): per-show sold trajectory + season channel mix. */}
-      <SeasonTrajectoryChart shows={dashboardShows} lang={lang} />
+      <SeasonTrajectoryChart
+        shows={dashboardShows}
+        channelsByShow={channelTicketsByShow}
+        lang={lang}
+      />
       <ChannelMixChart counts={channelCounts} lang={lang} />
 
       {/* Promo-code reporting (#325, ADR-0018): top codes by tickets sold, with

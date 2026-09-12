@@ -284,3 +284,43 @@ export async function getScannedTicketCountForShow(
   )
   return Number(res.rows[0]?.scanned ?? 0)
 }
+
+/**
+ * Active ticket counts split by order channel, PER SHOW (#242 follow-up), keyed
+ * by stringified show id. The per-show sibling of
+ * getActiveTicketCountsByChannel: same active-only tickets⋈orders join, grouped
+ * by show as well as channel, so the season-trajectory bars can be stacked by
+ * where each seat came from instead of rendering one flat total.
+ *
+ * Same channel folding as the season version — `partner` and `comp` are their
+ * own buckets, anything else (including legacy NULLs) folds into `online` — and
+ * the same rule applies: `comp` is a seat, never a sale, so it must stay out of
+ * every money total. At-the-door seats have no ticket rows at all, so they are
+ * NOT in this map; the caller derives them from the show's offline counters.
+ * Shows with no tickets are absent (callers default to zeroes).
+ */
+export type ShowChannelCounts = { online: number; partner: number; comp: number }
+
+export async function getActiveTicketCountsByShowAndChannel(
+  query: PoolQuery,
+): Promise<Map<string, ShowChannelCounts>> {
+  const res = await query(`
+    SELECT o.show_id AS show_id, o.channel AS channel, COUNT(*)::int AS sold
+    FROM tickets t
+    JOIN orders o ON o.id = t.order_id
+    WHERE t.status = 'active'
+    GROUP BY o.show_id, o.channel
+  `)
+  const byShow = new Map<string, ShowChannelCounts>()
+  for (const row of res.rows) {
+    const showId = String(row.show_id)
+    const count = Number(row.sold) || 0
+    const channel = String(row.channel)
+    const entry = byShow.get(showId) ?? { online: 0, partner: 0, comp: 0 }
+    if (channel === 'partner') entry.partner += count
+    else if (channel === 'comp') entry.comp += count // goodwill, not a sales channel
+    else entry.online += count
+    byShow.set(showId, entry)
+  }
+  return byShow
+}
