@@ -47,7 +47,6 @@ type ScreenKey =
   | 'performances'
   | 'mine'
   | 'scan'
-  | 'doorlist'
   | 'orders'
   | 'sell'
   | 'statement'
@@ -62,29 +61,53 @@ type Workspace = 'moreskant' | 'box' | 'door' | 'partner' | 'admin'
 interface Screen {
   key: ScreenKey
   label: string
+  /** The tab-bar spelling when the full label is too long for a fifth of a phone. */
+  short?: string
   /** Unlocked by ANY of these. */
   any: Permission[]
-  ws: Workspace
+  /** Variant C: the workspace this screen belongs to, in preference order. */
+  ws: Workspace[]
   /** Variant A's global rank: lower shows first, the first four are tabs. */
   rank: number
 }
 
 // The v1 screen list from the map, in Croatian, with the permission that
 // unlocks each. Refunds are an action inside Narudžbe, not a screen; the
-// lineup editor is inside an Izvedba; the dancer's Ljestvica is under Više.
+// lineup editor is inside an Izvedba; the door list is inside Skener; the
+// dancer's Ljestvica is under Više.
 const SCREENS: Screen[] = [
-  { key: 'orders', label: 'Narudžbe', any: ['tickets'], ws: 'box', rank: 1 },
-  { key: 'performances', label: 'Izvedbe', any: ['tickets', 'moreska', 'moreskant'], ws: 'moreskant', rank: 2 },
-  { key: 'mine', label: 'Moje', any: ['moreskant'], ws: 'moreskant', rank: 3 },
-  { key: 'scan', label: 'Skener', any: ['door'], ws: 'door', rank: 4 },
-  { key: 'sell', label: 'Prodaja', any: ['partner'], ws: 'partner', rank: 5 },
-  { key: 'statement', label: 'Obračun', any: ['partner'], ws: 'partner', rank: 6 },
-  { key: 'inquiries', label: 'Upiti', any: ['tickets'], ws: 'box', rank: 7 },
-  { key: 'comp', label: 'Gratis i kodovi', any: ['tickets'], ws: 'box', rank: 8 },
-  { key: 'doorlist', label: 'Na vratima', any: ['door'], ws: 'door', rank: 9 },
-  { key: 'users', label: 'Korisnici', any: ['users'], ws: 'admin', rank: 10 },
-  { key: 'stats', label: 'Statistika', any: ['season_stats', 'tickets', 'moreska'], ws: 'admin', rank: 11 },
+  { key: 'orders', label: 'Narudžbe', any: ['tickets'], ws: ['box'], rank: 1 },
+  {
+    key: 'performances',
+    label: 'Izvedbe',
+    any: ['tickets', 'moreska', 'moreskant'],
+    ws: ['moreskant', 'box'],
+    rank: 2,
+  },
+  { key: 'mine', label: 'Moje', any: ['moreskant'], ws: ['moreskant'], rank: 3 },
+  { key: 'scan', label: 'Skener', any: ['door'], ws: ['door'], rank: 4 },
+  { key: 'sell', label: 'Prodaja', any: ['partner'], ws: ['partner'], rank: 5 },
+  { key: 'statement', label: 'Obračun', any: ['partner'], ws: ['partner'], rank: 6 },
+  { key: 'inquiries', label: 'Upiti', any: ['tickets'], ws: ['box'], rank: 7 },
+  { key: 'comp', label: 'Gratis i kodovi', short: 'Gratis', any: ['tickets'], ws: ['box'], rank: 8 },
+  { key: 'users', label: 'Korisnici', any: ['users'], ws: ['admin'], rank: 9 },
+  {
+    key: 'stats',
+    label: 'Statistika',
+    any: ['season_stats', 'tickets', 'moreska'],
+    ws: ['admin', 'box', 'moreskant'],
+    rank: 10,
+  },
 ]
+
+/** Variant C: which permission opens a workspace at all. */
+const WS_UNLOCK: Record<Workspace, Permission[]> = {
+  moreskant: ['moreska', 'moreskant'],
+  box: ['tickets'],
+  door: ['door'],
+  partner: ['partner'],
+  admin: ['users', 'season_stats'],
+}
 
 const SCREEN_BY_KEY = Object.fromEntries(SCREENS.map((s) => [s.key, s])) as Record<ScreenKey, Screen>
 
@@ -97,6 +120,7 @@ const WS_LABEL: Record<Workspace, string> = {
 }
 const WS_ORDER: Workspace[] = ['moreskant', 'box', 'partner', 'door', 'admin']
 
+/** Every screen this person may open, in rank order. */
 function unlocked(p: Persona): Screen[] {
   return SCREENS.filter((s) => s.any.some((perm) => p.permissions.includes(perm))).sort(
     (a, b) => a.rank - b.rank,
@@ -142,7 +166,7 @@ function navA(p: Persona): Nav {
 
 function navB(p: Persona): Nav {
   const all = unlocked(p).map((s) => s.key)
-  const primaries: ScreenKey[] = all.filter((k) => k !== 'scan' && k !== 'doorlist').slice(0, 2)
+  const primaries: ScreenKey[] = all.filter((k) => k !== 'scan').slice(0, 2)
   const overflow = all.filter((k) => !primaries.includes(k))
   return {
     tabs: ['home', ...primaries, 'more'],
@@ -156,14 +180,17 @@ function navB(p: Persona): Nav {
 
 function navC(p: Persona): Nav {
   const all = unlocked(p)
-  const workspaces: WorkspaceNav[] = WS_ORDER.filter((ws) => all.some((s) => s.ws === ws)).map((ws) => {
-    const keys = all.filter((s) => s.ws === ws).map((s) => s.key)
-    // A `tickets` holder sees Izvedbe in Blagajna too: same URL, one screen,
-    // content decided by permissions.
-    const inWs = ws === 'box' && p.permissions.includes('tickets') ? [...keys, 'performances' as ScreenKey] : keys
-    const uniq = Array.from(new Set(inWs))
-    return { ws, tabs: uniq.slice(0, 3), overflow: uniq.slice(3) }
-  })
+  // Workspaces open by PERMISSION, not by screen: a secretary with `tickets`
+  // gets Blagajna and no Moreškant, even though Izvedbe is hers too. A screen
+  // then lands in the first of its workspaces the person holds (Izvedbe:
+  // Moreškant, else Blagajna; same URL, one screen, content by permission).
+  const held = WS_ORDER.filter((ws) => WS_UNLOCK[ws].some((perm) => p.permissions.includes(perm)))
+  const workspaces: WorkspaceNav[] = held
+    .map((ws) => {
+      const keys = all.filter((s) => (s.ws.find((w) => held.includes(w)) ?? held[0]) === ws).map((s) => s.key)
+      return { ws, tabs: keys.slice(0, 3), overflow: keys.slice(3) }
+    })
+    .filter((w) => w.tabs.length > 0)
   const first = workspaces[0]
   return {
     tabs: [...first.tabs, 'more'],
@@ -219,7 +246,6 @@ const ICONS: Record<ScreenKey, React.ReactNode> = {
       <path d="M7 12h10" />
     </>
   ),
-  doorlist: <path d="M5 6h14M5 12h14M5 18h9" />,
   orders: (
     <>
       <path d="M4 7h16l-1.5 12h-13z" />
@@ -263,6 +289,11 @@ function label(k: ScreenKey): string {
   if (k === 'home') return 'Početna'
   if (k === 'more') return 'Više'
   return SCREEN_BY_KEY[k].label
+}
+
+function tabLabel(k: ScreenKey): string {
+  if (k === 'home' || k === 'more') return label(k)
+  return SCREEN_BY_KEY[k].short ?? SCREEN_BY_KEY[k].label
 }
 
 // ── Screen stubs ────────────────────────────────────────────────────────────
@@ -342,19 +373,16 @@ function StubBody({ k, persona }: { k: ScreenKey; persona: Persona }) {
           <div className="proto__camera">kamera</div>
           <input className="app__input" placeholder="ili upiši kod s ulaznice" readOnly />
           <p className="proto__muted">
-            Večeras: {TONIGHT.title} {TONIGHT.time} · ušlo 0 / {TONIGHT.sold}
+            Večeras: {TONIGHT.title} {TONIGHT.time}
           </p>
+          <Rows
+            rows={[
+              ['Ušlo', '87 od 212'],
+              ['Prodano na vratima', '6 odraslih, 2 djece'],
+              ['Zadnji sken', '20:58 · A. Marić'],
+            ]}
+          />
         </>
-      )
-    case 'doorlist':
-      return (
-        <Rows
-          rows={[
-            ['Ušlo', '87 od 212'],
-            ['Prodano na vratima', '6 odraslih, 2 djece'],
-            ['Zadnji sken', '20:58 · A. Marić'],
-          ]}
-        />
       )
     case 'orders':
       return (
@@ -540,7 +568,7 @@ function Frame(props: FrameProps) {
                 aria-current={t === active ? 'page' : undefined}
               >
                 <Icon k={t} />
-                {label(t)}
+                {tabLabel(t)}
               </button>
             ))}
           </nav>
