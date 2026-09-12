@@ -5,7 +5,7 @@ import config from '@payload-config'
 import { handleAppLogin } from '@/lib/app/login'
 import { appRequestMeta } from '@/lib/app/request-guard'
 
-// POST /api/app/login — the Moreškant app's own sign-in (#421, ADR-0023).
+// POST /api/app/login — Cecilija's own sign-in (#421, ADR-0023).
 //
 // `/app` shares Payload's session but never `/admin/login`: this route runs the
 // local `login` operation and sets the very cookie Payload's admin sets, built
