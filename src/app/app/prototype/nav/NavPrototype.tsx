@@ -152,7 +152,12 @@ interface Nav {
 const MAX_TABS_A = 4
 
 function navA(p: Persona): Nav {
-  const all = unlocked(p).map((s) => s.key)
+  // DECIDED (Josip, 2026-09-12): a dancer lands on Izvedbe even when they also
+  // hold `tickets`; only Izvedbe jumps the rank, Moje stays where it is.
+  const ranked = unlocked(p).map((s) => s.key)
+  const all = p.permissions.includes('moreskant')
+    ? ['performances' as ScreenKey, ...ranked.filter((k) => k !== 'performances')]
+    : ranked
   const tabs = all.slice(0, MAX_TABS_A)
   const overflow = all.slice(MAX_TABS_A)
   const hasScan = all.includes('scan')
