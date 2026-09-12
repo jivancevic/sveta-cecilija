@@ -80,6 +80,12 @@ Access follows the **roster, not the login table**: unticking `active` or `isMor
 
 `public/manifest.webmanifest`: name and short name "Moreškant", `display: standalone`, `start_url` and `scope` `/app`, stone background and gold theme taken from the `.t-stone` tokens, 192 and 512 px PNG icons derived from the Cecilija logo (the webp rule in `assets.md` covers photos in `public/`; manifest icons are PNG by spec). Linked from the `/app` layout only, so no public page advertises it.
 
+### The status bar is the app's to clear (#482)
+
+The `/app` layout pairs `viewportFit: 'cover'` with `appleWebApp.statusBarStyle: 'black-translucent'`, so the installed app's web view starts at y=0 — under the clock and the Dynamic Island. Nothing puts it back: **every root container under `/app` must add `env(safe-area-inset-top)` itself**, the way `.app__shell`, `.app__panel` and `.app__ob` each do, or its first line renders behind the status bar. The same holds at the other end for `env(safe-area-inset-bottom)`, which the fixed tab bar and the shell's bottom padding already carry.
+
+The trap is that none of this shows in a browser, where both insets are `0px`: the bug exists only in the installed app on a notched phone, which is the only place a dancer ever sees it. Verify a new `/app` screen on an installed iPhone, not in a desktop tab.
+
 **The service worker arrived with push (#431) and still caches nothing** — the phase 3 reason (#419, story 47) survives it: a cache layer over server-rendered roster data can only turn app bugs into caching bugs. Details in the Push section below.
 
 ### The install flow (#455)
