@@ -205,6 +205,8 @@
 .proto[data-density='gusto'] .proto__laptop .proto__row {
   padding: 6px 0;
   display: flex;
+  flex-direction: row;
+  align-items: baseline;
   justify-content: space-between;
   gap: 16px;
 }
