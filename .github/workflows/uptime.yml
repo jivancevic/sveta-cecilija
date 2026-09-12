@@ -1,0 +1,72 @@
+name: Uptime
+
+# Outside-in monitoring for production (#451 step 7).
+#
+# Nothing watched moreska.eu until now. Coolify has no notification channel
+# configured at all, and its Sentinel agent only collects metrics — a dead
+# container notified nobody. While production shipped by a human clicking
+# Redeploy that was survivable, because the human was the monitor. With `main`
+# auto-deploying it is not.
+#
+# This is the zero-dependency half of the alarm: no account, no secret, and the
+# check itself lives in the repo. GitHub emails the workflow's author when a
+# scheduled run fails, and the GitHub mobile app turns that into a push.
+#
+# It is NOT a replacement for a real uptime service. GitHub delays scheduled
+# runs under load, sometimes by many minutes, so treat this as the floor rather
+# than the ceiling: an UptimeRobot-class monitor on the same URL, with a phone
+# push, is still the primary. Two independent watchers is the right number for
+# something that takes card payments.
+#
+# Why `dbOk` fails this check but never fails Coolify's: Coolify restarts an
+# unhealthy container, and restarting fixes nothing when Postgres is the thing
+# that blipped (see src/lib/health/health.ts). A human, though, very much wants
+# to know that the site is up but cannot sell a ticket.
+
+on:
+  schedule:
+    # Every 10 minutes. GitHub's minimum is 5, but scheduled runs are queued on
+    # a best-effort basis and asking for 5 mostly buys jitter, not resolution.
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+# A single run at a time; a backed-up schedule should not pile up alarms.
+concurrency:
+  group: uptime
+  cancel-in-progress: false
+
+jobs:
+  health:
+    name: health
+    runs-on: ubuntu-latest
+    steps:
+      - name: Poll the production health endpoint
+        run: |
+          set -uo pipefail
+          url=https://moreska.eu/api/health
+
+          # Three attempts over ~40s, so a single dropped packet between a
+          # GitHub runner and Hetzner does not page anyone. An alarm nobody
+          # trusts is worse than no alarm.
+          for attempt in 1 2 3; do
+            response=$(curl -sS --max-time 15 -w $'\n%{http_code}' "$url" 2>&1 || true)
+            code=$(printf '%s' "$response" | tail -n1)
+            body=$(printf '%s' "$response" | sed '$d')
+
+            if [ "$code" != "200" ]; then
+              reason="HTTP $code"
+            elif ! printf '%s' "$body" | grep -q '"ok":true'; then
+              reason="unexpected body"
+            elif ! printf '%s' "$body" | grep -q '"dbOk":true'; then
+              reason="app is up but cannot reach the database"
+            else
+              echo "attempt $attempt: healthy — $body"
+              exit 0
+            fi
+
+            echo "attempt $attempt failed: $reason — ${body:-<empty>}"
+            if [ "$attempt" -lt 3 ]; then sleep 20; fi
+          done
+
+          echo "::error::moreska.eu failed three health checks in a row: $reason"
+          exit 1
