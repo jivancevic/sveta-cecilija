@@ -34,7 +34,7 @@ unlock are tabs, the rest live under Više, and Izvedbe jumps to the front for a
 |---|---|---|---|---|---|
 | | landing | `/app` | any screen | **307 to the person's first tab** (#495) | done |
 | 1 | Narudžbe | `/app/orders`, `/app/orders/[id]` | `tickets` | `/admin/collections/orders` | none, the Backoffice keeps its list |
-| 2 | Izvedbe (one screen, content by `can()`) | `/app/performances`, `/app/performances/[id]` | `tickets`, `moreska`, `moreskant` | **live for `moreska` + `moreskant`** (#495); the blagajna's half is #502 | 308 from `/app/izvedba/[id]`; push messages now carry the new path |
+| 2 | Izvedbe (one screen, content by `can()`) | `/app/performances`, `/app/performances/[id]` | `tickets`, `moreska`, `moreskant` | **live for `moreska` + `moreskant`** (#495), with the voditelj's Dodaj / Uredi / Otkaži / Pragovi on it since #503; the blagajna's half is #502 | 308 from `/app/izvedba/[id]`; push messages now carry the new path |
 | 2.5 | Članovi (dancer profiles, invitations, join code; absorbs Pozivnice, added by #476) | `/app/members` | `moreska` | `/admin/collections/members`, `/app/invitations` | `/app/pozivnice` already 308s to `/app/invitations` (#495); **#511 repoints that 308 at `/app/members`** and folds the screen in |
 | 3 | Ljestvica (own season + roster ranking; voditelj sees the full table) | `/app/leaderboard?season=2026&part=mine\|all` | `moreskant`, `moreska` | **live** (#495): both panels on one screen, the voditelj's *Ljestvica* panel is the old scoreboard | 308 from `/app/moje` and `/app/statistika` |
 | 4 | Skener (camera, code entry, door list) | `/app/scan` | `door` | **live** (#504): the camera and the four result states, Pusti ostatak grupe (n), Poništi propuštanje, Pronađi ulaznicu and the "ušlo X od Y" ring, all on one screen | `/admin/scan` 308s here and the Backoffice view is deleted; the ticket QR stays `/scan/[token]`, whose staff buttons point at `/app/scan` |
@@ -970,6 +970,54 @@ emptied note is stored as `null` so "no note" has one representation. The field
 with its Spremi button is `NoteEditor.tsx` on `/app/performances/[id]`, rendered for a
 voditelj only (the route refuses everyone else anyway). It never auto-saves:
 pressing the button is the moment a voditelj decides to tell the roster.
+
+## The voditelj's own izvedbe: Dodaj, Uredi, Otkaži, Pragovi (#503)
+
+Branimir keeps next month's cruise calls in the Backoffice today, which means a
+raw collection form with a venue, sales counters and a public flag on it. #503
+is those four jobs as named actions on the Izvedbe screen, and one sentence
+from the collections table in `CLAUDE.md` shapes all of them: **`moreska` owns
+non-public rows, and on a public row it owns the roster fields and nothing
+else.**
+
+| Route | Guard | Does |
+|---|---|---|
+| `POST /api/app/performances` | `requirePermission('moreska')` + `/app` guard | one non-public performance: kind, date, time, location, client, optional note |
+| `PATCH /api/app/performances/[id]` | same | the same five fields on an existing row; **403 on a public row** |
+| `POST /api/app/performances/[id]/cancel` | same | `status = 'cancelled'` and nothing else; **403 on a public row**; a row that is already cancelled is a 200 with no write |
+| `POST /api/app/performances/[id]/thresholds` | same | `{ crni, bili }`, both or neither, 0 to `MAX_THRESHOLD` (40). The one voditelj write that DOES reach a public row |
+
+- **A public row is refused in the handler, never by the collection.** The
+  local API runs `overrideAccess: true`, so `canEditScheduleField` does not gate
+  these writes; `handleEditPerformance` / `handleCancelPerformance` re-read the
+  stored row and refuse on `isPublic`. The refusal is a **403** rather than a
+  404, because the voditelj can see the evening and simply may not do this to
+  it. Cancelling a Redovna refunds every buyer and mails them and is
+  `POST /api/shows/[id]/cancel` (#497), not a harder version of this.
+- **Pragovi reaches every row on purpose.** How many crni and bili an evening
+  needs is a fact about the dance, not about the ticket shop, and the
+  collection agrees: `canEditRosterField` asks only for `moreska` and never
+  about the row.
+- **Validation is shared with the MCP tool.** `src/lib/performance-input.ts`
+  owns the calendar-day check, the `HH:MM` check, the kind vocabulary without
+  `redovna` and the "a booking has a place" rule, plus the two builders that
+  turn the checked fields into a create row and an edit patch. Both front doors
+  onto a new performance run it, so `2026-02-31` is one answer and not two.
+- **The writer is shared too**, through the seam: `getRepo().shows.createPerformances`
+  is `createPerformancesInBulk`, so a row added on a phone, a row pasted through
+  Claude and a season entered in the Backoffice all get one transaction. Since
+  #503 a **one-row** call is not treated as a batch: it leaves the Shows
+  `afterChange` hook on (so the roster gets the ordinary "Nova izvedba" with the
+  date, the time and the place in it) and sends no "N novih izvedbi" summary.
+- **`updatePerformance` goes through the collection**, for the reason the note
+  edit does: a change from the phone must ring the same bells as the same change
+  from the Backoffice.
+- The screen: `AddPerformance` on `/app/performances` (closed until asked for,
+  under the hero), and `PerformanceEditor` + `ThresholdEditor` in the tools card
+  of `/app/performances/[id]`, next to the note, the postava and the alarm.
+  Thresholds are a **stepper**, never a native number input — on a phone that is
+  a pair of tiny arrows next to a keyboard that covers the page. Otkaži is two
+  visible taps rather than `confirm()`.
 
 ## Sandučić obavijesti: the inbox behind the bell (#496)
 
