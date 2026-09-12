@@ -87,7 +87,13 @@ function formatShowDate(iso: string): string {
 
 function formatScannedAt(iso: string): string {
   if (!iso) return ''
-  return new Date(iso).toLocaleString('en-GB', {
+  // The timestamp arrives straight off the driver and is sometimes
+  // `2026-09-13 00:11:02.324+02` rather than ISO. Node parses both; Safari
+  // refuses the space form and renders "Invalid Date", which is exactly the
+  // browser the door runs on.
+  const d = new Date(iso.replace(' ', 'T'))
+  if (Number.isNaN(d.getTime())) return ''
+  return d.toLocaleString('en-GB', {
     day: 'numeric',
     month: 'short',
     hour: '2-digit',
