@@ -34,11 +34,14 @@ import {
   type DanceRole,
 } from '@/lib/moreskant-profile'
 import {
-  PERFORMANCE_KINDS,
+  NON_PUBLIC_KINDS,
+  PERFORMANCE_INPUT_MESSAGES,
   PerformanceValidationError,
-  validateAndNormalisePerformance,
-  type PerformanceKind,
-} from '@/lib/show-performance'
+  isRealCalendarDay,
+  newPerformanceRow,
+  parseNonPublicPerformance,
+  type NewPerformanceRow,
+} from '@/lib/performance-input'
 import { seasonYear } from '@/lib/member/season'
 
 // --- what the tools speak ---
@@ -83,14 +86,13 @@ export interface McpLineupRow {
   role: DanceRole
 }
 
-export interface McpNewPerformance {
-  date?: unknown
-  time?: unknown
-  kind?: unknown
-  location?: unknown
-  client?: unknown
-  note?: unknown
-}
+/**
+ * One row `create_performances` is asked to write, before anything is checked.
+ *
+ * The shape only; the rules that turn it into a stored performance live in
+ * `@/lib/performance-input` (#503), shared with the voditelj's own form.
+ */
+export type { NonPublicPerformanceInput as McpNewPerformance } from '@/lib/performance-input'
 
 export interface McpStore {
   /** Every performance of the season, public and non-public alike. */
@@ -430,34 +432,16 @@ export interface CreatePerformancesResult {
   rejected: { index: number; error: string }[]
 }
 
-/** The kinds this tool may create: never `redovna`, which sells tickets. */
-export const MCP_CREATABLE_KINDS = PERFORMANCE_KINDS.filter(
-  (k): k is Exclude<PerformanceKind, 'redovna'> => k !== 'redovna',
-)
-
-const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/
-const DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/
-
 /**
- * True only for a date that exists in the calendar.
+ * The kinds this tool may create: never `redovna`, which sells tickets.
  *
- * The shape test is not enough (#445 review): `2026-02-31` matches the regex
- * and `new Date()` happily rolls it forward to 3 March, so a mistyped ship call
- * would land in the roster on a day nobody wrote down. The round trip through
- * `Date.UTC` is what catches it — a rolled-over date no longer prints as the
- * string it came from. It also rejects month 00/13 and day 00 for free.
+ * Re-exported from the shared input module (#503) rather than re-derived: the
+ * zod enum in the route, the voditelj's form on the phone and this tool all
+ * have to offer the same four words.
  */
-export function isRealCalendarDay(value: string): boolean {
-  const m = DATE_RE.exec(value)
-  if (!m) return false
-  const [, y, mo, d] = m
-  const date = new Date(Date.UTC(Number(y), Number(mo) - 1, Number(d)))
-  return (
-    date.getUTCFullYear() === Number(y) &&
-    date.getUTCMonth() === Number(mo) - 1 &&
-    date.getUTCDate() === Number(d)
-  )
-}
+export const MCP_CREATABLE_KINDS = NON_PUBLIC_KINDS
+
+export { isRealCalendarDay }
 
 /**
  * `create_performances({ rows })` — next year's cruise calls in one paste.
@@ -475,70 +459,28 @@ export async function createPerformances(
     return fail('Treba popis izvedbi.')
   }
 
-  const rows: { dateStr: string; data: Record<string, unknown> }[] = []
+  const rows: NewPerformanceRow[] = []
   const rejected: CreatePerformancesResult['rejected'] = []
 
   args.rows.forEach((raw, index) => {
-    const row = (raw ?? {}) as McpNewPerformance
-    const date = typeof row.date === 'string' ? row.date.trim() : ''
-    const time = typeof row.time === 'string' ? row.time.trim() : ''
-    const kind = typeof row.kind === 'string' ? row.kind.trim() : ''
-
-    if (!DATE_RE.test(date)) {
-      rejected.push({ index, error: 'Datum mora biti u obliku YYYY-MM-DD.' })
+    // The SAME validator the voditelj's own "Dodaj izvedbu" form runs (#503):
+    // one answer to "is this a day", "is this a time", "is this a kind we may
+    // create here" and "does a booking have a place", whichever front door the
+    // row came through.
+    const parsed = parseNonPublicPerformance(raw)
+    if (!parsed.ok) {
+      rejected.push({ index, error: parsed.error })
       return
     }
-    if (!isRealCalendarDay(date)) {
-      rejected.push({ index, error: `Datum ${date} ne postoji u kalendaru.` })
-      return
-    }
-    if (!TIME_RE.test(time)) {
-      rejected.push({ index, error: 'Vrijeme mora biti u obliku HH:MM.' })
-      return
-    }
-    if (kind === 'redovna') {
-      rejected.push({
-        index,
-        error: 'Redovnu izvedbu se ne unosi ovdje: ona prodaje karte i unosi se u administraciji.',
-      })
-      return
-    }
-    if (!(MCP_CREATABLE_KINDS as readonly string[]).includes(kind)) {
-      rejected.push({
-        index,
-        error: `Nepoznata vrsta "${kind}". Dopuštene su: ${MCP_CREATABLE_KINDS.join(', ')}.`,
-      })
-      return
-    }
-
-    const data: Record<string, unknown> = {
-      // Shows are stored at NOON UTC so the UTC calendar day is the intended
-      // day whatever the server's offset (db-bootstrap.md, `toIsoDate`).
-      date: `${date}T12:00:00.000Z`,
-      time,
-      kind,
-      isPublic: false,
-      location: typeof row.location === 'string' ? row.location.trim() : '',
-      client: typeof row.client === 'string' && row.client.trim() !== '' ? row.client.trim() : null,
-      voditeljNote:
-        typeof row.note === 'string' && row.note.trim() !== '' ? row.note.trim() : null,
-      status: 'active',
-      onlineSold: 0,
-      inPersonSold: 0,
-    }
-
     try {
-      // The same invariants the collection's beforeValidate hook enforces, run
-      // here so a bad row is a sentence in the answer rather than a 500 out of
-      // the middle of a batch.
-      rows.push({ dateStr: date, data: validateAndNormalisePerformance(data) })
+      rows.push(newPerformanceRow(parsed.fields))
     } catch (err) {
       rejected.push({
         index,
         error:
           err instanceof PerformanceValidationError
             ? err.message
-            : 'Izvedba nije prošla provjeru.',
+            : PERFORMANCE_INPUT_MESSAGES.failed,
       })
     }
   })

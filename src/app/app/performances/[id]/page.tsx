@@ -16,6 +16,7 @@ import {
   formatPerformanceDateLong,
 } from '@/lib/app/strings'
 import { SELF_COMP_CAP } from '@/lib/comp/self-comp'
+import type { NonPublicKind } from '@/lib/performance-input'
 import type { LineupView, PerformanceDetail } from '@/lib/app/detail-loaders'
 import type { ArmyTally, RosterPerson } from '@/lib/attendance/army-count'
 import type { Army } from '@/lib/attendance/rules'
@@ -27,6 +28,8 @@ import { AttendanceButtons } from '../../AttendanceButtons'
 import { CompTickets } from '../../CompTickets'
 import { ArmyMoveButton } from '../../ArmyMoveButton'
 import { NoteEditor } from '../../NoteEditor'
+import { PerformanceEditor } from '../../PerformanceForm'
+import { ThresholdEditor } from '../../ThresholdEditor'
 import { DetailSegments } from './DetailSegments'
 
 // `/app/performances/[id]` — one evening, in three segments (#423, #457, ADR-0024).
@@ -434,6 +437,34 @@ export default async function PerformanceDetailPage({
               {/* The same note `/admin` edits (#436, story 25): saving goes
                   through the collection, so the roster is notified either way. */}
               <NoteEditor performanceId={p.id} initialNote={p.voditeljNote} />
+              {/* The two army thresholds (#503). On EVERY row, public one
+                  included: how many crni and bili an evening needs is a fact
+                  about the dance, and the collection's own field access says
+                  the same (`canEditRosterField` never asks about the row). */}
+              <ThresholdEditor
+                performanceId={p.id}
+                crni={p.thresholdCrni}
+                bili={p.thresholdBili}
+              />
+              {/* Uredi and Otkaži, for a booking only (#503). A public evening
+                  gets the sentence instead of the controls: moving or
+                  cancelling one reaches ticket holders, and that is the
+                  blagajna's action (#497), not a harder version of this one. */}
+              {p.isPublic ? (
+                <p className="app__lead-note">{APP_STRINGS.performance.publicRow}</p>
+              ) : (
+                <PerformanceEditor
+                  performanceId={p.id}
+                  cancelled={p.cancelled}
+                  initial={{
+                    kind: (p.kind === 'redovna' ? 'ostalo' : p.kind) as NonPublicKind,
+                    date: p.date,
+                    time: p.time,
+                    location: p.location ?? '',
+                    client: p.client ?? '',
+                  }}
+                />
+              )}
               {/* The alarm is only ever about an evening still ahead (#430,
                   story 20); the route refuses the other two cases anyway, so a
                   hidden button is replaced by the reason it is hidden. */}

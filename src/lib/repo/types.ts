@@ -26,7 +26,7 @@
 import type { AuthRepo, SessionUser } from './auth'
 import type { DbRepo } from './db'
 import type { OrdersRepo } from './orders'
-import type { ShowsRepo } from './shows'
+import type { PerformancePatch, PerformanceRow, ShowsRepo } from './shows'
 
 export interface Repo {
   auth: AuthRepo
@@ -35,4 +35,12 @@ export interface Repo {
   shows: ShowsRepo
 }
 
-export type { AuthRepo, DbRepo, OrdersRepo, SessionUser, ShowsRepo }
+export type {
+  AuthRepo,
+  DbRepo,
+  OrdersRepo,
+  PerformancePatch,
+  PerformanceRow,
+  SessionUser,
+  ShowsRepo,
+}

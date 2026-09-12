@@ -3404,3 +3404,130 @@ a.app__ob-link {
     flex: 1 1 auto;
   }
 }
+
+/* ── Izvedbe: the voditelj's forms (#503) ──────────────────────────────────
+   Dodaj on the list, Uredi / Otkaži / Pragovi inside the tools card. They
+   reuse the shell's existing controls (.app__input, .app__select,
+   .app__stepper, .app__button) and add only the layout around them: the
+   labels, the date + time pair, and the two-tap cancel.
+
+   Phone first. The date and time sit side by side because they always fit
+   there together and reading "4.5. u 10:30" as one line is how the evening is
+   said out loud. */
+.app__perf-add {
+  margin: 20px 0 4px;
+}
+
+.app__perf-add--open,
+.app__thresholds,
+.app__perf-edit {
+  padding: 14px;
+  border: 1px solid var(--cardEdge);
+  border-radius: var(--radius);
+}
+
+/* Inside the tools card the sections are separated by a rule, exactly like the
+   alarm and the note, rather than by a second border of their own. */
+.app__lead .app__thresholds,
+.app__lead .app__perf-edit {
+  margin: 0;
+  padding: 12px 0 0;
+  border: none;
+  border-top: 1px solid var(--rule);
+}
+
+.app__perf-head {
+  margin: 0 0 4px;
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--goldText);
+}
+
+.app__perf-hint {
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.app__perf-fields {
+  margin: 12px 0 0;
+}
+
+.app__perf-field {
+  display: block;
+}
+
+.app__perf-field > span {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  margin-bottom: 4px;
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* "nije obavezno": the same line as the label, quieter, never a second line. */
+.app__perf-field > span i {
+  font-style: normal;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 11px;
+  opacity: 0.75;
+}
+
+.app__perf-field .app__select {
+  display: block;
+  width: 100%;
+  margin-bottom: 12px;
+  /* 16px keeps iOS Safari from zooming the page on focus. */
+  font-size: 16px;
+}
+
+.app__perf-field .app__input {
+  /* Same reason as the select above; .app__input is 15px elsewhere. */
+  font-size: 16px;
+  min-height: 44px;
+}
+
+.app__perf-when {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+}
+
+.app__perf-actions {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.app__perf-actions .app__button {
+  flex: 1 1 auto;
+}
+
+.app__perf-actions .app__button--quiet {
+  flex: 0 0 auto;
+}
+
+/* The second tap on Otkaži. Not a browser dialog: this is a phone, and one is
+   a wall of system chrome over the page the decision is about. */
+.app__perf-confirm {
+  margin-top: 12px;
+}
+
+.app__perf-confirm p {
+  margin: 0 0 10px;
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.app__button--danger {
+  background: var(--warn);
+  color: var(--card);
+}
