@@ -6,7 +6,7 @@ import {
 } from './send-moreskant-email'
 import { BREVO_EMAIL_ENDPOINT } from './post-brevo-email'
 
-const link = 'https://moreska.eu/app/set-password?token=tok-abc'
+const link = 'https://moreska.eu/app/prijava?token=tok-abc'
 
 function fakeFetch(status = 201) {
   return vi.fn(async () => new Response('', { status })) as unknown as typeof fetch
@@ -26,7 +26,7 @@ describe('renderMoreskantEmailHtml', () => {
   })
 
   it('drops the name when there is none', () => {
-    const html = renderMoreskantEmailHtml({ kind: 'reset', to: 'a@b.c', greeting: '', link })
+    const html = renderMoreskantEmailHtml({ kind: 'signin', to: 'a@b.c', greeting: '', link })
     expect(html).toContain('Bok,')
     expect(html).toContain('vrijedi 1 sat')
   })
@@ -49,7 +49,7 @@ describe('renderMoreskantEmailHtml', () => {
   })
 
   it('says moreškant, never moreškar, and carries no em-dash', () => {
-    for (const kind of ['invite', 'reset'] as const) {
+    for (const kind of ['invite', 'signin'] as const) {
       const html = renderMoreskantEmailHtml({ kind, to: 'a@b.c', greeting: 'Cici', link })
       expect(html).not.toMatch(/moreškar/i)
       expect(html).not.toContain('—')
@@ -76,10 +76,10 @@ describe('sendMoreskantEmail', () => {
   it('posts the reset mail with its own subject', async () => {
     const fetch = fakeFetch()
     await sendMoreskantEmail(
-      { kind: 'reset', to: 'cici@example.com', greeting: '', link },
+      { kind: 'signin', to: 'cici@example.com', greeting: '', link },
       { fetch, brevoApiKey: 'key' },
     )
-    expect(bodyOf(fetch).subject).toBe(MORESKANT_EMAIL_SUBJECTS.reset)
+    expect(bodyOf(fetch).subject).toBe(MORESKANT_EMAIL_SUBJECTS.signin)
   })
 
   it('reports true when the letter left', async () => {

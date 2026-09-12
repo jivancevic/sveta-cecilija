@@ -10,9 +10,8 @@ describe('emailRequiredFor', () => {
     expect(emailRequiredFor({ permissions: ['users', 'tickets', 'dev'] })).toBe(true)
     expect(emailRequiredFor({ permissions: ['tickets', 'refunds', 'door'] })).toBe(true)
     expect(emailRequiredFor({ permissions: ['moreska'] })).toBe(true)
-    // #420: a moreškant login is created by an invitation email, so the inbox
-    // is the account's precondition, not a nicety.
-    expect(emailRequiredFor({ permissions: ['moreskant'] })).toBe(true)
+    // A voditelj who also dances is still a voditelj: the wider permission is
+    // what decides, not the narrower one beside it.
     expect(emailRequiredFor({ permissions: ['moreska', 'moreskant'] })).toBe(true)
   })
 
@@ -20,6 +19,14 @@ describe('emailRequiredFor', () => {
     expect(emailRequiredFor({ permissions: ['door'] })).toBe(false)
     expect(emailRequiredFor({ permissions: ['partner'] })).toBe(false)
     expect(emailRequiredFor({ permissions: ['season_stats'] })).toBe(false)
+  })
+
+  // #420 → #463: a dancer's login needed an inbox while the invitation WAS an
+  // e-mail. It is a link now, handed over by SMS or claimed from the rehearsal
+  // QR, so the requirement was refusing a login to seventy-five of the
+  // seventy-six moreškanti on the roster and protecting nothing.
+  it('does not require email for a plain moreškant login', () => {
+    expect(emailRequiredFor({ permissions: ['moreskant'] })).toBe(false)
   })
 
   it('does not require email for an empty, missing or unknown set', () => {
@@ -41,9 +48,10 @@ describe('assertUserEmailPolicy', () => {
     expect(() => assertUserEmailPolicy({ permissions: ['moreska'], email: '   ' })).toThrow(
       /email address is required/i,
     )
-    expect(() => assertUserEmailPolicy({ permissions: ['moreskant'], email: null })).toThrow(
-      UserEmailRequiredError,
-    )
+  })
+
+  it('accepts a moreškant login with no email (#463)', () => {
+    expect(() => assertUserEmailPolicy({ permissions: ['moreskant'], email: null })).not.toThrow()
   })
 
   it('accepts a person-tier account with an email', () => {

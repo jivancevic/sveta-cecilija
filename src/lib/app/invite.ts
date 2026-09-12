@@ -21,12 +21,27 @@ import { allocateUsername } from './username'
 /** Seven days, the life of an invitation link (#419, story 21). */
 export const INVITE_EXPIRATION_MS = 7 * 24 * 60 * 60 * 1000
 
+/**
+ * How the invitation reaches the dancer (#463).
+ *
+ * `email` is the letter Brevo sends; `link` is the voditelj copying it into a
+ * text message from their own phone. They differ in exactly one rule and share
+ * every other one — see `mintInvitation`.
+ */
+export type InviteChannel = 'email' | 'link'
+
 /** The Member fields the invitation decides on. Emails stay server-side. */
 export interface InviteMember {
   id: string | number
   name?: string | null
   nickname?: string | null
   email?: string | null
+  /**
+   * For the SMS deep link of "Kopiraj pozivnicu" (#463). A mobile may cross the
+   * `/app` boundary and an e-mail may not (ADR-0024); this one never leaves the
+   * voditelj's own screen either way.
+   */
+  mobile?: string | null
   isMoreskant?: unknown
   active?: unknown
 }
@@ -74,13 +89,33 @@ export interface InviteEmail {
   to: string
   /** The nickname the greeting uses, falling back to the member's name. */
   greeting: string
-  /** `${baseUrl}/app/set-password?token=…` */
+  /** `${baseUrl}/app/prijava?token=…` */
   link: string
 }
 
 export interface InviteResult {
   status: number
   body: { ok: true; created: boolean; username: string; message: string } | { error: string }
+}
+
+/** What "Kopiraj pozivnicu" hands the voditelj (#463). */
+export interface InviteLinkResult {
+  status: number
+  body:
+    | {
+        ok: true
+        created: boolean
+        username: string
+        /** `${baseUrl}/app/prijava?token=…`, live for seven days. */
+        link: string
+        /** The whole Croatian text message, link included, ready to send. */
+        message: string
+        /** The Member's mobile, for the `sms:` deep link; null when unknown. */
+        mobile: string | null
+        /** Whom it is for, so a toast can say so. */
+        name: string
+      }
+    | { error: string }
 }
 
 export interface InviteDeps {
@@ -95,7 +130,8 @@ export interface InviteDeps {
   usernameTaken: (candidate: string) => Promise<boolean>
   createUser: (data: {
     username: string
-    email: string
+    /** Absent for a dancer whose Member row has no address (#463). */
+    email?: string
     password: string
     permissions: string[]
     member: string | number
@@ -142,87 +178,9 @@ export async function handleInvite(
   input: { memberId?: unknown } | null | undefined,
   deps: InviteDeps,
 ): Promise<InviteResult> {
-  const rejection = rejectAppRequest(deps.request)
-  if (rejection) return fail(rejection.status, APP_STRINGS.invite.unexpected)
-
-  // Configuration, checked before anything is created: a relative link in an
-  // invitation burns the token and reads to the dancer as a broken system.
-  if (!isUsableBaseUrl(deps.baseUrl)) {
-    console.error('[handleInvite] NEXT_PUBLIC_BASE_URL is missing or relative; no invitation sent')
-    return fail(500, APP_STRINGS.invite.baseUrlMissing)
-  }
-
-  const memberId = id(input?.memberId)
-  if (!memberId) return fail(400, APP_STRINGS.invite.missingMember)
-
-  let member: InviteMember | null = null
-  try {
-    member = await deps.loadMember(memberId)
-  } catch {
-    member = null
-  }
-  if (!member) return fail(400, APP_STRINGS.invite.missingMember)
-  if (member.isMoreskant !== true) return fail(400, APP_STRINGS.invite.notMoreskant)
-  // `active` defaults to true in the schema, so only an explicit false refuses.
-  if (member.active === false) return fail(400, APP_STRINGS.invite.notActive)
-
-  const email = typeof member.email === 'string' ? member.email.trim() : ''
-  if (!email) return fail(400, APP_STRINGS.invite.noEmail)
-
-  let user: InviteUser | null = null
-  try {
-    user = await deps.findUserByMember(member.id)
-  } catch {
-    user = null
-  }
-
-  // The takeover guard, before the e-mail move and before any token is minted
-  // (#462 review). Everything below this line assumes the login it found is a
-  // dancer's; `isDancerLogin` is where that assumption is checked.
-  if (!isDancerLogin(user)) return fail(409, APP_STRINGS.invite.staffLogin)
-
-  let created = false
-  if (!user) {
-    const username = await allocateUsername(member.nickname, deps.usernameTaken)
-    try {
-      user = await deps.createUser({
-        username,
-        email,
-        password: deps.randomPassword(),
-        // The whole bundle, spelled here once: a dancer's login reaches /app
-        // and their own answers, nothing else.
-        permissions: ['moreskant'],
-        member: member.id,
-      })
-    } catch {
-      // The realistic failure is a duplicate email (the address already belongs
-      // to another account), which is a data problem the voditelj can fix.
-      return fail(400, APP_STRINGS.invite.createFailed)
-    }
-    created = true
-  } else if (typeof user.email === 'string' && user.email.trim().toLowerCase() !== email.toLowerCase()) {
-    try {
-      await deps.updateUserEmail(user.id, email)
-      user = { ...user, email }
-    } catch {
-      return fail(400, APP_STRINGS.invite.createFailed)
-    }
-  }
-
-  // Target the login by username when it has one: it is unique, stable and
-  // unaffected by the email we may have just moved. Payload's forgotPassword
-  // resolves exactly one of the two fields.
-  const username = typeof user.username === 'string' && user.username ? user.username : ''
-  let token: string | null = null
-  try {
-    token = await deps.issueResetToken(
-      username ? { username } : { email },
-      INVITE_EXPIRATION_MS,
-    )
-  } catch {
-    token = null
-  }
-  if (!token) return fail(500, APP_STRINGS.invite.tokenFailed)
+  const minted = await mintInvitation(input, deps, 'email')
+  if (!minted.ok) return minted.failure
+  const { member, created, username, email, link } = minted
 
   // A send that throws must not surface as a 500 on a voditelj who has just
   // watched an account be created: the login exists, the token is live, and the
@@ -230,11 +188,8 @@ export async function handleInvite(
   try {
     await deps.sendInvite({
       to: email,
-      greeting:
-        (typeof member.nickname === 'string' && member.nickname.trim()) ||
-        (typeof member.name === 'string' && member.name.trim()) ||
-        '',
-      link: setPasswordLink(deps.baseUrl, token),
+      greeting: greetingFor(member),
+      link,
     })
   } catch (err) {
     console.error(
@@ -256,12 +211,235 @@ export async function handleInvite(
 }
 
 /**
+ * POST /api/app/invite/link `{ memberId }` — "Kopiraj pozivnicu" (#463).
+ *
+ * The same invitation, handed to the voditelj instead of to Brevo. It exists
+ * because `POST /api/app/invite` refuses a Member with no e-mail address, and
+ * that refusal is a wall in front of the people the society reaches by phone:
+ * on the production roster **one** moreškant out of seventy-six has an e-mail.
+ *
+ * Everything a dancer's login is — the username, the `['moreskant']` bundle,
+ * the `member` link, the seven-day token, the takeover guard — is the mail
+ * route's, unchanged, because both go through `mintInvitation`. The only two
+ * differences are that no address is required and that nothing is sent: the
+ * voditelj gets the link and a ready Croatian message and sends it themselves,
+ * **by SMS** (`invite-link.ts` has the reason it must not be a messenger).
+ */
+export async function handleInviteLink(
+  input: { memberId?: unknown } | null | undefined,
+  deps: InviteDeps,
+): Promise<InviteLinkResult> {
+  const minted = await mintInvitation(input, deps, 'link')
+  if (!minted.ok) return minted.failure as InviteLinkResult
+  const { member, created, username, link } = minted
+
+  return {
+    status: 200,
+    body: {
+      ok: true,
+      created,
+      username,
+      link,
+      message: APP_STRINGS.inviteLink.message(greetingFor(member), link),
+      mobile: typeof member.mobile === 'string' ? member.mobile : null,
+      name: greetingFor(member) || String(member.id),
+    },
+  }
+}
+
+/** "Cici", else "Ivan Ivanović", else empty: whom the letter is addressed to. */
+function greetingFor(member: InviteMember): string {
+  return (
+    (typeof member.nickname === 'string' && member.nickname.trim()) ||
+    (typeof member.name === 'string' && member.name.trim()) ||
+    ''
+  )
+}
+
+/** What `ensureDancerLogin` needs: the account half of `InviteDeps`. */
+export type EnsureLoginDeps = Pick<
+  InviteDeps,
+  'findUserByMember' | 'usernameTaken' | 'createUser' | 'updateUserEmail' | 'randomPassword'
+>
+
+export type EnsureLoginOutcome =
+  | { ok: true; user: InviteUser; created: boolean }
+  | { ok: false; reason: 'staff-login' | 'create-failed' }
+
+/**
+ * The dancer's login: find the one linked to this Member, or open it.
+ *
+ * **What a moreškant's account IS, in one function.** Three callers now depend
+ * on it being one: the invitation mail, "Kopiraj pozivnicu" and a voditelj
+ * approving a join claim at a rehearsal (#463). A dancer must end up with the
+ * same account whichever door they came through — the same `['moreskant']`
+ * bundle, the same `member` link, the same slugged username, the same unusable
+ * random password — and three hand-written versions of that is how one of them
+ * quietly grants something the others do not.
+ *
+ * The takeover guard runs first (#462 review) and is the reason this returns a
+ * REASON rather than throwing: the Member's login may be a colleague's staff
+ * account, and every caller has to refuse that before it moves an e-mail, mints
+ * a token or opens a session.
+ */
+export async function ensureDancerLogin(
+  member: InviteMember,
+  deps: EnsureLoginDeps,
+): Promise<EnsureLoginOutcome> {
+  const email = typeof member.email === 'string' ? member.email.trim() : ''
+
+  let user: InviteUser | null = null
+  try {
+    user = await deps.findUserByMember(member.id)
+  } catch {
+    user = null
+  }
+
+  // Everything below this line assumes the login it found is a dancer's;
+  // `isDancerLogin` is where that assumption is checked. It matters as much on
+  // the link channel as in the mail: a copied sign-in link is a session in a
+  // text message, so aiming one at a colleague's staff account is the same
+  // theft by a quieter route.
+  if (!isDancerLogin(user)) return { ok: false, reason: 'staff-login' }
+
+  if (!user) {
+    const username = await allocateUsername(member.nickname, deps.usernameTaken)
+    try {
+      user = await deps.createUser({
+        username,
+        // Omitted rather than empty when there is none: Payload's unique index
+        // on `email` would make the second address-less dancer a duplicate.
+        ...(email ? { email } : {}),
+        password: deps.randomPassword(),
+        // The whole bundle, spelled here once: a dancer's login reaches /app
+        // and their own answers, nothing else.
+        permissions: ['moreskant'],
+        member: member.id,
+      })
+    } catch {
+      // The realistic failure is a duplicate email (the address already belongs
+      // to another account), which is a data problem the voditelj can fix.
+      return { ok: false, reason: 'create-failed' }
+    }
+    return { ok: true, user, created: true }
+  }
+
+  // The Member's e-mail wins: the Member row is where a voditelj maintains a
+  // dancer's contact details, and two addresses for one person would mean the
+  // sign-in link going to the stale one.
+  if (email && typeof user.email === 'string' && user.email.trim().toLowerCase() !== email.toLowerCase()) {
+    try {
+      await deps.updateUserEmail(user.id, email)
+      user = { ...user, email }
+    } catch {
+      return { ok: false, reason: 'create-failed' }
+    }
+  }
+
+  return { ok: true, user, created: false }
+}
+
+/** The invitation both channels need, or the refusal both would give. */
+type MintedInvitation =
+  | {
+      ok: true
+      member: InviteMember
+      created: boolean
+      username: string
+      /** The Member's address, empty on the link channel when there is none. */
+      email: string
+      link: string
+    }
+  | { ok: false; failure: InviteResult }
+
+/**
+ * Find or create the dancer's login and mint a fresh seven-day link.
+ *
+ * The whole of what an invitation IS, in one place, because there are three
+ * callers now (the mail, "Kopiraj pozivnicu" and the bulk action) and three
+ * hand-copied versions of "the Member's e-mail wins" is how that rule ends up
+ * true on two of them.
+ *
+ * The channel changes exactly one thing: whether a Member with no e-mail is a
+ * refusal (mail) or ordinary (link).
+ */
+async function mintInvitation(
+  input: { memberId?: unknown } | null | undefined,
+  deps: InviteDeps,
+  channel: InviteChannel,
+): Promise<MintedInvitation> {
+  const no = (status: number, error: string): MintedInvitation => ({
+    ok: false,
+    failure: fail(status, error),
+  })
+
+  const rejection = rejectAppRequest(deps.request)
+  if (rejection) return no(rejection.status, APP_STRINGS.invite.unexpected)
+
+  // Configuration, checked before anything is created: a relative link in an
+  // invitation burns the token and reads to the dancer as a broken system.
+  if (!isUsableBaseUrl(deps.baseUrl)) {
+    console.error('[mintInvitation] NEXT_PUBLIC_BASE_URL is missing or relative; nothing issued')
+    return no(500, APP_STRINGS.invite.baseUrlMissing)
+  }
+
+  const memberId = id(input?.memberId)
+  if (!memberId) return no(400, APP_STRINGS.invite.missingMember)
+
+  let member: InviteMember | null = null
+  try {
+    member = await deps.loadMember(memberId)
+  } catch {
+    member = null
+  }
+  if (!member) return no(400, APP_STRINGS.invite.missingMember)
+  if (member.isMoreskant !== true) return no(400, APP_STRINGS.invite.notMoreskant)
+  // `active` defaults to true in the schema, so only an explicit false refuses.
+  if (member.active === false) return no(400, APP_STRINGS.invite.notActive)
+
+  const email = typeof member.email === 'string' ? member.email.trim() : ''
+  // The one channel difference: a letter needs somewhere to go, a copied link
+  // does not. Since #463 a dancer's login needs no address at all
+  // (`user-email-policy.ts`), so this is the only place the absence bites.
+  if (!email && channel === 'email') return no(400, APP_STRINGS.invite.noEmail)
+
+  const login = await ensureDancerLogin(member, deps)
+  if (!login.ok) {
+    return no(
+      login.reason === 'staff-login' ? 409 : 400,
+      login.reason === 'staff-login' ? APP_STRINGS.invite.staffLogin : APP_STRINGS.invite.createFailed,
+    )
+  }
+  const { user, created } = login
+
+  // Target the login by username when it has one: it is unique, stable and
+  // unaffected by the email we may have just moved. Payload's forgotPassword
+  // resolves exactly one of the two fields.
+  const username = typeof user.username === 'string' && user.username ? user.username : ''
+  if (!username && !email) {
+    // Nothing to aim `forgotPassword` at. Unreachable in practice (every login
+    // this flow creates gets a username), and a silent 500 later if it were not
+    // checked here.
+    return no(500, APP_STRINGS.invite.tokenFailed)
+  }
+  let token: string | null = null
+  try {
+    token = await deps.issueResetToken(username ? { username } : { email }, INVITE_EXPIRATION_MS)
+  } catch {
+    token = null
+  }
+  if (!token) return no(500, APP_STRINGS.invite.tokenFailed)
+
+  return { ok: true, member, created, username, email, link: signInLink(deps.baseUrl, token) }
+}
+
+/**
  * Is this base URL something a link in an email can point at?
  *
  * `NEXT_PUBLIC_BASE_URL` is unset in more environments than one would like (a
- * fresh worktree, a misfiled Coolify variable), and `setPasswordLink` would
- * then happily build `/app/set-password?token=…`, which is a live token inside
- * a dead link. Both handlers check this before they mint anything.
+ * fresh worktree, a misfiled Coolify variable), and `signInLink` would then
+ * happily build `/app/prijava?token=…`, which is a live token inside a dead
+ * link. Every handler that mints one checks this first.
  */
 export function isUsableBaseUrl(baseUrl: string | null | undefined): boolean {
   if (typeof baseUrl !== 'string' || !baseUrl.trim()) return false
@@ -273,8 +451,15 @@ export function isUsableBaseUrl(baseUrl: string | null | undefined): boolean {
   }
 }
 
-/** `${baseUrl}/app/set-password?token=…`, the one link both mails carry. */
-export function setPasswordLink(baseUrl: string, token: string): string {
+/**
+ * `${baseUrl}/app/prijava?token=…`, the one link every invitation carries.
+ *
+ * It pointed at `/app/set-password` until #463, which is what the link did back
+ * then: a form, then a session. It now opens the session and leaves the
+ * password alone, so the URL says what happens. Both mails and the voditelj's
+ * "Kopiraj pozivnicu" build it here, once.
+ */
+export function signInLink(baseUrl: string, token: string): string {
   const base = (baseUrl || '').replace(/\/+$/, '')
-  return `${base}/app/set-password?token=${encodeURIComponent(token)}`
+  return `${base}/app/prijava?token=${encodeURIComponent(token)}`
 }

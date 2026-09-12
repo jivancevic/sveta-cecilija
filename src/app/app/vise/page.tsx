@@ -72,6 +72,23 @@ export default async function MorePage() {
             <span aria-hidden="true">›</span>
           </Link>
         )}
+        {/* "Postavi lozinku" (#463). Optional by design: an invitation signs a
+            dancer in and a session lasts thirty days, so most of the roster
+            will never open this. It sits here rather than on a screen they are
+            sent to, which is the whole point of moving it. */}
+        <Link className="app__more-row" href="/app/set-password">
+          {APP_STRINGS.setPassword.title}
+          <span aria-hidden="true">›</span>
+        </Link>
+        {/* The voditelj's own onboarding screen (#463): invitations by SMS and
+            the rehearsal join code. It is here rather than in `/admin` because
+            both are done standing in the room, on the phone in their hand. */}
+        {voditelj && (
+          <Link className="app__more-row" href="/app/pozivnice">
+            {APP_STRINGS.inviteLink.title}
+            <span aria-hidden="true">›</span>
+          </Link>
+        )}
         {voditelj && (
           <>
             {/* The admin is a different app under the same origin, so these are

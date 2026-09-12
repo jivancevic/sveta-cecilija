@@ -44,9 +44,13 @@ export default async function MoreskantLoginPage({
       <h1>{APP_STRINGS.name}</h1>
       <p>{APP_STRINGS.login.intro}</p>
       <LoginForm next={next} />
+      {/* The way in for a dancer who never set a password, which since #463 is
+          most of the roster: the invitation signs them in and the password step
+          is optional. It reads as an offer rather than as a recovery, because
+          for them nothing was lost. */}
       <p className="app__aside">
         <Link className="app__link" href="/app/forgot">
-          {APP_STRINGS.forgot.link}
+          {APP_STRINGS.login.magicLink}
         </Link>
       </p>
     </main>

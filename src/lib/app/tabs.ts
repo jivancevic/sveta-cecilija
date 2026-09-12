@@ -16,7 +16,7 @@ export const APP_TAB_HREF: Record<AppTab, string> = {
 
 /**
  * The tab a pathname lives under, or null for a page that carries no bar at all
- * (login, the password pages, the consent screen).
+ * (login, the sign-in link, the consent screen).
  */
 export function activeAppTab(pathname: string): AppTab | null {
   const path = pathname.replace(/\/+$/, '') || '/app'
@@ -27,5 +27,9 @@ export function activeAppTab(pathname: string): AppTab | null {
   if (path === '/app/moje' || path.startsWith('/app/moje/')) return 'mine'
   if (path === '/app/vise' || path.startsWith('/app/vise/')) return 'more'
   if (path === '/app/statistika' || path.startsWith('/app/statistika/')) return 'more'
+  // Both are rows in Više and nothing else links to them (#463): the password
+  // a dancer may set, and the voditelj's invitations screen.
+  if (path === '/app/set-password') return 'more'
+  if (path === '/app/pozivnice') return 'more'
   return null
 }
