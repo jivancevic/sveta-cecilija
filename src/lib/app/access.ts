@@ -1,6 +1,6 @@
 // Who gets into `/app`, and as what (#421, ADR-0023 + ADR-0024).
 //
-// The Moreškant app has exactly two audiences and one door:
+// Cecilija has exactly two audiences and one door:
 //   - **voditelj** — a holder of `moreska`. Sees the whole season. A voditelj
 //     who also dances carries `self`, their own Member, so they answer for
 //     themselves without a second login (#419, story 14). A voditelj who does
