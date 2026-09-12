@@ -984,6 +984,13 @@ parent.
 | `/app/statistika` | Više | the season scoreboard, unchanged |
 | `/app/dobrodosli` | none | the walkthrough: no bar, no brand header |
 
+**The hero rule**: `pickNextPerformance` (`roster-loaders.ts`) picks the next
+evening that is **not cancelled**. A cancelled evening is never the hero, and it
+is never skipped from the month list either: it stays there, struck through, so
+a dancer who remembers a date finds it and reads why. The month heading counts
+only the rows that are still happening. The season's own count of evenings is
+the list; nothing on `/app` re-counts it.
+
 ### `?dio=` — the segment params
 
 Two screens carry a segmented control, and both state the vocabulary in a pure
@@ -992,9 +999,16 @@ parser rather than in the component: `parseSegment` →
 detail, `parseMojeSegment` → `moja | ljestvica`
 (`src/lib/app/leaderboard-loaders.ts`) on Moje. Every panel is server-rendered
 and handed to the client component as a child; switching costs no request and
-follows along in the URL through `history.replaceState`, never a navigation. The
-detail's values are also what a push deep-link means, so the strings and the URL
-values are read off one object.
+follows along in the URL through `history.replaceState`, never a navigation. On
+the detail screen all three panels stay in the DOM and the inactive two carry
+`hidden`, so the voditelj's lineup draft and the Ulaznice steppers survive a
+glance at another segment.
+
+**Nothing sends a `?dio=` link today.** Confirming a postava deliberately rings
+nobody, so `?dio=postava` is reserved for a future deep link rather than wired
+to a push that exists. The tab labels and the URL values are still read off one
+object (`APP_STRINGS.detail.segments`) so that when something does send one, the
+word on the tab and the value in the link cannot have drifted apart.
 
 ### The Dobrodošlica cookie rule
 
@@ -1035,8 +1049,10 @@ rather than re-deriving a count, which is what keeps `/app/statistika`,
   are none); `fullSeason` means it equals them and there was at least one;
   milestones are 5, 10, 15, 20 read off the same count. No streaks.
 - `me` carries `toNextPlace` — how many more performances would reach the next
-  higher distinct count, null at the top — and the next milestone. The sentences
-  built from it go through `pluralize` (`roster-loaders.ts`), the one home of
-  the three Croatian plural buckets.
+  higher distinct count, null at the top — together with `nextPlace`, the rank
+  that count already holds, and the next milestone. `nextPlace` is **not**
+  `rank - 1`: with ranks 1, 1, 3 the dancer at 3 reaches 1 by tying, and 2 is a
+  place nobody holds. The sentences built from it go through `pluralize`
+  (`roster-loaders.ts`), the one home of the three Croatian plural buckets.
 - The bottom of the list gets **no** treatment: no red, no "zadnji". An empty
   season hides the card and the podium and says so once.

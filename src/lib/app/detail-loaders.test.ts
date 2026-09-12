@@ -136,6 +136,14 @@ describe('buildPerformanceDetail', () => {
     expect(out.performance.myArmy).toBe('bili')
   })
 
+  it('falls back to the profile army for a row with no army, the way the count does', () => {
+    // The same NULL `countArmies` reads as "crni" when it puts Cici in a list:
+    // the chip and the list below it have to agree (#457 review).
+    const out = build({ attendanceDocs: [answer(1, 'coming', null)] })
+    expect(out.performance.myArmy).toBe('crni')
+    expect(out.count.crni.members.map((p) => p.nickname)).toContain('Cici')
+  })
+
   it('has no army for a bula, for a no, and for no answer at all', () => {
     expect(build({ attendanceDocs: [answer(4, 'coming', null)], viewer: { memberId: '4', voditelj: false } }).performance.myArmy).toBeNull()
     expect(build({ attendanceDocs: [answer(1, 'not_coming', 'crni')] }).performance.myArmy).toBeNull()

@@ -52,8 +52,6 @@ export const APP_STRINGS = {
   },
 
   list: {
-    emptyUpcoming: 'Nema više izvedbi u ovoj sezoni.',
-    emptyPast: 'Ove sezone još nije bilo izvedbi.',
     season: 'Sezona',
   },
 
@@ -81,8 +79,14 @@ export const APP_STRINGS = {
     cancelled: 'otkazano',
     past: (count: number) => `Prošle izvedbe (${count})`,
     lineupConfirmed: 'Postava potvrđena',
+    /**
+     * Two ways to have no next evening, and they are not the same news: the
+     * season is over, or it has not started. The title is picked on whether
+     * there is a last past evening to name.
+     */
     eosTitle: 'Sezona je završila',
     eosBody: (date: string) => `Zadnja izvedba bila je ${date}.`,
+    eosNothingTitle: 'Sezona još nije počela',
     eosNothing: 'Ove sezone još nije bilo izvedbi.',
     eosLink: 'Pogledaj svoju sezonu',
   },
@@ -108,7 +112,15 @@ export const APP_STRINGS = {
     emptyTitle: 'Još nisi plesao ove sezone',
     emptyBody: 'Prva potvrđena postava pojavit će se ovdje.',
     emptyLink: 'Odgovori na sljedeću izvedbu',
-    noMember: 'Tvoja prijava nije povezana s moreškantom, pa nema što prikazati.',
+    /**
+     * A voditelj without a Member row is not a dancer who has not danced yet
+     * (#457 review): the season below is the SOCIETY's, so the line says what
+     * is missing and the tiles say whose numbers those are.
+     */
+    noMember: 'Nemaš povezan profil moreškanta.',
+    noMemberBody: 'Ispod su brojke cijele sezone.',
+    seasonTotal: 'potvrđenih izvedbi',
+    seasonMonths: 'mjeseci s izvedbom',
   },
 
   /**
@@ -144,7 +156,6 @@ export const APP_STRINGS = {
 
   /** The "Više" tab: everything that is not an evening (#457). */
   more: {
-    title: 'Više',
     stats: 'Statistika sezone',
     /** The walkthrough, replayable from here (#457). */
     onboarding: 'Dobrodošlica',
@@ -223,8 +234,9 @@ export const APP_STRINGS = {
    * The performance detail and the voditelj's headcount (#423, redesigned in
    * #457 into three segments).
    *
-   * The segment labels are also what a push deep-link means by `?dio=`, so the
-   * three words and the three URL values are read off the same object.
+   * The segment labels are also the three `?dio=` values, read off one object,
+   * so a link into a segment and the word on its tab can never drift apart.
+   * No push sends such a link yet; the parameter is reserved for one.
    */
   detail: {
     back: 'Izvedbe',
@@ -238,6 +250,8 @@ export const APP_STRINGS = {
     move: 'Prebaci',
     moveTo: (army: string) => `Prebaci u ${army}`,
     missing: 'Ta izvedba ne postoji.',
+    /** What the segmented control IS, for a screen reader announcing the tablist. */
+    segmentsLabel: 'Dijelovi izvedbe',
     /** The three segments (#457). */
     segments: {
       dolaze: 'Dolaze',
@@ -411,6 +425,8 @@ export const APP_STRINGS = {
     iosTitle: 'Prvo dodaj na početni zaslon',
     iosBody:
       'Na iPhoneu obavijesti rade tek kad je Moreškant dodan na početni zaslon. Otvori izbornik dijeljenja i odaberi "Dodaj na početni zaslon".',
+    /** No push on this browser at all, so there is no switch to offer (#457). */
+    unavailable: 'Obavijesti nisu dostupne na ovom uređaju.',
     denied: 'Obavijesti su blokirane u postavkama preglednika. Uključi ih tamo pa pokušaj ponovno.',
     failed: 'Uključivanje obavijesti nije uspjelo. Pokušaj ponovno.',
     /** The `/app` POST routes answer with this when the guard refuses. */
@@ -498,8 +514,6 @@ export const APP_STRINGS = {
   /** The season scoreboard (#437, glossary: *Dancer statistics*). */
   stats: {
     title: 'Statistika',
-    link: 'Statistika',
-    back: 'Natrag',
     season: 'Sezona',
     dancer: 'Moreškant',
     performances: 'Izvedbi',
@@ -521,38 +535,43 @@ export const APP_STRINGS = {
    * rule, and two wordings for it would read as two.
    */
   comp: {
-    title: 'Besplatne karte',
-    intro: 'Do 4 karte po izvedbi. Stižu ti na e-mail kao PDF, s QR kodom za ulaz.',
+    /**
+     * One word for the thing throughout (#457 review): the segment is called
+     * "Ulaznice", so every sentence under it says "ulaznica" too. "Karta" was
+     * the same object under a second name, which reads as a second rule.
+     */
+    title: 'Besplatne ulaznice',
+    intro: 'Do 4 ulaznice po izvedbi. Stižu ti na e-mail kao PDF, s QR kodom za ulaz.',
     adults: 'Odrasli',
     children: 'Djeca',
-    nameLabel: 'Ime na karti',
+    nameLabel: 'Ime na ulaznici',
     namePlaceholder: 'Ime i prezime',
-    issue: 'Izdaj karte',
+    issue: 'Izdaj ulaznice',
     issuing: 'Izdajem...',
-    issued: 'Karte su izdane i poslane na tvoj e-mail.',
-    issuedNoEmail: 'Karte su izdane, ali e-mail nije otišao. Javi voditelju.',
+    issued: 'Ulaznice su izdane i poslane na tvoj e-mail.',
+    issuedNoEmail: 'Ulaznice su izdane, ali e-mail nije otišao. Javi voditelju.',
     cancel: 'Otkaži',
     cancelling: 'Otkazujem...',
-    cancelled: 'Karte su otkazane.',
+    cancelled: 'Ulaznice su otkazane.',
     /** Refusals, all of them also spoken by the routes. */
     /** The `/app` cross-site guard, in the comp routes' own words. */
     rejected: 'Zahtjev nije prihvaćen. Pokušaj ponovno iz aplikacije.',
-    pickOne: 'Odaberi barem jednu kartu.',
-    capReached: 'Potrošio si svoje 4 besplatne karte za ovu izvedbu.',
-    noMember: 'Tvoja prijava nije povezana s moreškantom, pa ne možeš izdati besplatne karte.',
-    noEmail: 'Na tvojem moreškantu nema e-mail adrese, pa karte nemaju kamo. Javi voditelju.',
-    notPublic: 'Za ovu izvedbu se ne prodaju karte.',
+    pickOne: 'Odaberi barem jednu ulaznicu.',
+    capReached: 'Potrošio si svoje 4 besplatne ulaznice za ovu izvedbu.',
+    noMember: 'Tvoja prijava nije povezana s moreškantom, pa ne možeš izdati besplatne ulaznice.',
+    noEmail: 'Na tvojem moreškantu nema e-mail adrese, pa ulaznice nemaju kamo. Javi voditelju.',
+    notPublic: 'Za ovu izvedbu se ne prodaju ulaznice.',
     showCancelled: 'Izvedba je otkazana.',
-    started: 'Izvedba je počela, karte se više ne mijenjaju.',
+    started: 'Izvedba je počela, ulaznice se više ne mijenjaju.',
     soldOut: 'Nema više slobodnih mjesta.',
-    scanned: 'Karta je već skenirana, pa se narudžba ne može otkazati.',
+    scanned: 'Ulaznica je već skenirana, pa se narudžba ne može otkazati.',
     /**
      * The ONE answer to every cancel that is not the caller's own self-issued
      * comp: unknown, paid, an admin's, or another dancer's. Three honest
      * sentences would map the order table for anyone who tried them.
      */
-    notFound: 'Karte nisu pronađene.',
-    failed: 'Karte nisu izdane. Pokušaj ponovno.',
+    notFound: 'Ulaznice nisu pronađene.',
+    failed: 'Ulaznice nisu izdane. Pokušaj ponovno.',
     cancelFailed: 'Otkazivanje nije uspjelo. Pokušaj ponovno.',
     /**
      * The Ulaznice segment's own words (#457): the big count's caption, the
@@ -568,7 +587,6 @@ export const APP_STRINGS = {
 
   /** The shared calendar subscription (#433, glossary: *Calendar feed*). */
   calendar: {
-    title: 'Kalendar',
     body: 'Dodaj ovu poveznicu u Google, Apple ili Outlook kalendar i sve izvedbe su ti u telefonu.',
     copy: 'Kopiraj poveznicu',
     copied: 'Poveznica je kopirana.',

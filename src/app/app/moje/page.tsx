@@ -106,7 +106,27 @@ export default async function MySeasonPage({
 
   const ownSeason = (
     <>
-      {!me && <p className="app__empty">{APP_STRINGS.mySeason.noMember}</p>}
+      {/* A voditelj with no Member row has not "failed to dance": there is no
+          dancer to count (#457 review). So the panel says what is missing and
+          then shows the SEASON's two numbers, which are facts they can use. */}
+      {!me && (
+        <>
+          <div className="app__empty-state">
+            <b>{APP_STRINGS.mySeason.noMember}</b>
+            {APP_STRINGS.mySeason.noMemberBody}
+          </div>
+          <div className="app__tiles">
+            <div className="app__tile2">
+              <b>{mine.confirmedTotal}</b>
+              <span>{APP_STRINGS.mySeason.seasonTotal}</span>
+            </div>
+            <div className="app__tile2">
+              <b>{mine.byMonth.length}</b>
+              <span>{APP_STRINGS.mySeason.seasonMonths}</span>
+            </div>
+          </div>
+        </>
+      )}
 
       {me && mine.empty ? (
         <section className="app__eos">

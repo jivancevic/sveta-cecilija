@@ -14,9 +14,16 @@ import { DETAIL_SEGMENTS, type DetailSegment } from '@/lib/app/detail-view'
 // The URL follows the thumb through `history.replaceState` rather than a
 // navigation: a dancer flipping between "tko dolazi" and "postava" is reading
 // one screen, not walking a history stack they then have to press Back through
-// three times. The param still works the other way round, as the landing point
-// of a push deep-link (`?dio=postava`), which is why the initial value is parsed
-// on the server and handed down.
+// three times. `?dio=` is also read the other way round, as a landing point,
+// which is why the initial value is parsed on the server and handed down.
+// Nothing currently SENDS such a link: confirming a postava deliberately rings
+// nobody, so the parameter is reserved for a future deep link rather than
+// wired to a push that exists.
+//
+// All three panels are in the DOM at once and the inactive two carry `hidden`
+// (#457 review). Mounting only the open one threw away the LineupEditor's
+// unsaved draft and the Ulaznice form's steppers every time a voditelj glanced
+// at another segment, which is a lost piece of typing rather than a re-render.
 
 export function DetailSegments({
   initial,
@@ -56,14 +63,18 @@ export function DetailSegments({
 
   return (
     <>
-      <div className="app__segments" role="tablist" aria-label={APP_STRINGS.lineup.title}>
+      <div
+        className="app__segments"
+        role="tablist"
+        aria-label={APP_STRINGS.detail.segmentsLabel}
+      >
         {DETAIL_SEGMENTS.map((key) => (
           <button
             key={key}
             type="button"
             role="tab"
             id={`app-seg-${key}`}
-            aria-controls="app-seg-panel"
+            aria-controls={`app-seg-panel-${key}`}
             className={`app__segment${segment === key ? ' app__segment--on' : ''}`}
             aria-selected={segment === key}
             onClick={() => show(key)}
@@ -74,14 +85,18 @@ export function DetailSegments({
         ))}
       </div>
 
-      <div
-        className="app__panel-body"
-        id="app-seg-panel"
-        role="tabpanel"
-        aria-labelledby={`app-seg-${segment}`}
-      >
-        {panels[segment]}
-      </div>
+      {DETAIL_SEGMENTS.map((key) => (
+        <div
+          key={key}
+          className="app__panel-body"
+          id={`app-seg-panel-${key}`}
+          role="tabpanel"
+          aria-labelledby={`app-seg-${key}`}
+          hidden={segment !== key}
+        >
+          {panels[key]}
+        </div>
+      ))}
 
       {(tools || lineupState) && (
         <section className="app__lead">

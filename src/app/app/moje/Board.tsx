@@ -58,11 +58,15 @@ export function Board({ board }: { board: Leaderboard }) {
               {pluralize(board.me.performances, APP_STRINGS.home.count)}
             </p>
             <p>
-              {board.me.rank === 1 || board.me.toNextPlace === null
+              {/* The place NAMED is the one those evenings actually reach: a
+                  tie shares a rank, so from rank 3 behind two dancers at the
+                  top the sentence says "do 1. mjesta", never "do 2." (#457
+                  review). */}
+              {board.me.toNextPlace === null || board.me.nextPlace === null
                 ? APP_STRINGS.board.leading
                 : APP_STRINGS.board.toNextPlace(
                     pluralize(board.me.toNextPlace, APP_STRINGS.home.count),
-                    board.me.rank - 1,
+                    board.me.nextPlace,
                   )}
             </p>
             {board.me.nextMilestone !== null && (

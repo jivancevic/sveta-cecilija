@@ -17,6 +17,7 @@ import {
   formatPerformanceDateLong,
 } from '@/lib/app/strings'
 import { resolveAppViewer } from '@/lib/app/viewer'
+import { SELF_COMP_CAP } from '@/lib/comp/self-comp'
 import type { LineupView, PerformanceDetail } from '@/lib/app/detail-loaders'
 import type { ArmyTally, RosterPerson } from '@/lib/attendance/army-count'
 import type { Army } from '@/lib/attendance/rules'
@@ -359,7 +360,7 @@ export default async function PerformanceDetailPage({
       ? String(detail.lineup.entries.length)
       : APP_STRINGS.detail.noCount,
     ulaznice: detail.comps.visible
-      ? `${detail.comps.issued}/4`
+      ? `${detail.comps.issued}/${SELF_COMP_CAP}`
       : APP_STRINGS.detail.noCount,
   }
 
@@ -414,19 +415,17 @@ export default async function PerformanceDetailPage({
         dolaze={<ComingPanel detail={detail} />}
         postava={
           detail.voditelj ? (
-            <>
-              {!detail.lineup.confirmed && (
-                <p className="app__lineup-hint">{APP_STRINGS.lineup.notConfirmedTitle}</p>
-              )}
-              <LineupEditor
-                performanceId={p.id}
-                initialEntries={detail.lineup.entries}
-                suggested={detail.lineup.suggested}
-                roster={detail.lineup.roster}
-                confirmed={detail.lineup.confirmed}
-                confirmedAt={detail.lineup.confirmedAt}
-              />
-            </>
+            // No hint above it (#457 review): the editor already prints
+            // `lineup.draftNote` for an unconfirmed postava, and a second line
+            // saying the same thing read as two different warnings.
+            <LineupEditor
+              performanceId={p.id}
+              initialEntries={detail.lineup.entries}
+              suggested={detail.lineup.suggested}
+              roster={detail.lineup.roster}
+              confirmed={detail.lineup.confirmed}
+              confirmedAt={detail.lineup.confirmedAt}
+            />
           ) : (
             <LineupPanel lineup={detail.lineup} myMemberId={detail.myMemberId} />
           )
@@ -460,27 +459,32 @@ export default async function PerformanceDetailPage({
         }
       />
 
-      {/* The sticky bar covers the bottom of the scroll; without this the last
-          group of the longest panel would sit under it. */}
-      <div className="app__sticky-spacer" aria-hidden="true" />
-
       {me && (
-        <div className="app__sticky">
-          <AttendanceButtons
-            performanceId={p.id}
-            memberId={me.id}
-            current={p.myAnswer}
-            disabled={!p.canAnswer}
-            lockNote={
-              p.canAnswer
-                ? null
-                : p.cancelled
-                  ? APP_STRINGS.answer.cancelled
-                  : APP_STRINGS.answer.locked
-            }
-            allowClear={voditelj}
-          />
-        </div>
+        <>
+          {/* The sticky bar covers the bottom of the scroll; without this the
+              last group of the longest panel would sit under it. It is inside
+              the same condition as the bar (#457 review): a viewer with no
+              Member row gets no bar, so they must not get its hole either, and
+              it is sized for the TALLEST variant (two buttons, the voditelj's
+              Poništi row and a lock note) rather than the shortest. */}
+          <div className="app__sticky-spacer" aria-hidden="true" />
+          <div className="app__sticky">
+            <AttendanceButtons
+              performanceId={p.id}
+              memberId={me.id}
+              current={p.myAnswer}
+              disabled={!p.canAnswer}
+              lockNote={
+                p.canAnswer
+                  ? null
+                  : p.cancelled
+                    ? APP_STRINGS.answer.cancelled
+                    : APP_STRINGS.answer.locked
+              }
+              allowClear={voditelj}
+            />
+          </div>
+        </>
       )}
     </AppShell>
   )

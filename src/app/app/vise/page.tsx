@@ -67,14 +67,12 @@ export default async function MorePage() {
         )}
       </nav>
 
-      <section className="app__more-block">
-        <h2 className="app__month-head">
-          <span>{APP_STRINGS.more.notifications}</span>
-        </h2>
-        {/* The public VAPID key is a server fact handed to the client as a prop
-            rather than a NEXT_PUBLIC_ twin of the same value (#431). */}
-        <InstallHint vapidPublicKey={vapidPublicKey()} />
-      </section>
+      {/* The "Obavijesti" heading belongs to the component, not to the page
+          (#457 review): whether there is anything to say under it is a fact of
+          this browser, and only the component knows it. The public VAPID key is
+          a server fact handed down as a prop rather than a NEXT_PUBLIC_ twin of
+          the same value (#431). */}
+      <InstallHint vapidPublicKey={vapidPublicKey()} />
 
       {calendarUrl && (
         <section className="app__more-block">

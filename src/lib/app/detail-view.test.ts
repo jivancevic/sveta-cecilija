@@ -5,6 +5,7 @@ import {
   groupLineupByRole,
   parseSegment,
 } from './detail-view'
+import { LINEUP_ROLE_ORDER } from '@/lib/lineup/rules'
 import type { LineupRow } from './detail-loaders'
 
 // #457 — the three rules the detail screen's segments rest on.
@@ -33,7 +34,7 @@ describe('groupLineupByRole', () => {
     role,
   })
 
-  it('orders the sections kralj, kralj, otmanović, bula, crni, bili', () => {
+  it('orders the sections the way lib/lineup/rules.ts orders a postava', () => {
     const groups = groupLineupByRole([
       row('1', 'Cici', 'bili'),
       row('2', 'Bepo', 'crni_kralj'),
@@ -42,22 +43,17 @@ describe('groupLineupByRole', () => {
       row('5', 'Grgo', 'bili_kralj'),
       row('6', 'Ivo', 'otmanovic'),
     ])
-    expect(groups.map((g) => g.role)).toEqual([
-      'crni_kralj',
-      'bili_kralj',
-      'otmanovic',
-      'bula',
-      'crni',
-      'bili',
-    ])
+    // Imported from `lib/lineup/rules.ts`, not restated here: crni kralj, his
+    // otmanović, then the bili kralj and the bula, then the two armies.
+    expect(groups.map((g) => g.role)).toEqual([...LINEUP_ROLE_ORDER])
   })
 
   it('keeps an empty special role as a section and drops an empty army', () => {
     const groups = groupLineupByRole([row('1', 'Cici', 'crni')])
     expect(groups.map((g) => g.role)).toEqual([
       'crni_kralj',
-      'bili_kralj',
       'otmanovic',
+      'bili_kralj',
       'bula',
       'crni',
     ])
@@ -81,8 +77,8 @@ describe('groupLineupByRole', () => {
   it('renders all four special sections for an empty postava', () => {
     expect(groupLineupByRole([]).map((g) => g.role)).toEqual([
       'crni_kralj',
-      'bili_kralj',
       'otmanovic',
+      'bili_kralj',
       'bula',
     ])
   })

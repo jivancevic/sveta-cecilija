@@ -182,9 +182,19 @@ describe('loadMySeason', () => {
   })
 
   it('scopes the lineup query to the confirmed evenings', async () => {
-    const d = deps()
+    // One confirmed evening beside an unconfirmed one and a cancelled one: the
+    // query must carry the confirmed id ALONE, or a draft postava and a called
+    // off evening would both count towards a dancer's season.
+    const d = deps({
+      loadPerformances: vi.fn(async () => [
+        { id: 1, date: '2026-07-04T00:00:00.000Z', lineupConfirmed: true, status: 'active' },
+        { id: 2, date: '2026-07-11T00:00:00.000Z', lineupConfirmed: false, status: 'active' },
+        { id: 3, date: '2026-07-18T00:00:00.000Z', lineupConfirmed: true, status: 'cancelled' },
+      ]),
+    })
     const out = await loadMySeason(undefined, '3', d)
     expect(d.loadLineups).toHaveBeenCalledWith(['1'])
+    expect(out.confirmedTotal).toBe(1)
     expect(out.mine).toBe(1)
     expect(out.empty).toBe(false)
   })

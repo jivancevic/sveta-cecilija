@@ -45,6 +45,21 @@ describe('buildLeaderboard', () => {
     expect(board.leader).toBe(12)
   })
 
+  it('names the place the next count actually holds, not rank minus one', () => {
+    // Ranks 1, 1, 3: five more evenings tie the two at the top, and a tie
+    // shares their rank. "Još 5 do 2. mjesta" would name a place nobody holds.
+    const board = buildLeaderboard({
+      stats: stats(
+        [dancer('1', 'Ante', 12), dancer('2', 'Bepo', 12), dancer('3', 'Cico', 7)],
+        20,
+      ),
+      myMemberId: '3',
+    })
+    expect(board.me?.rank).toBe(3)
+    expect(board.me?.toNextPlace).toBe(5)
+    expect(board.me?.nextPlace).toBe(1)
+  })
+
   it('keeps the order it is handed and marks the viewer own row', () => {
     const board = buildLeaderboard({
       stats: stats([dancer('1', 'Ante', 9), dancer('2', 'Bepo', 4)], 10),
@@ -56,6 +71,7 @@ describe('buildLeaderboard', () => {
       rank: 2,
       performances: 4,
       toNextPlace: 5,
+      nextPlace: 1,
       nextMilestone: 5,
       toNextMilestone: 1,
     })
@@ -89,6 +105,7 @@ describe('buildLeaderboard', () => {
       myMemberId: '1',
     })
     expect(board.me?.toNextPlace).toBeNull()
+    expect(board.me?.nextPlace).toBeNull()
     expect(board.me?.nextMilestone).toBeNull()
     expect(board.me?.toNextMilestone).toBeNull()
   })
@@ -101,6 +118,7 @@ describe('buildLeaderboard', () => {
     expect(board.rows.map((r) => r.rank)).toEqual([1, 1])
     expect(board.rows.every((r) => r.share === 0 && !r.fullSeason)).toBe(true)
     expect(board.me?.toNextPlace).toBeNull()
+    expect(board.me?.nextPlace).toBeNull()
     expect(board.confirmedPerformances).toBe(0)
   })
 

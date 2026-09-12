@@ -61,6 +61,14 @@ export interface LeaderboardMe {
    * for a dancer at zero in a season where nobody has danced.
    */
   toNextPlace: number | null
+  /**
+   * The rank those performances would actually reach: the rank of the dancers
+   * already at that count, because reaching it TIES them and a tie shares a
+   * rank (#457 review). Not `rank - 1`, which is a rank nobody may hold — with
+   * ranks 1, 1, 3 the dancer at 3 reaches 1, never 2. Null whenever
+   * `toNextPlace` is.
+   */
+  nextPlace: number | null
   nextMilestone: number | null
   toNextMilestone: number | null
 }
@@ -127,11 +135,16 @@ export function buildLeaderboard(input: {
       .filter((count) => count > myRow.performances)
       .sort((a, b) => a - b)
     const nextMilestone = MILESTONES.find((m) => m > myRow.performances) ?? null
+    const nextCount = myRow.rank === 1 || higher.length === 0 ? null : higher[0]
+    // The rank that count already holds, which is the rank reaching it earns.
+    const nextPlace =
+      nextCount === null ? null : (rows.find((r) => r.performances === nextCount)?.rank ?? null)
 
     me = {
       rank: myRow.rank,
       performances: myRow.performances,
-      toNextPlace: myRow.rank === 1 || higher.length === 0 ? null : higher[0] - myRow.performances,
+      toNextPlace: nextCount === null ? null : nextCount - myRow.performances,
+      nextPlace,
       nextMilestone,
       toNextMilestone: nextMilestone === null ? null : nextMilestone - myRow.performances,
     }

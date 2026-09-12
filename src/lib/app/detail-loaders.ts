@@ -22,6 +22,7 @@
 import { countArmies, type ArmyCount, type AttendanceRow } from '@/lib/attendance/army-count'
 import {
   allowedArmies,
+  defaultArmyOf,
   moreskantMayAnswer,
   toAttendanceMember,
   type Army,
@@ -335,7 +336,13 @@ export function buildPerformanceDetail(input: {
     ? (rows.find((r) => r.memberId === input.viewer.memberId) ?? null)
     : null
   const myAnswer = myRow?.status ?? null
-  const myArmy = myRow?.status === 'coming' ? (myRow.army ?? null) : null
+  // The SAME fallback `countArmies` applies to a row with a NULL army (one
+  // saved before the column existed, or hand-edited): without it the chip said
+  // "no army" while the list below had already put the reader in one (#457
+  // review). A bula has no army either way, which `defaultArmyOf` returns null
+  // for, so the chip stays off for them.
+  const myArmy =
+    myRow?.status === 'coming' ? (myRow.army ?? (me ? defaultArmyOf(me) : null)) : null
 
   const canAnswer =
     input.viewer.memberId != null &&

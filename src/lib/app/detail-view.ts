@@ -11,6 +11,7 @@
 // page reads; this owns how the read is presented.
 
 import type { DanceRole } from '@/lib/moreskant-profile'
+import { LINEUP_ROLE_ORDER } from '@/lib/lineup/rules'
 import type { LineupRow } from './detail-loaders'
 
 /** The three segments, in tab order. */
@@ -21,30 +22,15 @@ export type DetailSegment = (typeof DETAIL_SEGMENTS)[number]
 /**
  * Which segment `?dio=` asks for, defaulting to Dolaze.
  *
- * A push notification deep-links into a segment ("postava je potvrđena" lands on
- * Postava, #431), so the parameter is part of the contract with the notification
- * text and not merely a convenience. Anything unrecognised opens on Dolaze
- * rather than erroring: a stale link from an old push is still a link to the
- * evening.
+ * Nothing sends such a link today: confirming a postava deliberately rings
+ * nobody (#457 review), so `?dio=postava` is RESERVED for a future deep link
+ * rather than a contract with a notification that exists. Anything
+ * unrecognised opens on Dolaze rather than erroring, so a stale or hand-typed
+ * link is still a link to the evening.
  */
 export function parseSegment(raw: string | undefined | null): DetailSegment {
   return DETAIL_SEGMENTS.includes(raw as DetailSegment) ? (raw as DetailSegment) : 'dolaze'
 }
-
-/**
- * The order the postava is read in: the named roles first, then the two armies.
- *
- * The same order `compareLineupRows` sorts by, spelled as sections: "am I kralj
- * tonight" is answered by the top of the screen.
- */
-export const LINEUP_ROLE_ORDER: readonly DanceRole[] = [
-  'crni_kralj',
-  'bili_kralj',
-  'otmanovic',
-  'bula',
-  'crni',
-  'bili',
-]
 
 /**
  * The four roles an evening has exactly one of (or none), which are listed even
@@ -59,7 +45,12 @@ export interface LineupRoleGroup {
 }
 
 /**
- * Group a confirmed postava into role sections, in {@link LINEUP_ROLE_ORDER}.
+ * Group a confirmed postava into role sections, in `LINEUP_ROLE_ORDER`.
+ *
+ * That order is imported from `lib/lineup/rules.ts` (#457 review) rather than
+ * restated here: it is the same order `compareLineupRows` sorts the voditelj's
+ * editor by, and two copies of it would eventually be two different postave of
+ * one evening.
  *
  * A special role with nobody in it still gets a section, so the gap is visible;
  * an empty plain army does not, because "no crni at all" is not a gap, it is an

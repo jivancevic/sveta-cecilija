@@ -71,7 +71,20 @@ function AnswerBadge({ p }: { p: RosterPerformance }) {
  * work from live on the detail page, where there is room for two numbers and a
  * threshold beside each.
  */
-function PerformanceRow({ p, badge }: { p: RosterPerformance; badge?: React.ReactNode }) {
+function PerformanceRow({
+  p,
+  badge,
+  showAnswer,
+}: {
+  p: RosterPerformance
+  badge?: React.ReactNode
+  /**
+   * False for a viewer with no Member row (a voditelj who does not dance):
+   * there is no answer of theirs to report, and "Bez odgovora" on every row
+   * would read as a list of things they are late on (#457 review).
+   */
+  showAnswer: boolean
+}) {
   const where = performancePlace(p)
   return (
     <Link
@@ -92,7 +105,7 @@ function PerformanceRow({ p, badge }: { p: RosterPerformance; badge?: React.Reac
           {p.cancelled && ` · ${APP_STRINGS.home.cancelled}`}
         </span>
       </span>
-      {badge ?? <AnswerBadge p={p} />}
+      {badge ?? (showAnswer ? <AnswerBadge p={p} /> : <span />)}
     </Link>
   )
 }
@@ -183,7 +196,10 @@ export default async function MoreskantHomePage() {
         </section>
       ) : (
         <section className="app__eos">
-          <h2>{APP_STRINGS.home.eosTitle}</h2>
+          {/* Two different pieces of news, and the title has to say which: a
+              season that is over names its last evening, one that has not
+              started has none to name (#457 review). */}
+          <h2>{lastPast ? APP_STRINGS.home.eosTitle : APP_STRINGS.home.eosNothingTitle}</h2>
           <p>
             {lastPast
               ? APP_STRINGS.home.eosBody(formatPerformanceDate(lastPast.date))
@@ -198,11 +214,14 @@ export default async function MoreskantHomePage() {
       {months.map((group) => (
         <section className="app__month" key={`${group.year}-${group.month}`}>
           <h2 className="app__month-head">
+            {/* The count is of evenings that are still going to happen: a
+                cancelled row stays in the list, struck through, but it is not
+                one of "4 izvedbe" in September (#457 review). */}
             <span>{group.label}</span>
-            <b>{countLabel(group.performances.length)}</b>
+            <b>{countLabel(group.performances.filter((p) => !p.cancelled).length)}</b>
           </h2>
           {group.performances.map((p) => (
-            <PerformanceRow key={p.id} p={p} />
+            <PerformanceRow key={p.id} p={p} showAnswer={me != null} />
           ))}
         </section>
       ))}
@@ -214,6 +233,7 @@ export default async function MoreskantHomePage() {
             <PerformanceRow
               key={p.id}
               p={p}
+              showAnswer={me != null}
               badge={
                 p.lineupConfirmed ? (
                   <span className="app__badge app__badge--lineup">

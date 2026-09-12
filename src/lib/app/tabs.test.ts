@@ -8,6 +8,10 @@ describe('activeAppTab', () => {
     expect(activeAppTab('/app/izvedba/42')).toBe('performances')
   })
 
+  it('does not light Izvedbe for a path that merely starts with the word', () => {
+    expect(activeAppTab('/app/izvedbe-arhiva')).toBeNull()
+  })
+
   it('lights Moje for the season page', () => {
     expect(activeAppTab('/app/moje')).toBe('mine')
   })

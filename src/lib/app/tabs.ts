@@ -20,7 +20,10 @@ export const APP_TAB_HREF: Record<AppTab, string> = {
  */
 export function activeAppTab(pathname: string): AppTab | null {
   const path = pathname.replace(/\/+$/, '') || '/app'
-  if (path === '/app' || path.startsWith('/app/izvedba')) return 'performances'
+  // The trailing slash matters: without it a future `/app/izvedbe-arhiva`
+  // would light Izvedbe by accident, which is the class of bug the other three
+  // lines already avoid.
+  if (path === '/app' || path.startsWith('/app/izvedba/')) return 'performances'
   if (path === '/app/moje' || path.startsWith('/app/moje/')) return 'mine'
   if (path === '/app/vise' || path.startsWith('/app/vise/')) return 'more'
   if (path === '/app/statistika' || path.startsWith('/app/statistika/')) return 'more'

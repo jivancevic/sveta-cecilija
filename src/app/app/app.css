@@ -38,6 +38,20 @@
   box-sizing: border-box;
 }
 
+/* One visible focus ring for everything a keyboard can land on (#457 review).
+   The per-class `:hover, :focus-visible` rules further down only change colour,
+   which a sighted keyboard user cannot reliably tell from a hover; this is the
+   ring itself and it is stated once. Text inputs are deliberately left out:
+   `.app__field input` lights its own border instead, and two treatments on one
+   field would read as two states. */
+.app a:focus-visible,
+.app summary:focus-visible,
+.app button:focus-visible,
+.app select:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 1px;
+}
+
 /* The bar is fixed, so the content ends above it: bar + the iPhone's home
    indicator + a thumb's worth of air, or the last row sits under the bar. */
 .app__shell {
@@ -942,15 +956,6 @@
   border-radius: var(--radius);
 }
 
-.app__calendar-title {
-  margin: 0 0 6px;
-  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-
 .app__calendar-body {
   margin: 0 0 12px;
   font-size: 14px;
@@ -1033,11 +1038,6 @@
   background: rgba(0, 0, 0, 0.25);
   border: 1px solid var(--cardEdge);
   border-radius: var(--radius);
-}
-
-.app__select:focus-visible {
-  outline: 2px solid var(--gold);
-  outline-offset: 1px;
 }
 
 .app__stats-season {
@@ -1573,12 +1573,6 @@
   color: var(--goldBright);
 }
 
-.app__lineup-hint {
-  margin: 14px 0 0;
-  font-size: 13px;
-  color: var(--muted);
-}
-
 /* The Ulaznice panel's headline: the count carries the cap, so the sentence
    beside it does not have to. */
 .app__tix-head {
@@ -1712,9 +1706,17 @@
   text-align: center;
 }
 
-/* Bar + gradient: what the last row of a panel has to clear. */
+/* Bar + gradient: what the last row of a panel has to clear.
+
+   Sized for the TALLEST variant (#457 review), not the common one: the bar is
+   two 48px buttons, and for a voditelj it also carries the full-width Poništi
+   row, plus a lock note on an evening that has begun. 86px cleared only the
+   plain dancer's bar and left the voditelj's last group under it. Too much air
+   at the bottom of a scroll costs nothing; too little hides a name. The spacer
+   is rendered only when the bar is (see the page), so a viewer with no Member
+   row gets neither. */
 .app__sticky-spacer {
-  height: 86px;
+  height: 130px;
 }
 
 /* ── Dobrodošlica, the three-step walkthrough (#457) ─────── */
