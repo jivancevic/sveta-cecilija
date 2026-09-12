@@ -43,6 +43,7 @@ export type OfflineSaleErrorCode =
   | 'PRICE_ABOVE_FACE'
   | 'DISCOUNT_REASON_REQUIRED'
   | 'LABEL_TOO_LONG'
+  | 'OVER_CORRECTION'
 
 export class OfflineSaleValidationError extends Error {
   constructor(

@@ -54,8 +54,19 @@ WHERE NOT EXISTS (SELECT 1 FROM shows);
 -- Restart-safe + reset-safe: these run on every bootstrap (unlike the INSERT
 -- above, which only fires on an empty table), AFTER the shows exist, so they
 -- survive container restarts AND re-apply cleanly if the DB is reset and
--- re-seeded. The `legacy_reserved = 0` guard makes them seed-once: an already
--- non-zero value (e.g. a later manual admin adjustment) is left untouched.
-UPDATE shows SET legacy_reserved = 15 WHERE date::date = '2026-06-08' AND legacy_reserved = 0;
-UPDATE shows SET legacy_reserved = 2 WHERE date::date = '2026-06-23' AND legacy_reserved = 0;
-UPDATE shows SET legacy_reserved = 3 WHERE date::date = '2026-06-24' AND legacy_reserved = 0;
+-- re-seeded.
+--
+-- The guard is "no ledger line exists for this performance", NOT the old
+-- `legacy_reserved = 0` (ADR-0025). Since the ledger arrived, 0 is a legitimate
+-- state: refund all 15 legacy tickets for 2026-06-08 and the correct counter is
+-- 0 with a matching negative line. Under the old guard the next container
+-- restart would silently re-set 15 against an empty ledger, permanently losing
+-- 15 seats of capacity and leaving money and seats disagreeing forever. Once the
+-- backfill has run, every one of these dates has ledger lines and all three
+-- statements are permanent no-ops.
+UPDATE shows SET legacy_reserved = 15 WHERE date::date = '2026-06-08' AND legacy_reserved = 0
+  AND NOT EXISTS (SELECT 1 FROM offline_sales o WHERE o.show_id = shows.id AND o.source = 'legacy');
+UPDATE shows SET legacy_reserved = 2 WHERE date::date = '2026-06-23' AND legacy_reserved = 0
+  AND NOT EXISTS (SELECT 1 FROM offline_sales o WHERE o.show_id = shows.id AND o.source = 'legacy');
+UPDATE shows SET legacy_reserved = 3 WHERE date::date = '2026-06-24' AND legacy_reserved = 0
+  AND NOT EXISTS (SELECT 1 FROM offline_sales o WHERE o.show_id = shows.id AND o.source = 'legacy');

@@ -137,12 +137,14 @@ export async function AdminDashboardView() {
   const { upcoming, past } = partitionShows({ today: input.today, shows: dashboardShows })
   const season = seasonCapacity(dashboardShows)
 
-  // Season channel mix (#242): online + partner from tickets, in-person summed
-  // from the shows' box-office counters.
+  // Season channel mix (#242): online + partner from tickets, at-the-door from
+  // the two offline counters. BOTH of them: since ADR-0025 the show cards count
+  // legacy seats as sold, so a chart that summed only `inPersonSold` would read
+  // 48 under a card reading 123 on 2026-05-18.
   const channelCounts = {
     online: channelTickets.online,
     partner: channelTickets.partner,
-    inPerson: input.shows.reduce((sum, s) => sum + s.inPersonSold, 0),
+    inPerson: input.shows.reduce((sum, s) => sum + s.inPersonSold + s.legacyReserved, 0),
   }
 
   // Live inquiries badge (#239): count `new` enquiries + the booking sub-count.

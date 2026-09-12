@@ -12,7 +12,7 @@ Rules worth knowing before you touch it:
 - **A line priced below face value MUST carry a reason** (`resolveOfflineSaleLines` refuses otherwise), and a price *above* face is refused outright as a typo.
 - **The ledger is append-only.** A miscount is corrected by appending the inverse line (negative `quantity`). Nothing updates or deletes a row.
 - **`shows.in_person_sold` and `shows.legacy_reserved` are a cache**, not the truth: they are the per-source `SUM(quantity)`, written in the same transaction as the insert. Capacity reads the counters (so `remainingSeats` and its call sites are untouched); **money and the adult/child split read the ledger**.
-- **The only writer is `POST /api/shows/[id]/offline-sales`** (permission `tickets`). Never move a counter from anywhere else or the pair drifts.
+- **The only writer that maintains the pair is `POST /api/shows/[id]/offline-sales`** (permission `tickets`). Never move a counter from anywhere else or the pair drifts. One other writer exists and does exactly that: the Shows `beforeValidate` hook zeroes both counters when a performance is saved **non-public** (#409) without touching the ledger, so flipping a performance with door sales to non-public orphans its lines. The counters are `readOnly` in the admin precisely so this is the only way it can happen.
 - Entry points: the inline control on each **upcoming** dashboard card, and the **Shows edit-menu item**, which is the only one that reaches a *past* performance and the only one that can record a `legacy` line.
 - Backfill of a whole season: `scripts/backfill-offline-sales-2026.mjs` (idempotent; recomputes the counters from the ledger rather than incrementing, and asserts the invariant on the way out).
 

@@ -10,7 +10,15 @@
 // (`remainingSeats`) and its eight call sites keep working untouched. Capacity
 // reads the counters; money and the adult/child split read the ledger. A writer
 // who moves one without the other breaks the pair — which is why the insert and
-// the counter update share one transaction here and there is no second writer.
+// the counter update share one transaction here.
+//
+// ONE OTHER WRITER EXISTS and it is not this module: the Shows beforeValidate
+// hook (`validateAndNormalisePerformance`) ZEROES both counters when a row is
+// saved non-public, because a non-public performance sells nothing (#409). It
+// does not touch the ledger, so marking a performance with door sales
+// non-public orphans its lines and breaks the pair until the lines are removed
+// or the counters rebuilt. Rebuild with the recompute in
+// `scripts/backfill-offline-sales-2026.mjs`.
 
 import type { PoolQuery } from '../tickets/sold-seats'
 import { publicPerformanceSql } from '../show-performance'
@@ -31,7 +39,8 @@ import {
 /** Minimal slice of node-postgres we depend on, so this is unit-testable. */
 export interface OfflineSaleTxClient {
   query: (sql: string, params?: unknown[]) => Promise<{ rows: Array<Record<string, unknown>> }>
-  release?: () => void
+  /** Passing an error destroys the connection instead of pooling it (node-postgres). */
+  release?: (err?: unknown) => void
 }
 export interface OfflineSaleTxPool {
   connect: () => Promise<OfflineSaleTxClient>
@@ -86,6 +95,7 @@ export async function recordOfflineSale(
   }
 
   const client = await pool.connect()
+  let poisoned: unknown = null
   try {
     await client.query('BEGIN')
 
@@ -121,13 +131,43 @@ export async function recordOfflineSale(
       )
     }
 
+    // You may only take back what you actually put in, AT THE PRICE YOU PUT IT
+    // IN AT. Without this, the seat count comes out right while the money does
+    // not: enter 32 pensioners at €15, then undo them through the plain adult
+    // box (which defaults to the €20 face value) and the performance is left
+    // with zero seats and MINUS €160 of revenue, with nothing on any screen to
+    // explain the gap. Grouping by (type, price) also stops a correction of one
+    // type cancelling seats of another, which would drive a per-type total
+    // negative and render "Children: -10" on the member dashboard.
+    const groups = await client.query(
+      `SELECT ticket_type, unit_price_cents, SUM(quantity)::int AS q
+       FROM offline_sales
+       WHERE show_id = $1 AND source = $2
+       GROUP BY ticket_type, unit_price_cents
+       HAVING SUM(quantity) < 0`,
+      [showId, input.source],
+    )
+    if (groups.rows.length > 0) {
+      const g = groups.rows[0]
+      const price = (Number(g.unit_price_cents) / 100).toFixed(2)
+      throw new OfflineSaleValidationError(
+        'OVER_CORRECTION',
+        `That correction takes back more ${String(g.ticket_type)} tickets at €${price} than were ever recorded for this performance. Correct a line using the same ticket type and the same price it was entered at.`,
+      )
+    }
+
     await client.query('COMMIT')
     return { lines, totals: sumOfflineLines(lines), counter }
   } catch (err) {
-    await client.query('ROLLBACK').catch(() => {})
+    // If ROLLBACK itself fails the connection is unusable and may still be
+    // inside a transaction, so it must be DESTROYED rather than handed back to
+    // the pool. pg evicts a client when release() is given an error.
+    await client.query('ROLLBACK').catch((rollbackErr) => {
+      poisoned = rollbackErr
+    })
     throw err
   } finally {
-    client.release?.()
+    client.release?.(poisoned ?? undefined)
   }
 }
 

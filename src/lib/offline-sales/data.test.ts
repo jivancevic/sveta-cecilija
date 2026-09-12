@@ -9,15 +9,25 @@ import { publicPerformanceSql } from '../show-performance'
 
 // A fake pg client that records every statement and answers the counter UPDATE
 // with whatever total the test wants to simulate.
-function fakePool(opts: { counterAfter?: number; showMissing?: boolean } = {}) {
+function fakePool(
+  opts: {
+    counterAfter?: number
+    showMissing?: boolean
+    /** Groups the (type, price) guard should report as having gone negative. */
+    negativeGroups?: Array<Record<string, unknown>>
+    rollbackFails?: boolean
+  } = {},
+) {
   const statements: Array<{ sql: string; params?: unknown[] }> = []
   const client = {
     query: vi.fn(async (sql: string, params?: unknown[]) => {
       statements.push({ sql, params })
+      if (opts.rollbackFails && /ROLLBACK/i.test(sql)) throw new Error('connection terminated')
       if (/^UPDATE shows/i.test(sql.trim())) {
         if (opts.showMissing) return { rows: [] }
         return { rows: [{ counter: opts.counterAfter ?? 100 }] }
       }
+      if (/HAVING SUM\(quantity\) < 0/i.test(sql)) return { rows: opts.negativeGroups ?? [] }
       return { rows: [] }
     }),
     release: vi.fn(),
@@ -92,6 +102,49 @@ describe('recordOfflineSale', () => {
 
     expect(sqls().join('\n')).toMatch(/ROLLBACK/)
     expect(sqls().join('\n')).not.toMatch(/COMMIT/)
+  })
+
+  it('refuses a correction that takes back more than was ever recorded, at that price', async () => {
+    // The money bug this guard exists for: 32 pensioners entered at €15, then
+    // undone through the plain adult box, which defaults to the €20 face value.
+    // Seats land on 0 but revenue lands on MINUS €160 with nothing to explain it.
+    const { pool, sqls } = fakePool({
+      counterAfter: 0,
+      negativeGroups: [{ ticket_type: 'adult', unit_price_cents: 2000, q: -32 }],
+    })
+
+    await expect(
+      recordOfflineSale(pool, {
+        showId: '3',
+        source: 'door',
+        lines: [{ ticketType: 'adult', quantity: -32 }],
+      }),
+    ).rejects.toThrow(/takes back more adult tickets at €20\.00/i)
+
+    expect(sqls().join('\n')).toMatch(/ROLLBACK/)
+    expect(sqls().join('\n')).not.toMatch(/COMMIT/)
+  })
+
+  it('checks the correction guard per source, scoped to the performance', async () => {
+    const { pool, statements } = fakePool()
+    await recordOfflineSale(pool, {
+      showId: '7',
+      source: 'legacy',
+      lines: [{ ticketType: 'adult', quantity: 1 }],
+    })
+    const guard = statements.find((s) => /HAVING SUM\(quantity\) < 0/i.test(s.sql))!
+    expect(guard.params).toEqual([7, 'legacy'])
+    expect(guard.sql).toMatch(/GROUP BY ticket_type, unit_price_cents/)
+  })
+
+  it('destroys the connection instead of pooling it when ROLLBACK itself fails', async () => {
+    const { pool, client } = fakePool({ showMissing: true, rollbackFails: true })
+    await expect(
+      recordOfflineSale(pool, { showId: '1', source: 'door', lines: [{ ticketType: 'adult', quantity: 1 }] }),
+    ).rejects.toThrow(/not found/i)
+    // A client released WITH an error is evicted by pg rather than reused; a
+    // connection still inside a transaction must never go back to the pool.
+    expect(client.release).toHaveBeenCalledWith(expect.any(Error))
   })
 
   it('rolls back when the show does not exist', async () => {

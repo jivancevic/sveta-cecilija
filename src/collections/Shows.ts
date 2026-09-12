@@ -259,7 +259,7 @@ export const Shows: CollectionConfig = {
       // location). "Public ⇒ venue" is enforced by the beforeValidate hook.
       type: 'select',
       options: [
-        { label: 'Ljetno kino (320)', value: 'ljetno-kino' },
+        { label: 'Ljetno kino (350)', value: 'ljetno-kino' },
         { label: 'Zimsko kino / Centar za kulturu (250)', value: 'zimsko-kino' },
       ],
       admin: {
@@ -298,7 +298,16 @@ export const Shows: CollectionConfig = {
       name: 'inPersonSold',
       type: 'number',
       defaultValue: 0,
-      admin: { condition: publicPerformanceOnly },
+      admin: {
+        condition: publicPerformanceOnly,
+        // READ-ONLY: since ADR-0025 this is a cache of the offline sales ledger,
+        // not a number anyone types. Hand-editing it puts money and seats out of
+        // step with no screen showing the drift. Record a sale (or a negative
+        // correction) through the ledger instead.
+        readOnly: true,
+        description:
+          'Tickets sold at the door. Maintained from the sales ledger — use "Add sales at the door" rather than editing this.',
+      },
       access: { update: scheduleFieldUpdate },
     },
     {
@@ -308,8 +317,10 @@ export const Shows: CollectionConfig = {
       min: 0,
       admin: {
         description:
-          'Tickets sold on the previous WordPress site (korcula-moreska.com) before cutover. Subtracted from venue capacity so moreska.eu cannot oversell against them.',
+          'Tickets sold on the previous WordPress site (korcula-moreska.com) before cutover. Maintained from the sales ledger — use "Add sales at the door" and pick the previous site, rather than editing this.',
         condition: publicPerformanceOnly,
+        // READ-ONLY for the same reason as inPersonSold: a cache, not an input.
+        readOnly: true,
       },
       access: {
         // Defense-in-depth: pinning the field guarantees a door account, a

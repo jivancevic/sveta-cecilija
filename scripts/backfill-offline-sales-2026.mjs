@@ -105,15 +105,26 @@ async function main() {
     ]) {
       for (const entry of entries) {
         const showRes = await client.query(
-          `SELECT id FROM shows WHERE is_public = true AND date::date = $1::date ORDER BY id LIMIT 1`,
+          `SELECT id FROM shows WHERE is_public = true AND date::date = $1::date ORDER BY id`,
           [entry.date],
         )
-        const showId = showRes.rows[0]?.id
-        if (!showId) {
+        if (showRes.rows.length === 0) {
           console.error(`  ✗ ${source} ${entry.date}: no public performance on that date`)
           process.exitCode = 1
           continue
         }
+        // Refuse rather than guess. Picking the lower id would put a whole
+        // evening's takings on the wrong performance with nothing in the log.
+        if (showRes.rows.length > 1) {
+          console.error(
+            `  ✗ ${source} ${entry.date}: ${showRes.rows.length} public performances on that date (ids ${showRes.rows
+              .map((r) => r.id)
+              .join(', ')}) — resolve by hand`,
+          )
+          process.exitCode = 1
+          continue
+        }
+        const showId = showRes.rows[0].id
 
         const existing = await client.query(
           `SELECT COUNT(*)::int AS n FROM offline_sales WHERE show_id = $1 AND source = $2`,
@@ -146,16 +157,22 @@ async function main() {
               [showId, source, l.type, l.quantity, l.priceCents, l.label, '2026 season backfill'],
             )
           }
-          // Recompute both counters from the ledger rather than incrementing, so
-          // this is safe to re-run and so a counter set by hand at cutover lands
-          // on the same value instead of doubling.
+          // Recompute from the ledger rather than incrementing, so this is safe
+          // to re-run and so a counter set by hand at cutover lands on the same
+          // value instead of doubling.
+          //
+          // ONLY the source just written. Recomputing both would zero the other
+          // source's counter on any performance whose lines this pass does not
+          // carry — the door pass runs first, so 2026-06-08's legacy_reserved
+          // would be wiped and only restored later, leaving 15 seats missing if
+          // the run aborted in between.
+          const column = source === 'door' ? 'in_person_sold' : 'legacy_reserved'
           await client.query(
             `UPDATE shows s SET
-               in_person_sold  = (SELECT COALESCE(SUM(quantity), 0) FROM offline_sales WHERE show_id = s.id AND source = 'door'),
-               legacy_reserved = (SELECT COALESCE(SUM(quantity), 0) FROM offline_sales WHERE show_id = s.id AND source = 'legacy'),
+               ${column} = (SELECT COALESCE(SUM(quantity), 0) FROM offline_sales WHERE show_id = s.id AND source = $2),
                updated_at = NOW()
              WHERE s.id = $1`,
-            [showId],
+            [showId, source],
           )
           await client.query('COMMIT')
           inserted += lines.length

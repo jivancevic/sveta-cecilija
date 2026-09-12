@@ -90,5 +90,6 @@ Croatian **"Na ulazu"**, English **"At the door"**, replacing the inconsistent *
 - **Pro:** A discount is recordable without inventing a price category, and the ledger shape already fits the deferred per-ticket discount work.
 - **Pro:** Corrections are possible and auditable for the first time.
 - **Con:** Two representations of the same seats now exist, the ledger and the cached counters. The invariant is stated here and covered by tests; a future writer who updates one without the other breaks it.
-- **Con:** `offline_sales` is invisible in the Payload admin, so a repair outside the entry UI means SQL.
+- **Con:** `offline_sales` is invisible in the Payload admin, so a repair outside the entry UI means SQL. Nothing yet renders an individual line, so the audit trail is readable only by query.
+- **Con:** the Shows `beforeValidate` hook zeroes both counters when a performance is made non-public (#409) and knows nothing about the ledger, so that one path can still orphan lines. The counters are `readOnly` in the admin to keep it the only such path, and the backfill script's recompute rebuilds them.
 - **Con:** Raising capacity to 350 removes the accidental 30-seat walk-up buffer that 320 was providing.

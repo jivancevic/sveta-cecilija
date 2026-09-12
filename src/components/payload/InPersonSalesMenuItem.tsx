@@ -31,6 +31,17 @@ interface LineDraft {
   discountLabel?: string
 }
 
+interface StoredLine {
+  id: number
+  source: Source
+  ticketType: 'adult' | 'child'
+  quantity: number
+  unitPriceCents: number
+  discountLabel: string | null
+}
+
+const eur = (cents: number) => `€${(cents / 100).toFixed(2)}`
+
 function parseCount(raw: string): number | null {
   if (raw.trim() === '') return null
   const n = Number(raw)
@@ -51,6 +62,23 @@ export function InPersonSalesMenuItem() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<number | null>(null)
+  const [existing, setExisting] = useState<StoredLine[] | null>(null)
+
+  // What is already recorded, so a correction is made against something visible
+  // rather than from memory. Without this the seat count can come out right
+  // while the money does not: undoing a €15 pensioner line through the €20
+  // adult box leaves the same number of seats and €160 less revenue.
+  const loadExisting = React.useCallback(async () => {
+    if (!id) return
+    try {
+      const res = await fetch(`/api/shows/${id}/offline-sales`)
+      if (!res.ok) return
+      const data = await res.json()
+      setExisting(Array.isArray(data?.lines) ? data.lines : [])
+    } catch {
+      // A failed read must not block entry; the form still works blind.
+    }
+  }, [id])
 
   // Saved, public Shows document only (#409).
   if (!visible) return null
@@ -78,21 +106,28 @@ export function InPersonSalesMenuItem() {
     const d = parseCount(discountCount)
     if (d !== null) {
       if (Number.isNaN(d)) return 'Enter whole numbers only (a negative corrects an earlier entry).'
-      const eur = Number(discountPrice)
-      if (discountPrice.trim() === '' || !Number.isFinite(eur) || eur < 0) {
+      // Not named `eur`: that is the money FORMATTER at module scope, and
+      // shadowing it here would read as a formatting call two lines down.
+      const priceEur = Number(discountPrice)
+      if (discountPrice.trim() === '' || !Number.isFinite(priceEur) || priceEur < 0) {
         return 'A discounted line needs a price.'
       }
       if (discountLabel.trim() === '') return 'A discounted line needs a reason.'
       lines.push({
         ticketType: 'adult',
         quantity: d,
-        unitPriceCents: Math.round(eur * CENTS_PER_EUR),
+        unitPriceCents: Math.round(priceEur * CENTS_PER_EUR),
         discountLabel: discountLabel.trim(),
       })
     }
 
     if (lines.length === 0) return 'Enter at least one ticket count.'
     return lines
+  }
+
+  const openPanel = () => {
+    setOpen(true)
+    void loadExisting()
   }
 
   const handleSubmit = async () => {
@@ -123,6 +158,7 @@ export function InPersonSalesMenuItem() {
       setSuccess(data.counter)
       clear()
       setLoading(false)
+      void loadExisting()
       router.refresh()
     } catch {
       setError('Network error. Please try again.')
@@ -156,6 +192,31 @@ export function InPersonSalesMenuItem() {
         <p style={{ margin: '0 0 10px', fontSize: 12, color: 'var(--theme-elevation-500)' }}>
           Adds to the current total. A negative number corrects an earlier entry.
         </p>
+
+        {existing !== null && existing.length > 0 && (
+          <div
+            style={{
+              marginBottom: 12,
+              padding: '8px 10px',
+              background: 'var(--theme-elevation-50)',
+              borderRadius: 4,
+              fontSize: 12,
+            }}
+          >
+            <p style={{ margin: '0 0 4px', fontWeight: 600 }}>Already recorded</p>
+            {existing.map((l) => (
+              <div key={l.id} style={{ color: 'var(--theme-elevation-600)' }}>
+                {l.quantity > 0 ? '+' : ''}
+                {l.quantity} × {l.ticketType} @ {eur(l.unitPriceCents)}
+                {l.discountLabel ? ` (${l.discountLabel})` : ''}
+                {l.source === 'legacy' ? ' — previous site' : ''}
+              </div>
+            ))}
+            <p style={{ margin: '6px 0 0', color: 'var(--theme-elevation-500)' }}>
+              To undo a line, enter the same ticket type and the same price with a negative count.
+            </p>
+          </div>
+        )}
 
         <label style={{ ...rowStyle, gridTemplateColumns: '1fr' }}>
           <span style={{ marginBottom: 4 }}>Sold where</span>
@@ -296,7 +357,7 @@ export function InPersonSalesMenuItem() {
 
   return (
     <button
-      onClick={() => setOpen(true)}
+      onClick={openPanel}
       style={{
         display: 'block',
         width: '100%',

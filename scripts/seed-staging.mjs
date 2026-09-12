@@ -93,7 +93,7 @@ const { Client } = pg
 const SEED_TIME_MARKER = '00:01' // sentinel time; no real show is scheduled here
 const PI_PREFIX = 'pi_TEST_seed_'
 const TOKEN_PREFIX = 'TEST_seed_'
-const VENUE_CAPACITY = { 'ljetno-kino': 320, 'zimsko-kino': 250 }
+const VENUE_CAPACITY = { 'ljetno-kino': 350, 'zimsko-kino': 250 }
 const ADULT_CENTS = 2000 // €20
 const CHILD_CENTS = 1000 // €10
 

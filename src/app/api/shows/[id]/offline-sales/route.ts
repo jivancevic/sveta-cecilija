@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requirePermission } from '@/lib/access/route-guard'
 import { isPublicPerformance } from '@/lib/show-performance'
-import { recordOfflineSale, type OfflineSaleTxPool } from '@/lib/offline-sales/data'
+import {
+  getOfflineSaleLinesForShow,
+  recordOfflineSale,
+  type OfflineSaleTxPool,
+} from '@/lib/offline-sales/data'
+import { sumOfflineLines } from '@/lib/offline-sales/lines'
 import {
   OfflineSaleValidationError,
   OFFLINE_SOURCES,
@@ -35,6 +40,13 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: 'lines must be an array' }, { status: 400 })
   }
 
+  // `note` is varchar(255); without this the overflow surfaces as a raw
+  // Postgres error reported to the operator as "your input was wrong".
+  const note = typeof body?.note === 'string' ? body.note.trim() : null
+  if (note !== null && note.length > 255) {
+    return NextResponse.json({ error: 'note is longer than 255 characters' }, { status: 400 })
+  }
+
   const pool = (payload.db as unknown as { pool: { query: PoolQuery } & OfflineSaleTxPool }).pool
   const poolQuery: PoolQuery = (sql, p) => pool.query(sql, p)
 
@@ -56,7 +68,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       source,
       lines: lines as OfflineSaleLineDraft[],
       createdById: user.id,
-      note: typeof body?.note === 'string' ? body.note : null,
+      note: note || null,
     })
     return NextResponse.json({
       source,
@@ -69,7 +81,38 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       return NextResponse.json({ error: err.message, code: err.code }, { status: 400 })
     }
     const message = err instanceof Error ? err.message : 'Failed to record offline sales'
-    const status = /not found/i.test(message) ? 404 : 400
-    return NextResponse.json({ error: message }, { status })
+    if (/not found/i.test(message)) return NextResponse.json({ error: message }, { status: 404 })
+    // Anything left is ours, not the caller's: a dead pool, a constraint the app
+    // failed to enforce first. Reporting those as 400 tells the operator to fix
+    // input that was fine.
+    console.error('[offline-sales] unexpected failure', err)
+    return NextResponse.json({ error: 'Failed to record the sale' }, { status: 500 })
+  }
+}
+
+// What is already on the books for this performance.
+//
+// This is a safety feature, not a convenience. The write guard can prove a
+// correction never drives a (type, price) group negative, but it cannot know
+// WHICH line the operator meant to undo: enter 32 pensioners at €15, then type
+// -32 into the plain adult box, and the ledger faithfully records "36 adults at
+// €20 plus 32 at €15" when the operator meant "68 adults at €20". Same seat
+// count, €160 apart, and nothing on screen to notice it by. So the entry UI
+// shows the lines, and a correction is made against something visible.
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const gate = await requirePermission(req, 'tickets')
+  if (gate.error) return gate.error
+  const { payload } = gate
+
+  const { id } = await params
+  const pool = (payload.db as unknown as { pool: { query: PoolQuery } }).pool
+  const poolQuery: PoolQuery = (sql, p) => pool.query(sql, p)
+
+  try {
+    const lines = await getOfflineSaleLinesForShow(poolQuery, id)
+    return NextResponse.json({ lines, totals: sumOfflineLines(lines) })
+  } catch (err) {
+    console.error('[offline-sales] read failed', err)
+    return NextResponse.json({ error: 'Failed to read the sales ledger' }, { status: 500 })
   }
 }
