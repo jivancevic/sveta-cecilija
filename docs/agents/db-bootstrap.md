@@ -114,7 +114,7 @@ const res = await db.query(
 )
 ```
 
-Pattern proven in `src/app/api/shows/[id]/in-person-sales/route.ts`. The lib helper takes an `atomicIncrement` dep so unit tests can mock it; only the route wires the real SQL.
+Pattern proven in `src/lib/offline-sales/data.ts` (`recordOfflineSale`), which moves `in_person_sold` / `legacy_reserved` by the net of a ledger batch inside the same transaction as the INSERT (ADR-0025). It takes a minimal `{connect}` pool slice so unit tests can drive the transaction without a database. The route (`src/app/api/shows/[id]/offline-sales/route.ts`) only wires the real pool.
 
 ## Reading date/timestamp columns via raw SQL → JS Date, not string
 

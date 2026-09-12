@@ -2,6 +2,21 @@
 
 Deeper notes on the features whose design is non-obvious. CLAUDE.md keeps a one-line pointer to each.
 
+## Offline sales: at the door and the legacy site (ADR-0025)
+
+Seats that produce **no `Order` and no `Ticket` row** are recorded as counted **lines** in the raw `offline_sales` table, one line per (ticket type, quantity, unit price, optional discount reason). Two sources: `door` (paid at the entrance) and `legacy` (the old WordPress site, frozen at the 2026-06-07 cutover).
+
+Rules worth knowing before you touch it:
+
+- **A discounted seat keeps its real type.** The 32 pensioners who paid €15 on 2026-06-08 are `adult` lines carrying `discount_label`, not a third price category. Type says who sat there, the discount says why it cost less.
+- **A line priced below face value MUST carry a reason** (`resolveOfflineSaleLines` refuses otherwise), and a price *above* face is refused outright as a typo.
+- **The ledger is append-only.** A miscount is corrected by appending the inverse line (negative `quantity`). Nothing updates or deletes a row.
+- **`shows.in_person_sold` and `shows.legacy_reserved` are a cache**, not the truth: they are the per-source `SUM(quantity)`, written in the same transaction as the insert. Capacity reads the counters (so `remainingSeats` and its call sites are untouched); **money and the adult/child split read the ledger**.
+- **The only writer is `POST /api/shows/[id]/offline-sales`** (permission `tickets`). Never move a counter from anywhere else or the pair drifts.
+- Entry points: the inline control on each **upcoming** dashboard card, and the **Shows edit-menu item**, which is the only one that reaches a *past* performance and the only one that can record a `legacy` line.
+- Backfill of a whole season: `scripts/backfill-offline-sales-2026.mjs` (idempotent; recomputes the counters from the ledger rather than incrementing, and asserts the invariant on the way out).
+
+
 ## Non-public performances (ADR-0024 phase 2, #404)
 
 `Shows` is the record of **every** performance, not only the ticketed ones. `kind` (`redovna | dmc | gulliver | koncert | ostalo`) says what it is; `isPublic` says whether it sells. A **public** performance is what a show has always been: venue, capacity, online and partner sales, `/tickets`, door scan, ticket statistics. A **non-public** one (a cruise-ship call, a concert, a one-off) carries a free-text `location` and an optional `client` (the ship or organiser), `venue` NULL, no capacity, no sales, and is hidden from every buyer, partner, door and ticket-statistics surface. Save-time rules (`src/lib/show-performance.ts`): `redovna` must be public, public needs a venue, non-public needs a location and gets `venue` NULL plus `inPersonSold` / `legacyReserved` zeroed and `onlineSalesPaused` false.
