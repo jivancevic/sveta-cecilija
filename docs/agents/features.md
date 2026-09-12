@@ -81,6 +81,24 @@ So after the claim + notice, `rescheduleShow` **reissues the ticket itself** as 
 
 Items 2 (follow-up to non-openers via Brevo `opened` events) and 3 (admin view of non-openers) of #379 ship separately.
 
+### Re-issuing a lost self-serve refund link (support)
+
+The reschedule email's refund link (ADR-0021) is the buyer's only route to it — there is no "resend my link" self-service, and buyers do lose the mail (first real case: 2026-07-26). The token is **stateless and never expires**, so it can be regenerated on demand for any order.
+
+1. Find the order and confirm eligibility — needs `shows.date_changed_at IS NOT NULL`, `channel='online'`, a `stripe_payment_intent_id`, `refund_status='none'`, and **zero scanned tickets** (the same conditions `evaluateRefundEligibility` re-derives; see `src/lib/refund/reschedule-refund-context.ts`). Note the orders column is `email`, not `buyer_email`.
+2. Sign the token with the **prod** `PAYLOAD_SECRET` — run it inside the running app container so the secret never leaves the box, and print only the URL:
+   ```js
+   // node -e inside the prod app container
+   const { createHmac } = require('crypto')
+   const id = '<orderId>'
+   const t = Buffer.from(id).toString('base64url') + '.' +
+     createHmac('sha256', process.env.PAYLOAD_SECRET).update(id).digest('base64url')
+   console.log(`${process.env.NEXT_PUBLIC_BASE_URL}/order/${encodeURIComponent(t)}/refund`)
+   ```
+3. Verify before sending: a plain `GET` on the URL is side-effect-free (the refund is a `POST`). A 200 showing the order total + the "Cancel & refund" CTA means `ELIGIBLE`; the page renders its own neutral state for every other case.
+
+Prefer this over refunding for the buyer from `/admin` — the decision (and the irreversible click) stays with them.
+
 ## Cancel a show + refund and notify every buyer (#497)
 
 Admin edit-view action `CancelShowMenuItem`, the harsher sibling of the reschedule flow. Before #497 it was a bare `PATCH /api/shows/<id> {status:'cancelled'}`: the row left `/tickets` and **nothing else happened** — every ticket stayed `active`, no buyer heard, no money moved, and the secretary was left to find and refund each order by hand.
