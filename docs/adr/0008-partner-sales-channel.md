@@ -3,6 +3,15 @@
 **Status:** Accepted
 **Date:** 2026-06-01
 
+> **Scoping note added 2026-08-21.** This ADR's rejection of generating fiscal
+> invoices from the app reads as a general stance but is **only true of the
+> partner channel**, where it still holds: the accountant confirmed partner sales
+> stay outside Fiskalizacija 1 (partners receipt their own buyers, HGD settles
+> with them B2B under Fiskalizacija 2.0 at season end), so the reconciliation
+> statement remains the right artifact here. **Direct online sales are the
+> opposite case** — those must be fiscalized by the app itself, with an automatic
+> R1 company invoice on request. See ADR-0020 as amended.
+
 ## Context
 
 Until now moreska.eu has had two ways tickets reach attendees: **online** (buyer pays via Stripe on the site → `Order` + tickets + PDF email) and **in-person** (a bare `inPersonSold` integer counter on `Shows`, no order, no artifact, no PII — the door cash tally).

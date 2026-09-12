@@ -163,7 +163,7 @@ Every decision reads the permission set via `can()` / `hasAny()` from `src/lib/a
 
 ### Ticketing rules
 
-- **Prices:** €20 adult, €10 child (fixed).
+- **Prices:** €20 adult, €10 child (fixed). **PDV-inclusive at 25%** (€20 = €16 base + €4 PDV), same rate both categories — confirmed by the accountant, may drop pending a ministry opinion, so treat the rate as configurable rather than a constant (ADR-0020).
 - **Venue capacities:** `ljetno-kino` (Summer Cinema / Ljetno kino) = 350; `zimsko-kino` (Cultural Center Korčula / Centar za kulturu) = 250. (Ljetno kino was recorded as 320 until PR #448; the house holds 350 — [ADR-0025](docs/adr/0025-offline-sales-ledger.md).) Always derived from `VENUE_CAPACITY` in `src/lib/shows.ts`; remaining = capacity − sold tickets.
 - **Public venue names differ from DB values** — EN "Summer Cinema" / "Cultural Center Korčula", HR "Ljetno kino" / "Centar za kulturu". Keys: `schedule.venue*`, `performancesPage.venue*`. Buyer-facing names come from `VENUE_LABEL` in `src/lib/venues.ts`. Venue shown on every show card; a bad-weather note tops the tickets page (zimsko is the fallback).
 - **Every performance is a `shows` row; only `isPublic` ones sell tickets** (ADR-0024) — filter every buyer/partner/door/stats query through `src/lib/show-performance.ts`, never by spelling `isPublic` yourself. Rules: `docs/agents/features.md`. `docs/performances.md` is a frozen print, not the source of truth.

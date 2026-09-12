@@ -1,7 +1,77 @@
 # ADR-0020: B2C fiscalization of online ticket sales — SaaS vs in-house CIS
 
-**Status:** Proposed — contingent on the external "unblock" checklist below (FINA cert, VAT decision, ePorezna registration, interni akt)
-**Date:** 2026-06-25 (renumbered 0018 → 0020 on 2026-07-07; legal + vendor claims re-verified against current sources the same day — see the verification note under Context)
+**Status:** Proposed — build-vs-buy decision stands; still contingent on the external "unblock" checklist below (see the 2026-08-21 amendment for what has since closed and what has not)
+**Date:** 2026-06-25 (renumbered 0018 → 0020 on 2026-07-07; legal + vendor claims re-verified against current sources the same day — see the verification note under Context. **Amended 2026-08-21** with the accountant's corrections and the vendor-inquiry results — read the amendment first, it overrides several claims below.)
+
+> ## Amendment 2026-08-21 — accountant's facts override the leanings below
+>
+> The body of this ADR was written before the org's accountant and secretary
+> answered. **Where they disagree, their answer governs.** Read this section
+> before acting on anything further down.
+>
+> **1. VAT is 25%, included in the ticket price — not exempt, not 5%.**
+> Confirmed by tajnica Tatjana Vigna 2026-07-07, sourced from the local Porezna
+> uprava: €20 adult = €16.00 base + €4.00 PDV, €10 child at the same rate. This
+> **supersedes** the "čl. 39 exemption or 5% reduced rate" lean in the Context
+> verification note and in checklist item 1. The rate is nevertheless **not
+> settled forever** — Tatjana noted it "may change subject to a ministry
+> opinion", and a request for that opinion is an open parallel track (worth ~€3.05
+> per adult ticket if it succeeds). **Therefore the VAT rate must be a
+> configuration value, never a constant** — a successful opinion changes one
+> setting, not the integration.
+>
+> **2. The FINA certificate exists.** Issued **2026-07-02**, ref
+> `FFAA0D6B7A59FD63D914`, in the name of the physical person **Velebit Veršić**
+> linked to the business entity HGD SV. CECILIJA-KORČULA. The secretary
+> downloaded it and set a password. Checklist item 2 is therefore **mostly
+> closed**, with two caveats: the `.p12`/`.pfx` file has **not yet been handed to
+> the developer**, and the issuance mail describes a *"NRA1"* certificate issued
+> to a physical person, so it must be **verified to be the fiscalization
+> application certificate** (the one that signs the ZKI) and not a business
+> certificate for ePorezna access. Verify from the file's subject before
+> committing to a vendor. The password was transmitted in plain-text email and
+> should be treated as compromised: re-download with a new one if practical.
+>
+> **3. New requirement this ADR never covered: R1 company invoices.** The
+> accountant wants the web shop itself to issue an **R1 račun** (company buyer:
+> naziv, OIB, adresa) automatically when a buyer asks for one. It carries the
+> **same number sequence** as ordinary receipts — the buyer block is the only
+> difference — so no separate series is needed. This means a
+> "trebam račun na firmu" capture step in checkout, which must ship **behind the
+> same feature flag as fiscalization** (promising a company invoice we cannot yet
+> issue is worse than not offering it).
+>
+> **4. Payment method decides the regime.** F1 (JIR/ZKI via CIS) for cash and
+> cards; F2/eRačun for bank transfers. **Partner-channel sales stay out of F1** —
+> partners receipt their own buyers, and HGD settles with them B2B under F2 at
+> season end. This is consistent with ADR-0008, which is *not* reversed; see the
+> scoping note added there.
+>
+> **5. Nothing has ever been fiscalized.** Confirmed 2026-07-07: no online sale,
+> from launch through the 2026 season, has produced a fiscalized račun. The
+> working decision is to **draw a line at go-live** and fiscalize forward, leaving
+> the prior period to the accountant to settle in the books rather than
+> back-filling hundreds of receipts into CIS with wrong dates. **This is pending
+> the accountant's explicit confirmation** and is the one open item where being
+> wrong means filing bad data.
+>
+> **6. Vendor selection has moved.** See the amended vendor section below —
+> Fiskalio was never actually contacted, and the two vendors who did reply
+> changed the picture.
+>
+> **Still open and blocking the build** (owner: Marija Šestanović, accountant, via
+> Tatjana): the **poslovni prostor label** and its ePorezna registration as an
+> internetska trgovina, the **naplatni uređaj label**, the **operater OIB**, the
+> mandatory receipt notes, the **interni akt** and its starting number for the WEB
+> series, how a **refund/storno** is fiscalized (we have buyer self-serve refunds
+> per ADR-0021, so storno must be automatable), and the deadline for deferred
+> submission when CIS is unreachable. Without the first four, no receipt can be
+> sent at all.
+>
+> Two edge cases the accountant still has to rule on, both created by ADRs written
+> after this one: **comp tickets** (`channel='comp'`, `total=0` — ADR-0019) and
+> **promo-code orders** (discounted adult price — ADR-0018). A zero-value receipt
+> and a discounted one are not obviously the same case.
 
 > **Renumbered 0018 → 0020.** This ADR was originally merged as **ADR-0018**
 > (PR #304, 2026-06-25). A later change (PR #328) independently reused 0018/0019
@@ -144,6 +214,49 @@ critical-events log (ADR-0016) for out-of-band re-issue.
    re-uploadable. If we ever outgrow the SaaS we can revisit B with a real driver
    (volume, a feature the SaaS lacks), not a guess.
 
+> **Superseded 2026-08-21 — the vendor pick below is stale.** The decision
+> *"SaaS, not in-house CIS"* stands and was independently confirmed by the
+> accountant. The specific ranking did not survive contact with the market. What
+> actually happened:
+>
+> A new selection criterion appeared after this ADR was written: the accountant
+> asked that the **same service also provide a physical POS blagajna** for
+> door sales. That filtered **Fiskalio and FiskalAPI out before they were ever
+> contacted** — neither was emailed. On **2026-07-15** an inquiry went from
+> `info@moreska.eu` to four POS-capable vendors: Solo/Superbo, e-Računi,
+> Webračun and Adeo POS. **Only two replied.** Solo and e-Računi never answered
+> and are treated as non-responsive.
+>
+> | | **Webračun** | **Adeo POS** (neoinfo.hr) |
+> |---|---|---|
+> | Own FINA cert | Yes, uploaded to them (F1); their intermediary cert for F2 | Yes, stays HGD's |
+> | JIR/ZKI via REST | Yes | Yes, F1 + F2 on one API, docs supplied (*Fiscalization API v1.14*) |
+> | **Storno via API** | **No — UI only** | **Yes** |
+> | **R1 auto-fiscalized** | **No — buyer data makes it a non-fiscalized PDF needing two manual clicks** | Yes, full company buyer block |
+> | Blagajna | Android/web, **no offline mode** | Android, offline with catch-up fiscalization |
+> | Price | €40 setup + €24,99/mo only in months with ≥1 invoice, 700 invoices incl. | €100/mo (1.000 tx), €0,30/tx over, **+€1.000 optional integration support** |
+>
+> **Webračun is disqualified on function, not price.** Manual storno cannot serve
+> ADR-0021's buyer self-serve refunds, which fire without a human present, and an
+> R1 that needs two manual clicks is not the automatic R1 the accountant asked
+> for. Its seasonal pricing model is otherwise the best fit here, which is worth
+> remembering if either gap ever closes.
+>
+> **Adeo POS is the leading candidate**, and the only respondent that satisfies
+> every functional requirement. The open question is cost: €1.200/yr flat for an
+> org that sells tickets four months a year. On **2026-08-21** a reply was sent
+> asking for **seasonal pricing or dormancy in no-revenue months**, declining the
+> €1.000 integration support, and asking how certificate handover, expiry and a
+> test environment work. **If they refuse seasonal pricing, re-open Fiskalio and
+> FiskalAPI for a web-only integration** and let the org buy a POS separately —
+> the "one vendor for both" criterion was the secretary's convenience, not a legal
+> requirement, and it is what removed the two cheapest candidates from
+> consideration in the first place. Lock-in stays bounded either way: JIR and ZKI
+> land on our own Order.
+>
+> Everything from here to the end of this section is the **original 2026-06-25
+> reasoning, retained for context**.
+
 **Vendor pick: Fiskalio first.** It is purpose-built for exactly this shape —
 a **native Stripe-webhook flow** (add its URL in the Stripe dashboard; it
 detects the payment, fiscalizes, emails the račun), **upload-your-own FINA
@@ -171,9 +284,21 @@ vendor-direct-email path is an acceptable v0 that we upgrade later.
 
 ## What unblocks us (exact checklist)
 
-These are external and owned by the accountant (Marija Šestanović) + secretary
-(Tatjana) + FINA, not by the developer. **None of the code below ships until
-items 1–4 are done.**
+These are external and owned by the accountant (Marija Šestanović,
+Knjigovodstveni servis ŠESTA, `marija6anovic@gmail.com`) + secretary (Tatjana
+Vigna, who relays rather than decides) + FINA, not by the developer. **None of
+the code below ships until items 1–4 are done.**
+
+> **Checklist status 2026-08-21.** Item 1 is **answered** (25% PDV included in
+> the price — see the amendment at the top; a ministry opinion for a lower rate is
+> a separate, non-blocking track). Item 2 is **mostly closed** — the certificate
+> was issued 2026-07-02 but the file is not yet in the developer's hands and its
+> type needs verifying. **Items 3 and 4 are untouched and are now the real
+> blockers**: without a registered poslovni prostor label, a naplatni uređaj
+> label, an operater OIB and an interni akt fixing the WEB number series, not a
+> single receipt can be transmitted. Asked of the secretary 2026-07-07, answered
+> *"I don't know all of this, I have to check"*, and never followed up. Re-asked
+> of the accountant directly 2026-08-21.
 
 - [ ] **1. VAT / PDV decision on the tickets.** Determine whether Moreška/
       folklore performance tickets sold by HGD are **VAT-exempt under čl. 39
