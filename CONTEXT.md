@@ -67,6 +67,17 @@ _Avoid_: **admin** as a name for any surface. For months it would mean both the 
 
 **Declension:** "Cecilija" is a Croatian feminine noun and declines like a name in every text: "Dodaj Ceciliju na ekran", "Prijavi se u Ceciliju", "Pozivnica za Ceciliju", "u Ceciliji". Never keep it invariant as if it were a foreign brand. English copy, if any, keeps "Cecilija" unchanged.
 
+### Screen (ekran) and landing screen (ulazni ekran)
+A screen is one place in Cecilija with one address and one Croatian label (Narudžbe, Izvedbe, Ljestvica, Skener, Prodaja, Obračun, Upiti, Gratis, Korisnici, Statistika, Više). A permission unlocks screens; an account is inside Cecilija when its permissions unlock at least one, and the **landing screen** is the first of them in the bar order. Izvedbe is one screen for everyone who has it: what it shows depends on the permissions, never on a second address. Statistika is the sales screen; dancer statistics live on *Ljestvica*.
+_Avoid_: page, view, module, "admin screen".
+
+### Nemate pristup (no access)
+What a signed-in account sees when its permissions unlock no screen, or when it opens a screen it does not unlock: the sentence naming the situation, a way back to the landing screen, and Odjava. Never a silent redirect and never a "not found". The Backoffice link appears only for a `dev` holder.
+
+### Sandučić obavijesti (notification inbox)
+Every notification Cecilija sends a person is also kept for them to read later: a bell in the header of every screen shows how many are unread, and the inbox lists them. Kept per account, not per device, so the count is the same on the phone and the laptop. Roster notifications (see *Notification types*) go to moreškanti and voditelji; a `tickets` holder also gets a new inquiry and a new card dispute, never every order.
+_Avoid_: feed, activity log, message centre.
+
 ### Croatian capitalisation: moreška
 "moreška" and its declensions (moreške, morešku, moreškom…) are always **lowercase** in Croatian — it is a common noun (a type of dance), not a proper name. Use uppercase only when it is the **leading word of a unit that is sentence-cased**: the start of a sentence, or the first word of a standalone title / heading / card-name label (a card whose name is "Moreška" or "Moreška iskustvo"). Keep it lowercase **mid-sentence, mid-title** (e.g. "Privatna moreška", "Nastanak moreške"), and in **mid-list descriptor fragments** (e.g. the programme note "1 sat · nastup klape · moreška uz živi puhaći orkestar" — not a title). In English, "Moreška" is treated as a proper name and capitalised throughout, so a `name` field reads "Moreška" in `en.json` but "moreška" mid-phrase in `hr.json` by design — that EN↔HR asymmetry is correct, not a bug.
 
@@ -453,8 +464,8 @@ _Avoid_: cast, roster (roster = the whole membership).
 Per season (calendar year, as in ADR-0022): confirmed performances per moreškant, and how many times each danced `crni_kralj`, `bili_kralj`, `otmanovic`, `bula`. Past seasons selectable. Confirmed lineups of past performances are visible to every moreškant.
 
 ### Ljestvica (leaderboard)
-The season's moreškanti ranked by confirmed performances, the same count as *Dancer statistics*, shown in full with nicknames: every active moreškant is on it, equal counts share a rank. The count is a lineup fact, never an attendance answer, so saying "coming" moves nobody. Milestones (5, 10, 15 and 20 performances, and **puna sezona** = danced every confirmed performance of the season) are read off that same count. No streaks. Past seasons selectable.
-_Avoid_: points, streak, ranking by answers.
+The dancer's own tab in Cecilija (decided in [Cecilija: route map](https://github.com/jivancevic/sveta-cecilija/issues/473)): a moreškant's own season on one side and the season's moreškanti ranked by confirmed performances on the other, the same count as *Dancer statistics*, shown in full with nicknames. A voditelj sees the whole table there; the tab replaces the former "Moje" tab and the separate dancer statistics page. Every active moreškant is on it, equal counts share a rank. The count is a lineup fact, never an attendance answer, so saying "coming" moves nobody. Milestones (5, 10, 15 and 20 performances, and **puna sezona** = danced every confirmed performance of the season) are read off that same count. No streaks. Past seasons selectable.
+_Avoid_: points, streak, ranking by answers, "Moje", statistika (that word is the sales screen).
 
 ### Dobrodošlica (onboarding)
 The three-step walkthrough a moreškant sees once per device after signing in: add to the home screen (left out when the app is already opened as an installed app), turn on notifications, subscribe to the calendar feed. Every step can be skipped and skipping counts as seen. Remembered on the device only, so a new phone shows it again.
