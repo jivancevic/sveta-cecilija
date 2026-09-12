@@ -18,6 +18,7 @@ import {
 } from '@/lib/app/strings'
 import { AppShell } from '../AppShell'
 import { AttendanceButtons } from '../AttendanceButtons'
+import { AddPerformance } from '../PerformanceForm'
 import { openScreen } from '../gate'
 
 // `/app/performances` — the Izvedbe screen (#457, ADR-0024; renamed in #495).
@@ -209,6 +210,13 @@ export default async function PerformancesPage() {
           </Link>
         </section>
       )}
+
+      {/* "Dodaj izvedbu" (#503): a voditelj's own booking, entered where the
+          schedule is read. Closed until it is asked for, and under the hero
+          rather than over it, because the question this screen answers first is
+          still "where am I next". A dancer never sees it and the route refuses
+          them anyway. */}
+      {voditelj && <AddPerformance />}
 
       {months.map((group) => (
         <section className="app__month" key={`${group.year}-${group.month}`}>

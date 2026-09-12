@@ -385,6 +385,9 @@ export const APP_STRINGS = {
     cancelAction: 'Otkaži izvedbu',
     cancelling: 'Otkazujem...',
     cancelConfirm: 'Otkazati ovu izvedbu? Moreškanti dobivaju obavijest.',
+    /** The second tap. Not a browser dialog: this is a phone, and one is a wall. */
+    cancelYes: 'Da, otkaži',
+    cancelNo: 'Ne',
     cancelled: 'Izvedba je otkazana.',
     /** Already cancelled: the voditelj got what they wanted, so this is not an error. */
     alreadyCancelled: 'Izvedba je već otkazana.',
