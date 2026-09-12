@@ -41,8 +41,8 @@ export const ALLOW_LIST: Record<string, string> = {
     'Order-joined read: the show is reached from the scanned ticket’s order, so only a show that already sold a ticket can surface.',
   'src/app/api/stripe/webhook/route.ts':
     'Order-joined read: the show doc is loaded to render the ticket email of the order that just paid.',
-  'src/lib/scan-deps.ts':
-    'Order-joined read: door-scan detail for the show of an existing ticket, never a schedule listing.',
+  'src/lib/repo/payload/shows.ts':
+    'Order-joined read (#504): the repository seam’s one id-addressed show read, reached from an existing ticket’s order (door scan detail), never a schedule listing. The schedule goes through src/lib/show-loaders.ts, which does apply the predicate.',
   'src/lib/show-stats-data.ts':
     'Id-addressed read; the public check is applied one layer up by loadShowStatsInput (src/lib/stats-loaders.ts).',
   'src/app/api/cron/send-review-emails/route.ts':
