@@ -182,6 +182,22 @@ describe('handleLinkSelf — the refusals', () => {
     expect(d.link).not.toHaveBeenCalled()
   })
 
+  it('403s a shared login, which is nobody in particular', async () => {
+    const d = deps({ caller: { id: 9, permissions: ['moreska'], shared: true } })
+    const result = await handleLinkSelf({ memberId: '12' }, d)
+    expect(result.status).toBe(403)
+    expect(result.body).toEqual({ error: APP_STRINGS.linkSelf.sharedAccount })
+    expect(d.loadMember).not.toHaveBeenCalled()
+    expect(d.link).not.toHaveBeenCalled()
+  })
+
+  it('lets a normal login through: only a literal true is shared', async () => {
+    for (const shared of [undefined, false, null, 'true']) {
+      const d = deps({ caller: { id: 9, permissions: ['moreska'], shared } })
+      expect((await handleLinkSelf({ memberId: '12' }, d)).status).toBe(200)
+    }
+  })
+
   it('400s a body with no member', async () => {
     const d = deps()
     for (const body of [null, {}, { memberId: '' }, { memberId: '   ' }, { memberId: {} }]) {

@@ -36,6 +36,37 @@ export interface InviteUser {
   id: string | number
   username?: string | null
   email?: string | null
+  /**
+   * What that login may do, as stored. Read for ONE reason: an invitation must
+   * never be pointed at an account that is more than a dancer (see
+   * {@link isDancerLogin}).
+   */
+  permissions?: readonly unknown[] | null
+}
+
+/**
+ * Is the login behind this Member an ordinary dancer login?
+ *
+ * True when it holds nothing beyond `moreskant`. An empty set counts: a login
+ * from before the permission vocabulary is still not a staff account, and
+ * refusing it would break re-inviting a dancer whose row predates #393.
+ *
+ * The rule exists because an invitation MOVES an existing login's e-mail onto
+ * the Member's and mails it a password-reset link (see below). On a dancer that
+ * is the point: it is how "the letter got lost" is fixed. On an account that
+ * also holds `moreska`, `tickets` or `users` it is an account takeover — any
+ * voditelj can edit a Member's e-mail, so pressing "Pošalji pozivnicu" on a
+ * Member whose login is a colleague's staff account would mail that colleague's
+ * reset link to an address of the presser's choosing.
+ *
+ * Before #462 a staff account carried a `member` link only if a `users` holder
+ * set one by hand. `/api/app/link-self` makes exactly that link routine for a
+ * voditelj who dances, which is what turns a latent hole into a live one.
+ */
+export function isDancerLogin(user: InviteUser | null | undefined): boolean {
+  if (!user) return true
+  const held = Array.isArray(user.permissions) ? user.permissions : []
+  return !held.some((p) => p !== 'moreskant')
 }
 
 /** What the invitation email needs; the copy itself lives in lib/email. */
@@ -144,6 +175,11 @@ export async function handleInvite(
   } catch {
     user = null
   }
+
+  // The takeover guard, before the e-mail move and before any token is minted
+  // (#462 review). Everything below this line assumes the login it found is a
+  // dancer's; `isDancerLogin` is where that assumption is checked.
+  if (!isDancerLogin(user)) return fail(409, APP_STRINGS.invite.staffLogin)
 
   let created = false
   if (!user) {

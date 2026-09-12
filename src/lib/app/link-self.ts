@@ -140,8 +140,11 @@ export interface LinkSelfResult {
 export interface LinkSelfDeps {
   /** Origin / Sec-Fetch-Site / Content-Type, plus the origins we own. */
   request: AppRequestMeta
-  /** The calling login: its id and its permission set exactly as stored. */
-  caller: { id: string | number; permissions?: readonly unknown[] }
+  /**
+   * The calling login: its id, its permission set exactly as stored, and
+   * whether it is a shared account (ADR-0022).
+   */
+  caller: { id: string | number; permissions?: readonly unknown[]; shared?: unknown }
   /**
    * The caller's CURRENT `member` link, re-read server-side with
    * `overrideAccess` rather than taken off the session, which may predate a
@@ -190,6 +193,12 @@ export async function handleLinkSelf(
 ): Promise<LinkSelfResult> {
   const rejection = rejectAppRequest(deps.request)
   if (rejection) return fail(rejection.status, APP_STRINGS.linkSelf.rejected)
+
+  // A shared login is not a person and cannot be a dancer (ADR-0022): several
+  // volunteers hold it, so "this is me" has no answer. `Users.access.update`
+  // already forbids a shared account editing its own row; this route runs with
+  // `overrideAccess`, so it carries the same rule itself (#462 review).
+  if (deps.caller.shared === true) return fail(403, APP_STRINGS.linkSelf.sharedAccount)
 
   // Rule 2, before anything is read: a login that already knows who it is may
   // not change its mind here. That is `users` work, and it is the whole reason

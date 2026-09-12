@@ -61,17 +61,17 @@ export async function POST(req: Request) {
 
   const deps = createInviteDeps(payload, request)
   let sent = 0
-  let failed = 0
-  for (const memberId of send) {
+  const failed: string[] = []
+  for (const target of send) {
     try {
-      const result = await handleInvite({ memberId }, deps)
+      const result = await handleInvite({ memberId: target.id }, deps)
       if (result.status === 200) sent += 1
-      else failed += 1
+      else failed.push(target.label)
     } catch {
-      failed += 1
+      failed.push(target.label)
     }
   }
 
-  const outcome = { sent, noEmail: noEmail.length, failed }
+  const outcome = { sent, noEmail: noEmail.map((t) => t.label), failed }
   return NextResponse.json({ ok: true, ...outcome, message: summariseBulkInvites(outcome) })
 }

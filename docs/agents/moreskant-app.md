@@ -366,6 +366,7 @@ What keeps it narrow:
 | Rule | Why |
 |---|---|
 | `requirePermission(req, 'moreska')` first, then the cross-site guard | the local API runs `overrideAccess: true`, so this handler's check is the only thing standing in for the field lock it bypasses |
+| a `shared` login is refused (403) | a login several volunteers hold is nobody in particular, so "this is me" has no answer (ADR-0022). `Users.access.update` says the same thing, and this route bypasses it |
 | the caller must have **no** link yet (409 otherwise) | repointing an existing link stays a `users` job. A self-edit path that can *move* a link is exactly what the lock exists to prevent |
 | the target must be `active` + `isMoreskant` | the same bar `decideAppAccess` applies to a dancer identity |
 | **no other login may point at that Member** (409) | linking to a dancer who already has an account is taking over their identity, not filling in a blank |
@@ -381,8 +382,11 @@ fails on legacy data is a worse outage than a race nobody has run yet.
 The screen is `/app/povezi`, reached from the hero on `/app` (where the two
 answer buttons are missing, which is the moment the gap is felt) and from Više
 (which survives the end of the season, when there is no hero). Both links are
-quiet and both are shown only to a voditelj with no Member: a voditelj who does
-not dance must not read them as something they are late on.
+quiet and both are shown only to a voditelj whose **raw link** is empty: a
+voditelj who does not dance must not read them as something they are late on,
+and one whose link points at a retired Member must not be sent to a list whose
+every tap is refused. Gate an entry point on `viewer.memberLinkId`, never on
+`accessMember(...)`, which is also null in that second case.
 
 `AppViewer` carries `memberLinkId`, the **raw** `Users.member` value, alongside
 the decision. The decision deliberately collapses "no link" and "a link to a
@@ -404,9 +408,33 @@ link stay written once. The Payload wiring both routes need moved into
 `src/lib/app/invite-data.ts` for that reason — two hand-copied sets of calls is
 how "the Member's e-mail wins" ends up true on one route and not the other.
 `src/lib/app/invite-all.ts` holds the only two decisions that are the bulk
-action's own: who is in the batch, and what the toast says. Dancers with no
-e-mail are **counted and reported**, never skipped silently: they are precisely
-the rows that still need a hand.
+action's own: who is in the batch, and what the toast says.
+
+The toast **names** the dancers of both bad outcomes rather than counting them,
+and the failed ones are the reason why: `handleInvite` creates the login before
+it mails, so a send that fails leaves an account behind, and the next bulk press
+sees a Member that "already has a login" and skips it for good. A count would
+strand those dancers silently. The names send the voditelj to the per-row
+"Pošalji pozivnicu", which is idempotent and does re-mail them.
+
+### An invitation may not be aimed at a staff login (#462 review)
+
+A second press MOVES the found login's e-mail onto the Member's and mails that
+address a password-reset link. On a dancer that is the point: it is how a lost
+letter is fixed. On a login that holds more than `moreskant` it is an account
+takeover, because **any** voditelj may edit a Member's e-mail — so pressing
+"Pošalji pozivnicu" on a Member whose login is a colleague's staff account would
+send that colleague's reset link wherever the presser chose.
+
+`isDancerLogin` (`src/lib/app/invite.ts`) is the guard: it refuses with a 409
+before the e-mail move and before any token is minted, unless the login holds
+nothing beyond `moreskant`. An empty permission set passes — a row from before
+the vocabulary is still not a staff account.
+
+The hole predates this work (a `users` holder could always hand-link a staff
+account), but `/api/app/link-self` is what makes such links routine, so the
+guard ships with it. The bulk action is not a vector: it skips every Member that
+already has a login.
 
 Sends are sequential (Brevo's free tier is 300/day and rate-limits a burst; tens
 of dancers is a second of wall clock). The menu item is on Members'

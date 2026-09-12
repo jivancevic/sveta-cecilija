@@ -46,6 +46,10 @@ export async function POST(req: Request) {
       permissions: Array.isArray((user as { permissions?: unknown }).permissions)
         ? ((user as { permissions?: unknown[] }).permissions as unknown[])
         : [],
+      // Both fields are field-locked to `users`, and both still reach us:
+      // Payload's JWT strategy loads the account through the local API with
+      // `overrideAccess: true`, the same reason `permissions` gets here.
+      shared: (user as { shared?: unknown }).shared === true,
     },
     callerMemberId: callerMemberId == null ? null : String(callerMemberId),
 

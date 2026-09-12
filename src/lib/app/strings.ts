@@ -295,6 +295,13 @@ export const APP_STRINGS = {
     sendFailed: 'Prijava je otvorena, ali pozivnica nije poslana. Pokušaj ponovno.',
     baseUrlMissing: 'Poveznica se ne može izraditi jer aplikacija nije ispravno postavljena.',
     tokenFailed: 'Poveznica se ne može izraditi. Pokušaj ponovno.',
+    /**
+     * The takeover guard (#462 review): the Member's login is not a dancer's.
+     * It names no permission and no account, because the presser does not need
+     * to know whose login it is, only that this is not the way to reset it.
+     */
+    staffLogin:
+      'Prijava tog člana ima šire dozvole od moreškanta, pa pozivnica nije poslana. Lozinku za takav račun postavlja administrator.',
     sentNew: 'Pozivnica je poslana i prijava je otvorena.',
     sentAgain: 'Nova poveznica je poslana na e-mail člana.',
     unexpected: 'Slanje trenutno nije moguće. Pokušaj ponovno.',
@@ -317,8 +324,15 @@ export const APP_STRINGS = {
     /** Nothing to do, which is the good ending and not an error. */
     none: 'Svi aktivni moreškanti s e-mailom već imaju prijavu.',
     sent: (count: number) => `Poslano pozivnica: ${count}.`,
-    noEmail: (count: number) => `Bez e-maila, preskočeno: ${count}.`,
-    failed: (count: number) => `Nije poslano: ${count}.`,
+    /**
+     * The two bad outcomes NAME the dancers rather than counting them: a
+     * voditelj can only act on a name. The failed ones especially, because a
+     * failed send still leaves a login behind, so the next bulk press skips
+     * them and only the per-row "Pošalji pozivnicu" will reach them.
+     */
+    noEmail: (who: string) => `Bez e-maila: ${who}.`,
+    failed: (who: string) => `Nije poslano: ${who}. Pošalji im pojedinačno.`,
+    andMore: (count: number) => `i još ${count}`,
     unexpected: 'Slanje trenutno nije moguće. Pokušaj ponovno.',
   },
 
@@ -353,6 +367,9 @@ export const APP_STRINGS = {
      * what the field lock exists to prevent.
      */
     alreadyLinked: 'Tvoj račun je već povezan s članom. Promjenu radi administrator.',
+    /** A login several people share is nobody in particular (ADR-0022). */
+    sharedAccount:
+      'Ovu prijavu koristi više osoba, pa se ne može povezati s jednim moreškantom. Zatraži vlastitu prijavu.',
     failed: 'Povezivanje nije uspjelo. Pokušaj ponovno.',
   },
 

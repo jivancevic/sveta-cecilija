@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import {
   handleInvite,
   INVITE_EXPIRATION_MS,
+  isDancerLogin,
   isUsableBaseUrl,
   setPasswordLink,
   type InviteDeps,
@@ -178,6 +179,77 @@ describe('handleInvite — a second press', () => {
     })
     await handleInvite({ memberId: '12' }, d)
     expect(d.updateUserEmail).not.toHaveBeenCalled()
+  })
+})
+
+/**
+ * The takeover guard (#462 review).
+ *
+ * A second press MOVES the found login's e-mail onto the Member's and mails it
+ * a reset link. On a dancer that is the fix for a lost letter. On an account
+ * that also holds `moreska`, `tickets` or `users` it is a takeover: any
+ * voditelj may edit a Member's e-mail, so pressing "Pošalji pozivnicu" on a
+ * Member whose login is a colleague's staff account would send that colleague's
+ * reset link wherever the presser likes. `/api/app/link-self` makes exactly
+ * that link routine, which is why the rule lands with it.
+ */
+describe('handleInvite — the login behind the Member is not a dancer', () => {
+  const staff = {
+    id: 31,
+    username: 'voditelj',
+    email: 'voditelj@moreska.eu',
+    permissions: ['moreska', 'moreskant'],
+  }
+
+  it('refuses before it moves an e-mail or mints a token', async () => {
+    const d = deps({ findUserByMember: vi.fn().mockResolvedValue(staff) })
+    const result = await handleInvite({ memberId: '12' }, d)
+    expect(result.status).toBe(409)
+    expect(result.body).toEqual({ error: APP_STRINGS.invite.staffLogin })
+    expect(d.updateUserEmail).not.toHaveBeenCalled()
+    expect(d.issueResetToken).not.toHaveBeenCalled()
+    expect(d.sendInvite).not.toHaveBeenCalled()
+  })
+
+  it.each([
+    ['a superadmin', ['users', 'tickets', 'moreska', 'moreskant']],
+    ['a ticketing account', ['tickets']],
+    ['a door account that somehow carries a link', ['door', 'moreskant']],
+  ])('refuses %s', async (_label, permissions) => {
+    const d = deps({ findUserByMember: vi.fn().mockResolvedValue({ ...staff, permissions }) })
+    expect((await handleInvite({ memberId: '12' }, d)).status).toBe(409)
+  })
+
+  it.each([
+    ['a plain dancer', ['moreskant']],
+    ['a login from before the permission vocabulary', []],
+    ['a login whose set could not be read', null],
+  ])('still re-invites %s', async (_label, permissions) => {
+    const d = deps({ findUserByMember: vi.fn().mockResolvedValue({ ...staff, permissions }) })
+    expect((await handleInvite({ memberId: '12' }, d)).status).toBe(200)
+    expect(d.sendInvite).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not stand between a Member and their FIRST login', async () => {
+    // Nobody to check: the account this press creates holds ['moreskant'].
+    const d = deps({ findUserByMember: vi.fn().mockResolvedValue(null) })
+    expect((await handleInvite({ memberId: '12' }, d)).status).toBe(200)
+    expect(d.createUser).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('isDancerLogin', () => {
+  it.each([
+    ['no login at all', null, true],
+    ['an empty set', { id: 1, permissions: [] }, true],
+    ['a missing set', { id: 1 }, true],
+    ['exactly moreskant', { id: 1, permissions: ['moreskant'] }, true],
+    ['moreska too', { id: 1, permissions: ['moreskant', 'moreska'] }, false],
+    ['tickets', { id: 1, permissions: ['tickets'] }, false],
+    ['users', { id: 1, permissions: ['users'] }, false],
+    ['an unknown word, which is still not moreskant', { id: 1, permissions: ['xyz'] }, false],
+  ])('%s → %s', (_label, user, expected) => {
+    expect(isDancerLogin(user)).toBe(expected)
   })
 })
 

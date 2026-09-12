@@ -19,22 +19,39 @@ import { APP_STRINGS } from './strings'
 /** The Member fields the batch is chosen on. */
 export interface BulkMember {
   id: string | number
+  name?: unknown
+  nickname?: unknown
   email?: unknown
   isMoreskant?: unknown
   active?: unknown
 }
 
+/** One member of the batch: the id to post, and what to call them in the toast. */
+export interface BulkTarget {
+  id: string
+  /** Nickname, else name, else the id. Never an e-mail: the toast is a screen. */
+  label: string
+}
+
 export interface BulkSelection {
   /** Members to invite, in the order they were given. */
-  send: string[]
+  send: BulkTarget[]
   /**
    * Eligible dancers with no e-mail address on the row.
    *
-   * Counted rather than skipped silently: they are precisely the rows a
-   * voditelj still has to do something about, and a summary that hid them would
-   * read as "everybody is invited" while three dancers have no way in.
+   * Named rather than skipped silently: they are precisely the rows a voditelj
+   * still has to do something about, and a summary that hid them would read as
+   * "everybody is invited" while three dancers have no way in.
    */
-  noEmail: string[]
+  noEmail: BulkTarget[]
+}
+
+/** Nickname, else name, else the bare id, so a row is always addressable. */
+export function bulkLabel(member: BulkMember): string {
+  const nickname = typeof member.nickname === 'string' ? member.nickname.trim() : ''
+  if (nickname) return nickname
+  const name = typeof member.name === 'string' ? member.name.trim() : ''
+  return name || String(member.id)
 }
 
 /**
@@ -48,8 +65,8 @@ export function selectBulkInvites(
   members: readonly BulkMember[],
   memberIdsWithLogin: ReadonlySet<string>,
 ): BulkSelection {
-  const send: string[] = []
-  const noEmail: string[] = []
+  const send: BulkTarget[] = []
+  const noEmail: BulkTarget[] = []
   for (const member of members) {
     if (member?.id == null) continue
     const id = String(member.id)
@@ -58,23 +75,39 @@ export function selectBulkInvites(
     // `active` defaults to true in the collection, so only an explicit false retires.
     if (member.active === false) continue
     const email = typeof member.email === 'string' ? member.email.trim() : ''
+    const target = { id, label: bulkLabel(member) }
     if (!email) {
-      noEmail.push(id)
+      noEmail.push(target)
       continue
     }
-    send.push(id)
+    send.push(target)
   }
   return { send, noEmail }
 }
 
 export interface BulkOutcome {
   sent: number
-  noEmail: number
-  failed: number
+  /** Who was skipped for want of an address, by name. */
+  noEmail: readonly string[]
+  /** Who the send failed for, by name. */
+  failed: readonly string[]
+}
+
+/** At most four names, then "i još N", so a toast stays a toast. */
+export function nameList(names: readonly string[], max = 4): string {
+  if (names.length <= max) return names.join(', ')
+  return `${names.slice(0, max).join(', ')} ${APP_STRINGS.inviteAll.andMore(names.length - max)}`
 }
 
 /**
- * What the toast says: one clause per outcome that actually happened.
+ * What the toast says: one clause per outcome that actually happened, and the
+ * two bad outcomes NAME the dancers (#462 review).
+ *
+ * A count alone is unusable. `handleInvite` creates the login before it mails,
+ * so a send that fails leaves an account behind; the next bulk press sees a
+ * Member that "already has a login" and skips it forever. Naming the misses is
+ * what lets a voditelj go and press "Pošalji pozivnicu" on those rows, which IS
+ * idempotent and does re-mail them.
  *
  * Nothing at all to do is the good ending and gets its own sentence, not a
  * "poslano: 0" that reads like a failure.
@@ -82,7 +115,11 @@ export interface BulkOutcome {
 export function summariseBulkInvites(outcome: BulkOutcome): string {
   const parts: string[] = []
   if (outcome.sent > 0) parts.push(APP_STRINGS.inviteAll.sent(outcome.sent))
-  if (outcome.noEmail > 0) parts.push(APP_STRINGS.inviteAll.noEmail(outcome.noEmail))
-  if (outcome.failed > 0) parts.push(APP_STRINGS.inviteAll.failed(outcome.failed))
+  if (outcome.noEmail.length > 0) {
+    parts.push(APP_STRINGS.inviteAll.noEmail(nameList(outcome.noEmail)))
+  }
+  if (outcome.failed.length > 0) {
+    parts.push(APP_STRINGS.inviteAll.failed(nameList(outcome.failed)))
+  }
   return parts.length === 0 ? APP_STRINGS.inviteAll.none : parts.join(' ')
 }
