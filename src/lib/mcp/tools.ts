@@ -86,14 +86,13 @@ export interface McpLineupRow {
   role: DanceRole
 }
 
-export interface McpNewPerformance {
-  date?: unknown
-  time?: unknown
-  kind?: unknown
-  location?: unknown
-  client?: unknown
-  note?: unknown
-}
+/**
+ * One row `create_performances` is asked to write, before anything is checked.
+ *
+ * The shape only; the rules that turn it into a stored performance live in
+ * `@/lib/performance-input` (#503), shared with the voditelj's own form.
+ */
+export type { NonPublicPerformanceInput as McpNewPerformance } from '@/lib/performance-input'
 
 export interface McpStore {
   /** Every performance of the season, public and non-public alike. */
