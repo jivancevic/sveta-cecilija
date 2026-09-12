@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { decideInstallStep, type AppPlatform, type InstallStep } from '@/lib/app/platform'
 import { APP_STRINGS } from '@/lib/app/strings'
 import { InstallSteps, type StepPlatform } from './InstallSteps'
+import { hasPushSubscription, subscribeToPush, unsubscribeFromPush } from './push-client'
 import {
   isSnoozed,
   pushSupported,
@@ -14,8 +15,8 @@ import {
   webviewHostIsIos,
 } from './use-install'
 
-// The one banner under the season list: install (#421), notifications (#431),
-// and since #455 the platform it is actually talking to.
+// The one banner in the Više tab: install (#421), notifications (#431), and
+// since #455 the platform it is actually talking to.
 //
 // ONE component rather than several stacked banners, because these are one
 // question asked in the right order. What changed in #455 is which order, and
@@ -38,33 +39,20 @@ import {
 // component renders nothing until it has looked - a banner that flashes "turn
 // on notifications" at somebody who turned them on last week is worse than a
 // beat of silence.
-
-// The worker script lives at the ROOT so it can claim `/app` itself, not only
-// `/app/…` — see the header of `public/moreskant-sw.js`.
-const SW_URL = '/moreskant-sw.js'
-const SW_SCOPE = '/app'
+//
+// Every browser call it makes lives in `push-client.ts` (#457), shared with
+// step 2 of the Dobrodošlica: two screens, one notion of "subscribed".
+//
+// It carries its OWN heading (#457): the Više tab used to print the heading and
+// let this component decide whether anything went under it, which left a title
+// over nothing on a device with nothing to offer. The heading and the body are
+// one decision, so they are made in one place.
 
 /** `installed` and `inapp` never reach the step list; the rest map straight through. */
 function stepPlatform(platform: AppPlatform): StepPlatform {
   if (platform === 'ios') return 'ios'
   if (platform === 'android') return 'android'
   return 'desktop'
-}
-
-/**
- * base64url application server key → the bytes `subscribe()` wants.
- *
- * Typed as `ArrayBuffer` rather than `Uint8Array` because lib.dom's
- * `BufferSource` requires a view over a plain `ArrayBuffer`, which a
- * `Uint8Array<ArrayBufferLike>` is not; the buffer itself is accepted directly
- * and by every browser that has a `PushManager`.
- */
-function urlBase64ToBytes(base64: string): ArrayBuffer {
-  const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), '=')
-  const raw = atob(padded.replace(/-/g, '+').replace(/_/g, '/'))
-  const out = new Uint8Array(new ArrayBuffer(raw.length))
-  for (let i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i)
-  return out.buffer as ArrayBuffer
 }
 
 export function InstallHint({ vapidPublicKey }: { vapidPublicKey?: string | null }) {
@@ -82,17 +70,9 @@ export function InstallHint({ vapidPublicKey }: { vapidPublicKey?: string | null
     const look = async () => {
       const here = readPlatform()
       const later = isSnoozed()
-      let hasSubscription = false
-      if (vapidPublicKey && pushSupported()) {
-        try {
-          const registration = await navigator.serviceWorker.getRegistration(SW_SCOPE)
-          hasSubscription = (await registration?.pushManager.getSubscription()) != null
-        } catch {
-          hasSubscription = false
-        }
-      }
+      const hasSubscription = vapidPublicKey ? await hasPushSubscription() : false
       if (cancelled) return
-      setSubscribed(hasSubscription)
+      setSubscribed(hasSubscription === true)
       setSnoozed(later)
       setPlatform(here)
     }
@@ -137,62 +117,23 @@ export function InstallHint({ vapidPublicKey }: { vapidPublicKey?: string | null
     if (busy || !vapidPublicKey) return
     setBusy(true)
     setError(null)
-    try {
-      const permission = await Notification.requestPermission()
-      if (permission !== 'granted') {
-        setError(APP_STRINGS.push.denied)
-        return
-      }
-      // `register` resolves as soon as the worker is registered, which is not
-      // the same as being active; `ready` is what `subscribe()` needs.
-      await navigator.serviceWorker.register(SW_URL, { scope: SW_SCOPE })
-      const registration = await navigator.serviceWorker.ready
-      const subscription = await registration.pushManager.subscribe({
-        // Required by Chrome: a silent push is not allowed on the open web.
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToBytes(vapidPublicKey),
-      })
-      const res = await fetch('/api/app/push/subscribe', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(subscription.toJSON()),
-      })
-      if (!res.ok) {
-        // Do not leave a subscription the server does not know about: it would
-        // look "on" here and never ring.
-        await subscription.unsubscribe().catch(() => {})
-        setError(APP_STRINGS.push.failed)
-        return
-      }
-      setSubscribed(true)
-    } catch {
-      setError(APP_STRINGS.push.failed)
-    } finally {
-      setBusy(false)
-    }
+    const result = await subscribeToPush(vapidPublicKey)
+    if (result === 'subscribed') setSubscribed(true)
+    else setError(result === 'denied' ? APP_STRINGS.push.denied : APP_STRINGS.push.failed)
+    setBusy(false)
   }
 
   async function disable() {
     if (busy) return
     setBusy(true)
     setError(null)
-    try {
-      const registration = await navigator.serviceWorker.getRegistration(SW_SCOPE)
-      const subscription = await registration?.pushManager.getSubscription()
-      if (subscription) {
-        await fetch('/api/app/push/unsubscribe', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ endpoint: subscription.endpoint }),
-        }).catch(() => {})
-        await subscription.unsubscribe().catch(() => {})
-      }
-      setSubscribed(false)
-    } catch {
-      setError(APP_STRINGS.push.failed)
-    } finally {
-      setBusy(false)
-    }
+    const ok = await unsubscribeFromPush()
+    // Only a successful unsubscribe turns the switch off (#457 review). A
+    // failure that still flipped it would tell a dancer the phone is quiet
+    // while it keeps ringing, and leave them no button to try again with.
+    if (ok) setSubscribed(false)
+    else setError(APP_STRINGS.push.failed)
+    setBusy(false)
   }
 
   if (platform === null) return null
@@ -215,78 +156,108 @@ export function InstallHint({ vapidPublicKey }: { vapidPublicKey?: string | null
 
   if (step === 'on') {
     return (
-      <aside className="app__hint app__hint--quiet">
-        <span>{APP_STRINGS.push.onTitle}</span>
-        <button type="button" className="app__hint-link" disabled={busy} onClick={disable}>
-          {busy ? APP_STRINGS.push.disabling : APP_STRINGS.push.disable}
-        </button>
-      </aside>
+      <Block title={APP_STRINGS.more.notifications}>
+        <aside className="app__hint app__hint--quiet">
+          <span>{APP_STRINGS.push.onTitle}</span>
+          <button type="button" className="app__hint-link" disabled={busy} onClick={disable}>
+            {busy ? APP_STRINGS.push.disabling : APP_STRINGS.push.disable}
+          </button>
+          {error && <p className="app__answer-error">{error}</p>}
+        </aside>
+      </Block>
     )
   }
 
   if (step === 'inapp') {
     return (
-      <aside className="app__hint">
-        <strong>{APP_STRINGS.install.inappTitle}</strong>
-        {APP_STRINGS.install.inappBody}
-        <p className="app__install-how">
-          {webviewHostIsIos() ? APP_STRINGS.install.inappIos : APP_STRINGS.install.inappAndroid}
-        </p>
-        <div className="app__hint-actions">
-          <button type="button" className="app__button app__button--small" onClick={copyLink}>
-            {APP_STRINGS.install.inappCopy}
-          </button>
-        </div>
-        {copied && <p className="app__install-how">{APP_STRINGS.install.inappCopied}</p>}
-        {error && <p className="app__answer-error">{error}</p>}
-        <div className="app__hint-foot">{laterButton}</div>
-      </aside>
+      <Block title={APP_STRINGS.install.guideTitle}>
+        <aside className="app__hint">
+          <strong>{APP_STRINGS.install.inappTitle}</strong>
+          {APP_STRINGS.install.inappBody}
+          <p className="app__install-how">
+            {webviewHostIsIos() ? APP_STRINGS.install.inappIos : APP_STRINGS.install.inappAndroid}
+          </p>
+          <div className="app__hint-actions">
+            <button type="button" className="app__button app__button--small" onClick={copyLink}>
+              {APP_STRINGS.install.inappCopy}
+            </button>
+          </div>
+          {copied && <p className="app__install-how">{APP_STRINGS.install.inappCopied}</p>}
+          {error && <p className="app__answer-error">{error}</p>}
+          <div className="app__hint-foot">{laterButton}</div>
+        </aside>
+      </Block>
     )
   }
 
   if (step === 'install') {
     return (
-      <aside className="app__hint">
-        <strong>{APP_STRINGS.install.title}</strong>
-        {APP_STRINGS.install.why}
-        <InstallSteps
-          platform={stepPlatform(platform)}
-          canPrompt={canPrompt}
-          busy={busy}
-          error={error}
-          onInstall={runInstall}
-        />
-        <div className="app__hint-foot">
-          <Link className="app__hint-link" href="/app/instalacija">
-            {APP_STRINGS.install.guideTitle}
-          </Link>
-          {laterButton}
-        </div>
-      </aside>
+      <Block title={APP_STRINGS.install.guideTitle}>
+        <aside className="app__hint">
+          <strong>{APP_STRINGS.install.title}</strong>
+          {APP_STRINGS.install.why}
+          <InstallSteps
+            platform={stepPlatform(platform)}
+            canPrompt={canPrompt}
+            busy={busy}
+            error={error}
+            onInstall={runInstall}
+          />
+          <div className="app__hint-foot">
+            {/* The heading above already says "Instalacija", so the link says
+                what is on the other side of it instead. */}
+            <Link className="app__hint-link" href="/app/instalacija">
+              {APP_STRINGS.onboarding.install.guide}
+            </Link>
+            {laterButton}
+          </div>
+        </aside>
+      </Block>
     )
   }
 
   // 'push': notifications are the offer, and on a Chromium tab that has not
   // been installed yet the one-tap install rides along underneath.
   return (
-    <aside className="app__hint">
-      <strong>{APP_STRINGS.push.title}</strong>
-      {APP_STRINGS.push.body}
-      <div className="app__hint-actions">
-        <button type="button" className="app__button app__button--small" disabled={busy} onClick={enable}>
-          {busy ? APP_STRINGS.push.enabling : APP_STRINGS.push.enable}
-        </button>
-      </div>
-      {error && <p className="app__answer-error">{error}</p>}
-      {canPrompt && platform !== 'installed' && (
-        <div className="app__hint-foot">
-          <button type="button" className="app__hint-link" disabled={busy} onClick={runInstall}>
-            {busy ? APP_STRINGS.install.acting : APP_STRINGS.install.title}
+    <Block title={APP_STRINGS.more.notifications}>
+      <aside className="app__hint">
+        <strong>{APP_STRINGS.push.title}</strong>
+        {APP_STRINGS.push.body}
+        <div className="app__hint-actions">
+          <button
+            type="button"
+            className="app__button app__button--small"
+            disabled={busy}
+            onClick={enable}
+          >
+            {busy ? APP_STRINGS.push.enabling : APP_STRINGS.push.enable}
           </button>
-          {laterButton}
         </div>
-      )}
-      {(!canPrompt || platform === 'installed') && <div className="app__hint-foot">{laterButton}</div>}
-    </aside>
+        {error && <p className="app__answer-error">{error}</p>}
+        {canPrompt && platform !== 'installed' && (
+          <div className="app__hint-foot">
+            <button type="button" className="app__hint-link" disabled={busy} onClick={runInstall}>
+              {busy ? APP_STRINGS.install.acting : APP_STRINGS.install.title}
+            </button>
+            {laterButton}
+          </div>
+        )}
+        {(!canPrompt || platform === 'installed') && (
+          <div className="app__hint-foot">{laterButton}</div>
+        )}
+      </aside>
+    </Block>
+  )
+}
+
+/** The section and its heading: one wrapper, so the title never stands alone. */
+function Block({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section className="app__more-block">
+      <h2 className="app__month-head">
+        <span>{title}</span>
+      </h2>
+      {children}
+    </section>
   )
 }

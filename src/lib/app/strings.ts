@@ -44,15 +44,167 @@ export const APP_STRINGS = {
     logout: 'Odjavi se',
   },
 
+  /** The three tabs of the bottom bar (#457): three real pages, not a toggle. */
   tabs: {
-    upcoming: 'Nadolazeće',
-    past: 'Prošle',
+    performances: 'Izvedbe',
+    mine: 'Moje',
+    more: 'Više',
   },
 
   list: {
-    emptyUpcoming: 'Nema više izvedbi u ovoj sezoni.',
-    emptyPast: 'Ove sezone još nije bilo izvedbi.',
     season: 'Sezona',
+  },
+
+  /**
+   * The home screen (#457): one hero for the next evening, then the agenda by
+   * month, then the past behind a disclosure.
+   *
+   * `inDays` declines "dan" the way Croatian does (1, 21, 31 → "dan"), and the
+   * three count words are the three Croatian plural buckets; `countLabel` in
+   * `roster-loaders.ts` picks between them, so the rule is tested once.
+   */
+  home: {
+    next: 'Sljedeća izvedba',
+    today: 'danas',
+    tomorrow: 'sutra',
+    inDays: (days: number) =>
+      `za ${days} ${days % 10 === 1 && days % 100 !== 11 ? 'dan' : 'dana'}`,
+    detailLink: 'Tko dolazi, postava, ulaznice ›',
+    count: { one: 'izvedba', few: 'izvedbe', many: 'izvedbi' },
+    answerYes: 'Dolazim',
+    answerNo: 'Ne dolazim',
+    answerNone: 'Bez odgovora',
+    armyCrni: 'Crna vojska',
+    armyBili: 'Bila vojska',
+    cancelled: 'otkazano',
+    past: (count: number) => `Prošle izvedbe (${count})`,
+    lineupConfirmed: 'Postava potvrđena',
+    /**
+     * Two ways to have no next evening, and they are not the same news: the
+     * season is over, or it has not started. The title is picked on whether
+     * there is a last past evening to name.
+     */
+    eosTitle: 'Sezona je završila',
+    eosBody: (date: string) => `Zadnja izvedba bila je ${date}.`,
+    eosNothingTitle: 'Sezona još nije počela',
+    eosNothing: 'Ove sezone još nije bilo izvedbi.',
+    eosLink: 'Pogledaj svoju sezonu',
+  },
+
+  /** The "Moje" tab: one dancer's own season (#457). */
+  mySeason: {
+    title: 'Moje',
+    /** The two panels, which are also what `?dio=` means on this tab. */
+    segments: {
+      moja: 'Moja sezona',
+      ljestvica: 'Ljestvica',
+    },
+    season: 'Sezona',
+    mine: 'u postavi',
+    /** Pluralised by the count on the tile: "1 izvedba u sezoni", "22 izvedbi u sezoni". */
+    total: { one: 'izvedba u sezoni', few: 'izvedbe u sezoni', many: 'izvedbi u sezoni' },
+    crni: 'Crna vojska',
+    bili: 'Bila vojska',
+    byMonth: 'Po mjesecu',
+    chartLabel: 'Izvedbe po mjesecu',
+    legend: 'Zlatno: u potvrđenoj postavi. Sivo: sve potvrđene izvedbe sezone.',
+    roles: 'Uloge',
+    times: (count: number) => `${count}×`,
+    emptyTitle: 'Još nisi plesao ove sezone',
+    emptyBody: 'Prva potvrđena postava pojavit će se ovdje.',
+    emptyLink: 'Odgovori na sljedeću izvedbu',
+    /**
+     * A voditelj without a Member row is not a dancer who has not danced yet
+     * (#457 review): the season below is the SOCIETY's, so the line says what
+     * is missing and the tiles say whose numbers those are.
+     */
+    noMember: 'Nemaš povezan profil moreškanta.',
+    noMemberBody: 'Ispod su brojke cijele sezone.',
+    seasonTotal: 'potvrđenih izvedbi',
+    seasonMonths: 'mjeseci s izvedbom',
+  },
+
+  /**
+   * The Ljestvica, the second panel of the Moje tab (#457, glossary:
+   * *Ljestvica*).
+   *
+   * Every counted noun here is handed to `pluralize` rather than written with a
+   * fixed ending: "1 izvedbi do 2. mjesta" would be the kind of sentence that
+   * tells a dancer the app was written by somebody who does not speak to them.
+   */
+  board: {
+    /** The small caption under the big "#3": out of how many moreškanata. */
+    outOf: (total: number) => `od ${total}`,
+    leading: 'Vodiš ljestvicu.',
+    toNextPlace: (count: string, place: number) => `Još ${count} do ${place}. mjesta.`,
+    nextMilestone: (count: string) => `Sljedeća prekretnica: ${count}`,
+    /** The chip on the row of a dancer who danced the whole season. */
+    fullSeason: 'puna sezona',
+    /** The chip that says which row is the reader's own. */
+    you: 'ti',
+    /** The caption under a podium tile, so the rank reads as a place and not as a second count. */
+    place: (rank: number) => `${rank}. mjesto`,
+    confirmedCount: {
+      one: 'potvrđena izvedba',
+      few: 'potvrđene izvedbe',
+      many: 'potvrđenih izvedbi',
+    },
+    footer: (confirmed: string) =>
+      `Broji se samo potvrđena postava. ${confirmed} u sezoni.`,
+    empty: 'Ljestvica počinje s prvom potvrđenom postavom.',
+  },
+
+  /** The "Više" tab: everything that is not an evening (#457). */
+  more: {
+    stats: 'Statistika sezone',
+    /** The walkthrough, replayable from here (#457). */
+    onboarding: 'Dobrodošlica',
+    notifications: 'Obavijesti',
+    calendar: 'Kalendar izvedbi',
+    profile: 'Moji podaci',
+    nickname: 'Nadimak',
+    roles: 'Uloge',
+    mobile: 'Mobitel',
+    missing: 'nije upisano',
+    admin: 'Administracija',
+    members: 'Moreškanti',
+  },
+
+  /**
+   * The date vocabulary the list needs beside `formatPerformanceDate`: month
+   * names in the NOMINATIVE for a heading ("Rujan", not "rujna"), plus the short
+   * forms of the month and the weekday for the date tile and the bar chart.
+   */
+  date: {
+    months: [
+      'Siječanj',
+      'Veljača',
+      'Ožujak',
+      'Travanj',
+      'Svibanj',
+      'Lipanj',
+      'Srpanj',
+      'Kolovoz',
+      'Rujan',
+      'Listopad',
+      'Studeni',
+      'Prosinac',
+    ],
+    monthsShort: [
+      'sij',
+      'velj',
+      'ožu',
+      'tra',
+      'svi',
+      'lip',
+      'srp',
+      'kol',
+      'ruj',
+      'lis',
+      'stu',
+      'pro',
+    ],
+    weekdaysShort: ['ned', 'pon', 'uto', 'sri', 'čet', 'pet', 'sub'],
   },
 
   card: {
@@ -78,20 +230,51 @@ export const APP_STRINGS = {
     saving: 'Spremam...',
   },
 
-  /** The performance detail and the voditelj's headcount (#423). */
+  /**
+   * The performance detail and the voditelj's headcount (#423, redesigned in
+   * #457 into three segments).
+   *
+   * The segment labels are also the three `?dio=` values, read off one object,
+   * so a link into a segment and the word on its tab can never drift apart.
+   * No push sends such a link yet; the parameter is reserved for one.
+   */
   detail: {
-    back: 'Natrag',
+    back: 'Izvedbe',
     note: 'Poruka voditelja',
     crni: 'Crni',
     bili: 'Bili',
     bula: 'Bule',
     notComing: 'Ne dolaze',
     noAnswer: 'Bez odgovora',
-    empty: 'Nema nikoga.',
     call: 'Nazovi',
     move: 'Prebaci',
     moveTo: (army: string) => `Prebaci u ${army}`,
     missing: 'Ta izvedba ne postoji.',
+    /** What the segmented control IS, for a screen reader announcing the tablist. */
+    segmentsLabel: 'Dijelovi izvedbe',
+    /** The three segments (#457). */
+    segments: {
+      dolaze: 'Dolaze',
+      postava: 'Postava',
+      ulaznice: 'Ulaznice',
+    },
+    /** A counter with nothing to count: a dash, never a zero that means "none". */
+    noCount: '–',
+    /** One muted line under an empty group heading. */
+    nobody: 'nitko',
+    /** The one empty group that is good news. */
+    allAnswered: 'Svi su odgovorili',
+    noAnswersTitle: 'Još nitko nije odgovorio',
+    noAnswersBody: 'Odgovori prvi, ostali vide tko dolazi.',
+    callAria: (nickname: string) => `Nazovi ${nickname}`,
+  },
+
+  /** The voditelj's tools, gathered at the bottom of the detail page (#457). */
+  lead: {
+    title: 'Alati za voditelja',
+    lineupConfirmed: (inLineup: number) => `Postava: potvrđena, ${inLineup} u postavi`,
+    lineupDraft: (coming: number, noAnswer: number) =>
+      `Postava: nije potvrđena, ${coming} dolazi, ${noAnswer} bez odgovora`,
   },
 
   /**
@@ -147,6 +330,84 @@ export const APP_STRINGS = {
     sent: 'Ako račun postoji, poveznica je poslana na e-mail te osobe.',
     unexpected: 'Slanje trenutno nije moguće. Pokušaj ponovno.',
     backToLogin: 'Natrag na prijavu',
+  },
+
+  /**
+   * The Dobrodošlica (#457, glossary: *Dobrodošlica*).
+   *
+   * Three steps, and each one asks for a permission or a subscription the app
+   * cannot grant itself, so every step says WHAT IT BUYS before it asks: the
+   * notification step names the three things that will ring rather than
+   * promising "obavijesti", because a dancer who does not know what will ring
+   * says no. Every step can be refused and refusing is not a failure, which is
+   * why the quiet link is "Ne sada" and never "Odustani".
+   */
+  onboarding: {
+    skip: 'Preskoči',
+    step: (index: number, total: number) => `Korak ${index} od ${total}`,
+
+    /**
+     * Step 1 IS the #455 install guide: the numbered steps themselves live in
+     * `install.iosSteps` / `androidSteps` / `desktopSteps` and are rendered by
+     * the same `InstallSteps` component as the banner and `/app/instalacija`,
+     * so there is one set of instructions in the app rather than two that can
+     * disagree. Only the frame around them is written here.
+     */
+    install: {
+      title: 'Dodaj Moreškanta na početni zaslon',
+      body: 'Otvara se kao aplikacija, bez adresne trake, i može ti slati obavijesti.',
+      /** The quiet way to the full-screen guide, which is also the QR target. */
+      guide: 'Detaljne upute',
+      primary: 'Dodao sam',
+      later: 'Kasnije',
+    },
+
+    push: {
+      title: 'Uključi obavijesti',
+      body: 'Javljamo samo kad se nešto tiče tebe. Bez reklama, bez podsjetnika svaki dan.',
+      /**
+       * The fake notification. It is the T-48h ANSWER REMINDER, type (2) of the
+       * glossary's *Notification types*, and not an invented one: confirming a
+       * postava deliberately rings nobody, so a sample "postava je potvrđena"
+       * would promise a push that does not exist.
+       */
+      sampleTitle: 'Moreškant',
+      sampleBody: 'Četvrtak u 21:00, Ljetno kino. Još nisi odgovorio dolaziš li.',
+      sampleWhen: 'prije 2 min',
+      benefitLineup: 'Podsjetnik za odgovor',
+      benefitAlarm: 'Alarm od voditelja',
+      benefitChange: 'Promjena mjesta ili sata',
+      primary: 'Uključi obavijesti',
+      working: 'Uključujem...',
+      on: 'Obavijesti su uključene',
+      skip: 'Ne sada',
+    },
+
+    calendar: {
+      title: 'Izvedbe u tvom kalendaru',
+      body: 'Pretplata se sama osvježava kad se raspored promijeni. Radi u Apple i Google kalendaru.',
+      /**
+       * Only off iOS (#457 review). There the link goes on the clipboard, and a
+       * clipboard with no instructions is a dancer holding a URL they have
+       * nowhere to put, so the sentence names the three taps in Google kalendar.
+       */
+      googleHint: 'U Google kalendaru: Postavke, Dodaj kalendar, Putem URL-a.',
+      cardTitle: 'Kalendar izvedbi',
+      cardBody: 'Sve izvedbe sezone, javne i privatne, s bilješkom voditelja.',
+      primary: 'Pretplati se na kalendar',
+      copy: 'Kopiraj link',
+      copied: 'Link kopiran',
+      /** After the handoff: the step waits, it never scrolls on by itself. */
+      next: 'Dalje',
+      skip: 'Ne sada',
+    },
+
+    done: {
+      title: 'Spremno',
+      next: (date: string) => `Sljedeća izvedba je ${date}. Reci nam dolaziš li.`,
+      nothing: 'Vidimo se na prvoj izvedbi sezone.',
+      primary: 'Na izvedbe',
+    },
   },
 
   /**
@@ -298,7 +559,12 @@ export const APP_STRINGS = {
     confirmedNote: 'Potvrđena postava. Otključaj je za izmjene.',
     draftNote: 'Postava još nije potvrđena, moreškanti je ne vide.',
     empty: 'Postava je prazna.',
-    emptyForDancer: 'Postava za ovu izvedbu još nije objavljena.',
+    /** The dancer's Postava segment before the voditelj has locked the list (#457). */
+    notConfirmedTitle: 'Postava još nije potvrđena',
+    notConfirmedBody: 'Voditelj je slaže na dan izvedbe. Dobit ćeš obavijest.',
+    confirmedAt: (when: string) => `Potvrđena ${when}`,
+    /** A named role nobody is dancing tonight. */
+    unassigned: 'nije dodijeljeno',
     warningSuffix: 'Spremit će se svejedno.',
     nobodyToAdd: 'Svi aktivni moreškanti su već u postavi.',
     /** The route's own refusals. */
@@ -313,8 +579,6 @@ export const APP_STRINGS = {
   /** The season scoreboard (#437, glossary: *Dancer statistics*). */
   stats: {
     title: 'Statistika',
-    link: 'Statistika',
-    back: 'Natrag',
     season: 'Sezona',
     dancer: 'Moreškant',
     performances: 'Izvedbi',
@@ -336,47 +600,58 @@ export const APP_STRINGS = {
    * rule, and two wordings for it would read as two.
    */
   comp: {
-    title: 'Besplatne karte',
-    intro: 'Do 4 karte po izvedbi. Stižu ti na e-mail kao PDF, s QR kodom za ulaz.',
+    /**
+     * One word for the thing throughout (#457 review): the segment is called
+     * "Ulaznice", so every sentence under it says "ulaznica" too. "Karta" was
+     * the same object under a second name, which reads as a second rule.
+     */
+    title: 'Besplatne ulaznice',
+    intro: 'Do 4 ulaznice po izvedbi. Stižu ti na e-mail kao PDF, s QR kodom za ulaz.',
     adults: 'Odrasli',
     children: 'Djeca',
-    /** The allowance still left, next to the steppers (#430, story 48). */
-    remaining: (left: number) => `još ${left} od 4`,
-    nameLabel: 'Ime na karti',
+    nameLabel: 'Ime na ulaznici',
     namePlaceholder: 'Ime i prezime',
-    issue: 'Izdaj karte',
+    issue: 'Izdaj ulaznice',
     issuing: 'Izdajem...',
-    issued: 'Karte su izdane i poslane na tvoj e-mail.',
-    issuedNoEmail: 'Karte su izdane, ali e-mail nije otišao. Javi voditelju.',
-    mine: (count: number) => `Moje karte: ${count}`,
+    issued: 'Ulaznice su izdane i poslane na tvoj e-mail.',
+    issuedNoEmail: 'Ulaznice su izdane, ali e-mail nije otišao. Javi voditelju.',
     cancel: 'Otkaži',
     cancelling: 'Otkazujem...',
-    cancelled: 'Karte su otkazane.',
+    cancelled: 'Ulaznice su otkazane.',
     /** Refusals, all of them also spoken by the routes. */
     /** The `/app` cross-site guard, in the comp routes' own words. */
     rejected: 'Zahtjev nije prihvaćen. Pokušaj ponovno iz aplikacije.',
-    pickOne: 'Odaberi barem jednu kartu.',
-    capReached: 'Potrošio si svoje 4 besplatne karte za ovu izvedbu.',
-    noMember: 'Tvoja prijava nije povezana s moreškantom, pa ne možeš izdati besplatne karte.',
-    noEmail: 'Na tvojem moreškantu nema e-mail adrese, pa karte nemaju kamo. Javi voditelju.',
-    notPublic: 'Za ovu izvedbu se ne prodaju karte.',
+    pickOne: 'Odaberi barem jednu ulaznicu.',
+    capReached: 'Potrošio si svoje 4 besplatne ulaznice za ovu izvedbu.',
+    noMember: 'Tvoja prijava nije povezana s moreškantom, pa ne možeš izdati besplatne ulaznice.',
+    noEmail: 'Na tvojem moreškantu nema e-mail adrese, pa ulaznice nemaju kamo. Javi voditelju.',
+    notPublic: 'Za ovu izvedbu se ne prodaju ulaznice.',
     showCancelled: 'Izvedba je otkazana.',
-    started: 'Izvedba je počela, karte se više ne mijenjaju.',
+    started: 'Izvedba je počela, ulaznice se više ne mijenjaju.',
     soldOut: 'Nema više slobodnih mjesta.',
-    scanned: 'Karta je već skenirana, pa se narudžba ne može otkazati.',
+    scanned: 'Ulaznica je već skenirana, pa se narudžba ne može otkazati.',
     /**
      * The ONE answer to every cancel that is not the caller's own self-issued
      * comp: unknown, paid, an admin's, or another dancer's. Three honest
      * sentences would map the order table for anyone who tried them.
      */
-    notFound: 'Karte nisu pronađene.',
-    failed: 'Karte nisu izdane. Pokušaj ponovno.',
+    notFound: 'Ulaznice nisu pronađene.',
+    failed: 'Ulaznice nisu izdane. Pokušaj ponovno.',
     cancelFailed: 'Otkazivanje nije uspjelo. Pokušaj ponovno.',
+    /**
+     * The Ulaznice segment's own words (#457): the big count's caption, the
+     * line that replaces the form once the four are gone, and one sentence per
+     * reason there is nothing to issue (`compUnavailableReason`).
+     */
+    headline: 'besplatnih ulaznica za ovu izvedbu',
+    allUsed: 'Iskoristio si sve četiri.',
+    privateNoTickets: 'Privatna izvedba, nema ulaznica.',
+    past: 'Izvedba je prošla.',
+    noMemberShort: 'Ulaznice može izdati samo moreškant s povezanim profilom.',
   },
 
   /** The shared calendar subscription (#433, glossary: *Calendar feed*). */
   calendar: {
-    title: 'Kalendar',
     body: 'Dodaj ovu poveznicu u Google, Apple ili Outlook kalendar i sve izvedbe su ti u telefonu.',
     copy: 'Kopiraj poveznicu',
     copied: 'Poveznica je kopirana.',
@@ -534,4 +809,43 @@ export function formatPerformanceDate(date: string): string {
   const d = new Date(`${date}T12:00:00.000Z`)
   if (Number.isNaN(d.getTime())) return date
   return `${WEEKDAYS[d.getUTCDay()]}, ${d.getUTCDate()}. ${MONTHS[d.getUTCMonth()]}`
+}
+
+/** UTC noon, so no timezone can shift the calendar day out from under a label. */
+function atNoon(date: string): Date | null {
+  const d = new Date(`${date}T12:00:00.000Z`)
+  return Number.isNaN(d.getTime()) ? null : d
+}
+
+/**
+ * "Četvrtak, 17. rujna" — the hero's headline (#457).
+ *
+ * The same sentence `formatPerformanceDate` builds, with the weekday
+ * capitalised because here it opens a line rather than sitting inside one.
+ */
+export function formatPerformanceDateLong(date: string): string {
+  const text = formatPerformanceDate(date)
+  return text.charAt(0).toUpperCase() + text.slice(1)
+}
+
+/** "čet" — the weekday of the date tile in the month list. */
+export function shortWeekday(date: string): string {
+  const d = atNoon(date)
+  return d ? APP_STRINGS.date.weekdaysShort[d.getUTCDay()] : ''
+}
+
+/** The day number of the date tile, as a string ("17"). */
+export function dayOfMonth(date: string): string {
+  const d = atNoon(date)
+  return d ? String(d.getUTCDate()) : ''
+}
+
+/** "Rujan" from a 1-12 month number; the heading of a month section. */
+export function monthLabel(month: number): string {
+  return APP_STRINGS.date.months[month - 1] ?? ''
+}
+
+/** "ruj" from a 1-12 month number; the bar chart's axis. */
+export function shortMonthLabel(month: number): string {
+  return APP_STRINGS.date.monthsShort[month - 1] ?? ''
 }

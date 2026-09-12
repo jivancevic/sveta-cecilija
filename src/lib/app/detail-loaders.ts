@@ -22,6 +22,7 @@
 import { countArmies, type ArmyCount, type AttendanceRow } from '@/lib/attendance/army-count'
 import {
   allowedArmies,
+  defaultArmyOf,
   moreskantMayAnswer,
   toAttendanceMember,
   type Army,
@@ -148,6 +149,13 @@ export interface PerformanceDetail {
   lineup: LineupView
   /** The dancer's own free tickets (#434). */
   comps: CompView
+  /**
+   * The instant the payload was cut at (#457). The Ulaznice segment explains a
+   * hidden form against it rather than reading the wall clock in render, so the
+   * sentence a dancer sees and the `visible` the loader decided are answers to
+   * the same question asked at the same moment.
+   */
+  nowMs: number
 }
 
 /**
@@ -320,9 +328,21 @@ export function buildPerformanceDetail(input: {
     ? members.find((m) => String(m.id) === input.viewer.memberId)
     : undefined
 
-  const myAnswer = input.viewer.memberId
-    ? (rows.find((r) => r.memberId === input.viewer.memberId)?.status ?? null)
+  // The viewer's own row, once: the answer AND the army recorded on it. The
+  // army is a fact of the ANSWER, not of the profile (#457) — a voditelj may
+  // move a dancer for one evening, and the chip has to say which side they are
+  // on that evening.
+  const myRow = input.viewer.memberId
+    ? (rows.find((r) => r.memberId === input.viewer.memberId) ?? null)
     : null
+  const myAnswer = myRow?.status ?? null
+  // The SAME fallback `countArmies` applies to a row with a NULL army (one
+  // saved before the column existed, or hand-edited): without it the chip said
+  // "no army" while the list below had already put the reader in one (#457
+  // review). A bula has no army either way, which `defaultArmyOf` returns null
+  // for, so the chip stays off for them.
+  const myArmy =
+    myRow?.status === 'coming' ? (myRow.army ?? (me ? defaultArmyOf(me) : null)) : null
 
   const canAnswer =
     input.viewer.memberId != null &&
@@ -343,13 +363,14 @@ export function buildPerformanceDetail(input: {
     performance.startMs > input.nowMs
 
   return {
-    performance: { ...performance, myAnswer, canAnswer },
+    performance: { ...performance, myAnswer, myArmy, canAnswer },
     count,
     voditelj: input.viewer.voditelj,
     canEditOthers: input.viewer.voditelj,
     canAlarm,
     moveTargets,
     myMemberId: input.viewer.memberId,
+    nowMs: input.nowMs,
     comps: buildCompView({
       performance,
       ownComps: input.ownComps ?? [],

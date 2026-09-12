@@ -3,7 +3,10 @@
 import { useState } from 'react'
 import { APP_STRINGS } from '@/lib/app/strings'
 
-// The "Kalendar" panel on `/app` (#433, story 42).
+// The "Kalendar" panel on `/app/vise` (#433, story 42).
+//
+// It prints no heading of its own (#457): the Više tab already puts "Kalendar
+// izvedbi" above it, and a second title under the first read as two panels.
 //
 // One URL and a copy button. The URL is rendered as TEXT rather than as a link:
 // tapping an `https://` link opens the feed in the browser, which downloads a
@@ -32,7 +35,6 @@ export function CalendarPanel({ url }: { url: string }) {
 
   return (
     <section className="app__calendar">
-      <h2 className="app__calendar-title">{APP_STRINGS.calendar.title}</h2>
       <p className="app__calendar-body">{APP_STRINGS.calendar.body}</p>
       <code className="app__calendar-url">{url}</code>
       <button type="button" className="app__button" onClick={copy}>

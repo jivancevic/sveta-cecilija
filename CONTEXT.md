@@ -435,6 +435,14 @@ _Avoid_: cast, roster (roster = the whole membership).
 ### Dancer statistics
 Per season (calendar year, as in ADR-0022): confirmed performances per moreškant, and how many times each danced `crni_kralj`, `bili_kralj`, `otmanovic`, `bula`. Past seasons selectable. Confirmed lineups of past performances are visible to every moreškant.
 
+### Ljestvica (leaderboard)
+The season's moreškanti ranked by confirmed performances, the same count as *Dancer statistics*, shown in full with nicknames: every active moreškant is on it, equal counts share a rank. The count is a lineup fact, never an attendance answer, so saying "coming" moves nobody. Milestones (5, 10, 15 and 20 performances, and **puna sezona** = danced every confirmed performance of the season) are read off that same count. No streaks. Past seasons selectable.
+_Avoid_: points, streak, ranking by answers.
+
+### Dobrodošlica (onboarding)
+The three-step walkthrough a moreškant sees once per device after signing in: add to the home screen (left out when the app is already opened as an installed app), turn on notifications, subscribe to the calendar feed. Every step can be skipped and skipping counts as seen. Remembered on the device only, so a new phone shows it again.
+_Avoid_: tutorial, wizard, setup.
+
 ### Moreškant comp
 A comp ticket (see *Comp ticket*) a moreškant issues for themselves at a public performance, attributed to their own Member row, capped at **4 tickets per performance** for self-issued ones only; admin-issued comps do not count. Cancelable by the moreškant until the performance starts, while unscanned.
 

@@ -33,6 +33,7 @@ import {
 } from '@/lib/attendance/rules'
 import { countArmies, type AttendanceRow } from '@/lib/attendance/army-count'
 import { relationIdString } from '@/lib/payload-relation'
+import { APP_STRINGS, monthLabel } from '@/lib/app/strings'
 import type { Venue } from '@/lib/venues'
 
 /** One performance card. No email, ever. */
@@ -59,6 +60,15 @@ export interface RosterPerformance {
   thresholdBili: number
   /** The viewer's OWN answer, or null when they have not answered (#422). */
   myAnswer: AttendanceStatus | null
+  /**
+   * The army recorded on the viewer's OWN attendance row (#457), null when
+   * there is no row or the row carries no army (a bula is in neither). It is a
+   * fact of the answer, not of the profile: a voditelj may move a dancer for one
+   * evening, and the hero chip has to say which army that evening.
+   */
+  myArmy: Army | null
+  /** Whether the postava of this evening is confirmed (#432): a past-row badge. */
+  lineupConfirmed: boolean
   /** Whether the viewer may still change that answer from the card (#422). */
   canAnswer: boolean
   /**
@@ -78,6 +88,13 @@ export interface SeasonPerformances {
   year: number
   upcoming: RosterPerformance[]
   past: RosterPerformance[]
+  /**
+   * The instant the split was taken. The page renders "za 5 dana" against it
+   * rather than against its own clock: a server component may not read the wall
+   * clock during render, and the honest reference point for a relative label is
+   * the one the data was cut at anyway.
+   */
+  nowMs: number
 }
 
 /**
@@ -114,12 +131,14 @@ export function toRosterPerformance(row: Record<string, unknown>): RosterPerform
     location: isPublic ? null : text(row.location),
     client: isPublic ? null : text(row.client),
     cancelled: row.status === 'cancelled',
+    lineupConfirmed: row.lineupConfirmed === true,
     voditeljNote: text(row.voditeljNote),
     startMs: date && time ? showStartMs(date, time) : Number.NaN,
     thresholdCrni: threshold(row.thresholdCrni),
     thresholdBili: threshold(row.thresholdBili),
     // Filled in by attachOwnAnswers / attachArmyChips once the viewer is known.
     myAnswer: null,
+    myArmy: null,
     canAnswer: false,
     chip: null,
   }
@@ -168,12 +187,116 @@ export function attachOwnAnswers(
   answers: Map<string, AttendanceStatus>,
   nowMs: number,
   opts: { voditelj: boolean; hasMember: boolean },
+  armies?: Map<string, Army>,
 ): RosterPerformance[] {
   return rows.map((p) => ({
     ...p,
     myAnswer: answers.get(p.id) ?? null,
+    myArmy: armies?.get(p.id) ?? null,
     canAnswer: opts.hasMember && (opts.voditelj || moreskantMayAnswer(p, nowMs)),
   }))
+}
+
+/**
+ * The evening the hero shows: the first upcoming one that is NOT cancelled.
+ *
+ * A cancelled performance still belongs in the agenda below, struck through, so
+ * that a dancer who remembers an evening finds it and reads why it is gone. It
+ * just must never be the thing the screen opens with: the hero answers "where
+ * am I next", and "nowhere, this is off" is not that answer.
+ */
+export function pickNextPerformance(
+  upcoming: readonly RosterPerformance[],
+): RosterPerformance | null {
+  return upcoming.find((p) => !p.cancelled) ?? null
+}
+
+/** One month's worth of the agenda. */
+export interface MonthGroup {
+  /** 1-12. */
+  month: number
+  year: number
+  /** "Rujan", nominative: it is a heading, not part of a sentence. */
+  label: string
+  performances: RosterPerformance[]
+}
+
+/**
+ * Group the agenda by calendar month, keeping the order it arrives in.
+ *
+ * The year is part of the key, not only of the label: two Septembers a year
+ * apart are two sections even though the heading reads the same, and a season
+ * boundary must never fold one into the other.
+ */
+export function groupByMonth(list: readonly RosterPerformance[]): MonthGroup[] {
+  const out: MonthGroup[] = []
+  const index = new Map<string, MonthGroup>()
+  for (const p of list) {
+    const year = Number(p.date.slice(0, 4))
+    const month = Number(p.date.slice(5, 7))
+    if (!Number.isInteger(year) || !Number.isInteger(month) || month < 1 || month > 12) continue
+    const key = `${year}-${month}`
+    let group = index.get(key)
+    if (!group) {
+      group = { month, year, label: monthLabel(month), performances: [] }
+      index.set(key, group)
+      out.push(group)
+    }
+    group.performances.push(p)
+  }
+  return out
+}
+
+const ZAGREB_DAY = new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'Europe/Zagreb',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+})
+
+/**
+ * Whole days from now until a start instant, counted in CALENDAR days in
+ * Europe/Zagreb rather than in 24 hour buckets.
+ *
+ * Tonight's 21:00 show is "danas" at nine in the morning and still "danas" at
+ * eight in the evening; tomorrow's is "sutra" whether it is 20 hours away or 30.
+ * A 24 hour bucket would call both of those the wrong thing, and the label a
+ * dancer reads is the one they would say out loud.
+ */
+export function daysUntil(startMs: number, nowMs: number): number {
+  if (!Number.isFinite(startMs) || !Number.isFinite(nowMs)) return 0
+  const day = (ms: number) => Date.parse(`${ZAGREB_DAY.format(new Date(ms))}T00:00:00.000Z`)
+  return Math.round((day(startMs) - day(nowMs)) / 86_400_000)
+}
+
+/**
+ * `${count} ${the right one of three Croatian plural forms}`.
+ *
+ * Croatian has three plural buckets and the teens are the exception that decides
+ * whether the rule was written or guessed: 11 izvedbi, 21 izvedba, 22 izvedbe.
+ * The rule is stated once here and every counted noun in `/app` borrows it, so
+ * a second counted noun cannot quietly ship with a second, wrong rule.
+ */
+export function pluralize(
+  count: number,
+  words: { one: string; few: string; many: string },
+): string {
+  return `${count} ${words[pluralForm(count)]}`
+}
+
+/** Which of the three Croatian plural forms a count takes, for a label shown apart from its number. */
+export function pluralForm(count: number): 'one' | 'few' | 'many' {
+  const mod100 = Math.abs(count) % 100
+  const mod10 = Math.abs(count) % 10
+  if (mod100 >= 11 && mod100 <= 14) return 'many'
+  if (mod10 === 1) return 'one'
+  if (mod10 >= 2 && mod10 <= 4) return 'few'
+  return 'many'
+}
+
+/** "3 izvedbe" — the count beside a month heading. */
+export function countLabel(count: number): string {
+  return pluralize(count, APP_STRINGS.home.count)
 }
 
 /**
@@ -248,6 +371,7 @@ export async function loadSeasonPerformances(
   // The viewer's own answers, one query for the whole season. A voditelj with no
   // Member link (a non-dancing voditelj, story 15) skips it entirely.
   const answers = new Map<string, AttendanceStatus>()
+  const armies = new Map<string, Army>()
   if (deps.memberId) {
     const mine = await deps.find({
       collection: 'attendance',
@@ -259,14 +383,21 @@ export async function loadSeasonPerformances(
       const performance = relationIdString(row.performance)
       if (performance && (row.status === 'coming' || row.status === 'not_coming')) {
         answers.set(performance, row.status)
+        if (row.army === 'crni' || row.army === 'bili') armies.set(performance, row.army)
       }
     }
   }
 
-  rows = attachOwnAnswers(rows, answers, now.getTime(), {
-    voditelj: deps.voditelj === true,
-    hasMember: deps.memberId != null,
-  })
+  rows = attachOwnAnswers(
+    rows,
+    answers,
+    now.getTime(),
+    {
+      voditelj: deps.voditelj === true,
+      hasMember: deps.memberId != null,
+    },
+    armies,
+  )
 
   // The voditelj's headcount chips: two more queries, and only for the account
   // that has a reason to see them. A dancer gets the numbers on the detail page.
@@ -309,5 +440,5 @@ export async function loadSeasonPerformances(
     rows = attachArmyChips(rows, attendance, members)
   }
 
-  return { year, ...splitSeasonPerformances(rows, now.getTime()) }
+  return { year, nowMs: now.getTime(), ...splitSeasonPerformances(rows, now.getTime()) }
 }

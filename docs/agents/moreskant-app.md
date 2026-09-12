@@ -94,6 +94,10 @@ What this replaced, and why each half was wrong: the old banner asked "push supp
 
 `InstallHint.tsx` renders the decision, `InstallSteps.tsx` the numbered steps (with the iOS share glyph drawn inline, because step one is "find this icon"), and `use-install.ts` holds the browser reads. Every storage and permission access stays wrapped in `try/catch`: a private window, a browser blocking site data and a thumbnail-capture pass can each throw, and none of that may take `/app` down. Whether **this** device is subscribed is still read from the browser, never from the server, and the component renders nothing until it has looked.
 
+The banner asks that question, and every other browser push call, through **`push-client.ts`** (#457): `use-install.ts` re-exports its `pushSupported` rather than restating it, so "can this browser subscribe" has one answer. The split is by subject, not by screen: `platform.ts` + `use-install.ts` own WHICH DEVICE this is, `push-client.ts` owns the subscription and its round trip to `/api/app/push/*`, and the components own only what is said. `InstallHint` carries its own heading ("Instalacija" or "Obavijesti", whichever card it is showing), because whether there is anything to put under one is a fact only it knows.
+
+**The three places that show these instructions are one implementation.** The banner, the Dobrodošlica's first step and `/app/instalacija` all call `readPlatform()` and render `InstallSteps`, all offer the same one-tap `install.action` button when Chromium parked a prompt, and all show the same way out of a webview. There is no second set of install copy anywhere in `/app`.
+
 **`/app/instalacija`** is the same guide full screen, and deliberately **not** behind the access decision: it is the target of the QR code a voditelj puts on the wall at a rehearsal, and the person scanning it has not signed in yet. Its platform switch exists because the voditelj is holding somebody else's phone half the time.
 
 ### Why not the App Store or Google Play (#455)
@@ -451,11 +455,12 @@ has no claim and no limit.
 
 ### The banner
 
-`InstallHint.tsx` is the one banner (#430 stories 1-3): unsubscribed and able to
+`InstallHint.tsx` is the one banner (#430 stories 1-3), which since #457 lives
+in the Više tab and carries its own heading: unsubscribed and able to
 subscribe → "Uključi obavijesti"; already subscribed → one muted line with the
 per-device off switch, which is the whole of the per-device control (story 5).
 Which of those it asks, and whether it asks about installing first instead, is
-`decideInstallStep` in `src/lib/app/platform.ts` — see [the install flow](#the-install-flow-452)
+`decideInstallStep` in `src/lib/app/platform.ts` — see [the install flow](#the-install-flow-455)
 for why the order is per platform rather than fixed (#455).
 
 ## Triggered notifications (#436 — phase 4 batch B)
@@ -981,3 +986,134 @@ convention: both FKs reach only `users`, so the file just has to land before
 `migrate-zz-drop-users-role.sql`, which must stay the last `migrate-*` file
 (#398). `oauth_codes` and `oauth_tokens` are raw tables and must stay out of the
 regenerated `00-base.sql`.
+
+## Redesign (#457)
+
+No schema change, no new route handler: the same reads, rearranged into three
+tabs plus a walkthrough.
+
+### The tabs
+
+A fixed bottom bar (`TabBar.tsx`, one client island inside the server
+`AppShell`) over three pages. `activeAppTab` (`src/lib/app/tabs.ts`) is the
+single rule for which tab a path lights up, so a page below a tab lights its
+parent.
+
+| Route | Tab | What it is |
+|---|---|---|
+| `/app` | Izvedbe | the next live evening as a hero, then the season by month, the past behind a disclosure |
+| `/app/izvedba/[id]` | Izvedbe | one evening, three segments, the two answer buttons pinned above the bar |
+| `/app/moje` | Moje | two panels: the dancer's own season, and the Ljestvica |
+| `/app/vise` | Više | statistics, the Dobrodošlica replay, the install guide, notifications, calendar, own record, Odjava |
+| `/app/statistika` | Više | the season scoreboard, unchanged |
+| `/app/dobrodosli` | none | the walkthrough: no bar, no brand header |
+| `/app/instalacija` | none | the full-screen install guide (#455), public by design: the QR target at a rehearsal |
+
+**The hero rule**: `pickNextPerformance` (`roster-loaders.ts`) picks the next
+evening that is **not cancelled**. A cancelled evening is never the hero, and it
+is never skipped from the month list either: it stays there, struck through, so
+a dancer who remembers a date finds it and reads why. The month heading counts
+only the rows that are still happening. The season's own count of evenings is
+the list; nothing on `/app` re-counts it.
+
+### `?dio=` — the segment params
+
+Two screens carry a segmented control, and both state the vocabulary in a pure
+parser rather than in the component: `parseSegment` →
+`dolaze | postava | ulaznice` (`src/lib/app/detail-view.ts`) on the performance
+detail, `parseMojeSegment` → `moja | ljestvica`
+(`src/lib/app/leaderboard-loaders.ts`) on Moje. Every panel is server-rendered
+and handed to the client component as a child; switching costs no request and
+follows along in the URL through `history.replaceState`, never a navigation. On
+the detail screen all three panels stay in the DOM and the inactive two carry
+`hidden`, so the voditelj's lineup draft and the Ulaznice steppers survive a
+glance at another segment.
+
+**Nothing sends a `?dio=` link today.** Confirming a postava deliberately rings
+nobody, so `?dio=postava` is reserved for a future deep link rather than wired
+to a push that exists. The tab labels and the URL values are still read off one
+object (`APP_STRINGS.detail.segments`) so that when something does send one, the
+word on the tab and the value in the link cannot have drifted apart.
+
+### The Dobrodošlica cookie rule
+
+Glossary: *Dobrodošlica*. Remembered **on the device only**, never on the
+account, as two things that back each other up:
+
+1. **The cookie, set by the server.** `POST /api/app/onboarding/done`
+   (`src/app/api/app/onboarding/done/route.ts`) answers 204 with
+   `Set-Cookie: moreskant_onboarded=1; Path=/app; HttpOnly; SameSite=Lax; Max-Age=31536000`
+   (plus `Secure` when the request arrived over https). A **one-year** cookie
+   has to come from a header: Safari's ITP caps a `document.cookie` write at
+   seven days, so a browser-written one would quietly become "next week" and
+   walk a dancer through the same three steps every Monday. The route sets a
+   cookie and nothing else, and still carries the full `/app` gate — the
+   cross-site check (`rejectAppRequest`) first, then
+   `requirePermission(['moreskant', 'moreska'])`.
+2. **`localStorage['moreskant.onboarding.done']`, the rescue.** The client
+   writes it when the walkthrough ends and reads it **on mount** of
+   `/app/dobrodosli`: a device that has seen the walkthrough but lost its cookie
+   (expired, cleared with the site data, a private window) re-POSTs for a new
+   one and goes straight to `/app`.
+
+The names, the cookie string (`onboardingCookie()`) and the redirect rule live
+in `src/lib/app/onboarding.ts`.
+
+`needsOnboarding({ signedIn, denied, hasMember, cookiePresent })` is pure and
+tested, and **`/app` is the only page that calls it**. Every other page under
+`/app` opens on what it says it is: a push deep-link into tonight's postava must
+not land on a walkthrough. Its four inputs are read off the viewer before the
+page's early exits and acted on after them, so the rule answers the signed-out
+and denied cases itself rather than being handed a hard-coded `false`.
+Finishing and skipping ask for the same cookie, so "Preskoči" is an answer
+rather than a deferral; the page itself never sets it on arrival, which is what
+makes the Više row a harmless replay.
+
+Step 1 (home screen) is left out when `readPlatform()` answers `installed`,
+step 3 (calendar) when the deployment has no feed URL. The first render is the
+full list on both sides so hydration stays quiet, and an effect narrows it after
+mount.
+
+**Step 1 IS the #455 install guide**, not a second one: the same
+`readPlatform()` decision, the same `InstallSteps` list, the same one-tap
+"Instaliraj" where Chromium parked a `beforeinstallprompt` (with "Dodao sam" as
+the primary where it did not), and the same way out of a Viber webview instead
+of steps that cannot be followed there. Under it sits a quiet "Detaljne upute"
+to `/app/instalacija`, the full-screen version and the QR target at a rehearsal,
+which is also a row in the Više tab.
+
+Step 2 runs the REAL subscribe flow: every browser push call lives in
+`src/app/app/push-client.ts`, shared with the Više switch, so the two screens
+cannot drift into two notions of "subscribed".
+
+Step 3 hands the calendar over **per platform** and never on a timer: on iOS the
+primary button is "Pretplati se na kalendar" (`webcal://`, which leaves the
+browser for the calendar app), everywhere else it is "Kopiraj link" beside the
+sentence naming the three taps in Google kalendar. Either way the step waits for
+the dancer to come back and the primary becomes "Dalje"; "Ne sada" is always
+there.
+
+### The Ljestvica
+
+Glossary: *Ljestvica* — that entry is the rulebook, this is where it is
+implemented. `buildLeaderboard` (`src/lib/app/leaderboard-loaders.ts`) is pure
+and sits **downstream of `loadSeasonStats`**: it ranks the scoreboard's own rows
+rather than re-deriving a count, which is what keeps `/app/statistika`,
+`/app/moje` and the board from ever printing three numbers for one season.
+
+- Only confirmed lineups count (already true of `SeasonStats.rows`), every
+  active moreškant is a row even at zero, and the incoming order (performances
+  desc, then nickname) is never re-sorted.
+- **Competition ranking**: equal counts share a rank and the next rank skips
+  (1, 1, 3).
+- `share` is the count over the season's confirmed performances (0 when there
+  are none); `fullSeason` means it equals them and there was at least one;
+  milestones are 5, 10, 15, 20 read off the same count. No streaks.
+- `me` carries `toNextPlace` — how many more performances would reach the next
+  higher distinct count, null at the top — together with `nextPlace`, the rank
+  that count already holds, and the next milestone. `nextPlace` is **not**
+  `rank - 1`: with ranks 1, 1, 3 the dancer at 3 reaches 1 by tying, and 2 is a
+  place nobody holds. The sentences built from it go through `pluralize`
+  (`roster-loaders.ts`), the one home of the three Croatian plural buckets.
+- The bottom of the list gets **no** treatment: no red, no "zadnji". An empty
+  season hides the card and the podium and says so once.

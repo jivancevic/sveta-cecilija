@@ -1,104 +1,253 @@
 import Link from 'next/link'
+import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { accessMember } from '@/lib/app/access'
+import { ONBOARDING_COOKIE, needsOnboarding } from '@/lib/app/onboarding'
 import { getSeasonPerformances } from '@/lib/app/roster-data'
-import { APP_STRINGS, ROLE_LABELS } from '@/lib/app/strings'
-import type { DanceRole } from '@/lib/moreskant-profile'
+import {
+  countLabel,
+  daysUntil,
+  groupByMonth,
+  pickNextPerformance,
+  type RosterPerformance,
+} from '@/lib/app/roster-loaders'
+import { performancePlace } from '@/lib/app/performance-place'
+import {
+  APP_STRINGS,
+  KIND_LABELS,
+  dayOfMonth,
+  formatPerformanceDate,
+  formatPerformanceDateLong,
+  shortWeekday,
+} from '@/lib/app/strings'
 import { resolveAppViewer } from '@/lib/app/viewer'
-import { vapidPublicKey } from '@/lib/push/vapid'
-import { calendarFeedUrl } from '@/lib/calendar/feed'
-import { CalendarPanel } from './CalendarPanel'
-import { InstallHint } from './InstallHint'
-import { LogoutButton } from './LogoutButton'
-import { PerformanceList } from './PerformanceList'
+import { AppShell } from './AppShell'
+import { AttendanceButtons } from './AttendanceButtons'
+import { DeniedPage } from './DeniedPage'
 
-// `/app` — the season's performances as cards (#421, ADR-0024 phase 3).
+// `/app` — the Izvedbe tab (#457, ADR-0024).
 //
-// Anonymous → /app/login. Signed in but not on the roster → "Nemate pristup"
-// with a link to the admin, because a wrong bookmark should explain itself
-// rather than show a blank screen (#419, story 37). Attendance buttons are #422.
+// The screen answers one question first: where am I next, and am I going. So
+// the next live evening gets a hero with the two buttons in it, and the rest of
+// the season is the agenda below it, grouped by month. The hero's evening is in
+// that agenda too: the list is the whole schedule, not the leftovers.
+//
+// Everything here is server-rendered except the two answer buttons. The old
+// "Nadolazeće | Prošle" toggle is gone: past evenings are a disclosure at the
+// bottom, because a dancer opens this app to look forward and the past is
+// something they go looking for.
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-function DeniedPage() {
-  return (
-    <main className="app__panel">
-      <h1>{APP_STRINGS.denied.title}</h1>
-      <p>{APP_STRINGS.denied.body}</p>
-      <p>
-        <Link className="app__link" href="/admin">
-          {APP_STRINGS.denied.adminLink}
-        </Link>
-      </p>
-      <LogoutButton className="app__button" />
-    </main>
-  )
+/** "danas" / "sutra" / "za 5 dana" — the right half of the hero eyebrow. */
+function relativeLabel(startMs: number, nowMs: number): string {
+  const days = daysUntil(startMs, nowMs)
+  if (days <= 0) return APP_STRINGS.home.today
+  if (days === 1) return APP_STRINGS.home.tomorrow
+  return APP_STRINGS.home.inDays(days)
 }
 
-/** "Cici · Crni kralj, Crni" — the small identity line of story 36. */
-function identityLine(member: { nickname?: string | null; roles?: string[]; primaryRole?: string | null }) {
-  const ordered = [
-    ...(member.primaryRole ? [member.primaryRole] : []),
-    ...(member.roles ?? []).filter((r) => r !== member.primaryRole),
-  ]
-  const labels = ordered.map((r) => ROLE_LABELS[r as DanceRole] ?? r)
-  return labels.length > 0 ? labels.join(', ') : APP_STRINGS.header.noRoles
+/** "21:00 · Ljetno kino", or "19:30 · Luka · Le Ponant" for a booking. */
+function metaLine(p: RosterPerformance): string {
+  const where = performancePlace(p)
+  return [p.time, where, p.isPublic ? null : p.client].filter(Boolean).join(' · ')
+}
+
+function AnswerBadge({ p }: { p: RosterPerformance }) {
+  if (p.myAnswer === 'coming') {
+    return <span className="app__badge app__badge--yes">{APP_STRINGS.home.answerYes}</span>
+  }
+  if (p.myAnswer === 'not_coming') {
+    return <span className="app__badge app__badge--no">{APP_STRINGS.home.answerNo}</span>
+  }
+  return <span className="app__badge app__badge--none">{APP_STRINGS.home.answerNone}</span>
+}
+
+/**
+ * One row of the agenda, the whole of it a link to the evening.
+ *
+ * A voditelj sees their OWN answer here like anybody else; the headcounts they
+ * work from live on the detail page, where there is room for two numbers and a
+ * threshold beside each.
+ */
+function PerformanceRow({
+  p,
+  badge,
+  showAnswer,
+}: {
+  p: RosterPerformance
+  badge?: React.ReactNode
+  /**
+   * False for a viewer with no Member row (a voditelj who does not dance):
+   * there is no answer of theirs to report, and "Bez odgovora" on every row
+   * would read as a list of things they are late on (#457 review).
+   */
+  showAnswer: boolean
+}) {
+  const where = performancePlace(p)
+  return (
+    <Link
+      className={`app__row${p.cancelled ? ' app__row--cancelled' : ''}`}
+      href={`/app/izvedba/${p.id}`}
+    >
+      <span className="app__row-tile">
+        <b>{dayOfMonth(p.date)}</b>
+        <small>{shortWeekday(p.date)}</small>
+      </span>
+      <span className="app__row-main">
+        <span className="app__row-time">
+          {p.time}
+          {where && <span>{where}</span>}
+        </span>
+        <span className="app__row-sub">
+          {KIND_LABELS[p.kind]}
+          {p.cancelled && ` · ${APP_STRINGS.home.cancelled}`}
+        </span>
+      </span>
+      {badge ?? (showAnswer ? <AnswerBadge p={p} /> : <span />)}
+    </Link>
+  )
 }
 
 export default async function MoreskantHomePage() {
   const viewer = await resolveAppViewer()
+  const me = accessMember(viewer.access)
+
+  // The Dobrodošlica is sent from HERE and from nowhere else (#457): every
+  // other page under `/app` opens on what it says it is, so a push deep-link
+  // into tonight's postava can never land on a walkthrough.
+  //
+  // Decided BEFORE the two early exits and out of the viewer itself, so every
+  // input the rule reads is the real one (#457 review) — the signed-out and the
+  // denied cases are the rule's to answer, not this file's to pre-empt — and
+  // acted on after them, so those two still get the page they are owed.
+  const jar = await cookies()
+  const welcome = needsOnboarding({
+    signedIn: viewer.signedIn,
+    denied: viewer.access.kind === 'denied',
+    hasMember: me != null,
+    cookiePresent: jar.has(ONBOARDING_COOKIE),
+  })
+
   if (!viewer.signedIn) redirect('/app/login')
   if (viewer.access.kind === 'denied') return <DeniedPage />
+  if (welcome) redirect('/app/dobrodosli')
 
-  const me = accessMember(viewer.access)
   const voditelj = viewer.access.kind === 'voditelj'
+
   const season = await getSeasonPerformances({ memberId: me?.id ?? null, voditelj })
 
-  // The shared feed (#433). Both halves are server facts handed down as one
-  // prop: a deployment missing either simply shows no panel, rather than a
-  // "Kalendar" heading over a broken link.
-  const calendarUrl = calendarFeedUrl(
-    process.env.NEXT_PUBLIC_BASE_URL,
-    process.env.CALENDAR_FEED_TOKEN,
-  )
+  const next = pickNextPerformance(season.upcoming)
+  const months = groupByMonth(season.upcoming)
+  const lastPast = season.past[0] ?? null
 
   return (
-    <div className="app__shell">
-      <header className="app__header">
-        <div>
-          <h1 className="app__brand">{APP_STRINGS.name}</h1>
-          {me?.nickname && (
-            <p className="app__identity">
-              <strong>{me.nickname}</strong> · {identityLine(me)}
+    <AppShell me={me} season={season.year}>
+      {next ? (
+        <section className="app__hero">
+          <p className="app__hero-eyebrow">
+            {APP_STRINGS.home.next}
+            <em>{relativeLabel(next.startMs, season.nowMs)}</em>
+          </p>
+          <p className="app__hero-date">{formatPerformanceDateLong(next.date)}</p>
+          <p className="app__hero-meta">{metaLine(next)}</p>
+
+          <div className="app__hero-tags">
+            {next.kind !== 'redovna' && <span className="app__chip">{KIND_LABELS[next.kind]}</span>}
+            {next.myArmy && (
+              <span className={`app__hero-army app__hero-army--${next.myArmy}`}>
+                {next.myArmy === 'crni' ? APP_STRINGS.home.armyCrni : APP_STRINGS.home.armyBili}
+              </span>
+            )}
+            {next.chip && (
+              <>
+                <span className={`app__chip${next.chip.crni.below ? ' app__chip--low' : ''}`}>
+                  {APP_STRINGS.detail.crni} {next.chip.crni.count}/{next.chip.crni.threshold}
+                </span>
+                <span className={`app__chip${next.chip.bili.below ? ' app__chip--low' : ''}`}>
+                  {APP_STRINGS.detail.bili} {next.chip.bili.count}/{next.chip.bili.threshold}
+                </span>
+              </>
+            )}
+          </div>
+
+          {next.voditeljNote && (
+            <p className="app__note">
+              <span className="app__note-label">{APP_STRINGS.card.noteLabel}</span>
+              {next.voditeljNote}
             </p>
           )}
-        </div>
-        <LogoutButton />
-      </header>
 
-      <p className="app__season">
-        {APP_STRINGS.list.season} {season.year}
-        {/* The way to the scoreboard (#437). One link rather than a nav bar:
-            `/app` has two destinations and a bar for two is chrome. */}
-        <Link className="app__link app__season-link" href="/app/statistika">
-          {APP_STRINGS.stats.link}
-        </Link>
-      </p>
+          {me && (
+            <div className="app__hero-answers">
+              <AttendanceButtons
+                performanceId={next.id}
+                memberId={me.id}
+                current={next.myAnswer}
+                disabled={!next.canAnswer}
+                lockNote={next.canAnswer ? null : APP_STRINGS.answer.locked}
+              />
+            </div>
+          )}
 
-      <PerformanceList
-        upcoming={season.upcoming}
-        past={season.past}
-        memberId={me?.id ?? null}
-        voditelj={voditelj}
-      />
+          <Link className="app__hero-link" href={`/app/izvedba/${next.id}`}>
+            {APP_STRINGS.home.detailLink}
+          </Link>
+        </section>
+      ) : (
+        <section className="app__eos">
+          {/* Two different pieces of news, and the title has to say which: a
+              season that is over names its last evening, one that has not
+              started has none to name (#457 review). */}
+          <h2>{lastPast ? APP_STRINGS.home.eosTitle : APP_STRINGS.home.eosNothingTitle}</h2>
+          <p>
+            {lastPast
+              ? APP_STRINGS.home.eosBody(formatPerformanceDate(lastPast.date))
+              : APP_STRINGS.home.eosNothing}
+          </p>
+          <Link className="app__button app__button--link" href="/app/moje">
+            {APP_STRINGS.home.eosLink}
+          </Link>
+        </section>
+      )}
 
-      {/* The public VAPID key is a server fact handed to the client as a prop
-          rather than a NEXT_PUBLIC_ twin of the same value (#431): one name for
-          one key means the operator cannot set half of a pair. */}
-      <InstallHint vapidPublicKey={vapidPublicKey()} />
+      {months.map((group) => (
+        <section className="app__month" key={`${group.year}-${group.month}`}>
+          <h2 className="app__month-head">
+            {/* The count is of evenings that are still going to happen: a
+                cancelled row stays in the list, struck through, but it is not
+                one of "4 izvedbe" in September (#457 review). */}
+            <span>{group.label}</span>
+            <b>{countLabel(group.performances.filter((p) => !p.cancelled).length)}</b>
+          </h2>
+          {group.performances.map((p) => (
+            <PerformanceRow key={p.id} p={p} showAnswer={me != null} />
+          ))}
+        </section>
+      ))}
 
-      {calendarUrl && <CalendarPanel url={calendarUrl} />}
-    </div>
+      {season.past.length > 0 && (
+        <details className="app__past">
+          <summary>{APP_STRINGS.home.past(season.past.length)}</summary>
+          {season.past.map((p) => (
+            <PerformanceRow
+              key={p.id}
+              p={p}
+              showAnswer={me != null}
+              badge={
+                p.lineupConfirmed ? (
+                  <span className="app__badge app__badge--lineup">
+                    {APP_STRINGS.home.lineupConfirmed}
+                  </span>
+                ) : (
+                  <span />
+                )
+              }
+            />
+          ))}
+        </details>
+      )}
+    </AppShell>
   )
 }

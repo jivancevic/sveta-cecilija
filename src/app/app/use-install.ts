@@ -23,14 +23,12 @@ export interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
 }
 
-export function pushSupported(): boolean {
-  return (
-    typeof window !== 'undefined' &&
-    'serviceWorker' in navigator &&
-    'PushManager' in window &&
-    'Notification' in window
-  )
-}
+/**
+ * Re-exported, not re-implemented (#457): `push-client.ts` owns every browser
+ * push call, so "can this browser subscribe at all" has ONE answer. The banner
+ * reads it from here because that is where the rest of its facts live.
+ */
+export { pushSupported } from './push-client'
 
 function standalone(): boolean {
   try {
