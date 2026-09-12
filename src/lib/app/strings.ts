@@ -374,6 +374,8 @@ export const APP_STRINGS = {
    */
   inviteLink: {
     title: 'Pozivnice',
+    /** The second half of the screen: the roster, one invitation at a time. */
+    listTitle: 'Pošalji pozivnicu',
     intro:
       'Kopiraj pozivnicu i pošalji je SMS-om. Poveznica prijavljuje moreškanta bez lozinke i vrijedi 7 dana.',
     /** The one sentence that decides whether the app can be installed at all. */
@@ -396,6 +398,57 @@ export const APP_STRINGS = {
     /** The message itself, as it lands in the dancer's inbox. */
     message: (greeting: string, link: string) =>
       `${greeting ? `Bok ${greeting}, ` : 'Bok, '}ovo je tvoja pozivnica za aplikaciju Moreškant, gdje se vidi raspored izvedbi i javlja dolazak: ${link} Otvori poveznicu i odmah si prijavljen, bez lozinke. Vrijedi 7 dana.`,
+  },
+
+  /**
+   * The rehearsal join code (#463): `/app/join/<kod>` and the voditelj's half.
+   *
+   * The dancer's side of this screen is read by somebody who has never used the
+   * app, standing in a hall, on a phone somebody else may be holding. So it
+   * says what will happen before it happens ("javit ćemo voditelju"), and every
+   * dead end names the person to ask rather than the rule that was broken.
+   */
+  join: {
+    title: 'Pridruži se',
+    intro: 'Odaberi svoje ime s popisa. Voditelj će potvrditi i aplikacija se otvara.',
+    /** The code is dead or was never real: the voditelj has a new one. */
+    badCode: 'Kod nije ispravan ili je istekao. Zatraži novi od voditelja.',
+    badMember: 'Taj član nije na popisu aktivnih moreškanata.',
+    alreadyHasLogin: 'Taj moreškant već ima prijavu. Zatraži poveznicu od voditelja.',
+    alreadyPending: 'Zahtjev za tog moreškanta već čeka potvrdu.',
+    throttled: 'Previše pokušaja. Pričekaj malo pa probaj ponovno.',
+    empty: 'Svi aktivni moreškanti već imaju prijavu.',
+    /** The wait, which is the screen a dancer actually sits on. */
+    waiting: 'Javili smo voditelju. Čekaj potvrdu, ne zatvaraj ovu stranicu.',
+    approved: 'Potvrđeno. Otvaram aplikaciju...',
+    rejected: 'Zahtjev nije potvrđen. Javi se voditelju.',
+    expired: 'Zahtjev je istekao. Odaberi svoje ime ponovno.',
+    unexpected: 'Trenutno nije moguće. Pokušaj ponovno.',
+
+    /** The voditelj's half, on `/app/pozivnice`. */
+    codeTitle: 'Kod za probu',
+    codeIntro:
+      'Pokaži ovaj QR ili kod na probi. Moreškant odabere svoje ime, ti potvrdiš i ulazi bez lozinke.',
+    codeNone: 'Nema aktivnog koda.',
+    codeCreate: 'Napravi kod',
+    codeRotate: 'Novi kod',
+    codeWorking: 'Radim...',
+    codeValid: (until: string) => `Vrijedi do ${until}`,
+    codeFailed: 'Kod nije napravljen. Pokušaj ponovno.',
+    /** Rotating kills the old one, which is the point: say so before the tap. */
+    rotateHint: 'Novi kod poništava stari, pa stara slika QR-a više ne vrijedi.',
+    pendingTitle: 'Čekaju potvrdu',
+    pendingNone: 'Nema zahtjeva.',
+    approve: 'Potvrdi',
+    reject: 'Odbij',
+    deciding: 'Šaljem...',
+    badClaim: 'Taj zahtjev ne postoji.',
+    decided: 'O tom zahtjevu je već odlučeno.',
+    claimExpired: 'Zahtjev je istekao. Neka moreškant odabere svoje ime ponovno.',
+    loginFailed: 'Prijava nije otvorena. Pokušaj ponovno.',
+    approveFailed:
+      'Prijava je otvorena, ali zahtjev nije potvrđen. Pošalji mu pozivnicu s popisa ispod.',
+    decideFailed: 'Nije uspjelo. Pokušaj ponovno.',
   },
 
   /**

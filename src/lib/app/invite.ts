@@ -256,6 +256,89 @@ function greetingFor(member: InviteMember): string {
   )
 }
 
+/** What `ensureDancerLogin` needs: the account half of `InviteDeps`. */
+export type EnsureLoginDeps = Pick<
+  InviteDeps,
+  'findUserByMember' | 'usernameTaken' | 'createUser' | 'updateUserEmail' | 'randomPassword'
+>
+
+export type EnsureLoginOutcome =
+  | { ok: true; user: InviteUser; created: boolean }
+  | { ok: false; reason: 'staff-login' | 'create-failed' }
+
+/**
+ * The dancer's login: find the one linked to this Member, or open it.
+ *
+ * **What a moreškant's account IS, in one function.** Three callers now depend
+ * on it being one: the invitation mail, "Kopiraj pozivnicu" and a voditelj
+ * approving a join claim at a rehearsal (#463). A dancer must end up with the
+ * same account whichever door they came through — the same `['moreskant']`
+ * bundle, the same `member` link, the same slugged username, the same unusable
+ * random password — and three hand-written versions of that is how one of them
+ * quietly grants something the others do not.
+ *
+ * The takeover guard runs first (#462 review) and is the reason this returns a
+ * REASON rather than throwing: the Member's login may be a colleague's staff
+ * account, and every caller has to refuse that before it moves an e-mail, mints
+ * a token or opens a session.
+ */
+export async function ensureDancerLogin(
+  member: InviteMember,
+  deps: EnsureLoginDeps,
+): Promise<EnsureLoginOutcome> {
+  const email = typeof member.email === 'string' ? member.email.trim() : ''
+
+  let user: InviteUser | null = null
+  try {
+    user = await deps.findUserByMember(member.id)
+  } catch {
+    user = null
+  }
+
+  // Everything below this line assumes the login it found is a dancer's;
+  // `isDancerLogin` is where that assumption is checked. It matters as much on
+  // the link channel as in the mail: a copied sign-in link is a session in a
+  // text message, so aiming one at a colleague's staff account is the same
+  // theft by a quieter route.
+  if (!isDancerLogin(user)) return { ok: false, reason: 'staff-login' }
+
+  if (!user) {
+    const username = await allocateUsername(member.nickname, deps.usernameTaken)
+    try {
+      user = await deps.createUser({
+        username,
+        // Omitted rather than empty when there is none: Payload's unique index
+        // on `email` would make the second address-less dancer a duplicate.
+        ...(email ? { email } : {}),
+        password: deps.randomPassword(),
+        // The whole bundle, spelled here once: a dancer's login reaches /app
+        // and their own answers, nothing else.
+        permissions: ['moreskant'],
+        member: member.id,
+      })
+    } catch {
+      // The realistic failure is a duplicate email (the address already belongs
+      // to another account), which is a data problem the voditelj can fix.
+      return { ok: false, reason: 'create-failed' }
+    }
+    return { ok: true, user, created: true }
+  }
+
+  // The Member's e-mail wins: the Member row is where a voditelj maintains a
+  // dancer's contact details, and two addresses for one person would mean the
+  // sign-in link going to the stale one.
+  if (email && typeof user.email === 'string' && user.email.trim().toLowerCase() !== email.toLowerCase()) {
+    try {
+      await deps.updateUserEmail(user.id, email)
+      user = { ...user, email }
+    } catch {
+      return { ok: false, reason: 'create-failed' }
+    }
+  }
+
+  return { ok: true, user, created: false }
+}
+
 /** The invitation both channels need, or the refusal both would give. */
 type MintedInvitation =
   | {
@@ -320,54 +403,14 @@ async function mintInvitation(
   // (`user-email-policy.ts`), so this is the only place the absence bites.
   if (!email && channel === 'email') return no(400, APP_STRINGS.invite.noEmail)
 
-  let user: InviteUser | null = null
-  try {
-    user = await deps.findUserByMember(member.id)
-  } catch {
-    user = null
+  const login = await ensureDancerLogin(member, deps)
+  if (!login.ok) {
+    return no(
+      login.reason === 'staff-login' ? 409 : 400,
+      login.reason === 'staff-login' ? APP_STRINGS.invite.staffLogin : APP_STRINGS.invite.createFailed,
+    )
   }
-
-  // The takeover guard, before the e-mail move and before any token is minted
-  // (#462 review). Everything below this line assumes the login it found is a
-  // dancer's; `isDancerLogin` is where that assumption is checked. It matters
-  // as much on the link channel: a copied sign-in link is a session in a text
-  // message, so aiming one at a colleague's staff account is the same theft by
-  // a quieter route.
-  if (!isDancerLogin(user)) return no(409, APP_STRINGS.invite.staffLogin)
-
-  let created = false
-  if (!user) {
-    const username = await allocateUsername(member.nickname, deps.usernameTaken)
-    try {
-      user = await deps.createUser({
-        username,
-        // Omitted rather than empty when there is none: Payload's unique index
-        // on `email` would make the second address-less dancer a duplicate.
-        ...(email ? { email } : {}),
-        password: deps.randomPassword(),
-        // The whole bundle, spelled here once: a dancer's login reaches /app
-        // and their own answers, nothing else.
-        permissions: ['moreskant'],
-        member: member.id,
-      })
-    } catch {
-      // The realistic failure is a duplicate email (the address already belongs
-      // to another account), which is a data problem the voditelj can fix.
-      return no(400, APP_STRINGS.invite.createFailed)
-    }
-    created = true
-  } else if (
-    email &&
-    typeof user.email === 'string' &&
-    user.email.trim().toLowerCase() !== email.toLowerCase()
-  ) {
-    try {
-      await deps.updateUserEmail(user.id, email)
-      user = { ...user, email }
-    } catch {
-      return no(400, APP_STRINGS.invite.createFailed)
-    }
-  }
+  const { user, created } = login
 
   // Target the login by username when it has one: it is unique, stable and
   // unaffected by the email we may have just moved. Payload's forgotPassword

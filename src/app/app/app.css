@@ -2434,3 +2434,41 @@ a.app__ob-link {
   text-align: center;
   text-decoration: none;
 }
+
+/* The rehearsal code (#463). The QR is held up on a phone as often as it is
+   printed, so it gets a white plate: a dark theme behind a QR is a QR half the
+   scanners in the room will not read. */
+.app__join-code {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  text-align: center;
+}
+
+.app__join-qr {
+  width: 220px;
+  height: 220px;
+  padding: 10px;
+  background: #fff;
+  border-radius: var(--radius);
+}
+
+.app__join-code-value {
+  margin: 0;
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 28px;
+  letter-spacing: 0.22em;
+  /* The code is read off a screen across a room: it is the biggest thing here
+     after the QR, and the letters are drawn from an alphabet with no 0/O. */
+  color: var(--goldBright);
+}
+
+.app__join-code-url,
+.app__join-code-valid {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
