@@ -2,9 +2,11 @@ import type { Metadata, Viewport } from 'next'
 import { bodoni, ibmPlexMono, inter } from '@/app/(frontend)/fonts'
 import { INSTALL_PROMPT_CAPTURE } from '@/lib/app/platform'
 import { APP_STRINGS } from '@/lib/app/strings'
+import { vapidPublicKey } from '@/lib/push/vapid'
+import { ServiceWorkerMigration } from './ServiceWorkerMigration'
 import './app.css'
 
-// The Moreškant app's own root layout (#421, ADR-0023).
+// Cecilija's own root layout (#421, ADR-0023).
 //
 // `/app` lives outside `(frontend)` and `(payload)` with its own <html>, the
 // way `/scan` does: no public nav, no cookie banner, no Tailwind, no locale
@@ -44,6 +46,7 @@ export default function MoreskantAppLayout({ children }: { children: React.React
           lives in `InstallHint`.
         */}
         <script dangerouslySetInnerHTML={{ __html: INSTALL_PROMPT_CAPTURE }} />
+        <ServiceWorkerMigration vapidPublicKey={vapidPublicKey()} />
         {children}
       </body>
     </html>

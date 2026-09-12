@@ -3,6 +3,8 @@
 **Status:** Accepted
 **Date:** 2026-09-07
 
+> **Name note (2026-09-12, #489):** the app this ADR calls *Moreškant* is now called **Cecilija**; "moreškant" names the dancer and this roster section of it. Nothing in the model below changes. The rebrand itself is recorded in ADR-0027.
+
 ## Context
 
 The society needs a roster and notification tool for its dancers: who is coming to which performance, an alarm when an army is short, the final lineup per performance, and season statistics. It must integrate with the existing app (same login, same tickets), be trivial to "install" on a phone, and let voditelji record lineups from a photo of the paper list via the Claude app. Glossary terms are in `CONTEXT.md` under *Moreškant*.

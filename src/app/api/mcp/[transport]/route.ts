@@ -170,7 +170,7 @@ const handler = createMcpHandler(
       async ({ rows }, extra) => jsonText(await createPerformances({ rows }, await storeFor(extra))),
     )
   },
-  { serverInfo: { name: 'moreskant-mcp', version: '1.0.0' } },
+  { serverInfo: { name: 'cecilija-mcp', version: '1.0.0' } },
   {
     basePath: '/api/mcp',
     verboseLogs: process.env.NODE_ENV !== 'production',

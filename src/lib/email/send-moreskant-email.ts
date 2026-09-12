@@ -1,4 +1,4 @@
-// The two Moreškant account mails (#424): the invitation and the sign-in link.
+// The two Cecilija account mails (#424): the invitation and the sign-in link.
 //
 // One module, because they are one letter with two openings: both carry the
 // same `/app/prijava?token=…` link, both are Croatian, both go from
@@ -39,8 +39,8 @@ export interface MoreskantEmailDeps {
 }
 
 export const MORESKANT_EMAIL_SUBJECTS: Record<MoreskantEmailKind, string> = {
-  invite: 'Pozivnica za Moreškant',
-  signin: 'Poveznica za prijavu u Moreškant',
+  invite: 'Pozivnica za Ceciliju',
+  signin: 'Poveznica za prijavu u Ceciliju',
 }
 
 function escapeHtml(value: string): string {
@@ -60,12 +60,12 @@ function renderGreeting(greeting: string): string {
 function renderBody(kind: MoreskantEmailKind): string[] {
   if (kind === 'invite') {
     return [
-      'Otvorena ti je prijava za aplikaciju Moreškant, gdje se vidi raspored izvedbi i javlja dolazak.',
+      'Otvorena ti je prijava za Ceciliju, gdje se vidi raspored izvedbi i javlja dolazak.',
       'Klikni na poveznicu i odmah si prijavljen, bez lozinke. Poveznica vrijedi 7 dana.',
     ]
   }
   return [
-    'Zatražena je poveznica za prijavu u aplikaciju Moreškant.',
+    'Zatražena je poveznica za prijavu u Ceciliju.',
     'Klikni na poveznicu i prijavljujemo te. Poveznica vrijedi 1 sat.',
   ]
 }

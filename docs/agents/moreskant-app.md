@@ -1,4 +1,8 @@
-# The Moreškant app (`/app`)
+# Cecilija (`/app`)
+
+**The app is called Cecilija** (renamed from *Moreškant* in #489; rule and
+declension in `CONTEXT.md` → *Product surfaces*). "Moreškant" now names only the
+dancer and the roster section of Cecilija, which is what this file documents.
 
 The dancer-facing surface of the roster module ([ADR-0023](../adr/0023-permissions-replace-roles-app-surface.md), [ADR-0024](../adr/0024-moreskant-roster-domain.md); phase 3 = #419). Croatian only, mobile first, no ticketing. Glossary in `CONTEXT.md` → *Moreškant*.
 
@@ -168,7 +172,17 @@ Access follows the **roster, not the login table**: unticking `active` or `isMor
 
 ## PWA
 
-`public/manifest.webmanifest`: name and short name "Moreškant", `display: standalone`, `start_url` and `scope` `/app`, stone background and gold theme taken from the `.t-stone` tokens, 192 and 512 px PNG icons derived from the Cecilija logo (the webp rule in `assets.md` covers photos in `public/`; manifest icons are PNG by spec). Linked from the `/app` layout only, so no public page advertises it.
+`public/manifest.webmanifest`: name and short name "Cecilija", `display: standalone`, `start_url` and `scope` `/app`, stone background and gold theme taken from the `.t-stone` tokens, 192 and 512 px PNG icons plus a 512 px maskable one (the webp rule in `assets.md` covers photos in `public/`; manifest icons are PNG by spec). Linked from the `/app` layout only, so no public page advertises it.
+
+The icons are **generated, not drawn**: `node scripts/generate-app-icons.mjs` builds `cecilija-icon-192.png`, `cecilija-icon-512.png`, `cecilija-icon-maskable-512.png` and the root `apple-touch-icon.png` from `assets/images/cecilija-logo.png` (ImageMagick, the same local tool `assets.md` assumes for `cwebp`). The maskable one carries a smaller crest because Android crops to the central 80% circle, and it drops the gold hairline the other three have. A logo change is one command, never a hunt through `public/`.
+
+**The icon an iPhone installs is not the manifest's.** iOS reads the
+`apple-touch-icon` link, which Next emits from the nearest segment's
+`apple-icon.png`, so `/app` carries its own at `src/app/app/apple-icon.png` and
+the public site keeps the root one. Editing the manifest alone would leave the
+society's website icon on the dancer's home screen.
+
+**An iPhone freezes the name and the icon at install time.** Android and Chrome pick up a renamed manifest on their own; an installed iOS app does not, so the two phones that installed "Moreškant" have to delete and re-add it. That is the whole user cost of the rebrand (#489).
 
 ### The status bar is the app's to clear (#482)
 
@@ -690,7 +704,7 @@ the next section.
 
 ### The service worker lives at the ROOT, and that is load-bearing
 
-`public/moreskant-sw.js`, registered with `scope: '/app'`. A worker's default
+`public/cecilija-sw.js`, registered with `scope: '/app'`. A worker's default
 maximum scope is its own directory, so a script under `public/app/` could only
 claim `/app/` — and `/app/` does **not** cover `/app` itself, which is the page
 the banner lives on: `navigator.serviceWorker.ready` there waits forever. Found
@@ -698,6 +712,17 @@ in a real Chrome, not in a test. From the root the allowed maximum is `/`, so
 `/app` is granted with no `Service-Worker-Allowed` header.
 
 The worker handles `push`, `notificationclick` and `pushsubscriptionchange`.
+
+**Renaming the worker file needs a migration, and there is one** (#489). A
+device holding the old `moreskant-sw.js` registration holds one whose script is
+now a 404: nothing tells that device, and its push simply stops. So
+`migrateLegacyServiceWorker()` in `push-client.ts` runs on every `/app` load
+(mounted by `ServiceWorkerMigration` in the layout): it unregisters a
+registration whose script ends in `moreskant-sw.js`, registers the new one, and
+re-subscribes plus re-POSTs only if that device was actually subscribed.
+Unregister comes FIRST, because unregistering drops the push subscription with
+it. It is a migration, not a feature: delete it once the roster's devices have
+all opened the app after the rebrand.
 **There is no fetch handler and no cache**, deliberately: phase 3's reason still
 holds (`/app` is server-rendered from data that changes hour by hour, so a cache
 could only turn app bugs into caching bugs). A click opens
@@ -1380,7 +1405,7 @@ account, as two things that back each other up:
 
 1. **The cookie, set by the server.** `POST /api/app/onboarding/done`
    (`src/app/api/app/onboarding/done/route.ts`) answers 204 with
-   `Set-Cookie: moreskant_onboarded=1; Path=/app; HttpOnly; SameSite=Lax; Max-Age=31536000`
+   `Set-Cookie: cecilija_onboarded=1; Path=/app; HttpOnly; SameSite=Lax; Max-Age=31536000`
    (plus `Secure` when the request arrived over https). A **one-year** cookie
    has to come from a header: Safari's ITP caps a `document.cookie` write at
    seven days, so a browser-written one would quietly become "next week" and
@@ -1388,7 +1413,7 @@ account, as two things that back each other up:
    cookie and nothing else, and still carries the full `/app` gate — the
    cross-site check (`rejectAppRequest`) first, then
    `requirePermission(['moreskant', 'moreska'])`.
-2. **`localStorage['moreskant.onboarding.done']`, the rescue.** The client
+2. **`localStorage['cecilija.onboarding.done']`, the rescue.** The client
    writes it when the walkthrough ends and reads it **on mount** of
    `/app/dobrodosli`: a device that has seen the walkthrough but lost its cookie
    (expired, cleared with the site data, a private window) re-POSTs for a new
