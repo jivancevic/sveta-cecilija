@@ -53,11 +53,17 @@
 }
 
 /* The bar is fixed, so the content ends above it: bar + the iPhone's home
-   indicator + a thumb's worth of air, or the last row sits under the bar. */
+   indicator + a thumb's worth of air, or the last row sits under the bar.
+
+   The top inset is the same story at the other end. `viewport-fit=cover` plus
+   `black-translucent` (layout.tsx) means the installed app's web view starts at
+   y=0, under the clock and the Dynamic Island, so the header needs the inset
+   added or "Moreškant" renders behind the status bar. Safari adds 0px here, so
+   the browser tab is unchanged. */
 .app__shell {
   max-width: 640px;
   margin: 0 auto;
-  padding: 0 16px calc(var(--tabH) + env(safe-area-inset-bottom) + 24px);
+  padding: env(safe-area-inset-top) 16px calc(var(--tabH) + env(safe-area-inset-bottom) + 24px);
 }
 
 /* ── Header ─────────────────────────────────────────────── */
@@ -494,10 +500,12 @@
 }
 
 /* ── Login + denied ─────────────────────────────────────── */
+/* Same top inset as `.app__shell`: /app/instalacija is opened from a QR code
+   and the auth panels are reachable inside an already-installed app. */
 .app__panel {
   max-width: 420px;
   margin: 0 auto;
-  padding: 48px 16px 64px;
+  padding: calc(env(safe-area-inset-top) + 48px) 16px 64px;
 }
 
 .app__panel h1 {
