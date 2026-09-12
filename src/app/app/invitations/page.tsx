@@ -1,12 +1,12 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { redirect } from 'next/navigation'
 import QRCode from 'qrcode'
 import { getInviteCandidates } from '@/lib/app/invite-list-data'
 import { getCurrentJoinCode, getPendingJoinClaims } from '@/lib/app/join-data'
 import { formatDateTimeHr } from '@/lib/app/join'
 import { APP_STRINGS } from '@/lib/app/strings'
 import { AppShell } from '../AppShell'
+import { DeniedPage } from '../DeniedPage'
 import { openScreen } from '../gate'
 import { InviteList } from './InviteList'
 import { JoinCodeCard } from './JoinCodeCard'
@@ -33,7 +33,13 @@ export const metadata: Metadata = {
 export default async function InvitationsPage() {
   const { viewer, refusal } = await openScreen()
   if (refusal) return refusal
-  if (!viewer.voditelj) redirect('/app')
+  // A row under Više rather than a screen of its own, so the table cannot
+  // refuse it: the page does, with the same panel a wrong route gets (#473).
+  // Never a silent redirect — a dancer who was sent this link should read why
+  // it is not for them, not find themselves somewhere else.
+  if (!viewer.voditelj) {
+    return <DeniedPage landing={viewer.nav.landing} dev={viewer.permissions.includes('dev')} />
+  }
 
   const [candidates, joinCode, pending] = await Promise.all([
     getInviteCandidates(),
