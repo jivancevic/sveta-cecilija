@@ -80,6 +80,15 @@ export default async function MorePage() {
           {APP_STRINGS.setPassword.title}
           <span aria-hidden="true">›</span>
         </Link>
+        {/* The voditelj's own onboarding screen (#463): invitations by SMS and
+            the rehearsal join code. It is here rather than in `/admin` because
+            both are done standing in the room, on the phone in their hand. */}
+        {voditelj && (
+          <Link className="app__more-row" href="/app/pozivnice">
+            {APP_STRINGS.inviteLink.title}
+            <span aria-hidden="true">›</span>
+          </Link>
+        )}
         {voditelj && (
           <>
             {/* The admin is a different app under the same origin, so these are

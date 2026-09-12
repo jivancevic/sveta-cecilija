@@ -385,10 +385,13 @@ export const APP_STRINGS = {
     copied: (name: string) => `Pozivnica za ${name} je kopirana. Pošalji je SMS-om.`,
     /** The clipboard is refused in more browsers than one expects; show the text. */
     copyFailed: 'Kopiranje nije uspjelo. Označi poruku i kopiraj je ručno.',
+    copiedShort: 'Kopirano',
     sms: 'SMS',
     whatsapp: 'WhatsApp',
     noMobile: 'nema mobitel',
     empty: 'Svi aktivni moreškanti već imaju prijavu.',
+    /** The ones already in, kept on the list because re-sending is the fix. */
+    joined: (count: number) => `Već imaju prijavu (${count})`,
     failed: 'Pozivnica nije izrađena. Pokušaj ponovno.',
     /** The message itself, as it lands in the dancer's inbox. */
     message: (greeting: string, link: string) =>

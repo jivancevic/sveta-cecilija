@@ -17,6 +17,8 @@
 //
 // Pure and table-tested; the components only render what these return.
 
+import { memberEligibility, type LinkSelfMember } from './link-self'
+
 /**
  * A Croatian mobile in international digits, or null when it cannot be read.
  *
@@ -71,4 +73,51 @@ export function smsHref(
 export function whatsappHref(mobile: string | null, message: string): string {
   const target = mobile ?? ''
   return `https://wa.me/${target}?text=${encodeURIComponent(message)}`
+}
+
+/** A roster row as this screen reads it: the self-link's shape plus the mobile. */
+export interface InviteRosterMember extends LinkSelfMember {
+  mobile?: string | null
+}
+
+/** One line of the voditelj's invitations list. A projection, never a spread. */
+export interface InviteCandidate {
+  id: string
+  name: string
+  nickname: string | null
+  /** As typed on the Member row; the deep links normalise it (see above). */
+  mobile: string | null
+  /** Does some login already point at this Member (`member-logins.ts`)? */
+  hasLogin: boolean
+}
+
+/**
+ * The roster as the invitations screen lists it: every ACTIVE moreškant, with
+ * the one fact that decides which half of the screen they are in.
+ *
+ * A dancer who already has a login stays on the list rather than disappearing
+ * from it, because "Kopiraj pozivnicu" is idempotent and re-issuing is the
+ * whole answer to a lost phone (#419, story 7). The screen simply puts them
+ * under the ones who still need doing.
+ *
+ * The "is this a dancer at all" half of the rule is `memberEligibility`
+ * (#462), which the self-link screen and the link-self POST already share:
+ * "an active moreškant" has one definition here, not three.
+ */
+export function inviteCandidates(
+  members: readonly InviteRosterMember[],
+  memberIdsWithLogin: ReadonlySet<string>,
+): InviteCandidate[] {
+  return members
+    .filter((m) => memberEligibility(m, false) === null)
+    .map((m) => ({
+      id: String(m.id),
+      name: typeof m.name === 'string' ? m.name : '',
+      nickname: typeof m.nickname === 'string' ? m.nickname : null,
+      mobile: typeof m.mobile === 'string' ? m.mobile : null,
+      hasLogin: memberIdsWithLogin.has(String(m.id)),
+    }))
+    .sort((a, b) =>
+      (a.nickname || a.name).localeCompare(b.nickname || b.name, 'hr', { sensitivity: 'base' }),
+    )
 }

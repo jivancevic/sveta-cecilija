@@ -2382,3 +2382,55 @@ a.app__ob-link {
 .app__hero-link--link-self {
   margin-top: 4px;
 }
+
+/* `/app/pozivnice` (#463): the voditelj hands an invitation over by phone.
+
+   The SMS sentence is the one piece of advice on the screen that changes the
+   outcome (a messenger's webview cannot install the app), so it is a framed
+   note rather than another line of muted intro text. */
+.app__invite-hint {
+  margin: 0 0 14px;
+  padding: 10px 12px;
+  border: 1px solid var(--cardEdge);
+  border-left: 3px solid var(--gold);
+  border-radius: var(--radius);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+/* A row that has been minted: the message the voditelj is about to send, then
+   the three ways to send it. It replaces the tappable row in place, so the list
+   keeps its order and nothing jumps under the thumb. */
+.app__invite-row {
+  padding: 12px 0;
+  border-bottom: 1px solid #1f1f1f;
+}
+
+.app__invite-who {
+  margin: 0 0 6px;
+  font-size: 16px;
+  color: var(--light);
+}
+
+.app__invite-message {
+  margin: 0 0 10px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--muted);
+  /* A link with a token is one long unbreakable word on a 360px screen. */
+  overflow-wrap: anywhere;
+}
+
+.app__invite-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.app__invite-actions .app__button {
+  flex: 1 1 auto;
+  min-width: 96px;
+  text-align: center;
+  text-decoration: none;
+}

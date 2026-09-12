@@ -144,7 +144,14 @@ export const Members: CollectionConfig = {
       // edit-menu actions. It renders only on a saved moreškant row, and the
       // route it posts to re-checks `moreska` itself.
       edit: {
-        editMenuItems: ['@/components/payload/InviteMoreskantMenuItem#InviteMoreskantMenuItem'],
+        editMenuItems: [
+          '@/components/payload/InviteMoreskantMenuItem#InviteMoreskantMenuItem',
+          // "Kopiraj pozivnicu" (#463): the same invitation for the dancer who
+          // has no e-mail, which the button above refuses and which is most of
+          // the roster. It copies the message; the phone half (SMS, WhatsApp)
+          // is `/app/pozivnice`.
+          '@/components/payload/CopyInviteMenuItem#CopyInviteMenuItem',
+        ],
       },
       // "Pošalji pozivnice svima" (#462): the same action for everyone still
       // missing a login, so the gap is closed rather than hunted for down the
