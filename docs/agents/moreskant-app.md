@@ -133,8 +133,8 @@ same `AppNav` the server computed, so a phone never ships the permission table.
 - Moreškant identity on `Members` and the `Users.member` link (#420).
 - The `/app` route group: login, the access decision, the season's performance cards, the PWA manifest (#421).
 - **Attendance**: the collection, the answer rules, the army count, Dolazim / Ne dolazim on every card (#422).
-- **The performance detail** `/app/izvedba/[id]`: armies against thresholds, on-behalf answers, the army move, the card headcount chip (#423).
-- **Invitations** (#424): "Pošalji pozivnicu" on a Member, `/app/set-password`, "Zaboravljena lozinka". Rewritten by #463: the link signs the dancer in and the password is optional.
+- **The performance detail** `/app/performances/[id]`: armies against thresholds, on-behalf answers, the army move, the card headcount chip (#423).
+- **Invitations** (#424): "Pošalji pozivnicu" on a Member, `/app/account`, "Zaboravljena lozinka". Rewritten by #463: the link signs the dancer in and the password is optional.
 
 ## What ships in phase 4 (#430, batches A → E)
 
@@ -183,7 +183,7 @@ The identifier field takes an **email or a username** (ADR-0011 hybrid login); w
 | holds `moreskant`, Member exists, `active`, `isMoreskant` | `moreskant` |
 | anything else | `denied` |
 
-Access follows the **roster, not the login table**: unticking `active` or `isMoreskant` locks a dancer out on the next request without deleting anything (#419, story 16). A voditelj with no Member link is valid (story 15); a `moreskant` with a missing or stale link is denied (story 38). A voditelj who *does* dance fills the link in themselves through `/app/povezi` (#462, below) — the field is locked to `users` and used to need an administrator.
+Access follows the **roster, not the login table**: unticking `active` or `isMoreskant` locks a dancer out on the next request without deleting anything (#419, story 16). A voditelj with no Member link is valid (story 15); a `moreskant` with a missing or stale link is denied (story 38). A voditelj who *does* dance fills the link in themselves through `/app/account` (#462, below) — the field is locked to `users` and used to need an administrator.
 
 `src/lib/app/viewer.ts` is the IO half. It does the two things the pure decision cannot:
 
@@ -238,9 +238,9 @@ What this replaced, and why each half was wrong: the old banner asked "push supp
 
 The banner asks that question, and every other browser push call, through **`push-client.ts`** (#457): `use-install.ts` re-exports its `pushSupported` rather than restating it, so "can this browser subscribe" has one answer. The split is by subject, not by screen: `platform.ts` + `use-install.ts` own WHICH DEVICE this is, `push-client.ts` owns the subscription and its round trip to `/api/app/push/*`, and the components own only what is said. `InstallHint` carries its own heading ("Instalacija" or "Obavijesti", whichever card it is showing), because whether there is anything to put under one is a fact only it knows.
 
-**The three places that show these instructions are one implementation.** The banner, the Dobrodošlica's first step and `/app/instalacija` all call `readPlatform()` and render `InstallSteps`, all offer the same one-tap `install.action` button when Chromium parked a prompt, and all show the same way out of a webview. There is no second set of install copy anywhere in `/app`.
+**The three places that show these instructions are one implementation.** The banner, the Dobrodošlica's first step and `/app/install` all call `readPlatform()` and render `InstallSteps`, all offer the same one-tap `install.action` button when Chromium parked a prompt, and all show the same way out of a webview. There is no second set of install copy anywhere in `/app`.
 
-**`/app/instalacija`** is the same guide full screen, and deliberately **not** behind the access decision: it is the target of the QR code a voditelj puts on the wall at a rehearsal, and the person scanning it has not signed in yet. Its platform switch exists because the voditelj is holding somebody else's phone half the time.
+**`/app/install`** is the same guide full screen, and deliberately **not** behind the access decision: it is the target of the QR code a voditelj puts on the wall at a rehearsal, and the person scanning it has not signed in yet. Its platform switch exists because the voditelj is holding somebody else's phone half the time.
 
 ### Why not the App Store or Google Play (#455)
 
@@ -326,7 +326,7 @@ started" without a join.
 
 ### The detail view
 
-`/app/izvedba/[id]`, loaded by `src/lib/app/detail-loaders.ts` (pure) +
+`/app/performances/[id]`, loaded by `src/lib/app/detail-loaders.ts` (pure) +
 `detail-data.ts` (the Payload calls). Read-only is a property of the **viewer**,
 not of the page: a moreškant looking back at last week sees the answers as they
 were, a voditelj can still correct them. Mobiles are `tel:` links; there is no
@@ -499,8 +499,8 @@ dropped in silence.
 
 That lock had one victim: a **voditelj who also dances**. `Users.member` is
 locked to `users` for read *and* write, so they could not see the field, let
-alone fill it, and `decideAppAccess` handed them `{ kind: 'voditelj', self:
-null }` — a state that is perfectly valid for a voditelj who does not dance
+alone fill it, and `decideAppAccess` handed them a viewer with `self: null` —
+a state that is perfectly valid for a voditelj who does not dance
 (story 15) and indistinguishable from one whose link was never set. They could
 not answer their own dolazak and could not appear in a postava, and the only
 repair was somebody with `users` editing the row by hand.
@@ -531,7 +531,7 @@ un-links rather than leaving two logins on one dancer. A unique index on
 the column has carried hand-set values since #420, and a bootstrap index that
 fails on legacy data is a worse outage than a race nobody has run yet.
 
-The screen is `/app/povezi`, reached from the hero on `/app` (where the two
+The screen is `/app/account`, reached from the hero on `/app` (where the two
 answer buttons are missing, which is the moment the gap is felt) and from Više
 (which survives the end of the season, when there is no hero). Both links are
 quiet and both are shown only to a voditelj whose **raw link** is empty: a
@@ -543,7 +543,7 @@ every tap is refused. Gate an entry point on `viewer.memberLinkId`, never on
 `AppViewer` carries `memberLinkId`, the **raw** `Users.member` value, alongside
 the decision. The decision deliberately collapses "no link" and "a link to a
 retired or un-flagged Member" into the same `self: null`, which is right
-everywhere that asks "is there a dancer here"; `/app/povezi` asks the other
+everywhere that asks "is there a dancer here"; `/app/account` asks the other
 question — may this account still be linked at all — and without it would offer
 a list whose every tap 409s.
 
@@ -627,11 +627,11 @@ decision below follows from that line.
 
 ### The link opens a session; the password is optional
 
-`/app/set-password` ran Payload's `resetPassword`, which stores a hash **and
+The old password page ran Payload's `resetPassword`, which stores a hash **and
 opens a session**. So the password step was never what signed anybody in: it was
 a toll on the way to a session the token had already earned. Since #463:
 
-- both mails and "Kopiraj pozivnicu" point at **`/app/prijava?token=…`**
+- both mails and "Kopiraj pozivnicu" point at **`/app/session?token=…`**
   (`signInLink`, one builder, `invite.ts`);
 - that page opens nothing itself. It renders, and a client island POSTs the
   token to **`POST /api/app/session`**. The reason is that a link in a letter is
@@ -686,7 +686,7 @@ random password, the takeover guard). Three callers depend on it now: the mail,
 the copied link and a voditelj approving a join claim. The channel changes
 exactly **one** rule: whether a missing address is a refusal.
 
-`/app/pozivnice` is the voditelj's screen, on the phone they are already
+`/app/invitations` is the voditelj's screen, on the phone they are already
 holding: every active moreškant, the ones without a login first, one tap to mint
 a fresh seven-day link, then the message in full with SMS, WhatsApp and Kopiraj
 under it. The message is **shown** rather than silently copied, because the
@@ -709,7 +709,7 @@ silently, which is how a composer opens with an empty body.
 ### `/app/join/<kod>`: the rehearsal QR
 
 For the dancer with no e-mail and no number on file. A voditelj shows a code
-(QR on `/app/pozivnice`, or a printed sheet), the dancer taps their own name,
+(QR on `/app/invitations`, or a printed sheet), the dancer taps their own name,
 and a voditelj approves with one tap; the dancer's phone then drops into `/app`
 signed in.
 
@@ -722,7 +722,7 @@ QUEUE, not a door — which is also what makes it safe to print.
 |---|---|
 | the code | 12 hours, rotatable, drawn from an alphabet with no `0`/`O`/`1`/`I`/`L` (it is read off paper across a hall). Stored in the CLEAR, unlike the OAuth credentials next door: it is printed on a wall, it is not a secret |
 | "Novi kod" | kills every live code, then issues one. That IS the rotation: a voditelj presses it because yesterday's QR is on somebody's camera roll |
-| the page | public like `/app/instalacija` and for the same reason, but it WRITES. Names only — no mobile, no e-mail, no roles (`getJoinCandidates` is where that projection is stated) |
+| the page | public like `/app/install` and for the same reason, but it WRITES. Names only — no mobile, no e-mail, no roles (`getJoinCandidates` is where that projection is stated) |
 | who is listed | active moreškanti with no login, which is `memberEligibility` (#462), not a second definition |
 | one claim | a **partial unique index** on `member_id WHERE status='pending'`, so two phones cannot queue one dancer twice and mint two logins. The route reads the refusal as "somebody already asked" |
 | the claim secret | the device's credential: httpOnly cookie (`Path=/`, both halves of the flow need it), SHA-256 in the database, spent BEFORE the session is minted. `markJoinClaimUsed` REPORTS whether this call is the one that spent it, and a caller told "no" opens nothing — the phone's poll is a plain `setInterval` that does not wait for its own last request, so on a bad connection two overlap |
@@ -780,7 +780,7 @@ all opened the app after the rebrand.
 **There is no fetch handler and no cache**, deliberately: phase 3's reason still
 holds (`/app` is server-rendered from data that changes hour by hour, so a cache
 could only turn app bugs into caching bugs). A click opens
-`/app/izvedba/[id]`, reusing an already-open window rather than stacking copies.
+`/app/performances/[id]`, reusing an already-open window rather than stacking copies.
 
 ### Two raw tables, not collections
 
@@ -963,7 +963,7 @@ the voditelji's phones.
 `payload.update`, which is the entire point: the `afterChange` hook fires and a
 note typed on the pier notifies the roster exactly as an `/admin` save does. An
 emptied note is stored as `null` so "no note" has one representation. The field
-with its Spremi button is `NoteEditor.tsx` on `/app/izvedba/[id]`, rendered for a
+with its Spremi button is `NoteEditor.tsx` on `/app/performances/[id]`, rendered for a
 voditelj only (the route refuses everyone else anyway). It never auto-saves:
 pressing the button is the moment a voditelj decides to tell the roster.
 
@@ -1145,7 +1145,7 @@ only there, never in the regenerated `00-base.sql`.
 
 ## Statistics (#437 — phase 4 batch C)
 
-`/app/statistika`: one row per active moreškant for the selected season —
+`/app/leaderboard`: one row per active moreškant for the selected season —
 confirmed performances danced, and how many times as crni kralj, bili kralj,
 otmanović and bula. Tapping a row reveals the split by performance kind.
 Society-wide, like the rest of `/app`: every moreškant sees the whole table.
@@ -1168,7 +1168,7 @@ Society-wide, like the rest of `/app`: every moreškant sees the whole table.
 
 ## Self-issued comps (#434 — phase 4 batch D)
 
-"Besplatne karte" on `/app/izvedba/[id]`: a dancer issues up to **four** free
+"Besplatne karte" on `/app/performances/[id]`: a dancer issues up to **four** free
 tickets per performance for their own family and cancels them again while the
 evening has not begun. Glossary: `CONTEXT.md` → *Moreškant comp*.
 
@@ -1411,20 +1411,22 @@ tabs plus a walkthrough.
 
 ### The tabs
 
-A fixed bottom bar (`TabBar.tsx`, one client island inside the server
-`AppShell`) over three pages. `activeAppTab` (`src/lib/app/tabs.ts`) is the
-single rule for which tab a path lights up, so a page below a tab lights its
-parent.
+A fixed bottom bar (`TabBar` in `AppNav.tsx`, one client island inside the
+server `AppShell`) over the screens this account unlocks. Since #495 the bar is
+computed rather than written down — the server hands it the `AppNav` that
+`appNav()` built out of the permission set — and `activeScreenKey`
+(`src/lib/app/screens.ts`) is the single rule for which tab a path lights up,
+so a page below a tab lights its parent. The laptop renders the same nav as a
+grouped sidebar from 1024 px up.
 
 | Route | Tab | What it is |
 |---|---|---|
 | `/app` | Izvedbe | the next live evening as a hero, then the season by month, the past behind a disclosure |
-| `/app/izvedba/[id]` | Izvedbe | one evening, three segments, the two answer buttons pinned above the bar |
-| `/app/moje` | Moje | two panels: the dancer's own season, and the Ljestvica |
-| `/app/vise` | Više | statistics, the Dobrodošlica replay, the install guide, notifications, calendar, own record, Odjava |
-| `/app/statistika` | Više | the season scoreboard, unchanged |
-| `/app/dobrodosli` | none | the walkthrough: no bar, no brand header |
-| `/app/instalacija` | none | the full-screen install guide (#455), public by design: the QR target at a rehearsal |
+| `/app/performances/[id]` | Izvedbe | one evening, three segments, the two answer buttons pinned above the bar |
+| `/app/leaderboard` | Ljestvica | two panels (`?part=mine\|all`): the dancer's own season, and the ranking — the full scoreboard for a voditelj (#495) |
+| `/app/more` | Više | the overflow screens, then the standing rows: invitations, own account, the Dobrodošlica replay, the install guide, calendar, Odjava |
+| `/app/welcome` | none | the walkthrough: no bar, no brand header |
+| `/app/install` | none | the full-screen install guide (#455), public by design: the QR target at a rehearsal |
 
 **The hero rule**: `pickNextPerformance` (`roster-loaders.ts`) picks the next
 evening that is **not cancelled**. A cancelled evening is never the hero, and it
@@ -1469,7 +1471,7 @@ account, as two things that back each other up:
    `requirePermission(['moreskant', 'moreska'])`.
 2. **`localStorage['cecilija.onboarding.done']`, the rescue.** The client
    writes it when the walkthrough ends and reads it **on mount** of
-   `/app/dobrodosli`: a device that has seen the walkthrough but lost its cookie
+   `/app/welcome`: a device that has seen the walkthrough but lost its cookie
    (expired, cleared with the site data, a private window) re-POSTs for a new
    one and goes straight to `/app`.
 
@@ -1496,7 +1498,7 @@ mount.
 "Instaliraj" where Chromium parked a `beforeinstallprompt` (with "Dodao sam" as
 the primary where it did not), and the same way out of a Viber webview instead
 of steps that cannot be followed there. Under it sits a quiet "Detaljne upute"
-to `/app/instalacija`, the full-screen version and the QR target at a rehearsal,
+to `/app/install`, the full-screen version and the QR target at a rehearsal,
 which is also a row in the Više tab.
 
 Step 2 runs the REAL subscribe flow: every browser push call lives in
@@ -1515,8 +1517,8 @@ there.
 Glossary: *Ljestvica* — that entry is the rulebook, this is where it is
 implemented. `buildLeaderboard` (`src/lib/app/leaderboard-loaders.ts`) is pure
 and sits **downstream of `loadSeasonStats`**: it ranks the scoreboard's own rows
-rather than re-deriving a count, which is what keeps `/app/statistika`,
-`/app/moje` and the board from ever printing three numbers for one season.
+rather than re-deriving a count, which is what keeps both panels of
+`/app/leaderboard` and the board from ever printing three numbers for one season.
 
 - Only confirmed lineups count (already true of `SeasonStats.rows`), every
   active moreškant is a row even at zero, and the incoming order (performances
