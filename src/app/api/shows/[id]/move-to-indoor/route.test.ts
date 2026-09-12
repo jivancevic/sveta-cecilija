@@ -56,7 +56,7 @@ const row = (over: Record<string, unknown> = {}) => ({
 })
 
 const req = () =>
-  new NextRequest('http://localhost/api/shows/7/move-to-zimsko', { method: 'POST' })
+  new NextRequest('http://localhost/api/shows/7/move-to-indoor', { method: 'POST' })
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -67,7 +67,7 @@ beforeEach(() => {
     .mockResolvedValueOnce({ rows: [row({ venue: 'zimsko-kino' })] })
 })
 
-describe('POST /api/shows/[id]/move-to-zimsko', () => {
+describe('POST /api/shows/[id]/move-to-indoor', () => {
   it('tells the roster the place changed, leaving out the dancers who are not coming', async () => {
     const res = await POST(req(), { params: Promise.resolve({ id: '7' }) })
     expect(res.status).toBe(200)

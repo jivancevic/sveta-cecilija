@@ -38,7 +38,7 @@ import { POST as compIssuePost } from './comp/issue/route'
 import { GET as compMembersGet } from './comp/members/route'
 import { POST as scanPost } from './scan/[token]/route'
 import { GET as partnerSalesGet } from './partner/sales/route'
-import { POST as stornoPost } from './partner/storno/route'
+import { POST as stornoPost } from './partner/cancel/route'
 
 const BUNDLES = {
   superadmin: [
@@ -211,10 +211,10 @@ describe('partner class — GET /api/partner/sales', () => {
   })
 })
 
-describe('composed class — POST /api/partner/storno (tickets or partner)', () => {
+describe('composed class — POST /api/partner/cancel (tickets or partner)', () => {
   it('401s without a session', async () => {
     signIn(null)
-    expect((await stornoPost(post('/api/partner/storno', { orderId: '1' }))).status).toBe(401)
+    expect((await stornoPost(post('/api/partner/cancel', { orderId: '1' }))).status).toBe(401)
   })
 
   it.each([
@@ -223,12 +223,12 @@ describe('composed class — POST /api/partner/storno (tickets or partner)', () 
     ['empty set', []],
   ])('403s for %s', async (_label, permissions) => {
     signIn(permissions)
-    expect((await stornoPost(post('/api/partner/storno', { orderId: '1' }))).status).toBe(403)
+    expect((await stornoPost(post('/api/partner/cancel', { orderId: '1' }))).status).toBe(403)
   })
 
   it('403s a partner with no link before touching the order', async () => {
     signIn(BUNDLES.partner)
-    const res = await stornoPost(post('/api/partner/storno', { orderId: '1' }))
+    const res = await stornoPost(post('/api/partner/cancel', { orderId: '1' }))
     expect(res.status).toBe(403)
     await expect(res.json()).resolves.toEqual({ error: 'Account not linked to a partner' })
     expect(findByID).not.toHaveBeenCalled()
@@ -240,7 +240,7 @@ describe('composed class — POST /api/partner/storno (tickets or partner)', () 
     ['a linked partner', BUNDLES.partner],
   ])('lets %s through the gate to the order lookup', async (_label, permissions) => {
     signIn(permissions, { partner: 7 })
-    const res = await stornoPost(post('/api/partner/storno', { orderId: '1' }))
+    const res = await stornoPost(post('/api/partner/cancel', { orderId: '1' }))
     expect(res.status).not.toBe(401)
     expect(res.status).not.toBe(403)
     expect(findByID).toHaveBeenCalled()

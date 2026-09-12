@@ -48,7 +48,7 @@ Claim-before-send means two concurrent confirmations can't double-notify (the lo
 
 The notice is **deduped by email** (`DISTINCT ON (lower(email))` — one per person, not per order) and is **not a refund trigger** (the show still happens). Buyers who want out reply to `info@` and admin refunds case-by-case via the existing flow.
 
-Pure DI orchestration in `src/lib/venue-change.ts`; route `POST/GET /api/shows/[id]/move-to-zimsko`. All buyer-facing venue names come from the shared `VENUE_LABEL` in `src/lib/venues.ts`.
+Pure DI orchestration in `src/lib/venue-change.ts`; route `POST/GET /api/shows/[id]/move-to-indoor`. All buyer-facing venue names come from the shared `VENUE_LABEL` in `src/lib/venues.ts`.
 
 ## Reschedule a show + notify buyers
 

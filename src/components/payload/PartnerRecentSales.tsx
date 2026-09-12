@@ -102,7 +102,7 @@ export function PartnerRecentSales({ initial, lang }: { initial: Page; lang: Adm
     const row = view.sales.find((s) => s.orderId === orderId)
     const code = row?.code ?? ''
     try {
-      const res = await fetch('/api/partner/storno', {
+      const res = await fetch('/api/partner/cancel', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(ticketId ? { orderId, ticketId } : { orderId }),
@@ -165,7 +165,7 @@ export function PartnerRecentSales({ initial, lang }: { initial: Page; lang: Adm
     setRemoving(null) // cancel any in-flight collapse so the restored row stays
     setError(null)
     try {
-      const res = await fetch('/api/partner/storno/undo', {
+      const res = await fetch('/api/partner/cancel/undo', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(ticketId ? { orderId, ticketId } : { orderId }),

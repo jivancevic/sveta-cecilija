@@ -13,7 +13,7 @@ export const dynamic = 'force-dynamic'
 // `tickets` only, NO time window (the same-day window is partner self-service,
 // not an admin rule). The local API runs overrideAccess, so the permission is
 // re-checked in-handler via requirePermission (CLAUDE.md hard rule). This is the
-// admin-only, comp-scoped counterpart to the partner /api/partner/storno route:
+// admin-only, comp-scoped counterpart to the partner /api/partner/cancel route:
 // it reuses the SAME void primitive with reason='storno' (comp voids are
 // distinguished by channel='comp', so no new enum value), refuses to touch a
 // paid online or partner order, and frees the seat via the active-ticket count

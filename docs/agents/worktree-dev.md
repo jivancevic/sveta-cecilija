@@ -53,4 +53,13 @@ gh pr merge <child> --merge
 
 Prefer **not** stacking unless the PRs genuinely overlap files — independent PRs off `main` each get CI for free.
 
-> **The `gh pr merge` calls above are for the human, not the agent.** An agent opens the PR and stops (CLAUDE.md). And do not reach for `gh pr merge --admin` to get past a red check: `enforce_admins` is **false** on this repo, so GitHub will happily let it through — and since [ADR-0026](../adr/0026-production-auto-deploy-from-main.md) a push to `main` deploys straight to production. The bypass is not blocked; it is simply never the right move.
+## A compound shell command that names `git` or `gh` is refused
+
+A worktree-isolated session may only run git operations it can prove target its own worktree, and the guard gives up on anything it cannot parse statically. Two shapes that look harmless are refused outright:
+
+- **Command substitution around git** — `cd "$(git rev-parse --show-toplevel)" && sed -i '' …` is rejected ("names git in a form too complex to verify").
+- **A heredoc or `;`-chain ending in `gh`** — `cat > body.md <<'EOF' … EOF; gh pr create --title "refactor(api): …; rename …"` is rejected because the guard cannot show the `gh` call is not git. The semicolon inside the *title* is enough to trip it.
+
+Neither is a permission denial, so retrying verbatim does not help. **Split them into plain, separate commands**: write the body with the Write tool, then call `gh pr create --body-file <path>` on its own. Paths already resolve inside the worktree, so the `cd "$(git rev-parse …)"` was never needed in the first place. A related guard blocks `python3 - <<'PY' … PY` edits of files under `docs/`; use the Edit tool for those.
+
+> **An agent may run the `gh pr merge` calls above once every check is green** (CLAUDE.md, granted 2026-09-12 — it replaced the older rule that reserved the merge click for a human). A pending check is not a passing one: read all six before merging. And do not reach for `gh pr merge --admin` to get past a red check: `enforce_admins` is **false** on this repo, so GitHub will happily let it through — and since [ADR-0026](../adr/0026-production-auto-deploy-from-main.md) a push to `main` deploys straight to production. The bypass is not blocked; it is simply never the right move.

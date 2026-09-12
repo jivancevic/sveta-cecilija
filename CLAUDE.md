@@ -22,6 +22,7 @@
 
 ## Hard rules (don't violate; each enforced where noted)
 
+- **Every URL path segment is English, page routes and API routes alike** (#481). Croatian stays where it is the domain: UI copy, DB enum values (`storno`, `zimsko-kino`), cookie names (`moreska_locale`), glossary terms and code symbols. A Croatian segment that already ships gets renamed with a 308 from the old path for one release (`next.config.ts`), never a silent break. The `/app/*` Croatian segments are the one grandfathered set; they are renamed screen by screen under the Cecilija map (#471).
 - **Never build internal URLs with a `/en` or `/hr` prefix** — locale is cookie-based, those routes 404 (`src/proxy.ts`).
 - **Never query the Shows collection directly in page components** — go through `getUpcomingShows()` / `getNextShow()` in `src/lib/shows.ts`.
 - **There is no `capacity` field on Shows and never add one** — capacity is fixed per venue (`VENUE_CAPACITY` in `src/lib/shows.ts`).
