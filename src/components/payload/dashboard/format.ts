@@ -18,15 +18,20 @@ export const ACCENT_FONT = 'var(--font-bodoni), "Bodoni Moda SC", "Bodoni Moda",
 // light and dark Payload elevations the figures sit on).
 export const GOLD = '#b08d3e'
 
-// Channel-mix palette (#242): anchored on the brand gold (online — the primary
-// channel), with two muted earth tones drawn from the stone/heritage palette for
-// the supporting channels. All three are fixed brand colours chosen to stay
-// legible on both the light and dark Payload elevations (no theme token needed),
-// and distinct enough to read apart without relying on the legend alone.
+// Channel palette (#242): anchored on the brand gold (online — the primary
+// channel), with muted earth tones drawn from the stone/heritage palette for the
+// rest. All are fixed brand colours chosen to stay legible on both the light and
+// dark Payload elevations (no theme token needed), and distinct enough to read
+// apart without relying on the legend alone.
+//
+// `comp` is a seat origin, not a sales channel (ADR-0019), so it appears in the
+// stacked season-trajectory bars but NOT in the sales-channel mix — hence the
+// muted plum sitting apart from the three warm/cool sales tones.
 export const CHANNEL_COLORS = {
   online: GOLD, // brand gold
   inPerson: '#4a6670', // slate teal
   partner: '#8c5a3c', // terracotta bronze
+  comp: '#6a5a7d', // muted plum
 } as const
 
 /** Style for a hero/figure number: gold + Bodoni accent. Numbers only. */

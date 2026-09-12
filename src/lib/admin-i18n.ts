@@ -140,6 +140,8 @@ export const dashboardStrings = {
     channelOnline: 'Online',
     channelInPerson: 'At the door',
     channelPartner: 'Partners',
+    // Seat origin, not a sales channel — stacked trajectory bars only.
+    channelComp: 'Comp',
     noSalesYet: 'No sales yet.',
     // Comps on the dashboards (#322, ADR-0019): a count, never a money figure.
     compSold: 'Comp', // per-show seat-reconciliation column
@@ -309,6 +311,8 @@ export const dashboardStrings = {
     channelOnline: 'Online',
     channelInPerson: 'Na ulazu',
     channelPartner: 'Partneri',
+    // Seat origin, not a sales channel — stacked trajectory bars only.
+    channelComp: 'Gratis',
     noSalesYet: 'Još nema prodaje.',
     // Comps on the dashboards (#322, ADR-0019): a count, never a money figure.
     compSold: 'Gratis', // per-show seat-reconciliation column
