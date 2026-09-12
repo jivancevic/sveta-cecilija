@@ -535,7 +535,7 @@ sees a Member that "already has a login" and skips it for good. A count would
 strand those dancers silently. The names send the voditelj to the per-row
 "Pošalji pozivnicu", which is idempotent and does re-mail them.
 
-### An invitation may not be aimed at a staff login (#462 review)
+### An invitation may not be aimed at a staff login (#462 review, allowlist #520)
 
 A second press MOVES the found login's e-mail onto the Member's and mails that
 address a password-reset link. On a dancer that is the point: it is how a lost
@@ -546,8 +546,28 @@ send that colleague's reset link wherever the presser chose.
 
 `isDancerLogin` (`src/lib/app/invite.ts`) is the guard: it refuses with a 409
 before the e-mail move and before any token is minted, unless the login holds
-nothing beyond `moreskant`. An empty permission set passes — a row from before
-the vocabulary is still not a staff account.
+nothing outside the allowlist. An empty permission set passes — a row from
+before the vocabulary is still not a staff account.
+
+The allowlist is `INVITABLE_PERMISSIONS` in `src/lib/access/permissions.ts`,
+spelled there once with the vocabulary and never re-typed: **`moreskant` and
+`door`**. `door` is on it because of #487: one person is one account, so the
+door person who also dances gets `moreskant` added to their door login by a
+`users` holder rather than a second account opened to be invitable, and a login
+that holds only `door` (plus `moreskant`) reaches no further than the shared
+`tehnika` account already does — scan a ticket at the gate. Everything else
+(`moreska`, `tickets`, `users`, `finance`, `editor`, …) is still a 409 with the
+same Croatian sentence. All three callers go through `ensureDancerLogin`, so the
+rule is the same for the mail, for "Kopiraj pozivnicu" and for a voditelj
+approving a join claim.
+
+**The allowlist does not open a session.** `mayOpenAppSession`
+(`src/lib/app/token-login.ts`) still reads the permission set, not the roster
+link, so `POST /api/app/session` needs `moreskant` or `moreska`: a link aimed at
+a `door`-only login mints fine and then 403s on the tap. That is deliberate —
+granting `moreskant` is a `users` holder's act (#487), never a voditelj's — and
+it is why the production task (#521) adds `moreskant` to the three door logins
+*before* anyone presses "Kopiraj pozivnicu" on them.
 
 The hole predates this work (a `users` holder could always hand-link a staff
 account), but `/api/app/link-self` is what makes such links routine, so the

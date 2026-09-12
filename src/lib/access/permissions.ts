@@ -45,6 +45,23 @@ export const PERMISSIONS = [
 
 export type Permission = (typeof PERMISSIONS)[number]
 
+/**
+ * The permission sets an invitation may land on (#487, #520).
+ *
+ * An invitation moves a login's e-mail onto the Member's and mails or texts it
+ * a sign-in link, so it may only ever be aimed at an account whose reach is a
+ * dancer's. `moreskant` is that by definition; `door` is on the list because a
+ * door login reaches no further than the shared `tehnika` account already does
+ * — scanning tickets at the gate — and a door person who dances must hold ONE
+ * account (#487), not a second one opened just to be invitable.
+ *
+ * Anything else (`moreska`, `tickets`, `users`, `finance`, …) is a staff
+ * account, and pointing an invitation at one is account takeover: any voditelj
+ * may edit a Member's e-mail. The check itself is `isDancerLogin` in
+ * `src/lib/app/invite.ts`; the words live here, once, with the vocabulary.
+ */
+export const INVITABLE_PERMISSIONS: readonly Permission[] = ['moreskant', 'door']
+
 /** Anything Payload might hand us as `req.user`. */
 export type PermissionUser = { permissions?: unknown } | null | undefined
 
