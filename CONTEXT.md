@@ -59,7 +59,7 @@ The society runs three software surfaces, each with exactly one name (decided in
 
 - **Cecilija**: the staff and member app at `/app`. Everyone who works for or dances in the society uses it: the secretary, the door crew, partners, voditelji and moreškanti. It replaces both the old *Moreškant* app name and, screen by screen, the Backoffice as a daily tool.
 - **Web**: the public site at `moreska.eu`, where visitors read about the society and buy tickets.
-- **Backoffice**: the raw-edit administration behind the `dev` permission (the Payload admin at `/admin`). Once Cecilija covers a screen, nobody but the developer opens the Backoffice for it.
+- **Backoffice**: the raw-edit administration behind the `dev` permission (the Payload admin at `/admin`), which an `editor` also opens, for Objave and FAQ only. Once Cecilija covers a screen, nobody but the developer opens the Backoffice for it.
 
 _Avoid_: **admin** as a name for any surface. For months it would mean both the Backoffice and the new app; say Cecilija or Backoffice. **Moreškant** is no longer the name of an app: it names a person and a section of Cecilija (see below).
 
@@ -125,6 +125,10 @@ Whether a given **online** purchase is valid *right now*: the order is non-empty
 ### Online sales pause
 An admin toggle on one show that closes the **online** sales channel only. A paused show stays publicly listed with an "online sales closed" note (it is not cancelled and not hidden); partner sells, comp tickets, door scanning and stats are unaffected. Pausing applies to new purchase attempts — a payment already in flight completes normally. Distinct from *cancelled* (show doesn't happen) and *sold out* (no seats left).
 
+
+### Show cancellation
+Withdrawing a public performance that will not happen. Decided in [#497](https://github.com/jivancevic/sveta-cecilija/issues/497) (2026-09-12): cancelling **refunds every online order in full automatically** through the idempotent refund engine and emails every buyer, voids partner tickets as storno (the seats leave the monthly statement) and comp tickets likewise, and is done by a `refunds` holder. A non-public performance is simply marked cancelled: nothing to refund, nobody to tell. Distinct from *Online sales pause* (the show still happens) and from *Self-serve reschedule refund* (the show moved, the buyer chooses).
+_Avoid_: "cancel" for a single ticket (that is a *storno* or a *refund*).
 ### Free-ticket discount
 Every 5th ticket in a single order is free. The free ticket's type matches the most expensive category present in the order: adult (€20) if any adult tickets were purchased, otherwise child (€10).
 
@@ -392,6 +396,9 @@ Lives at `/admin` (the route is the admin landing page itself; the old `/admin/s
 - **No season aggregate. No revenue. No other shows.** Tehnika does not need season-wide numbers; revenue is a PII-adjacent metric that ADR-0006 keeps out of the tehnika tier.
 - Action row: a single **Scan a ticket** button that lazy-loads the in-browser QR scanner. Auto-opens when the page is loaded with `?scan=1` (used by the scan-result screen's "Scan new" button to chain admits in one tap).
 
+
+### Financije
+The money screen of Cecilija (decided in #476): revenue collected, refunds, partner receivable per month with the statement download, the door-sales ledger per performance. Unlocked by `finance`, never by `tickets` alone, and it shows no buyer. *Statistika* is its counterpart: counts and fill for `tickets`, `season_stats` and `finance`, never money.
 ### Scanned (people)
 The "Scanned" number on the dashboard counts **people through the door**, not orders or tokens. After the "one QR per order" rule, a single scanned token represents an entire party; the number that actually matters to door staff is the seat-equivalent count.
 
@@ -414,7 +421,7 @@ A small **curated sink** the app writes to at known failure seams that would oth
 Terms for the roster / attendance / lineup module ([ADR-0023](docs/adr/0023-permissions-replace-roles-app-surface.md), [ADR-0024](docs/adr/0024-moreskant-roster-domain.md)). The module lives inside **Cecilija** (see *Product surfaces*) at `/app`; "Moreškant" was the app's name until 2026-09 and now names only the dancer and this section.
 
 ### Permission
-A named capability granted to a user; a user holds a *set* of them. Replaces the role tier. Vocabulary: `users`, `tickets`, `refunds`, `door`, `partner`, `season_stats`, `moreska`, `moreskant`, `dev`. "Superadmin" is no longer an entity, only shorthand for "all permissions". `partner` requires a Partner link; `moreskant` requires a Member link.
+A named capability granted to a user; a user holds a *set* of them. Replaces the role tier. Vocabulary: `users`, `tickets`, `refunds`, `door`, `partner`, `season_stats`, `moreska`, `moreskant`, `dev`, plus two decided in [Cecilija: per-screen inventory](https://github.com/jivancevic/sveta-cecilija/issues/476) that ship with #500: **`finance`** (money without buyers: revenue, refunds, partner receivable; also unlocks Statistika) and **`editor`** (Objave and FAQ in the Backoffice). `finance` exists because the society's tajnik and blagajnik are different people by statute: the president reads revenue without holding `tickets`. "Superadmin" is no longer an entity, only shorthand for "all permissions". `partner` requires a Partner link; `moreskant` requires a Member link.
 _Avoid_: role, tier, admin-tier, superadmin (as a role).
 
 ### Voditelj
@@ -453,6 +460,9 @@ Headcount of "coming" per army, compared to the threshold. `crni_kralj` and `otm
 The only way a moreškant gets a login. A voditelj presses "Pošalji pozivnicu" on the Member; the account is created with exactly the `moreskant` permission and the Member link, and the dancer gets a Croatian email with a link to choose a password, **valid for seven days**. Pressing again sends a fresh link to the same login, never a second one. A dancer who forgets their password asks for one themselves from the login page and gets the same page behind a **one-hour** link.
 _Avoid_: registration, sign-up, account request.
 
+
+### Članovi
+The voditelj's roster screen in Cecilija (decided in #476): the list of moreškanti, each dancer's profile (nadimak, mobile, email, dance roles, primary role, active), adding a dancer by hand, and every *Pozivnica* affordance (the rehearsal join code, pending claims, invitations per dancer). Unlocked by `moreska`. Deleting a member and the attribution half of a *Member* stay in the Backoffice.
 ### Alarm
 The push "Sokoliću, fali nas! Stanje za nastup <date time>: 3 bilih, 7 crnih" sent to moreškanti with **no answer** when an army is below threshold. Automatic once per performance at T-6h (or 18:00 the day before when the performance starts before 14:00, Europe/Zagreb), plus manual by a voditelj at any time. "Sokoliću" is a generic greeting, not a vocative of the nickname. The automatic one is claimed once per performance whether or not it is sent, so an evening judged covered at T-6h stays judged.
 

@@ -21,6 +21,7 @@ unlock are tabs, the rest live under Više, and Izvedbe jumps to the front for a
 | | landing | `/app` | any screen | `/app` is the Izvedbe list | 307 to the person's first tab |
 | 1 | Narudžbe | `/app/orders`, `/app/orders/[id]` | `tickets` | `/admin/collections/orders` | none, the Backoffice keeps its list |
 | 2 | Izvedbe (one screen, content by `can()`) | `/app/performances`, `/app/performances/[id]` | `tickets`, `moreska`, `moreskant` | `/app`, `/app/izvedba/[id]` | 308 (push messages carry `/app/izvedba/<id>`) |
+| 2.5 | Članovi (dancer profiles, invitations, join code; absorbs Pozivnice, added by #476) | `/app/members` | `moreska` | `/admin/collections/members`, `/app/pozivnice` | 308 from `/app/pozivnice` |
 | 3 | Ljestvica (own season + roster ranking; voditelj sees the full table) | `/app/leaderboard?season=2026&part=mine\|all` | `moreskant`, `moreska` | `/app/moje?sezona=&dio=`, `/app/statistika` | 308 from both |
 | 4 | Skener (camera, code entry, door list) | `/app/scan` | `door` | `/admin/scan` | 308; the ticket QR stays `/scan/[token]`, whose staff buttons point at `/app/scan` |
 | 5 | Prodaja | `/app/sell` | `partner` | partner view in `/admin` | none |
@@ -28,7 +29,8 @@ unlock are tabs, the rest live under Više, and Izvedbe jumps to the front for a
 | 7 | Upiti | `/app/inquiries` | `tickets` | `/admin/collections/contact-submissions` | none |
 | 8 | Gratis (comp tickets; promo codes stay in the Backoffice for v1) | `/app/comp` | `tickets` | comp menu item on an order | none |
 | 9 | Korisnici | `/app/users`, `/app/users/[id]` | `users` | `/admin/collections/users` | none |
-| 10 | Statistika (sales only; the single-show drill-down folds into `/app/performances/[id]`) | `/app/stats?season=2026` | `tickets`, `season_stats` | `/admin/stats`, `/admin/stats/[id]` | 308 from both |
+| 10 | Statistika (counts only; the single-show drill-down folds into `/app/performances/[id]`) | `/app/stats?season=2026` | `tickets`, `season_stats`, `finance` | `/admin/stats`, `/admin/stats/[id]` | 308 from both |
+| 11 | Financije (money without buyers, added by #476) | `/app/finance` | `finance` | money band on the Backoffice dashboard | none |
 | last | Više (a list, always the last tab) | `/app/more` | any screen | `/app/vise` | 308 |
 
 Rows under Više, after the overflow screens:
@@ -36,7 +38,7 @@ Rows under Više, after the overflow screens:
 | Row | Route | Unlocked by | Today | Old path |
 |---|---|---|---|---|
 | Kalendar | `/app/calendar` | `moreskant`, `moreska` | a row in Više | new |
-| Pozivnice | `/app/invitations` | `moreska` | `/app/pozivnice` | 308 |
+| Pozivnice | folds into Članovi (`/app/members`, #476) | `moreska` | `/app/pozivnice` | 308 to `/app/members` |
 | Moj račun (password, member link, push on/off) | `/app/account` | any screen | `/app/set-password`, `/app/povezi` | 308 from both |
 | Backoffice (link to `/admin`) | `/admin` | `dev` only | a row for every voditelj | the general link disappears |
 | Odjava | `POST /api/app/logout` | any screen | same | unchanged |

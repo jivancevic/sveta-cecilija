@@ -20,6 +20,8 @@ Nine words, listed once in `src/lib/access/permissions.ts`. Never re-type the li
 | `moreskant` | A moreškant's own roster view at `/app` (ADR-0024). Since #421 it is the dancer half of the `/app` access decision; since #422 it also scopes the `attendance` collection to the dancer's own rows. On Members and Users it grants nothing, so a `moreskant` login reaches no collection but its own row and its own answers. It is never chosen by hand: the invitation (#424) issues it as the whole bundle of a dancer's login. |
 | `dev` | Developer diagnostics: the dev strip and the critical-events strip (ADR-0016). |
 
+**Decided, not yet in code (2026-09-12, [#476](https://github.com/jivancevic/sveta-cecilija/issues/476), ships with #500):** `finance` (money without buyers: the Financije screen, Statistika, partner statements) and `editor` (Objave and FAQ in the Backoffice; `tickets` loses them). Until #500 lands, `permissions.ts` is still the nine-word list above.
+
 ## The predicates
 
 - `can(user, 'refunds')`: the single access predicate. Null user, empty set, or a word outside the vocabulary all mean **false**. Never "everything".
