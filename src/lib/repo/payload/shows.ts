@@ -1,9 +1,11 @@
-// The Payload-backed `ShowsRepo` (#475, #503).
+// The Payload-backed `ShowsRepo` (#475, #501, #503).
 //
 // `detailsById` is one id-addressed read, order-joined by every caller: the id
 // arrives off a ticket's order, so a non-public performance — which sells
-// nothing and so owns no ticket — cannot surface. The schedule is read through
-// `src/lib/shows.ts`, not here.
+// nothing and so owns no ticket — cannot surface. `ticketedPerformances` is the
+// other direction: every row that DOES sell tickets, for Narudžbe's filter
+// (#501), through the `show-performance.ts` predicate rather than a hand-spelled
+// `isPublic`. Neither is the schedule: that is read through `src/lib/shows.ts`.
 //
 // The three voditelj methods (#503) are the writes behind Dodaj / Uredi /
 // Otkaži / Pragovi. Both writers go through the LOCAL API on purpose:
@@ -21,12 +23,13 @@
 // here. `user` is still carried so the hooks see who is asking.
 
 import { toIsoDate } from '@/lib/to-iso-date'
+import { PUBLIC_PERFORMANCE_WHERE } from '@/lib/show-performance'
 import {
   createPerformancesInBulk,
   payloadBulkDeps,
   type BulkCreatePayload,
 } from '@/lib/performance-bulk-create'
-import type { PerformanceRow, ShowsRepo } from '../shows'
+import type { PerformanceRow, ShowsRepo, TicketedPerformance } from '../shows'
 import { payloadClient, type PayloadClient } from './client'
 
 function text(value: unknown): string | null {
@@ -73,6 +76,29 @@ export function createShowsRepo(load: () => Promise<PayloadClient> = payloadClie
       } catch {
         return null
       }
+    },
+
+    async ticketedPerformances(): Promise<TicketedPerformance[]> {
+      const payload = await load()
+      const found = await payload.find({
+        collection: 'shows',
+        where: PUBLIC_PERFORMANCE_WHERE,
+        sort: '-date',
+        depth: 0,
+        // The whole ticketed history: a season is 22 evenings, so this is a
+        // short list and a filter that could not reach last August would be
+        // useless the week after a season ends.
+        limit: 500,
+        overrideAccess: true,
+      })
+      return found.docs.map((doc) => ({
+        id: String(doc.id),
+        // `toIsoDate`, never `String(...).slice(0, 10)`: a `dayOnly` column
+        // comes back as a Date, whose `String()` is "Mon Jun 22 2026 …".
+        date: toIsoDate(doc.date),
+        time: typeof doc.time === 'string' ? doc.time : '',
+        venue: typeof doc.venue === 'string' ? doc.venue : '',
+      }))
     },
 
     async performanceById(id) {

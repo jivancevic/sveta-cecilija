@@ -34,6 +34,7 @@ vi.mock('@/lib/scan-deps', () => ({
 }))
 
 import { POST as refundPost } from './orders/[id]/refund/route'
+import { PATCH as buyerPatch } from './app/orders/[id]/buyer/route'
 import { POST as compIssuePost } from './comp/issue/route'
 import { GET as compMembersGet } from './comp/members/route'
 import { POST as scanPost } from './scan/[token]/route'
@@ -75,6 +76,13 @@ function post(url: string, body: unknown = {}) {
 }
 function get(url: string) {
   return new NextRequest(`http://localhost${url}`)
+}
+function patch(url: string, body: unknown = {}) {
+  return new NextRequest(`http://localhost${url}`, {
+    method: 'PATCH',
+    body: JSON.stringify(body),
+    headers: { 'content-type': 'application/json' },
+  })
 }
 
 beforeEach(() => {
@@ -142,6 +150,43 @@ describe('tickets class — POST /api/comp/issue and GET /api/comp/members', () 
     expect(res.status).not.toBe(401)
     expect(res.status).not.toBe(403)
     expect((await compMembersGet(get('/api/comp/members'))).status).toBe(200)
+  })
+})
+
+describe('tickets class — PATCH /api/app/orders/[id]/buyer', () => {
+  // Narudžbe's one write (#501). It is a `/app` route, so it also carries the
+  // cross-site guard, but that lives in the pure handler and is tested there;
+  // here the question is only the permission gate.
+  const params = Promise.resolve({ id: '42' })
+  const body = { buyerName: 'Ivan Horvat', email: 'ivan@example.com' }
+
+  it('401s without a session', async () => {
+    signIn(null)
+    expect((await buyerPatch(patch('/api/app/orders/42/buyer', body), { params })).status).toBe(401)
+  })
+
+  it.each([
+    ['tehnika', BUNDLES.tehnika],
+    ['partner', BUNDLES.partner],
+    ['member', BUNDLES.member],
+    ['refunds without tickets', ['refunds']],
+    ['a dancer', ['moreskant']],
+    ['empty set', []],
+  ])('403s for %s', async (_label, permissions) => {
+    signIn(permissions)
+    expect((await buyerPatch(patch('/api/app/orders/42/buyer', body), { params })).status).toBe(403)
+  })
+
+  it.each([
+    ['admin', BUNDLES.admin],
+    ['superadmin', BUNDLES.superadmin],
+  ])('lets %s through the gate', async (_label, permissions) => {
+    signIn(permissions)
+    // `findByID` is stubbed to null, so a caller that passes the gate reaches
+    // the handler's own 404 — which is exactly what "through the gate" means.
+    const res = await buyerPatch(patch('/api/app/orders/42/buyer', body), { params })
+    expect(res.status).not.toBe(401)
+    expect(res.status).not.toBe(403)
   })
 })
 

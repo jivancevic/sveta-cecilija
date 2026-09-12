@@ -29,6 +29,25 @@ export interface SessionUser {
   email: string | null
 }
 
+/**
+ * Who is WRITING (seam research §6.3), next to who is asking because they are
+ * the same question at two moments.
+ *
+ * Carried into every write so the Payload implementation can hand `user` to the
+ * local API: the collection hooks read it, and an edit made from a phone is
+ * then attributed the way a Backoffice edit is. A null user is legitimate — a
+ * cron job and the Stripe webhook write with no person behind them.
+ *
+ * `unknown` rather than `SessionUser`, for now: phase A's writers hand over the
+ * Payload user document the route already authenticated, and narrowing it here
+ * would only produce a cast at every call site. #503's `ShowsRepo` writes take
+ * the same thing under the older name `actor`; the seam ticket that grows the
+ * next write collapses the two spellings rather than adding a third.
+ */
+export interface WriteCtx {
+  user: unknown
+}
+
 export interface AuthRepo {
   /** The caller behind a request, or null when there is no session. */
   userFromHeaders(headers: Headers): Promise<SessionUser | null>

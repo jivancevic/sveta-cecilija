@@ -3405,6 +3405,399 @@ a.app__ob-link {
   }
 }
 
+/* ─────────────────────────────────────────────────────────────
+   Narudžbe (#501): the blagajna's list of orders and one order.
+
+   Phone first, and the phone is the harder case: Tatjana holds it in one hand
+   at the door while a guest waits. So the search box is the first thing under
+   the header, every row of the list is a whole tap target, and the four named
+   actions on an order are full-width buttons stacked under the facts they act
+   on. The laptop gets the same markup wider, with the filters inline beside
+   the search and the facts in two columns.
+
+   Numbers use the utility face with tabular figures (#490): a column of totals
+   that does not line up is a column nobody scans.
+   ───────────────────────────────────────────────────────────── */
+
+/* ── The filter bar ─────────────────────────────────────── */
+.app__orders-filters {
+  margin-top: 16px;
+}
+
+.app__orders-search {
+  display: block;
+}
+
+.app__orders-search .app__input {
+  margin-bottom: 8px;
+}
+
+.app__orders-selects {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.app__orders-select {
+  display: block;
+  flex: 1 1 150px;
+  min-width: 0;
+}
+
+.app__orders-select .app__select {
+  width: 100%;
+}
+
+.app__orders-clear {
+  color: var(--goldText);
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.app__orders-clear:hover {
+  text-decoration: underline;
+}
+
+.app__orders-count {
+  margin: 16px 0 2px;
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* ── One row of the list ────────────────────────────────── */
+.app__order-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  /* The #490 row rhythm, which tightens on a laptop. Never a fixed px pair:
+     that is what the token is for. */
+  padding: var(--rowY) 0;
+  border-top: 1px solid var(--rule);
+  color: inherit;
+  text-decoration: none;
+}
+
+.app__orders-list .app__order-row:last-child {
+  border-bottom: 1px solid var(--rule);
+}
+
+.app__order-row:hover {
+  background: rgba(184, 136, 26, 0.07);
+}
+
+.app__order-main {
+  display: block;
+  min-width: 0;
+}
+
+.app__order-buyer {
+  display: block;
+  font-size: 16px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* The order code beside the name: the thing a guest reads off their phone. */
+.app__order-buyer small {
+  margin-left: 8px;
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.app__order-show,
+.app__order-meta {
+  display: block;
+  margin-top: 1px;
+  font-size: 13px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app__order-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  flex: 0 0 auto;
+}
+
+.app__order-total {
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+/* Storno: the one badge that has to be readable at a glance in a long list. */
+.app__badge--refunded {
+  border-color: var(--red);
+  color: var(--warn);
+}
+
+/* ── The pager ──────────────────────────────────────────── */
+.app__orders-pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+/* Quiet, outlined: a pager is a way to keep reading, not a call to action, and
+   two gold blocks at the bottom of a list would out-shout every row above. */
+.app__orders-pager .app__button--link {
+  padding: 9px 16px;
+  text-decoration: none;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.app__orders-page {
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* ── One order ──────────────────────────────────────────── */
+.app__order-back {
+  display: inline-block;
+  margin: 12px 0 4px;
+  color: var(--goldText);
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.app__order-facts {
+  margin-top: 8px;
+}
+
+.app__order-fact {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--rule);
+  font-size: 15px;
+}
+
+.app__order-fact > span {
+  flex: 0 0 auto;
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.app__order-fact > b {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-weight: 500;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.app__order-amount {
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.app__order-samelink {
+  color: var(--goldText);
+  font-size: 13px;
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+/* ── The four named actions ─────────────────────────────── */
+.app__order-actions {
+  margin-top: 22px;
+}
+
+.app__order-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.app__order-buttons .app__button--link {
+  width: 100%;
+  text-align: center;
+}
+
+.app__order-note,
+.app__order-hint {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.app__order-done {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--gold);
+  color: var(--goldText);
+  font-size: 14px;
+}
+
+/* The confirmation: in the flow under the buttons, not a modal. A dialog on a
+   phone held at a gate is one more surface that can land under a thumb. */
+.app__order-sheet {
+  margin-top: 14px;
+  padding: 14px;
+  background: var(--card);
+  border: 1px solid var(--cardEdge);
+}
+
+.app__order-sheet-title {
+  margin: 0 0 4px;
+  font-family: var(--font-bodoni), Georgia, serif;
+  font-size: 19px;
+  font-weight: 600;
+}
+
+.app__order-sheet-body {
+  margin: 0 0 12px;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.app__order-sheet-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.app__order-sheet-buttons .app__button {
+  flex: 1 1 140px;
+  width: auto;
+  text-align: center;
+}
+
+/* ── The order's tickets ────────────────────────────────── */
+.app__order-tickets {
+  margin-top: 26px;
+}
+
+.app__order-tickets-head {
+  margin: 0 0 6px;
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.app__order-ticket-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.app__order-ticket {
+  display: grid;
+  grid-template-columns: minmax(0, auto) minmax(0, 1fr);
+  gap: 2px 12px;
+  padding: var(--rowY) 0;
+  border-top: 1px solid var(--rule);
+  font-size: 15px;
+}
+
+.app__order-ticket:last-child {
+  border-bottom: 1px solid var(--rule);
+}
+
+/* A voided seat is still part of the record, just visibly not a seat. */
+.app__order-ticket--void {
+  opacity: 0.6;
+}
+
+.app__order-ticket--void .app__order-ticket-type {
+  text-decoration: line-through;
+}
+
+.app__order-ticket-state {
+  text-align: right;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.app__order-ticket-scan {
+  grid-column: 1 / -1;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+@media (min-width: 1024px) {
+  /* The filters sit beside the search rather than under it: one line of
+     controls over a wide list, which is what an office screen has room for. */
+  .app__orders-filters {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .app__orders-search {
+    flex: 1 1 320px;
+  }
+
+  .app__orders-search .app__input {
+    margin-bottom: 0;
+  }
+
+  .app__orders-selects {
+    flex: 0 0 auto;
+  }
+
+  .app__orders-select {
+    flex: 0 0 auto;
+  }
+
+  /* Two columns of facts, and the actions in a row: a laptop reads an order in
+     one screen rather than a scroll. */
+  .app__order-facts {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: 32px;
+  }
+
+  .app__order-buttons {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .app__order-buttons .app__button,
+  .app__order-buttons .app__button--link {
+    width: auto;
+    flex: 0 1 auto;
+    padding-inline: 20px;
+  }
+
+  .app__order-sheet {
+    max-width: 520px;
+  }
+}
+
 /* ── Izvedbe: the voditelj's forms (#503) ──────────────────────────────────
    Dodaj on the list, Uredi / Otkaži / Pragovi inside the tools card. They
    reuse the shell's existing controls (.app__input, .app__select,
@@ -3527,6 +3920,9 @@ a.app__ob-link {
   color: var(--ink);
 }
 
+/* The one face for a button that cannot be undone: Otkaži izvedbu (#503) and
+   Povrat (#501). Tokens, never a hex — a night island re-points `--warn` and
+   `--card`, and a hardcoded colour would not follow it. */
 .app__button--danger {
   background: var(--warn);
   color: var(--card);

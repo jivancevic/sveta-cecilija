@@ -8,14 +8,18 @@
 // failure is logged rather than swallowed.
 
 import type { Where } from 'payload'
-import type { LookupAuditEntry, MatchedOrder, NormalizedQuery, OrdersRepo, OrderToken } from '../orders'
+import type {
+  LookupAuditEntry,
+  MatchedOrder,
+  NormalizedQuery,
+  OrderDetailRow,
+  OrderListResult,
+  OrdersRepo,
+  OrderToken,
+} from '../orders'
 import { payloadClient, type PayloadClient } from './client'
-
-/** Ids arrive as strings off a URL or a JSON body; the columns are integers. */
-function idForQuery(id: string | number): string | number {
-  const n = Number(id)
-  return Number.isInteger(n) && String(n) === String(id).trim() ? n : id
-}
+import { idForQuery, whereForOrderList } from './orders-where'
+import { isNotFound, toOrderRow, toTicketRow, type Doc } from './orders-map'
 
 export function whereForLookup(q: NormalizedQuery, showId: string | number): Where {
   const and: Where[] = [{ show: { equals: idForQuery(showId) } }]
@@ -76,6 +80,85 @@ export function createOrdersRepo(load: () => Promise<PayloadClient> = payloadCli
       return tickets.docs
         .filter((t) => t.status !== 'cancelled')
         .map<OrderToken>((t) => ({ token: t.token as string, scanned: !!t.scanned }))
+    },
+
+    async listForStaff(query): Promise<OrderListResult> {
+      const payload = await load()
+      const found = await payload.find({
+        collection: 'orders',
+        where: whereForOrderList(query),
+        // Newest first, which is what "the order somebody is asking about" means
+        // at a counter. `createdAt` rather than the id, because a comp issued
+        // from `/app` and a Stripe purchase are written by different paths.
+        sort: '-createdAt',
+        depth: 1,
+        limit: query.perPage,
+        page: query.page,
+        overrideAccess: true,
+      })
+      return {
+        rows: found.docs.map((doc) => toOrderRow(doc as Doc)),
+        total: found.totalDocs ?? found.docs.length,
+      }
+    },
+
+    async staffDetailById(id): Promise<OrderDetailRow | null> {
+      const payload = await load()
+      let order: Doc
+      try {
+        order = (await payload.findByID({
+          collection: 'orders',
+          id,
+          depth: 1,
+          overrideAccess: true,
+        })) as unknown as Doc
+      } catch (err) {
+        // ONLY not-found becomes null. A bare `catch { return null }` would
+        // turn a database outage into "Ova narudžba ne postoji" — the screen
+        // would calmly tell Tatjana a real order is gone, and the buyer
+        // standing in front of her would be told the same. Anything that is
+        // not Payload's NotFound is re-thrown and becomes a 500, which is what
+        // an outage actually is.
+        if (!isNotFound(err)) throw err
+        return null
+      }
+      if (!order) return null
+
+      // Cancelled tickets are part of the record here, unlike at the door:
+      // "which of these seats did we void, and why" is the question this screen
+      // exists to answer.
+      const tickets = await payload.find({
+        collection: 'tickets',
+        where: { order: { equals: idForQuery(id) } },
+        depth: 0,
+        limit: 200,
+        sort: 'createdAt',
+        overrideAccess: true,
+      })
+
+      return {
+        ...toOrderRow(order),
+        tickets: tickets.docs.map((t) => toTicketRow(t as Doc)),
+      }
+    },
+
+    async updateBuyer(id, buyer, ctx) {
+      const payload = await load()
+      await payload.update({
+        collection: 'orders',
+        id,
+        // Widened the way the other `/app` writes are: `data` is typed from the
+        // generated `payload-types.ts`, which this repo deliberately does not
+        // commit. This says "a partial Orders update" rather than casting to
+        // `never`, which said nothing at all.
+        data: { buyerName: buyer.buyerName, email: buyer.email } as Parameters<
+          typeof payload.update
+        >[0]['data'],
+        overrideAccess: true,
+        // Carried so the Orders hooks and Payload's own attribution see who
+        // made the edit, exactly as a Backoffice save is attributed.
+        user: ctx.user as Parameters<typeof payload.update>[0]['user'],
+      })
     },
 
     async recordLookup(entry: LookupAuditEntry) {
