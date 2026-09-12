@@ -63,7 +63,14 @@ describe('the screen table', () => {
       }
     }
     const live = APP_SCREENS.filter((s) => s.servesToday.length > 0)
-    expect(keys(live)).toEqual(['performances', 'leaderboard', 'scan', 'sell', 'statement'])
+    expect(keys(live)).toEqual([
+      'orders',
+      'performances',
+      'leaderboard',
+      'scan',
+      'sell',
+      'statement',
+    ])
   })
 
   it('gives refunds and dev no screen of their own', () => {
@@ -105,10 +112,11 @@ describe('unlockedScreens', () => {
     expect(keys(unlockedScreens(user('moreska'), ctx()))).toEqual(['performances', 'leaderboard'])
   })
 
-  it('gives a tickets holder nothing until the blagajna screens are built', () => {
-    // Narudžbe, Upiti, Gratis and Statistika are ticketed separately (#501,
-    // #507, #506, #508) and Izvedbe serves the blagajna only from #502.
-    expect(unlockedScreens(user('tickets', 'refunds'), ctx())).toEqual([])
+  it('gives a tickets holder Narudžbe, and the rest as they are built', () => {
+    // Narudžbe landed with #501. Upiti, Gratis and Statistika are ticketed
+    // separately (#507, #506, #508) and Izvedbe serves the blagajna only from
+    // #502, so `tickets` still unlocks exactly one screen.
+    expect(keys(unlockedScreens(user('tickets', 'refunds'), ctx()))).toEqual(['orders'])
   })
 
   it('never lets an unknown permission string unlock anything', () => {
@@ -131,9 +139,10 @@ describe('appNav', () => {
   })
 
   it('has no tabs and no landing screen for an account that unlocks nothing', () => {
-    // `tickets` is the widest set that still unlocks nothing built: Narudžbe
-    // (#501), Upiti, Gratis and Statistika are all still empty columns.
-    const nav = appNav(user('tickets'), ctx())
+    // `finance` is the widest set that still unlocks nothing built: Financije
+    // (#509) and Statistika (#508) are both still empty columns, and `refunds`
+    // unlocks no screen by design (a refund is an action inside an order).
+    const nav = appNav(user('finance', 'refunds'), ctx())
     expect(nav.tabs).toEqual([])
     expect(nav.landing).toBeNull()
   })

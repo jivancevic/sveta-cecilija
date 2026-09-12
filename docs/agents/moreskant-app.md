@@ -33,7 +33,7 @@ unlock are tabs, the rest live under Više, and Izvedbe jumps to the front for a
 | Rank | Screen (label) | Route | Unlocked by | Today | Old path |
 |---|---|---|---|---|---|
 | | landing | `/app` | any screen | **307 to the person's first tab** (#495) | done |
-| 1 | Narudžbe | `/app/orders`, `/app/orders/[id]` | `tickets` | `/admin/collections/orders` | none, the Backoffice keeps its list |
+| 1 | Narudžbe | `/app/orders`, `/app/orders/[id]` | `tickets` | **live** (#501): the list with search (name, e-mail or code), a performance filter, a state filter (`active\|refunded\|partner\|comp`) and a pager, all in the query string; the detail with the order's facts, its tickets and four named actions — Povrat (`refunds` only, and only on a paid, unrefunded order), Pošalji ulaznice ponovno, Otvori PDF, Uredi kupca | none, the Backoffice keeps its list |
 | 2 | Izvedbe (one screen, content by `can()`) | `/app/performances`, `/app/performances/[id]` | `tickets`, `moreska`, `moreskant` | **live for `moreska` + `moreskant`** (#495), with the voditelj's Dodaj / Uredi / Otkaži / Pragovi on it since #503; the blagajna's half is #502 | 308 from `/app/izvedba/[id]`; push messages now carry the new path |
 | 2.5 | Članovi (dancer profiles, invitations, join code; absorbs Pozivnice, added by #476) | `/app/members` | `moreska` | `/admin/collections/members`, `/app/invitations` | `/app/pozivnice` already 308s to `/app/invitations` (#495); **#511 repoints that 308 at `/app/members`** and folds the screen in |
 | 3 | Ljestvica (own season + roster ranking; voditelj sees the full table) | `/app/leaderboard?season=2026&part=mine\|all` | `moreskant`, `moreska` | **live** (#495): both panels on one screen, the voditelj's *Ljestvica* panel is the old scoreboard | 308 from `/app/moje` and `/app/statistika` |
@@ -1692,3 +1692,68 @@ rather than re-deriving a count, which is what keeps both panels of
   (`roster-loaders.ts`), the one home of the three Croatian plural buckets.
 - The bottom of the list gets **no** treatment: no red, no "zadnji". An empty
   season hides the card and the podium and says so once.
+
+## Narudžbe (#501)
+
+`/app/orders` and `/app/orders/[id]`, for a `tickets` holder: the blagajna's
+list of orders, and the one order behind it. It is the first screen a `tickets`
+login unlocks, so it is also the landing screen for one (`/app` → `/app/orders`).
+
+**The screen state is the URL.** `src/lib/app/orders-query.ts` parses `?q=`,
+`?show=`, `?state=` and `?page=` and builds the address back; nothing about the
+list lives in the browser. That is what makes a row survive a reload at the
+door, and what lets Skener's "Otvori narudžbu" (`/app/orders/<id>`) and Izvedbe's
+"Narudžbe za ovu izvedbu" (`/app/orders?show=<id>`) be plain links. A parameter
+that is not one of the four states, not a whole page number or half a kilobyte
+of search term resolves to something harmless: the query string is the one
+input a stranger hands this screen directly. `page=1` is never written, so one
+view has one address.
+
+**The four states are two questions in one control.** `active` / `refunded` ask
+about the money (`refundStatus`), `partner` / `comp` about the channel. One
+dropdown rather than two, because Tatjana picks one at a time. The `where` is
+built inside the seam (`src/lib/repo/payload/orders-where.ts`, unit-tested), and
+the search is one OR over three columns — the name ANDed word by word so "ivan
+horvat" finds "Horvat Ivan", the address as a `like`, the code as an exact
+uppercase match.
+
+**Four named actions, each behind a confirmation** (#476: named actions only, no
+raw edit form):
+
+| Action | Route | Notes |
+|---|---|---|
+| Povrat | `POST /api/orders/[id]/refund` | The idempotent engine, untouched. The button is decided on the SERVER by `refundOffer()`: `can(viewer, 'refunds')` first, so a `tickets`-only holder never receives it in the markup rather than receiving it disabled; then the order itself — already refunded, or nothing to refund (a comp, or a row with no payment intent), each says so instead of offering a button that would throw. The route re-checks `refunds` anyway. |
+| Pošalji ulaznice ponovno | `POST /api/orders/[id]/resend-ticket-email` | Always to the address on the order. An order with none says so and offers the edit instead, which is the same rule the old `/admin` menu item carried. |
+| Otvori PDF | `GET /api/orders/[id]/tickets.pdf` | A plain anchor: it is a file. |
+| Uredi kupca | `PATCH /api/app/orders/[id]/buyer` | The one new route, and the only thing on the screen that writes. |
+
+`PATCH /api/app/orders/[id]/buyer` carries `requirePermission(req, 'tickets')`
+plus the `/app` cross-site guard, and its rules are pure and table-tested in
+`src/lib/app/orders-buyer.ts`: a name is required (this repairs a name, it does
+not delete one), a blank address is stored as NULL so "no e-mail" has one
+representation, and **a refunded order is closed** — the money moved, the
+tickets are void, and the buyer on it is part of what happened. The write goes
+through `repo.orders.updateBuyer`, which is `payload.update` inside the seam, so
+the Orders hooks run exactly as they do for a Backoffice edit.
+
+**Not in v1, deliberately:** CSV export, deleting an order, editing counts,
+total or channel, and the Tickets collection as a list of its own. What was sold
+is a record; a miscount is corrected with an offline-sales line (ADR-0025) or a
+refund, and the Backoffice keeps the raw edit for a `dev` holder.
+
+**Money never comes from a join.** `OrderRow.totalCents` is the order's own
+column: a SUM across the join to tickets multiplies the amount by the party size,
+which is a bug this project has already had once.
+
+**Povrat is not storno, and the screen says so.** The badge on a refunded row
+reads *Povrat* and the state filter reads *Vraćene*, because in this project
+*storno* names a specific different event: a ticket voided with
+`cancel_reason='storno'`, where no money moved (CONTEXT.md, the partner and comp
+void). The ticket line is where both can appear, as "Poništena · povrat" and
+"Poništena · storno".
+
+The screen reaches the database only through `getRepo()` (ADR-0027 decision 5),
+so it adds no entry to the repo guard's allow-list. It grew the seam by four
+methods: `orders.listForStaff`, `orders.staffDetailById`, `orders.updateBuyer`
+and `shows.ticketedPerformances` (the performance filter's options, which are
+the ticketed performances only — a non-public one has no orders).

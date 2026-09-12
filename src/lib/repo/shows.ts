@@ -1,10 +1,12 @@
 // ShowsRepo — the slice of the shows collection the seam serves today (#475).
 //
-// Two jobs, both of them id-addressed:
+// Three jobs:
 //
 //   - Skener's read behind a ticket that already exists (`detailsById`).
 //   - The voditelj's non-public performances (#503): the one row a form is
 //     about, the create, and the patch behind Uredi / Otkaži / Pragovi.
+//   - Narudžbe's performance filter (#501): the ticketed rows, and only those,
+//     because the filter is over ORDERS and a non-public row has none.
 //
 // The schedule itself is NOT here and must not be: reading the schedule goes
 // through `getUpcomingShows()` / `getNextShow()` (`src/lib/shows.ts`), which is
@@ -65,6 +67,16 @@ export interface PerformancePatch {
   thresholdBili?: number
 }
 
+/** One entry of Narudžbe's performance filter (#501). */
+export interface TicketedPerformance {
+  id: string
+  /** YYYY-MM-DD. */
+  date: string
+  time: string
+  /** The DB slug; `VENUE_LABEL` turns it into a name people say. */
+  venue: string
+}
+
 export interface ShowsRepo {
   /**
    * Date / time / venue of one performance, or null when the row is gone.
@@ -73,6 +85,16 @@ export interface ShowsRepo {
    * non-public performance (which sells nothing) cannot surface here.
    */
   detailsById(id: string | number): Promise<ShowDetails | null>
+
+  /**
+   * Every performance that sells tickets, newest first (#501).
+   *
+   * Only the ticketed ones, because this fills a filter over ORDERS and a
+   * non-public performance has none (ADR-0024). The predicate comes from
+   * `show-performance.ts` rather than being spelled here, which is the rule.
+   * Not the buyer's schedule: that is `getUpcomingShows()` and it ends today.
+   */
+  ticketedPerformances(): Promise<TicketedPerformance[]>
 
   /** The row one voditelj form is about, or null when the id is not a performance. */
   performanceById(id: string | number): Promise<PerformanceRow | null>

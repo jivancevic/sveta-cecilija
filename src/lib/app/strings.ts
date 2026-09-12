@@ -1166,6 +1166,164 @@ export const APP_STRINGS = {
     download: 'Preuzmi CSV',
   },
 
+  /**
+   * Narudžbe (#501): the blagajna's list of orders and the one order behind it.
+   *
+   * The screen Tatjana opens when a guest is standing in front of her, so the
+   * words are the ones she would use out loud: "gratis" for a comp,
+   * "propuštena" for a ticket that has been through the door.
+   *
+   * **Povrat and storno are two different events and this screen says so.** A
+   * refund gave the money back; a *storno* voided a partner or comp seat with
+   * no money in it (CONTEXT.md, `tickets.cancel_reason`). The badge, the state
+   * filter and the ticket line all use *povrat* for the first, and *storno*
+   * stays reserved for the second.
+   *
+   * Every action here is NAMED (#476): four buttons with four verbs, each
+   * behind a confirmation, and no raw edit form anywhere. The one field edit is
+   * the buyer's name and address, which is a repair rather than a decision.
+   */
+  orders: {
+    /** The search box and the two filters, above the list. */
+    searchLabel: 'Pretraži narudžbe',
+    searchPlaceholder: 'Ime, e-pošta ili kod',
+    search: 'Traži',
+    clear: 'Poništi filtre',
+    showLabel: 'Izvedba',
+    allShows: 'Sve izvedbe',
+    stateLabel: 'Stanje',
+    allStates: 'Sve narudžbe',
+    /**
+     * The four values of the state filter (`lib/app/orders-query.ts`).
+     *
+     * "Vraćene", NOT "stornirane": in this project *storno* is a specific
+     * thing — a ticket voided with `cancel_reason='storno'`, where no money
+     * moved (CONTEXT.md, the partner and comp void). A refunded order is the
+     * opposite: the money went back. Calling it storno on the one screen that
+     * handles both would teach the blagajna the wrong word for the wrong event.
+     */
+    states: {
+      active: 'Važeće',
+      refunded: 'Vraćene',
+      partner: 'Partnerske',
+      comp: 'Gratis',
+    },
+    /** How an order was sold, as the row and the detail both say it. */
+    channels: {
+      online: 'Online',
+      partner: 'Partner',
+      comp: 'Gratis',
+    },
+    /** An online order that carried a member's promo code (ADR-0018). */
+    promo: 'Promo',
+    /**
+     * The badge on a row whose money has gone back — the same word the ticket
+     * line uses ("Poništena · povrat"), never *storno*, which is the void that
+     * moved no money.
+     */
+    refunded: 'Povrat',
+    /**
+     * "2 odrasle, 1 dječja" — the party, and the result count above it.
+     *
+     * Three buckets each, handed to `pluralize` (`roster-loaders.ts`), which is
+     * where the Croatian rule is stated once: 21 narudžba, 22 narudžbe, but 11
+     * narudžbi. Both nouns are the feminine *karta*, so they decline together.
+     */
+    adults: { one: 'odrasla', few: 'odrasle', many: 'odraslih' },
+    children: { one: 'dječja', few: 'dječje', many: 'dječjih' },
+    count: { one: 'narudžba', few: 'narudžbe', many: 'narudžbi' },
+    empty: 'Nema narudžbe koja odgovara pretrazi.',
+    emptyAll: 'Još nema nijedne narudžbe.',
+    /** The pager: two buttons and the one sentence between them. */
+    previous: 'Prethodna',
+    next: 'Sljedeća',
+    pageOf: (page: number, pages: number) => `Stranica ${page} od ${pages}`,
+
+    /** The one order: its facts, in the order they are read. */
+    detail: {
+      back: 'Sve narudžbe',
+      noName: 'Bez imena',
+      noEmail: 'Bez e-pošte',
+      performance: 'Izvedba',
+      showGone: 'Izvedba je obrisana',
+      /** The one link the detail builds: the rest of that evening's orders. */
+      sameShow: 'sve narudžbe',
+      email: 'E-pošta',
+      code: 'Kod narudžbe',
+      /** The channel line carries the partner or the member with it. */
+      channel: 'Kanal',
+      promoCode: 'Promo kod',
+      total: 'Iznos',
+      created: 'Zaprimljeno',
+      /** The party, as a fact; the panel below lists the seats one by one. */
+      party: 'Ulaznice',
+      ticketsTitle: 'Pojedinačne ulaznice',
+      adult: 'Odrasla',
+      child: 'Dječja',
+      active: 'Važeća',
+      cancelled: 'Poništena',
+      /**
+       * Why a ticket was voided — the DB's own two `cancel_reason` values, and
+       * two different events: *povrat* gave the money back, *storno* voided a
+       * partner or comp seat with no money involved (CONTEXT.md).
+       */
+      reasonRefund: 'povrat',
+      reasonStorno: 'storno',
+      scanned: (when: string) => `Propuštena ${when}`,
+      /** The same fact with an unreadable timestamp behind it. */
+      scannedNoTime: 'Propuštena',
+      notScanned: 'Nije propuštena',
+      noTickets: 'Ova narudžba nema ulaznica.',
+      missing: 'Ova narudžba ne postoji.',
+    },
+
+    /** The four named actions. Povrat is only ever offered to `refunds`. */
+    actions: {
+      refund: 'Povrat',
+      resend: 'Pošalji ulaznice ponovno',
+      pdf: 'Otvori PDF',
+      edit: 'Uredi kupca',
+      confirm: 'Potvrdi',
+      cancel: 'Odustani',
+      working: 'Trenutak...',
+    },
+
+    refund: {
+      title: 'Povrat novca',
+      body: (amount: string) =>
+        `Vraćam ${amount} na karticu kupca i poništavam sve ulaznice ove narudžbe. Ovo se ne može opozvati.`,
+      /** A comp or a partner sale never moved money through Stripe. */
+      notPayable: 'Ova narudžba nije plaćena karticom, pa nema što vratiti.',
+      already: 'Novac je već vraćen.',
+      done: 'Novac je vraćen i ulaznice su poništene.',
+      failed: 'Povrat nije uspio. Pokušaj ponovno ili javi Josipu.',
+    },
+
+    resend: {
+      title: 'Pošalji ulaznice ponovno',
+      body: (email: string) => `Šaljem ulaznice na ${email}.`,
+      noEmail: 'Ova narudžba nema e-poštu. Prvo uredi kupca, pa pošalji.',
+      done: 'Ulaznice su poslane.',
+      failed: 'Slanje nije uspjelo. Pokušaj ponovno.',
+    },
+
+    edit: {
+      title: 'Uredi kupca',
+      body: 'Popravi ime ili e-poštu. Broj ulaznica, iznos i kanal se ovdje ne mijenjaju.',
+      nameLabel: 'Ime i prezime',
+      emailLabel: 'E-pošta',
+      emailHint: 'Ostavi prazno ako narudžba nema e-poštu.',
+      save: 'Spremi',
+      done: 'Podaci kupca su spremljeni.',
+      failed: 'Spremanje nije uspjelo. Pokušaj ponovno.',
+      nameMissing: 'Upiši ime kupca.',
+      emailInvalid: 'E-pošta nije ispravna.',
+      refunded: 'Stornirana narudžba se ne uređuje.',
+      notFound: 'Ova narudžba ne postoji.',
+      rejected: 'Zahtjev nije prihvaćen.',
+    },
+  },
+
   /** The shared calendar subscription (#433, glossary: *Calendar feed*). */
   calendar: {
     body: 'Dodaj ovu poveznicu u Google, Apple ili Outlook kalendar i sve izvedbe su ti u telefonu.',
