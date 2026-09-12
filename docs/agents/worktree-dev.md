@@ -33,9 +33,9 @@ The parallel sessions share one `sveta_cecilija_dev` DB, so the DB often holds c
 
 After merging a PR with `gh`, run `git fetch origin main` before you `git checkout -b new-branch origin/main` — otherwise the new branch is cut from the *pre-merge* main and silently lacks the just-merged work (and will look like it reverts it). Also: pushing a worktree branch that tracks a differently-named remote branch needs an explicit refspec — `git push origin HEAD:remote-branch-name`, not a bare `git push`. `gh pr merge --delete-branch` errors inside a worktree (main is checked out elsewhere) but the merge still lands; delete the remote branch manually.
 
-## Stacked PRs don't get CI, so the required `vitest` check never reports
+## Stacked PRs don't get CI, so the required checks never report
 
-`.github/workflows/ci.yml` triggers only on `pull_request` to `main` (and push to `main`). A PR opened with a base branch other than `main` — a *stacked* PR — gets **zero CI runs**, so the required `vitest` check (branch protection) never reports and the PR sits `BLOCKED` ("waiting for status") even though it's `MERGEABLE`.
+`.github/workflows/ci.yml` triggers only on `pull_request` to `main` (and push to `main`). A PR opened with a base branch other than `main` — a *stacked* PR — gets **zero CI runs**, so the six required checks (`vitest`, `lint-types`, `build`, `prod-install`, `docker`, `drift`) never report and the PR sits `BLOCKED` ("waiting for status") even though it's `MERGEABLE`.
 
 Retargeting it (`gh pr edit <n> --base main`) doesn't help: that fires a `pull_request` `edited` event, which isn't in the default trigger set `[opened, synchronize, reopened]`. To fire CI without a code change, **close then reopen the PR** (`gh pr close <n> && gh pr reopen <n>` → `reopened` event).
 
@@ -46,9 +46,11 @@ Also: GitHub auto-retargets a child PR's base only when the parent *branch* is d
 ```sh
 gh pr merge <parent> --merge
 gh pr edit <child> --base main                # parent's changes are now in main
-gh pr close <child> && gh pr reopen <child>   # fire CI so vitest reports
+gh pr close <child> && gh pr reopen <child>   # fire CI so the checks report
 # wait for the vitest check to pass, then:
 gh pr merge <child> --merge
 ```
 
-Prefer **not** stacking unless the PRs genuinely overlap files — independent PRs off `main` each get CI for free. Don't rely on `gh pr merge --admin` to skip the gate (it's blocked here anyway).
+Prefer **not** stacking unless the PRs genuinely overlap files — independent PRs off `main` each get CI for free.
+
+> **The `gh pr merge` calls above are for the human, not the agent.** An agent opens the PR and stops (CLAUDE.md). And do not reach for `gh pr merge --admin` to get past a red check: `enforce_admins` is **false** on this repo, so GitHub will happily let it through — and since [ADR-0026](../adr/0026-production-auto-deploy-from-main.md) a push to `main` deploys straight to production. The bypass is not blocked; it is simply never the right move.

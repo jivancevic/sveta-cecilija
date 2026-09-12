@@ -27,7 +27,7 @@ Move the container build to a **hand-written multi-stage Dockerfile** and switch
 - Add a `.dockerignore` (node_modules, .next, .git, assets/, Sveta Cecilija/, docs/, *.ods, .env*) so the build context is minimal.
 - **Secrets are runtime env only**, never build ARGs. `next build` only gets the few public/build-time vars it genuinely needs (a throwaway dummy `PAYLOAD_SECRET`/`DATABASE_URL` so the config's module-load fail-fast passes).
 - Pin `node:22` to honour the existing `engines` ceiling (Node 22 max, per CLAUDE.md).
-- **Verify the new image on `dev.moreska.eu` (staging) first**, then promote to prod via the manual Redeploy gate (ADR-0009).
+- **Verify the new image on `dev.moreska.eu` (staging) first**, then promote to prod via the manual Redeploy gate (ADR-0009). *(Superseded 2026-09-12 by [ADR-0026](0026-production-auto-deploy-from-main.md): there is no manual Redeploy gate any more. A merge to `main` deploys both apps; the gate is CI plus the image `HEALTHCHECK`.)*
 - Set Coolify image retention to **2** per app (current + one rollback) and prune the stale backlog.
 
 Expected outcome: runtime image **~400–600 MB** (4–6× smaller), far faster cached rebuilds (unchanged-deps builds skip `npm ci`), bounded build cache, secrets out of image history, and retirement of the Nixpacks-specific failure modes.
