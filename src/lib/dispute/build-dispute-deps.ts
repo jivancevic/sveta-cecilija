@@ -7,6 +7,7 @@
 // A chargeback and a refund leave the ticket in the same terminal state (never
 // restorable, unlike a storno), so `refund` is the honest cancel_reason.
 import type { Payload } from 'payload'
+import { notifyStaffOfDispute } from '../app/staff-notifications'
 import type { DisputedOrder, HandleDisputeDeps } from './handle-dispute'
 import { voidOrderTickets, type TicketVoidExecutor } from '../tickets/ticket-void'
 import { recordCriticalEvent } from '../critical-events/record'
@@ -46,6 +47,17 @@ export function buildDisputeDeps(payload: Payload, pool: DisputeDepsPool): Handl
       return voided
     },
     notifyAdmins: async (input) => {
+      // The Cecilija inbox row goes FIRST and unconditionally (#496): it is the
+      // half that does not depend on a third party, so a missing BREVO_API_KEY
+      // leaves the secretary told rather than silent. It never throws (see
+      // `staff-notifications.ts`), so it cannot cost the mail below.
+      await notifyStaffOfDispute(pool.query, {
+        orderCode: input.order?.code ?? null,
+        amountCents: input.amountCents,
+        currency: input.currency,
+        reason: input.reason,
+      })
+
       const brevoApiKey = process.env.BREVO_API_KEY
       if (!brevoApiKey) {
         // Loud, but not fatal: the critical-events row still lands, and failing

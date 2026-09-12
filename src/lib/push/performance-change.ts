@@ -76,6 +76,7 @@ export function buildChangeMessage(
         ),
       })
   return {
+    kind: 'performance_changed',
     title: cancelledNow ? PUSH_MESSAGES.change.cancelledTitle : PUSH_MESSAGES.change.title,
     body,
     url: performanceUrl(next.id),
@@ -100,6 +101,7 @@ export function buildNewPerformanceMessage(
   nowMs: number = Date.now(),
 ): PushMessage {
   return {
+    kind: 'performance_created',
     title: PUSH_MESSAGES.created.title,
     body: PUSH_MESSAGES.created.body({
       date: next.date,

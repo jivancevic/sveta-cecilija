@@ -218,6 +218,7 @@ export async function notifyBulkCreated(
     const userIds = toUserIds(memberIds, await deps.loadUserIdsByMember(memberIds))
     if (userIds.length === 0) return NOTHING
     return await deps.send(userIds, {
+      kind: 'performance_created',
       title: PUSH_MESSAGES.createdBulk.title,
       body: PUSH_MESSAGES.createdBulk.body(input),
       url: '/app',

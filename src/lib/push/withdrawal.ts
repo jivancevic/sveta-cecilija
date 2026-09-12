@@ -53,6 +53,7 @@ export function buildWithdrawalMessage(
   nowMs: number = Date.now(),
 ): PushMessage {
   return {
+    kind: 'withdrawal',
     title: PUSH_MESSAGES.withdrawal.title,
     body: PUSH_MESSAGES.withdrawal.body({
       // A moreškant's nickname is required and unique (#420), so the fallback
