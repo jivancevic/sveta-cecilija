@@ -2707,6 +2707,149 @@ a.app__ob-link {
   border-color: #d9a526;
 }
 
+/* ── Sandučić obavijesti: the bell and the inbox (#496) ───── */
+
+/* Visually hidden, still read aloud. The unread dot is a colour, and a colour
+   is nothing to a screen reader. */
+.app__sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* The bell sits in the header slot on every screen, so it is a fixed target a
+   thumb learns. 44px square: the tap target, not the glyph. */
+.app__bell {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  margin-right: -10px;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.app__bell-icon {
+  display: block;
+}
+
+/* The count, not a dot: "three things happened" is the reason to open it. It
+   overlaps the glyph's top-right corner rather than pushing it, so the bell
+   does not move when the number appears. */
+.app__bell-badge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--gold);
+  color: var(--onGold);
+  border-radius: 9px;
+  font-family: var(--font-ibm-plex-mono), ui-monospace, monospace;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.app__notif-actions {
+  margin-top: 16px;
+  text-align: right;
+}
+
+.app__notif-list {
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* A row is a button (it writes, then navigates), dressed as `.app__more-row`:
+   one tap, a chevron, a hairline under it. */
+.app__notif-row {
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 14px 0;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--rule);
+  border-radius: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* The dot occupies its space whether or not it is filled, so a row does not
+   shift left the moment it is read. */
+.app__notif-dot {
+  flex: 0 0 auto;
+  width: 7px;
+  height: 7px;
+  margin-top: 7px;
+  border-radius: 50%;
+  background: transparent;
+}
+
+.app__notif-row--unread .app__notif-dot {
+  background: var(--gold);
+}
+
+.app__notif-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Read rows stay present rather than fading away: an inbox is also a record of
+   what you were told. Only the weight of the title separates the two. */
+.app__notif-title {
+  font-size: 15px;
+  color: var(--ink);
+}
+
+.app__notif-row--unread .app__notif-title {
+  font-weight: 600;
+}
+
+.app__notif-body {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.app__notif-time {
+  margin-top: 2px;
+  font-family: var(--font-ibm-plex-mono), ui-monospace, monospace;
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+
+.app__notif-chevron {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+/* The empty state's second line: the panel styles its lead, not its body. */
+.app__empty-state p {
+  margin: 4px 0 0;
+}
+
 @media (min-width: 1024px) {
   .app {
     /* Density is a breakpoint, not a toggle (#490). */

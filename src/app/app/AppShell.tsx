@@ -6,6 +6,7 @@ import { APP_STRINGS, ROLE_LABELS } from '@/lib/app/strings'
 import type { AppViewer } from '@/lib/app/viewer'
 import type { DanceRole } from '@/lib/moreskant-profile'
 import { Sidebar, TabBar } from './AppNav'
+import { NotificationBell } from './NotificationBell'
 import { ShowDayStrip } from './ShowDayStrip'
 
 // The chrome every screen wears (#495): the sidebar, the header, the content
@@ -17,9 +18,11 @@ import { ShowDayStrip } from './ShowDayStrip'
 // was: server-rendered data with no store.
 //
 // The header is the same everywhere (#473): the screen's title on the left, the
-// notification bell on the right, phone and laptop alike. The bell arrives with
-// the inbox (#496); until then the slot renders whatever a screen puts in
-// `actions`, and nothing when it puts nothing.
+// notification bell on the right, phone and laptop alike. The bell landed with
+// the inbox (#496) and is now unconditional — it is the one control that is on
+// every screen, and a slot that appeared and disappeared with a screen's own
+// `actions` would move the bell under the reader's thumb. A screen's `actions`
+// sit to its left in the same slot.
 //
 // "Odjava" is NOT in the header: it lives in Više, where the things a person
 // does once a season live. A header button that ends the session sitting one
@@ -56,7 +59,7 @@ export function AppShell({
   title?: string
   /** The season label under the title; omitted where it means nothing. */
   season?: number | null
-  /** The right-hand side of the header. The bell lands here in #496. */
+  /** Extra controls left of the bell. The bell itself is always there (#496). */
   actions?: React.ReactNode
   /** A block between the header and the content (the performance detail's). */
   intro?: React.ReactNode
@@ -78,7 +81,10 @@ export function AppShell({
               </p>
             )}
           </div>
-          {actions && <div className="app__header-actions">{actions}</div>}
+          <div className="app__header-actions">
+            {actions}
+            <NotificationBell unread={viewer.unreadNotifications} />
+          </div>
         </header>
 
         {/* One line back to the scanner on the day of an izvedba (#472). Only

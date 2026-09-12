@@ -10,6 +10,7 @@
 // "moreškant" and never a "moreškar", the event noun is "izvedba" (never
 // "nastup" or "predstava"), and no em-dashes in anything a person reads.
 
+import type { EnquiryType } from '@/lib/contact/enquiry-type'
 import type { PerformanceKind } from '@/lib/show-performance'
 import type { DanceRole } from '@/lib/moreskant-profile'
 import { DANCE_ROLE_LABELS } from '@/lib/moreskant-profile'
@@ -1000,6 +1001,32 @@ export const APP_STRINGS = {
     copyFailed: 'Kopiranje nije uspjelo, označi poveznicu i kopiraj ručno.',
   },
 
+  /**
+   * The Sandučić obavijesti (#496): the screen behind the bell.
+   *
+   * Every notification the app sends is also kept here, per account, so the
+   * unread count is the same on the phone and on the laptop. The screen is a
+   * Više row rather than a tab, because it is read after something happened
+   * rather than as a place to be.
+   */
+  notifications: {
+    title: 'Obavijesti',
+    /** The bell's accessible name, with the count read out loud. */
+    bell: (unread: number) => (unread > 0 ? `Obavijesti, ${unread} nepročitanih` : 'Obavijesti'),
+    /** Above 99 the exact number stops being information on a badge. */
+    badgeOverflow: '99+',
+    markAll: 'Označi sve pročitanim',
+    marking: 'Označavam...',
+    markAllFailed: 'Označavanje nije uspjelo. Pokušaj ponovno.',
+    emptyTitle: 'Još nema obavijesti',
+    emptyBody: 'Kad se nešto dogodi oko izvedbi, naći ćeš to ovdje.',
+    /** The dot next to a row nobody has opened yet. */
+    unread: 'Nepročitano',
+    /** "danas u 21:00" / "5. kolovoza u 21:00", built by `notification-view.ts`. */
+    today: 'danas',
+    yesterday: 'jučer',
+  },
+
   /** The OAuth consent screen for the MCP connector (#438, stories 56-59). */
   authorize: {
     title: 'Poveži Claude',
@@ -1102,6 +1129,41 @@ export const PUSH_MESSAGES = {
   },
 } as const
 
+/**
+ * The two kinds that are FILED and never pushed (#496).
+ *
+ * They are separate from `PUSH_MESSAGES` because nothing about them reaches a
+ * phone: a new inquiry and a chargeback are read at a desk, and a device that
+ * buzzed for every enquiry would be muted inside a week. Same shape, so the
+ * inbox renders them without knowing the difference.
+ */
+export const INBOX_MESSAGES = {
+  inquiry: {
+    title: 'Novi upit',
+    body: (input: { name: string; type: string }) => `${input.name} · ${input.type}`,
+  },
+
+  /**
+   * A card payment the buyer disputed (#380). It names the money and the order,
+   * because the one thing a secretary does next is find that order.
+   */
+  dispute: {
+    title: 'Osporena naplata',
+    body: (input: { order: string | null; amount: string; reason: string }) =>
+      `${input.order ? `Narudžba ${input.order}` : 'Nije pronađena narudžba'}, ${
+        input.amount
+      }. Razlog: ${input.reason}.`,
+  },
+} as const
+
+/** Croatian labels for the enquiry types the public forms store. */
+export const ENQUIRY_TYPE_LABELS: Record<EnquiryType, string> = {
+  general: 'Općenito',
+  'private-moreska': 'Privatna moreška',
+  'moreska-experience': 'Moreška iskustvo',
+  other: 'Ostalo',
+}
+
 /** Croatian labels for the performance kinds (ADR-0024). */
 export const KIND_LABELS: Record<PerformanceKind, string> = {
   redovna: 'Redovna',
@@ -1124,7 +1186,8 @@ const WEEKDAYS = [
   'subota',
 ] as const
 
-const MONTHS = [
+/** The genitive months, as a Croatian date reads them ("5. kolovoza"). */
+export const MONTHS_GENITIVE = [
   'siječnja',
   'veljače',
   'ožujka',
@@ -1150,7 +1213,7 @@ const MONTHS = [
 export function formatPerformanceDate(date: string): string {
   const d = new Date(`${date}T12:00:00.000Z`)
   if (Number.isNaN(d.getTime())) return date
-  return `${WEEKDAYS[d.getUTCDay()]}, ${d.getUTCDate()}. ${MONTHS[d.getUTCMonth()]}`
+  return `${WEEKDAYS[d.getUTCDay()]}, ${d.getUTCDate()}. ${MONTHS_GENITIVE[d.getUTCMonth()]}`
 }
 
 /** UTC noon, so no timezone can shift the calendar day out from under a label. */

@@ -11,6 +11,7 @@ import {
 // socket, no VAPID keys, no `web-push` import anywhere in this file.
 
 const message: PushMessage = {
+  kind: 'alarm',
   title: 'Sokoliću, fali nas!',
   body: 'Stanje za nastup srijeda, 5. kolovoza u 21:00: 3 bilih, 7 crnih',
   url: '/app/performances/10',

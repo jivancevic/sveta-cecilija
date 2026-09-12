@@ -26,6 +26,8 @@
 // must never abort the fan-out: the alarm exists precisely for the evening when
 // something is already wrong.
 
+import type { AppNotificationKind } from '@/lib/app/notification-audience'
+
 /** One stored device. `keys` is the shape the Web Push API hands the browser. */
 export interface PushSubscriptionRow {
   /** The row id, so a dead endpoint can be deleted without re-matching text. */
@@ -38,6 +40,17 @@ export interface PushSubscriptionRow {
 
 /** What a device shows. `url` is where a tap lands (`/app/performances/<id>`). */
 export interface PushMessage {
+  /**
+   * What kind of news this is (#496).
+   *
+   * Required, and deliberately part of the MESSAGE rather than an argument of
+   * the send: every push is also filed in the Sandučić obavijesti, and the one
+   * place that knows what a message is about is whoever wrote it. With the kind
+   * on the message, `createSender` files the row for every sender at once
+   * (`push-data.ts`) and the two can never drift — a new sender cannot compile
+   * without saying what it is sending.
+   */
+  kind: AppNotificationKind
   title: string
   body: string
   url: string

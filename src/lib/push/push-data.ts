@@ -16,6 +16,12 @@
 // of this. The callers are a `moreska` route and a `CRON_SECRET` job; roster
 // visibility is society-wide by decision (ADR-0024).
 
+import {
+  audienceFor,
+  resolveNotificationAudience,
+} from '@/lib/app/notification-audience'
+import { loadDoorOnlyUserIds } from '@/lib/app/notification-recipients'
+import { fileNotifications } from '@/lib/app/notifications-write'
 import type { AttendanceRow } from '@/lib/attendance/army-count'
 import { toAttendanceMember, type AttendanceMember } from '@/lib/attendance/rules'
 import { toAttendanceRow } from '@/lib/app/detail-loaders'
@@ -152,7 +158,7 @@ export async function loadDuePerformances(
  * still gets a working `/app`, and a voditelj pressing the alarm gets an honest
  * "0 uređaja" rather than a 500.
  */
-export function createSender(
+function createPushOnlySender(
   query: PushQuery,
 ): (userIds: readonly string[], message: PushMessage) => Promise<SendPushResult> {
   const config = vapidConfig()
@@ -170,6 +176,56 @@ export function createSender(
       post,
       removeSubscription: (id) => removeSubscriptionById(query, id),
     })
+}
+
+/**
+ * THE sender: one inbox row per account, then the push (#496).
+ *
+ * Every sender the roster has — the manual alarm, the cron's alarm and
+ * reminder, a performance created or changed, a bulk season, a withdrawn
+ * "dolazim" — reaches a device through `deps.send`, so filing the row HERE is
+ * what makes "a push and its inbox row are one write" true for all of them at
+ * once, rather than five places that each have to remember.
+ *
+ * Two things it does that a plain fan-out does not:
+ *
+ *   - the inbox row is written even when VAPID is unconfigured or the account
+ *     has no device at all. That is the point of the inbox: a dancer who never
+ *     allowed notifications still finds out what happened;
+ *   - for the kinds about the evening itself it ALSO files a row for every
+ *     `door`-only account, and never pushes them (#473's open question, settled
+ *     in `notification-audience.ts`). The extra lookup only happens for those
+ *     kinds, so an alarm costs no second query.
+ *
+ * Filing NEVER fails the send. A notification that reached twenty phones and
+ * could not be written down is worse the other way round: the roster has been
+ * told, and a `afterChange` hook that threw here would fail the save itself.
+ */
+export function createSender(
+  query: PushQuery,
+): (userIds: readonly string[], message: PushMessage) => Promise<SendPushResult> {
+  const push = createPushOnlySender(query)
+
+  return async (userIds, message) => {
+    const doorOnly = audienceFor(message.kind).doorInbox ? await doorOnlyIds(query) : []
+    const audience = resolveNotificationAudience(message.kind, {
+      primary: userIds.map(String),
+      doorOnly,
+    })
+
+    await fileNotifications(query, message, audience.inbox)
+    return push(audience.push, message)
+  }
+}
+
+/** Never throws: a door lookup that failed simply files fewer rows. */
+async function doorOnlyIds(query: PushQuery): Promise<string[]> {
+  try {
+    return await loadDoorOnlyUserIds(query)
+  } catch (err) {
+    console.error('[push] door-only lookup failed', err)
+    return []
+  }
 }
 
 /** The deps both the manual alarm and the cron job share. */
