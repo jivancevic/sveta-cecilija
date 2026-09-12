@@ -175,6 +175,20 @@ export const Orders: CollectionConfig = {
         description: 'Buyer locale captured at checkout; drives post-purchase email language',
       },
     },
+    // #497 — the per-order half of the show-cancellation flow's re-runnability.
+    // The money half re-runs off `refundStatus`; this is the mail half, so a
+    // second press of "Cancel show" retries only the buyers Brevo never reached
+    // instead of mailing all of them twice. NULL = still owed the notice.
+    {
+      name: 'cancelNotifiedAt',
+      type: 'date',
+      admin: {
+        readOnly: true,
+        description:
+          'Timestamp the "this performance is cancelled" email was sent to this buyer. NULL = not sent (a re-run of the cancellation will try again).',
+        date: { pickerAppearance: 'dayAndTime' },
+      },
+    },
     {
       name: 'reviewEmailSentAt',
       type: 'date',

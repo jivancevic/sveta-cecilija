@@ -127,7 +127,18 @@ An admin toggle on one show that closes the **online** sales channel only. A pau
 
 
 ### Show cancellation
-Withdrawing a public performance that will not happen. Decided in [#497](https://github.com/jivancevic/sveta-cecilija/issues/497) (2026-09-12): cancelling **refunds every online order in full automatically** through the idempotent refund engine and emails every buyer, voids partner tickets as storno (the seats leave the monthly statement) and comp tickets likewise, and is done by a `refunds` holder. A non-public performance is simply marked cancelled: nothing to refund, nobody to tell. Distinct from *Online sales pause* (the show still happens) and from *Self-serve reschedule refund* (the show moved, the buyer chooses).
+Withdrawing a public performance that will not happen. Built in [#497](https://github.com/jivancevic/sveta-cecilija/issues/497) (2026-09-12), one action behind `POST /api/shows/[id]/cancel`, gated on `refunds` because it moves money:
+
+- the show is marked cancelled **first**, so it stops selling before a single refund runs;
+- every **online** order is refunded in full through the shared idempotent engine (which also voids its tickets), and its buyer is emailed;
+- every **partner** and **comp** order is voided as a *storno*, so the seats leave the show and a partner's leave the monthly statement; a claimed slip with an address gets the notice too, an unclaimed one has nobody to write to;
+- the notice says what happened to the money, and that differs by channel: refunded to the original payment method (online), returned at the point of sale that charged it (partner), nothing to return (comp).
+
+Refunds are **automatic, not a self-serve link**: a cancelled evening leaves the buyer nothing to keep a ticket for, and a link would leave money unreturned with everyone who never opens the mail. Stripe's fees are not returned to the society; that is the cost of cancelling.
+
+The action is **safely re-runnable**, which is the documented fix for a half-finished run rather than hand bookkeeping: `orders.refundStatus` records the money, `tickets.status` the seats and `orders.cancelNotifiedAt` the mail, so a second press skips what is done and retries only the failures. Every failure is written to the *critical-events log*. Brevo's free tier sends 300 mails a day and there is no queue in v1, so the preview warns when the sends alone could exhaust it.
+
+A non-public performance is simply marked cancelled: nothing to refund, nobody to tell. Distinct from *Online sales pause* (the show still happens) and from *Self-serve reschedule refund* (the show moved, the buyer chooses).
 _Avoid_: "cancel" for a single ticket (that is a *storno* or a *refund*).
 ### Free-ticket discount
 Every 5th ticket in a single order is free. The free ticket's type matches the most expensive category present in the order: adult (€20) if any adult tickets were purchased, otherwise child (€10).

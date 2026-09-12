@@ -16,7 +16,7 @@
 | Frontend & CSS gotchas — specificity, `backdrop-filter`, hero loading, `next/image` | `docs/agents/frontend-css.md` |
 | Assets pipeline — `public/` vs `assets/`, webp conversion | `docs/agents/assets.md` |
 | Cecilija, the staff and member app (`/app`, called Moreškant until #489) — route group, shared cookie, access decision, roster loaders, PWA, the target route map | `docs/agents/moreskant-app.md` (+ [ADR-0027](docs/adr/0027-cecilija-one-staff-app-payload-backoffice.md), [ADR-0024](docs/adr/0024-moreskant-roster-domain.md)) |
-| Feature design notes — offline sales at the door + legacy ([ADR-0025](docs/adr/0025-offline-sales-ledger.md)), non-public performances (`kind`/`isPublic`, ADR-0024), #94 bad-weather venue change, show reschedule + ticket reissue (#379), #57 marketing opt-outs + review-email attendance gate (#378), Stripe disputes (#380) | `docs/agents/features.md` |
+| Feature design notes — offline sales at the door + legacy ([ADR-0025](docs/adr/0025-offline-sales-ledger.md)), non-public performances (`kind`/`isPublic`, ADR-0024), #94 bad-weather venue change, show reschedule + ticket reissue (#379), show cancellation with automatic refunds (#497), #57 marketing opt-outs + review-email attendance gate (#378), Stripe disputes (#380) | `docs/agents/features.md` |
 | Domain glossary | `CONTEXT.md` (single context; see `docs/agents/domain.md`) |
 | Architecture decisions | `docs/adr/` |
 
