@@ -17,6 +17,14 @@ knew about, plus a set of deprecated `t-com.hr` email aliases.
 | Domain | Registrar | DNS | Status | Notes |
 |---|---|---|---|---|
 | `moreska.eu` | Totohost | Hetzner DNS (`hydrogen/oxygen/helium.ns.hetzner.com`) | **Active — primary** | Nameserver delegation handed to Hetzner. Production site. |
+
+Subdomains on the `moreska.eu` zone (all `A` records pointing at the one Hetzner box, `178.105.206.9`):
+
+| Host | Serves | Notes |
+|---|---|---|
+| `www` | prod | Traefik strips the `www` (Coolify's per-app redirect setting, a 307). |
+| `dev` | staging | Second Coolify app on the same box, tracks `main`. |
+| `app` | prod, redirect only | Vanity host for the staff app (#479). Attached to the **prod** Coolify service so Traefik routes it and Let's Encrypt issues a cert; every request then 301s to `https://moreska.eu/app`, path preserved, from `src/lib/app-subdomain.ts`. The redirect is deliberately in code rather than a Traefik label, because Coolify regenerates the labels whenever the domain list changes. Nothing is ever *served* on this host, so it needs no mail, no SPF and no separate deploy. |
 | `korcula-moreska.com` | Totohost (assumed) | — | **Active — legacy WP** | Old WordPress site. Stays up read-only through end of 2026 season so `checkinera` keeps scanning legacy QRs (`docs/todo.md` §0). 301 → `moreska.eu` planned at/after cutover (#11). |
 
 ### Regica — UNKNOWN, needs human login (issue #107, Task 1)
