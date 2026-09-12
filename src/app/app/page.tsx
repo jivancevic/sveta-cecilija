@@ -1,6 +1,8 @@
 import Link from 'next/link'
+import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { accessMember } from '@/lib/app/access'
+import { ONBOARDING_COOKIE, needsOnboarding } from '@/lib/app/onboarding'
 import { getSeasonPerformances } from '@/lib/app/roster-data'
 import {
   countLabel,
@@ -102,6 +104,24 @@ export default async function MoreskantHomePage() {
 
   const me = accessMember(viewer.access)
   const voditelj = viewer.access.kind === 'voditelj'
+
+  // The Dobrodošlica is sent from HERE and from nowhere else (#457): every
+  // other page under `/app` opens on what it says it is, so a push deep-link
+  // into tonight's postava can never land on a walkthrough.
+  const jar = await cookies()
+  if (
+    needsOnboarding({
+      signedIn: viewer.signedIn,
+      // Already returned above; the rule still states the case, so the one
+      // place the decision lives reads as the whole decision.
+      denied: false,
+      hasMember: me != null,
+      cookiePresent: jar.has(ONBOARDING_COOKIE),
+    })
+  ) {
+    redirect('/app/dobrodosli')
+  }
+
   const season = await getSeasonPerformances({ memberId: me?.id ?? null, voditelj })
 
   const next = pickNextPerformance(season.upcoming)

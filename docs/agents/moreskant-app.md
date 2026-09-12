@@ -962,3 +962,81 @@ convention: both FKs reach only `users`, so the file just has to land before
 `migrate-zz-drop-users-role.sql`, which must stay the last `migrate-*` file
 (#398). `oauth_codes` and `oauth_tokens` are raw tables and must stay out of the
 regenerated `00-base.sql`.
+
+## Redesign (#457)
+
+No schema change, no new route handler: the same reads, rearranged into three
+tabs plus a walkthrough.
+
+### The tabs
+
+A fixed bottom bar (`TabBar.tsx`, one client island inside the server
+`AppShell`) over three pages. `activeAppTab` (`src/lib/app/tabs.ts`) is the
+single rule for which tab a path lights up, so a page below a tab lights its
+parent.
+
+| Route | Tab | What it is |
+|---|---|---|
+| `/app` | Izvedbe | the next live evening as a hero, then the season by month, the past behind a disclosure |
+| `/app/izvedba/[id]` | Izvedbe | one evening, three segments, the two answer buttons pinned above the bar |
+| `/app/moje` | Moje | two panels: the dancer's own season, and the Ljestvica |
+| `/app/vise` | Više | statistics, the Dobrodošlica replay, notifications, calendar, own record, Odjava |
+| `/app/statistika` | Više | the season scoreboard, unchanged |
+| `/app/dobrodosli` | none | the walkthrough: no bar, no brand header |
+
+### `?dio=` — the segment params
+
+Two screens carry a segmented control, and both state the vocabulary in a pure
+parser rather than in the component: `parseSegment` →
+`dolaze | postava | ulaznice` (`src/lib/app/detail-view.ts`) on the performance
+detail, `parseMojeSegment` → `moja | ljestvica`
+(`src/lib/app/leaderboard-loaders.ts`) on Moje. Every panel is server-rendered
+and handed to the client component as a child; switching costs no request and
+follows along in the URL through `history.replaceState`, never a navigation. The
+detail's values are also what a push deep-link means, so the strings and the URL
+values are read off one object.
+
+### The Dobrodošlica cookie rule
+
+Glossary: *Dobrodošlica*. Remembered **on the device only** — cookie
+`moreskant_onboarded=1`, `Path=/app`, `SameSite=Lax`, one year, written from the
+browser (`document.cookie`) with `localStorage['moreskant.onboarding.done']` as
+a fallback; either one counts as done. The names and the rule live in
+`src/lib/app/onboarding.ts`.
+
+`needsOnboarding({ signedIn, denied, hasMember, cookiePresent })` is pure and
+tested, and **`/app` is the only page that calls it**. Every other page under
+`/app` opens on what it says it is: a push deep-link into tonight's postava must
+not land on a walkthrough. Finishing and skipping write the same cookie, so
+"Preskoči" is an answer rather than a deferral; the page itself never writes it
+on arrival, which is what makes the Više row a harmless replay.
+
+Step 1 (home screen) is left out when the browser reports standalone, step 3
+(calendar) when the deployment has no feed URL. The first render is the full
+list on both sides so hydration stays quiet, and an effect narrows it after
+mount. Step 2 runs the REAL subscribe flow: every browser call lives in
+`src/app/app/push-client.ts`, shared with the Više switch, so the two screens
+cannot drift into two notions of "subscribed".
+
+### The Ljestvica
+
+Glossary: *Ljestvica* — that entry is the rulebook, this is where it is
+implemented. `buildLeaderboard` (`src/lib/app/leaderboard-loaders.ts`) is pure
+and sits **downstream of `loadSeasonStats`**: it ranks the scoreboard's own rows
+rather than re-deriving a count, which is what keeps `/app/statistika`,
+`/app/moje` and the board from ever printing three numbers for one season.
+
+- Only confirmed lineups count (already true of `SeasonStats.rows`), every
+  active moreškant is a row even at zero, and the incoming order (performances
+  desc, then nickname) is never re-sorted.
+- **Competition ranking**: equal counts share a rank and the next rank skips
+  (1, 1, 3).
+- `share` is the count over the season's confirmed performances (0 when there
+  are none); `fullSeason` means it equals them and there was at least one;
+  milestones are 5, 10, 15, 20 read off the same count. No streaks.
+- `me` carries `toNextPlace` — how many more performances would reach the next
+  higher distinct count, null at the top — and the next milestone. The sentences
+  built from it go through `pluralize` (`roster-loaders.ts`), the one home of
+  the three Croatian plural buckets.
+- The bottom of the list gets **no** treatment: no red, no "zadnji". An empty
+  season hides the card and the podium and says so once.

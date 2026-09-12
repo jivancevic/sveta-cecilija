@@ -44,6 +44,12 @@ export default async function MorePage() {
           {APP_STRINGS.more.stats}
           <span aria-hidden="true">›</span>
         </Link>
+        {/* The walkthrough, replayable: the page sets the cookie only when it
+            is finished or skipped, so opening it again changes nothing. */}
+        <Link className="app__more-row" href="/app/dobrodosli">
+          {APP_STRINGS.more.onboarding}
+          <span aria-hidden="true">›</span>
+        </Link>
         {voditelj && (
           <>
             {/* The admin is a different app under the same origin, so these are

@@ -270,19 +270,28 @@ export function daysUntil(startMs: number, nowMs: number): number {
 }
 
 /**
- * "3 izvedbe" — the count beside a month heading.
+ * `${count} ${the right one of three Croatian plural forms}`.
  *
  * Croatian has three plural buckets and the teens are the exception that decides
  * whether the rule was written or guessed: 11 izvedbi, 21 izvedba, 22 izvedbe.
+ * The rule is stated once here and every counted noun in `/app` borrows it, so
+ * a second counted noun cannot quietly ship with a second, wrong rule.
  */
-export function countLabel(count: number): string {
-  const words = APP_STRINGS.home.count
+export function pluralize(
+  count: number,
+  words: { one: string; few: string; many: string },
+): string {
   const mod100 = Math.abs(count) % 100
   const mod10 = Math.abs(count) % 10
   if (mod100 >= 11 && mod100 <= 14) return `${count} ${words.many}`
   if (mod10 === 1) return `${count} ${words.one}`
   if (mod10 >= 2 && mod10 <= 4) return `${count} ${words.few}`
   return `${count} ${words.many}`
+}
+
+/** "3 izvedbe" — the count beside a month heading. */
+export function countLabel(count: number): string {
+  return pluralize(count, APP_STRINGS.home.count)
 }
 
 /**

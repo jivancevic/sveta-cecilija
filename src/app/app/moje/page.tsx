@@ -2,12 +2,16 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { accessMember } from '@/lib/app/access'
 import { getMySeason } from '@/lib/app/my-season-data'
+import { getSeasonStats } from '@/lib/app/stats-data'
+import { buildLeaderboard, parseMojeSegment } from '@/lib/app/leaderboard-loaders'
 import type { MySeasonMonth } from '@/lib/app/my-season-loaders'
 import { APP_STRINGS, ROLE_LABELS } from '@/lib/app/strings'
 import { DANCE_ROLES } from '@/lib/moreskant-profile'
 import { resolveAppViewer } from '@/lib/app/viewer'
 import { AppShell } from '../AppShell'
 import { DeniedPage } from '../DeniedPage'
+import { Board } from './Board'
+import { MojeSegments } from './MojeSegments'
 
 // `/app/moje` — the Moje tab (#457): one dancer's own season.
 //
@@ -78,7 +82,7 @@ function MonthChart({ months }: { months: MySeasonMonth[] }) {
 export default async function MySeasonPage({
   searchParams,
 }: {
-  searchParams: Promise<{ sezona?: string | string[] }>
+  searchParams: Promise<{ sezona?: string | string[]; dio?: string | string[] }>
 }) {
   const viewer = await resolveAppViewer()
   if (!viewer.signedIn) redirect('/app/login')
@@ -87,27 +91,21 @@ export default async function MySeasonPage({
   const me = accessMember(viewer.access)
   const params = await searchParams
   const requested = Array.isArray(params.sezona) ? params.sezona[0] : params.sezona
-  const mine = await getMySeason(requested, me?.id ?? null)
+  const segment = parseMojeSegment(Array.isArray(params.dio) ? params.dio[0] : params.dio)
+
+  // Both panels are read and rendered on the server, whichever one the URL
+  // opens on: the toggle is then free, and the season link below it means the
+  // same thing in either panel.
+  const [mine, stats] = await Promise.all([
+    getMySeason(requested, me?.id ?? null),
+    getSeasonStats(requested),
+  ])
+  const board = buildLeaderboard({ stats, myMemberId: me?.id ?? null })
 
   const roles = DANCE_ROLES.filter((role) => mine.roles[role] > 0)
 
-  return (
-    <AppShell me={me} season={mine.season}>
-      {/* The season picker: plain links, so the page stays a server render and
-          a chosen season is a URL somebody can be sent. */}
-      <nav className="app__seasons" aria-label={APP_STRINGS.mySeason.season}>
-        {mine.seasons.map((year) => (
-          <Link
-            key={year}
-            href={`/app/moje?sezona=${year}`}
-            className={`app__seasons-item${year === mine.season ? ' app__seasons-item--on' : ''}`}
-            aria-current={year === mine.season ? 'page' : undefined}
-          >
-            {year}
-          </Link>
-        ))}
-      </nav>
-
+  const ownSeason = (
+    <>
       {!me && <p className="app__empty">{APP_STRINGS.mySeason.noMember}</p>}
 
       {me && mine.empty ? (
@@ -163,11 +161,21 @@ export default async function MySeasonPage({
                 ))}
               </section>
             )}
-
-            {/* Part 3 (#457): the Ljestvica segment goes here, under the roles. */}
           </>
         )
       )}
+    </>
+  )
+
+  return (
+    <AppShell me={me} season={mine.season}>
+      <MojeSegments
+        initial={segment}
+        season={mine.season}
+        seasons={mine.seasons}
+        moja={ownSeason}
+        ljestvica={<Board board={board} />}
+      />
     </AppShell>
   )
 }

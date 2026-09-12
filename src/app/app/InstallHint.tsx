@@ -2,6 +2,14 @@
 
 import { useEffect, useState } from 'react'
 import { APP_STRINGS } from '@/lib/app/strings'
+import {
+  hasPushSubscription,
+  isIos,
+  pushSupported,
+  standalone,
+  subscribeToPush,
+  unsubscribeFromPush,
+} from './push-client'
 
 // The one banner under the season list: "Dodaj na početni zaslon" (#421) and,
 // since #431, "Uključi obavijesti".
@@ -21,53 +29,12 @@ import { APP_STRINGS } from '@/lib/app/strings'
 // banner that flashes "turn on notifications" at somebody who turned them on
 // last week is worse than a beat of silence.
 //
-// Every storage / permission access is wrapped: a private window, a browser
-// that blocks site data and a thumbnail-capture pass can each throw, and none
-// of that may take `/app` down.
+// Every browser call it makes lives in `push-client.ts` (#457), shared with
+// step 2 of the Dobrodošlica: two screens, one notion of "subscribed".
 
 const DISMISSED_KEY = 'moreskant.installHint.dismissed'
-// The worker script lives at the ROOT so it can claim `/app` itself, not only
-// `/app/…` — see the header of `public/moreskant-sw.js`.
-const SW_URL = '/moreskant-sw.js'
-const SW_SCOPE = '/app'
 
 type BannerState = 'unknown' | 'install' | 'offer' | 'on' | 'hidden'
-
-/**
- * base64url application server key → the bytes `subscribe()` wants.
- *
- * Typed as `ArrayBuffer` rather than `Uint8Array` because lib.dom's
- * `BufferSource` requires a view over a plain `ArrayBuffer`, which a
- * `Uint8Array<ArrayBufferLike>` is not; the buffer itself is accepted directly
- * and by every browser that has a `PushManager`.
- */
-function urlBase64ToBytes(base64: string): ArrayBuffer {
-  const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), '=')
-  const raw = atob(padded.replace(/-/g, '+').replace(/_/g, '/'))
-  const out = new Uint8Array(new ArrayBuffer(raw.length))
-  for (let i = 0; i < raw.length; i++) out[i] = raw.charCodeAt(i)
-  return out.buffer as ArrayBuffer
-}
-
-function pushSupported(): boolean {
-  return (
-    typeof window !== 'undefined' &&
-    'serviceWorker' in navigator &&
-    'PushManager' in window &&
-    'Notification' in window
-  )
-}
-
-function standalone(): boolean {
-  try {
-    return (
-      window.matchMedia?.('(display-mode: standalone)').matches === true ||
-      (navigator as unknown as { standalone?: boolean }).standalone === true
-    )
-  } catch {
-    return false
-  }
-}
 
 function dismissed(): boolean {
   try {
@@ -91,13 +58,8 @@ export function InstallHint({ vapidPublicKey }: { vapidPublicKey?: string | null
         if (!cancelled) setState(standalone() || dismissed() ? 'hidden' : 'install')
         return
       }
-      try {
-        const registration = await navigator.serviceWorker.getRegistration(SW_SCOPE)
-        const subscription = await registration?.pushManager.getSubscription()
-        if (!cancelled) setState(subscription ? 'on' : 'offer')
-      } catch {
-        if (!cancelled) setState('offer')
-      }
+      const subscribed = await hasPushSubscription()
+      if (!cancelled) setState(subscribed ? 'on' : 'offer')
     }
     void decide()
     return () => {
@@ -109,62 +71,20 @@ export function InstallHint({ vapidPublicKey }: { vapidPublicKey?: string | null
     if (busy || !vapidPublicKey) return
     setBusy(true)
     setError(null)
-    try {
-      const permission = await Notification.requestPermission()
-      if (permission !== 'granted') {
-        setError(APP_STRINGS.push.denied)
-        return
-      }
-      // `register` resolves as soon as the worker is registered, which is not
-      // the same as being active; `ready` is what `subscribe()` needs.
-      await navigator.serviceWorker.register(SW_URL, { scope: SW_SCOPE })
-      const registration = await navigator.serviceWorker.ready
-      const subscription = await registration.pushManager.subscribe({
-        // Required by Chrome: a silent push is not allowed on the open web.
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToBytes(vapidPublicKey),
-      })
-      const res = await fetch('/api/app/push/subscribe', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(subscription.toJSON()),
-      })
-      if (!res.ok) {
-        // Do not leave a subscription the server does not know about: it would
-        // look "on" here and never ring.
-        await subscription.unsubscribe().catch(() => {})
-        setError(APP_STRINGS.push.failed)
-        return
-      }
-      setState('on')
-    } catch {
-      setError(APP_STRINGS.push.failed)
-    } finally {
-      setBusy(false)
-    }
+    const result = await subscribeToPush(vapidPublicKey)
+    if (result === 'subscribed') setState('on')
+    else setError(result === 'denied' ? APP_STRINGS.push.denied : APP_STRINGS.push.failed)
+    setBusy(false)
   }
 
   async function disable() {
     if (busy) return
     setBusy(true)
     setError(null)
-    try {
-      const registration = await navigator.serviceWorker.getRegistration(SW_SCOPE)
-      const subscription = await registration?.pushManager.getSubscription()
-      if (subscription) {
-        await fetch('/api/app/push/unsubscribe', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ endpoint: subscription.endpoint }),
-        }).catch(() => {})
-        await subscription.unsubscribe().catch(() => {})
-      }
-      setState('offer')
-    } catch {
-      setError(APP_STRINGS.push.failed)
-    } finally {
-      setBusy(false)
-    }
+    const ok = await unsubscribeFromPush()
+    if (!ok) setError(APP_STRINGS.push.failed)
+    setState('offer')
+    setBusy(false)
   }
 
   if (state === 'unknown' || state === 'hidden') return null
@@ -183,7 +103,7 @@ export function InstallHint({ vapidPublicKey }: { vapidPublicKey?: string | null
   if (state === 'install') {
     // Two audiences, one line: a phone that cannot do push yet (iOS, no home
     // screen icon) and a deployment with no keys. Both need the same sentence.
-    const ios = pushSupported() === false && /iPad|iPhone|iPod/.test(navigator.userAgent)
+    const ios = pushSupported() === false && isIos()
     return (
       <aside className="app__hint">
         <strong>{ios ? APP_STRINGS.push.iosTitle : APP_STRINGS.install.title}</strong>

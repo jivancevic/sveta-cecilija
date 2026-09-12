@@ -90,6 +90,11 @@ export const APP_STRINGS = {
   /** The "Moje" tab: one dancer's own season (#457). */
   mySeason: {
     title: 'Moje',
+    /** The two panels, which are also what `?dio=` means on this tab. */
+    segments: {
+      moja: 'Moja sezona',
+      ljestvica: 'Ljestvica',
+    },
     season: 'Sezona',
     mine: 'u postavi',
     total: 'izvedbi u sezoni',
@@ -106,10 +111,43 @@ export const APP_STRINGS = {
     noMember: 'Tvoja prijava nije povezana s moreškantom, pa nema što prikazati.',
   },
 
+  /**
+   * The Ljestvica, the second panel of the Moje tab (#457, glossary:
+   * *Ljestvica*).
+   *
+   * Every counted noun here is handed to `pluralize` rather than written with a
+   * fixed ending: "1 izvedbi do 2. mjesta" would be the kind of sentence that
+   * tells a dancer the app was written by somebody who does not speak to them.
+   */
+  board: {
+    title: 'Ljestvica',
+    /** The small caption under the big "#3": out of how many moreškanata. */
+    outOf: (total: number) => `od ${total}`,
+    mine: 'moje izvedbe',
+    leading: 'Vodiš ljestvicu.',
+    toNextPlace: (count: string, place: number) => `Još ${count} do ${place}. mjesta.`,
+    nextMilestone: (count: string) => `Sljedeća prekretnica: ${count}`,
+    /** The chip on the row of a dancer who danced the whole season. */
+    fullSeason: 'puna sezona',
+    /** The chip that says which row is the reader's own. */
+    you: 'ti',
+    confirmedCount: {
+      one: 'potvrđena izvedba',
+      few: 'potvrđene izvedbe',
+      many: 'potvrđenih izvedbi',
+    },
+    footer: (confirmed: string) =>
+      `Broji se samo potvrđena postava. ${confirmed} u sezoni.`,
+    empty: 'Ljestvica počinje s prvom potvrđenom postavom.',
+    milestoneLabel: (count: number) => `${count} izvedbi`,
+  },
+
   /** The "Više" tab: everything that is not an evening (#457). */
   more: {
     title: 'Više',
     stats: 'Statistika sezone',
+    /** The walkthrough, replayable from here (#457). */
+    onboarding: 'Dobrodošlica',
     notifications: 'Obavijesti',
     calendar: 'Kalendar izvedbi',
     profile: 'Moji podaci',
@@ -278,6 +316,73 @@ export const APP_STRINGS = {
     sent: 'Ako račun postoji, poveznica je poslana na e-mail te osobe.',
     unexpected: 'Slanje trenutno nije moguće. Pokušaj ponovno.',
     backToLogin: 'Natrag na prijavu',
+  },
+
+  /**
+   * The Dobrodošlica (#457, glossary: *Dobrodošlica*).
+   *
+   * Three steps, and each one asks for a permission or a subscription the app
+   * cannot grant itself, so every step says WHAT IT BUYS before it asks: the
+   * notification step names the three things that will ring rather than
+   * promising "obavijesti", because a dancer who does not know what will ring
+   * says no. Every step can be refused and refusing is not a failure, which is
+   * why the quiet link is "Ne sada" and never "Odustani".
+   */
+  onboarding: {
+    skip: 'Preskoči',
+    step: (index: number, total: number) => `Korak ${index} od ${total}`,
+
+    install: {
+      title: 'Dodaj Moreškanta na početni zaslon',
+      body: 'Otvara se kao aplikacija, bez adresne trake, i može ti slati obavijesti.',
+      iosShare: 'Dodirni Podijeli u Safariju',
+      iosAdd: 'Dodaj na početni zaslon',
+      iosHint: 'Ikona Podijeli je na dnu Safarija, u sredini.',
+      androidMenu: 'Otvori izbornik preglednika (tri točke)',
+      androidAdd: 'Instaliraj aplikaciju',
+      androidHint: 'Izbornik je gore desno, tri točke jedna ispod druge.',
+      primary: 'Dodao sam',
+      later: 'Kasnije',
+    },
+
+    push: {
+      title: 'Uključi obavijesti',
+      body: 'Javljamo samo kad se nešto tiče tebe. Bez reklama, bez podsjetnika svaki dan.',
+      /**
+       * The fake notification. It is the T-48h ANSWER REMINDER, type (2) of the
+       * glossary's *Notification types*, and not an invented one: confirming a
+       * postava deliberately rings nobody, so a sample "postava je potvrđena"
+       * would promise a push that does not exist.
+       */
+      sampleTitle: 'Moreškant',
+      sampleBody: 'Četvrtak u 21:00, Ljetno kino. Još nisi odgovorio dolaziš li.',
+      sampleWhen: 'prije 2 min',
+      benefitLineup: 'Podsjetnik za odgovor',
+      benefitAlarm: 'Alarm od voditelja',
+      benefitChange: 'Promjena mjesta ili sata',
+      primary: 'Uključi obavijesti',
+      working: 'Uključujem...',
+      on: 'Obavijesti su uključene',
+      skip: 'Ne sada',
+    },
+
+    calendar: {
+      title: 'Izvedbe u tvom kalendaru',
+      body: 'Pretplata se sama osvježava kad se raspored promijeni. Radi u Apple i Google kalendaru.',
+      cardTitle: 'Kalendar izvedbi',
+      cardBody: 'Sve izvedbe sezone, javne i privatne, s bilješkom voditelja.',
+      primary: 'Pretplati se na kalendar',
+      copy: 'Kopiraj link',
+      copied: 'Link kopiran',
+      skip: 'Ne sada',
+    },
+
+    done: {
+      title: 'Spremno',
+      next: (date: string) => `Sljedeća izvedba je ${date}. Reci nam dolaziš li.`,
+      nothing: 'Vidimo se na prvoj izvedbi sezone.',
+      primary: 'Na izvedbe',
+    },
   },
 
   install: {
