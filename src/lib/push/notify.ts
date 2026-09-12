@@ -164,7 +164,13 @@ async function sendToRoster(
   deps: NotifyDeps,
 ): Promise<SendPushResult> {
   const userIds = await rosterUserIds(performance, excludeNotComing, deps)
-  return userIds.length === 0 ? NOTHING : deps.send(userIds, message)
+  // Called even with an empty roster since #496: `deps.send` is also what FILES
+  // the inbox rows, and the audience it files is not always the audience it
+  // pushes — a performance created or moved reaches the `door`-only accounts in
+  // their inbox, and that must not depend on some dancer happening to own a
+  // login. The sender itself short-circuits the fan-out when there is nobody to
+  // push to.
+  return deps.send(userIds, message)
 }
 
 /**
