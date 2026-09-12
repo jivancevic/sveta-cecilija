@@ -27,6 +27,10 @@ describe('mayOpenAppSession', () => {
     [['moreska'], true],
     [['moreska', 'users', 'tickets'], true],
     [['tickets'], false],
+    // #520: the invitation allowlist lets a link be aimed at a door login, but
+    // the session still reads the permission set, so what opens `/app` is
+    // `moreskant` — a `users` holder adds it (#487, #521), never the voditelj.
+    [['door', 'moreskant'], true],
     [['door'], false],
     [['partner'], false],
     [[], false],

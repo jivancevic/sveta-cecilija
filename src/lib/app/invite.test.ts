@@ -215,7 +215,7 @@ describe('handleInvite — the login behind the Member is not a dancer', () => {
   it.each([
     ['a superadmin', ['users', 'tickets', 'moreska', 'moreskant']],
     ['a ticketing account', ['tickets']],
-    ['a door account that somehow carries a link', ['door', 'moreskant']],
+    ['a door account that also sells', ['door', 'tickets']],
   ])('refuses %s', async (_label, permissions) => {
     const d = deps({ findUserByMember: vi.fn().mockResolvedValue({ ...staff, permissions }) })
     expect((await handleInvite({ memberId: '12' }, d)).status).toBe(409)
@@ -223,6 +223,10 @@ describe('handleInvite — the login behind the Member is not a dancer', () => {
 
   it.each([
     ['a plain dancer', ['moreskant']],
+    // #520, reversing the #462 rule: the door person who dances is ONE account
+    // (#487), and a door login reaches no further than shared `tehnika` does.
+    ['a door person who also dances', ['door', 'moreskant']],
+    ['a door-only login', ['door']],
     ['a login from before the permission vocabulary', []],
     ['a login whose set could not be read', null],
   ])('still re-invites %s', async (_label, permissions) => {
@@ -245,6 +249,12 @@ describe('isDancerLogin', () => {
     ['an empty set', { id: 1, permissions: [] }, true],
     ['a missing set', { id: 1 }, true],
     ['exactly moreskant', { id: 1, permissions: ['moreskant'] }, true],
+    // #520: a door login reaches no further than the shared `tehnika` account,
+    // so the door person who dances keeps ONE account and stays invitable.
+    ['exactly door', { id: 1, permissions: ['door'] }, true],
+    ['door and moreskant', { id: 1, permissions: ['door', 'moreskant'] }, true],
+    ['door plus a staff word', { id: 1, permissions: ['door', 'tickets'] }, false],
+    ['moreska alone', { id: 1, permissions: ['moreska'] }, false],
     ['moreska too', { id: 1, permissions: ['moreskant', 'moreska'] }, false],
     ['tickets', { id: 1, permissions: ['tickets'] }, false],
     ['users', { id: 1, permissions: ['users'] }, false],

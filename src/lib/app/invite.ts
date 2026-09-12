@@ -14,6 +14,7 @@
 // API runs `overrideAccess: true`, so collection access does not gate a route
 // (CLAUDE.md hard rule).
 
+import { INVITABLE_PERMISSIONS } from '@/lib/access/permissions'
 import { APP_STRINGS } from './strings'
 import { rejectAppRequest, type AppRequestMeta } from './request-guard'
 import { allocateUsername } from './username'
@@ -60,11 +61,12 @@ export interface InviteUser {
 }
 
 /**
- * Is the login behind this Member an ordinary dancer login?
+ * Is the login behind this Member one an invitation may land on?
  *
- * True when it holds nothing beyond `moreskant`. An empty set counts: a login
- * from before the permission vocabulary is still not a staff account, and
- * refusing it would break re-inviting a dancer whose row predates #393.
+ * True when it holds nothing outside `INVITABLE_PERMISSIONS` (`moreskant` and,
+ * since #520, `door`). An empty set counts: a login from before the permission
+ * vocabulary is still not a staff account, and refusing it would break
+ * re-inviting a dancer whose row predates #393.
  *
  * The rule exists because an invitation MOVES an existing login's e-mail onto
  * the Member's and mails it a password-reset link (see below). On a dancer that
@@ -81,7 +83,8 @@ export interface InviteUser {
 export function isDancerLogin(user: InviteUser | null | undefined): boolean {
   if (!user) return true
   const held = Array.isArray(user.permissions) ? user.permissions : []
-  return !held.some((p) => p !== 'moreskant')
+  const allowed: readonly string[] = INVITABLE_PERMISSIONS
+  return held.every((p) => typeof p === 'string' && allowed.includes(p))
 }
 
 /** What the invitation email needs; the copy itself lives in lib/email. */
