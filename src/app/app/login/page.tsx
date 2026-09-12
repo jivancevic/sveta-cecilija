@@ -37,7 +37,7 @@ export default async function MoreskantLoginPage({
   // that is NOT on the roster stays here, so it can sign in as someone else
   // rather than bounce between two pages it may not read.
   const viewer = await resolveAppViewer()
-  if (viewer.signedIn && viewer.access.kind !== 'denied') redirect(next)
+  if (viewer.signedIn && viewer.access.kind === 'ok') redirect(next)
 
   return (
     <main className="app__panel">

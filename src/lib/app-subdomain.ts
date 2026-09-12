@@ -34,8 +34,8 @@ type HostRedirect = {
 }
 
 /**
- * Order matters: the `/app/...` rule comes first so `app.moreska.eu/app/moje`
- * lands on `/app/moje` rather than `/app/app/moje`.
+ * Order matters: the `/app/...` rule comes first so `app.moreska.eu/app/more`
+ * lands on `/app/more` rather than `/app/app/leaderboard`.
  */
 export function appSubdomainRedirects(): HostRedirect[] {
   const has = [{ type: 'host' as const, value: APP_SUBDOMAIN_HOST }]

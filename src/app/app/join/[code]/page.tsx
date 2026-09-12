@@ -6,7 +6,7 @@ import { JoinClaim } from './JoinClaim'
 
 // /app/join/<kod> — the rehearsal QR (#463).
 //
-// PUBLIC, like `/app/instalacija` and for the same reason: the person scanning
+// PUBLIC, like `/app/install` and for the same reason: the person scanning
 // it has no login yet, which is the entire problem being solved. Unlike that
 // page it WRITES, so everything about it is built to be boring to an outsider:
 //

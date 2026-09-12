@@ -95,7 +95,7 @@ describe('the alarm message', () => {
 
   it('opens the performance when tapped, and collapses per performance', () => {
     const message = buildAlarmMessage(performance, count)
-    expect(message.url).toBe('/app/izvedba/10')
+    expect(message.url).toBe('/app/performances/10')
     expect(message.tag).toBe('alarm-10')
   })
 
@@ -127,7 +127,7 @@ describe('the reminder message', () => {
     const message = buildReminderMessage(performance)
     expect(message.title).toBe('Javi dolazak')
     expect(message.body).toContain('srijeda, 5. kolovoza u 21:00')
-    expect(message.url).toBe('/app/izvedba/10')
+    expect(message.url).toBe('/app/performances/10')
     expect(message.tag).toBe('reminder-10')
     // A reminder two days out survives a night in a tunnel.
     expect(message.ttlSeconds).toBe(REMINDER_TTL_SECONDS)

@@ -1,4 +1,4 @@
-// What `/app/statistika` reads (#437, ADR-0024 phase 4).
+// What `/app/leaderboard` reads (#437, ADR-0024 phase 4).
 //
 // The phase 2 loader split: this half is pure and DI'd, `stats-data.ts` holds
 // the Payload calls and nothing else. The counting rule itself is NOT here — it

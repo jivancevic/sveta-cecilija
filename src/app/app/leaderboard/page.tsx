@@ -1,20 +1,24 @@
 import Link from 'next/link'
-import { redirect } from 'next/navigation'
-import { accessMember } from '@/lib/app/access'
 import { getMySeason } from '@/lib/app/my-season-data'
 import { getSeasonStats } from '@/lib/app/stats-data'
-import { buildLeaderboard, parseMojeSegment } from '@/lib/app/leaderboard-loaders'
+import { buildLeaderboard, parseLeaderboardSegment } from '@/lib/app/leaderboard-loaders'
 import type { MySeasonMonth } from '@/lib/app/my-season-loaders'
 import { pluralForm } from '@/lib/app/roster-loaders'
 import { APP_STRINGS, ROLE_LABELS } from '@/lib/app/strings'
 import { DANCE_ROLES } from '@/lib/moreskant-profile'
-import { resolveAppViewer } from '@/lib/app/viewer'
 import { AppShell } from '../AppShell'
-import { DeniedPage } from '../DeniedPage'
+import { openScreen } from '../gate'
 import { Board } from './Board'
-import { MojeSegments } from './MojeSegments'
+import { LeaderboardSegments } from './LeaderboardSegments'
+import { StatsTable } from './StatsTable'
 
-// `/app/moje` — the Moje tab (#457): one dancer's own season.
+// `/app/leaderboard` — the Ljestvica screen (#457, #437; merged by #495).
+//
+// Two screens became one (#473). "Moja sezona" is the dancer's own year and
+// "Ljestvica" is the roster ranked; a voditelj gets the FULL scoreboard in that
+// second panel, which is what `/app/leaderboard` used to be on its own. Both
+// panels are read on the server whichever the URL opens on, so the toggle costs
+// no request, and `?season=` means the same year in either.
 //
 // Everything on it is a LINEUP fact, never an attendance answer: saying
 // "dolazim" moves no number here, the way it moves none on the scoreboard
@@ -80,19 +84,18 @@ function MonthChart({ months }: { months: MySeasonMonth[] }) {
   )
 }
 
-export default async function MySeasonPage({
+export default async function LeaderboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ sezona?: string | string[]; dio?: string | string[] }>
+  searchParams: Promise<{ season?: string | string[]; part?: string | string[] }>
 }) {
-  const viewer = await resolveAppViewer()
-  if (!viewer.signedIn) redirect('/app/login')
-  if (viewer.access.kind === 'denied') return <DeniedPage />
+  const { viewer, refusal } = await openScreen('leaderboard')
+  if (refusal) return refusal
 
-  const me = accessMember(viewer.access)
+  const me = viewer.me
   const params = await searchParams
-  const requested = Array.isArray(params.sezona) ? params.sezona[0] : params.sezona
-  const segment = parseMojeSegment(Array.isArray(params.dio) ? params.dio[0] : params.dio)
+  const requested = Array.isArray(params.season) ? params.season[0] : params.season
+  const segment = parseLeaderboardSegment(Array.isArray(params.part) ? params.part[0] : params.part)
 
   // Both panels are read and rendered on the server, whichever one the URL
   // opens on: the toggle is then free, and the season link below it means the
@@ -133,7 +136,7 @@ export default async function MySeasonPage({
         <section className="app__eos">
           <h2>{APP_STRINGS.mySeason.emptyTitle}</h2>
           <p>{APP_STRINGS.mySeason.emptyBody}</p>
-          <Link className="app__button app__button--link" href="/app">
+          <Link className="app__button app__button--link" href="/app/performances">
             {APP_STRINGS.mySeason.emptyLink}
           </Link>
         </section>
@@ -188,14 +191,25 @@ export default async function MySeasonPage({
     </>
   )
 
+  // The voditelj's panel is the whole scoreboard, per dancer and per kind; a
+  // dancer's is the ranking, which is the same counts with the names they know.
+  const ranking = viewer.voditelj ? (
+    <>
+      {stats.confirmedPerformances === 0 && <p className="app__empty">{APP_STRINGS.stats.empty}</p>}
+      <StatsTable rows={stats.rows} season={stats.season} seasons={stats.seasons} />
+    </>
+  ) : (
+    <Board board={board} />
+  )
+
   return (
-    <AppShell me={me} season={mine.season}>
-      <MojeSegments
+    <AppShell viewer={viewer} screen="leaderboard" season={mine.season}>
+      <LeaderboardSegments
         initial={segment}
         season={mine.season}
         seasons={mine.seasons}
-        moja={ownSeason}
-        ljestvica={<Board board={board} />}
+        mine={ownSeason}
+        all={ranking}
       />
     </AppShell>
   )

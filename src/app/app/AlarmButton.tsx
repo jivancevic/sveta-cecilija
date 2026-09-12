@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { APP_STRINGS } from '@/lib/app/strings'
 
-// "Pošalji alarm" (#431) — the voditelj's control on `/app/izvedba/[id]`.
+// "Pošalji alarm" (#431) — the voditelj's control on `/app/performances/[id]`.
 //
 // It reports back how many DEVICES rang (#430, story 24), because that is the
 // only honest answer to "will anyone hear this": a roster of twenty dancers with

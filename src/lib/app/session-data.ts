@@ -4,7 +4,7 @@ import { addSessionToUser, generatePayloadCookie } from 'payload/shared'
 // Opening a session for an account whose password nobody knows (#463).
 //
 // This is the piece that makes an invitation the thing that AUTHENTICATES.
-// Until #463 the only way into `/app` from a link was `/app/set-password`,
+// Until #463 the only way into `/app` from a link was the password form,
 // which runs Payload's `resetPassword`: that stores a hash and opens a session
 // in one go, so a dancer had to invent a password before they could see the
 // app. A dancer who never wants one should not have to, and "pošalji mi link za

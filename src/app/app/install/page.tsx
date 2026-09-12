@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { APP_STRINGS } from '@/lib/app/strings'
 import { InstallGuide } from './InstallGuide'
 
-// /app/instalacija — the full-screen install guide (#455).
+// /app/install — the full-screen install guide (#455).
 //
 // Deliberately NOT behind the access decision: it is the target of the QR code
 // a voditelj puts on the wall at a rehearsal, and the person scanning it has

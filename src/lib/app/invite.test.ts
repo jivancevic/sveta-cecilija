@@ -276,7 +276,7 @@ describe('handleInvite — the token and the mail', () => {
     expect(d.sendInvite).toHaveBeenCalledWith({
       to: 'cici@example.com',
       greeting: 'Cici',
-      link: 'https://moreska.eu/app/prijava?token=tok-abc',
+      link: 'https://moreska.eu/app/session?token=tok-abc',
     })
   })
 
@@ -298,13 +298,13 @@ describe('handleInvite — the token and the mail', () => {
 describe('signInLink', () => {
   it('builds the one link both mails carry', () => {
     expect(signInLink('https://moreska.eu', 'abc')).toBe(
-      'https://moreska.eu/app/prijava?token=abc',
+      'https://moreska.eu/app/session?token=abc',
     )
   })
 
   it('tolerates a trailing slash and escapes the token', () => {
     expect(signInLink('https://moreska.eu/', 'a b')).toBe(
-      'https://moreska.eu/app/prijava?token=a%20b',
+      'https://moreska.eu/app/session?token=a%20b',
     )
   })
 })
@@ -370,7 +370,7 @@ describe('isUsableBaseUrl', () => {
  */
 describe('handleInviteLink', () => {
   const noEmail = { ...cici, email: null, mobile: '091 234 5678' }
-  const link = 'https://moreska.eu/app/prijava?token=tok-abc'
+  const link = 'https://moreska.eu/app/session?token=tok-abc'
 
   it('mints a link for a dancer with no e-mail at all', async () => {
     const d = deps({ loadMember: vi.fn().mockResolvedValue(noEmail) })

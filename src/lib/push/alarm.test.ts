@@ -85,7 +85,7 @@ describe('handleManualAlarm', () => {
     expect(userIds).toEqual(['u5'])
     expect(message.title).toBe('Sokoliću, fali nas!')
     expect(message.body).toContain('1 bilih, 2 crnih')
-    expect(message.url).toBe('/app/izvedba/10')
+    expect(message.url).toBe('/app/performances/10')
   })
 
   it('widens to "ne dolazim" when the box is ticked', async () => {

@@ -1,6 +1,5 @@
 import Link from 'next/link'
-import { notFound, redirect } from 'next/navigation'
-import { accessMember } from '@/lib/app/access'
+import { notFound } from 'next/navigation'
 import { getPerformanceDetail } from '@/lib/app/detail-data'
 import {
   compUnavailableReason,
@@ -16,13 +15,13 @@ import {
   ROLE_LABELS,
   formatPerformanceDateLong,
 } from '@/lib/app/strings'
-import { resolveAppViewer } from '@/lib/app/viewer'
 import { SELF_COMP_CAP } from '@/lib/comp/self-comp'
 import type { LineupView, PerformanceDetail } from '@/lib/app/detail-loaders'
 import type { ArmyTally, RosterPerson } from '@/lib/attendance/army-count'
 import type { Army } from '@/lib/attendance/rules'
 import { AlarmButton } from '../../AlarmButton'
 import { AppShell } from '../../AppShell'
+import { openScreen } from '../../gate'
 import { LineupEditor } from '../../LineupEditor'
 import { AttendanceButtons } from '../../AttendanceButtons'
 import { CompTickets } from '../../CompTickets'
@@ -30,7 +29,7 @@ import { ArmyMoveButton } from '../../ArmyMoveButton'
 import { NoteEditor } from '../../NoteEditor'
 import { DetailSegments } from './DetailSegments'
 
-// `/app/izvedba/[id]` — one evening, in three segments (#423, #457, ADR-0024).
+// `/app/performances/[id]` — one evening, in three segments (#423, #457, ADR-0024).
 //
 // The old page stacked everything a performance has onto one scroll: the
 // headcounts, the postava, the free tickets, the voditelj's controls. That is
@@ -334,12 +333,11 @@ export default async function PerformanceDetailPage({
 }) {
   const { id } = await params
   const { dio } = await searchParams
-  const viewer = await resolveAppViewer()
-  if (!viewer.signedIn) redirect('/app/login')
-  if (viewer.access.kind === 'denied') redirect('/app')
+  const { viewer, refusal } = await openScreen('performances')
+  if (refusal) return refusal
 
-  const me = accessMember(viewer.access)
-  const voditelj = viewer.access.kind === 'voditelj'
+  const me = viewer.me
+  const voditelj = viewer.voditelj
   const detail = await getPerformanceDetail(id, { memberId: me?.id ?? null, voditelj })
   if (!detail) notFound()
 
@@ -371,12 +369,11 @@ export default async function PerformanceDetailPage({
         ? { cls: 'app__chip--no', label: APP_STRINGS.home.answerNo }
         : { cls: 'app__chip--none', label: APP_STRINGS.home.answerNone }
 
-  const header = (
+  const intro = (
     <header className="app__detail-head">
-      <Link className="app__back" href="/app">
+      <Link className="app__back" href="/app/performances">
         ‹ {APP_STRINGS.detail.back}
       </Link>
-      <h1 className="app__detail-title">{title}</h1>
       <p className="app__detail-when">
         {formatPerformanceDateLong(p.date)}
         {p.time && ` · ${p.time}`}
@@ -408,7 +405,7 @@ export default async function PerformanceDetailPage({
   )
 
   return (
-    <AppShell me={me} header={header}>
+    <AppShell viewer={viewer} screen="performances" title={title} intro={intro}>
       <DetailSegments
         initial={segment}
         counts={counts}

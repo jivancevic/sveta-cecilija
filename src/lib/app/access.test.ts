@@ -15,6 +15,9 @@ const dancer = (over: Partial<AppMember> = {}): AppMember => ({
 
 const user = (...permissions: string[]) => ({ id: '1', permissions })
 
+const screenKeys = (access: ReturnType<typeof decideAppAccess>) =>
+  access.kind === 'ok' ? access.screens.map((s) => s.key) : null
+
 describe('isActiveMoreskant', () => {
   it.each([
     ['a live dancer', dancer(), true],
@@ -31,47 +34,48 @@ describe('isActiveMoreskant', () => {
   })
 })
 
+// The rule (#473): an account is IN when its permission set unlocks at least
+// one screen. Which screens those are is the table's business (screens.ts);
+// this file tests the door and what it hands the caller.
+
 describe('decideAppAccess — the voditelj', () => {
   it('lets a `moreska` holder in with no Member link (a non-dancing voditelj)', () => {
-    expect(decideAppAccess(user('moreska'), null)).toEqual({ kind: 'voditelj', self: null })
+    const access = decideAppAccess(user('moreska'), null)
+    expect(access.kind).toBe('ok')
+    expect(screenKeys(access)).toEqual(['performances', 'leaderboard'])
+    expect(access.kind === 'ok' && access.self).toBeNull()
   })
 
   it('lets a `moreska` holder in even when the linked Member is retired', () => {
-    expect(decideAppAccess(user('moreska'), dancer({ active: false }))).toEqual({
-      kind: 'voditelj',
-      self: null,
-    })
+    const access = decideAppAccess(user('moreska'), dancer({ active: false }))
+    expect(access.kind).toBe('ok')
+    expect(access.kind === 'ok' && access.self).toBeNull()
   })
 
   it('carries `self` for a voditelj who also holds `moreskant` and has a live Member', () => {
     const me = dancer()
-    expect(decideAppAccess(user('moreska', 'moreskant'), me)).toEqual({
-      kind: 'voditelj',
-      self: me,
-    })
+    const access = decideAppAccess(user('moreska', 'moreskant'), me)
+    expect(access.kind === 'ok' && access.self).toBe(me)
   })
 
   it('leaves `self` null when the voditelj does not hold `moreskant`', () => {
-    expect(decideAppAccess(user('moreska'), dancer())).toEqual({ kind: 'voditelj', self: null })
+    const access = decideAppAccess(user('moreska'), dancer())
+    expect(access.kind === 'ok' && access.self).toBeNull()
   })
 
   it('leaves `self` null when the linked Member is no longer a dancer', () => {
-    expect(
-      decideAppAccess(user('moreska', 'moreskant'), dancer({ isMoreskant: false })),
-    ).toEqual({ kind: 'voditelj', self: null })
-  })
-
-  it('outranks every other permission the same account happens to hold', () => {
-    expect(decideAppAccess(user('tickets', 'refunds', 'door', 'moreska'), null).kind).toBe(
-      'voditelj',
-    )
+    const access = decideAppAccess(user('moreska', 'moreskant'), dancer({ isMoreskant: false }))
+    expect(access.kind === 'ok' && access.self).toBeNull()
   })
 })
 
 describe('decideAppAccess — the moreškant', () => {
   it('lets a `moreskant` holder in when the linked Member is a live dancer', () => {
     const me = dancer()
-    expect(decideAppAccess(user('moreskant'), me)).toEqual({ kind: 'moreskant', member: me })
+    const access = decideAppAccess(user('moreskant'), me)
+    expect(access.kind).toBe('ok')
+    expect(access.kind === 'ok' && access.self).toBe(me)
+    expect(screenKeys(access)).toEqual(['performances', 'leaderboard'])
   })
 
   it.each([
@@ -84,15 +88,31 @@ describe('decideAppAccess — the moreškant', () => {
   })
 })
 
+describe('decideAppAccess — the conditional permissions', () => {
+  it('denies a `partner` holder with no Partner link', () => {
+    expect(decideAppAccess(user('partner'), null)).toEqual({ kind: 'denied' })
+  })
+
+  it('unlocks nothing for `refunds` and `dev`, however they are combined', () => {
+    expect(decideAppAccess(user('refunds', 'dev'), dancer())).toEqual({ kind: 'denied' })
+  })
+
+  it('carries the Partner link through for the screens that scope on it', () => {
+    const access = decideAppAccess(user('moreska'), null, { partnerId: '7' })
+    expect(access.kind === 'ok' && access.partnerId).toBe('7')
+  })
+})
+
 describe('decideAppAccess — everybody else', () => {
   it.each([
     ['anonymous', null],
     ['an authenticated account with no permission set', { id: '2', permissions: undefined }],
-    ['tickets (Tatjana)', user('tickets', 'refunds', 'door')],
+    ['tickets (Tatjana), until the blagajna screens are built', user('tickets', 'refunds', 'door')],
     ['the door login', user('door')],
     ['a partner POS', user('partner')],
     ['the society season dashboard', user('season_stats')],
     ['a dev-only account', user('dev')],
+    ['an editor-only account', user('editor')],
   ])('denies %s', (_label, u) => {
     expect(decideAppAccess(u, null)).toEqual({ kind: 'denied' })
     // A stray Member link changes nothing without the permission.
@@ -100,25 +120,24 @@ describe('decideAppAccess — everybody else', () => {
   })
 
   it('ignores a permission word outside the vocabulary', () => {
-    expect(decideAppAccess(user('voditelj'), dancer())).toEqual({
-      kind: 'denied',
-    })
+    expect(decideAppAccess(user('voditelj'), dancer())).toEqual({ kind: 'denied' })
   })
 
   it('never lets a single permission other than moreska/moreskant in (sweep)', () => {
+    // Today's live table. Every screen ticket that flips a `servesToday` word
+    // moves one of these to `true`, and this line is where that shows up.
     for (const p of PERMISSIONS) {
-      const expected = p === 'moreska' || p === 'moreskant' ? true : false
-      expect(decideAppAccess(user(p), dancer()).kind !== 'denied', `permission ${p}`).toBe(expected)
+      const expected = p === 'moreska' || p === 'moreskant'
+      expect(decideAppAccess(user(p), dancer()).kind === 'ok', `permission ${p}`).toBe(expected)
     }
   })
 })
 
 describe('accessMember', () => {
-  it('is the voditelj’s own row, the moreškant’s row, or nothing', () => {
+  it('is the account’s own dancer row, or nothing', () => {
     const me = dancer()
-    expect(accessMember({ kind: 'voditelj', self: me })).toBe(me)
-    expect(accessMember({ kind: 'voditelj', self: null })).toBeNull()
-    expect(accessMember({ kind: 'moreskant', member: me })).toBe(me)
+    expect(accessMember(decideAppAccess(user('moreska', 'moreskant'), me))).toBe(me)
+    expect(accessMember(decideAppAccess(user('moreska'), null))).toBeNull()
     expect(accessMember({ kind: 'denied' })).toBeNull()
   })
 })

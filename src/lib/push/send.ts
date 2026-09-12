@@ -36,7 +36,7 @@ export interface PushSubscriptionRow {
   auth: string
 }
 
-/** What a device shows. `url` is where a tap lands (`/app/izvedba/<id>`). */
+/** What a device shows. `url` is where a tap lands (`/app/performances/<id>`). */
 export interface PushMessage {
   title: string
   body: string

@@ -4,7 +4,7 @@ import { APP_HOME, safeAppNextPath } from './next-path'
 describe('safeAppNextPath', () => {
   it('keeps a path inside /app, query string and all', () => {
     expect(safeAppNextPath('/app')).toBe('/app')
-    expect(safeAppNextPath('/app/izvedba/12')).toBe('/app/izvedba/12')
+    expect(safeAppNextPath('/app/performances/12')).toBe('/app/performances/12')
     expect(safeAppNextPath('/app/authorize?client_id=abc&state=xyz')).toBe(
       '/app/authorize?client_id=abc&state=xyz',
     )
@@ -20,10 +20,10 @@ describe('safeAppNextPath', () => {
 
   it('refuses a `..` segment that climbs back out of /app (#445 review)', () => {
     expect(safeAppNextPath('/app/../admin')).toBe(APP_HOME)
-    expect(safeAppNextPath('/app/izvedba/../../admin')).toBe(APP_HOME)
+    expect(safeAppNextPath('/app/performances/../../admin')).toBe(APP_HOME)
     expect(safeAppNextPath('/app/..')).toBe(APP_HOME)
     // A dot that is not a whole segment is harmless.
-    expect(safeAppNextPath('/app/izvedba/1..2')).toBe('/app/izvedba/1..2')
+    expect(safeAppNextPath('/app/performances/1..2')).toBe('/app/performances/1..2')
     // …and a query may say whatever it likes.
     expect(safeAppNextPath('/app/authorize?state=..')).toBe('/app/authorize?state=..')
   })
@@ -39,7 +39,7 @@ describe('safeAppNextPath', () => {
     expect(safeAppNextPath(undefined)).toBe(APP_HOME)
     expect(safeAppNextPath('')).toBe(APP_HOME)
     expect(safeAppNextPath('   ')).toBe(APP_HOME)
-    expect(safeAppNextPath(['/app/izvedba/1'])).toBe(APP_HOME)
+    expect(safeAppNextPath(['/app/performances/1'])).toBe(APP_HOME)
     expect(safeAppNextPath(42)).toBe(APP_HOME)
   })
 })

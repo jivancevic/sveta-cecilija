@@ -1,7 +1,7 @@
 // The rehearsal join code (#463): how a dancer with no e-mail and no SMS gets
 // in, standing in the room.
 //
-// A voditelj shows one short-lived code (a QR beside the `/app/instalacija`
+// A voditelj shows one short-lived code (a QR beside the `/app/install`
 // one). A dancer scans it, sees the roster by name, taps their own, and waits.
 // The voditelj approves with one tap and the dancer's phone drops into `/app`
 // signed in. Nothing is mailed, nothing is typed, and nobody invents a password.

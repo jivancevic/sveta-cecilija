@@ -16,7 +16,7 @@ import { useInviteVisible } from './useInviteVisible'
  *
  * Only the clipboard, not the deep links: `sms:` opens a composer on a phone
  * and does nothing on the desktop where `/admin` is usually read. The phone
- * half of this lives in `/app/pozivnice`, which is a voditelj's own screen with
+ * half of this lives in `/app/invitations`, which is a voditelj's own screen with
  * the SMS and WhatsApp buttons on it.
  *
  * The answer goes to a toast for the same reason the invitation's does: Payload

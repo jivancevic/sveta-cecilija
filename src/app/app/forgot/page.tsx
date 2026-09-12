@@ -12,7 +12,7 @@ import { ForgotForm } from './ForgotForm'
 // The route and the URL are still the "zaboravljena lozinka" ones, because the
 // token, the throttle and the deliberate silence are unchanged. What arrives is
 // not: since #463 the link opens a session instead of asking for a new password
-// (`/app/prijava`), so a dancer who never had a password is no longer being
+// (`/app/session`), so a dancer who never had a password is no longer being
 // offered a way to recover one.
 
 export const runtime = 'nodejs'

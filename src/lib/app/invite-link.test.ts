@@ -42,8 +42,8 @@ describe('smsHref', () => {
   })
 
   it('escapes the message, link and all', () => {
-    const href = smsHref('385912345678', 'Link: https://moreska.eu/app/prijava?token=a b', 'ios')
-    expect(href).toContain('body=Link%3A%20https%3A%2F%2Fmoreska.eu%2Fapp%2Fprijava%3Ftoken%3Da%20b')
+    const href = smsHref('385912345678', 'Link: https://moreska.eu/app/session?token=a b', 'ios')
+    expect(href).toContain('body=Link%3A%20https%3A%2F%2Fmoreska.eu%2Fapp%2Fsession%3Ftoken%3Da%20b')
   })
 })
 

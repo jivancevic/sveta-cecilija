@@ -1,4 +1,4 @@
-// What `/app/moje` reads (#457): one dancer's own season.
+// What `/app/leaderboard` reads (#457): one dancer's own season.
 //
 // The phase 2 loader split, the same shape as `stats-loaders.ts`: this half is
 // pure and DI'd, `my-season-data.ts` holds the Payload calls and nothing else.

@@ -1,15 +1,12 @@
-import { redirect } from 'next/navigation'
-import { accessMember } from '@/lib/app/access'
 import { getSeasonPerformances } from '@/lib/app/roster-data'
 import { pickNextPerformance } from '@/lib/app/roster-loaders'
 import { formatPerformanceDate } from '@/lib/app/strings'
-import { resolveAppViewer } from '@/lib/app/viewer'
 import { calendarFeedUrl } from '@/lib/calendar/feed'
 import { vapidPublicKey } from '@/lib/push/vapid'
-import { DeniedPage } from '../DeniedPage'
+import { openScreen } from '../gate'
 import { Onboarding } from './Onboarding'
 
-// `/app/dobrodosli` — the Dobrodošlica (#457, glossary: *Dobrodošlica*).
+// `/app/welcome` — the Dobrodošlica (#457, glossary: *Dobrodošlica*).
 //
 // No tab bar and no brand header: the walkthrough is the only thing on the
 // screen, because every one of its three steps is a question the dancer has to
@@ -29,12 +26,11 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 export default async function OnboardingPage() {
-  const viewer = await resolveAppViewer()
-  if (!viewer.signedIn) redirect('/app/login')
-  if (viewer.access.kind === 'denied') return <DeniedPage />
+  const { viewer, refusal } = await openScreen()
+  if (refusal) return refusal
 
-  const me = accessMember(viewer.access)
-  const voditelj = viewer.access.kind === 'voditelj'
+  const me = viewer.me
+  const voditelj = viewer.voditelj
   const season = await getSeasonPerformances({ memberId: me?.id ?? null, voditelj })
   const next = pickNextPerformance(season.upcoming)
 

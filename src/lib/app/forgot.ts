@@ -1,7 +1,7 @@
 // "Zaboravljena lozinka" (#424, #419 story 23).
 //
 // A dancer who lost their password types an email or a username and gets a
-// link to the same `/app/set-password` page the invitation uses, valid for one
+// link to the same `/app/account` page the invitation uses, valid for one
 // hour rather than seven days: an invitation is a thing a voditelj hands over
 // and a dancer opens when they get to it, a reset is a thing the dancer just
 // asked for.

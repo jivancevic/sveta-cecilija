@@ -2,7 +2,7 @@ import { getPayload } from 'payload'
 import config from '@payload-config'
 import { loadSeasonStats, seasonOfDate, type SeasonStats } from './stats-loaders'
 
-// The IO wiring behind `/app/statistika` (#437) — the `detail-data.ts` shape:
+// The IO wiring behind `/app/leaderboard` (#437) — the `detail-data.ts` shape:
 // the Payload calls and nothing else, so every rule about what the scoreboard
 // counts stays in the pure, unit-tested `stats-loaders.ts` and
 // `lib/lineup/stats.ts`.

@@ -38,7 +38,7 @@ import { pushSupported, readPlatform, useInstallPrompt, webviewHostIsIos } from 
 // Step 1 IS the install guide of #455, not a second one: the same
 // `readPlatform()` decision, the same `InstallSteps` list, the same one-tap
 // `beforeinstallprompt` button where Chromium offers it, and the same way out
-// of a Viber webview. The quiet link under it opens `/app/instalacija`, which
+// of a Viber webview. The quiet link under it opens `/app/install`, which
 // is the full-screen version and the QR target at a rehearsal.
 
 type Step = 'install' | 'push' | 'calendar'
@@ -328,7 +328,7 @@ export function Onboarding({
                 {/* One tap replaces the list where the browser offers it, so
                     the steps are only drawn when there is no prompt to take. */}
                 {!canPrompt && <InstallSteps platform={stepPlatform(platform)} />}
-                <Link className="app__ob-link" href="/app/instalacija">
+                <Link className="app__ob-link" href="/app/install">
                   {APP_STRINGS.onboarding.install.guide}
                 </Link>
               </div>

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { PERFORMANCE_KINDS, type PerformanceKind } from '@/lib/show-performance'
 import { STAT_ROLES, type DancerStats, type StatRole } from '@/lib/lineup/stats'
 import type { SeasonStats } from './stats-loaders'
-import { buildLeaderboard, parseMojeSegment } from './leaderboard-loaders'
+import { buildLeaderboard, parseLeaderboardSegment } from './leaderboard-loaders'
 
 function dancer(memberId: string, nickname: string, performances: number): DancerStats {
   return {
@@ -21,14 +21,14 @@ function stats(rows: DancerStats[], confirmedPerformances: number): SeasonStats 
   return { season: 2026, seasons: [2026, 2025], rows, confirmedPerformances }
 }
 
-describe('parseMojeSegment', () => {
+describe('parseLeaderboardSegment', () => {
   it('opens on the dancer own season by default', () => {
-    expect(parseMojeSegment(undefined)).toBe('moja')
-    expect(parseMojeSegment('nesto')).toBe('moja')
+    expect(parseLeaderboardSegment(undefined)).toBe('mine')
+    expect(parseLeaderboardSegment('nesto')).toBe('mine')
   })
 
   it('opens on the board when the URL asks for it', () => {
-    expect(parseMojeSegment('ljestvica')).toBe('ljestvica')
+    expect(parseLeaderboardSegment('all')).toBe('all')
   })
 })
 
