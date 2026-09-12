@@ -55,7 +55,7 @@ Two names, used in different contexts. See [ADR-0003](../docs/adr/0003-brand-lay
 Reason: competitor `moreska.hr` owns the "Moreška Korčula" experience keyword in search. The brand layer reclaims share of voice while preserving the 143-year heritage differentiator.
 
 ### Product surfaces: Cecilija / Web / Backoffice
-The society runs three software surfaces, each with exactly one name (decided in [Cecilija: rebrand surfaces](https://github.com/jivancevic/sveta-cecilija/issues/477), map #471):
+The society runs three software surfaces, each with exactly one name (decided in [Cecilija: rebrand surfaces](https://github.com/jivancevic/sveta-cecilija/issues/477), map #471; recorded in [ADR-0027](docs/adr/0027-cecilija-one-staff-app-payload-backoffice.md)):
 
 - **Cecilija**: the staff and member app at `/app`. Everyone who works for or dances in the society uses it: the secretary, the door crew, partners, voditelji and moreškanti. It replaces both the old *Moreškant* app name and, screen by screen, the Backoffice as a daily tool.
 - **Web**: the public site at `moreska.eu`, where visitors read about the society and buy tickets.
@@ -75,7 +75,7 @@ _Avoid_: page, view, module, "admin screen".
 What a signed-in account sees when its permissions unlock no screen, or when it opens a screen it does not unlock: the sentence naming the situation, a way back to the landing screen, and Odjava. Never a silent redirect and never a "not found". The Backoffice link appears only for a `dev` holder.
 
 ### Sandučić obavijesti (notification inbox)
-Every notification Cecilija sends a person is also kept for them to read later: a bell in the header of every screen shows how many are unread, and the inbox lists them. Kept per account, not per device, so the count is the same on the phone and the laptop. Roster notifications (see *Notification types*) go to moreškanti and voditelji; a `tickets` holder also gets a new inquiry and a new card dispute, never every order.
+Every notification Cecilija sends a person is also kept for them to read later ([ADR-0027](docs/adr/0027-cecilija-one-staff-app-payload-backoffice.md) narrows ADR-0024: push stays the only way a notification is *delivered*, the inbox is where every one of them is *kept*): a bell in the header of every screen shows how many are unread, and the inbox lists them. Kept per account, not per device, so the count is the same on the phone and the laptop. Roster notifications (see *Notification types*) go to moreškanti and voditelji; a `tickets` holder also gets a new inquiry and a new card dispute, never every order.
 _Avoid_: feed, activity log, message centre.
 
 ### Croatian capitalisation: moreška
