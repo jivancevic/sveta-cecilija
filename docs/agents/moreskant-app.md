@@ -82,7 +82,31 @@ Access follows the **roster, not the login table**: unticking `active` or `isMor
 
 **The service worker arrived with push (#431) and still caches nothing** — the phase 3 reason (#419, story 47) survives it: a cache layer over server-rendered roster data can only turn app bugs into caching bugs. Details in the Push section below.
 
-The "Dodaj na početni zaslon" hint (`InstallHint.tsx`) is one dismissible line remembered per device in `localStorage`, every access wrapped in `try/catch`, and it is skipped when `display-mode: standalone` says the icon already exists. It is plain instructions rather than an install button, because iOS never fires `beforeinstallprompt` and iOS is where the hint matters most. Since #431 that same component is also the notifications banner (Push, below).
+### The install flow (#455)
+
+Three facts decide what `/app` offers, and all three live in `src/lib/app/platform.ts` as pure functions over browser facts, table-tested in `platform.test.ts` against real UA strings:
+
+- **`detectPlatform`** → `installed | inapp | ios | android | desktop`. `standalone` wins over every UA. An **in-app browser** (Viber, WhatsApp, Messenger, Instagram, any Android WebView) is its own platform, not a phone: the share sheet it shows belongs to the host app and has no "Add to Home Screen" at any scroll position, so the only useful thing to say there is "open this in Safari". That dead end is the most common way an invitation fails, because a link travels by Viber. iPadOS reports a Macintosh UA, so touch points are the tell.
+- **`decideInstallStep`** → `inapp | install | push | on | none`. Read it as one sentence: a device that already rings needs no offer; "Kasnije" buys silence until tomorrow; a webview gets the way out; a browser with **no `PushManager` at all is asked to install**, because on iOS that IS the notification switch; everything else is offered notifications first, because on Android they work in a plain tab and installing is then a one-tap bonus rather than a toll.
+- **`INSTALL_PROMPT_CAPTURE`**, injected inline by the `/app` layout ahead of hydration. Chromium fires `beforeinstallprompt` once and never replays it, so a React effect that has not hydrated yet misses it and the one-tap button never appears on the one platform that has one. The script only parks the event on `window`; every decision about it stays in the component.
+
+What this replaced, and why each half was wrong: the old banner asked "push supported?" first, so an Android tab (which always has a `PushManager`) never reached the install offer at all, and the install branch was dead code on the easiest platform; one × wrote a permanent `localStorage` flag, which silenced the banner forever on the iPhone where installing is the precondition for notifications; and one sentence of generic advice served every device, including the webviews where it cannot be followed.
+
+`InstallHint.tsx` renders the decision, `InstallSteps.tsx` the numbered steps (with the iOS share glyph drawn inline, because step one is "find this icon"), and `use-install.ts` holds the browser reads. Every storage and permission access stays wrapped in `try/catch`: a private window, a browser blocking site data and a thumbnail-capture pass can each throw, and none of that may take `/app` down. Whether **this** device is subscribed is still read from the browser, never from the server, and the component renders nothing until it has looked.
+
+The banner asks that question, and every other browser push call, through **`push-client.ts`** (#457): `use-install.ts` re-exports its `pushSupported` rather than restating it, so "can this browser subscribe" has one answer. The split is by subject, not by screen: `platform.ts` + `use-install.ts` own WHICH DEVICE this is, `push-client.ts` owns the subscription and its round trip to `/api/app/push/*`, and the components own only what is said. `InstallHint` carries its own heading ("Instalacija" or "Obavijesti", whichever card it is showing), because whether there is anything to put under one is a fact only it knows.
+
+**The three places that show these instructions are one implementation.** The banner, the Dobrodošlica's first step and `/app/instalacija` all call `readPlatform()` and render `InstallSteps`, all offer the same one-tap `install.action` button when Chromium parked a prompt, and all show the same way out of a webview. There is no second set of install copy anywhere in `/app`.
+
+**`/app/instalacija`** is the same guide full screen, and deliberately **not** behind the access decision: it is the target of the QR code a voditelj puts on the wall at a rehearsal, and the person scanning it has not signed in yet. Its platform switch exists because the voditelj is holding somebody else's phone half the time.
+
+### Why not the App Store or Google Play (#455)
+
+Asked and answered in the same pass, so it does not get re-litigated every season.
+
+- **App Store: no.** 99 EUR/year with no waiver (Apple's fee waiver is limited to a country list Croatia is not on, whatever the RNO registration says), guideline 4.2 "minimum functionality" rejection risk for what is a webview of an existing site, guideline 5.1.1(v) would force an in-app account-deletion flow the roster has no use for, plus an EU DSA trader declaration that publishes the society's address and phone on the store page. Every release would then wait on review, instead of shipping with the site.
+- **Google Play: cheap but not free of work.** 25 USD once, and a Trusted Web Activity built by PWABuilder is genuinely just this PWA in a Play wrapper, with `assetlinks.json` on the domain and no review risk (TWA is Google's own mechanism). An organisation account needs a D-U-N-S number, which the society does not have; organisation accounts are exempt from the "12 testers for 14 days" rule, which applies only to personal accounts created after 2023-11-13.
+- **What a store would actually buy**: on iPhone, installing from a store listing instead of the share sheet. Nothing else: push already works in the PWA, and on Android the one-tap `beforeinstallprompt` button is the same gesture. That is one screen's worth of difference, which is why the screen got fixed instead.
 
 ## Attendance (#422, #423)
 
@@ -431,13 +455,13 @@ has no claim and no limit.
 
 ### The banner
 
-`InstallHint.tsx` is now the one banner and asks the two questions in order
-(#430 stories 1-3): no `PushManager` and not installed → the iOS "add to the home
-screen" line; supported and unsubscribed → "Uključi obavijesti"; already
-subscribed → one muted line with the per-device off switch, which is the whole of
-the per-device control (story 5). Whether **this** device is subscribed is read
-from the browser, never from the server, and the component renders nothing until
-it has looked.
+`InstallHint.tsx` is the one banner (#430 stories 1-3), which since #457 lives
+in the Više tab and carries its own heading: unsubscribed and able to
+subscribe → "Uključi obavijesti"; already subscribed → one muted line with the
+per-device off switch, which is the whole of the per-device control (story 5).
+Which of those it asks, and whether it asks about installing first instead, is
+`decideInstallStep` in `src/lib/app/platform.ts` — see [the install flow](#the-install-flow-455)
+for why the order is per platform rather than fixed (#455).
 
 ## Triggered notifications (#436 — phase 4 batch B)
 
@@ -980,9 +1004,10 @@ parent.
 | `/app` | Izvedbe | the next live evening as a hero, then the season by month, the past behind a disclosure |
 | `/app/izvedba/[id]` | Izvedbe | one evening, three segments, the two answer buttons pinned above the bar |
 | `/app/moje` | Moje | two panels: the dancer's own season, and the Ljestvica |
-| `/app/vise` | Više | statistics, the Dobrodošlica replay, notifications, calendar, own record, Odjava |
+| `/app/vise` | Više | statistics, the Dobrodošlica replay, the install guide, notifications, calendar, own record, Odjava |
 | `/app/statistika` | Više | the season scoreboard, unchanged |
 | `/app/dobrodosli` | none | the walkthrough: no bar, no brand header |
+| `/app/instalacija` | none | the full-screen install guide (#455), public by design: the QR target at a rehearsal |
 
 **The hero rule**: `pickNextPerformance` (`roster-loaders.ts`) picks the next
 evening that is **not cancelled**. A cancelled evening is never the hero, and it
@@ -1044,10 +1069,20 @@ Finishing and skipping ask for the same cookie, so "Preskoči" is an answer
 rather than a deferral; the page itself never sets it on arrival, which is what
 makes the Više row a harmless replay.
 
-Step 1 (home screen) is left out when the browser reports standalone, step 3
-(calendar) when the deployment has no feed URL. The first render is the full
-list on both sides so hydration stays quiet, and an effect narrows it after
-mount. Step 2 runs the REAL subscribe flow: every browser call lives in
+Step 1 (home screen) is left out when `readPlatform()` answers `installed`,
+step 3 (calendar) when the deployment has no feed URL. The first render is the
+full list on both sides so hydration stays quiet, and an effect narrows it after
+mount.
+
+**Step 1 IS the #455 install guide**, not a second one: the same
+`readPlatform()` decision, the same `InstallSteps` list, the same one-tap
+"Instaliraj" where Chromium parked a `beforeinstallprompt` (with "Dodao sam" as
+the primary where it did not), and the same way out of a Viber webview instead
+of steps that cannot be followed there. Under it sits a quiet "Detaljne upute"
+to `/app/instalacija`, the full-screen version and the QR target at a rehearsal,
+which is also a row in the Više tab.
+
+Step 2 runs the REAL subscribe flow: every browser push call lives in
 `src/app/app/push-client.ts`, shared with the Više switch, so the two screens
 cannot drift into two notions of "subscribed".
 

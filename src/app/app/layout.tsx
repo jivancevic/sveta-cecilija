@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { bodoni, ibmPlexMono, inter } from '@/app/(frontend)/fonts'
+import { INSTALL_PROMPT_CAPTURE } from '@/lib/app/platform'
 import { APP_STRINGS } from '@/lib/app/strings'
 import './app.css'
 
@@ -34,6 +35,15 @@ export default function MoreskantAppLayout({ children }: { children: React.React
   return (
     <html lang="hr" className={`${bodoni.variable} ${inter.variable} ${ibmPlexMono.variable}`}>
       <body className="app" suppressHydrationWarning>
+        {/*
+          Chromium fires `beforeinstallprompt` once, shortly after load, and
+          never replays it. A React effect that has not hydrated yet misses it
+          and the one-tap install button then never appears on the one platform
+          that has one, so the listener is installed inline, ahead of hydration
+          (#455). It only parks the event on `window`; every decision about it
+          lives in `InstallHint`.
+        */}
+        <script dangerouslySetInnerHTML={{ __html: INSTALL_PROMPT_CAPTURE }} />
         {children}
       </body>
     </html>

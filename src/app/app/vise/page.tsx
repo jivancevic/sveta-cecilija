@@ -50,6 +50,14 @@ export default async function MorePage() {
           {APP_STRINGS.more.onboarding}
           <span aria-hidden="true">›</span>
         </Link>
+        {/* The same guide the Dobrodošlica's first step shows, full screen
+            (#455). It lives here too because a dancer who skipped the
+            walkthrough, or who is holding somebody else's phone at a rehearsal,
+            needs a way back to it that is not three steps long. */}
+        <Link className="app__more-row" href="/app/instalacija">
+          {APP_STRINGS.install.guideTitle}
+          <span aria-hidden="true">›</span>
+        </Link>
         {voditelj && (
           <>
             {/* The admin is a different app under the same origin, so these are
@@ -67,11 +75,12 @@ export default async function MorePage() {
         )}
       </nav>
 
-      {/* The "Obavijesti" heading belongs to the component, not to the page
-          (#457 review): whether there is anything to say under it is a fact of
-          this browser, and only the component knows it. The public VAPID key is
-          a server fact handed down as a prop rather than a NEXT_PUBLIC_ twin of
-          the same value (#431). */}
+      {/* The heading belongs to the component, not to the page (#457 review):
+          whether there is anything to say under it, and whether it is about
+          notifications or about installing, are facts of this browser that only
+          the component knows (#455). The public VAPID key is a server fact
+          handed down as a prop rather than a NEXT_PUBLIC_ twin of the same
+          value (#431). */}
       <InstallHint vapidPublicKey={vapidPublicKey()} />
 
       {calendarUrl && (

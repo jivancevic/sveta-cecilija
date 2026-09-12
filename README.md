@@ -48,7 +48,7 @@ Open [http://localhost:3000](http://localhost:3000) for the public site, or `/ad
 
 ## Deployment
 
-Production runs on **Coolify** (Hetzner Cloud) from a multi-stage **Dockerfile** that produces a Next.js standalone image ([ADR-0012](./docs/adr/0012-container-build-dockerfile-standalone.md)) — not Vercel, since Payload's long-lived Postgres pool and bootstrap-on-start don't fit a serverless model. `dev.moreska.eu` is a second Coolify app that auto-deploys every push to `main`; prod has auto-deploy off and is promoted by a manual redeploy of the same commit. See [`docs/agents/deployment.md`](./docs/agents/deployment.md) for the build gotchas and debugging playbook.
+Production runs on **Coolify** (Hetzner Cloud) from a multi-stage **Dockerfile** that produces a Next.js standalone image ([ADR-0012](./docs/adr/0012-container-build-dockerfile-standalone.md)) — not Vercel, since Payload's long-lived Postgres pool and bootstrap-on-start don't fit a serverless model. `dev.moreska.eu` is a second Coolify app that tracks the same branch. **Both auto-deploy every push to `main`** ([ADR-0026](./docs/adr/0026-production-auto-deploy-from-main.md)); what gates production is CI plus the image's own `HEALTHCHECK`, not a human click. See [`docs/agents/deployment.md`](./docs/agents/deployment.md) for the build gotchas and debugging playbook.
 
 ## Learn More
 

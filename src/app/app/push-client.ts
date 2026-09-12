@@ -11,6 +11,11 @@
 // This file owns the browser calls and the /api round trip and NOTHING about
 // what a screen says: it answers with a reason, and each caller picks its own
 // sentence out of `APP_STRINGS`.
+//
+// It owns nothing about PLATFORM either (#455): which device this is, and which
+// question to ask it first, is `src/lib/app/platform.ts` read through
+// `use-install.ts`. The only capability question that belongs here is
+// `pushSupported`, which `use-install.ts` re-exports rather than restates.
 
 // The worker script lives at the ROOT so it can claim `/app` itself, not only
 // `/app/…` — see the header of `public/moreskant-sw.js`.
@@ -41,23 +46,6 @@ export function pushSupported(): boolean {
     'PushManager' in window &&
     'Notification' in window
   )
-}
-
-/** Is the app already running from the home screen? */
-export function standalone(): boolean {
-  try {
-    return (
-      window.matchMedia?.('(display-mode: standalone)').matches === true ||
-      (navigator as unknown as { standalone?: boolean }).standalone === true
-    )
-  } catch {
-    return false
-  }
-}
-
-/** An iPhone or iPad, the one platform where the install step comes first. */
-export function isIos(): boolean {
-  return typeof navigator !== 'undefined' && /iPad|iPhone|iPod/.test(navigator.userAgent)
 }
 
 /** Does THIS browser profile already hold a subscription? Null when it cannot say. */

@@ -346,15 +346,18 @@ export const APP_STRINGS = {
     skip: 'Preskoči',
     step: (index: number, total: number) => `Korak ${index} od ${total}`,
 
+    /**
+     * Step 1 IS the #455 install guide: the numbered steps themselves live in
+     * `install.iosSteps` / `androidSteps` / `desktopSteps` and are rendered by
+     * the same `InstallSteps` component as the banner and `/app/instalacija`,
+     * so there is one set of instructions in the app rather than two that can
+     * disagree. Only the frame around them is written here.
+     */
     install: {
       title: 'Dodaj Moreškanta na početni zaslon',
       body: 'Otvara se kao aplikacija, bez adresne trake, i može ti slati obavijesti.',
-      iosShare: 'Dodirni Podijeli u Safariju',
-      iosAdd: 'Dodaj na početni zaslon',
-      iosHint: 'Ikona Podijeli je na dnu Safarija, u sredini.',
-      androidMenu: 'Otvori izbornik preglednika (tri točke)',
-      androidAdd: 'Instaliraj aplikaciju',
-      androidHint: 'Izbornik je gore desno, tri točke jedna ispod druge.',
+      /** The quiet way to the full-screen guide, which is also the QR target. */
+      guide: 'Detaljne upute',
       primary: 'Dodao sam',
       later: 'Kasnije',
     },
@@ -407,20 +410,79 @@ export const APP_STRINGS = {
     },
   },
 
+  /**
+   * Installation (#421, rewritten in #455).
+   *
+   * One sentence of generic advice used to serve every device. It could not:
+   * the wording that helps an iPhone ("izbornik dijeljenja") is wrong on
+   * Android, both are wrong inside Viber's webview, and on Android the whole
+   * thing is a single button. So the copy is per platform, and the steps are
+   * numbered because a person holding the phone is following along rather than
+   * reading.
+   *
+   * The menu entries are quoted in Croatian AND English: a phone bought here is
+   * as likely to be in one as the other, and "Add to Home Screen" is the string
+   * most of them will actually see.
+   */
   install: {
-    title: 'Dodaj na početni zaslon',
-    body: 'Otvori izbornik preglednika i odaberi "Dodaj na početni zaslon" za ikonu Moreškant.',
-    dismiss: 'Sakrij',
+    title: 'Dodaj Moreškant na ekran',
+    why: 'S ikonom na ekranu dobivaš obavijesti o izvedbama i raspored u jednom dodiru.',
+    snooze: 'Kasnije',
+    /** The full-screen guide at `/app/instalacija`, also the QR target. */
+    guideTitle: 'Instalacija',
+    guideIntro: 'Tri koraka i Moreškant je na ekranu kao svaka druga aplikacija.',
+    guideDone: 'Kad završiš, otvori raspored.',
+    guideOpenApp: 'Otvori raspored',
+    /** A voditelj showing somebody else's phone needs the other instructions. */
+    otherDevice: 'Upute za drugi uređaj',
+    deviceIphone: 'iPhone',
+    deviceAndroid: 'Android',
+    deviceDesktop: 'Računalo',
+
+    iosSteps: [
+      'Dodirni ikonu dijeljenja, kvadratić sa strelicom prema gore. Na iPhoneu je u donjoj traci, na iPadu gore desno.',
+      'Pomakni popis prema dolje i odaberi "Dodaj na početni zaslon", na engleskom "Add to Home Screen".',
+      'Potvrdi s "Dodaj" i ikona Moreškant je na ekranu.',
+    ],
+    androidSteps: [
+      'Dodirni tri točkice gore desno.',
+      'Odaberi "Instaliraj aplikaciju" ili "Dodaj na početni zaslon".',
+      'Potvrdi i ikona je na ekranu.',
+    ],
+    desktopSteps: [
+      'U adresnoj traci dodirni ikonu za instalaciju, monitor sa strelicom prema dolje.',
+      'Potvrdi "Instaliraj".',
+    ],
+    /** Chromium only: one tap instead of the three steps above. */
+    action: 'Instaliraj',
+    acting: 'Instaliram...',
+    failed: 'Instalacija nije uspjela. Probaj kroz izbornik preglednika.',
+    installedTitle: 'Moreškant je instaliran.',
+
+    /**
+     * The webview dead end, and the reason this rewrite exists (#455): a link
+     * that travels through Viber or WhatsApp opens in THEIR browser, whose
+     * share sheet has no "add to home screen" at any scroll position. Telling
+     * that person to look for it is the single most common way the install
+     * fails, so they get the way out instead.
+     */
+    inappTitle: 'Otvori u pregledniku',
+    inappBody:
+      'Otvorio si Moreškant unutar druge aplikacije, a odatle se ikona ne može dodati na ekran.',
+    inappIos: 'Dodirni izbornik ove aplikacije, tri točkice ili strelicu, pa "Otvori u Safariju".',
+    inappAndroid: 'Dodirni tri točkice pa "Otvori u pregledniku" ili "Otvori u Chromeu".',
+    inappCopy: 'Kopiraj link',
+    inappCopied: 'Link je kopiran. Zalijepi ga u Safari ili Chrome.',
   },
 
   /**
    * Push (#431): the banner on `/app`, the per-device switch and the voditelj's
    * manual alarm button.
    *
-   * The iOS line is a separate sentence rather than the generic install hint,
-   * because on an uninstalled iPhone the enable button cannot work at all
-   * (Safari exposes no `PushManager` outside a home-screen app) and a button
-   * that silently does nothing is worse than an instruction (#430, story 2).
+   * An uninstalled iPhone never reaches these strings: Safari exposes no
+   * `PushManager` outside a home screen app, so `decideInstallStep` sends that
+   * device to the install copy above instead, and a button that silently does
+   * nothing is never rendered (#430, story 2; #455).
    */
   push: {
     title: 'Uključi obavijesti',
@@ -430,11 +492,6 @@ export const APP_STRINGS = {
     onTitle: 'Obavijesti su uključene na ovom uređaju.',
     disable: 'Isključi',
     disabling: 'Isključujem...',
-    iosTitle: 'Prvo dodaj na početni zaslon',
-    iosBody:
-      'Na iPhoneu obavijesti rade tek kad je Moreškant dodan na početni zaslon. Otvori izbornik dijeljenja i odaberi "Dodaj na početni zaslon".',
-    /** No push on this browser at all, so there is no switch to offer (#457). */
-    unavailable: 'Obavijesti nisu dostupne na ovom uređaju.',
     denied: 'Obavijesti su blokirane u postavkama preglednika. Uključi ih tamo pa pokušaj ponovno.',
     failed: 'Uključivanje obavijesti nije uspjelo. Pokušaj ponovno.',
     /** The `/app` POST routes answer with this when the guard refuses. */

@@ -269,6 +269,8 @@ Every `Order` records the **channel** it came from: `online` (buyer paid via Str
 
 A `comp` order carries no Stripe payment (`stripePaymentIntentId = null`) and `total = 0`, so it never enters revenue math — it is deliberately a distinct channel (not a €0 `online` order) precisely so it stays out of "Revenue collected", the online channel-mix chart, and the "last Stripe webhook" health signal.
 
+That exclusion is about **sales**, not about seats. A comp still occupies a chair, so it is counted wherever a chart measures where the seats in a house came from: the season-trajectory bars are stacked into online / at the door / partner / comp, while the "Sales channels" split beneath them stays online / at the door / partner. The two disagreeing is the design, not a bug — don't "fix" either one to match the other.
+
 ### Member (society member)
 A first-class entity (Payload `Members` collection, slug `members`) representing a member of HGD Sveta Cecilija, used to **attribute comp tickets** (see *Comp ticket*) and — as a **shared relationship target** — member **promo codes** (see *Promo code* / ADR-0018-member-promo-codes; promo needs only `id` + `name`, which this shape provides). It is a single collection built once and depended on by both features. Deliberately minimal — unlike `Partners` there is no money, law, login, or commission involved:
 
