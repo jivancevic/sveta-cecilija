@@ -44,7 +44,9 @@ So the choice was never "safety versus convenience". It was: keep a ritual that 
 
 ### Where the human checkpoint moved
 
-It moved one step earlier, to the merge button. Since the Redeploy click is gone, **merging to `main` is now the last human decision in front of a live payment system**, which is why CLAUDE.md forbids an agent from merging its own PR.
+It moved one step earlier, to the merge button. Since the Redeploy click is gone, **merging to `main` is the last gate in front of a live payment system**.
+
+At the time of this ADR that gate was a human one: CLAUDE.md forbade an agent from merging its own PR. **That was relaxed later the same day (2026-09-12)** — an agent may now merge once all six required checks are green, never via the admin bypass. The gate is therefore CI, not a person, and the reasoning above should be read as an argument about the *gate*, not about who clicks it. Current rule: CLAUDE.md hard rules.
 
 ## Alternatives considered
 
