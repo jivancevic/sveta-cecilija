@@ -130,6 +130,7 @@ export function buildAlarmMessage(
   nowMs: number = Date.now(),
 ): PushMessage {
   return {
+    kind: 'alarm',
     title: PUSH_MESSAGES.alarm.title,
     body: PUSH_MESSAGES.alarm.body({
       date: performance.date,
@@ -148,6 +149,7 @@ export function buildAlarmMessage(
 
 export function buildReminderMessage(performance: NotifiablePerformance): PushMessage {
   return {
+    kind: 'reminder',
     title: PUSH_MESSAGES.reminder.title,
     body: PUSH_MESSAGES.reminder.body({ date: performance.date, time: performance.time }),
     url: performanceUrl(performance.id),

@@ -58,10 +58,11 @@ Rows under Više, after the overflow screens:
 | Odjava | `POST /api/app/logout` | any screen | same | unchanged |
 
 Screens that are not rows: **Obavijesti** is a bell in the header of every
-screen with the unread count, opening the inbox at `/app/notifications` (see
-the inbox ticket under the map); **Dobrodošlica** at `/app/welcome` (was
-`/app/dobrodosli`, 308) is shown once per device and only to a `moreskant`
-holder, everyone else lands straight on their first tab.
+screen with the unread count, opening the inbox at `/app/notifications`
+(**live**, #496; also listed as a row in Više, because the bell carries no
+label); **Dobrodošlica** at `/app/welcome` (was `/app/dobrodosli`, 308) is
+shown once per device and only to a `moreskant` holder, everyone else lands
+straight on their first tab.
 
 Public pages, no session:
 
@@ -108,8 +109,9 @@ buttons on `/scan/[token]` all lose it.
 Every screen carries a thin header: the screen's title on the left, the
 notification bell with the unread count on the right, on the phone and on the
 laptop alike. The count is per account, not per device, so it agrees across a
-person's devices. `AppShell` renders the title from the screen table and leaves
-the right-hand slot (`actions`) empty until the inbox lands (#496).
+person's devices. `AppShell` renders the title from the screen table and the
+bell unconditionally (#496); a screen's own `actions` sit to the bell's left in
+the same slot, so the bell never moves under a reader's thumb.
 
 ### The look
 
@@ -966,6 +968,94 @@ emptied note is stored as `null` so "no note" has one representation. The field
 with its Spremi button is `NoteEditor.tsx` on `/app/performances/[id]`, rendered for a
 voditelj only (the route refuses everyone else anyway). It never auto-saves:
 pressing the button is the moment a voditelj decides to tell the roster.
+
+## Sandučić obavijesti: the inbox behind the bell (#496)
+
+Push is still the only way a notification is **delivered**; the inbox is where
+every one of them is **kept**. `app_notifications`
+(`db/schema/migrate-zz-dd-app-notifications.sql`) is a raw table, not a Payload
+collection, for the same reasons `push_subscriptions` is not: nobody edits a
+notification in the Backoffice, every row is written by a sender, and the query
+that matters is a count. It is **not** `performance_notifications`, which stays
+the once-per-performance CLAIM keyed on (performance, type).
+
+One row per ACCOUNT per notification, never per device and never per Member:
+that is what makes the count agree on the phone and on the laptop.
+`src/lib/app/notifications-store.ts` is the table's only reader and writer
+(`PoolQuery` in, every statement scoped to one `user_id`), and
+`src/lib/app/notifications-write.ts` is the same insert with the opposite error
+contract — swallowing — because every sender files a row as a side effect of
+something more important.
+
+### A push and its inbox row are one write
+
+`PushMessage` carries a `kind` (`src/lib/app/notification-audience.ts`), so
+`createSender` in `push-data.ts` files the rows for **every** roster sender at
+once: the manual alarm, the cron's alarm and reminder, a performance created or
+changed (the Shows `afterChange` hook AND the two raw-SQL saves in
+`raw-save.ts`), a bulk season, and a withdrawn "dolazim". A new sender cannot
+compile without saying what it is sending. Two consequences worth knowing:
+
+- the row lands even when VAPID is unconfigured and even for an account with no
+  device at all. A dancer who never allowed notifications still finds out;
+- filing never fails the send, and never fails a Payload save.
+
+The two kinds with no push behind them — a new inquiry and a new card dispute —
+go through `src/lib/app/staff-notifications.ts` instead, called from the
+enquiry action's `persist` (so the row is a fact of the submission, not of
+Brevo being up) and from the dispute deps' `notifyAdmins`. **Never an order**: a
+sale is not news, and an inbox full of them would bury the two kinds a
+secretary has to act on.
+
+### Who gets what
+
+| Kind | Audience | Resolved by | Push | Door-only inbox |
+|---|---|---|---|---|
+| `alarm` | dancers | `Users.member` | yes | no |
+| `reminder` | dancers | `Users.member` | yes | no |
+| `performance_created` | dancers | `Users.member` | yes | **yes** |
+| `performance_changed` | dancers | `Users.member` | yes | **yes** |
+| `withdrawal` | voditelji | holds `moreska` | yes | no |
+| `inquiry` | staff | holds `tickets` | no | no |
+| `dispute` | staff | holds `tickets` | no | no |
+
+The rule is a pure table (`resolveNotificationAudience`), so `inbox` is a
+superset of `push` by construction: a notification somebody was pushed and
+cannot then find in their inbox is the defect the table exists to prevent.
+
+**The route map's open question (#473 Q15), settled by #496: a `door`-only
+holder gets the inbox row and never the push**, and only for the two kinds
+about the evening itself — a performance created, moved or cancelled. The
+roster's alarm and answer reminder stay roster-only, because "javi dolazak" is
+not a question the person on the gate can answer. "Door-only" means holds
+`door` and none of `tickets | moreska | moreskant`
+(`loadDoorOnlyUserIds`); shared logins are deliberately **not** excluded there,
+unlike everywhere else, because the door account (`tehnika`) is shared by design
+and nothing rings.
+
+### The screen and its two routes
+
+`/app/notifications` opens with `openScreen()` and **no** screen key: it is a
+Više row, not a tab, and `UNDER_MORE` in `screens.ts` already lists it so Više
+stays lit. Rows newest first, fifty at a time, no "load more" (the rows are
+never deleted, so an older one is still there for a query). A row is a BUTTON,
+not a link: its job is a write followed by a navigation, and a link doing the
+write in an `onClick` would race the navigation.
+
+`POST /api/app/notifications/[id]/read` and `POST /api/app/notifications/read-all`
+are the only two writers. They carry **`requireAppSession`**
+(`src/lib/app/session-guard.ts`) rather than `requirePermission`, because a
+notification is addressed to an ACCOUNT and no permission word names that: the
+guard composes Payload's `auth` with the same `decideAppAccess` the page gate
+uses, through the shared `resolveAppAccessFor`. It is still an in-handler
+re-check, which is the rule (CLAUDE.md); spelling the audience as a list of
+permissions would re-type the vocabulary and drift the first time a screen's
+`unlockedBy` changed. Ownership is re-checked in the SQL, not in the handler:
+`markNotificationRead` carries `user_id` in its WHERE, so an id from somebody
+else's inbox is a 404 rather than a confirmation that the row exists.
+
+The push on/off switch is on **Moj račun** (`/app/account`, inside
+`InstallHint`), moved there by #495 and not in Više.
 
 ## The calendar feed (#433 — phase 4 batch B)
 

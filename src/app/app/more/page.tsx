@@ -58,6 +58,14 @@ export default async function MorePage() {
           </Link>
         )}
 
+        {/* The same screen the bell opens (#496). It is listed here too because
+            Više is where a person looks for a screen they cannot see a way
+            into, and because the bell carries no label of its own. */}
+        <Link className="app__more-row" href="/app/notifications">
+          {APP_STRINGS.notifications.title}
+          <span aria-hidden="true">›</span>
+        </Link>
+
         <Link className="app__more-row" href="/app/account">
           {APP_STRINGS.screens.account}
           <span aria-hidden="true">›</span>

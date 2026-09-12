@@ -75,6 +75,17 @@ describe('notifyPerformanceSaved', () => {
     expect(sent[0]!.message.title).toBe('Nova izvedba')
   })
 
+  it('still calls the sender when no dancer has a login (#496)', async () => {
+    // `deps.send` is also what FILES the inbox rows, and a performance created
+    // or moved reaches the `door`-only accounts there. That must not depend on
+    // some dancer happening to own a login.
+    const { deps: d, sent } = deps({ loadUserIdsByMember: async () => new Map() })
+    await (await notifyPerformanceSaved({ doc: doc(), operation: 'create' }, d)).sending
+
+    expect(sent).toHaveLength(1)
+    expect(sent[0]!.userIds).toEqual([])
+  })
+
   it('leaves out the dancers who said "ne dolazim" on a change', async () => {
     const rows: AttendanceRow[] = [
       { memberId: '1', status: 'not_coming', army: null },

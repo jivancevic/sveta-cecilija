@@ -5,6 +5,7 @@ import config from '@payload-config'
 import { submitEnquiry, type EnquiryInput, type SubmitEnquiryResult } from '@/lib/contact/submit-enquiry'
 import { sendEnquiryNotification } from '@/lib/email/send-enquiry-notification'
 import { sendEnquiryAcknowledgement } from '@/lib/email/send-enquiry-acknowledgement'
+import { notifyStaffOfEnquiry } from '@/lib/app/staff-notifications'
 import { getLocale } from '@/lib/locale'
 import { recordCriticalEvent } from '@/lib/critical-events/record'
 import type { PoolQuery } from '@/lib/tickets/sold-seats'
@@ -25,6 +26,15 @@ export async function submitContactEnquiry(input: EnquiryInput): Promise<SubmitE
   return submitEnquiry(input, {
     persist: async (data) => {
       await payload.create({ collection: 'contact-submissions', data })
+      // The inbox row is written in the SAME call that stores the enquiry
+      // (#496), so "a new inquiry arrived" is a fact of the submission rather
+      // than of the mail going out — Brevo being down leaves `notify` unwired,
+      // and the secretary would otherwise learn nothing. It never throws (see
+      // `staff-notifications.ts`), so a stored enquiry stays stored.
+      await notifyStaffOfEnquiry(pool.query, {
+        name: data.name,
+        enquiryType: data.enquiryType,
+      })
     },
     notify: brevoApiKey
       ? async (data) => {
