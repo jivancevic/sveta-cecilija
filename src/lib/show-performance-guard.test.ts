@@ -73,7 +73,7 @@ export const ALLOW_LIST: Record<string, string> = {
     'Roster read (#437): the season scoreboard counts EVERY confirmed performance, public or not (ADR-0024) — a dancer who danced eight ship calls danced eight performances. Scoped to one calendar year, behind the /app access decision, and it surfaces nothing to a buyer.',
   'src/lib/app/my-season-data.ts':
     'Roster read (#457): the Moje tab counts one dancer\'s own confirmed performances, public or not (ADR-0024) — a ship call a dancer was in the postava for is an evening they danced. Scoped to one calendar year, behind the /app access decision, and it surfaces nothing to a buyer.',
-  'src/app/api/shows/[id]/move-to-zimsko/route.ts':
+  'src/app/api/shows/[id]/move-to-indoor/route.ts':
     'Id-addressed write route; its SELECT feeds the in-handler isPublicPerformance() check merged in #409, which 400s a non-public performance before anything moves.',
   'src/app/api/shows/[id]/reschedule/route.ts':
     'Id-addressed write route; its SELECT feeds the in-handler isPublicPerformance() check merged in #409, which refuses a non-public performance before any buyer is notified.',

@@ -20,7 +20,7 @@ import { withShowSellLock, type SellLockPool } from '@/lib/tickets/sell-lock'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-// POST /api/partner/storno/undo — restore (un-storno) a partner sale or a single
+// POST /api/partner/cancel/undo — restore (un-storno) a partner sale or a single
 // ticket (ADR-0017, #146). Body: { orderId: string, ticketId?: string }.
 // Whole-order when ticketId is omitted. Success: { restored: number }.
 //
@@ -148,7 +148,7 @@ export async function POST(req: NextRequest) {
       const status = err.code === 'NOT_OWNER' ? 403 : 409
       return NextResponse.json({ error: err.message, code: err.code }, { status })
     }
-    console.error('[partner/storno/undo] unexpected error', err)
+    console.error('[partner/cancel/undo] unexpected error', err)
     return NextResponse.json({ error: 'Could not undo the cancellation' }, { status: 500 })
   }
 }

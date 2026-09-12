@@ -29,6 +29,22 @@ const nextConfig: NextConfig = {
   async headers() {
     return [{ source: '/:path*', headers: [...securityHeaders, ...stagingHeaders] }]
   },
+  // #481: URL path segments are English. These two API routes were renamed
+  // (`storno` → `cancel`, `move-to-zimsko` → `move-to-indoor`); a 308 keeps any
+  // still-deployed client working for one release. 308 (permanent: true) is the
+  // only correct code here — it preserves the POST method and body, unlike 301.
+  // Drop these once the season is over and nothing calls the old paths.
+  async redirects() {
+    return [
+      { source: '/api/partner/storno', destination: '/api/partner/cancel', permanent: true },
+      { source: '/api/partner/storno/undo', destination: '/api/partner/cancel/undo', permanent: true },
+      {
+        source: '/api/shows/:id/move-to-zimsko',
+        destination: '/api/shows/:id/move-to-indoor',
+        permanent: true,
+      },
+    ]
+  },
 }
 
 export default withPayload(nextConfig)
