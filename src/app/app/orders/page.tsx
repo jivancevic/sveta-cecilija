@@ -1,7 +1,8 @@
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
 import { loadOrdersList } from '@/lib/app/orders-data'
 import { ordersHref, parseOrdersQuery, ORDERS_PER_PAGE, type RawSearchParams } from '@/lib/app/orders-query'
-import { orderRowView, pageCount } from '@/lib/app/orders-view'
+import { foundLabel, orderRowView, pageCount } from '@/lib/app/orders-view'
 import { APP_STRINGS } from '@/lib/app/strings'
 import { AppShell } from '../AppShell'
 import { openScreen } from '../gate'
@@ -41,12 +42,16 @@ export default async function OrdersPage({
   const pages = pageCount(total, ORDERS_PER_PAGE)
   const filtered = query.q !== '' || query.showId !== null || query.state !== null
 
+  // A hand-typed `page=9` on a two-page result would otherwise read "17
+  // narudžbi" over an empty list, which says two contradictory things at once.
+  if (query.page > pages && total > 0) redirect(ordersHref({ ...query, page: pages }))
+
   return (
     <AppShell viewer={viewer} screen="orders">
       <OrdersFilters query={query} performances={performances} />
 
       <p className="app__orders-count" aria-live="polite">
-        {S.found(total)}
+        {foundLabel(total)}
       </p>
 
       {rows.length === 0 ? (

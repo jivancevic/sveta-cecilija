@@ -1032,16 +1032,22 @@ export const APP_STRINGS = {
     promo: 'Promo',
     /** The badge on a row whose money has gone back. */
     refunded: 'Storno',
-    /** "2 odrasle, 1 dječja" — the party, spelled for a Croatian reader. */
-    adults: (n: number) => (n === 1 ? '1 odrasla' : `${n} odraslih`),
-    children: (n: number) => (n === 1 ? '1 dječja' : `${n} dječjih`),
+    /**
+     * "2 odrasle, 1 dječja" — the party, and the result count above it.
+     *
+     * Three buckets each, handed to `pluralize` (`roster-loaders.ts`), which is
+     * where the Croatian rule is stated once: 21 narudžba, 22 narudžbe, but 11
+     * narudžbi. Both nouns are the feminine *karta*, so they decline together.
+     */
+    adults: { one: 'odrasla', few: 'odrasle', many: 'odraslih' },
+    children: { one: 'dječja', few: 'dječje', many: 'dječjih' },
+    count: { one: 'narudžba', few: 'narudžbe', many: 'narudžbi' },
     empty: 'Nema narudžbe koja odgovara pretrazi.',
     emptyAll: 'Još nema nijedne narudžbe.',
     /** The pager: two buttons and the one sentence between them. */
     previous: 'Prethodna',
     next: 'Sljedeća',
     pageOf: (page: number, pages: number) => `Stranica ${page} od ${pages}`,
-    found: (n: number) => (n === 1 ? '1 narudžba' : `${n} narudžbi`),
 
     /** The one order: its facts, in the order they are read. */
     detail: {

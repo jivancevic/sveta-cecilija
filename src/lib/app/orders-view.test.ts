@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   channelLabel,
   formatEur,
+  foundLabel,
   orderRowView,
   pageCount,
   partyLabel,
@@ -44,17 +45,32 @@ describe('formatEur', () => {
 
 describe('partyLabel', () => {
   it('names both halves of a mixed party', () => {
-    expect(partyLabel(2, 1)).toBe('2 odraslih, 1 dječja')
+    expect(partyLabel(2, 1)).toBe('2 odrasle, 1 dječja')
   })
 
   it('drops the half that is zero', () => {
-    expect(partyLabel(3, 0)).toBe('3 odraslih')
-    expect(partyLabel(0, 2)).toBe('2 dječjih')
+    expect(partyLabel(3, 0)).toBe('3 odrasle')
+    expect(partyLabel(0, 2)).toBe('2 dječje')
   })
 
-  it('uses the singular where Croatian wants it', () => {
+  // The three Croatian buckets, borrowed from `pluralize` rather than
+  // re-invented: 21 is "one", 11 is "many".
+  it('declines the way Croatian does, teens included', () => {
     expect(partyLabel(1, 0)).toBe('1 odrasla')
     expect(partyLabel(0, 1)).toBe('1 dječja')
+    expect(partyLabel(5, 0)).toBe('5 odraslih')
+    expect(partyLabel(11, 0)).toBe('11 odraslih')
+    expect(partyLabel(21, 0)).toBe('21 odrasla')
+    expect(partyLabel(0, 12)).toBe('12 dječjih')
+  })
+})
+
+describe('foundLabel', () => {
+  it('counts orders through the same three buckets', () => {
+    expect(foundLabel(1)).toBe('1 narudžba')
+    expect(foundLabel(3)).toBe('3 narudžbe')
+    expect(foundLabel(26)).toBe('26 narudžbi')
+    expect(foundLabel(0)).toBe('0 narudžbi')
   })
 })
 
@@ -207,7 +223,7 @@ describe('orderRowView', () => {
       buyer: 'Ivan Horvat',
       code: 'AB3K',
       performance: 'pet, 14. kolovoza · Ljetno kino',
-      party: '2 odraslih, 1 dječja',
+      party: '2 odrasle, 1 dječja',
       total: '50,00 €',
       channel: 'Online',
       refunded: false,

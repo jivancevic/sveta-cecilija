@@ -12,8 +12,8 @@
 
 import { VENUE_LABEL, type Venue } from '@/lib/venues'
 import type { OrderPerformance, OrderRow, OrderTicketRow } from '@/lib/repo/orders'
-import { APP_STRINGS, MONTHS_GENITIVE } from './strings'
-import { shortWeekday } from './strings'
+import { pluralize } from './roster-loaders'
+import { APP_STRINGS, MONTHS_GENITIVE, shortWeekday } from './strings'
 
 const S = APP_STRINGS.orders
 
@@ -26,12 +26,17 @@ export function formatEur(cents: number): string {
   return `${sign}${whole},${rest} €`
 }
 
-/** "2 odraslih, 1 dječja" — the party, with the empty half left out. */
+/** "2 odrasle, 1 dječja" — the party, with the empty half left out. */
 export function partyLabel(adults: number, children: number): string {
   const parts: string[] = []
-  if (adults > 0) parts.push(S.adults(adults))
-  if (children > 0) parts.push(S.children(children))
+  if (adults > 0) parts.push(pluralize(adults, S.adults))
+  if (children > 0) parts.push(pluralize(children, S.children))
   return parts.join(', ')
+}
+
+/** "26 narudžbi" — how many rows the filters matched, above the list. */
+export function foundLabel(total: number): string {
+  return pluralize(total, S.count)
 }
 
 /**
