@@ -871,6 +871,13 @@
   border-style: solid;
 }
 
+/* An unsubscribe that failed says so on its own line, under the switch it did
+   not move (#457 review), instead of squeezing in beside it. */
+.app__hint--quiet .app__answer-error {
+  flex-basis: 100%;
+  margin: 0;
+}
+
 .app__hint-link {
   background: none;
   border: none;
@@ -1844,6 +1851,12 @@
   background: var(--card);
 }
 
+/* The same box, empty, for the beat before the browser has said which phone
+   this is: it holds the height so step 1 does not jump (#457 review). */
+.app__ob-illus--wait {
+  min-height: 170px;
+}
+
 /* The two fake rows are drawn in the SYSTEM font, not the brand one: they are a
    picture of the phone's own menu, and a serif would make them read as ours. */
 .app__ios-row {
@@ -1889,8 +1902,12 @@
   line-height: 1;
 }
 
+/* `margin-inline: auto` because `.app__ob p` caps the measure at 34ch: a
+   centred line inside a narrower-than-full box is only centred if the box
+   itself is (#457 review). */
 .app__ios-hint {
   margin-top: 10px;
+  margin-inline: auto;
   font-size: 12px;
   color: var(--muted);
   text-align: center;
@@ -2047,6 +2064,7 @@
 
 .app__ob-note {
   margin: 0;
+  margin-inline: auto;
   font-size: 13px;
   color: var(--goldBright);
   text-align: center;

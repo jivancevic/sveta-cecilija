@@ -1012,18 +1012,37 @@ word on the tab and the value in the link cannot have drifted apart.
 
 ### The Dobrodošlica cookie rule
 
-Glossary: *Dobrodošlica*. Remembered **on the device only** — cookie
-`moreskant_onboarded=1`, `Path=/app`, `SameSite=Lax`, one year, written from the
-browser (`document.cookie`) with `localStorage['moreskant.onboarding.done']` as
-a fallback; either one counts as done. The names and the rule live in
-`src/lib/app/onboarding.ts`.
+Glossary: *Dobrodošlica*. Remembered **on the device only**, never on the
+account, as two things that back each other up:
+
+1. **The cookie, set by the server.** `POST /api/app/onboarding/done`
+   (`src/app/api/app/onboarding/done/route.ts`) answers 204 with
+   `Set-Cookie: moreskant_onboarded=1; Path=/app; HttpOnly; SameSite=Lax; Max-Age=31536000`
+   (plus `Secure` when the request arrived over https). A **one-year** cookie
+   has to come from a header: Safari's ITP caps a `document.cookie` write at
+   seven days, so a browser-written one would quietly become "next week" and
+   walk a dancer through the same three steps every Monday. The route sets a
+   cookie and nothing else, and still carries the full `/app` gate — the
+   cross-site check (`rejectAppRequest`) first, then
+   `requirePermission(['moreskant', 'moreska'])`.
+2. **`localStorage['moreskant.onboarding.done']`, the rescue.** The client
+   writes it when the walkthrough ends and reads it **on mount** of
+   `/app/dobrodosli`: a device that has seen the walkthrough but lost its cookie
+   (expired, cleared with the site data, a private window) re-POSTs for a new
+   one and goes straight to `/app`.
+
+The names, the cookie string (`onboardingCookie()`) and the redirect rule live
+in `src/lib/app/onboarding.ts`.
 
 `needsOnboarding({ signedIn, denied, hasMember, cookiePresent })` is pure and
 tested, and **`/app` is the only page that calls it**. Every other page under
 `/app` opens on what it says it is: a push deep-link into tonight's postava must
-not land on a walkthrough. Finishing and skipping write the same cookie, so
-"Preskoči" is an answer rather than a deferral; the page itself never writes it
-on arrival, which is what makes the Više row a harmless replay.
+not land on a walkthrough. Its four inputs are read off the viewer before the
+page's early exits and acted on after them, so the rule answers the signed-out
+and denied cases itself rather than being handed a hard-coded `false`.
+Finishing and skipping ask for the same cookie, so "Preskoči" is an answer
+rather than a deferral; the page itself never sets it on arrival, which is what
+makes the Više row a harmless replay.
 
 Step 1 (home screen) is left out when the browser reports standalone, step 3
 (calendar) when the deployment has no feed URL. The first render is the full
@@ -1031,6 +1050,13 @@ list on both sides so hydration stays quiet, and an effect narrows it after
 mount. Step 2 runs the REAL subscribe flow: every browser call lives in
 `src/app/app/push-client.ts`, shared with the Više switch, so the two screens
 cannot drift into two notions of "subscribed".
+
+Step 3 hands the calendar over **per platform** and never on a timer: on iOS the
+primary button is "Pretplati se na kalendar" (`webcal://`, which leaves the
+browser for the calendar app), everywhere else it is "Kopiraj link" beside the
+sentence naming the three taps in Google kalendar. Either way the step waits for
+the dancer to come back and the primary becomes "Dalje"; "Ne sada" is always
+there.
 
 ### The Ljestvica
 

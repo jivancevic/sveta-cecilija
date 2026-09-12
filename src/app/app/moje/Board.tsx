@@ -71,8 +71,11 @@ export function Board({ board }: { board: Leaderboard }) {
             </p>
             {board.me.nextMilestone !== null && (
               <p className="app__board-milestone-line">
+                {/* The milestone is a counted noun like every other one here,
+                    so it goes through `pluralize` too (#457 review): "20
+                    izvedbi", but "21 izvedba". */}
                 {APP_STRINGS.board.nextMilestone(
-                  APP_STRINGS.board.milestoneLabel(board.me.nextMilestone),
+                  pluralize(board.me.nextMilestone, APP_STRINGS.home.count),
                 )}
               </p>
             )}

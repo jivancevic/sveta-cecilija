@@ -89,8 +89,11 @@ export function InstallHint({ vapidPublicKey }: { vapidPublicKey?: string | null
     setBusy(true)
     setError(null)
     const ok = await unsubscribeFromPush()
-    if (!ok) setError(APP_STRINGS.push.failed)
-    setState('offer')
+    // Only a successful unsubscribe turns the switch off (#457 review). A
+    // failure that still flipped it would tell a dancer the phone is quiet
+    // while it keeps ringing, and leave them no button to try again with.
+    if (ok) setState('offer')
+    else setError(APP_STRINGS.push.failed)
     setBusy(false)
   }
 
@@ -119,6 +122,7 @@ export function InstallHint({ vapidPublicKey }: { vapidPublicKey?: string | null
           <button type="button" className="app__hint-link" disabled={busy} onClick={disable}>
             {busy ? APP_STRINGS.push.disabling : APP_STRINGS.push.disable}
           </button>
+          {error && <p className="app__answer-error">{error}</p>}
         </aside>
       </Block>
     )

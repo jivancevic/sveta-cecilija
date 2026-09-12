@@ -112,28 +112,29 @@ function PerformanceRow({
 
 export default async function MoreskantHomePage() {
   const viewer = await resolveAppViewer()
-  if (!viewer.signedIn) redirect('/app/login')
-  if (viewer.access.kind === 'denied') return <DeniedPage />
-
   const me = accessMember(viewer.access)
-  const voditelj = viewer.access.kind === 'voditelj'
 
   // The Dobrodošlica is sent from HERE and from nowhere else (#457): every
   // other page under `/app` opens on what it says it is, so a push deep-link
   // into tonight's postava can never land on a walkthrough.
+  //
+  // Decided BEFORE the two early exits and out of the viewer itself, so every
+  // input the rule reads is the real one (#457 review) — the signed-out and the
+  // denied cases are the rule's to answer, not this file's to pre-empt — and
+  // acted on after them, so those two still get the page they are owed.
   const jar = await cookies()
-  if (
-    needsOnboarding({
-      signedIn: viewer.signedIn,
-      // Already returned above; the rule still states the case, so the one
-      // place the decision lives reads as the whole decision.
-      denied: false,
-      hasMember: me != null,
-      cookiePresent: jar.has(ONBOARDING_COOKIE),
-    })
-  ) {
-    redirect('/app/dobrodosli')
-  }
+  const welcome = needsOnboarding({
+    signedIn: viewer.signedIn,
+    denied: viewer.access.kind === 'denied',
+    hasMember: me != null,
+    cookiePresent: jar.has(ONBOARDING_COOKIE),
+  })
+
+  if (!viewer.signedIn) redirect('/app/login')
+  if (viewer.access.kind === 'denied') return <DeniedPage />
+  if (welcome) redirect('/app/dobrodosli')
+
+  const voditelj = viewer.access.kind === 'voditelj'
 
   const season = await getSeasonPerformances({ memberId: me?.id ?? null, voditelj })
 

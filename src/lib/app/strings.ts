@@ -132,10 +132,8 @@ export const APP_STRINGS = {
    * tells a dancer the app was written by somebody who does not speak to them.
    */
   board: {
-    title: 'Ljestvica',
     /** The small caption under the big "#3": out of how many moreškanata. */
     outOf: (total: number) => `od ${total}`,
-    mine: 'moje izvedbe',
     leading: 'Vodiš ljestvicu.',
     toNextPlace: (count: string, place: number) => `Još ${count} do ${place}. mjesta.`,
     nextMilestone: (count: string) => `Sljedeća prekretnica: ${count}`,
@@ -151,7 +149,6 @@ export const APP_STRINGS = {
     footer: (confirmed: string) =>
       `Broji se samo potvrđena postava. ${confirmed} u sezoni.`,
     empty: 'Ljestvica počinje s prvom potvrđenom postavom.',
-    milestoneLabel: (count: number) => `${count} izvedbi`,
   },
 
   /** The "Više" tab: everything that is not an evening (#457). */
@@ -383,11 +380,19 @@ export const APP_STRINGS = {
     calendar: {
       title: 'Izvedbe u tvom kalendaru',
       body: 'Pretplata se sama osvježava kad se raspored promijeni. Radi u Apple i Google kalendaru.',
+      /**
+       * Only off iOS (#457 review). There the link goes on the clipboard, and a
+       * clipboard with no instructions is a dancer holding a URL they have
+       * nowhere to put, so the sentence names the three taps in Google kalendar.
+       */
+      googleHint: 'U Google kalendaru: Postavke, Dodaj kalendar, Putem URL-a.',
       cardTitle: 'Kalendar izvedbi',
       cardBody: 'Sve izvedbe sezone, javne i privatne, s bilješkom voditelja.',
       primary: 'Pretplati se na kalendar',
       copy: 'Kopiraj link',
       copied: 'Link kopiran',
+      /** After the handoff: the step waits, it never scrolls on by itself. */
+      next: 'Dalje',
       skip: 'Ne sada',
     },
 
