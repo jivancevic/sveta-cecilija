@@ -82,7 +82,19 @@ Access follows the **roster, not the login table**: unticking `active` or `isMor
 
 **The service worker arrived with push (#431) and still caches nothing** — the phase 3 reason (#419, story 47) survives it: a cache layer over server-rendered roster data can only turn app bugs into caching bugs. Details in the Push section below.
 
-The "Dodaj na početni zaslon" hint (`InstallHint.tsx`) is one dismissible line remembered per device in `localStorage`, every access wrapped in `try/catch`, and it is skipped when `display-mode: standalone` says the icon already exists. It is plain instructions rather than an install button, because iOS never fires `beforeinstallprompt` and iOS is where the hint matters most. Since #431 that same component is also the notifications banner (Push, below).
+### The install flow (#455)
+
+Three facts decide what `/app` offers, and all three live in `src/lib/app/platform.ts` as pure functions over browser facts, table-tested in `platform.test.ts` against real UA strings:
+
+- **`detectPlatform`** → `installed | inapp | ios | android | desktop`. `standalone` wins over every UA. An **in-app browser** (Viber, WhatsApp, Messenger, Instagram, any Android WebView) is its own platform, not a phone: the share sheet it shows belongs to the host app and has no "Add to Home Screen" at any scroll position, so the only useful thing to say there is "open this in Safari". That dead end is the most common way an invitation fails, because a link travels by Viber. iPadOS reports a Macintosh UA, so touch points are the tell.
+- **`decideInstallStep`** → `inapp | install | push | on | none`. Read it as one sentence: a device that already rings needs no offer; "Kasnije" buys silence until tomorrow; a webview gets the way out; a browser with **no `PushManager` at all is asked to install**, because on iOS that IS the notification switch; everything else is offered notifications first, because on Android they work in a plain tab and installing is then a one-tap bonus rather than a toll.
+- **`INSTALL_PROMPT_CAPTURE`**, injected inline by the `/app` layout ahead of hydration. Chromium fires `beforeinstallprompt` once and never replays it, so a React effect that has not hydrated yet misses it and the one-tap button never appears on the one platform that has one. The script only parks the event on `window`; every decision about it stays in the component.
+
+What this replaced, and why each half was wrong: the old banner asked "push supported?" first, so an Android tab (which always has a `PushManager`) never reached the install offer at all, and the install branch was dead code on the easiest platform; one × wrote a permanent `localStorage` flag, which silenced the banner forever on the iPhone where installing is the precondition for notifications; and one sentence of generic advice served every device, including the webviews where it cannot be followed.
+
+`InstallHint.tsx` renders the decision, `InstallSteps.tsx` the numbered steps (with the iOS share glyph drawn inline, because step one is "find this icon"), and `use-install.ts` holds the browser reads. Every storage and permission access stays wrapped in `try/catch`: a private window, a browser blocking site data and a thumbnail-capture pass can each throw, and none of that may take `/app` down. Whether **this** device is subscribed is still read from the browser, never from the server, and the component renders nothing until it has looked.
+
+**`/app/instalacija`** is the same guide full screen, and deliberately **not** behind the access decision: it is the target of the QR code a voditelj puts on the wall at a rehearsal, and the person scanning it has not signed in yet. Its platform switch exists because the voditelj is holding somebody else's phone half the time.
 
 ## Attendance (#422, #423)
 
@@ -431,13 +443,12 @@ has no claim and no limit.
 
 ### The banner
 
-`InstallHint.tsx` is now the one banner and asks the two questions in order
-(#430 stories 1-3): no `PushManager` and not installed → the iOS "add to the home
-screen" line; supported and unsubscribed → "Uključi obavijesti"; already
-subscribed → one muted line with the per-device off switch, which is the whole of
-the per-device control (story 5). Whether **this** device is subscribed is read
-from the browser, never from the server, and the component renders nothing until
-it has looked.
+`InstallHint.tsx` is the one banner (#430 stories 1-3): unsubscribed and able to
+subscribe → "Uključi obavijesti"; already subscribed → one muted line with the
+per-device off switch, which is the whole of the per-device control (story 5).
+Which of those it asks, and whether it asks about installing first instead, is
+`decideInstallStep` in `src/lib/app/platform.ts` — see [the install flow](#the-install-flow-452)
+for why the order is per platform rather than fixed (#455).
 
 ## Triggered notifications (#436 — phase 4 batch B)
 
