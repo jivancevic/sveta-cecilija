@@ -1,4 +1,5 @@
-// The Moreškant service worker (#431, ADR-0024 phase 4).
+// The Cecilija service worker (#431, ADR-0024 phase 4; renamed from
+// `moreskant-sw.js` with the product in #489).
 //
 // It does exactly two things: show a push notification, and open the
 // performance when one is tapped. THERE IS NO FETCH HANDLER AND NO CACHE, on
@@ -8,7 +9,7 @@
 // Without a fetch handler the browser serves every request from the network as
 // if the worker were not there.
 //
-// Served from the ROOT (`/moreskant-sw.js`) and registered with `scope: '/app'`,
+// Served from the ROOT (`/cecilija-sw.js`) and registered with `scope: '/app'`,
 // which is the manifest's scope too. A worker's default maximum scope is its own
 // directory, so a script under `public/app/` could only ever claim `/app/` —
 // and `/app/` does NOT cover `/app` itself, which is the page the banner lives
@@ -36,13 +37,13 @@ self.addEventListener('push', (event) => {
     // the app's own name, rather than dropping silently.
   }
 
-  const title = payload.title || 'Moreškant'
+  const title = payload.title || 'Cecilija'
   const options = {
     body: payload.body || '',
     // The maskable app icon, the same one the home screen uses.
-    icon: '/moreskant-icon-192.png',
-    badge: '/moreskant-icon-192.png',
-    tag: payload.tag || 'moreskant',
+    icon: '/cecilija-icon-192.png',
+    badge: '/cecilija-icon-192.png',
+    tag: payload.tag || 'cecilija',
     // A replaced notification must still ring: an alarm sent twice is two
     // attempts to get somebody's attention, not one update to a status line.
     renotify: Boolean(payload.tag),

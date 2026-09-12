@@ -18,9 +18,79 @@
 // `pushSupported`, which `use-install.ts` re-exports rather than restates.
 
 // The worker script lives at the ROOT so it can claim `/app` itself, not only
-// `/app/…` — see the header of `public/moreskant-sw.js`.
-const SW_URL = '/moreskant-sw.js'
+// `/app/…` — see the header of `public/cecilija-sw.js`.
+const SW_URL = '/cecilija-sw.js'
 const SW_SCOPE = '/app'
+
+/**
+ * The worker this app registered while it was called Moreškant (#489).
+ *
+ * Its script no longer exists, so a device still holding that registration is a
+ * device whose next update check 404s and whose push then dies silently. The
+ * migration below is what stops that, and this constant is the only place the
+ * old name survives.
+ */
+const LEGACY_SW_FILE = 'moreskant-sw.js'
+
+/**
+ * Move a device from the Moreškant worker to the Cecilija one (#489).
+ *
+ * Runs on every `/app` load and does nothing at all on a device that never had
+ * the old worker, which after the rebrand is every device but two. The order
+ * matters: the old registration is unregistered FIRST, because unregistering
+ * drops its push subscription with it, and a re-subscribe before that would be
+ * the one we just threw away. A device that was subscribed is re-subscribed on
+ * the new worker and the server is told, so the endpoint in
+ * `push_subscriptions` is replaced rather than left to die on a 410.
+ *
+ * Best effort throughout: this is a background repair, and a browser that
+ * refuses any step must still get its screen.
+ */
+export async function migrateLegacyServiceWorker(
+  vapidPublicKey: string | null | undefined,
+): Promise<'migrated' | 'nothing-to-do' | 'failed'> {
+  if (!pushSupported()) return 'nothing-to-do'
+  try {
+    const registrations = await navigator.serviceWorker.getRegistrations()
+    const legacy = registrations.filter((registration) =>
+      [registration.active, registration.waiting, registration.installing].some((worker) =>
+        worker?.scriptURL.endsWith(LEGACY_SW_FILE),
+      ),
+    )
+    if (legacy.length === 0) return 'nothing-to-do'
+
+    // Was this device receiving pushes? Read it before anything is torn down.
+    let wasSubscribed = false
+    for (const registration of legacy) {
+      const subscription = await registration.pushManager.getSubscription().catch(() => null)
+      if (subscription) wasSubscribed = true
+      await registration.unregister().catch(() => {})
+    }
+
+    await navigator.serviceWorker.register(SW_URL, { scope: SW_SCOPE })
+    if (!wasSubscribed || !vapidPublicKey) return 'migrated'
+
+    const registration = await navigator.serviceWorker.ready
+    const subscription = await registration.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey: urlBase64ToBytes(vapidPublicKey),
+    })
+    const res = await fetch('/api/app/push/subscribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(subscription.toJSON()),
+    })
+    if (!res.ok) {
+      // Same rule as `subscribeToPush`: a subscription the sender does not know
+      // about reads as "uključeno" and rings never.
+      await subscription.unsubscribe().catch(() => {})
+      return 'failed'
+    }
+    return 'migrated'
+  } catch {
+    return 'failed'
+  }
+}
 
 /**
  * base64url application server key → the bytes `subscribe()` wants.

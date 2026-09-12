@@ -26,10 +26,10 @@
 // supposed to be quick.
 
 /** The cookie the server writes; `Path=/app`, so it never reaches the site. */
-export const ONBOARDING_COOKIE = 'moreskant_onboarded'
+export const ONBOARDING_COOKIE = 'cecilija_onboarded'
 
 /** The localStorage twin, the rescue for a device that lost the cookie. */
-export const ONBOARDING_STORAGE_KEY = 'moreskant.onboarding.done'
+export const ONBOARDING_STORAGE_KEY = 'cecilija.onboarding.done'
 
 /** A year: long enough that a dancer sees it once per phone, per season. */
 export const ONBOARDING_MAX_AGE_SECONDS = 31_536_000
