@@ -241,6 +241,7 @@ describe('scanToken', () => {
     const result = await scanToken('tok_abc', deps)
     expect(result).toEqual({
       status: 'ALREADY_SCANNED',
+      orderId: 'ord_1',
       scannedAt: '2026-05-23T18:30:00.000Z',
       showDate: '2026-07-01',
       showTime: '21:00',
@@ -264,6 +265,7 @@ describe('scanToken', () => {
     const result = await scanToken('tok_void', deps)
     expect(result).toEqual({
       status: 'CANCELLED',
+      orderId: 'ord_1',
       cancelReason: 'storno',
       showDate: '2026-07-01',
       showTime: '21:00',

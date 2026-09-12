@@ -63,7 +63,7 @@ describe('the screen table', () => {
       }
     }
     const live = APP_SCREENS.filter((s) => s.servesToday.length > 0)
-    expect(keys(live)).toEqual(['performances', 'leaderboard'])
+    expect(keys(live)).toEqual(['performances', 'leaderboard', 'scan'])
   })
 
   it('gives refunds and dev no screen of their own', () => {
@@ -124,7 +124,9 @@ describe('appNav', () => {
   })
 
   it('has no tabs and no landing screen for an account that unlocks nothing', () => {
-    const nav = appNav(user('door'), ctx())
+    // `tickets` is the widest set that still unlocks nothing built: Narudžbe
+    // (#501), Upiti, Gratis and Statistika are all still empty columns.
+    const nav = appNav(user('tickets'), ctx())
     expect(nav.tabs).toEqual([])
     expect(nav.landing).toBeNull()
   })

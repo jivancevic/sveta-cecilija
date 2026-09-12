@@ -106,10 +106,9 @@ function relPath(full: string): string {
 // ---------------------------------------------------------------------------
 
 describe('Cecilija code reaches Payload only through the seam', () => {
-  const files = [
-    ...walk(path.join(SRC_DIR, 'app/app')),
-    ...walk(path.join(SRC_DIR, 'app/api/app')),
-  ].sort()
+  const files = SCANNED_PREFIXES.flatMap((prefix) =>
+    walk(path.resolve(SRC_DIR, '..', prefix)),
+  ).sort()
 
   it('scans both Cecilija directories (sanity)', () => {
     expect(files.length).toBeGreaterThan(30)

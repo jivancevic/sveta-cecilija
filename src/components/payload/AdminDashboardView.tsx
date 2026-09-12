@@ -341,7 +341,7 @@ async function TehnikaDashboard({ signedInAs, lang }: { signedInAs: string; lang
 
       {/* Dominant full-width, thumb-height scan button → in-page viewfinder. */}
       <Link
-        href="/admin/scan"
+        href="/app/scan"
         style={{
           display: 'block',
           width: '100%',

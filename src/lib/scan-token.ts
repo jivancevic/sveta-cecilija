@@ -59,6 +59,10 @@ export type ScanResult =
     }
   | {
       status: 'ALREADY_SCANNED'
+      // The order behind the ticket. Carried since #504 so the Skener result
+      // card can offer a `refunds` holder the one link into the order; no
+      // buyer ever sees this branch (the buyer viewer answers BUYER_VIEW).
+      orderId: string
       scannedAt: string
       showDate: string
       showTime: string
@@ -67,6 +71,7 @@ export type ScanResult =
   | {
       // A voided ticket (storno or refund). Scans to a clear dead-end, never VALID.
       status: 'CANCELLED'
+      orderId: string
       cancelReason: CancelReason | null
       showDate: string
       showTime: string
@@ -198,6 +203,7 @@ export async function scanToken(
   if (ticket.status === 'cancelled') {
     return {
       status: 'CANCELLED',
+      orderId: ticket.orderId,
       cancelReason: ticket.cancelReason,
       showDate: show.date,
       showTime: show.time,
@@ -207,6 +213,7 @@ export async function scanToken(
   if (ticket.scanned) {
     return {
       status: 'ALREADY_SCANNED',
+      orderId: ticket.orderId,
       scannedAt: ticket.scannedAt,
       showDate: show.date,
       showTime: show.time,

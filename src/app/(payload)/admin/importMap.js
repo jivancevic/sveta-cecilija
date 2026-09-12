@@ -11,7 +11,6 @@ import { AdminLogo as AdminLogo_313e964a7107ac39e31c5ff2e54b6ba9 } from '@/compo
 import { BulkCreateShowsView as BulkCreateShowsView_4791875e82fc193b95e30c08c823631e } from '@/components/payload/BulkCreateShowsView'
 import { AdminStatsView as AdminStatsView_stats } from '@/components/payload/AdminStatsView'
 import { AdminDashboardView as AdminDashboardView_dashboard } from '@/components/payload/AdminDashboardView'
-import { AdminScanView as AdminScanView_scan } from '@/components/payload/AdminScanView'
 import { AccountLogout as AccountLogout_account } from '@/components/payload/AccountLogout'
 import { InviteMoreskantMenuItem as InviteMoreskantMenuItem_invite } from '@/components/payload/InviteMoreskantMenuItem'
 import { InviteAllMoreskantiMenuItem as InviteAllMoreskantiMenuItem_invite_all } from '@/components/payload/InviteAllMoreskantiMenuItem'
@@ -32,7 +31,6 @@ export const importMap = {
   "@/components/payload/BulkCreateShowsView#BulkCreateShowsView": BulkCreateShowsView_4791875e82fc193b95e30c08c823631e,
   "@/components/payload/AdminStatsView#AdminStatsView": AdminStatsView_stats,
   "@/components/payload/AdminDashboardView#AdminDashboardView": AdminDashboardView_dashboard,
-  "@/components/payload/AdminScanView#AdminScanView": AdminScanView_scan,
   "@/components/payload/AccountLogout#AccountLogout": AccountLogout_account,
   "@/components/payload/InviteMoreskantMenuItem#InviteMoreskantMenuItem": InviteMoreskantMenuItem_invite,
   "@/components/payload/InviteAllMoreskantiMenuItem#InviteAllMoreskantiMenuItem": InviteAllMoreskantiMenuItem_invite_all,

@@ -57,12 +57,10 @@ export default buildConfig({
           path: '/stats',
           exact: false,
         },
-        scan: {
-          // Inline scan station for tehnika. Camera stays live across scans;
-          // results overlay the feed via /api/scan/[token]. No page transitions.
-          Component: '@/components/payload/AdminScanView#AdminScanView',
-          path: '/scan',
-        },
+        // `/scan` used to be here: the Backoffice's inline scan station. Since
+        // #504 the door's screen is Cecilija's Skener at `/app/scan`, and
+        // `/admin/scan` 308s to it (`next.config.ts`), so the view is gone
+        // rather than left unreachable behind the redirect.
         // Replace Payload's default collection-card dashboard with the
         // role-branched view. `admin.dashboard.widgets` is additive (it
         // appends to the default `CollectionCards` widget), so to *replace*

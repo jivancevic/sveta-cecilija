@@ -916,6 +916,82 @@ export const APP_STRINGS = {
     noMemberShort: 'Ulaznice može izdati samo moreškant s povezanim profilom.',
   },
 
+  /**
+   * Skener, the door screen (#504, ported from `/admin/scan` and the door
+   * dashboard).
+   *
+   * Croatian, with ONE deliberate exception: `result` below is English,
+   * because the card is held up to a guest who has just handed over a phone.
+   * Everything the volunteer reads on their own — the ring, the buttons, the
+   * search — is Croatian like the rest of the app.
+   */
+  scan: {
+    /** The ring for tonight, and the evening with no ring. */
+    admitted: 'ušlo',
+    of: 'od',
+    noShow: 'Večeras nema izvedbe.',
+    noShowBody: 'Skener radi kad je izvedba na rasporedu.',
+    /** The dominant button and the scanner overlay around it. */
+    open: 'Skeniraj ulaznicu',
+    close: 'Zatvori',
+    starting: 'Palim kameru...',
+    idleTitle: 'Spremno za skeniranje',
+    idleBody: 'Dodirni za kameru. Telefon će prvi put pitati za dopuštenje.',
+    idleAction: 'Dodirni za skeniranje',
+    errorTitle: 'Kamera ne radi',
+    errorFallback: 'Kamera nije dostupna.',
+    retry: 'Pokušaj ponovno',
+    scanMore: 'Skeniraj sljedeću',
+    /** The `refunds` holder's one link off the card (#476). */
+    openOrder: 'Otvori narudžbu',
+    /** Party admit and undo, both spoken on the result card. */
+    admitParty: (n: number) => `Pusti ostatak grupe (${n})`,
+    admitting: 'Propuštam...',
+    admittedParty: (n: number) =>
+      n > 0 ? `Propušteno još ${n} iz grupe.` : 'Cijela grupa je već propuštena.',
+    admitPartyFailed: 'Propuštanje grupe nije uspjelo.',
+    undo: 'Poništi propuštanje',
+    undoing: 'Poništavam...',
+    undone: 'Propuštanje je poništeno.',
+    undoExpired: 'Isteklo je vrijeme za poništavanje (2 minute).',
+    /** Pronađi ulaznicu: the manual-admit fallback when a QR will not scan. */
+    lookupTitle: 'Pronađi ulaznicu',
+    lookupIntro: 'Za večerašnju izvedbu, po kodu, e-pošti ili imenu.',
+    modeCode: 'Kod',
+    modeEmail: 'E-pošta',
+    modeName: 'Ime',
+    placeholderCode: 'npr. AB3K',
+    placeholderEmail: 'kupac@primjer.com',
+    placeholderName: 'Ime Prezime',
+    search: 'Traži',
+    searching: '...',
+    searchFailed: 'Pretraga nije uspjela.',
+    notFound: 'Nema narudžbe za ovu izvedbu.',
+    ambiguous: (n: number) => `Pronađeno ${n} narudžbi. Suzi pretragu ili upiši kod narudžbe.`,
+    admit: 'Pusti',
+    back: 'Natrag',
+    admitFailed: 'Propuštanje nije uspjelo.',
+    noTickets: 'Narudžba nema važećih ulaznica.',
+    allAdmitted: 'Svi su propušteni',
+    admittedOf: (done: number, all: number) => `${done} / ${all} propušteno`,
+    adults: (n: number) => `${n} odraslih`,
+    children: (n: number) => `${n} djece`,
+    /** The show-day strip the shell offers a door holder on other screens. */
+    stripToday: 'Izvedba je večeras',
+    /**
+     * The English result card (#476). A guest reads it over the volunteer's
+     * shoulder, so these five lines are the one place in Cecilija that is not
+     * Croatian; the headings themselves live in `lib/app/scan-screen.ts`.
+     */
+    result: {
+      voided: 'This ticket has been voided',
+      voidedRefund: 'This ticket has been voided (refunded).',
+      voidedStorno: 'This ticket has been voided (cancelled).',
+      unknown: 'This ticket is not recognised.',
+      firstScanned: 'First scanned at',
+    },
+  },
+
   /** The shared calendar subscription (#433, glossary: *Calendar feed*). */
   calendar: {
     body: 'Dodaj ovu poveznicu u Google, Apple ili Outlook kalendar i sve izvedbe su ti u telefonu.',
