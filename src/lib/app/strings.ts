@@ -402,6 +402,19 @@ export const APP_STRINGS = {
       'Izvedba je otkazana, pa se više ne mijenja. Ako se ipak održava, dodaj novu izvedbu.',
     publicRow:
       'Ovo je javna izvedba. Njezin datum, mjesto i otkazivanje vodi blagajna, jer o tome ovise prodane ulaznice.',
+    /**
+     * The two halves of Dodaj, each refusing the other's row (#502).
+     *
+     * Both name the person who CAN do it rather than the permission that is
+     * missing: "blagajna" and "voditelj" are words the reader uses about their
+     * own society, and `tickets` is a word from the codebase.
+     */
+    publicNeedsTickets: 'Javnu izvedbu, koja prodaje ulaznice, unosi blagajna.',
+    nonPublicNeedsMoreska: 'Izvedbu koja ne prodaje ulaznice unosi voditelj.',
+    /** The blagajna's own fields on a public evening (#502). */
+    venue: 'Mjesto',
+    isPublic: 'Javna izvedba, prodaje ulaznice',
+    notPublicNoSales: 'Ova izvedba ne prodaje ulaznice, pa nema što pauzirati.',
     missing: 'Ta izvedba ne postoji.',
     failed: 'Izvedba nije spremljena. Pokušaj ponovno.',
     rejected: 'Zahtjev nije prihvaćen. Pokušaj ponovno iz aplikacije.',
@@ -1221,6 +1234,176 @@ export const APP_STRINGS = {
       refunded: 'Stornirana narudžba se ne uređuje.',
       notFound: 'Ova narudžba ne postoji.',
       rejected: 'Zahtjev nije prihvaćen.',
+    },
+  },
+
+  /**
+   * The blagajna's half of Izvedbe (#502): the numbers on a public evening and
+   * the named actions that change it.
+   *
+   * Every word here is about SEATS and MONEY, which is why it is its own block
+   * rather than more of `performance` (the voditelj's five fields) or of
+   * `detail` (the roster's headcounts). A dancer never reads any of it: the
+   * page renders this section only for a `tickets` holder.
+   */
+  sales: {
+    title: 'Prodaja',
+    /** The one line every row carries: "148/350" and what is left of it. */
+    soldOf: (sold: number, capacity: number) => `${sold}/${capacity}`,
+    remaining: (seats: number) => `još ${seats}`,
+    /** An oversold room is a real state (a miscounted door batch), so it says so. */
+    over: (seats: number) => `${seats} preko kapaciteta`,
+    /**
+     * The five places a seat can come from, in the order the money reads them:
+     * the three ticketed channels first, then the two the ledger holds
+     * (ADR-0025). Lowercase, because they are read inside a line rather than as
+     * headings.
+     */
+    channels: {
+      online: 'online',
+      partner: 'partner',
+      comp: 'gratis',
+      door: 'vrata',
+      legacy: 'staro',
+    },
+    none: 'Još nema prodaje.',
+    /**
+     * What is true of this evening besides its numbers.
+     *
+     * "Preseljeno" and "Pomaknuto" are facts a buyer was already mailed about
+     * (#94, #379), so they are a record rather than a warning; "Pauzirano" is
+     * the one that is still someone's decision.
+     */
+    badges: {
+      paused: 'Prodaja pauzirana',
+      cancelled: 'Otkazano',
+      moved: 'Preseljeno',
+      rescheduled: 'Datum pomaknut',
+    },
+    /** The detail's number list. `Prihod` appears for a `finance` holder only. */
+    numbers: {
+      sold: 'Prodano',
+      remaining: 'Slobodno',
+      capacity: 'Kapacitet',
+      scanned: 'Ušlo',
+      revenue: 'Prihod',
+      online: 'Online',
+      partner: 'Partner',
+      comp: 'Gratis',
+      door: 'Na vratima',
+      legacy: 'Prethodna stranica',
+    },
+    /** A non-public evening sells nothing, so there is nothing to show. */
+    notPublic: 'Ova izvedba ne prodaje ulaznice, pa nema brojki o prodaji.',
+    ordersLink: 'Narudžbe za ovu izvedbu',
+  },
+
+  /**
+   * The blagajna's named actions on one public evening (#502).
+   *
+   * Each one is a button with a verb on it and a sheet under it that says what
+   * is about to happen, never a browser dialog: three of the five move money or
+   * send mail to every buyer, and a mis-tap on a phone is the normal case.
+   * Every route behind them already existed and is unchanged.
+   */
+  showActions: {
+    title: 'Radnje',
+    confirm: 'Potvrdi',
+    cancel: 'Odustani',
+    close: 'Zatvori',
+    working: 'Radim...',
+    failed: 'Radnja nije uspjela. Pokušaj ponovno.',
+    loading: 'Učitavam...',
+    /** The online sales switch (#366). The only action that mails nobody. */
+    pause: {
+      pause: 'Pauziraj online prodaju',
+      resume: 'Nastavi online prodaju',
+      pauseTitle: 'Pauzirati online prodaju?',
+      pauseBody:
+        'Izvedba ostaje na rasporedu, ali se ulaznice više ne mogu kupiti online. Partneri i vrata i dalje prodaju.',
+      resumeTitle: 'Nastaviti online prodaju?',
+      resumeBody: 'Ulaznice se ponovno mogu kupiti online.',
+      paused: 'Online prodaja je pauzirana.',
+      resumed: 'Online prodaja je nastavljena.',
+    },
+    /** Otkaži: the #497 route, money and mail to every buyer. */
+    cancelShow: {
+      action: 'Otkaži izvedbu',
+      title: 'Otkazati izvedbu?',
+      lead: (date: string, time: string) => `${date} u ${time}. Ovo se ne može poništiti.`,
+      refunds: (amount: string, orders: number) =>
+        `Povrat ${amount} na ${orders} online ${orders === 1 ? 'narudžbu' : 'narudžbi'}.`,
+      voids: (partnerSeats: number, compSeats: number) =>
+        `Storniranje ${partnerSeats} partnerskih i ${compSeats} gratis ulaznica.`,
+      mails: (buyers: number, noEmail: number) =>
+        noEmail > 0
+          ? `E-pošta na ${buyers} kupaca; ${noEmail} narudžbi nema adresu.`
+          : `E-pošta na ${buyers} kupaca.`,
+      already:
+        'Izvedba je već otkazana. Ponovno pokretanje dovršava povrate i e-poštu koje raniji pokušaj nije stigao obaviti.',
+      overLimit: (limit: number) =>
+        `To je više od ${limit} poruka dnevno koliko Brevo dopušta, a dio današnje kvote je možda već potrošen. Poruke koje ne prođu broje se kao neuspjele: pokreni radnju ponovno sutra i poslat će se samo one koje su ostale.`,
+      needsRefunds:
+        'Otkazivanje vraća novac, pa traži dozvolu za povrate. Zamoli nekoga tko je ima (Tatjana, Josip).',
+      confirm: 'Otkaži, vrati novac i obavijesti',
+      keep: 'Zadrži izvedbu',
+      done: (refunded: number, amount: string, voided: number, notified: number) =>
+        `Otkazano. Povrat na ${refunded} narudžbi (${amount}), stornirano ${voided} ulaznica, obaviješteno ${notified} kupaca.`,
+      /** The documented fix for a half-finished run (#497). */
+      retry:
+        'Dio posla nije prošao. Pokreni radnju ponovno: preskače sve što je već obavljeno i ponavlja samo ovo.',
+    },
+    /** Pomakni datum: the #379 route, with its test send. */
+    reschedule: {
+      action: 'Pomakni datum',
+      title: 'Pomakni datum izvedbe',
+      lead: (date: string, time: string, buyers: number) =>
+        `Sada ${date} u ${time}. Obavijest ide na ${buyers} kupaca, a ulaznice se šalju ponovno s novim datumom.`,
+      newDate: 'Novi datum',
+      test: 'Pošalji probni mail meni',
+      testSent: (to: string) => `Probni mail je poslan na ${to} (EN i HR). Provjeri pa potvrdi.`,
+      confirm: 'Potvrdi i pošalji kupcima',
+      needsDate: 'Prvo odaberi novi datum.',
+      done: (oldDate: string, newDate: string, sent: number, total: number) =>
+        `Pomaknuto ${oldDate} u ${newDate}. Obaviješteno ${sent} od ${total} kupaca.`,
+      noop: 'To je već datum ove izvedbe. Ništa nije promijenjeno.',
+      mismatch: 'Datum se u međuvremenu promijenio. Otvori radnju ponovno. Nije poslana e-pošta.',
+    },
+    /** Preseli u zimsko: the #94 route. Ljetno only, once. */
+    move: {
+      action: 'Preseli u zimsko',
+      title: 'Preseliti u Centar za kulturu?',
+      lead: (buyers: number) =>
+        `Mjesto se mijenja u Centar za kulturu, a obavijest ide na ${buyers} kupaca. Ovo se radi jednom.`,
+      confirm: 'Preseli i obavijesti',
+      done: (sent: number, total: number) =>
+        `Preseljeno. Obaviješteno ${sent} od ${total} kupaca.`,
+      already: 'Izvedba je već preseljena. E-pošta se ne šalje ponovno.',
+      notApplicable: 'Ova izvedba je već u Centru za kulturu, pa nema što preseliti.',
+    },
+    /** Prodaja na vratima: the ledger (ADR-0025), past evenings included. */
+    door: {
+      action: 'Prodaja na vratima',
+      title: 'Upiši prodane ulaznice',
+      hint: 'Dodaje se na dosadašnji zbroj. Negativan broj ispravlja raniji unos.',
+      sourceLabel: 'Gdje je prodano',
+      sourceDoor: 'Na vratima',
+      sourceLegacy: 'Prethodna stranica (prije prelaska)',
+      adults: 'Odrasli (20 €)',
+      children: 'Djeca (10 €)',
+      discountHead: 'Sniženo, i dalje odrasla ulaznica',
+      discountCount: 'Koliko',
+      discountPrice: 'Cijena po ulaznici (€)',
+      discountReason: 'Razlog sniženja',
+      discountReasonPlaceholder: 'npr. umirovljenici',
+      recorded: 'Već upisano',
+      recordedHint:
+        'Da ispraviš neki redak, upiši istu vrstu i istu cijenu s negativnim brojem.',
+      empty: 'Upiši barem jednu ulaznicu.',
+      needsPrice: 'Sniženi redak treba cijenu.',
+      needsReason: 'Sniženi redak treba razlog.',
+      confirm: 'Upiši',
+      done: (total: number) => `Upisano. Novi zbroj: ${total}.`,
     },
   },
 

@@ -4,7 +4,10 @@ import {
   NON_PUBLIC_KINDS,
   isRealCalendarDay,
   newPerformanceRow,
+  newPublicPerformanceRow,
   parseNonPublicPerformance,
+  parsePublicPerformance,
+  parsePublicPerformanceEdit,
   performanceEditPatch,
 } from './performance-input'
 
@@ -171,5 +174,101 @@ describe('performanceEditPatch', () => {
     ]) {
       expect(keys).not.toContain(forbidden)
     }
+  })
+})
+
+// ---------------------------------------------------------------------------
+// The blagajna's half: a PUBLIC performance (#502)
+// ---------------------------------------------------------------------------
+
+const PUBLIC_GOOD = {
+  date: '2027-07-19',
+  time: '21:00',
+  kind: 'redovna',
+  venue: 'ljetno-kino',
+}
+
+describe('parsePublicPerformance', () => {
+  it('accepts the four fields a public evening is', () => {
+    const parsed = parsePublicPerformance(PUBLIC_GOOD)
+    if (!parsed.ok) throw new Error(parsed.error)
+    expect(parsed.fields).toEqual({
+      dateStr: '2027-07-19',
+      time: '21:00',
+      kind: 'redovna',
+      venue: 'ljetno-kino',
+    })
+  })
+
+  it('accepts `redovna`, which the voditelj’s validator refuses outright', () => {
+    expect(parseNonPublicPerformance({ ...PUBLIC_GOOD, location: 'Luka' }).ok).toBe(false)
+    expect(parsePublicPerformance(PUBLIC_GOOD).ok).toBe(true)
+  })
+
+  it('refuses a venue that is not one of the two houses', () => {
+    const parsed = parsePublicPerformance({ ...PUBLIC_GOOD, venue: 'kino-mediteran' })
+    expect(parsed.ok).toBe(false)
+    if (parsed.ok) return
+    expect(parsed.error).toContain('Ljetno kino')
+  })
+
+  it('refuses a missing venue: a public evening has a capacity, so it has a house', () => {
+    expect(parsePublicPerformance({ ...PUBLIC_GOOD, venue: '' }).ok).toBe(false)
+  })
+
+  it('reuses the same date and time rules as the booking form', () => {
+    expect(parsePublicPerformance({ ...PUBLIC_GOOD, date: '2027-02-31' }).ok).toBe(false)
+    expect(parsePublicPerformance({ ...PUBLIC_GOOD, time: '25:00' }).ok).toBe(false)
+  })
+
+  it('refuses an unknown kind', () => {
+    expect(parsePublicPerformance({ ...PUBLIC_GOOD, kind: 'karneval' }).ok).toBe(false)
+  })
+})
+
+describe('newPublicPerformanceRow', () => {
+  it('stores the day at noon UTC and marks the row public and on sale', () => {
+    const parsed = parsePublicPerformance(PUBLIC_GOOD)
+    if (!parsed.ok) throw new Error(parsed.error)
+    expect(newPublicPerformanceRow(parsed.fields)).toEqual({
+      dateStr: '2027-07-19',
+      data: {
+        date: '2027-07-19T12:00:00.000Z',
+        time: '21:00',
+        kind: 'redovna',
+        isPublic: true,
+        venue: 'ljetno-kino',
+        status: 'active',
+        onlineSold: 0,
+        inPersonSold: 0,
+        legacyReserved: 0,
+        onlineSalesPaused: false,
+      },
+    })
+  })
+})
+
+describe('parsePublicPerformanceEdit', () => {
+  it('carries the time, the venue and the kind, and never the date', () => {
+    // Moving a public evening's DATE mails every buyer and reissues every
+    // ticket (#379), so it is its own named action and not a field on a form.
+    const parsed = parsePublicPerformanceEdit({ ...PUBLIC_GOOD, date: '2099-01-01' })
+    if (!parsed.ok) throw new Error(parsed.error)
+    expect(parsed.patch).toEqual({
+      time: '21:00',
+      kind: 'redovna',
+      venue: 'ljetno-kino',
+    })
+  })
+
+  it('needs no date at all, because Uredi does not send one', () => {
+    const parsed = parsePublicPerformanceEdit({ time: '21:00', kind: 'koncert', venue: 'zimsko-kino' })
+    expect(parsed.ok).toBe(true)
+  })
+
+  it('still refuses a bad time, a bad kind and a bad venue', () => {
+    expect(parsePublicPerformanceEdit({ ...PUBLIC_GOOD, time: '9:00' }).ok).toBe(false)
+    expect(parsePublicPerformanceEdit({ ...PUBLIC_GOOD, kind: 'karneval' }).ok).toBe(false)
+    expect(parsePublicPerformanceEdit({ ...PUBLIC_GOOD, venue: 'luka' }).ok).toBe(false)
   })
 })

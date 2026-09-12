@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+import type { Permission } from '@/lib/access/permissions'
 import type { PerformancePatch, PerformanceRow } from '@/lib/repo/shows'
 import type { AppRequestMeta } from './request-guard'
 import {
@@ -6,6 +7,7 @@ import {
   handleCancelPerformance,
   handleCreatePerformance,
   handleEditPerformance,
+  handlePausePerformance,
   handleThresholds,
   parseThresholds,
   type PerformanceFormDeps,
@@ -40,6 +42,8 @@ const BOOKING: PerformanceRow = {
   cancelled: false,
   location: 'Luka',
   client: 'Le Ponant',
+  venue: null,
+  paused: false,
   thresholdCrni: 8,
   thresholdBili: 8,
 }
@@ -51,6 +55,7 @@ const REDOVNA: PerformanceRow = {
   isPublic: true,
   location: null,
   client: null,
+  venue: 'ljetno-kino',
 }
 
 const GOOD_BODY = {
@@ -61,11 +66,17 @@ const GOOD_BODY = {
   client: 'Le Ponant',
 }
 
-function deps(row: PerformanceRow | null = BOOKING, request: AppRequestMeta = OK_REQUEST) {
+function deps(
+  row: PerformanceRow | null = BOOKING,
+  request: AppRequestMeta = OK_REQUEST,
+  /** The caller's set. The default is the voditelj, whose half this file began as. */
+  permissions: Permission[] = ['moreska'],
+) {
   const created: { dateStr: string; data: Record<string, unknown> }[][] = []
   const updated: { id: string; patch: PerformancePatch }[] = []
   const d: PerformanceFormDeps = {
     request,
+    permissions,
     loadPerformance: vi.fn(async () => row),
     createPerformances: async (rows) => {
       created.push([...rows])
@@ -283,6 +294,148 @@ describe('handleThresholds', () => {
   it('refuses a cross-site POST', async () => {
     const { deps: d, updated } = deps(BOOKING, CROSS_SITE)
     expect((await handleThresholds('7', { crni: 8, bili: 8 }, d)).status).toBe(403)
+    expect(updated).toEqual([])
+  })
+})
+
+// ---------------------------------------------------------------------------
+// The blagajna's half (#502): a PUBLIC evening is theirs, and only theirs
+// ---------------------------------------------------------------------------
+//
+// The rule these tests are really about is the mirror of the voditelj's: a
+// public row sells tickets, so its house, its hour and its sale belong to the
+// person who answers for the money. The handler asks the permission set
+// because the local API runs `overrideAccess: true` and the collection's field
+// locks therefore do not run for any of these writes (CLAUDE.md).
+
+const PUBLIC_BODY = {
+  date: '2027-07-19',
+  time: '21:00',
+  kind: 'redovna',
+  venue: 'ljetno-kino',
+  isPublic: true,
+}
+
+describe('Dodaj, when the body asks for a PUBLIC performance', () => {
+  it('lets a `tickets` holder create one, venue and all', async () => {
+    const { deps: d, created } = deps(BOOKING, OK_REQUEST, ['tickets'])
+    const res = await handleCreatePerformance(PUBLIC_BODY, d)
+
+    expect(res.status).toBe(200)
+    expect(created[0]![0]!.data).toMatchObject({
+      date: '2027-07-19T12:00:00.000Z',
+      time: '21:00',
+      kind: 'redovna',
+      isPublic: true,
+      venue: 'ljetno-kino',
+      onlineSalesPaused: false,
+    })
+  })
+
+  it('refuses a voditelj, whose rows never sell a ticket', async () => {
+    const { deps: d, created } = deps(BOOKING, OK_REQUEST, ['moreska'])
+    const res = await handleCreatePerformance(PUBLIC_BODY, d)
+
+    expect(res.status).toBe(403)
+    expect(created).toEqual([])
+  })
+
+  it('refuses a `tickets` holder a NON-public row: that is the voditelj’s', async () => {
+    const { deps: d, created } = deps(BOOKING, OK_REQUEST, ['tickets'])
+    const res = await handleCreatePerformance(GOOD_BODY, d)
+
+    expect(res.status).toBe(403)
+    expect(created).toEqual([])
+  })
+
+  it('lets somebody who holds both do either', async () => {
+    const both: Permission[] = ['tickets', 'moreska']
+    expect((await handleCreatePerformance(PUBLIC_BODY, deps(BOOKING, OK_REQUEST, both).deps)).status).toBe(200)
+    expect((await handleCreatePerformance(GOOD_BODY, deps(BOOKING, OK_REQUEST, both).deps)).status).toBe(200)
+  })
+})
+
+describe('Uredi, on a PUBLIC performance', () => {
+  const EDIT = { time: '21:30', kind: 'redovna', venue: 'zimsko-kino' }
+
+  it('lets a `tickets` holder change the hour, the house and the kind', async () => {
+    const { deps: d, updated } = deps(REDOVNA, OK_REQUEST, ['tickets'])
+    const res = await handleEditPerformance('9', EDIT, d)
+
+    expect(res.status).toBe(200)
+    expect(updated).toEqual([
+      { id: '9', patch: { time: '21:30', kind: 'redovna', venue: 'zimsko-kino' } },
+    ])
+  })
+
+  it('never writes the date: moving a public evening is its own action', async () => {
+    const { deps: d, updated } = deps(REDOVNA, OK_REQUEST, ['tickets'])
+    await handleEditPerformance('9', { ...EDIT, date: '2099-01-01' }, d)
+
+    expect(Object.keys(updated[0]!.patch)).not.toContain('date')
+  })
+
+  it('refuses a voditelj, even one who also holds `moreskant`', async () => {
+    const { deps: d, updated } = deps(REDOVNA, OK_REQUEST, ['moreska', 'moreskant'])
+    const res = await handleEditPerformance('9', EDIT, d)
+
+    expect(res.status).toBe(403)
+    expect(updated).toEqual([])
+  })
+
+  it('refuses a `tickets` holder a BOOKING: that stays the voditelj’s row', async () => {
+    const { deps: d, updated } = deps(BOOKING, OK_REQUEST, ['tickets'])
+    const res = await handleEditPerformance('7', GOOD_BODY, d)
+
+    expect(res.status).toBe(403)
+    expect(updated).toEqual([])
+  })
+
+  it('refuses a cancelled public evening, as it refuses a cancelled booking', async () => {
+    const { deps: d, updated } = deps({ ...REDOVNA, cancelled: true }, OK_REQUEST, ['tickets'])
+    const res = await handleEditPerformance('9', EDIT, d)
+
+    expect(res.status).toBe(409)
+    expect(updated).toEqual([])
+  })
+
+  it('refuses a body with no venue and writes nothing', async () => {
+    const { deps: d, updated } = deps(REDOVNA, OK_REQUEST, ['tickets'])
+    const res = await handleEditPerformance('9', { time: '21:30', kind: 'redovna' }, d)
+
+    expect(res.status).toBe(400)
+    expect(updated).toEqual([])
+  })
+})
+
+describe('handlePausePerformance', () => {
+  it('turns online sales off, and on again', async () => {
+    const off = deps(REDOVNA, OK_REQUEST, ['tickets'])
+    expect((await handlePausePerformance('9', { paused: true }, off.deps)).status).toBe(200)
+    expect(off.updated).toEqual([{ id: '9', patch: { onlineSalesPaused: true } }])
+
+    const on = deps({ ...REDOVNA, paused: true }, OK_REQUEST, ['tickets'])
+    expect((await handlePausePerformance('9', { paused: false }, on.deps)).status).toBe(200)
+    expect(on.updated).toEqual([{ id: '9', patch: { onlineSalesPaused: false } }])
+  })
+
+  it('refuses a booking: a row that sells nothing has no sale to pause', async () => {
+    const { deps: d, updated } = deps(BOOKING, OK_REQUEST, ['tickets'])
+    const res = await handlePausePerformance('7', { paused: true }, d)
+
+    expect(res.status).toBe(400)
+    expect(updated).toEqual([])
+  })
+
+  it('refuses a body that says neither true nor false', async () => {
+    const { deps: d, updated } = deps(REDOVNA, OK_REQUEST, ['tickets'])
+    expect((await handlePausePerformance('9', { paused: 'da' }, d)).status).toBe(400)
+    expect(updated).toEqual([])
+  })
+
+  it('refuses a cross-site POST', async () => {
+    const { deps: d, updated } = deps(REDOVNA, CROSS_SITE, ['tickets'])
+    expect((await handlePausePerformance('9', { paused: true }, d)).status).toBe(403)
     expect(updated).toEqual([])
   })
 })

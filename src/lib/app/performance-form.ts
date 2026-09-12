@@ -18,9 +18,13 @@
 // seam's (`getRepo().shows`), which puts them on Payload's local API so the
 // Shows hooks keep telling the roster what changed.
 
+import { can, type Permission } from '@/lib/access/permissions'
 import {
   newPerformanceRow,
+  newPublicPerformanceRow,
   parseNonPublicPerformance,
+  parsePublicPerformance,
+  parsePublicPerformanceEdit,
   performanceEditPatch,
   PerformanceValidationError,
   type NewPerformanceRow,
@@ -41,6 +45,18 @@ export const MAX_THRESHOLD = 40
 
 export interface PerformanceFormDeps {
   request: AppRequestMeta
+  /**
+   * The caller's permission set, which is what decides WHICH kind of row this
+   * request may touch (#502).
+   *
+   * The route's `requirePermission` lets either half of Izvedbe in; the split
+   * between them is a property of the ROW, not of the URL, so it is settled
+   * here: a public evening is the blagajna's (`tickets`), a booking is the
+   * voditelj's (`moreska`). It cannot be left to the collection, because the
+   * seam writes through the local API and `overrideAccess: true` means field
+   * access never runs (CLAUDE.md).
+   */
+  permissions: readonly Permission[]
   /** The row the action is about; null when the id is not a performance. */
   loadPerformance: (id: string) => Promise<PerformanceRow | null>
   /** `getRepo().shows.createPerformances` — the ONE shared writer. */
@@ -74,6 +90,11 @@ function guarded(deps: PerformanceFormDeps): PerformanceFormResult | null {
   return rejection ? refuse(rejection.status, APP_STRINGS.performance.rejected) : null
 }
 
+/** `can()` over the set the route handed down, never a re-typed string list. */
+function holds(deps: PerformanceFormDeps, permission: Permission): boolean {
+  return can({ permissions: [...deps.permissions] }, permission)
+}
+
 /**
  * The row an action is about, or the refusal that replaces it.
  *
@@ -99,13 +120,46 @@ async function loadOwned(
   return { row }
 }
 
-/** POST /api/app/performances — Dodaj izvedbu. */
+/**
+ * POST /api/app/performances — Dodaj izvedbu, both halves of it.
+ *
+ * The BODY says which kind of evening is being added, and the permission set
+ * says whether the caller may add that kind. A public row needs `tickets`
+ * (it sells seats and a capacity is attached to it); a booking needs `moreska`
+ * (nobody sells a ticket to a cruise call). Somebody who holds both may enter
+ * either, which is the ordinary case for the secretary.
+ */
 export async function handleCreatePerformance(
   body: unknown,
   deps: PerformanceFormDeps,
 ): Promise<PerformanceFormResult> {
   const rejection = guarded(deps)
   if (rejection) return rejection
+
+  if ((body as { isPublic?: unknown } | null)?.isPublic === true) {
+    if (!holds(deps, 'tickets')) {
+      return refuse(403, APP_STRINGS.performance.publicNeedsTickets)
+    }
+    const parsed = parsePublicPerformance(body)
+    if (!parsed.ok) return refuse(400, parsed.error)
+
+    let row: NewPerformanceRow
+    try {
+      row = newPublicPerformanceRow(parsed.fields)
+    } catch (err) {
+      return refuse(
+        400,
+        err instanceof PerformanceValidationError ? err.message : APP_STRINGS.performance.failed,
+      )
+    }
+
+    await deps.createPerformances([row])
+    return ok({ date: parsed.fields.dateStr })
+  }
+
+  if (!holds(deps, 'moreska')) {
+    return refuse(403, APP_STRINGS.performance.nonPublicNeedsMoreska)
+  }
 
   const parsed = parseNonPublicPerformance(body)
   if (!parsed.ok) return refuse(400, parsed.error)
@@ -148,17 +202,72 @@ export async function handleEditPerformance(
   const rejection = guarded(deps)
   if (rejection) return rejection
 
-  const found = await loadOwned(rawId, deps, { nonPublicOnly: true })
+  const found = await loadOwned(rawId, deps, { nonPublicOnly: false })
   if ('refusal' in found) return found.refusal
+
+  // A cancelled evening is a record, whichever kind it is. The reason is the
+  // same on both halves: the Shows `afterChange` hook pushes "premještena" on a
+  // changed row, and pushing that at a roster (or mailing it to buyers) who
+  // have already been told the evening is off is worse than no edit at all.
   if (found.row.cancelled) {
     return refuse(409, APP_STRINGS.performance.cancelledNotEditable)
   }
+
+  // ── The blagajna's half (#502): the hour, the house and the kind ────────
+  if (found.row.isPublic) {
+    if (!holds(deps, 'tickets')) return refuse(403, APP_STRINGS.performance.publicRow)
+
+    const parsed = parsePublicPerformanceEdit(body)
+    if (!parsed.ok) return refuse(400, parsed.error)
+
+    await deps.updatePerformance(found.row.id, parsed.patch)
+    return ok()
+  }
+
+  // ── The voditelj's half (#503): the five fields of a booking ────────────
+  if (!holds(deps, 'moreska')) return refuse(403, APP_STRINGS.performance.nonPublicNeedsMoreska)
 
   const parsed = parseNonPublicPerformance(body)
   if (!parsed.ok) return refuse(400, parsed.error)
 
   await deps.updatePerformance(found.row.id, performanceEditPatch(parsed.fields))
   return ok({ date: parsed.fields.dateStr })
+}
+
+/**
+ * POST /api/app/performances/[id]/pause — Pauziraj / Nastavi online prodaju.
+ *
+ * The pause (#366) had no route of its own: it was a checkbox on the Shows
+ * form in the Backoffice, and the only way to flip it from a phone was to open
+ * the raw collection. This is that checkbox as a named action, and it writes
+ * through the collection like every other Cecilija write so the Shows hooks
+ * still run.
+ *
+ * It stops ONLINE checkout only. A partner still sells and the door still
+ * sells, which is why the sheet says so: "pauzirano" must not read as
+ * "cancelled" to the person pressing it.
+ */
+export async function handlePausePerformance(
+  rawId: unknown,
+  body: unknown,
+  deps: PerformanceFormDeps,
+): Promise<PerformanceFormResult> {
+  const rejection = guarded(deps)
+  if (rejection) return rejection
+
+  const found = await loadOwned(rawId, deps, { nonPublicOnly: false })
+  if ('refusal' in found) return found.refusal
+
+  // A booking sells nothing, so it has no sale to pause: the collection zeroes
+  // the flag on every non-public save anyway (#409), and writing it here would
+  // be a change the hook silently undoes.
+  if (!found.row.isPublic) return refuse(400, APP_STRINGS.performance.notPublicNoSales)
+
+  const paused = (body as { paused?: unknown } | null)?.paused
+  if (typeof paused !== 'boolean') return refuse(400, APP_STRINGS.performance.failed)
+
+  await deps.updatePerformance(found.row.id, { onlineSalesPaused: paused })
+  return ok()
 }
 
 /**
