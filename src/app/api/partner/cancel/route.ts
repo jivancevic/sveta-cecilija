@@ -7,7 +7,7 @@ import { voidOrderTickets, voidSingleTicket, type TicketVoidExecutor } from '@/l
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-// POST /api/partner/storno — cancel (storno) a partner sale or a single ticket.
+// POST /api/partner/cancel — cancel (storno) a partner sale or a single ticket.
 // Body: { orderId: string, ticketId?: string }. Whole-order when ticketId is omitted.
 //
 // Local API runs overrideAccess, so this route re-derives the actor from the
@@ -90,7 +90,7 @@ export async function POST(req: NextRequest) {
       const status = err.code === 'NOT_OWNER' ? 403 : err.code === 'WINDOW_CLOSED' ? 409 : 409
       return NextResponse.json({ error: err.message, code: err.code }, { status })
     }
-    console.error('[partner/storno] unexpected error', err)
+    console.error('[partner/cancel] unexpected error', err)
     return NextResponse.json({ error: 'Could not cancel the sale' }, { status: 500 })
   }
 }

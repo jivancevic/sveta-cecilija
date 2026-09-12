@@ -2,7 +2,7 @@ import { describe, it, expect } from 'vitest'
 import { PERMISSIONS, can, hasAny, isPermission, permissionsOf, type Permission } from './permissions'
 
 describe('PERMISSIONS vocabulary', () => {
-  it('is the closed nine-word list from ADR-0023, in order', () => {
+  it('is the closed eleven-word list from ADR-0023 plus #500, in order', () => {
     expect([...PERMISSIONS]).toEqual([
       'users',
       'tickets',
@@ -12,6 +12,8 @@ describe('PERMISSIONS vocabulary', () => {
       'season_stats',
       'moreska',
       'moreskant',
+      'finance',
+      'editor',
       'dev',
     ])
   })

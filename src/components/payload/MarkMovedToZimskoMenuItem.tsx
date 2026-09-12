@@ -70,7 +70,7 @@ export function MarkMovedToZimskoMenuItem() {
     setError(null)
     setResult(null)
     try {
-      const res = await fetch(`/api/shows/${id}/move-to-zimsko`, { method: 'GET' })
+      const res = await fetch(`/api/shows/${id}/move-to-indoor`, { method: 'GET' })
       const data = await res.json()
       if (!res.ok) {
         setError(data.error || 'Could not load preview.')
@@ -88,7 +88,7 @@ export function MarkMovedToZimskoMenuItem() {
     setLoading(true)
     setError(null)
     try {
-      const res = await fetch(`/api/shows/${id}/move-to-zimsko`, { method: 'POST' })
+      const res = await fetch(`/api/shows/${id}/move-to-indoor`, { method: 'POST' })
       const data = await res.json()
       if (!res.ok) {
         setError(data.error || 'Move failed.')

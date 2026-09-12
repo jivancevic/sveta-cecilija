@@ -23,6 +23,8 @@ const PERMISSION_LABELS: Record<Permission, { en: string; hr: string }> = {
   season_stats: { en: 'Season ticket dashboard', hr: 'Sezonska ploča s prodajom' },
   moreska: { en: 'Moreška roster (voditelj)', hr: 'Postava moreške (voditelj)' },
   moreskant: { en: 'Own moreškant view', hr: 'Vlastiti moreškantski pregled' },
+  finance: { en: 'Finances (no buyers)', hr: 'Financije (bez kupaca)' },
+  editor: { en: 'Content (posts and FAQ)', hr: 'Sadržaj (objave i FAQ)' },
   dev: { en: 'Developer diagnostics', hr: 'Razvojna dijagnostika' },
 }
 
@@ -113,8 +115,9 @@ export const Users: CollectionConfig = {
       },
     ],
     // Conditional email requirement: an account held by a named person
-    // (`users`, `tickets`, `moreska` or, since #420, `moreskant`) must have an
-    // email; door, partner and season_stats accounts may be username-only. Merge incoming data over the
+    // (`users`, `tickets`, `moreska` and, since #500, `finance` or `editor`)
+    // must have an email; door, partner, season_stats and moreskant accounts
+    // may be username-only. Merge incoming data over the
     // existing doc so an update that touches only one field is judged on the
     // resulting record — and an explicit `email: null` is honoured, not masked
     // by the original value.

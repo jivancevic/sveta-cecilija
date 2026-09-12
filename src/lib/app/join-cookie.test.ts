@@ -58,8 +58,9 @@ describe('joinSecretFrom', () => {
     expect(joinSecretFrom(request(headers))).toBeNull()
   })
 
-  // `moreskant_onboarded` starts with the same word; a prefix match would read
-  // the wrong cookie and hand the status route a secret that is not one.
+  // A cookie whose name merely starts with this one's would satisfy a prefix
+  // match, which would read the wrong cookie and hand the status route a secret
+  // that is not one.
   it('does not match a cookie whose name merely starts the same', () => {
     expect(joinSecretFrom(request({ cookie: 'moreskant_join_other=nope' }))).toBeNull()
   })

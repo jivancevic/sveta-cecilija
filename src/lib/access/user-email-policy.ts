@@ -24,7 +24,13 @@
 import { hasAny, permissionsOf, type Permission, type PermissionUser } from './permissions'
 
 /** Permissions only a named individual ever holds. */
-export const EMAIL_REQUIRED_PERMISSIONS: readonly Permission[] = ['users', 'tickets', 'moreska']
+export const EMAIL_REQUIRED_PERMISSIONS: readonly Permission[] = [
+  'users',
+  'tickets',
+  'moreska',
+  'finance',
+  'editor',
+]
 
 /** True when this permission set belongs to a real person, who must have an email. */
 export function emailRequiredFor(user: PermissionUser): boolean {

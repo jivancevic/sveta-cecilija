@@ -72,7 +72,7 @@ describe('POST /api/app/onboarding/done', () => {
 
     expect(res.status).toBe(204)
     const cookie = res.headers.get('set-cookie') ?? ''
-    expect(cookie).toContain('moreskant_onboarded=1')
+    expect(cookie).toContain('cecilija_onboarded=1')
     expect(cookie).toContain('Path=/app')
     expect(cookie).toContain('HttpOnly')
     expect(cookie).toContain('SameSite=Lax')

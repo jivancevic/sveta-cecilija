@@ -1,10 +1,15 @@
 /**
  * `app.moreska.eu` is a vanity host for the staff app, not a second deployment:
- * one Coolify service, one container, one certificate set. The host is attached
- * to the prod app in Coolify purely so Traefik routes it and issues a cert; the
- * redirect itself lives here, in code, because Coolify regenerates its Traefik
- * labels whenever the domain list changes and a hand-written middleware label
- * would quietly disappear with it.
+ * one Coolify service, one container, one certificate set.
+ *
+ * **These rules are currently dormant: the host does not resolve** (#479, parked
+ * 2026-09-12 — `moreska.eu/app` is the address, and staff arrive by QR, installed
+ * icon or invitation link rather than by typing one). Switching it on is one DNS
+ * record plus one Coolify domain; `docs/agents/domains.md` has the two steps.
+ *
+ * The redirect lives here, in code, rather than in a Traefik middleware label,
+ * because Coolify regenerates its labels whenever the domain list changes and a
+ * hand-written one would quietly disappear with it.
  *
  * These rules run as next.config `redirects()`, which Next evaluates before the
  * proxy (`src/proxy.ts`). That ordering matters: a request to the vanity host

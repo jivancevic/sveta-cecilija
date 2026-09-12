@@ -3,6 +3,8 @@
 **Status:** Accepted
 **Date:** 2026-09-07
 
+> **Name note (2026-09-12, #489):** the app this ADR calls *Moreškant* is now called **Cecilija**; "moreškant" names the dancer and this roster section of it. Nothing in the model below changes. The rebrand itself is recorded in ADR-0027.
+
 ## Context
 
 The society needs a roster and notification tool for its dancers: who is coming to which performance, an alarm when an army is short, the final lineup per performance, and season statistics. It must integrate with the existing app (same login, same tickets), be trivial to "install" on a phone, and let voditelji record lineups from a photo of the paper list via the Claude app. Glossary terms are in `CONTEXT.md` under *Moreškant*.
@@ -17,7 +19,7 @@ Three existing decisions collide with it: `Members` is a login-less attribution 
 
 **Attendance and lineup are separate records.** Attendance is the dancer's answer (no answer / coming / not coming); lineup is the voditelj's record of who danced what, with a `confirmed` flag. Statistics read confirmed lineups only, so a mis-read photo or a draft never inflates a count.
 
-**Web push is the only channel.** No email, SMS or WhatsApp for roster notifications. A PWA with "Add to Home Screen" is the installation story. Automatic alarms fire once per performance at T-6h (18:00 the day before for morning performances), only while below threshold; voditelji can send manually without limit.
+**Web push is the only channel.** No email, SMS or WhatsApp for roster notifications. *(Narrowed 2026-09-12 by [ADR-0027](./0027-cecilija-one-staff-app-payload-backoffice.md): push stays the only **delivery** channel, but every notification is also kept per account in an inbox behind a bell in the header of every screen, so one that arrives on a phone that is off is still recoverable.)* A PWA with "Add to Home Screen" is the installation story. Automatic alarms fire once per performance at T-6h (18:00 the day before for morning performances), only while below threshold; voditelji can send manually without limit.
 
 **The MCP server copies the Sufler pattern.** `mcp-handler` on `/api/mcp/[transport]`, hand-written OAuth 2.1 with PKCE and a fixed client, an `/authorize` page backed by Payload login and restricted to the `moreska` permission. **The access token lives one year and there is no refresh token** (amended #438): a connection has to survive a season, and a refresh flow is a second set of rules to get wrong; revocation is deleting the token row, or removing the permission. Tools take structured text, never images: Claude reads the photo in chat and calls `set_lineup` with nicknames; the tool **matches exactly, ignoring case and diacritics, and reports every name it could not match** rather than guessing at the nearest one, and writes an unconfirmed lineup. Bulk performance creation is also a tool.
 

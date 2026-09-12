@@ -23,16 +23,11 @@ Run `gh issue view <number> --comments`.
 
 ## Wayfinding operations
 
-How the `wayfinder` skill's map, tickets, claims, blocking and frontier are expressed on this tracker (first map: #471, Cecilija).
+How the `wayfinder` skill's map, tickets, claims and blocking map onto GitHub (used by the Cecilija map #471):
 
-- **Map**: one issue labelled `wayfinder:map`; its body is the index (Destination, Notes, Decisions so far, Not yet specified, Out of scope). Edit it with `gh issue edit <map> --body-file <file>` after re-fetching the body with `gh issue view <map> --json body -q .body`: several sessions edit the same map concurrently, so never write from a copy fetched earlier in the session.
-- **Ticket**: a **native sub-issue** of the map, labelled `wayfinder:research | prototype | grilling | task`, body starting `Part of the <map name> #<map>.` then `## Question`. Attach it with the database id, not the number:
-  ```sh
-  gh api repos/jivancevic/sveta-cecilija/issues/<n> --jq .id          # database id
-  gh api -X POST repos/jivancevic/sveta-cecilija/issues/<map>/sub_issues -F sub_issue_id=<id>
-  gh api repos/jivancevic/sveta-cecilija/issues/<map>/sub_issues --jq 'map(.number)'   # list children
-  ```
-- **Claim**: the assignee. `gh issue edit <n> --add-assignee jivancevic` before any work; an open, unassigned ticket is unclaimed.
-- **Blocking**: GitHub exposes no dependency relationship through `gh`, so it is a body convention: the first paragraph names what blocks the ticket (`Blocked by the navigation prototype.`). The **frontier** is every open, unassigned sub-issue whose named blockers are closed; read the bodies, there is no query for it.
-- **Resolution**: a comment holding the answer, `gh issue close <n> --reason completed`, then one line under the map's Decisions so far, linking the ticket by its title.
+- **Map** = one issue labelled `wayfinder:map`. **Tickets** = its native **sub-issues**, each labelled `wayfinder:research | prototype | grilling | task`. Attach with GraphQL: `addSubIssue(input:{issueId:<map node id>, subIssueId:<ticket node id>})`; list with `issue(number:N) { subIssues(first:40) { nodes { number state } } }`. Node ids come from `issue(number:N) { id }`.
+- **Blocking** is GitHub's native dependency: `addBlockedBy(input:{issueId:<blocked>, blockingIssueId:<blocker>})`, read back with `issue(number:N) { blockedBy(first:20) { nodes { number state } } }`. It renders in the issue sidebar, so the frontier is visible without opening the map. Write "Blocked by X" in the body too, for readers of the plain issue.
+- **Claim** = assign the ticket to `jivancevic` before any work; an open, unassigned sub-issue is unclaimed. **Frontier** = open sub-issues with no open `blockedBy` and no assignee.
+- **Resolution** = a comment on the ticket, then `gh issue close --reason completed`, then one line under *Decisions so far* in the map body (`gh issue edit <map> --body-file`; fetch the body first, never retype it, and never write from a copy fetched earlier in the session: several sessions edit the same map concurrently).
+- The GraphQL endpoint drops connections often (`Post ... unexpected EOF`); wrap each mutation in a short retry loop and verify with the read query afterwards. `gh issue create` can fail the same way: check `gh issue list` before recreating.
 - Long bodies and comments go through `--body-file` (a worktree session's guard refuses heredocs that mention git/gh).

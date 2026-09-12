@@ -1,6 +1,6 @@
 // Every word `/app` says, in one place (#421).
 //
-// The Moreškant app is Croatian-only by decision (ADR-0024, story 33): it is a
+// Cecilija is Croatian-only by decision (ADR-0024, story 33): it is a
 // tool for the society's own dancers, not a second face of the ticket shop, so
 // it carries no i18n layer, no locale cookie and no `src/messages` dictionary.
 // One frozen map, imported by the pages and by the route handlers that answer
@@ -16,8 +16,8 @@ import { DANCE_ROLE_LABELS } from '@/lib/moreskant-profile'
 
 export const APP_STRINGS = {
   /** The product name: the manifest, the header and the browser tab all use it. */
-  name: 'Moreškant',
-  tagline: 'Raspored izvedbi',
+  name: 'Cecilija',
+  tagline: 'HGD Sveta Cecilija',
 
   header: {
     logout: 'Odjava',
@@ -59,7 +59,7 @@ export const APP_STRINGS = {
     /** ADR-0022: a login several people hold is nobody in particular. */
     sharedAccount: 'Ovu prijavu koristi više osoba, pa se ne može otvoriti poveznicom.',
     notAppAccount:
-      'Ta prijava nije za aplikaciju Moreškant. Lozinku za nju postavi u administraciji.',
+      'Ta prijava nije za Ceciliju. Lozinku za nju postavi u administraciji.',
     unexpected: 'Prijava trenutno nije moguća. Pokušaj ponovno.',
     retry: 'Zatraži novu poveznicu',
     toLogin: 'Prijava lozinkom',
@@ -397,7 +397,7 @@ export const APP_STRINGS = {
     failed: 'Pozivnica nije izrađena. Pokušaj ponovno.',
     /** The message itself, as it lands in the dancer's inbox. */
     message: (greeting: string, link: string) =>
-      `${greeting ? `Bok ${greeting}, ` : 'Bok, '}ovo je tvoja pozivnica za aplikaciju Moreškant, gdje se vidi raspored izvedbi i javlja dolazak: ${link} Otvori poveznicu i odmah si prijavljen, bez lozinke. Vrijedi 7 dana.`,
+      `${greeting ? `Bok ${greeting}, ` : 'Bok, '}ovo je tvoja pozivnica za Ceciliju, gdje se vidi raspored izvedbi i javlja dolazak: ${link} Otvori poveznicu i odmah si prijavljen, bez lozinke. Vrijedi 7 dana.`,
   },
 
   /**
@@ -575,7 +575,7 @@ export const APP_STRINGS = {
      * disagree. Only the frame around them is written here.
      */
     install: {
-      title: 'Dodaj Moreškanta na početni zaslon',
+      title: 'Dodaj Ceciliju na početni zaslon',
       body: 'Otvara se kao aplikacija, bez adresne trake, i može ti slati obavijesti.',
       /** The quiet way to the full-screen guide, which is also the QR target. */
       guide: 'Detaljne upute',
@@ -592,7 +592,7 @@ export const APP_STRINGS = {
        * postava deliberately rings nobody, so a sample "postava je potvrđena"
        * would promise a push that does not exist.
        */
-      sampleTitle: 'Moreškant',
+      sampleTitle: 'Cecilija',
       sampleBody: 'Četvrtak u 21:00, Ljetno kino. Još nisi odgovorio dolaziš li.',
       sampleWhen: 'prije 2 min',
       benefitLineup: 'Podsjetnik za odgovor',
@@ -646,12 +646,12 @@ export const APP_STRINGS = {
    * most of them will actually see.
    */
   install: {
-    title: 'Dodaj Moreškant na ekran',
+    title: 'Dodaj Ceciliju na ekran',
     why: 'S ikonom na ekranu dobivaš obavijesti o izvedbama i raspored u jednom dodiru.',
     snooze: 'Kasnije',
     /** The full-screen guide at `/app/instalacija`, also the QR target. */
     guideTitle: 'Instalacija',
-    guideIntro: 'Tri koraka i Moreškant je na ekranu kao svaka druga aplikacija.',
+    guideIntro: 'Tri koraka i Cecilija je na ekranu kao svaka druga aplikacija.',
     guideDone: 'Kad završiš, otvori raspored.',
     guideOpenApp: 'Otvori raspored',
     /** A voditelj showing somebody else's phone needs the other instructions. */
@@ -663,7 +663,7 @@ export const APP_STRINGS = {
     iosSteps: [
       'Dodirni ikonu dijeljenja, kvadratić sa strelicom prema gore. Na iPhoneu je u donjoj traci, na iPadu gore desno.',
       'Pomakni popis prema dolje i odaberi "Dodaj na početni zaslon", na engleskom "Add to Home Screen".',
-      'Potvrdi s "Dodaj" i ikona Moreškant je na ekranu.',
+      'Potvrdi s "Dodaj" i ikona Cecilija je na ekranu.',
     ],
     androidSteps: [
       'Dodirni tri točkice gore desno.',
@@ -678,7 +678,7 @@ export const APP_STRINGS = {
     action: 'Instaliraj',
     acting: 'Instaliram...',
     failed: 'Instalacija nije uspjela. Probaj kroz izbornik preglednika.',
-    installedTitle: 'Moreškant je instaliran.',
+    installedTitle: 'Cecilija je instalirana.',
 
     /**
      * The webview dead end, and the reason this rewrite exists (#455): a link
@@ -689,7 +689,7 @@ export const APP_STRINGS = {
      */
     inappTitle: 'Otvori u pregledniku',
     inappBody:
-      'Otvorio si Moreškant unutar druge aplikacije, a odatle se ikona ne može dodati na ekran.',
+      'Otvorio si Ceciliju unutar druge aplikacije, a odatle se ikona ne može dodati na ekran.',
     inappIos: 'Dodirni izbornik ove aplikacije, tri točkice ili strelicu, pa "Otvori u Safariju".',
     inappAndroid: 'Dodirni tri točkice pa "Otvori u pregledniku" ili "Otvori u Chromeu".',
     inappCopy: 'Kopiraj link',
@@ -891,7 +891,7 @@ export const APP_STRINGS = {
     deny: 'Odbij',
     working: 'Povezivanje...',
     /** No session at all: the caller can fix this one themselves. */
-    signInFirst: 'Prijavi se u Moreškant pa pokušaj ponovno.',
+    signInFirst: 'Prijavi se u Ceciliju pa pokušaj ponovno.',
     /** A dancer, or anyone else without `moreska` (story 58). */
     deniedTitle: 'Nemate pristup',
     deniedBody: 'Claude se može povezati samo s računom voditelja.',

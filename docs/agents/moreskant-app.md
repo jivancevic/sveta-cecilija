@@ -1,6 +1,100 @@
-# The Moreškant app (`/app`)
+# Cecilija (`/app`)
+
+**The app is called Cecilija** (renamed from *Moreškant* in #489; rule and
+declension in `CONTEXT.md` → *Product surfaces*). "Moreškant" now names only the
+dancer and the roster section of Cecilija, which is what this file documents.
 
 The dancer-facing surface of the roster module ([ADR-0023](../adr/0023-permissions-replace-roles-app-surface.md), [ADR-0024](../adr/0024-moreskant-roster-domain.md); phase 3 = #419). Croatian only, mobile first, no ticketing. Glossary in `CONTEXT.md` → *Moreškant*.
+
+## Cecilija route map (#473)
+
+Decided 2026-09-12 under the Cecilija map (#471), after the navigation
+decision (#472). This is the **target** table: every screen keeps its Croatian
+label and gets an English path segment (the #481 rule), renamed **screen by
+screen** as each build ticket lands, never in one sweep. Until a row is built,
+the "Today" path is still the live one.
+
+### Screens and the permission that unlocks each
+
+Rank is the bar order from #472: the first four screens a person's permissions
+unlock are tabs, the rest live under Više, and Izvedbe jumps to the front for a
+`moreskant` holder.
+
+| Rank | Screen (label) | Route | Unlocked by | Today | Old path |
+|---|---|---|---|---|---|
+| | landing | `/app` | any screen | `/app` is the Izvedbe list | 307 to the person's first tab |
+| 1 | Narudžbe | `/app/orders`, `/app/orders/[id]` | `tickets` | `/admin/collections/orders` | none, the Backoffice keeps its list |
+| 2 | Izvedbe (one screen, content by `can()`) | `/app/performances`, `/app/performances/[id]` | `tickets`, `moreska`, `moreskant` | `/app`, `/app/izvedba/[id]` | 308 (push messages carry `/app/izvedba/<id>`) |
+| 2.5 | Članovi (dancer profiles, invitations, join code; absorbs Pozivnice, added by #476) | `/app/members` | `moreska` | `/admin/collections/members`, `/app/pozivnice` | 308 from `/app/pozivnice` |
+| 3 | Ljestvica (own season + roster ranking; voditelj sees the full table) | `/app/leaderboard?season=2026&part=mine\|all` | `moreskant`, `moreska` | `/app/moje?sezona=&dio=`, `/app/statistika` | 308 from both |
+| 4 | Skener (camera, code entry, door list) | `/app/scan` | `door` | `/admin/scan` | 308; the ticket QR stays `/scan/[token]`, whose staff buttons point at `/app/scan` |
+| 5 | Prodaja | `/app/sell` | `partner` | partner view in `/admin` | none |
+| 6 | Obračun | `/app/statement` | `partner` | partner view in `/admin` | none |
+| 7 | Upiti | `/app/inquiries` | `tickets` | `/admin/collections/contact-submissions` | none |
+| 8 | Gratis (comp tickets; promo codes stay in the Backoffice for v1) | `/app/comp` | `tickets` | comp menu item on an order | none |
+| 9 | Korisnici | `/app/users`, `/app/users/[id]` | `users` | `/admin/collections/users` | none |
+| 10 | Statistika (counts only; the single-show drill-down folds into `/app/performances/[id]`) | `/app/stats?season=2026` | `tickets`, `season_stats`, `finance` | `/admin/stats`, `/admin/stats/[id]` | 308 from both |
+| 11 | Financije (money without buyers, added by #476) | `/app/finance` | `finance` | money band on the Backoffice dashboard | none |
+| last | Više (a list, always the last tab) | `/app/more` | any screen | `/app/vise` | 308 |
+
+Rows under Više, after the overflow screens:
+
+| Row | Route | Unlocked by | Today | Old path |
+|---|---|---|---|---|
+| Kalendar | `/app/calendar` | `moreskant`, `moreska` | a row in Više | new |
+| Pozivnice | folds into Članovi (`/app/members`, #476) | `moreska` | `/app/pozivnice` | 308 to `/app/members` |
+| Moj račun (password, member link, push on/off) | `/app/account` | any screen | `/app/set-password`, `/app/povezi` | 308 from both |
+| Backoffice (link to `/admin`) | `/admin` | `dev` only | a row for every voditelj | the general link disappears |
+| Odjava | `POST /api/app/logout` | any screen | same | unchanged |
+
+Screens that are not rows: **Obavijesti** is a bell in the header of every
+screen with the unread count, opening the inbox at `/app/notifications` (see
+the inbox ticket under the map); **Dobrodošlica** at `/app/welcome` (was
+`/app/dobrodosli`, 308) is shown once per device and only to a `moreskant`
+holder, everyone else lands straight on their first tab.
+
+Public pages, no session:
+
+| Page | Route | Today | Old path |
+|---|---|---|---|
+| Instalacija (the rehearsal QR target) | `/app/install` | `/app/instalacija` | 308 **kept permanently**: the QR may hang on a wall |
+| sign-in by link (invitation, new password) | `/app/session?token=` | `/app/prijava?token=` | 308 **kept permanently**: the link is in SMS and mail |
+| `/app/login`, `/app/forgot`, `/app/set-password`, `/app/authorize`, `/app/join/[code]` | unchanged | | |
+
+Every other 308 follows the #481 rule: one release, dropped after the season.
+
+### The access rule
+
+**A signed-in account is in when its permission set unlocks at least one
+screen.** The permission → screen table above lives in one module
+(`src/lib/app/screens.ts`, to be written by the shell ticket) and the bar, the
+sidebar, the active-tab highlighter and every page's gate read it; nothing
+re-types it. `decideAppAccess` generalises from `voditelj | moreskant | denied`
+to `{ kind: 'ok', screens, self, partnerId } | { kind: 'denied' }`:
+
+- `moreskant` unlocks nothing unless the linked Member is an active moreškant
+  (today's "access follows the roster" rule, unchanged).
+- `partner` unlocks nothing without a Partner link.
+- `refunds` and `dev` unlock no screen on their own: a refund is an action
+  inside an order, `dev` is the diagnostics strip and the Backoffice link.
+- "Is there a dancer here" stays a separate question (`self`), answered by the
+  linked Member exactly as now.
+
+A signed-in account that unlocks no screen sees the "Nemate pristup" page:
+"Tvoj račun još nema pristup nijednom dijelu Cecilije. Javi se tajnici ili
+voditelju." plus Odjava, and a Backoffice link **only** for a `dev` holder. An
+account that unlocks screens but types a route it does not unlock sees the same
+panel with a link back to its landing screen: never a silent redirect (hides a
+stale bookmark) and never a 404 (lies). No `/app` page links to `/admin` for
+anyone but `dev`: the denied page, Više, the consent screen and the staff
+buttons on `/scan/[token]` all lose it.
+
+### Header
+
+Every screen carries a thin header: the screen's title on the left, the
+notification bell with the unread count on the right, on the phone and on the
+laptop alike. The count is per account, not per device, so it agrees across a
+person's devices.
 
 ## What ships in phase 3 (#420 → #424)
 
@@ -78,7 +172,17 @@ Access follows the **roster, not the login table**: unticking `active` or `isMor
 
 ## PWA
 
-`public/manifest.webmanifest`: name and short name "Moreškant", `display: standalone`, `start_url` and `scope` `/app`, stone background and gold theme taken from the `.t-stone` tokens, 192 and 512 px PNG icons derived from the Cecilija logo (the webp rule in `assets.md` covers photos in `public/`; manifest icons are PNG by spec). Linked from the `/app` layout only, so no public page advertises it.
+`public/manifest.webmanifest`: name and short name "Cecilija", `display: standalone`, `start_url` and `scope` `/app`, stone background and gold theme taken from the `.t-stone` tokens, 192 and 512 px PNG icons plus a 512 px maskable one (the webp rule in `assets.md` covers photos in `public/`; manifest icons are PNG by spec). Linked from the `/app` layout only, so no public page advertises it.
+
+The icons are **generated, not drawn**: `node scripts/generate-app-icons.mjs` builds `cecilija-icon-192.png`, `cecilija-icon-512.png`, `cecilija-icon-maskable-512.png` and the root `apple-touch-icon.png` from `assets/images/cecilija-logo.png` (ImageMagick, the same local tool `assets.md` assumes for `cwebp`). The maskable one carries a smaller crest because Android crops to the central 80% circle, and it drops the gold hairline the other three have. A logo change is one command, never a hunt through `public/`.
+
+**The icon an iPhone installs is not the manifest's.** iOS reads the
+`apple-touch-icon` link, which Next emits from the nearest segment's
+`apple-icon.png`, so `/app` carries its own at `src/app/app/apple-icon.png` and
+the public site keeps the root one. Editing the manifest alone would leave the
+society's website icon on the dancer's home screen.
+
+**An iPhone freezes the name and the icon at install time.** Android and Chrome pick up a renamed manifest on their own; an installed iOS app does not, so the two phones that installed "Moreškant" have to delete and re-add it. That is the whole user cost of the rebrand (#489).
 
 ### The status bar is the app's to clear (#482)
 
@@ -600,7 +704,7 @@ the next section.
 
 ### The service worker lives at the ROOT, and that is load-bearing
 
-`public/moreskant-sw.js`, registered with `scope: '/app'`. A worker's default
+`public/cecilija-sw.js`, registered with `scope: '/app'`. A worker's default
 maximum scope is its own directory, so a script under `public/app/` could only
 claim `/app/` — and `/app/` does **not** cover `/app` itself, which is the page
 the banner lives on: `navigator.serviceWorker.ready` there waits forever. Found
@@ -608,6 +712,17 @@ in a real Chrome, not in a test. From the root the allowed maximum is `/`, so
 `/app` is granted with no `Service-Worker-Allowed` header.
 
 The worker handles `push`, `notificationclick` and `pushsubscriptionchange`.
+
+**Renaming the worker file needs a migration, and there is one** (#489). A
+device holding the old `moreskant-sw.js` registration holds one whose script is
+now a 404: nothing tells that device, and its push simply stops. So
+`migrateLegacyServiceWorker()` in `push-client.ts` runs on every `/app` load
+(mounted by `ServiceWorkerMigration` in the layout): it unregisters a
+registration whose script ends in `moreskant-sw.js`, registers the new one, and
+re-subscribes plus re-POSTs only if that device was actually subscribed.
+Unregister comes FIRST, because unregistering drops the push subscription with
+it. It is a migration, not a feature: delete it once the roster's devices have
+all opened the app after the rebrand.
 **There is no fetch handler and no cache**, deliberately: phase 3's reason still
 holds (`/app` is server-rendered from data that changes hour by hour, so a cache
 could only turn app bugs into caching bugs). A click opens
@@ -1290,7 +1405,7 @@ account, as two things that back each other up:
 
 1. **The cookie, set by the server.** `POST /api/app/onboarding/done`
    (`src/app/api/app/onboarding/done/route.ts`) answers 204 with
-   `Set-Cookie: moreskant_onboarded=1; Path=/app; HttpOnly; SameSite=Lax; Max-Age=31536000`
+   `Set-Cookie: cecilija_onboarded=1; Path=/app; HttpOnly; SameSite=Lax; Max-Age=31536000`
    (plus `Secure` when the request arrived over https). A **one-year** cookie
    has to come from a header: Safari's ITP caps a `document.cookie` write at
    seven days, so a browser-written one would quietly become "next week" and
@@ -1298,7 +1413,7 @@ account, as two things that back each other up:
    cookie and nothing else, and still carries the full `/app` gate — the
    cross-site check (`rejectAppRequest`) first, then
    `requirePermission(['moreskant', 'moreska'])`.
-2. **`localStorage['moreskant.onboarding.done']`, the rescue.** The client
+2. **`localStorage['cecilija.onboarding.done']`, the rescue.** The client
    writes it when the walkthrough ends and reads it **on mount** of
    `/app/dobrodosli`: a device that has seen the walkthrough but lost its cookie
    (expired, cleared with the site data, a private window) re-POSTs for a new

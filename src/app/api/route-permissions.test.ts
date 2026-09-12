@@ -38,7 +38,8 @@ import { POST as compIssuePost } from './comp/issue/route'
 import { GET as compMembersGet } from './comp/members/route'
 import { POST as scanPost } from './scan/[token]/route'
 import { GET as partnerSalesGet } from './partner/sales/route'
-import { POST as stornoPost } from './partner/storno/route'
+import { POST as stornoPost } from './partner/cancel/route'
+import { GET as reconciliationGet } from './partner/reconciliation/route'
 
 const BUNDLES = {
   superadmin: [
@@ -50,6 +51,8 @@ const BUNDLES = {
     'season_stats',
     'moreska',
     'moreskant',
+    'finance',
+    'editor',
     'dev',
   ],
   admin: ['tickets', 'refunds', 'door'],
@@ -211,10 +214,10 @@ describe('partner class — GET /api/partner/sales', () => {
   })
 })
 
-describe('composed class — POST /api/partner/storno (tickets or partner)', () => {
+describe('composed class — POST /api/partner/cancel (tickets or partner)', () => {
   it('401s without a session', async () => {
     signIn(null)
-    expect((await stornoPost(post('/api/partner/storno', { orderId: '1' }))).status).toBe(401)
+    expect((await stornoPost(post('/api/partner/cancel', { orderId: '1' }))).status).toBe(401)
   })
 
   it.each([
@@ -223,12 +226,12 @@ describe('composed class — POST /api/partner/storno (tickets or partner)', () 
     ['empty set', []],
   ])('403s for %s', async (_label, permissions) => {
     signIn(permissions)
-    expect((await stornoPost(post('/api/partner/storno', { orderId: '1' }))).status).toBe(403)
+    expect((await stornoPost(post('/api/partner/cancel', { orderId: '1' }))).status).toBe(403)
   })
 
   it('403s a partner with no link before touching the order', async () => {
     signIn(BUNDLES.partner)
-    const res = await stornoPost(post('/api/partner/storno', { orderId: '1' }))
+    const res = await stornoPost(post('/api/partner/cancel', { orderId: '1' }))
     expect(res.status).toBe(403)
     await expect(res.json()).resolves.toEqual({ error: 'Account not linked to a partner' })
     expect(findByID).not.toHaveBeenCalled()
@@ -240,9 +243,49 @@ describe('composed class — POST /api/partner/storno (tickets or partner)', () 
     ['a linked partner', BUNDLES.partner],
   ])('lets %s through the gate to the order lookup', async (_label, permissions) => {
     signIn(permissions, { partner: 7 })
-    const res = await stornoPost(post('/api/partner/storno', { orderId: '1' }))
+    const res = await stornoPost(post('/api/partner/cancel', { orderId: '1' }))
     expect(res.status).not.toBe(401)
     expect(res.status).not.toBe(403)
     expect(findByID).toHaveBeenCalled()
+  })
+})
+
+// The partner statement is money, so since #500 it answers to `finance` and to
+// a partner reading its own — never to `tickets` on its own.
+describe('finance class — GET /api/partner/reconciliation', () => {
+  const url = '/api/partner/reconciliation?year=2026&month=8&format=json'
+
+  it('401s without a session', async () => {
+    signIn(null)
+    expect((await reconciliationGet(get(url))).status).toBe(401)
+  })
+
+  it.each([
+    ['tickets without finance', ['tickets']],
+    ['tehnika', BUNDLES.tehnika],
+    ['member', BUNDLES.member],
+    ['editor', ['editor']],
+    ['empty set', []],
+  ])('403s for %s', async (_label, permissions) => {
+    signIn(permissions)
+    expect((await reconciliationGet(get(url))).status).toBe(403)
+  })
+
+  it.each([
+    ['finance', ['finance']],
+    ['the secretary, who holds both', ['tickets', 'finance']],
+    ['superadmin', BUNDLES.superadmin],
+  ])('lets %s through the gate', async (_label, permissions) => {
+    signIn(permissions)
+    const res = await reconciliationGet(get(`${url}&partnerId=7`))
+    expect(res.status).not.toBe(401)
+    expect(res.status).not.toBe(403)
+  })
+
+  it('lets a partner through for its own statement', async () => {
+    signIn(BUNDLES.partner, { partner: 7 })
+    const res = await reconciliationGet(get(url))
+    expect(res.status).not.toBe(401)
+    expect(res.status).not.toBe(403)
   })
 })

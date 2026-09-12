@@ -41,7 +41,18 @@ export async function AdminStatsView(props: AdminStatsViewProps = {}) {
   // The PII columns (buyer name, email) are backoffice-only; a door account
   // reaching this page sees the anonymised view (ADR-0023).
   const adminView = can(user as PermissionUser, 'tickets')
+  // Revenue is its own read since #500: `finance`, never `tickets`. The two are
+  // deliberately independent — Tatjana holds both, Velebit only `finance`.
+  const showMoney = can(user as PermissionUser, 'finance')
   const cookieLang = (await cookies()).get(ADMIN_LANG_COOKIE)?.value
   const lang = resolveAdminLang({ cookieLang, user: user as PermissionUser })
-  return <AdminShowStatsBody header={header} orders={orders} adminView={adminView} lang={lang} />
+  return (
+    <AdminShowStatsBody
+      header={header}
+      orders={orders}
+      adminView={adminView}
+      showMoney={showMoney}
+      lang={lang}
+    />
+  )
 }

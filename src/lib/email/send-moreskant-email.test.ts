@@ -69,7 +69,7 @@ describe('sendMoreskantEmail', () => {
     const body = bodyOf(fetch)
     expect(body.sender).toEqual({ email: 'info@moreska.eu', name: 'HGD Sveta Cecilija' })
     expect(body.to).toEqual([{ email: 'cici@example.com', name: 'Cici' }])
-    expect(body.subject).toBe('Pozivnica za Moreškant')
+    expect(body.subject).toBe('Pozivnica za Ceciliju')
     expect(body.htmlContent).toContain(link)
   })
 

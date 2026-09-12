@@ -67,4 +67,21 @@ describe('assertUserEmailPolicy', () => {
   it('names the offending permissions in the message', () => {
     expect(() => assertUserEmailPolicy({ permissions: ['tickets', 'door'] })).toThrow(/tickets/)
   })
+
+  // #500: both new permissions belong to a named person, never a shared login.
+  it('requires an email for a finance holder', () => {
+    expect(() => assertUserEmailPolicy({ permissions: ['finance'], email: null })).toThrow(
+      /finance/,
+    )
+  })
+
+  it('requires an email for an editor', () => {
+    expect(() => assertUserEmailPolicy({ permissions: ['editor'] })).toThrow(/editor/)
+  })
+
+  it('accepts a finance holder with an email', () => {
+    expect(() =>
+      assertUserEmailPolicy({ permissions: ['finance', 'door'], email: 'vele@moreska.eu' }),
+    ).not.toThrow()
+  })
 })

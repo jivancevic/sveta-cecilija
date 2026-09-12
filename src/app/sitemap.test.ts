@@ -37,7 +37,7 @@ describe('sitemap', () => {
     expect(urls).toContain(`${SITE_URL}/blog/klapa-na-skverina`)
   })
 
-  // #421: the Moreškant app is an internal tool. It must never be advertised in
+  // #421: Cecilija is an internal tool. It must never be advertised in
   // the sitemap, whatever else the sitemap grows.
   it('lists no /app URL', async () => {
     vi.mocked(getAllPublishedSlugs).mockResolvedValue([
