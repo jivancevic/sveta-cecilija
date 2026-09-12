@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { inviteActionVisible } from './moreskant-admin-actions'
+import { inviteActionVisible, inviteAllActionVisible } from './moreskant-admin-actions'
 
 const voditelj = ['moreska']
 const ticketAdmin = ['tickets', 'refunds', 'door']
@@ -40,6 +40,53 @@ describe('inviteActionVisible', () => {
     for (const permissions of [undefined, null, 'moreska', {}]) {
       expect(
         inviteActionVisible({ collectionSlug: 'members', id: 12, isMoreskant: true, permissions }),
+      ).toBe(true)
+    }
+  })
+})
+
+describe('inviteAllActionVisible', () => {
+  const voditeljDocs = [{ id: 1, name: 'Ivan', isMoreskant: true }]
+  // What a `tickets`-only account receives: the moreškant fields are stripped
+  // by field access, so the key is absent rather than false.
+  const backofficeDocs = [{ id: 1, name: 'Ivan' }]
+
+  it('renders on the Members list for a voditelj', () => {
+    expect(
+      inviteAllActionVisible({
+        collectionSlug: 'members',
+        docs: voditeljDocs,
+        permissions: voditelj,
+      }),
+    ).toBe(true)
+  })
+
+  it.each([
+    ['another collection', { collectionSlug: 'shows', docs: voditeljDocs }],
+    ['rows stripped of the moreškant fields', { collectionSlug: 'members', docs: backofficeDocs }],
+    ['an empty list, which has nobody to invite', { collectionSlug: 'members', docs: [] }],
+    ['no rows at all', { collectionSlug: 'members', docs: undefined }],
+    [
+      'a viewer known to lack moreska',
+      { collectionSlug: 'members', docs: voditeljDocs, permissions: ticketAdmin },
+    ],
+  ])('stays hidden for %s', (_label, input) => {
+    expect(inviteAllActionVisible(input)).toBe(false)
+  })
+
+  it('is satisfied by a single row carrying the flag, false included', () => {
+    expect(
+      inviteAllActionVisible({
+        collectionSlug: 'members',
+        docs: [{ id: 1 }, { id: 2, isMoreskant: false }],
+      }),
+    ).toBe(true)
+  })
+
+  it('treats an unreadable permission set as unknown, not as denied', () => {
+    for (const permissions of [undefined, null, 'moreska', {}]) {
+      expect(
+        inviteAllActionVisible({ collectionSlug: 'members', docs: voditeljDocs, permissions }),
       ).toBe(true)
     }
   })

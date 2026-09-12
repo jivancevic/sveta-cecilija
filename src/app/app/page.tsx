@@ -191,6 +191,19 @@ export default async function MoreskantHomePage() {
             </div>
           )}
 
+          {/* The missing half of the hero, for a voditelj who dances (#462).
+              Their two buttons are absent because `Users.member` is empty, and
+              the field is locked to a `users` holder, so until now the only
+              repair was somebody else editing the row by hand. The link goes
+              where those buttons would be, and stays a quiet line: a voditelj
+              who does NOT dance is in a valid state (#419, story 15) and must
+              not read this as something they are late on. */}
+          {!me && voditelj && (
+            <Link className="app__hero-link app__hero-link--link-self" href="/app/povezi">
+              {APP_STRINGS.linkSelf.action} ›
+            </Link>
+          )}
+
           <Link className="app__hero-link" href={`/app/izvedba/${next.id}`}>
             {APP_STRINGS.home.detailLink}
           </Link>

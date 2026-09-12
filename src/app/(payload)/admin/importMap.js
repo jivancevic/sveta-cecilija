@@ -14,6 +14,7 @@ import { AdminDashboardView as AdminDashboardView_dashboard } from '@/components
 import { AdminScanView as AdminScanView_scan } from '@/components/payload/AdminScanView'
 import { AccountLogout as AccountLogout_account } from '@/components/payload/AccountLogout'
 import { InviteMoreskantMenuItem as InviteMoreskantMenuItem_invite } from '@/components/payload/InviteMoreskantMenuItem'
+import { InviteAllMoreskantiMenuItem as InviteAllMoreskantiMenuItem_invite_all } from '@/components/payload/InviteAllMoreskantiMenuItem'
 
 /** @type import('payload').ImportMap */
 export const importMap = {
@@ -33,4 +34,5 @@ export const importMap = {
   "@/components/payload/AdminScanView#AdminScanView": AdminScanView_scan,
   "@/components/payload/AccountLogout#AccountLogout": AccountLogout_account,
   "@/components/payload/InviteMoreskantMenuItem#InviteMoreskantMenuItem": InviteMoreskantMenuItem_invite,
+  "@/components/payload/InviteAllMoreskantiMenuItem#InviteAllMoreskantiMenuItem": InviteAllMoreskantiMenuItem_invite_all,
 }

@@ -29,6 +29,16 @@ export interface AppViewer {
   /** Null when there is no session at all: the caller redirects to /app/login. */
   signedIn: boolean
   access: AppAccess
+  /**
+   * The RAW `Users.member` link, whether or not it resolves to a usable dancer.
+   *
+   * The decision deliberately collapses "no link" and "a link to a retired or
+   * un-flagged Member" into the same `self: null` (#421), which is right for
+   * every screen that asks "is there a dancer here". `/app/povezi` is the one
+   * that asks the other question — may this account still be linked at all
+   * (#462) — and without this it would offer a list whose every tap 409s.
+   */
+  memberLinkId: string | null
 }
 
 /** Payload doc → the projection `/app` renders. Emails are deliberately absent. */
@@ -50,10 +60,11 @@ export function toAppMember(doc: Record<string, unknown> | null | undefined): Ap
 export async function resolveAppViewer(): Promise<AppViewer> {
   const payload = await getPayload({ config })
   const { user } = await payload.auth({ headers: await headers() })
-  if (!user) return { signedIn: false, access: { kind: 'denied' } }
+  if (!user) return { signedIn: false, access: { kind: 'denied' }, memberLinkId: null }
 
   // Re-read the link and the Member row itself: see the header note.
   let memberDoc: Record<string, unknown> | null = null
+  let memberLinkId: string | null = null
   try {
     const account = await payload.findByID({
       collection: 'users',
@@ -62,6 +73,7 @@ export async function resolveAppViewer(): Promise<AppViewer> {
       overrideAccess: true,
     })
     const memberId = relationId((account as Record<string, unknown> | null)?.member)
+    memberLinkId = memberId == null ? null : String(memberId)
     if (memberId != null) {
       memberDoc = (await payload.findByID({
         collection: 'members',
@@ -79,5 +91,6 @@ export async function resolveAppViewer(): Promise<AppViewer> {
   return {
     signedIn: true,
     access: decideAppAccess(user as { permissions?: unknown }, toAppMember(memberDoc)),
+    memberLinkId,
   }
 }

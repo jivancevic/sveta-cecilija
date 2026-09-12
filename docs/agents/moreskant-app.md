@@ -57,7 +57,7 @@ The identifier field takes an **email or a username** (ADR-0011 hybrid login); w
 | holds `moreskant`, Member exists, `active`, `isMoreskant` | `moreskant` |
 | anything else | `denied` |
 
-Access follows the **roster, not the login table**: unticking `active` or `isMoreskant` locks a dancer out on the next request without deleting anything (#419, story 16). A voditelj with no Member link is valid (story 15); a `moreskant` with a missing or stale link is denied (story 38).
+Access follows the **roster, not the login table**: unticking `active` or `isMoreskant` locks a dancer out on the next request without deleting anything (#419, story 16). A voditelj with no Member link is valid (story 15); a `moreskant` with a missing or stale link is denied (story 38). A voditelj who *does* dance fills the link in themselves through `/app/povezi` (#462, below) — the field is locked to `users` and used to need an administrator.
 
 `src/lib/app/viewer.ts` is the IO half. It does the two things the pure decision cannot:
 
@@ -342,6 +342,78 @@ Browser-verified once, and worth knowing when reading a 200 in the network tab:
 a `moreskant` PATCHing their own row with a new username, permission set and
 member link gets a **200 and no change at all**, because a denied field is
 dropped in silence.
+
+### "Poveži svoj račun s članom" (#462)
+
+That lock had one victim: a **voditelj who also dances**. `Users.member` is
+locked to `users` for read *and* write, so they could not see the field, let
+alone fill it, and `decideAppAccess` handed them `{ kind: 'voditelj', self:
+null }` — a state that is perfectly valid for a voditelj who does not dance
+(story 15) and indistinguishable from one whose link was never set. They could
+not answer their own dolazak and could not appear in a postava, and the only
+repair was somebody with `users` editing the row by hand.
+
+`POST /api/app/link-self` is a narrow, permission-checked hole in the lock, not
+a relaxation of it. Do not widen the field access to achieve the same thing: the
+lock is why a dancer cannot repoint themselves at another dancer. The rules are
+pure in `src/lib/app/link-self.ts`; the route is the IO shell, and
+`src/lib/app/link-self-data.ts` builds the screen's list through the same
+`memberEligibility` the POST re-applies, so a hidden line and a refused tap are
+one rule rather than two that can disagree.
+
+What keeps it narrow:
+
+| Rule | Why |
+|---|---|
+| `requirePermission(req, 'moreska')` first, then the cross-site guard | the local API runs `overrideAccess: true`, so this handler's check is the only thing standing in for the field lock it bypasses |
+| the caller must have **no** link yet (409 otherwise) | repointing an existing link stays a `users` job. A self-edit path that can *move* a link is exactly what the lock exists to prevent |
+| the target must be `active` + `isMoreskant` | the same bar `decideAppAccess` applies to a dancer identity |
+| **no other login may point at that Member** (409) | linking to a dancer who already has an account is taking over their identity, not filling in a blank |
+| the write is `member` + `permissions ∪ {moreskant}` | filling in a missing link never widens what an account may do |
+
+The exclusivity check runs **twice**, before the write and after it, because
+between the two a second voditelj can claim the same Member; losing that race
+un-links rather than leaving two logins on one dancer. A unique index on
+`users.member` would be the stronger guard and is deliberately not there:
+the column has carried hand-set values since #420, and a bootstrap index that
+fails on legacy data is a worse outage than a race nobody has run yet.
+
+The screen is `/app/povezi`, reached from the hero on `/app` (where the two
+answer buttons are missing, which is the moment the gap is felt) and from Više
+(which survives the end of the season, when there is no hero). Both links are
+quiet and both are shown only to a voditelj with no Member: a voditelj who does
+not dance must not read them as something they are late on.
+
+`AppViewer` carries `memberLinkId`, the **raw** `Users.member` value, alongside
+the decision. The decision deliberately collapses "no link" and "a link to a
+retired or un-flagged Member" into the same `self: null`, which is right
+everywhere that asks "is there a dancer here"; `/app/povezi` asks the other
+question — may this account still be linked at all — and without it would offer
+a list whose every tap 409s.
+
+### "Pošalji pozivnice svima" (#462)
+
+The list-view half of the same gap: the per-Member action (#424) leaves a
+voditelj to read the "Ima prijavu" column down forty rows and open each miss by
+hand. `POST /api/app/invite/all` does it once, for every active moreškant with
+an e-mail and no login.
+
+It adds **no invitation rule of its own**: it loops `handleInvite` over the
+batch, so the four refusals, the idempotent reverse lookup and the seven-day
+link stay written once. The Payload wiring both routes need moved into
+`src/lib/app/invite-data.ts` for that reason — two hand-copied sets of calls is
+how "the Member's e-mail wins" ends up true on one route and not the other.
+`src/lib/app/invite-all.ts` holds the only two decisions that are the bulk
+action's own: who is in the batch, and what the toast says. Dancers with no
+e-mail are **counted and reported**, never skipped silently: they are precisely
+the rows that still need a hand.
+
+Sends are sequential (Brevo's free tier is 300/day and rate-limits a burst; tens
+of dancers is a second of wall clock). The menu item is on Members'
+`listMenuItems` and hides itself from the ticketing backoffice through the field
+lock rather than through a permission list: `isMoreskant` locks read to
+`moreska`, so a `tickets`-only account receives rows with no such key
+(`inviteAllActionVisible`). As always that is UX; the route re-checks `moreska`.
 
 ## Push (#431, #435 — phase 4 batch A)
 

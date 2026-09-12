@@ -58,6 +58,16 @@ export default async function MorePage() {
           {APP_STRINGS.install.guideTitle}
           <span aria-hidden="true">›</span>
         </Link>
+        {/* The durable way to "Poveži svoj račun s članom" (#462). The hero on
+            `/app` carries the same link, but only while there is a next evening
+            to hang it under: out of season a voditelj who has just been given
+            an account would otherwise have nowhere to go. */}
+        {voditelj && !me && (
+          <Link className="app__more-row" href="/app/povezi">
+            {APP_STRINGS.linkSelf.action}
+            <span aria-hidden="true">›</span>
+          </Link>
+        )}
         {voditelj && (
           <>
             {/* The admin is a different app under the same origin, so these are
