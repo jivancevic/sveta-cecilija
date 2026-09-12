@@ -1,17 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { type Where } from 'payload'
 import { requirePermission } from '@/lib/access/route-guard'
+import { getRepo } from '@/lib/repo'
 import { getNextShow } from '@/lib/shows'
-import {
-  lookupOrder,
-  type LookupMode,
-  type MatchedOrder,
-  type NormalizedQuery,
-  type OrderLookupDeps,
-} from '@/lib/order-lookup'
+import { lookupOrder, type LookupMode, type OrderLookupDeps } from '@/lib/order-lookup'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
+
+// The door's manual-admit search (#245), now serving the Skener screen (#504).
+//
+// The rules are in the pure `order-lookup.ts` (normalisation, the single-match
+// rule that keeps the buyer list unbrowsable, the always-on audit write); the
+// queries are in the repository seam (`repo.orders`, #475). What is left here is
+// the gate and the one thing neither of those can decide: WHICH performance may
+// be searched.
 
 interface LookupBody {
   showId: string | number
@@ -19,22 +21,11 @@ interface LookupBody {
   mode: LookupMode
 }
 
-function whereForQuery(q: NormalizedQuery, showId: number | string): Where {
-  const and: Where[] = [{ show: { equals: showId } }]
-  if (q.mode === 'email') {
-    and.push({ email: { equals: q.email } })
-  } else if (q.mode === 'code') {
-    and.push({ code: { equals: q.code } })
-  } else {
-    for (const term of q.terms) and.push({ buyerName: { like: term } })
-  }
-  return { and }
-}
-
 export async function POST(req: NextRequest) {
   const gate = await requirePermission(req, ['door', 'tickets'])
   if (gate.error) return gate.error
-  const { payload, user } = gate
+  const { user } = gate
+  const repo = getRepo()
 
   let body: LookupBody
   try {
@@ -48,9 +39,9 @@ export async function POST(req: NextRequest) {
   }
 
   // Server-side guard: only the currently-next show is queryable. Same
-  // definition as the tehnika dashboard (see `getNextShow` in @/lib/shows).
-  // Prevents tehnika from probing arbitrary historical shows by passing a
-  // different showId from the client.
+  // definition as the Skener ring (see `getNextShow` in @/lib/shows).
+  // Prevents a door account from probing arbitrary historical shows by passing
+  // a different showId from the client.
   const next = await getNextShow()
   if (!next) {
     return NextResponse.json({ error: 'No upcoming show' }, { status: 403 })
@@ -59,53 +50,19 @@ export async function POST(req: NextRequest) {
   if (String(next.id) !== showIdStr) {
     return NextResponse.json({ error: 'Show is not the active door show' }, { status: 403 })
   }
-  const showIdRef = Number.isFinite(Number(showIdStr)) ? Number(showIdStr) : showIdStr
 
   const deps: OrderLookupDeps = {
-    findMatches: async (q) => {
-      const found = await payload.find({
-        collection: 'orders',
-        where: whereForQuery(q, showIdRef),
-        depth: 0,
-        limit: 20,
-      })
-      return found.docs.map<MatchedOrder>((o) => ({
-        id: String(o.id),
-        buyerName: o.buyerName as string,
-        adultCount: (o.adultCount as number) ?? 0,
-        childCount: (o.childCount as number) ?? 0,
-      }))
-    },
-    loadTokens: async (orderId) => {
-      const tickets = await payload.find({
-        collection: 'tickets',
-        where: { order: { equals: Number.isFinite(Number(orderId)) ? Number(orderId) : orderId } },
-        depth: 0,
-        limit: 200,
-        sort: 'createdAt',
-      })
-      // Only active tickets are admittable; a cancelled ticket is not a real seat.
-      return tickets.docs
-        .filter((t) => t.status !== 'cancelled')
-        .map((t) => ({ token: t.token as string, scanned: !!t.scanned }))
-    },
+    findMatches: (q) => repo.orders.findForDoorLookup(q, showIdStr),
+    loadTokens: (orderId) => repo.orders.activeTicketsOfOrder(orderId),
     loadShow: async () => ({ date: next.date, time: next.time, venue: next.venue }),
-    recordAudit: async (entry) => {
-      try {
-        await payload.create({
-          collection: 'order-lookups',
-          data: {
-            user: user.id as number | string,
-            show: showIdRef,
-            query: entry.query,
-            mode: entry.mode,
-            matchedOrderId: entry.matchedOrderIds.join(','),
-          },
-        })
-      } catch (err) {
-        console.error('[orders/lookup] audit log failed', err)
-      }
-    },
+    recordAudit: (entry) =>
+      repo.orders.recordLookup({
+        userId: user.id,
+        showId: showIdStr,
+        mode: entry.mode,
+        query: entry.query,
+        matchedOrderIds: entry.matchedOrderIds,
+      }),
   }
 
   const result = await lookupOrder(

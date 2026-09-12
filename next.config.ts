@@ -8,7 +8,7 @@ const securityHeaders = [
   { key: 'X-Content-Type-Options', value: 'nosniff' },
   { key: 'X-Frame-Options', value: 'DENY' },
   { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
-  // camera=(self): the /admin/scan door scanner needs getUserMedia. `()` (empty
+  // camera=(self): the /app/scan door scanner needs getUserMedia. `()` (empty
   // allowlist) disables the camera even same-origin — Chrome enforces this and
   // rejects getUserMedia ("Camera unavailable"); iOS Safari historically
   // ignored it, which masked the bug. (self) is the tightest value that still
@@ -50,6 +50,12 @@ const nextConfig: NextConfig = {
         destination: '/api/shows/:id/move-to-indoor',
         permanent: true,
       },
+
+      // #504: the door scanner moved out of the Backoffice into Cecilija.
+      // `/admin/scan` is on printed instructions and in the door volunteers'
+      // browser history, and the Backoffice is being retired screen by screen,
+      // so the old path 308s to the new one for a release.
+      { source: '/admin/scan', destination: '/app/scan', permanent: true },
 
       // ── Cecilija's Croatian segments (#473, #495) ──────────────────────
       //

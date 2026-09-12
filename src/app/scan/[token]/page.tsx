@@ -307,8 +307,11 @@ function StaffActions() {
         gap: '0.75rem',
       }}
     >
-      <Link href="/admin/scan" prefetch={false} style={primary}>Scan new</Link>
-      <Link href="/admin" prefetch={false} style={secondary}>Back</Link>
+      {/* Both buttons point into Cecilija since #504: the door's screen is
+          `/app/scan`, and a volunteer who followed a QR here should land back
+          in the app they work from rather than in the Backoffice. */}
+      <Link href="/app/scan" prefetch={false} style={primary}>Scan new</Link>
+      <Link href="/app" prefetch={false} style={secondary}>Back</Link>
     </div>
   )
 }

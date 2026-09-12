@@ -88,6 +88,20 @@ describe('decideAppAccess — the moreškant', () => {
   })
 })
 
+describe('decideAppAccess — the door', () => {
+  it('lets a `door` login in on Skener alone (#504)', () => {
+    const access = decideAppAccess(user('door'), null)
+    expect(access.kind).toBe('ok')
+    expect(screenKeys(access)).toEqual(['scan'])
+    expect(access.kind === 'ok' && access.self).toBeNull()
+  })
+
+  it('adds Skener to what a dancer who also works the gate already had', () => {
+    const access = decideAppAccess(user('moreskant', 'door'), dancer())
+    expect(screenKeys(access)).toEqual(['performances', 'leaderboard', 'scan'])
+  })
+})
+
 describe('decideAppAccess — the conditional permissions', () => {
   it('denies a `partner` holder with no Partner link', () => {
     expect(decideAppAccess(user('partner'), null)).toEqual({ kind: 'denied' })
@@ -107,8 +121,7 @@ describe('decideAppAccess — everybody else', () => {
   it.each([
     ['anonymous', null],
     ['an authenticated account with no permission set', { id: '2', permissions: undefined }],
-    ['tickets (Tatjana), until the blagajna screens are built', user('tickets', 'refunds', 'door')],
-    ['the door login', user('door')],
+    ['tickets (Tatjana), until the blagajna screens are built', user('tickets', 'refunds')],
     ['a partner POS', user('partner')],
     ['the society season dashboard', user('season_stats')],
     ['a dev-only account', user('dev')],
@@ -125,9 +138,10 @@ describe('decideAppAccess — everybody else', () => {
 
   it('never lets a single permission other than moreska/moreskant in (sweep)', () => {
     // Today's live table. Every screen ticket that flips a `servesToday` word
-    // moves one of these to `true`, and this line is where that shows up.
+    // moves one of these to `true`, and this line is where that shows up:
+    // `door` joined the list when Skener landed (#504).
     for (const p of PERMISSIONS) {
-      const expected = p === 'moreska' || p === 'moreskant'
+      const expected = p === 'moreska' || p === 'moreskant' || p === 'door'
       expect(decideAppAccess(user(p), dancer()).kind === 'ok', `permission ${p}`).toBe(expected)
     }
   })

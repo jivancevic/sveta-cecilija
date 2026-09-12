@@ -2677,13 +2677,17 @@ a.app__ob-link {
   font-weight: 600;
 }
 
-/* ── Night island 1 of 2 (#490): the next evening ──────────
-   The dancer's poster for tonight, dark on every device, on a page that is
-   otherwise paper. It re-points the TOKENS rather than restating colours, so
-   everything inside it — chips, buttons, notes — follows without knowing it is
-   on an island. The second island is the whole Skener screen, which arrives
-   with #504. */
-.app__hero {
+/* ── The two night islands (#490) ──────────────────────────
+   Island 1 is the next evening: the dancer's poster for tonight, dark on every
+   device, on a page that is otherwise paper. Island 2 is the whole Skener
+   screen (`.app__night`, #504), because the door works in the dark and a white
+   page is a lamp in the volunteer's face.
+
+   Both re-point the TOKENS rather than restating colours, so everything inside
+   them — chips, buttons, notes, the search field — follows without knowing it
+   is on an island. One palette, stated once, for both. */
+.app__hero,
+.app__night {
   --bg: #131313;
   --card: #131313;
   --frame: #0a0a0a;
@@ -2885,5 +2889,518 @@ a.app__ob-link {
 
   .app__header-title h1 {
     font-size: 27px;
+  }
+}
+
+/* ── Skener (#504): the door screen ────────────────────────
+   The whole screen is night island 2 (the token block above). Everything below
+   therefore names a token, never a hex — except the four answers a scanned
+   ticket can give, which are a role the paper palette never had and which get
+   four tokens of their own here. Green/amber/grey/red is what a volunteer
+   recognises across a queue before they have read a word. */
+.app__night {
+  --ok: #0f7a3a; /* VALID: this person walks in */
+  --seen: #b46a00; /* ALREADY SCANNED: this ticket has been used */
+  --void: #4a4a4a; /* CANCELLED: refunded or stornoed, a dead end */
+  --bad: #b00020; /* INVALID: not one of ours */
+
+  margin: 18px 0 0;
+  padding: 16px;
+  border: 1px solid var(--cardEdge);
+  border-radius: var(--radius);
+  background: var(--bg);
+}
+
+/* The ring: one number, big enough to read while somebody hands you a phone. */
+.app__scan-ring {
+  text-align: center;
+}
+
+.app__scan-when {
+  margin: 0;
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--goldText);
+}
+
+.app__scan-ringsvg {
+  display: block;
+  margin: 8px auto 4px;
+  max-width: 100%;
+}
+
+.app__scan-track {
+  fill: none;
+  stroke: var(--sunk);
+}
+
+.app__scan-fill {
+  fill: none;
+  stroke: var(--gold);
+  stroke-linecap: butt;
+}
+
+.app__scan-count {
+  fill: var(--ink);
+  font-family: var(--font-bodoni), Georgia, serif;
+  font-size: 52px;
+  font-variant-numeric: tabular-nums;
+}
+
+.app__scan-total {
+  fill: var(--muted);
+  font-family: var(--font-inter), system-ui, sans-serif;
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+
+.app__scan-ring--empty {
+  padding: 20px 0 6px;
+}
+
+.app__scan-none {
+  margin: 0;
+  font-family: var(--font-bodoni), Georgia, serif;
+  font-size: 22px;
+}
+
+.app__scan-none-body {
+  margin: 6px 0 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+/* The action, and the only thing on the screen sized for a thumb in a queue. */
+.app__scan-open {
+  display: block;
+  width: 100%;
+  margin-top: 16px;
+  padding: 20px 16px;
+  background: var(--gold);
+  color: var(--onGold);
+  border: 1px solid var(--gold);
+  border-radius: var(--radius);
+  font-family: var(--font-inter), system-ui, sans-serif;
+  font-size: 19px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.app__scan-open:hover,
+.app__scan-open:focus-visible {
+  background: var(--goldText);
+  border-color: var(--goldText);
+}
+
+/* ── The scanner overlay ───────────────────────────────────
+   Fixed over everything, the tab bar included: while the camera is open the
+   screen has exactly one job. */
+.app__scan-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: #000;
+}
+
+.app__scan-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* The aim box, cut out of a dimmed frame by one enormous outer shadow. */
+.app__scan-aim {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: min(60vmin, 480px);
+  height: min(60vmin, 480px);
+  transform: translate(-50%, -50%);
+  border: 2px solid rgba(255, 255, 255, 0.85);
+  border-radius: var(--radius);
+  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+}
+
+.app__scan-exit {
+  position: absolute;
+  top: max(env(safe-area-inset-top, 0px), 16px);
+  right: 16px;
+  padding: 10px 18px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: var(--radius);
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.app__scan-status {
+  position: absolute;
+  bottom: max(env(safe-area-inset-bottom, 0px), 24px);
+  left: 0;
+  right: 0;
+  margin: 0;
+  text-align: center;
+  color: #fff;
+  font-size: 14px;
+}
+
+/* The two screens that replace the viewfinder: the tap fallback and the error. */
+.app__scan-screen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px;
+  background: var(--frame);
+  color: var(--ink);
+  text-align: center;
+}
+
+.app__scan-screen h2 {
+  margin: 0;
+  font-family: var(--font-bodoni), Georgia, serif;
+  font-size: 24px;
+  font-weight: 600;
+}
+
+.app__scan-screen p {
+  margin: 0;
+  max-width: 320px;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.app__scan-errmsg {
+  color: var(--warn);
+}
+
+.app__scan-cta {
+  width: min(86vw, 360px);
+  margin-top: 12px;
+  padding: 22px 16px;
+  background: var(--gold);
+  color: var(--onGold);
+  border: 1px solid var(--gold);
+  border-radius: var(--radius);
+  font-size: 19px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.app__scan-quiet {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 14px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* The result card, over the viewfinder or on the page under the search. */
+.app__scan-cardwrap {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.75);
+  overflow-y: auto;
+}
+
+.app__scan-result {
+  width: 100%;
+  max-width: 420px;
+  margin-top: 16px;
+  padding: 18px 16px 16px;
+  border-radius: var(--radius);
+  color: #fff;
+  text-align: center;
+}
+
+.app__scan-cardwrap .app__scan-result {
+  margin-top: 0;
+}
+
+.app__scan-result--valid {
+  background: var(--ok);
+}
+
+.app__scan-result--already-scanned {
+  background: var(--seen);
+}
+
+.app__scan-result--cancelled {
+  background: var(--void);
+}
+
+.app__scan-result--invalid {
+  background: var(--bad);
+}
+
+/* English, and the largest word on the screen: it is read from a metre away. */
+.app__scan-heading {
+  margin: 0;
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.app__scan-name {
+  margin: 12px 0 0;
+  font-family: var(--font-bodoni), Georgia, serif;
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.app__scan-party {
+  margin: 6px 0 0;
+  font-size: 16px;
+}
+
+.app__scan-meta {
+  margin: 6px 0 0;
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+.app__scan-note {
+  margin: 10px 0 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.app__scan-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.app__scan-action {
+  display: block;
+  width: 100%;
+  padding: 14px 16px;
+  background: #fff;
+  color: #111;
+  border: 1px solid #fff;
+  border-radius: var(--radius);
+  font-family: var(--font-inter), system-ui, sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.app__scan-action--ghost {
+  background: transparent;
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.7);
+  font-weight: 600;
+}
+
+.app__scan-action[disabled] {
+  opacity: 0.7;
+  cursor: default;
+}
+
+/* ── Pronađi ulaznicu: the manual admit when a QR will not scan ── */
+.app__scan-lookup {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--rule);
+}
+
+.app__scan-lookup h2 {
+  margin: 0;
+  font-family: var(--font-bodoni), Georgia, serif;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.app__scan-lookup-intro {
+  margin: 4px 0 12px;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.app__scan-modes {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.app__scan-mode {
+  flex: 1 1 0;
+  padding: 10px 8px;
+  background: var(--sunk);
+  color: var(--ink);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  font-family: inherit;
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.app__scan-mode--on {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: var(--onGold);
+  font-weight: 600;
+}
+
+.app__scan-search {
+  display: flex;
+  gap: 8px;
+}
+
+.app__scan-search input {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 12px 10px;
+  background: var(--sunk);
+  color: var(--ink);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  font-family: inherit;
+  font-size: 16px; /* 16px, or iOS zooms the page on focus */
+}
+
+.app__scan-search input:focus {
+  outline: none;
+  border-color: var(--gold);
+}
+
+.app__scan-search button {
+  padding: 12px 18px;
+  background: var(--gold);
+  color: var(--onGold);
+  border: 1px solid var(--gold);
+  border-radius: var(--radius);
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.app__scan-search button[disabled] {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.app__scan-info {
+  margin: 12px 0 0;
+  font-size: 15px;
+  color: var(--muted);
+}
+
+.app__scan-match {
+  margin-top: 12px;
+  padding: 14px;
+  background: var(--sunk);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+}
+
+.app__scan-match-name {
+  margin: 0;
+  font-family: var(--font-bodoni), Georgia, serif;
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.app__scan-match-party,
+.app__scan-match-meta {
+  margin: 4px 0 0;
+  font-size: 14px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.app__scan-match-state {
+  margin: 8px 0 0;
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.app__scan-match .app__scan-action {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: var(--onGold);
+}
+
+.app__scan-match .app__scan-action--ghost {
+  background: transparent;
+  border-color: var(--rule);
+  color: var(--ink);
+}
+
+/* The show-day strip (#472): a door holder reading another screen on the day of
+   an izvedba gets one line back to the scanner. */
+.app__daystrip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 14px 0 0;
+  padding: 12px 14px;
+  background: var(--gold);
+  color: var(--onGold);
+  border-radius: var(--radius);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.app__daystrip b {
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+@media (min-width: 1024px) {
+  /* The laptop has room for the two halves side by side; the phone stacks. */
+  .app__scan {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 8px 24px;
+    align-items: start;
+  }
+
+  .app__scan-lookup {
+    grid-column: 2;
+    grid-row: 1 / span 3;
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
+  }
+
+  .app__scan-result {
+    grid-column: 1;
+  }
+
+  .app__scan-actions {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .app__scan-action {
+    width: auto;
+    min-width: 150px;
+    flex: 1 1 auto;
   }
 }

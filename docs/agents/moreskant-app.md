@@ -37,7 +37,7 @@ unlock are tabs, the rest live under Više, and Izvedbe jumps to the front for a
 | 2 | Izvedbe (one screen, content by `can()`) | `/app/performances`, `/app/performances/[id]` | `tickets`, `moreska`, `moreskant` | **live for `moreska` + `moreskant`** (#495); the blagajna's half is #502 | 308 from `/app/izvedba/[id]`; push messages now carry the new path |
 | 2.5 | Članovi (dancer profiles, invitations, join code; absorbs Pozivnice, added by #476) | `/app/members` | `moreska` | `/admin/collections/members`, `/app/invitations` | `/app/pozivnice` already 308s to `/app/invitations` (#495); **#511 repoints that 308 at `/app/members`** and folds the screen in |
 | 3 | Ljestvica (own season + roster ranking; voditelj sees the full table) | `/app/leaderboard?season=2026&part=mine\|all` | `moreskant`, `moreska` | **live** (#495): both panels on one screen, the voditelj's *Ljestvica* panel is the old scoreboard | 308 from `/app/moje` and `/app/statistika` |
-| 4 | Skener (camera, code entry, door list) | `/app/scan` | `door` | `/admin/scan` | 308; the ticket QR stays `/scan/[token]`, whose staff buttons point at `/app/scan` |
+| 4 | Skener (camera, code entry, door list) | `/app/scan` | `door` | **live** (#504): the camera and the four result states, Pusti ostatak grupe (n), Poništi propuštanje, Pronađi ulaznicu and the "ušlo X od Y" ring, all on one screen | `/admin/scan` 308s here and the Backoffice view is deleted; the ticket QR stays `/scan/[token]`, whose staff buttons point at `/app/scan` |
 | 5 | Prodaja | `/app/sell` | `partner` | partner view in `/admin` | none |
 | 6 | Obračun | `/app/statement` | `partner` | partner view in `/admin` | none |
 | 7 | Upiti | `/app/inquiries` | `tickets` | `/admin/collections/contact-submissions` | none |
@@ -120,9 +120,11 @@ The palette is #490's, declared once in the `.app` block of
 `--goldText #8f6a10` wherever gold carries text, radius 0, and `--rowY` as the
 row rhythm (11 px on the phone, 6 px from 1024 px up). There is no dark mode
 and no toggle. **Two night islands, and only two**: the "next performance" hero
-card, which re-points the tokens on `.app__hero`, and the whole Skener screen
-when it lands (#504). An island overrides the TOKENS, never the colours, so
-everything inside it follows without knowing where it is.
+card and the whole Skener screen, which share one token block on
+`.app__hero, .app__night` (#504). An island overrides the TOKENS, never the
+colours, so everything inside it follows without knowing where it is. Skener
+adds four tokens of its own (`--ok`, `--seen`, `--void`, `--bad`): the four
+answers a scanned ticket gives are a role the paper palette never had.
 
 ### The frame
 

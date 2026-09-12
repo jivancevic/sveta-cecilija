@@ -110,7 +110,7 @@ export const APP_SCREENS: AppScreen[] = [
     route: '/app/scan',
     rank: 4,
     unlockedBy: ['door'],
-    servesToday: [],
+    servesToday: ['door'],
     groups: ['door'],
   },
   {
