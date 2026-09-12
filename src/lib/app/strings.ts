@@ -295,11 +295,82 @@ export const APP_STRINGS = {
     sendFailed: 'Prijava je otvorena, ali pozivnica nije poslana. Pokušaj ponovno.',
     baseUrlMissing: 'Poveznica se ne može izraditi jer aplikacija nije ispravno postavljena.',
     tokenFailed: 'Poveznica se ne može izraditi. Pokušaj ponovno.',
+    /**
+     * The takeover guard (#462 review): the Member's login is not a dancer's.
+     * It names no permission and no account, because the presser does not need
+     * to know whose login it is, only that this is not the way to reset it.
+     */
+    staffLogin:
+      'Prijava tog člana ima šire dozvole od moreškanta, pa pozivnica nije poslana. Lozinku za takav račun postavlja administrator.',
     sentNew: 'Pozivnica je poslana i prijava je otvorena.',
     sentAgain: 'Nova poveznica je poslana na e-mail člana.',
     unexpected: 'Slanje trenutno nije moguće. Pokušaj ponovno.',
     /** The Members list column: does this member already have a login? */
     hasLogin: 'Ima prijavu',
+  },
+
+  /**
+   * "Pošalji pozivnice svima" on the Members LIST (#462).
+   *
+   * The per-row action leaves a voditelj to work out who is still missing by
+   * reading the "Ima prijavu" column, which is a job for the machine. This one
+   * sends to everyone eligible and then says what it did per outcome, because
+   * "poslano 9" alone hides the three dancers whose row has no e-mail and who
+   * are exactly the ones that still need a hand.
+   */
+  inviteAll: {
+    action: 'Pošalji pozivnice svima',
+    sending: 'Šaljem...',
+    /** Nothing to do, which is the good ending and not an error. */
+    none: 'Svi aktivni moreškanti s e-mailom već imaju prijavu.',
+    sent: (count: number) => `Poslano pozivnica: ${count}.`,
+    /**
+     * The two bad outcomes NAME the dancers rather than counting them: a
+     * voditelj can only act on a name. The failed ones especially, because a
+     * failed send still leaves a login behind, so the next bulk press skips
+     * them and only the per-row "Pošalji pozivnicu" will reach them.
+     */
+    noEmail: (who: string) => `Bez e-maila: ${who}.`,
+    failed: (who: string) => `Nije poslano: ${who}. Pošalji im pojedinačno.`,
+    andMore: (count: number) => `i još ${count}`,
+    unexpected: 'Slanje trenutno nije moguće. Pokušaj ponovno.',
+  },
+
+  /**
+   * "Poveži svoj račun s članom" (#462).
+   *
+   * A voditelj who also dances has no way to fill `Users.member` in: the field
+   * is locked to a `users` holder for read and write, deliberately, and without
+   * it they cannot answer their own dolazak or appear in a postava. This screen
+   * is the narrow way through, and every sentence it can say is also said by
+   * the route, so a refused tap and a hidden line read as one rule.
+   */
+  linkSelf: {
+    title: 'Poveži svoj račun s članom',
+    intro:
+      'Odaberi sebe s popisa i moći ćeš javljati svoj dolazak i biti u postavi. Na popisu su aktivni moreškanti koji još nemaju prijavu.',
+    /** The quiet way in, from the hero and from the Više tab. */
+    action: 'Poveži svoj račun s članom',
+    linking: 'Povezujem...',
+    linked: 'Račun je povezan.',
+    empty: 'Svi aktivni moreškanti već imaju prijavu. Javi drugom voditelju da te poveže.',
+    /** Refusals, each of them also spoken by the route. */
+    rejected: 'Povezivanje trenutno nije moguće. Pokušaj ponovno iz aplikacije.',
+    missingMember: 'Odaberi člana s popisa.',
+    notFound: 'Taj član ne postoji.',
+    notMoreskant: 'Taj član nije označen kao moreškant.',
+    notActive: 'Taj član nije aktivan.',
+    taken: 'Taj član već ima prijavu. Ako je tvoja, prijavi se njome.',
+    /**
+     * The one refusal that is not a data problem: repointing an existing link
+     * stays administration, because a self-edit path that can move a link is
+     * what the field lock exists to prevent.
+     */
+    alreadyLinked: 'Tvoj račun je već povezan s članom. Promjenu radi administrator.',
+    /** A login several people share is nobody in particular (ADR-0022). */
+    sharedAccount:
+      'Ovu prijavu koristi više osoba, pa se ne može povezati s jednim moreškantom. Zatraži vlastitu prijavu.',
+    failed: 'Povezivanje nije uspjelo. Pokušaj ponovno.',
   },
 
   /** Choosing a password from an invitation or a reset link (#424). */

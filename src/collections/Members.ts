@@ -146,6 +146,12 @@ export const Members: CollectionConfig = {
       edit: {
         editMenuItems: ['@/components/payload/InviteMoreskantMenuItem#InviteMoreskantMenuItem'],
       },
+      // "Pošalji pozivnice svima" (#462): the same action for everyone still
+      // missing a login, so the gap is closed rather than hunted for down the
+      // "Ima prijavu" column. Its route re-checks `moreska` itself.
+      listMenuItems: [
+        '@/components/payload/InviteAllMoreskantiMenuItem#InviteAllMoreskantiMenuItem',
+      ],
     },
   },
   hooks: {

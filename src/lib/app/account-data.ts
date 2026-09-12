@@ -47,12 +47,20 @@ export async function issueAppResetToken(
   return typeof token === 'string' ? token : null
 }
 
-/** A Users document as the invitation rules read it. Never a spread. */
+/**
+ * A Users document as the invitation rules read it. Never a spread.
+ *
+ * `permissions` rides along for ONE rule, `isDancerLogin`: an invitation may
+ * not be aimed at an account that is more than a dancer (#462 review). The
+ * lookups that feed this run `overrideAccess: true`, so the field lock on
+ * `Users.permissions` does not hide it here.
+ */
 export function toInviteUser(row: Record<string, unknown> | null | undefined): InviteUser | null {
   if (!row || row.id == null) return null
   return {
     id: row.id as string | number,
     username: typeof row.username === 'string' ? row.username : null,
     email: typeof row.email === 'string' ? row.email : null,
+    permissions: Array.isArray(row.permissions) ? (row.permissions as unknown[]) : null,
   }
 }

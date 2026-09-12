@@ -2332,3 +2332,53 @@ a.app__ob-link {
   font-size: 13px;
   color: var(--muted);
 }
+
+/* ── Poveži svoj račun s članom (#462) ──────────────────── */
+/* The rows ARE .app__more-row: one tap, a chevron, a hairline under it. Only
+   the button reset and the two-line name are new. */
+.app__pick {
+  margin-top: 18px;
+}
+
+.app__pick-row {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid #1f1f1f;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.app__pick-row[disabled] {
+  opacity: 0.6;
+  cursor: default;
+}
+
+/* Scoped through the row, not written as `.app__pick-name`: the name is a
+   <span> inside .app__more-row, and `.app__more-row span` (the chevron rule)
+   would otherwise win on specificity and right-align it in muted grey. */
+.app__pick-row .app__pick-name {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 16px;
+  color: var(--light);
+  text-align: left;
+}
+
+.app__pick-row .app__pick-name strong {
+  font-weight: 600;
+}
+
+.app__pick-row .app__pick-name small {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* The way in, where the two answer buttons would have been (#462). Quiet: a
+   voditelj who does not dance is in a perfectly valid state and must not read
+   this as something they are late on. */
+.app__hero-link--link-self {
+  margin-top: 4px;
+}

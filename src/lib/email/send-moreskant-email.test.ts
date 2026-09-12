@@ -82,14 +82,42 @@ describe('sendMoreskantEmail', () => {
     expect(bodyOf(fetch).subject).toBe(MORESKANT_EMAIL_SUBJECTS.reset)
   })
 
-  it('logs but never throws when Brevo refuses', async () => {
+  it('reports true when the letter left', async () => {
+    await expect(
+      sendMoreskantEmail(
+        { kind: 'invite', to: 'cici@example.com', greeting: 'Cici', link },
+        { fetch: fakeFetch(), brevoApiKey: 'key' },
+      ),
+    ).resolves.toBe(true)
+  })
+
+  /**
+   * The value matters (#462 review): without it a Brevo 401 or a rate limit was
+   * indistinguishable from a delivery, the invitation answered "Pozivnica je
+   * poslana" while the log said otherwise, and the bulk action counted a dancer
+   * as invited who never heard from us.
+   */
+  it('logs and reports false when Brevo refuses, but never throws', async () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {})
     await expect(
       sendMoreskantEmail(
         { kind: 'invite', to: 'cici@example.com', greeting: 'Cici', link },
         { fetch: fakeFetch(400), brevoApiKey: 'key' },
       ),
-    ).resolves.toBeUndefined()
+    ).resolves.toBe(false)
+    expect(error).toHaveBeenCalled()
+    error.mockRestore()
+  })
+
+  it('reports false when the fetch itself blows up', async () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const boom = vi.fn().mockRejectedValue(new Error('network down'))
+    await expect(
+      sendMoreskantEmail(
+        { kind: 'invite', to: 'cici@example.com', greeting: 'Cici', link },
+        { fetch: boom as unknown as typeof globalThis.fetch, brevoApiKey: 'key' },
+      ),
+    ).resolves.toBe(false)
     expect(error).toHaveBeenCalled()
     error.mockRestore()
   })

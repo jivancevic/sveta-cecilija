@@ -46,3 +46,34 @@ export function inviteActionVisible(input: InviteActionVisibleInput): boolean {
   if (Array.isArray(input.permissions) && !input.permissions.includes(MORESKA)) return false
   return input.isMoreskant === true
 }
+
+export interface InviteAllActionVisibleInput {
+  /** `useListQuery().collectionSlug` — the item is registered on Members. */
+  collectionSlug?: string | null
+  /** `useListQuery().data?.docs`, the rows this account actually received. */
+  docs?: unknown
+  /** `useAuth().user.permissions`, when the client can see it. See above. */
+  permissions?: unknown
+}
+
+/**
+ * Should "Pošalji pozivnice svima" render on the Members LIST (#462)?
+ *
+ * The list has no document to read `isMoreskant` off, so the same signal is
+ * taken from the ROWS: `isMoreskant` locks READ to `moreska` (#420), so a
+ * `tickets`-only account — which also sees this list, for comp attribution —
+ * receives docs with no such key at all and the action stays hidden. A voditelj
+ * receives the key on every row and sees it.
+ *
+ * An empty list therefore hides the action too, which is right: there is nobody
+ * to invite. And as ever this is UX — `/api/app/invite/all` re-checks `moreska`
+ * server-side.
+ */
+export function inviteAllActionVisible(input: InviteAllActionVisibleInput): boolean {
+  if (input.collectionSlug !== 'members') return false
+  if (Array.isArray(input.permissions) && !input.permissions.includes(MORESKA)) return false
+  if (!Array.isArray(input.docs)) return false
+  return input.docs.some(
+    (doc) => doc != null && typeof doc === 'object' && 'isMoreskant' in (doc as object),
+  )
+}
