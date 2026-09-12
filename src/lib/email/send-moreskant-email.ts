@@ -1,7 +1,7 @@
 // The two Cecilija account mails (#424): the invitation and the sign-in link.
 //
 // One module, because they are one letter with two openings: both carry the
-// same `/app/prijava?token=…` link, both are Croatian, both go from
+// same `/app/session?token=…` link, both are Croatian, both go from
 // `info@moreska.eu` — the society's own identity, not the `tickets@` show
 // stream, because this is a mail to a member of the society rather than to a
 // buyer (ADR-0024; the Brevo daily cap is irrelevant at 20 dancers a season).
@@ -29,7 +29,7 @@ export interface MoreskantEmailInput {
   to: string
   /** Nickname (or full name) for the greeting; may be empty. */
   greeting: string
-  /** `https://moreska.eu/app/prijava?token=…` */
+  /** `https://moreska.eu/app/session?token=…` */
   link: string
 }
 

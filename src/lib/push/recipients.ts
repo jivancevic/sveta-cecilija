@@ -121,7 +121,7 @@ export function toUserIds(
 
 /** Where a tap lands: the performance the notification is about (story 6). */
 export function performanceUrl(performanceId: string): string {
-  return `/app/izvedba/${performanceId}`
+  return `/app/performances/${performanceId}`
 }
 
 export function buildAlarmMessage(

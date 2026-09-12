@@ -1,4 +1,4 @@
-// What `/app/statistika` reads (#437, ADR-0024 phase 4).
+// What `/app/leaderboard` reads (#437, ADR-0024 phase 4).
 //
 // The phase 2 loader split: this half is pure and DI'd, `stats-data.ts` holds
 // the Payload calls and nothing else. The counting rule itself is NOT here — it
@@ -73,7 +73,7 @@ export interface SeasonStatsDeps {
 /**
  * One season's table.
  *
- * `requested` is the raw `?sezona=` value. An unparseable or unknown year falls
+ * `requested` is the raw `?season=` value. An unparseable or unknown year falls
  * back to the current season rather than erroring: a mistyped URL should show
  * this year's table, not a stack trace.
  */

@@ -39,7 +39,7 @@ export function StatsTable({
           id="stats-season"
           className="app__select"
           value={String(season)}
-          onChange={(e) => router.push(`/app/statistika?sezona=${e.target.value}`)}
+          onChange={(e) => router.push(`/app/leaderboard?season=${e.target.value}&part=all`)}
         >
           {seasons.map((year) => (
             <option key={year} value={year}>

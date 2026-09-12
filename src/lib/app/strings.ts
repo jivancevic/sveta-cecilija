@@ -23,6 +23,10 @@ export const APP_STRINGS = {
     logout: 'Odjava',
     /** Shown next to the nickname when the account has no dance roles yet. */
     noRoles: 'bez uloge',
+    /** The bell's accessible name; the inbox behind it is #496. */
+    notifications: 'Obavijesti',
+    /** The bar and the sidebar are one landmark each, and both need a name. */
+    navLabel: 'Glavni izbornik',
   },
 
   login: {
@@ -45,7 +49,7 @@ export const APP_STRINGS = {
   },
 
   /**
-   * Signing in from a link (#463): what `/app/prijava` says while it works and
+   * Signing in from a link (#463): what `/app/session` says while it works and
    * when it cannot.
    *
    * The screen has no form, so every sentence here is either a spinner or a
@@ -65,18 +69,57 @@ export const APP_STRINGS = {
     toLogin: 'Prijava lozinkom',
   },
 
+  /**
+   * The refusal panel (#473). Two of them, and the difference matters: an
+   * account that unlocks nothing has nowhere to be sent, while one that typed a
+   * route it does not hold gets the way back to its own landing screen. Never a
+   * silent redirect, which hides a stale bookmark, and never a 404, which lies.
+   *
+   * The Backoffice link is for a `dev` holder and nobody else: after #473 no
+   * Cecilija page offers `/admin` to anyone who is not developing it.
+   */
   denied: {
     title: 'Nemate pristup',
-    body: 'Ova aplikacija je za moreškante i voditelje. Ako trebaš uredski dio, otvori administraciju.',
-    adminLink: 'Otvori administraciju',
+    body: 'Tvoj račun još nema pristup nijednom dijelu Cecilije. Javi se tajnici ili voditelju.',
+    screenTitle: 'Ovaj dio nije za tvoj račun',
+    screenBody: 'Tvoj račun ne otvara ovaj ekran. Ako ti treba, javi se tajnici ili voditelju.',
+    back: 'Natrag na početak',
+    adminLink: 'Otvori Backoffice',
     logout: 'Odjavi se',
   },
 
-  /** The three tabs of the bottom bar (#457): three real pages, not a toggle. */
-  tabs: {
+  /**
+   * The screen names (#495): the labels of the permission → screen table in
+   * `lib/app/screens.ts`, which the bottom bar, the laptop sidebar and every
+   * page title read. One spelling per screen, in one place.
+   */
+  screens: {
+    orders: 'Narudžbe',
     performances: 'Izvedbe',
-    mine: 'Moje',
+    members: 'Članovi',
+    leaderboard: 'Ljestvica',
+    scan: 'Skener',
+    sell: 'Prodaja',
+    statement: 'Obračun',
+    inquiries: 'Upiti',
+    comp: 'Gratis i kodovi',
+    /** The tab bar has a fifth of a phone for it. */
+    compShort: 'Gratis',
+    users: 'Korisnici',
+    stats: 'Statistika',
+    finance: 'Financije',
     more: 'Više',
+    account: 'Moj račun',
+    notifications: 'Obavijesti',
+  },
+
+  /** The laptop sidebar's workspaces (#472). */
+  groups: {
+    moreskant: 'Moreškant',
+    box: 'Blagajna',
+    partner: 'Partner',
+    door: 'Vrata',
+    admin: 'Uprava',
   },
 
   list: {
@@ -124,8 +167,8 @@ export const APP_STRINGS = {
     title: 'Moje',
     /** The two panels, which are also what `?dio=` means on this tab. */
     segments: {
-      moja: 'Moja sezona',
-      ljestvica: 'Ljestvica',
+      mine: 'Moja sezona',
+      all: 'Ljestvica',
     },
     season: 'Sezona',
     mine: 'u postavi',
@@ -194,8 +237,10 @@ export const APP_STRINGS = {
     roles: 'Uloge',
     mobile: 'Mobitel',
     missing: 'nije upisano',
-    admin: 'Administracija',
-    members: 'Moreškanti',
+    /* The raw Payload UI is the **Backoffice** and never "administracija"
+       (ADR-0027): Cecilija is what everyone else works in, and only a `dev`
+       holder is offered this row at all. */
+    admin: 'Backoffice',
   },
 
   /**
@@ -433,7 +478,7 @@ export const APP_STRINGS = {
     expired: 'Zahtjev je istekao. Odaberi svoje ime ponovno.',
     unexpected: 'Trenutno nije moguće. Pokušaj ponovno.',
 
-    /** The voditelj's half, on `/app/pozivnice`. */
+    /** The voditelj's half, on `/app/invitations`. */
     codeTitle: 'Kod za probu',
     codeIntro:
       'Pokaži ovaj QR ili kod na probi. Moreškant odabere svoje ime, ti potvrdiš i ulazi bez lozinke.',
@@ -570,7 +615,7 @@ export const APP_STRINGS = {
     /**
      * Step 1 IS the #455 install guide: the numbered steps themselves live in
      * `install.iosSteps` / `androidSteps` / `desktopSteps` and are rendered by
-     * the same `InstallSteps` component as the banner and `/app/instalacija`,
+     * the same `InstallSteps` component as the banner and `/app/install`,
      * so there is one set of instructions in the app rather than two that can
      * disagree. Only the frame around them is written here.
      */
@@ -649,7 +694,7 @@ export const APP_STRINGS = {
     title: 'Dodaj Ceciliju na ekran',
     why: 'S ikonom na ekranu dobivaš obavijesti o izvedbama i raspored u jednom dodiru.',
     snooze: 'Kasnije',
-    /** The full-screen guide at `/app/instalacija`, also the QR target. */
+    /** The full-screen guide at `/app/install`, also the QR target. */
     guideTitle: 'Instalacija',
     guideIntro: 'Tri koraka i Cecilija je na ekranu kao svaka druga aplikacija.',
     guideDone: 'Kad završiš, otvori raspored.',
@@ -720,7 +765,7 @@ export const APP_STRINGS = {
     badRequest: 'Podaci o uređaju nisu potpuni.',
   },
 
-  /** The voditelj's "Pošalji alarm" control on `/app/izvedba/[id]` (#431). */
+  /** The voditelj's "Pošalji alarm" control on `/app/performances/[id]` (#431). */
   alarm: {
     action: 'Pošalji alarm',
     sending: 'Šaljem...',

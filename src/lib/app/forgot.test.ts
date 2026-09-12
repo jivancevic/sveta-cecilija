@@ -97,7 +97,7 @@ describe('handleForgot — the lookup and the link', () => {
     expect(d.sendReset).toHaveBeenCalledWith({
       to: 'cici@example.com',
       greeting: 'Ivan Fabris',
-      link: 'https://moreska.eu/app/prijava?token=tok-reset',
+      link: 'https://moreska.eu/app/session?token=tok-reset',
     })
   })
 

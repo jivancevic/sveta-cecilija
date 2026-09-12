@@ -1,20 +1,18 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { redirect } from 'next/navigation'
 import QRCode from 'qrcode'
-import { accessMember } from '@/lib/app/access'
 import { getInviteCandidates } from '@/lib/app/invite-list-data'
 import { getCurrentJoinCode, getPendingJoinClaims } from '@/lib/app/join-data'
 import { formatDateTimeHr } from '@/lib/app/join'
 import { APP_STRINGS } from '@/lib/app/strings'
-import { resolveAppViewer } from '@/lib/app/viewer'
 import { AppShell } from '../AppShell'
 import { DeniedPage } from '../DeniedPage'
+import { openScreen } from '../gate'
 import { InviteList } from './InviteList'
 import { JoinCodeCard } from './JoinCodeCard'
 import { PendingClaims } from './PendingClaims'
 
-// `/app/pozivnice` — the voditelj's invitations screen (#463).
+// `/app/invitations` — the voditelj's invitations screen (#463).
 //
 // Getting a dancer onto the roster used to mean opening `/admin` on a laptop,
 // finding the Member, typing an e-mail address they usually do not have, and
@@ -32,11 +30,16 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 }
 
-export default async function PozivnicePage() {
-  const viewer = await resolveAppViewer()
-  if (!viewer.signedIn) redirect('/app/login')
-  if (viewer.access.kind === 'denied') return <DeniedPage />
-  if (viewer.access.kind !== 'voditelj') redirect('/app')
+export default async function InvitationsPage() {
+  const { viewer, refusal } = await openScreen()
+  if (refusal) return refusal
+  // A row under Više rather than a screen of its own, so the table cannot
+  // refuse it: the page does, with the same panel a wrong route gets (#473).
+  // Never a silent redirect — a dancer who was sent this link should read why
+  // it is not for them, not find themselves somewhere else.
+  if (!viewer.voditelj) {
+    return <DeniedPage landing={viewer.nav.landing} dev={viewer.permissions.includes('dev')} />
+  }
 
   const [candidates, joinCode, pending] = await Promise.all([
     getInviteCandidates(),
@@ -51,9 +54,9 @@ export default async function PozivnicePage() {
   const qr = joinUrl ? await QRCode.toDataURL(joinUrl, { margin: 1, width: 440 }) : null
 
   return (
-    <AppShell me={accessMember(viewer.access)}>
-      <Link className="app__back" href="/app/vise">
-        ‹ {APP_STRINGS.tabs.more}
+    <AppShell viewer={viewer} screen="more" title={APP_STRINGS.inviteLink.title}>
+      <Link className="app__back" href="/app/more">
+        ‹ {APP_STRINGS.screens.more}
       </Link>
       <h2 className="app__page-title">{APP_STRINGS.inviteLink.title}</h2>
 

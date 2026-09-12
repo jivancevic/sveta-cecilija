@@ -13,14 +13,14 @@
 // cookie from a `Set-Cookie` header keeps the year it was given.
 //
 // localStorage is the rescue rather than the record. The client writes it when
-// the walkthrough ends, and `/app/dobrodosli` reads it ON MOUNT: a device whose
+// the walkthrough ends, and `/app/welcome` reads it ON MOUNT: a device whose
 // cookie expired or was cleared (a private window, a "clear site data") says
 // "I have seen this", re-asks the route for the cookie and goes straight to the
 // list, so nobody is walked through the same three steps twice.
 //
 // The redirect itself is a rule about one page only. `/app` is the single door
 // that may send a dancer into the walkthrough; every other page under `/app`
-// opens on what it says it is. That matters most for `/app/izvedba/[id]`: a
+// opens on what it says it is. That matters most for `/app/performances/[id]`: a
 // push notification about tonight's postava must land on tonight's postava, and
 // a tutorial in front of it would be the app failing at the one moment it is
 // supposed to be quick.
@@ -56,7 +56,7 @@ export function onboardingCookie(options: { secure: boolean }): string {
 }
 
 /**
- * Should `/app` send this viewer to `/app/dobrodosli`?
+ * Should `/app` send this viewer to `/app/welcome`?
  *
  * Four facts, all of them already known to the page: a signed-out visitor is
  * on their way to the login, a denied account gets the "Nemate pristup" page,

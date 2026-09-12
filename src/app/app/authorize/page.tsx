@@ -1,7 +1,5 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { accessMember } from '@/lib/app/access'
 import { APP_STRINGS } from '@/lib/app/strings'
 import { resolveAppViewer } from '@/lib/app/viewer'
 import { authorizeReturnTo, mcpResourceUrl } from '@/lib/mcp/oauth'
@@ -36,16 +34,16 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 }
 
+/**
+ * The consent screen's own refusal. No Backoffice link: after #473 nothing in
+ * Cecilija offers `/admin` except to a `dev` holder, and a connector refused
+ * here is refused whatever else the account can open.
+ */
 function Refused({ title, body }: { title: string; body: string }) {
   return (
     <main className="app__panel">
       <h1>{title}</h1>
       <p>{body}</p>
-      <p>
-        <Link className="app__link" href="/admin">
-          {APP_STRINGS.denied.adminLink}
-        </Link>
-      </p>
       <LogoutButton className="app__button" />
     </main>
   )
@@ -66,7 +64,7 @@ export default async function AuthorizePage({
     redirect(`/app/login?next=${encodeURIComponent(authorizeReturnTo(params))}`)
   }
 
-  if (viewer.access.kind !== 'voditelj') {
+  if (!viewer.voditelj) {
     return (
       <Refused
         title={APP_STRINGS.authorize.deniedTitle}
@@ -85,7 +83,7 @@ export default async function AuthorizePage({
     )
   }
 
-  const me = accessMember(viewer.access)
+  const me = viewer.me
 
   return (
     <main className="app__panel">

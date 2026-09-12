@@ -92,7 +92,7 @@ export interface InviteEmail {
   to: string
   /** The nickname the greeting uses, falling back to the member's name. */
   greeting: string
-  /** `${baseUrl}/app/prijava?token=…` */
+  /** `${baseUrl}/app/session?token=…` */
   link: string
 }
 
@@ -109,7 +109,7 @@ export interface InviteLinkResult {
         ok: true
         created: boolean
         username: string
-        /** `${baseUrl}/app/prijava?token=…`, live for seven days. */
+        /** `${baseUrl}/app/session?token=…`, live for seven days. */
         link: string
         /** The whole Croatian text message, link included, ready to send. */
         message: string
@@ -441,7 +441,7 @@ async function mintInvitation(
  *
  * `NEXT_PUBLIC_BASE_URL` is unset in more environments than one would like (a
  * fresh worktree, a misfiled Coolify variable), and `signInLink` would then
- * happily build `/app/prijava?token=…`, which is a live token inside a dead
+ * happily build `/app/session?token=…`, which is a live token inside a dead
  * link. Every handler that mints one checks this first.
  */
 export function isUsableBaseUrl(baseUrl: string | null | undefined): boolean {
@@ -455,14 +455,14 @@ export function isUsableBaseUrl(baseUrl: string | null | undefined): boolean {
 }
 
 /**
- * `${baseUrl}/app/prijava?token=…`, the one link every invitation carries.
+ * `${baseUrl}/app/session?token=…`, the one link every invitation carries.
  *
- * It pointed at `/app/set-password` until #463, which is what the link did back
+ * It pointed at the password form until #463, which is what the link did back
  * then: a form, then a session. It now opens the session and leaves the
  * password alone, so the URL says what happens. Both mails and the voditelj's
  * "Kopiraj pozivnicu" build it here, once.
  */
 export function signInLink(baseUrl: string, token: string): string {
   const base = (baseUrl || '').replace(/\/+$/, '')
-  return `${base}/app/prijava?token=${encodeURIComponent(token)}`
+  return `${base}/app/session?token=${encodeURIComponent(token)}`
 }

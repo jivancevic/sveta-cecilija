@@ -16,7 +16,7 @@ import { findUserByResetToken, openAppSession } from '@/lib/app/session-data'
 // `requirePermission`.
 //
 // **It is a POST, and that is not cosmetic.** The link the dancer taps is a GET
-// on `/app/prijava?token=…`, which does nothing but render; the session is
+// on `/app/session?token=…`, which does nothing but render; the session is
 // opened by this POST, fired from that page's JavaScript. Mail providers,
 // link-preview bots and security scanners fetch a URL they find in a letter —
 // they do not run a page's scripts and post JSON back to it behind a

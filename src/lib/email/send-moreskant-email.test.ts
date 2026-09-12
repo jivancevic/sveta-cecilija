@@ -6,7 +6,7 @@ import {
 } from './send-moreskant-email'
 import { BREVO_EMAIL_ENDPOINT } from './post-brevo-email'
 
-const link = 'https://moreska.eu/app/prijava?token=tok-abc'
+const link = 'https://moreska.eu/app/session?token=tok-abc'
 
 function fakeFetch(status = 201) {
   return vi.fn(async () => new Response('', { status })) as unknown as typeof fetch

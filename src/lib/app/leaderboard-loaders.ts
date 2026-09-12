@@ -1,8 +1,8 @@
 // The Ljestvica (#457, glossary: *Ljestvica*): the season's moreškanti ranked.
 //
 // Pure, and deliberately DOWNSTREAM of `loadSeasonStats` rather than beside it:
-// the count a dancer is ranked by is the SAME count `/app/statistika` and
-// `/app/moje` print, so the ranking reads the scoreboard's rows instead of
+// the count a dancer is ranked by is the SAME count both panels of
+// `/app/leaderboard` print, so the ranking reads the scoreboard's rows instead of
 // re-deriving them. Two aggregations over one season is how the two screens
 // would eventually disagree about it.
 //
@@ -21,19 +21,21 @@ import type { SeasonStats } from './stats-loaders'
 /** The four milestones, in order (glossary: *Ljestvica*). */
 export const MILESTONES = [5, 10, 15, 20] as const
 
-/** The two panels of `/app/moje` (#457). */
-export const MOJE_SEGMENTS = ['moja', 'ljestvica'] as const
+/** The two panels of `/app/leaderboard` (#457, renamed by #473). */
+export const LEADERBOARD_SEGMENTS = ['mine', 'all'] as const
 
-export type MojeSegment = (typeof MOJE_SEGMENTS)[number]
+export type LeaderboardSegment = (typeof LEADERBOARD_SEGMENTS)[number]
 
 /**
- * Which panel `?dio=` asks for, defaulting to the dancer's own season.
+ * Which panel `?part=` asks for, defaulting to the dancer's own season.
  *
- * Anything unrecognised opens on "moja" rather than erroring: a stale link is
- * still a link to the tab.
+ * Anything unrecognised opens on "mine" rather than erroring: a stale link is
+ * still a link to the screen, and `?dio=moja` from before #495 lands there too.
  */
-export function parseMojeSegment(raw: string | undefined | null): MojeSegment {
-  return MOJE_SEGMENTS.includes(raw as MojeSegment) ? (raw as MojeSegment) : 'moja'
+export function parseLeaderboardSegment(raw: string | undefined | null): LeaderboardSegment {
+  return LEADERBOARD_SEGMENTS.includes(raw as LeaderboardSegment)
+    ? (raw as LeaderboardSegment)
+    : 'mine'
 }
 
 export interface LeaderboardRow {

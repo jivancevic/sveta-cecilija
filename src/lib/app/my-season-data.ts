@@ -3,7 +3,7 @@ import config from '@payload-config'
 import { loadMySeason, type MySeason } from './my-season-loaders'
 import { seasonOfDate } from './stats-loaders'
 
-// The IO wiring behind `/app/moje` (#457) — the `stats-data.ts` shape: the
+// The IO wiring behind `/app/leaderboard` (#457) — the `stats-data.ts` shape: the
 // Payload calls and nothing else, so every rule about what a dancer's season
 // counts stays in the pure, unit-tested `my-season-loaders.ts`.
 //

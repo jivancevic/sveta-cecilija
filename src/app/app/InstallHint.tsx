@@ -206,7 +206,7 @@ export function InstallHint({ vapidPublicKey }: { vapidPublicKey?: string | null
           <div className="app__hint-foot">
             {/* The heading above already says "Instalacija", so the link says
                 what is on the other side of it instead. */}
-            <Link className="app__hint-link" href="/app/instalacija">
+            <Link className="app__hint-link" href="/app/install">
               {APP_STRINGS.onboarding.install.guide}
             </Link>
             {laterButton}

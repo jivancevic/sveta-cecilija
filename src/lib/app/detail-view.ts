@@ -1,7 +1,7 @@
 // The three rules the performance detail screen needs and the page cannot own
 // (#457, ADR-0024).
 //
-// `/app/izvedba/[id]` is one screen with three segments — Dolaze, Postava,
+// `/app/performances/[id]` is one screen with three segments — Dolaze, Postava,
 // Ulaznice — and each of those asks a question that is a fact about the data
 // rather than about the markup: which segment the URL opened on, how the postava
 // is ordered, and why there are no tickets to issue. All three live here, pure

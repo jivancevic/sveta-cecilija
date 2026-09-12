@@ -4,7 +4,7 @@ import { APP_STRINGS } from '@/lib/app/strings'
 import { resolveAppViewer } from '@/lib/app/viewer'
 import { TokenSignIn } from './TokenSignIn'
 
-// /app/prijava?token=… — where both account mails now land (#463).
+// /app/session?token=… — where both account mails now land (#463).
 //
 // The invitation and "Pošalji mi link za prijavu" carry the same link; only the
 // life of the token differs (seven days against one hour). Following it lands
@@ -43,7 +43,7 @@ export default async function SignInWithLinkPage({
   const token = Array.isArray(raw) ? (raw[0] ?? '') : (raw ?? '')
 
   const viewer = await resolveAppViewer()
-  if (viewer.signedIn && viewer.access.kind !== 'denied') redirect('/app')
+  if (viewer.signedIn && viewer.access.kind === 'ok') redirect('/app')
 
   // No token at all: somebody typed the URL, or a mail client truncated it.
   // The password form is the other door and it is one tap away.

@@ -13,7 +13,7 @@ import {
 const message: PushMessage = {
   title: 'Sokoliću, fali nas!',
   body: 'Stanje za nastup srijeda, 5. kolovoza u 21:00: 3 bilih, 7 crnih',
-  url: '/app/izvedba/10',
+  url: '/app/performances/10',
   tag: 'alarm-10',
 }
 

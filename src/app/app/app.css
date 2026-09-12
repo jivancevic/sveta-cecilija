@@ -9,23 +9,34 @@
    ───────────────────────────────────────────────────────────── */
 
 .app {
-  --bg: #0a0a0a;
-  --bgDeep: #050505;
-  --card: #131313;
-  --cardEdge: rgba(184, 136, 26, 0.28);
-  --light: #f5f2ec;
-  --muted: #9a9a9a;
-  --gold: #b8881a;
-  --goldBright: #d9a526;
+  /* The palette decided in #490: one light skin for everyone, and exactly two
+     night islands (the "next performance" hero and, when it lands, Skener).
+     Values are the contract, the names are the roles — never hard-code a hex
+     for something a token already names, because an island re-points the token
+     and a hex does not follow. */
+  --bg: #f5f2ec; /* paper: the page ground, same as the public site */
+  --frame: #ede9e0; /* the frame: the laptop sidebar and the phone tab bar */
+  --card: #ffffff; /* cards, inputs, tables */
+  --cardEdge: rgba(184, 136, 26, 0.38); /* a card's own edge */
+  --rule: rgba(26, 20, 12, 0.1); /* the line between two rows of a list */
+  --sunk: #e9e4d9; /* a surface BELOW the page: a track, a code box, an off button */
+  --ink: #1a140c; /* text */
+  --muted: #6b6259; /* secondary text, 5.3:1 on paper */
+  --gold: #b8881a; /* the brand gold: a button, a rule, the focus ring */
+  --goldText: #8f6a10; /* gold that carries text or an icon, 4.8:1 on white */
+  --onGold: #14100a; /* text ON gold */
   --red: #8b0000;
-  --radius: 0px;
+  --warn: #a8321f; /* an army below its threshold, a form error */
+  --radius: 0px; /* moreška = blades (globals.css) */
   /* The bottom bar's own height; the safe area is added wherever it matters. */
   --tabH: 64px;
+  /* Row rhythm: a breakpoint, not a toggle (#490). Laptop tightens below. */
+  --rowY: 11px;
 
   margin: 0;
   min-height: 100dvh;
   background: var(--bg);
-  color: var(--light);
+  color: var(--ink);
   font-family: var(--font-inter), system-ui, sans-serif;
   font-size: 16px;
   line-height: 1.5;
@@ -69,11 +80,37 @@
 /* ── Header ─────────────────────────────────────────────── */
 .app__header {
   display: flex;
-  align-items: flex-start;
+  align-items: baseline;
   justify-content: space-between;
   gap: 16px;
-  padding: 20px 0 16px;
+  padding: 18px 0 14px;
   border-bottom: 1px solid var(--cardEdge);
+}
+
+/* The screen's name, left, on every screen (#473). Not the product's: the app
+   is named once, on the sidebar and on the install icon, and a title that said
+   "Cecilija" on all eleven screens would tell a reader nothing about where
+   they are. */
+.app__header-title {
+  min-width: 0;
+}
+
+.app__header-title h1 {
+  margin: 0;
+  font-family: var(--font-bodoni), Georgia, serif;
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  line-height: 1.15;
+}
+
+/* The bell's slot (#496). Empty until the inbox lands, and an empty flex box
+   costs nothing. */
+.app__header-actions {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .app__brand {
@@ -82,7 +119,7 @@
   font-weight: 600;
   letter-spacing: 0.01em;
   margin: 0;
-  color: var(--light);
+  color: var(--ink);
 }
 
 .app__identity {
@@ -92,7 +129,7 @@
 }
 
 .app__identity strong {
-  color: var(--goldBright);
+  color: var(--goldText);
   font-weight: 600;
 }
 
@@ -112,20 +149,19 @@
 
 .app__logout:hover,
 .app__logout:focus-visible {
-  color: var(--light);
+  color: var(--ink);
   border-color: var(--gold);
 }
 
 /* ── Season line ────────────────────────────────────────── */
 .app__season {
   margin: 0;
-  padding-top: 8px;
+  padding-top: 4px;
   flex: 0 0 auto;
   font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
   font-size: 12px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  text-align: right;
   color: var(--muted);
 }
 
@@ -143,15 +179,19 @@
   right: 0;
   bottom: 0;
   z-index: 20;
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  /* Flex, not three columns: the bar holds between one and five entries now,
+     computed from the permission set (#495), and a grid would have to be told
+     how many. */
+  display: flex;
   height: calc(var(--tabH) + env(safe-area-inset-bottom));
   padding-bottom: env(safe-area-inset-bottom);
-  background: var(--bgDeep);
+  background: var(--frame);
   border-top: 1px solid var(--cardEdge);
 }
 
 .app__tabbar-item {
+  flex: 1 1 0;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -166,8 +206,8 @@
 }
 
 .app__tabbar-item svg {
-  width: 26px;
-  height: 26px;
+  width: 24px;
+  height: 24px;
   stroke: currentColor;
   fill: none;
   stroke-width: 1.6;
@@ -176,7 +216,17 @@
 }
 
 .app__tabbar-item--on {
-  color: var(--goldBright);
+  color: var(--goldText);
+}
+
+/* Five labels have to fit a phone: the label shrinks before it wraps, and the
+   table already hands the bar a short spelling where one exists. */
+.app__tabbar-item span,
+.app__tabbar-item {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-inline: 2px;
 }
 
 .app__tabbar-item--on svg {
@@ -188,7 +238,7 @@
   margin: 18px 0 0;
   padding: 16px 16px 14px;
   background: var(--card);
-  border: 1px solid var(--goldBright);
+  border: 1px solid var(--goldText);
   border-radius: var(--radius);
 }
 
@@ -202,7 +252,7 @@
   font-size: 12px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--goldBright);
+  color: var(--goldText);
 }
 
 .app__hero-eyebrow em {
@@ -224,7 +274,7 @@
 .app__hero-meta {
   margin: 6px 0 0;
   font-size: 15px;
-  color: var(--light);
+  color: var(--ink);
 }
 
 .app__hero-tags {
@@ -250,7 +300,7 @@
   font-size: 12px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: var(--light);
+  color: var(--ink);
 }
 
 .app__hero-army--crni {
@@ -259,9 +309,9 @@
 }
 
 .app__hero-army--bili {
-  background: var(--light);
-  border-color: var(--light);
-  color: #0a0a0a;
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--card);
 }
 
 /* The two answer buttons, hero-sized: this is the one tap the screen exists
@@ -279,7 +329,7 @@
   font-weight: 600;
   letter-spacing: 0;
   text-transform: none;
-  color: var(--light);
+  color: var(--ink);
   border-color: var(--gold);
 }
 
@@ -292,7 +342,7 @@
   margin-top: 12px;
   font-size: 14px;
   text-align: right;
-  color: var(--goldBright);
+  color: var(--goldText);
   text-decoration: none;
 }
 
@@ -345,18 +395,19 @@
 }
 
 .app__row {
+  padding-block: var(--rowY);
   display: grid;
   grid-template-columns: 46px minmax(0, 1fr) auto;
   gap: 12px;
   align-items: center;
   padding: 11px 0;
-  border-top: 1px solid #1f1f1f;
+  border-top: 1px solid var(--rule);
   color: inherit;
   text-decoration: none;
 }
 
 .app__row:last-child {
-  border-bottom: 1px solid #1f1f1f;
+  border-bottom: 1px solid var(--rule);
 }
 
 .app__row--cancelled .app__row-time,
@@ -434,13 +485,13 @@
 .app__badge--yes {
   background: var(--gold);
   border-color: var(--gold);
-  color: #0a0a0a;
+  color: var(--onGold);
 }
 
 .app__badge--no {
-  background: #2a2a2a;
-  border-color: #2a2a2a;
-  color: var(--light);
+  background: var(--sunk);
+  border-color: var(--sunk);
+  color: var(--ink);
 }
 
 /* Nobody has answered yet: dashed, so an unanswered row is visibly unfinished
@@ -451,14 +502,14 @@
 
 .app__badge--lineup {
   border-color: var(--gold);
-  color: var(--goldBright);
+  color: var(--goldText);
 }
 
 /* Past evenings: present, but behind one tap, because this app is read
    forwards. */
 .app__past {
   margin: 30px 0 0;
-  border-top: 1px solid #1f1f1f;
+  border-top: 1px solid var(--rule);
 }
 
 .app__past > summary {
@@ -478,9 +529,9 @@
 .app__note {
   margin: 12px 0 0;
   padding-top: 10px;
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid var(--rule);
   font-size: 14px;
-  color: var(--light);
+  color: var(--ink);
 }
 
 .app__note-label {
@@ -540,8 +591,8 @@
   padding: 12px;
   font-size: 16px; /* 16px keeps iOS Safari from zooming on focus */
   font-family: inherit;
-  color: var(--light);
-  background: var(--bgDeep);
+  color: var(--ink);
+  background: var(--frame);
   border: 1px solid var(--cardEdge);
   border-radius: var(--radius);
 }
@@ -576,12 +627,12 @@
   padding: 10px 12px;
   border: 1px solid var(--red);
   border-radius: var(--radius);
-  color: #f0b9b9;
+  color: var(--warn);
   font-size: 14px;
 }
 
 .app__link {
-  color: var(--goldBright);
+  color: var(--goldText);
 }
 
 /* The counterpart of .app__error: "the mail is on its way" (#424). */
@@ -590,7 +641,7 @@
   padding: 10px 12px;
   border: 1px solid var(--gold);
   border-radius: var(--radius);
-  color: var(--goldBright);
+  color: var(--goldText);
   font-size: 14px;
 }
 
@@ -614,7 +665,7 @@
 
 .app__hint strong {
   display: block;
-  color: var(--light);
+  color: var(--ink);
   font-size: 14px;
   margin-bottom: 2px;
 }
@@ -644,7 +695,7 @@
 }
 
 .app__install-step::marker {
-  color: var(--goldBright);
+  color: var(--goldText);
   font-family: var(--font-ibm-plex-mono), ui-monospace, monospace;
 }
 
@@ -654,7 +705,7 @@
   height: 15px;
   vertical-align: -3px;
   margin-right: 6px;
-  color: var(--goldBright);
+  color: var(--goldText);
 }
 
 .app__install-one-tap {
@@ -669,7 +720,7 @@
 
 .app__install-done {
   margin: 0 0 12px;
-  color: var(--goldBright);
+  color: var(--goldText);
   font-size: 14px;
 }
 
@@ -711,8 +762,8 @@
 
 .app__install-device--on {
   color: var(--bg);
-  background: var(--goldBright);
-  border-color: var(--goldBright);
+  background: var(--goldText);
+  border-color: var(--goldText);
 }
 
 /* ── Attendance answers (#422) ──────────────────────────── */
@@ -743,21 +794,21 @@
 
 .app__answer:hover:not([disabled]),
 .app__answer:focus-visible {
-  color: var(--light);
+  color: var(--ink);
   border-color: var(--gold);
 }
 
 .app__answer--on.app__answer--yes {
   background: var(--gold);
   border-color: var(--gold);
-  color: #101010;
+  color: var(--onGold);
   font-weight: 700;
 }
 
 .app__answer--on.app__answer--no {
-  background: #2a2a2a;
+  background: var(--sunk);
   border-color: var(--muted);
-  color: var(--light);
+  color: var(--ink);
   font-weight: 700;
 }
 
@@ -786,7 +837,7 @@
 .app__answer-error {
   margin: 8px 0 0;
   font-size: 13px;
-  color: #f0b9b9;
+  color: var(--warn);
 }
 
 /* ── Headcount chips + performance detail (#423) ─────────── */
@@ -805,9 +856,9 @@
 /* Below threshold: the whole point of the chip is that a short evening is
    visible without opening it. */
 .app__chip--low {
-  border-color: #c05252;
+  border-color: var(--warn);
   background: rgba(139, 0, 0, 0.28);
-  color: #f0b9b9;
+  color: var(--warn);
   font-weight: 700;
 }
 
@@ -817,13 +868,13 @@
   font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
   font-size: 13px;
   letter-spacing: 0.06em;
-  color: var(--goldBright);
+  color: var(--goldText);
   text-decoration: none;
 }
 
 .app__back:hover,
 .app__back:focus-visible {
-  color: var(--light);
+  color: var(--ink);
 }
 
 .app__note--detail {
@@ -843,7 +894,7 @@
   font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--light);
+  color: var(--ink);
 }
 
 .app__people {
@@ -860,11 +911,11 @@
   flex-direction: column;
   gap: 6px;
   padding: 9px 0;
-  border-top: 1px solid #1f1f1f;
+  border-top: 1px solid var(--rule);
 }
 
 .app__people .app__person:last-child {
-  border-bottom: 1px solid #1f1f1f;
+  border-bottom: 1px solid var(--rule);
 }
 
 .app__person-line {
@@ -876,14 +927,14 @@
 
 .app__person-name {
   min-width: 0;
-  color: var(--light);
+  color: var(--ink);
   font-size: 16px;
 }
 
 /* The viewer's own name, in gold: a list of twenty nicknames is scanned for
    one of them. */
 .app__person--me .app__person-name {
-  color: var(--goldBright);
+  color: var(--goldText);
 }
 
 /* The number itself is dropped: it is a `tel:` href, and a dancer taps the
@@ -896,14 +947,14 @@
   height: 38px;
   border: 1px solid var(--cardEdge);
   border-radius: 50%;
-  color: var(--goldBright);
+  color: var(--goldText);
   text-decoration: none;
 }
 
 .app__call:hover,
 .app__call:focus-visible {
   border-color: var(--gold);
-  color: var(--light);
+  color: var(--ink);
 }
 
 .app__call-icon {
@@ -932,7 +983,7 @@
 
 .app__move:hover:not([disabled]),
 .app__move:focus-visible {
-  color: var(--light);
+  color: var(--ink);
   border-color: var(--gold);
 }
 
@@ -969,7 +1020,7 @@
   background: none;
   border: none;
   padding: 4px 0;
-  color: var(--goldBright);
+  color: var(--goldText);
   font-size: 13px;
   text-decoration: underline;
   cursor: pointer;
@@ -1010,7 +1061,7 @@
 .app__alarm-result {
   margin: 10px 0 0;
   font-size: 13px;
-  color: var(--light);
+  color: var(--ink);
 }
 
 /* The voditelj note, edited from the phone (#436). The same card frame as the
@@ -1029,8 +1080,8 @@
   padding: 10px 12px;
   font: inherit;
   font-size: 15px;
-  color: var(--light);
-  background: rgba(0, 0, 0, 0.25);
+  color: var(--ink);
+  background: var(--sunk);
   border: 1px solid var(--cardEdge);
   border-radius: var(--radius);
   resize: vertical;
@@ -1062,8 +1113,8 @@
   padding: 10px 12px;
   font-family: var(--font-ibm-plex-mono), monospace;
   font-size: 12px;
-  color: var(--light);
-  background: rgba(0, 0, 0, 0.25);
+  color: var(--ink);
+  background: var(--sunk);
   border: 1px solid var(--cardEdge);
   border-radius: var(--radius);
   overflow-wrap: anywhere;
@@ -1092,7 +1143,7 @@
   justify-content: space-between;
   gap: 8px;
   padding: 10px 0;
-  border-bottom: 1px solid rgba(154, 154, 154, 0.14);
+  border-bottom: 1px solid var(--rule);
 }
 
 /* The role a dancer's profile does not list: a warning, not a refusal, so it
@@ -1100,7 +1151,7 @@
 .app__lineup-warning {
   flex-basis: 100%;
   font-size: 12px;
-  color: #f0b9b9;
+  color: var(--warn);
 }
 
 .app__lineup-role {
@@ -1108,7 +1159,7 @@
   font-size: 12px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--goldBright);
+  color: var(--goldText);
 }
 
 .app__lineup-add {
@@ -1128,8 +1179,8 @@
   padding: 8px 10px;
   font: inherit;
   font-size: 14px;
-  color: var(--light);
-  background: rgba(0, 0, 0, 0.25);
+  color: var(--ink);
+  background: var(--sunk);
   border: 1px solid var(--cardEdge);
   border-radius: var(--radius);
 }
@@ -1168,7 +1219,7 @@
 .app__stats td {
   padding: 10px 4px;
   text-align: right;
-  border-bottom: 1px solid rgba(154, 154, 154, 0.14);
+  border-bottom: 1px solid var(--rule);
 }
 
 .app__stats thead th {
@@ -1183,7 +1234,7 @@
 .app__stats tbody th[scope='row'],
 .app__stats thead th:first-child {
   text-align: left;
-  color: var(--light);
+  color: var(--ink);
   font-weight: 400;
 }
 
@@ -1227,14 +1278,14 @@
   justify-content: space-between;
   gap: 8px;
   padding: 8px 0;
-  border-bottom: 1px solid rgba(154, 154, 154, 0.14);
+  border-bottom: 1px solid var(--rule);
 }
 
 .app__comp-code {
   font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
   font-size: 13px;
   letter-spacing: 0.06em;
-  color: var(--goldBright);
+  color: var(--goldText);
 }
 
 .app__comp-note {
@@ -1258,7 +1309,7 @@
 .app__stepper-label {
   flex: 1;
   font-size: 15px;
-  color: var(--light);
+  color: var(--ink);
 }
 
 .app__stepper-button {
@@ -1267,8 +1318,8 @@
   font: inherit;
   font-size: 20px;
   line-height: 1;
-  color: var(--light);
-  background: rgba(0, 0, 0, 0.25);
+  color: var(--ink);
+  background: var(--sunk);
   border: 1px solid var(--cardEdge);
   border-radius: var(--radius);
   cursor: pointer;
@@ -1283,7 +1334,7 @@
   min-width: 24px;
   text-align: center;
   font-size: 17px;
-  color: var(--light);
+  color: var(--ink);
 }
 
 .app__comp-name {
@@ -1303,8 +1354,8 @@
   padding: 10px 12px;
   font: inherit;
   font-size: 15px;
-  color: var(--light);
-  background: rgba(0, 0, 0, 0.25);
+  color: var(--ink);
+  background: var(--sunk);
   border: 1px solid var(--cardEdge);
   border-radius: var(--radius);
 }
@@ -1328,7 +1379,7 @@
   padding: 11px 18px;
   background: none;
   border: 1px solid var(--gold);
-  color: var(--light);
+  color: var(--ink);
   text-decoration: none;
 }
 
@@ -1353,7 +1404,7 @@
 
 .app__seasons-item--on {
   background: var(--card);
-  color: var(--goldBright);
+  color: var(--goldText);
 }
 
 .app__tiles {
@@ -1366,7 +1417,7 @@
 .app__tile2 {
   padding: 12px 14px;
   background: var(--card);
-  border: 1px solid #1f1f1f;
+  border: 1px solid var(--rule);
   border-radius: var(--radius);
 }
 
@@ -1390,12 +1441,23 @@
   margin-top: 24px;
 }
 
+/* Numeric columns and dense rows use the utility face with tabular figures
+   (#490): a serif at 13 px in a column of counts does not scan. */
+.app__stats-table td,
+.app__stats-table th,
+.app__tile2 b,
+.app__board-count,
+.app__board-rank {
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+
 .app__bars-svg {
   display: block;
   width: 100%;
   height: auto;
   font-family: var(--font-inter), system-ui, sans-serif;
-  fill: var(--light);
+  fill: var(--ink);
 }
 
 .app__bars-axis {
@@ -1417,12 +1479,12 @@
   justify-content: space-between;
   gap: 12px;
   padding: 10px 0;
-  border-top: 1px solid #1f1f1f;
+  border-top: 1px solid var(--rule);
   font-size: 15px;
 }
 
 .app__roles-row:last-child {
-  border-bottom: 1px solid #1f1f1f;
+  border-bottom: 1px solid var(--rule);
 }
 
 .app__roles-row span {
@@ -1436,12 +1498,13 @@
 }
 
 .app__more-row {
+  padding-block: calc(var(--rowY) + 3px);
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
   padding: 14px 0;
-  border-bottom: 1px solid #1f1f1f;
+  border-bottom: 1px solid var(--rule);
   font-size: 16px;
   color: inherit;
   text-decoration: none;
@@ -1495,7 +1558,7 @@
   margin: 6px 0 0;
   font-size: 16px;
   font-weight: 600;
-  color: var(--light);
+  color: var(--ink);
 }
 
 .app__detail-where {
@@ -1514,14 +1577,14 @@
 .app__chip--yes {
   background: var(--gold);
   border-color: var(--gold);
-  color: #0a0a0a;
+  color: var(--onGold);
   font-weight: 700;
 }
 
 .app__chip--no {
-  background: #2a2a2a;
-  border-color: #2a2a2a;
-  color: var(--light);
+  background: var(--sunk);
+  border-color: var(--sunk);
+  color: var(--ink);
 }
 
 /* Unanswered reads as unfinished, the same dashed border the list badge uses. */
@@ -1530,13 +1593,13 @@
 }
 
 .app__chip--cancelled {
-  border-color: #c05252;
-  color: #f0b9b9;
+  border-color: var(--warn);
+  color: var(--warn);
 }
 
 .app__chip--lineup {
   border-color: var(--gold);
-  color: var(--goldBright);
+  color: var(--goldText);
 }
 
 /* The segmented control sticks to the top of the scroll: on a long Dolaze list
@@ -1570,17 +1633,17 @@
   font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
   font-size: 13px;
   font-weight: 600;
-  color: var(--light);
+  color: var(--ink);
 }
 
 .app__segment--on {
   background: var(--card);
-  color: var(--goldBright);
-  box-shadow: inset 0 -2px 0 var(--goldBright);
+  color: var(--goldText);
+  box-shadow: inset 0 -2px 0 var(--goldText);
 }
 
 .app__segment--on b {
-  color: var(--goldBright);
+  color: var(--goldText);
 }
 
 .app__group {
@@ -1608,7 +1671,7 @@
 /* Below the threshold: the whole point of the number is that a short army is
    visible without counting the names under it. */
 .app__group-count--low {
-  color: #f0b9b9;
+  color: var(--warn);
   font-weight: 700;
 }
 
@@ -1619,7 +1682,7 @@
   width: 10px;
   height: 10px;
   margin-right: 8px;
-  border: 1px solid #555;
+  border: 1px solid var(--muted);
   vertical-align: middle;
 }
 
@@ -1628,14 +1691,14 @@
 }
 
 .app__swatch--bili {
-  background: var(--light);
+  background: #f5f2ec;
 }
 
 .app__group-empty {
   margin: 0;
   padding: 9px 0;
-  border-top: 1px solid #1f1f1f;
-  border-bottom: 1px solid #1f1f1f;
+  border-top: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
   font-size: 14px;
   color: var(--muted);
 }
@@ -1658,13 +1721,13 @@
   font-family: var(--font-bodoni), Georgia, serif;
   font-size: 17px;
   font-weight: 600;
-  color: var(--light);
+  color: var(--ink);
 }
 
 .app__lineup-confirmed {
   margin: 14px 0 0;
   font-size: 13px;
-  color: var(--goldBright);
+  color: var(--goldText);
 }
 
 /* The Ulaznice panel's headline: the count carries the cap, so the sentence
@@ -1715,7 +1778,7 @@
   font-weight: 400;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--goldBright);
+  color: var(--goldText);
 }
 
 .app__lead-row {
@@ -1725,10 +1788,10 @@
   padding: 12px 0;
   background: none;
   border: none;
-  border-top: 1px solid #1f1f1f;
+  border-top: 1px solid var(--rule);
   font-family: inherit;
   font-size: 15px;
-  color: var(--light);
+  color: var(--ink);
   text-align: left;
   cursor: pointer;
 }
@@ -1736,7 +1799,7 @@
 .app__lead-note {
   margin: 12px 0 0;
   padding-top: 12px;
-  border-top: 1px solid #1f1f1f;
+  border-top: 1px solid var(--rule);
   font-size: 13px;
   color: var(--muted);
 }
@@ -1746,7 +1809,7 @@
   margin: 0;
   padding: 12px 0 0;
   border: none;
-  border-top: 1px solid #1f1f1f;
+  border-top: 1px solid var(--rule);
 }
 
 /* ── The answer, always under the thumb (#457) ───────────── */
@@ -1779,7 +1842,7 @@
   font-weight: 600;
   letter-spacing: 0;
   text-transform: none;
-  color: var(--light);
+  color: var(--ink);
   border-color: var(--gold);
 }
 
@@ -1847,7 +1910,7 @@
 .app__steps i {
   display: block;
   height: 4px;
-  background: #2a2a2a;
+  background: var(--sunk);
 }
 
 .app__steps i.is-done {
@@ -1855,7 +1918,7 @@
 }
 
 .app__steps i.is-current {
-  background: var(--goldBright);
+  background: var(--goldText);
 }
 
 .app__ob-skip {
@@ -1882,7 +1945,7 @@
   font-size: 12px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--goldBright);
+  color: var(--goldText);
 }
 
 .app__ob h1 {
@@ -1917,9 +1980,9 @@
   width: 72px;
   height: 72px;
   margin-bottom: 8px;
-  border: 1px solid var(--goldBright);
+  border: 1px solid var(--goldText);
   border-radius: 50%;
-  color: var(--goldBright);
+  color: var(--goldText);
 }
 
 .app__ob-check svg {
@@ -1967,7 +2030,7 @@
   border: 1px solid var(--gold);
   border-radius: 8px;
   background: #0a0a0a;
-  color: var(--goldBright);
+  color: var(--goldText);
   font-family: var(--font-bodoni), Georgia, serif;
   font-size: 18px;
   font-weight: 700;
@@ -2009,7 +2072,7 @@
   width: 24px;
   height: 24px;
   margin: 0 auto 4px;
-  stroke: var(--goldBright);
+  stroke: var(--goldText);
   fill: none;
   stroke-width: 1.6;
   stroke-linecap: round;
@@ -2039,11 +2102,11 @@
 .app__calcard code {
   display: block;
   padding: 8px 10px;
-  border: 1px solid #1f1f1f;
-  background: #0a0a0a;
+  border: 1px solid var(--rule);
+  background: var(--sunk);
   font-family: var(--font-ibm-plex-mono), ui-monospace, monospace;
   font-size: 12px;
-  color: var(--goldBright);
+  color: var(--goldText);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -2061,7 +2124,7 @@
   padding: 15px;
   background: var(--gold);
   border: 1px solid var(--gold);
-  color: #0a0a0a;
+  color: var(--onGold);
   font-family: inherit;
   font-size: 17px;
   font-weight: 600;
@@ -2078,7 +2141,7 @@
   padding: 12px;
   background: transparent;
   border: 1px solid var(--cardEdge);
-  color: var(--light);
+  color: var(--ink);
   font-family: inherit;
   font-size: 15px;
   cursor: pointer;
@@ -2107,7 +2170,7 @@ a.app__ob-link {
   margin: 0;
   margin-inline: auto;
   font-size: 13px;
-  color: var(--goldBright);
+  color: var(--goldText);
   text-align: center;
 }
 
@@ -2117,8 +2180,8 @@ a.app__ob-link {
   right: 16px;
   bottom: calc(env(safe-area-inset-bottom) + 120px);
   padding: 10px 14px;
-  background: var(--light);
-  color: #0a0a0a;
+  background: var(--ink);
+  color: var(--bg);
   font-size: 14px;
   text-align: center;
   opacity: 0;
@@ -2154,7 +2217,7 @@ a.app__ob-link {
   gap: 16px;
   margin-top: 16px;
   padding: 14px 16px;
-  border: 1px solid var(--goldBright);
+  border: 1px solid var(--goldText);
   background: var(--card);
 }
 
@@ -2168,7 +2231,7 @@ a.app__ob-link {
   font-family: var(--font-bodoni), Georgia, serif;
   font-size: 34px;
   font-weight: 600;
-  color: var(--goldBright);
+  color: var(--goldText);
 }
 
 .app__board-mine small {
@@ -2192,12 +2255,12 @@ a.app__ob-link {
 
 .app__board-says .app__board-count-mine {
   font-size: 16px;
-  color: var(--light);
+  color: var(--ink);
 }
 
 .app__board-says .app__board-milestone-line {
   margin-top: 4px;
-  color: var(--goldBright);
+  color: var(--goldText);
 }
 
 /* Three tiles, the winner in the middle and tallest: a podium read left to
@@ -2212,7 +2275,7 @@ a.app__ob-link {
 
 .app__podium-tile {
   padding: 12px 8px 10px;
-  border: 1px solid #1f1f1f;
+  border: 1px solid var(--rule);
   background: var(--card);
   text-align: center;
 }
@@ -2257,11 +2320,11 @@ a.app__ob-link {
   gap: 12px;
   align-items: center;
   padding: 10px 0;
-  border-top: 1px solid #1f1f1f;
+  border-top: 1px solid var(--rule);
 }
 
 .app__board-row:last-child {
-  border-bottom: 1px solid #1f1f1f;
+  border-bottom: 1px solid var(--rule);
 }
 
 .app__board-rank {
@@ -2284,7 +2347,7 @@ a.app__ob-link {
 }
 
 .app__board-row--me .app__board-name {
-  color: var(--goldBright);
+  color: var(--goldText);
 }
 
 .app__board-chip {
@@ -2299,7 +2362,7 @@ a.app__ob-link {
 
 .app__board-chip--me {
   border-color: var(--gold);
-  color: var(--goldBright);
+  color: var(--goldText);
 }
 
 /* A reached milestone, as a small gold square with its number in it. */
@@ -2309,7 +2372,7 @@ a.app__ob-link {
   width: 20px;
   height: 20px;
   background: var(--gold);
-  color: #0a0a0a;
+  color: var(--onGold);
   font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
   font-size: 11px;
   font-style: normal;
@@ -2320,7 +2383,7 @@ a.app__ob-link {
   display: block;
   height: 3px;
   margin-top: 6px;
-  background: #1f1f1f;
+  background: var(--sunk);
 }
 
 .app__board-bar i {
@@ -2352,7 +2415,7 @@ a.app__ob-link {
   width: 100%;
   background: transparent;
   border: none;
-  border-bottom: 1px solid #1f1f1f;
+  border-bottom: 1px solid var(--rule);
   font-family: inherit;
   text-align: left;
   cursor: pointer;
@@ -2371,7 +2434,7 @@ a.app__ob-link {
   flex-direction: column;
   gap: 2px;
   font-size: 16px;
-  color: var(--light);
+  color: var(--ink);
   text-align: left;
 }
 
@@ -2412,13 +2475,13 @@ a.app__ob-link {
    keeps its order and nothing jumps under the thumb. */
 .app__invite-row {
   padding: 12px 0;
-  border-bottom: 1px solid #1f1f1f;
+  border-bottom: 1px solid var(--rule);
 }
 
 .app__invite-who {
   margin: 0 0 6px;
   font-size: 16px;
-  color: var(--light);
+  color: var(--ink);
 }
 
 .app__invite-message {
@@ -2456,7 +2519,7 @@ a.app__ob-link {
 .app__invite-actions .app__button--quiet:hover,
 .app__invite-actions .app__button--quiet:focus-visible {
   border-color: var(--gold);
-  color: var(--light);
+  color: var(--ink);
 }
 
 /* The rehearsal code (#463). The QR is held up on a phone as often as it is
@@ -2486,7 +2549,7 @@ a.app__ob-link {
   letter-spacing: 0.22em;
   /* The code is read off a screen across a room: it is the biggest thing here
      after the QR, and the letters are drawn from an alphabet with no 0/O. */
-  color: var(--goldBright);
+  color: var(--goldText);
 }
 
 .app__join-code-url,
@@ -2521,7 +2584,7 @@ a.app__ob-link {
   font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
   font-size: 44px;
   letter-spacing: 0.14em;
-  color: var(--goldBright);
+  color: var(--goldText);
 }
 
 .app__join-pairing-chip {
@@ -2531,6 +2594,153 @@ a.app__ob-link {
   border-radius: 999px;
   font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
   font-size: 12px;
-  color: var(--goldBright);
+  color: var(--goldText);
   white-space: nowrap;
+}
+
+
+/* ─────────────────────────────────────────────────────────────
+   The frame (#495): sidebar on the laptop, bar on the phone.
+
+   One layout for both, because Cecilija is one responsive app and not two
+   builds (ADR-0027). The phone gets the content column and the fixed bar it
+   always had; from 1024 px the sidebar appears beside it, the bar disappears,
+   and the rows tighten by one token (#490's `--rowY`).
+   ───────────────────────────────────────────────────────────── */
+.app__frame {
+  min-height: 100dvh;
+}
+
+/* Hidden on the phone: four tabs and Više are the whole navigation there. */
+.app__sidebar {
+  display: none;
+}
+
+.app__sidebar-brand {
+  margin: 0 0 18px;
+  padding: 0 10px;
+  font-family: var(--font-bodoni), Georgia, serif;
+  font-size: 21px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.app__sidebar-group {
+  margin-bottom: 16px;
+}
+
+.app__sidebar-group--last {
+  margin-top: auto;
+  padding-top: 8px;
+  border-top: 1px solid var(--rule);
+}
+
+.app__sidebar-head {
+  margin: 0 0 4px;
+  padding: 0 10px;
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.app__sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 10px;
+  color: var(--ink);
+  text-decoration: none;
+  font-size: 15px;
+  border-left: 2px solid transparent;
+}
+
+.app__sidebar-item svg {
+  width: 20px;
+  height: 20px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.app__sidebar-item:hover {
+  background: rgba(184, 136, 26, 0.1);
+}
+
+.app__sidebar-item--on {
+  color: var(--goldText);
+  border-left-color: var(--gold);
+  background: rgba(184, 136, 26, 0.14);
+  font-weight: 600;
+}
+
+/* ── Night island 1 of 2 (#490): the next evening ──────────
+   The dancer's poster for tonight, dark on every device, on a page that is
+   otherwise paper. It re-points the TOKENS rather than restating colours, so
+   everything inside it — chips, buttons, notes — follows without knowing it is
+   on an island. The second island is the whole Skener screen, which arrives
+   with #504. */
+.app__hero {
+  --bg: #131313;
+  --card: #131313;
+  --frame: #0a0a0a;
+  --ink: #f5f2ec;
+  --muted: #9a9a9a;
+  --gold: #d9a526;
+  --goldText: #d9a526;
+  --cardEdge: rgba(217, 165, 38, 0.55);
+  --rule: rgba(245, 242, 236, 0.14);
+  --sunk: #1f1f1f;
+  --onGold: #14100a;
+  /* The island's own warning red. Paper's `#a8321f` is 2.6:1 on #131313, and
+     the one thing the chip exists for is an army that is short tonight. */
+  --warn: #f0b9b9;
+  background: #131313;
+  color: var(--ink);
+  border-color: #d9a526;
+}
+
+@media (min-width: 1024px) {
+  .app {
+    /* Density is a breakpoint, not a toggle (#490). */
+    --rowY: 6px;
+  }
+
+  .app__frame {
+    display: grid;
+    grid-template-columns: 244px minmax(0, 1fr);
+  }
+
+  .app__sidebar {
+    display: flex;
+    flex-direction: column;
+    position: sticky;
+    top: 0;
+    align-self: start;
+    height: 100dvh;
+    overflow-y: auto;
+    padding: 20px 8px 16px;
+    background: var(--frame);
+    border-right: 1px solid var(--rule);
+  }
+
+  .app__tabbar {
+    display: none;
+  }
+
+  /* Left-aligned beside the sidebar, not centred in what is left of the
+     window: a column that drifts right as the monitor widens reads as though
+     it belongs to nothing. */
+  .app__shell {
+    max-width: 900px;
+    margin: 0;
+    padding: 0 32px 56px;
+  }
+
+  .app__header-title h1 {
+    font-size: 27px;
+  }
 }

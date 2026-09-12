@@ -3,7 +3,7 @@ import config from '@payload-config'
 import { loadMemberIdsWithLogin, type UserLinkFinder } from '@/lib/access/member-logins'
 import { inviteCandidates, type InviteCandidate, type InviteRosterMember } from './invite-link'
 
-// The IO wiring behind `/app/pozivnice` (#463) — the `link-self-data.ts` shape:
+// The IO wiring behind `/app/invitations` (#463) — the `link-self-data.ts` shape:
 // the Payload calls and nothing else, so WHO is on the list stays in the pure,
 // unit-tested `invite-link.ts`.
 //

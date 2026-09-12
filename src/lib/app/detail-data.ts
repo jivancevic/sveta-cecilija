@@ -4,7 +4,7 @@ import { relationIdString } from '@/lib/payload-relation'
 import { loadSeatsRemaining, type CompPayload } from './comp-data'
 import { loadPerformanceDetail, type PerformanceDetail } from './detail-loaders'
 
-// The IO wiring behind `/app/izvedba/[id]` (#423) — the `roster-data.ts` shape:
+// The IO wiring behind `/app/performances/[id]` (#423) — the `roster-data.ts` shape:
 // the Payload calls and nothing else, so every rule about what the detail shows
 // stays in the pure, unit-tested `detail-loaders.ts`.
 //

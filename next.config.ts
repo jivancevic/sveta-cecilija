@@ -1,6 +1,7 @@
 import { withPayload } from '@payloadcms/next/withPayload'
 import type { NextConfig } from 'next'
 import { appSubdomainRedirects } from './src/lib/app-subdomain'
+import { appRouteRedirects } from './src/lib/app/route-renames'
 
 const securityHeaders = [
   { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
@@ -49,6 +50,16 @@ const nextConfig: NextConfig = {
         destination: '/api/shows/:id/move-to-indoor',
         permanent: true,
       },
+
+      // ── Cecilija's Croatian segments (#473, #495) ──────────────────────
+      //
+      // The app's screens were renamed to English paths in one deploy, so
+      // every old path 308s to its new one. The table lives in
+      // `src/lib/app/route-renames.ts`, where each entry also records whether
+      // it may ever be dropped: two of them are permanent, because a QR code
+      // on a rehearsal-room wall and a link inside a sent SMS cannot be
+      // edited. The rest follow the #481 rule, one release.
+      ...appRouteRedirects(),
     ]
   },
 }

@@ -121,7 +121,7 @@ const SAMPLE_ANSWERS = [
 ]
 
 // The two sample postave (#432). Index 0 is the next performance of the season
-// and gets a CONFIRMED lineup, so `/app/statistika` has something to count and a
+// and gets a CONFIRMED lineup, so `/app/leaderboard` has something to count and a
 // dancer has a confirmed postava to look at; index 1 stays a DRAFT, which is
 // what a moreškant must NOT see. Roles are deliberately mixed: Cici dances his
 // own crni_kralj, and Dado is down as a bula he has no role for, so the warning

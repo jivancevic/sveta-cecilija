@@ -149,7 +149,7 @@ export const Members: CollectionConfig = {
           // "Kopiraj pozivnicu" (#463): the same invitation for the dancer who
           // has no e-mail, which the button above refuses and which is most of
           // the roster. It copies the message; the phone half (SMS, WhatsApp)
-          // is `/app/pozivnice`.
+          // is `/app/invitations`.
           '@/components/payload/CopyInviteMenuItem#CopyInviteMenuItem',
         ],
       },

@@ -3,7 +3,7 @@
 import { APP_STRINGS } from '@/lib/app/strings'
 
 // The numbered "how to install" steps, shared by the banner on `/app` and the
-// full-screen guide at `/app/instalacija` (#455).
+// full-screen guide at `/app/install` (#455).
 //
 // Presentational on purpose: every decision (which platform, is there a
 // one-tap prompt, has this device already installed) belongs to the caller, so

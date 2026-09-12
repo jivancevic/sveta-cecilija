@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { APP_STRINGS } from '@/lib/app/strings'
 
-// The "Kalendar" panel on `/app/vise` (#433, story 42).
+// The "Kalendar" panel on `/app/more` (#433, story 42).
 //
 // It prints no heading of its own (#457): the Više tab already puts "Kalendar
 // izvedbi" above it, and a second title under the first read as two panels.
