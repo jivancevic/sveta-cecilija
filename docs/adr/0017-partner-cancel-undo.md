@@ -11,5 +11,5 @@ This **amends [ADR-0008](0008-partner-sales-channel.md)**, whose storno was a on
 
 ## Consequences
 
-- A new `POST /api/partner/storno/undo` route + un-void primitive; the restore must take the same per-show sell lock as a sale, since re-activating tickets re-takes seats and could otherwise oversell.
+- A new `POST /api/partner/storno/undo` route (renamed to `POST /api/partner/cancel/undo` in #481, the English-slug rule) + un-void primitive; the restore must take the same per-show sell lock as a sale, since re-activating tickets re-takes seats and could otherwise oversell.
 - Stats / month-to-date / the recent-orders list all derive from active tickets, so they self-correct on both the void and the restore with no extra bookkeeping.

@@ -9,31 +9,22 @@ name: Schema drift
 #   bootstrap — run scripts/bootstrap-db.mjs (db/schema/*.sql only, no push)
 # The gate asserts `bootstrap` is a superset of `expected` (scripts/schema-diff.mjs).
 #
-# Path-filtered: drift can only appear when the schema source, the collection
-# configs Payload push reads, or the bootstrap/diff machinery change. Docs-only
-# and unrelated code PRs skip this slow job (it boots `next dev` + installs the
-# pg client). Safe to skip because `drift` is NOT a required status check — a
-# skipped run can't wedge a PR the way a skipped required check would.
+# This job used to be `paths:`-filtered and deliberately NOT a required check,
+# because GitHub reads a skipped required check as forever-pending and wedges the
+# PR. With production auto-deploying from main (ADR-0026) that posture no longer
+# holds: `bootstrap-db.mjs` runs on every prod boot, so a PR that adds a Payload
+# field and forgets `db/schema/*.sql` ships a column the code queries and the
+# database does not have, and there is no longer a human clicking Redeploy to
+# notice. The job therefore ALWAYS runs and decides internally whether there is
+# anything to compare, exactly like `docker.yml` — so it always reports a
+# conclusion and can be required. A PR that touches nothing schema-shaped costs
+# about twenty seconds instead of skipping.
 
 on:
   pull_request:
     branches: [main]
-    paths:
-      - 'db/schema/**'
-      - 'src/collections/**'
-      - 'scripts/bootstrap-db.mjs'
-      - 'scripts/schema-diff.mjs'
-      - 'package-lock.json'
-      - '.github/workflows/schema-drift.yml'
   push:
     branches: [main]
-    paths:
-      - 'db/schema/**'
-      - 'src/collections/**'
-      - 'scripts/bootstrap-db.mjs'
-      - 'scripts/schema-diff.mjs'
-      - 'package-lock.json'
-      - '.github/workflows/schema-drift.yml'
 
 jobs:
   drift:
@@ -55,13 +46,53 @@ jobs:
       PGPASSWORD: postgres
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # Drift can only appear when the schema source, the collection configs
+      # Payload push reads, or the bootstrap/diff machinery change. Default is
+      # ALWAYS to check: a diff we cannot classify (first push to a branch,
+      # missing base) runs the comparison.
+      - name: Decide whether to compare schemas
+        id: scope
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            base="${{ github.event.pull_request.base.sha }}"
+            head="${{ github.event.pull_request.head.sha }}"
+          else
+            base="${{ github.event.before }}"
+            head="${{ github.sha }}"
+          fi
+
+          decision=check
+          if [ -n "$base" ] && [ "$base" != "0000000000000000000000000000000000000000" ] \
+             && git cat-file -e "$base^{commit}" 2>/dev/null; then
+            changed=$(git diff --name-only "$base" "$head")
+            if ! echo "$changed" | grep -qE '^(db/schema/|src/collections/|scripts/bootstrap-db\.mjs|scripts/schema-diff\.mjs|package-lock\.json|\.github/workflows/schema-drift\.yml)'; then
+              decision=skip
+            fi
+            echo "Changed files:"; echo "$changed"
+          else
+            echo "No usable base sha ($base) — comparing."
+          fi
+
+          echo "decision=$decision" >> "$GITHUB_OUTPUT"
+          echo "Decision: $decision"
+
+      - name: Nothing schema-shaped changed
+        if: steps.scope.outputs.decision == 'skip'
+        run: echo "No change under db/schema, src/collections or the bootstrap/diff scripts — skipping the comparison."
+
       - uses: actions/setup-node@v4
+        if: steps.scope.outputs.decision == 'check'
         with:
           node-version: '22'
           cache: 'npm'
 
       # Match the Postgres 16 server so pg_dump doesn't refuse on a version skew.
       - name: Install postgresql-client-16
+        if: steps.scope.outputs.decision == 'check'
         run: |
           sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
           curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/pgdg.gpg
@@ -70,8 +101,10 @@ jobs:
           echo "/usr/lib/postgresql/16/bin" >> "$GITHUB_PATH"
 
       - run: npm ci
+        if: steps.scope.outputs.decision == 'check'
 
       - name: Create throwaway databases
+        if: steps.scope.outputs.decision == 'check'
         run: |
           psql -h localhost -U postgres -c "CREATE DATABASE expected"
           psql -h localhost -U postgres -c "CREATE DATABASE bootstrap"
@@ -81,6 +114,7 @@ jobs:
       # instrumentation.ts seeds base tables, then the first /admin request makes
       # Payload init + push, reconciling the schema to the collection configs.
       - name: Capture Payload-push schema (expected)
+        if: steps.scope.outputs.decision == 'check'
         run: |
           DATABASE_URL=postgres://postgres:postgres@localhost:5432/expected \
             node_modules/.bin/next dev -p 3000 > nextdev.log 2>&1 &
@@ -106,18 +140,21 @@ jobs:
 
       # bootstrap = what a fresh prod/DR DB gets: db/schema/*.sql via bootstrap-db.mjs.
       - name: Apply db/schema via bootstrap-db.mjs (bootstrap)
+        if: steps.scope.outputs.decision == 'check'
         run: DATABASE_URL=postgres://postgres:postgres@localhost:5432/bootstrap node scripts/bootstrap-db.mjs
 
       - name: Dump both schemas
+        if: steps.scope.outputs.decision == 'check'
         run: |
           pg_dump -h localhost -U postgres -d expected  --schema-only --no-owner --no-privileges > expected.sql
           pg_dump -h localhost -U postgres -d bootstrap --schema-only --no-owner --no-privileges > bootstrap.sql
 
       - name: Assert no drift
+        if: steps.scope.outputs.decision == 'check'
         run: node scripts/schema-diff.mjs expected.sql bootstrap.sql
 
       - name: Upload schema dumps on failure
-        if: failure()
+        if: failure() && steps.scope.outputs.decision == 'check'
         uses: actions/upload-artifact@v4
         with:
           name: schema-dumps

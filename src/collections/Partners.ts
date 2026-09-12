@@ -1,35 +1,35 @@
 import type { CollectionConfig } from 'payload'
-import { isAdminTier } from '@/lib/access/roles'
+import { can } from '@/lib/access/permissions'
 import { partnerOwnRecordWhere } from '@/lib/access/partner'
 
-type ReqUser = { id?: string | number; role?: string; partner?: unknown } | null | undefined
+type ReqUser = { id?: string | number; permissions?: unknown; partner?: unknown } | null | undefined
 
-const adminOnly = ({ req }: { req: { user: unknown } }) =>
-  isAdminTier(req.user as ReqUser)
+const backoffice = ({ req }: { req: { user: unknown } }) =>
+  can(req.user as ReqUser, 'tickets')
 
 // Resellers that sell Moreška tickets through their own POS (ADR-0008). First
-// partner: Kaleta (10% commission). A partner-role login links here via the
+// partner: Kaleta (10% commission). A `partner` login links here via the
 // `partner` relationship on Users and may read ONLY its own record.
 export const Partners: CollectionConfig = {
   slug: 'partners',
   access: {
-    // Admin-tier sees all partners; a partner sees only its own record.
+    // The backoffice sees all partners; a partner sees only its own record.
     read: ({ req }) => {
       const user = req.user as ReqUser
-      if (isAdminTier(user)) return true
+      if (can(user, 'tickets')) return true
       return partnerOwnRecordWhere(user)
     },
-    // Only admin-tier can create partners + set commission (ADR-0008).
-    create: adminOnly,
-    update: adminOnly,
-    delete: adminOnly,
+    // Only the backoffice can create partners + set commission (ADR-0008).
+    create: backoffice,
+    update: backoffice,
+    delete: backoffice,
   },
   admin: {
     useAsTitle: 'name',
     defaultColumns: ['name', 'commissionPercent', 'active'],
     // Empty sidebar for partners: they never manage the collection list, only
-    // their scoped dashboard. Hidden from anyone below admin-tier.
-    hidden: ({ user }) => !isAdminTier(user as ReqUser),
+    // their scoped dashboard. Hidden from anyone without `tickets`.
+    hidden: ({ user }) => !can(user as ReqUser, 'tickets'),
   },
   fields: [
     { name: 'name', type: 'text', required: true },

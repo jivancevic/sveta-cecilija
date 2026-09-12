@@ -19,6 +19,22 @@ knew about, plus a set of deprecated `t-com.hr` email aliases.
 | `moreska.eu` | Totohost | Hetzner DNS (`hydrogen/oxygen/helium.ns.hetzner.com`) | **Active — primary** | Nameserver delegation handed to Hetzner. Production site. |
 | `korcula-moreska.com` | Totohost (assumed) | — | **Active — legacy WP** | Old WordPress site. Stays up read-only through end of 2026 season so `checkinera` keeps scanning legacy QRs (`docs/todo.md` §0). 301 → `moreska.eu` planned at/after cutover (#11). |
 
+### Subdomains on the `moreska.eu` zone
+
+`A` records pointing at the one Hetzner box, `178.105.206.9`:
+
+| Host | Resolves? | Serves |
+|---|---|---|
+| `www` | yes | prod. Traefik strips the `www` (Coolify's per-app redirect setting, a 307). |
+| `dev` | yes | staging. Second Coolify app on the same box, tracks `main`. |
+| `app` | **no, parked by decision (2026-09-12, #479)** | nothing, see below |
+
+**`app.moreska.eu` is deliberately not live.** The redirect code shipped (`src/lib/app-subdomain.ts`, wired into `next.config.ts` `redirects()`, PR #485) and sits inert on prod because the host does not resolve. Josip's call when the ticket came up: `moreska.eu/app` is enough, because staff reach the app through the rehearsal QR, the installed PWA icon and the invitation link, never by typing an address. A vanity host buys nothing technical, only a shorter string to print or say out loud.
+
+Turning it on is two clicks whenever a poster wants the short name: add the `app` `A` record here, then append `https://app.moreska.eu` to the prod Coolify app's Domains field. DNS first, or Let's Encrypt cannot answer the HTTP-01 challenge. Every path then 301s to `https://moreska.eu/app`.
+
+**If you do turn it on, keep the redirect in code.** Coolify regenerates an app's Traefik labels whenever the domain list changes, so a hand-written `redirectregex` middleware disappears silently on the next domain edit. Config `redirects()` also runs *before* `src/proxy.ts`, which is what keeps the locale cookie off the vanity host.
+
 ### Regica — UNKNOWN, needs human login (issue #107, Task 1)
 
 A second registrar ("Regica") was discovered via `cecilija-passes/Password za Regica domene.txt`.
@@ -108,8 +124,14 @@ wrong):**
   on the live `korcula-moreska.com` site or in the public business registry (fininfo.hr). The only
   address publicly published on the old site is **`sv.cecilija@korcula-moreska.com`** (homepage
   footer + `/contacts/`), which is also cited as the media contact on third-party tourism pages.
-- ✅ **Public registry (fininfo.hr):** lists website `www.korcula-moreska.com`, **no email**.
-  Website field still needs updating to `moreska.eu` post-cutover (already noted in CLAUDE.md).
+- ✅ **Public registry — fixed 2026-08-17 (#369).** The official record is the **RNO** (Registar
+  neprofitnih organizacija, RNO broj `0163001`, https://banovac.mfin.hr/rnoprt/, searchable by OIB,
+  no login). It now reads website `https://moreska.eu/` and e-mail `info@moreska.eu`. Changed by
+  e-mailing a signed **Obrazac RNO-P** to `neprofitno.racunovodstvo@mfin.hr` — free, no attachments
+  beyond the form, no county office; the ministry confirmed the entry the next working day.
+  The `fininfo.hr` mirror is a **third party that lags** and still showed
+  `www.korcula-moreska.com` as of 2026-08-21 — cite banovac, not fininfo, when a platform reviewer
+  needs to tie the society to the domain.
 - ☐ **Legacy WP DB grep — NOT done (needs human/DB access).** The `wpbp_*` tables can only be
   reached via Totohost cPanel/phpMyAdmin or a DB export; neither is available to an agent. Given
   the old site is going read-only and will be 301'd, editing its stored content is low value —

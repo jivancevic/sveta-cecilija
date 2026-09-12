@@ -5,6 +5,20 @@
 -- if this file stops reproducing what Payload push would create.
 
 DO $$ BEGIN
+CREATE TYPE public.enum_attendance_army AS ENUM (
+    'crni',
+    'bili'
+);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+CREATE TYPE public.enum_attendance_status AS ENUM (
+    'coming',
+    'not_coming'
+);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
 CREATE TYPE public.enum_contact_submissions_enquiry_type AS ENUM (
     'general',
     'private-moreska',
@@ -47,6 +61,39 @@ CREATE TYPE public.enum_faqs_status AS ENUM (
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 DO $$ BEGIN
+CREATE TYPE public.enum_lineups_role AS ENUM (
+    'crni',
+    'bili',
+    'crni_kralj',
+    'otmanovic',
+    'bili_kralj',
+    'bula'
+);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+CREATE TYPE public.enum_members_primary_role AS ENUM (
+    'crni',
+    'bili',
+    'crni_kralj',
+    'otmanovic',
+    'bili_kralj',
+    'bula'
+);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+CREATE TYPE public.enum_members_roles AS ENUM (
+    'crni',
+    'bili',
+    'crni_kralj',
+    'otmanovic',
+    'bili_kralj',
+    'bula'
+);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
 CREATE TYPE public.enum_order_lookups_mode AS ENUM (
     'email',
     'name',
@@ -59,6 +106,13 @@ CREATE TYPE public.enum_orders_channel AS ENUM (
     'online',
     'partner',
     'comp'
+);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+CREATE TYPE public.enum_orders_comp_issued_by AS ENUM (
+    'admin',
+    'self'
 );
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
@@ -93,6 +147,16 @@ EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 DO $$ BEGIN
 CREATE TYPE public.enum_promo_codes_discount_type AS ENUM (
     'adult-price-override'
+);
+EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+DO $$ BEGIN
+CREATE TYPE public.enum_shows_kind AS ENUM (
+    'redovna',
+    'dmc',
+    'gulliver',
+    'koncert',
+    'ostalo'
 );
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
@@ -132,16 +196,42 @@ CREATE TYPE public.enum_tickets_type AS ENUM (
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 DO $$ BEGIN
-CREATE TYPE public.enum_users_role AS ENUM (
-    'superadmin',
-    'admin',
-    'tehnika',
+CREATE TYPE public.enum_users_permissions AS ENUM (
+    'users',
+    'tickets',
+    'refunds',
+    'door',
     'partner',
-    -- Shared read-only society-membership login (ADR-0022). Existing databases
-    -- pick this up from migrate-roles-3-member-enum.sql, not from here.
-    'member'
+    'season_stats',
+    'moreska',
+    'moreskant',
+    'finance',
+    'editor',
+    'dev'
 );
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
+
+CREATE TABLE IF NOT EXISTS public.attendance (
+    id integer NOT NULL,
+    performance_id integer NOT NULL,
+    member_id integer NOT NULL,
+    status public.enum_attendance_status NOT NULL,
+    army public.enum_attendance_army,
+    answered_by_id integer,
+    answered_at timestamp(3) with time zone,
+    updated_at timestamp(3) with time zone DEFAULT now() NOT NULL,
+    created_at timestamp(3) with time zone DEFAULT now() NOT NULL
+);
+
+CREATE SEQUENCE IF NOT EXISTS public.attendance_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.attendance_id_seq OWNED BY public.attendance.id;
 
 CREATE TABLE IF NOT EXISTS public.contact_submissions (
     id integer NOT NULL,
@@ -186,11 +276,35 @@ CREATE SEQUENCE IF NOT EXISTS public.faqs_id_seq
 
 ALTER SEQUENCE public.faqs_id_seq OWNED BY public.faqs.id;
 
+CREATE TABLE IF NOT EXISTS public.lineups (
+    id integer NOT NULL,
+    performance_id integer NOT NULL,
+    member_id integer NOT NULL,
+    role public.enum_lineups_role NOT NULL,
+    updated_at timestamp(3) with time zone DEFAULT now() NOT NULL,
+    created_at timestamp(3) with time zone DEFAULT now() NOT NULL
+);
+
+CREATE SEQUENCE IF NOT EXISTS public.lineups_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.lineups_id_seq OWNED BY public.lineups.id;
+
 CREATE TABLE IF NOT EXISTS public.members (
     id integer NOT NULL,
     name character varying NOT NULL,
     active boolean DEFAULT true,
     note character varying,
+    is_moreskant boolean DEFAULT false,
+    nickname character varying,
+    mobile character varying,
+    email character varying,
+    primary_role public.enum_members_primary_role,
     updated_at timestamp(3) with time zone DEFAULT now() NOT NULL,
     created_at timestamp(3) with time zone DEFAULT now() NOT NULL
 );
@@ -204,6 +318,23 @@ CREATE SEQUENCE IF NOT EXISTS public.members_id_seq
     CACHE 1;
 
 ALTER SEQUENCE public.members_id_seq OWNED BY public.members.id;
+
+CREATE TABLE IF NOT EXISTS public.members_roles (
+    "order" integer NOT NULL,
+    parent_id integer NOT NULL,
+    value public.enum_members_roles,
+    id integer NOT NULL
+);
+
+CREATE SEQUENCE IF NOT EXISTS public.members_roles_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.members_roles_id_seq OWNED BY public.members_roles.id;
 
 CREATE TABLE IF NOT EXISTS public.order_lookups (
     id integer NOT NULL,
@@ -232,6 +363,7 @@ CREATE TABLE IF NOT EXISTS public.orders (
     channel public.enum_orders_channel DEFAULT 'online'::public.enum_orders_channel NOT NULL,
     partner_id integer,
     member_id integer,
+    comp_issued_by public.enum_orders_comp_issued_by,
     promo_code_id integer,
     buyer_name character varying,
     email character varying,
@@ -243,6 +375,7 @@ CREATE TABLE IF NOT EXISTS public.orders (
     show_id integer NOT NULL,
     locale public.enum_orders_locale,
     review_email_sent_at timestamp(3) with time zone,
+    cancel_notified_at timestamp(3) with time zone,
     updated_at timestamp(3) with time zone DEFAULT now() NOT NULL,
     created_at timestamp(3) with time zone DEFAULT now() NOT NULL
 );
@@ -326,7 +459,9 @@ CREATE TABLE IF NOT EXISTS public.payload_locked_documents_rels (
     order_lookups_id integer,
     partners_id integer,
     members_id integer,
-    promo_codes_id integer
+    promo_codes_id integer,
+    attendance_id integer,
+    lineups_id integer
 );
 
 CREATE SEQUENCE IF NOT EXISTS public.payload_locked_documents_rels_id_seq
@@ -444,7 +579,11 @@ CREATE TABLE IF NOT EXISTS public.shows (
     id integer NOT NULL,
     date timestamp(3) with time zone NOT NULL,
     "time" character varying NOT NULL,
-    venue public.enum_shows_venue DEFAULT 'ljetno-kino'::public.enum_shows_venue NOT NULL,
+    kind public.enum_shows_kind DEFAULT 'redovna'::public.enum_shows_kind NOT NULL,
+    is_public boolean DEFAULT true NOT NULL,
+    venue public.enum_shows_venue,
+    location character varying,
+    client character varying,
     online_sold numeric DEFAULT 0,
     in_person_sold numeric DEFAULT 0,
     legacy_reserved numeric DEFAULT 0,
@@ -455,6 +594,11 @@ CREATE TABLE IF NOT EXISTS public.shows (
     date_changed_at timestamp(3) with time zone,
     date_changed_by_id integer,
     original_date timestamp(3) with time zone,
+    threshold_crni numeric DEFAULT 8 NOT NULL,
+    threshold_bili numeric DEFAULT 8 NOT NULL,
+    lineup_confirmed boolean DEFAULT false,
+    lineup_confirmed_at timestamp(3) with time zone,
+    voditelj_note character varying,
     updated_at timestamp(3) with time zone DEFAULT now() NOT NULL,
     created_at timestamp(3) with time zone DEFAULT now() NOT NULL
 );
@@ -495,8 +639,9 @@ ALTER SEQUENCE public.tickets_id_seq OWNED BY public.tickets.id;
 
 CREATE TABLE IF NOT EXISTS public.users (
     id integer NOT NULL,
-    role public.enum_users_role DEFAULT 'admin'::public.enum_users_role NOT NULL,
+    shared boolean DEFAULT false,
     partner_id integer,
+    member_id integer,
     updated_at timestamp(3) with time zone DEFAULT now() NOT NULL,
     created_at timestamp(3) with time zone DEFAULT now() NOT NULL,
     email character varying,
@@ -519,6 +664,23 @@ CREATE SEQUENCE IF NOT EXISTS public.users_id_seq
 
 ALTER SEQUENCE public.users_id_seq OWNED BY public.users.id;
 
+CREATE TABLE IF NOT EXISTS public.users_permissions (
+    "order" integer NOT NULL,
+    parent_id integer NOT NULL,
+    value public.enum_users_permissions,
+    id integer NOT NULL
+);
+
+CREATE SEQUENCE IF NOT EXISTS public.users_permissions_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.users_permissions_id_seq OWNED BY public.users_permissions.id;
+
 CREATE TABLE IF NOT EXISTS public.users_sessions (
     _order integer NOT NULL,
     _parent_id integer NOT NULL,
@@ -527,11 +689,17 @@ CREATE TABLE IF NOT EXISTS public.users_sessions (
     expires_at timestamp(3) with time zone NOT NULL
 );
 
+ALTER TABLE ONLY public.attendance ALTER COLUMN id SET DEFAULT nextval('public.attendance_id_seq'::regclass);
+
 ALTER TABLE ONLY public.contact_submissions ALTER COLUMN id SET DEFAULT nextval('public.contact_submissions_id_seq'::regclass);
 
 ALTER TABLE ONLY public.faqs ALTER COLUMN id SET DEFAULT nextval('public.faqs_id_seq'::regclass);
 
+ALTER TABLE ONLY public.lineups ALTER COLUMN id SET DEFAULT nextval('public.lineups_id_seq'::regclass);
+
 ALTER TABLE ONLY public.members ALTER COLUMN id SET DEFAULT nextval('public.members_id_seq'::regclass);
+
+ALTER TABLE ONLY public.members_roles ALTER COLUMN id SET DEFAULT nextval('public.members_roles_id_seq'::regclass);
 
 ALTER TABLE ONLY public.order_lookups ALTER COLUMN id SET DEFAULT nextval('public.order_lookups_id_seq'::regclass);
 
@@ -561,6 +729,15 @@ ALTER TABLE ONLY public.tickets ALTER COLUMN id SET DEFAULT nextval('public.tick
 
 ALTER TABLE ONLY public.users ALTER COLUMN id SET DEFAULT nextval('public.users_id_seq'::regclass);
 
+ALTER TABLE ONLY public.users_permissions ALTER COLUMN id SET DEFAULT nextval('public.users_permissions_id_seq'::regclass);
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'attendance_pkey' AND conrelid = 'public.attendance'::regclass) THEN
+    ALTER TABLE ONLY public.attendance
+    ADD CONSTRAINT attendance_pkey PRIMARY KEY (id);
+  END IF;
+END $$;
+
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'contact_submissions_pkey' AND conrelid = 'public.contact_submissions'::regclass) THEN
     ALTER TABLE ONLY public.contact_submissions
@@ -576,9 +753,23 @@ DO $$ BEGIN
 END $$;
 
 DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'lineups_pkey' AND conrelid = 'public.lineups'::regclass) THEN
+    ALTER TABLE ONLY public.lineups
+    ADD CONSTRAINT lineups_pkey PRIMARY KEY (id);
+  END IF;
+END $$;
+
+DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'members_pkey' AND conrelid = 'public.members'::regclass) THEN
     ALTER TABLE ONLY public.members
     ADD CONSTRAINT members_pkey PRIMARY KEY (id);
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'members_roles_pkey' AND conrelid = 'public.members_roles'::regclass) THEN
+    ALTER TABLE ONLY public.members_roles
+    ADD CONSTRAINT members_roles_pkey PRIMARY KEY (id);
   END IF;
 END $$;
 
@@ -674,6 +865,13 @@ DO $$ BEGIN
 END $$;
 
 DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'users_permissions_pkey' AND conrelid = 'public.users_permissions'::regclass) THEN
+    ALTER TABLE ONLY public.users_permissions
+    ADD CONSTRAINT users_permissions_pkey PRIMARY KEY (id);
+  END IF;
+END $$;
+
+DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'users_pkey' AND conrelid = 'public.users'::regclass) THEN
     ALTER TABLE ONLY public.users
     ADD CONSTRAINT users_pkey PRIMARY KEY (id);
@@ -687,6 +885,16 @@ DO $$ BEGIN
   END IF;
 END $$;
 
+CREATE INDEX IF NOT EXISTS attendance_answered_by_idx ON public.attendance USING btree (answered_by_id);
+
+CREATE INDEX IF NOT EXISTS attendance_created_at_idx ON public.attendance USING btree (created_at);
+
+CREATE INDEX IF NOT EXISTS attendance_member_idx ON public.attendance USING btree (member_id);
+
+CREATE INDEX IF NOT EXISTS attendance_performance_idx ON public.attendance USING btree (performance_id);
+
+CREATE INDEX IF NOT EXISTS attendance_updated_at_idx ON public.attendance USING btree (updated_at);
+
 CREATE INDEX IF NOT EXISTS contact_submissions_created_at_idx ON public.contact_submissions USING btree (created_at);
 
 CREATE INDEX IF NOT EXISTS contact_submissions_updated_at_idx ON public.contact_submissions USING btree (updated_at);
@@ -695,7 +903,19 @@ CREATE INDEX IF NOT EXISTS faqs_created_at_idx ON public.faqs USING btree (creat
 
 CREATE INDEX IF NOT EXISTS faqs_updated_at_idx ON public.faqs USING btree (updated_at);
 
+CREATE INDEX IF NOT EXISTS lineups_created_at_idx ON public.lineups USING btree (created_at);
+
+CREATE INDEX IF NOT EXISTS lineups_member_idx ON public.lineups USING btree (member_id);
+
+CREATE INDEX IF NOT EXISTS lineups_performance_idx ON public.lineups USING btree (performance_id);
+
+CREATE INDEX IF NOT EXISTS lineups_updated_at_idx ON public.lineups USING btree (updated_at);
+
 CREATE INDEX IF NOT EXISTS members_created_at_idx ON public.members USING btree (created_at);
+
+CREATE INDEX IF NOT EXISTS members_roles_order_idx ON public.members_roles USING btree ("order");
+
+CREATE INDEX IF NOT EXISTS members_roles_parent_idx ON public.members_roles USING btree (parent_id);
 
 CREATE INDEX IF NOT EXISTS members_updated_at_idx ON public.members USING btree (updated_at);
 
@@ -731,9 +951,13 @@ CREATE INDEX IF NOT EXISTS payload_locked_documents_created_at_idx ON public.pay
 
 CREATE INDEX IF NOT EXISTS payload_locked_documents_global_slug_idx ON public.payload_locked_documents USING btree (global_slug);
 
+CREATE INDEX IF NOT EXISTS payload_locked_documents_rels_attendance_id_idx ON public.payload_locked_documents_rels USING btree (attendance_id);
+
 CREATE INDEX IF NOT EXISTS payload_locked_documents_rels_contact_submissions_id_idx ON public.payload_locked_documents_rels USING btree (contact_submissions_id);
 
 CREATE INDEX IF NOT EXISTS payload_locked_documents_rels_faqs_id_idx ON public.payload_locked_documents_rels USING btree (faqs_id);
+
+CREATE INDEX IF NOT EXISTS payload_locked_documents_rels_lineups_id_idx ON public.payload_locked_documents_rels USING btree (lineups_id);
 
 CREATE INDEX IF NOT EXISTS payload_locked_documents_rels_members_id_idx ON public.payload_locked_documents_rels USING btree (members_id);
 
@@ -813,7 +1037,13 @@ CREATE INDEX IF NOT EXISTS users_created_at_idx ON public.users USING btree (cre
 
 CREATE UNIQUE INDEX IF NOT EXISTS users_email_idx ON public.users USING btree (email);
 
+CREATE INDEX IF NOT EXISTS users_member_idx ON public.users USING btree (member_id);
+
 CREATE INDEX IF NOT EXISTS users_partner_idx ON public.users USING btree (partner_id);
+
+CREATE INDEX IF NOT EXISTS users_permissions_order_idx ON public.users_permissions USING btree ("order");
+
+CREATE INDEX IF NOT EXISTS users_permissions_parent_idx ON public.users_permissions USING btree (parent_id);
 
 CREATE INDEX IF NOT EXISTS users_sessions_order_idx ON public.users_sessions USING btree (_order);
 
@@ -822,6 +1052,48 @@ CREATE INDEX IF NOT EXISTS users_sessions_parent_id_idx ON public.users_sessions
 CREATE INDEX IF NOT EXISTS users_updated_at_idx ON public.users USING btree (updated_at);
 
 CREATE UNIQUE INDEX IF NOT EXISTS users_username_idx ON public.users USING btree (username);
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'attendance_answered_by_id_users_id_fk' AND conrelid = 'public.attendance'::regclass) THEN
+    ALTER TABLE ONLY public.attendance
+    ADD CONSTRAINT attendance_answered_by_id_users_id_fk FOREIGN KEY (answered_by_id) REFERENCES public.users(id) ON DELETE SET NULL;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'attendance_member_id_members_id_fk' AND conrelid = 'public.attendance'::regclass) THEN
+    ALTER TABLE ONLY public.attendance
+    ADD CONSTRAINT attendance_member_id_members_id_fk FOREIGN KEY (member_id) REFERENCES public.members(id) ON DELETE SET NULL;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'attendance_performance_id_shows_id_fk' AND conrelid = 'public.attendance'::regclass) THEN
+    ALTER TABLE ONLY public.attendance
+    ADD CONSTRAINT attendance_performance_id_shows_id_fk FOREIGN KEY (performance_id) REFERENCES public.shows(id) ON DELETE SET NULL;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'lineups_member_id_members_id_fk' AND conrelid = 'public.lineups'::regclass) THEN
+    ALTER TABLE ONLY public.lineups
+    ADD CONSTRAINT lineups_member_id_members_id_fk FOREIGN KEY (member_id) REFERENCES public.members(id) ON DELETE SET NULL;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'lineups_performance_id_shows_id_fk' AND conrelid = 'public.lineups'::regclass) THEN
+    ALTER TABLE ONLY public.lineups
+    ADD CONSTRAINT lineups_performance_id_shows_id_fk FOREIGN KEY (performance_id) REFERENCES public.shows(id) ON DELETE SET NULL;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'members_roles_parent_fk' AND conrelid = 'public.members_roles'::regclass) THEN
+    ALTER TABLE ONLY public.members_roles
+    ADD CONSTRAINT members_roles_parent_fk FOREIGN KEY (parent_id) REFERENCES public.members(id) ON DELETE CASCADE;
+  END IF;
+END $$;
 
 DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'order_lookups_show_id_shows_id_fk' AND conrelid = 'public.order_lookups'::regclass) THEN
@@ -866,6 +1138,13 @@ DO $$ BEGIN
 END $$;
 
 DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'payload_locked_documents_rels_attendance_fk' AND conrelid = 'public.payload_locked_documents_rels'::regclass) THEN
+    ALTER TABLE ONLY public.payload_locked_documents_rels
+    ADD CONSTRAINT payload_locked_documents_rels_attendance_fk FOREIGN KEY (attendance_id) REFERENCES public.attendance(id) ON DELETE CASCADE;
+  END IF;
+END $$;
+
+DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'payload_locked_documents_rels_contact_submissions_fk' AND conrelid = 'public.payload_locked_documents_rels'::regclass) THEN
     ALTER TABLE ONLY public.payload_locked_documents_rels
     ADD CONSTRAINT payload_locked_documents_rels_contact_submissions_fk FOREIGN KEY (contact_submissions_id) REFERENCES public.contact_submissions(id) ON DELETE CASCADE;
@@ -876,6 +1155,13 @@ DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'payload_locked_documents_rels_faqs_fk' AND conrelid = 'public.payload_locked_documents_rels'::regclass) THEN
     ALTER TABLE ONLY public.payload_locked_documents_rels
     ADD CONSTRAINT payload_locked_documents_rels_faqs_fk FOREIGN KEY (faqs_id) REFERENCES public.faqs(id) ON DELETE CASCADE;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'payload_locked_documents_rels_lineups_fk' AND conrelid = 'public.payload_locked_documents_rels'::regclass) THEN
+    ALTER TABLE ONLY public.payload_locked_documents_rels
+    ADD CONSTRAINT payload_locked_documents_rels_lineups_fk FOREIGN KEY (lineups_id) REFERENCES public.lineups(id) ON DELETE CASCADE;
   END IF;
 END $$;
 
@@ -992,9 +1278,23 @@ DO $$ BEGIN
 END $$;
 
 DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'users_member_id_members_id_fk' AND conrelid = 'public.users'::regclass) THEN
+    ALTER TABLE ONLY public.users
+    ADD CONSTRAINT users_member_id_members_id_fk FOREIGN KEY (member_id) REFERENCES public.members(id) ON DELETE SET NULL;
+  END IF;
+END $$;
+
+DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'users_partner_id_partners_id_fk' AND conrelid = 'public.users'::regclass) THEN
     ALTER TABLE ONLY public.users
     ADD CONSTRAINT users_partner_id_partners_id_fk FOREIGN KEY (partner_id) REFERENCES public.partners(id) ON DELETE SET NULL;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'users_permissions_parent_fk' AND conrelid = 'public.users_permissions'::regclass) THEN
+    ALTER TABLE ONLY public.users_permissions
+    ADD CONSTRAINT users_permissions_parent_fk FOREIGN KEY (parent_id) REFERENCES public.users(id) ON DELETE CASCADE;
   END IF;
 END $$;
 

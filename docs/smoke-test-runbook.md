@@ -35,11 +35,11 @@ Time budget: ~45 min for smoke test, ~30 min for cutover.
 
 1. Open `https://moreska.eu/tickets` in incognito (no `/en` or `/hr` prefix — locale is cookie-driven).
 2. Confirm the new show appears with venue label **"Summer Cinema"** (EN) or **"Ljetno kino"** (HR).
-3. Confirm **remaining = 320** (full ljetno-kino capacity).
+3. Confirm **remaining = 350** (full ljetno-kino capacity).
 4. Switch language toggle → HR copy renders, same show present.
 
 - [ ] Show visible on `/tickets` in both EN and HR.
-- [ ] Capacity reads 320 remaining.
+- [ ] Capacity reads 350 remaining.
 
 ## 3. Stripe checkout — happy path (5 min)
 
@@ -76,7 +76,7 @@ Time budget: ~45 min for smoke test, ~30 min for cutover.
 3. Seats are counted as active ticket rows (ADR-0007): the webhook does NOT bump `onlineSold`. Confirm `remaining` on `/tickets` has dropped by **2** (the 2 people in this order), i.e. **318** for ljetno-kino.
 
 - [ ] Order + 2 Tickets (1 adult, 1 child) visible in admin.
-- [ ] `/tickets` remaining dropped by the order's person count (320 → 318).
+- [ ] `/tickets` remaining dropped by the order's person count (350 → 348).
 
 ## 6. QR scan flow (5 min)
 
@@ -102,8 +102,8 @@ Test **buyer view** (unauthenticated) AND **staff view** (authenticated). Cookie
 ## 7. In-person sales (2 min)
 
 1. Open the test show edit view in admin.
-2. Use the **in-person sales** action (edit-menu item or custom button) to add `5` in-person tickets. If wired as direct field edit instead, set `inPersonSold: 5` and save.
-3. Reload `/tickets` (incognito) → remaining capacity now **320 − 2 − 5 = 313** (2 active online tickets + 5 in-person).
+2. Use the **"Add sales at the door"** action (Shows edit menu, or the `+ Prodaja` control on an upcoming dashboard card) to add `5` adult tickets. The `inPersonSold` field itself is READ-ONLY since ADR-0025: it is a cache of the offline sales ledger, so there is no direct-field-edit fallback. To check the correction path, add `-2` in the same box and confirm remaining goes back up by 2.
+3. Reload `/tickets` (incognito) → remaining capacity now **350 − 2 − 5 = 343** (2 active online tickets + 5 at the door).
 
 - [ ] Remaining count updates on public page.
 
@@ -120,7 +120,7 @@ Test **buyer view** (unauthenticated) AND **staff view** (authenticated). Cookie
 ## 9. Stats view sanity (1 min)
 
 1. `https://moreska.eu/admin/stats` — season aggregate shows the test show in the table.
-2. `https://moreska.eu/admin/stats/<showId>`: per-show drill-down showing online sold 2 (active tickets), in-person 5, scanned 2 (people), revenue calculated.
+2. `https://moreska.eu/admin/stats/<showId>`: per-show drill-down showing online sold 2 (active tickets), at the door 5, scanned 2 (people), revenue calculated. Door revenue is now the ledger sum (5 adults = €100), not a headcount times a flat €20.
 
 - [ ] Stats numbers match expectation.
 

@@ -1,8 +1,10 @@
 # Deployment (Coolify on Hetzner)
 
-Two Coolify apps on one Hetzner box both track `main` ([ADR-0009](../adr/0009-staging-environment-on-coolify.md)): **`dev.moreska.eu` auto-deploys** every push to `main`; **`moreska.eu` (prod) has auto-deploy OFF** — promotion is a manual "Redeploy" click in the Coolify UI after testing the same commit on dev. Hotfixes are "merge to main, immediately Redeploy prod"; no special path. No `dev` git branch (single trunk). Don't use Vercel — Payload's long-lived Postgres pool + bootstrap-on-start fights serverless.
+Two Coolify apps on one Hetzner box both track `main`, and **both auto-deploy** ([ADR-0026](../adr/0026-production-auto-deploy-from-main.md), superseding ADR-0009's manual-prod half): a push to `main` lands on **`dev.moreska.eu`** and on **`moreska.eu` (prod)** independently. They were never chained — staging has never been a gate in front of prod, it is a second app that happens to track the same branch. What gates prod is machinery, not a click: all six status checks are required on `main`, CI boots the real Docker image against a throwaway Postgres, and Coolify refuses to promote a container whose `HEALTHCHECK` fails (the old container keeps serving instead). Hotfixes are just "merge to main"; no special path. No `dev` git branch (single trunk). Don't use Vercel — Payload's long-lived Postgres pool + bootstrap-on-start fights serverless.
 
-> **Redeploy the *right* app.** That same Coolify instance also hosts an unrelated **`korcula-stays`** project (e.g. `korcula-pms`) — easy to Redeploy by mistake. Prod moreska.eu is **project `moreska-eu` → production → app `sveta-cecilija:main-zek88q652dijih0ywodgffux`** (domains `moreska.eu` + `www.moreska.eu`, Build Pack: Dockerfile). Before clicking Redeploy, confirm the breadcrumb reads `moreska-eu › production › sveta-cecilija…`; after, confirm the deploy log line `Importing jivancevic/sveta-cecilija:main (commit sha …)` matches the commit you just merged. The Coolify UI is reached via an SSH tunnel to `localhost:8000`; if it shows an error page, the tunnel dropped (`curl localhost:8000` → `000`) — re-establish it first.
+> **The merge button is the last checkpoint, and since 2026-09-12 an agent may click it** once all six checks are green (CLAUDE.md; a pending check is not a passing one). With the Redeploy click gone, nothing stands between a merge and the live payment site except CI. Coolify auto-deploys on the *push webhook*, not on CI success, so branch protection is what keeps a red commit off `main` — and admin bypass is deliberately left on. **Never force-merge past a failing check**; the container health gate is a backstop, not permission.
+
+> **If you do Redeploy by hand** (a rollback, or re-running a deploy without a new commit), **pick the *right* app.** That same Coolify instance also hosts an unrelated **`korcula-stays`** project (e.g. `korcula-pms`) — easy to Redeploy by mistake. Prod moreska.eu is **project `moreska-eu` → production → app `sveta-cecilija:main-zek88q652dijih0ywodgffux`** (domains `moreska.eu` + `www.moreska.eu`, Build Pack: Dockerfile). Before clicking Redeploy, confirm the breadcrumb reads `moreska-eu › production › sveta-cecilija…`; after, confirm the deploy log line `Importing jivancevic/sveta-cecilija:main (commit sha …)` matches the commit you just merged. The Coolify UI is reached via an SSH tunnel to `localhost:8000`; if it shows an error page, the tunnel dropped (`curl localhost:8000` → `000`) — re-establish it first.
 
 Each deploy: Coolify pulls the commit and runs `docker build` against the repo-root **`Dockerfile`** ([ADR-0012](../adr/0012-container-build-dockerfile-standalone.md)) — Nixpacks was dropped in #193. The multi-stage build is `deps` (`npm ci`, cached on the lockfile) → `build` (`next build` → `.next/standalone`) → `runtime` (a slim `node:22-slim` image holding only the standalone output plus the bits `bootstrap-db.mjs` needs). The container's `CMD` is `node scripts/bootstrap-db.mjs && node server.js` (schema bootstrap, then the standalone server — there is no `npm start` in the image).
 
@@ -51,6 +53,14 @@ Coolify runs its *own* internal Postgres in a separate `coolify-db` container �
 - `STRIPE_SECRET_KEY`, `STRIPE_PUBLISHABLE_KEY`, `STRIPE_WEBHOOK_SECRET` — from Stripe Dashboard.
 - `BREVO_API_KEY` — for transactional email (issue #6).
 - `NEXT_PUBLIC_BASE_URL` — `https://moreska.eu` in prod.
+- `CRON_SECRET` — bearer for the cron routes (`/api/cron/send-review-emails`, `/api/cron/moreskant-notifications`).
+- `CALENDAR_FEED_TOKEN` — the single secret behind the shared ICS calendar feed (#433). Generate with `openssl rand -hex 24`. The URL is `https://moreska.eu/api/app/calendar/<token>.ics` and the `/app` "Kalendar" panel renders it from `NEXT_PUBLIC_BASE_URL` + the token; unset, the panel is hidden and the route answers **500 with a log** (a 404 would read like a wrong link). Rotating it silently breaks every calendar already subscribed, so tell the dancers before you do.
+- `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT` — web push for Cecilija (#431). Generate the pair **once** with
+  `node -e "console.log(JSON.stringify(require('web-push').generateVAPIDKeys()))"` and paste both into Coolify; the subject is `mailto:info@moreska.eu`. **Rotating the private key invalidates every existing subscription**, so a rotation has to be followed by `DELETE FROM push_subscriptions` and every dancer pressing "Uključi obavijesti" again. Without the keys the app still works and simply sends nothing.
+
+- `MCP_CLIENT_ID`, `MCP_REDIRECT_URIS` — the Claude connector's OAuth client (#438). `MCP_CLIENT_ID` is any stable string the client sends back (`claude` in prod); `MCP_REDIRECT_URIS` is a comma-separated allow-list, and in production it is `https://claude.ai/api/mcp/auth_callback`. There is **no client secret** to set (why: `moreskant-app.md` → *Connecting*). Neither value is a secret in the "rotate on leak" sense, but both must be set or the flow is refused. Changing `MCP_REDIRECT_URIS` does not invalidate any issued token; changing `MCP_CLIENT_ID` stops the next authorization, not the existing connections.
+
+  **Revoking a connector** (the ops answer, and the only place it is written down): `DELETE FROM oauth_tokens WHERE user_id = <id>` disconnects that voditelj's Claude app, and removing their `moreska` permission in `/admin` does the same without touching a row. Deleting the account takes both with it. There is no per-token UI: this is a two-voditelj society.
 
 Setting/changing any of these requires a redeploy — Coolify env doesn't hot-reload into the running container.
 
@@ -63,9 +73,25 @@ node server.js                  # the actual app (Next.js standalone entry point
 
 This is the container `CMD`. If bootstrap fails, the container exits — `server.js` never runs. Logs will show `[bootstrap-db] failed: <reason>`. The script also handles `DATABASE_URL not set` gracefully (logs and skips, so the app can start in degraded mode for debugging).
 
+## Coolify scheduled tasks
+
+Two, both hitting a `CRON_SECRET`-bearer route with `node -e fetch` rather than
+`curl` (the app image has node, not curl):
+
+| Task | Schedule | Command |
+|---|---|---|
+| Review emails (#378) | `*/15 * * * *` | `node -e "fetch('http://localhost:3000/api/cron/send-review-emails',{method:'POST',headers:{Authorization:'Bearer '+process.env.CRON_SECRET}}).then(r=>r.text()).then(console.log)"` |
+| Moreškant alarm + reminder (#435) | `*/15 * * * *` | `node -e "fetch('http://localhost:3000/api/cron/moreskant-notifications',{method:'POST',headers:{Authorization:'Bearer '+process.env.CRON_SECRET}}).then(r=>r.text()).then(console.log)"` |
+
+Both are idempotent by claim, so a missed run costs at most a delay and a double
+run sends once. The roster task prints a JSON summary
+(`{performances, alarm:{…}, reminder:{…}, errors}`) to the task log; `claimed`
+without `sent` means the alarm was claimed and skipped because no army was short,
+which is the intended behaviour, not a failure.
+
 ## Deploy triggers
 
-Both apps connect to the repo via the same Coolify **GitHub App** (no per-repo deploy webhook — its hook lives at the App/installation level, so `gh api repos/.../hooks` is empty by design). Whether a push to `main` deploys is governed by each app's **Automatic Deployment** toggle: **staging (`dev.moreska.eu`) = ON**, **prod (`moreska.eu`) = OFF**. If staging stops auto-deploying, check that per-app toggle first.
+Both apps connect to the repo via the same Coolify **GitHub App** (no per-repo deploy webhook — its hook lives at the App/installation level, so `gh api repos/.../hooks` is empty by design). Whether a push to `main` deploys is governed by each app's **Automatic Deployment** toggle, and since 2026-09-12 **both are ON** (ADR-0026). If either stops auto-deploying, check that per-app toggle first: it is `application_settings.is_auto_deploy_enabled`, and `Application::isDeployable()` reads nothing else. Unlike the Git branch field, this toggle really does persist — verify it in Coolify's own database rather than trusting the UI.
 
 ### If auto-deploy isn't firing (two non-obvious gotchas, both cost real time in #226)
 
@@ -90,7 +116,7 @@ There is **one** endpoint to change, not two. The legacy Woo endpoint is already
 
 ### Steps
 
-1. **Deploy this branch first.** Prod deploys are manual (see *Deploy triggers*). Enabling the events before the code ships is harmless (the old handler 200s and ignores unknown types), but you want the handler live so the first real dispute is actually processed.
+1. **Deploy this branch first.** Merging to `main` ships it (see *Deploy triggers*). Enabling the events before the code ships is harmless (the old handler 200s and ignores unknown types), but you want the handler live so the first real dispute is actually processed.
 2. Stripe Dashboard → **Developers → Webhooks**. Confirm the toggle top-right reads **live mode**, not test — the test-mode endpoint list is separate and changing it does nothing for real chargebacks.
 3. Open the endpoint whose URL is `https://moreska.eu/api/stripe/webhook` (`we_1TZquZ…`).
 4. **Update details → Select events**, add:

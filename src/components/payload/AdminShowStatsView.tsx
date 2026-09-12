@@ -42,10 +42,14 @@ function Stat({ label, value }: { label: string; value: React.ReactNode }) {
 function HeaderBlock({
   header,
   showAdminBits,
+  showMoney,
   lang,
 }: {
   header: ShowStatsHeader
   showAdminBits: boolean
+  /** Revenue is the `finance` permission since #500, separate from the
+   *  backoffice bits: money and buyers are two different reads. */
+  showMoney: boolean
   lang: AdminLang
 }) {
   return (
@@ -86,7 +90,7 @@ function HeaderBlock({
         {showAdminBits ? <Stat label="Legacy reserved" value={header.legacyReserved} /> : null}
         <Stat label="Scanned" value={header.scanned} />
         <Stat label="Remaining" value={header.remaining} />
-        {showAdminBits ? <Stat label="Revenue" value={eur(header.revenueCents)} /> : null}
+        {showMoney ? <Stat label="Revenue" value={eur(header.revenueCents)} /> : null}
       </div>
     </>
   )
@@ -187,11 +191,15 @@ export function AdminShowStatsBody({
   header,
   orders,
   adminView,
+  showMoney,
   lang,
 }: {
   header: ShowStatsHeader
   orders: ShowStatsOrderRow[]
+  /** Buyer names, e-mails and the legacy count: the `tickets` backoffice. */
   adminView: boolean
+  /** The Revenue tile: `finance` (#500). */
+  showMoney: boolean
   lang: AdminLang
 }) {
   return (
@@ -206,7 +214,12 @@ export function AdminShowStatsBody({
       </div>
       <h1 style={{ marginBottom: 12, fontSize: 24 }}>Show stats</h1>
 
-      <HeaderBlock header={header} showAdminBits={adminView} lang={lang} />
+      <HeaderBlock
+        header={header}
+        showAdminBits={adminView}
+        showMoney={showMoney}
+        lang={lang}
+      />
 
       {adminView ? (
         <>

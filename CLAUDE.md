@@ -11,25 +11,31 @@
 | Schema + DB patterns — bootstrap, enum migrations, atomic & race-safe SQL, TRUNCATE CASCADE | `docs/agents/db-bootstrap.md` (+ `db/schema/README.md`) |
 | Deployment + DB topology — Coolify, Dockerfile/standalone build, env promotion, dev/prod/staging DB names | `docs/agents/deployment.md` |
 | Working in worktrees / parallel sessions — `.env.local`, devDeps, push-hang, `gh pr merge` | `docs/agents/worktree-dev.md` |
+| Permissions & access: the vocabulary, migration bundles, field locks, shared accounts | `docs/agents/permissions.md` (+ [ADR-0023](docs/adr/0023-permissions-replace-roles-app-surface.md)) |
 | Payload admin customization (v3) — component paths, importMap, CSRF gate | `docs/agents/payload-admin.md` |
 | Frontend & CSS gotchas — specificity, `backdrop-filter`, hero loading, `next/image` | `docs/agents/frontend-css.md` |
 | Assets pipeline — `public/` vs `assets/`, webp conversion | `docs/agents/assets.md` |
-| Feature design notes — #94 bad-weather venue change, show reschedule + ticket reissue (#379), #57 marketing opt-outs + review-email attendance gate (#378), Stripe disputes (#380) | `docs/agents/features.md` |
+| Cecilija, the staff and member app (`/app`, called Moreškant until #489) — route group, shared cookie, access decision, roster loaders, PWA, the target route map | `docs/agents/moreskant-app.md` (+ [ADR-0027](docs/adr/0027-cecilija-one-staff-app-payload-backoffice.md), [ADR-0024](docs/adr/0024-moreskant-roster-domain.md)) |
+| Feature design notes — offline sales at the door + legacy ([ADR-0025](docs/adr/0025-offline-sales-ledger.md)), non-public performances (`kind`/`isPublic`, ADR-0024), #94 bad-weather venue change, show reschedule + ticket reissue (#379), show cancellation with automatic refunds (#497), #57 marketing opt-outs + review-email attendance gate (#378), Stripe disputes (#380) | `docs/agents/features.md` |
 | Domain glossary | `CONTEXT.md` (single context; see `docs/agents/domain.md`) |
 | Architecture decisions | `docs/adr/` |
 
 ## Hard rules (don't violate; each enforced where noted)
 
+- **Every URL path segment is English, page routes and API routes alike** (#481). Croatian stays where it is the domain: UI copy, DB enum values (`storno`, `zimsko-kino`), cookie names (`moreska_locale`), glossary terms and code symbols. A Croatian segment that already ships gets renamed with a 308 from the old path for one release (`next.config.ts`), never a silent break. The `/app/*` Croatian segments are the one grandfathered set; they are renamed screen by screen under the Cecilija map (#471).
+- **Cecilija is one app on one host, and the two surfaces have names** ([ADR-0027](docs/adr/0027-cecilija-one-staff-app-payload-backoffice.md)). The staff and member app is **Cecilija** at `moreska.eu/app`, inside this same Next.js app and this same Coolify service; the raw-edit Payload UI at `/admin` is the **Backoffice**, behind `dev` (plus `editor` for Objave and FAQ). Never call either surface "admin" in docs or copy, never add a second container, repo or deploy for the app, and never hand-write a Traefik label for `app.moreska.eu` (that host is inert by choice, #479; the 301 lives in `src/lib/app-subdomain.ts`). Data access for a rebuilt Cecilija screen goes through the repository seam `src/lib/repo/` (`getRepo()`; only `src/lib/repo/payload/` may import `payload`), adopted screen by screen, never as a sweep.
 - **Never build internal URLs with a `/en` or `/hr` prefix** — locale is cookie-based, those routes 404 (`src/proxy.ts`).
 - **Never query the Shows collection directly in page components** — go through `getUpcomingShows()` / `getNextShow()` in `src/lib/shows.ts`.
 - **There is no `capacity` field on Shows and never add one** — capacity is fixed per venue (`VENUE_CAPACITY` in `src/lib/shows.ts`).
-- **Ticket prices are fixed: €20 adult, €10 child** — no dynamic pricing.
-- **Roles are `superadmin | admin | tehnika | partner | member`** — read predicates from `src/lib/access/roles.ts`, never hardcode the list elsewhere. (`door-staff` is a retired label.) `member` is a read-only shared society login (ADR-0022) and is in **no** access predicate: it reaches its own dashboard branch and nothing else.
-- **Admin-only mutation routes must re-check the role in the handler** — Payload's local API runs `overrideAccess: true`, so collection `access` doesn't gate them. Use `requireRole(req, predicate)` from `src/lib/access/route-guard.ts` (the single chokepoint); don't re-type `getPayload → auth → role check` inline. Token/signature routes (Stripe webhook, `/scan/[token]/claim`, unsubscribe, cron) are the only exceptions.
+- **Ticket prices are fixed: €20 adult, €10 child** — no dynamic pricing. Two sanctioned exceptions, both of which record *why* the price moved and neither of which adds a price category: a **member promo code** overriding the adult price online (ADR-0018), and an **offline sale line** priced below face value, which must carry a `discount_label` ([ADR-0025](docs/adr/0025-offline-sales-ledger.md)). The constants stay the source of truth for what to charge; the ledger records what was charged.
+- **There are no roles: a user holds a *set* of permissions** (ADR-0023). The vocabulary is `users | tickets | refunds | door | partner | season_stats | moreska | moreskant | finance | editor | dev`, spelled out once in `src/lib/access/permissions.ts`; never re-type it elsewhere. `can(user, 'refunds')` (or `hasAny`) is the **only** predicate: no role string comparison, no tier alias. "Superadmin" is shorthand for "holds every permission", not a thing in code. `shared` on Users is the only marker of a shared login (ADR-0022); a shared account may not edit its own record. Details: `docs/agents/permissions.md`.
+- **Staff mutation routes must re-check the permission in the handler.** Payload's local API runs `overrideAccess: true`, so collection `access` doesn't gate them. Use `requirePermission(req, 'refunds')` from `src/lib/access/route-guard.ts` (the single chokepoint); don't re-type `getPayload → auth → permission check` inline. There are exactly three kinds of exception, and a route outside them that skips the guard is a bug: **token- or signature-authenticated** routes (Stripe webhook, `/scan/[token]/claim`, `/order/[token]/refund`, unsubscribe, cron, and since #463 `POST /api/app/session`, where the invitation token IS the authentication); the **`/app` routes that have no session yet by nature** (`login`, `logout`, `forgot`, and #463's public `join` and `join/status`), which carry `rejectAppRequest` from `src/lib/app/request-guard.ts` instead and whose rules live in their pure handlers; and the two that authenticate a caller before there is a session to guard — `POST /api/app/authorize` and `/api/mcp` — which re-check `can(user, 'moreska')` inline by design (`docs/agents/permissions.md`).
 - **Accumulating numeric columns must use atomic SQL** (`col = col + $1`), never read-modify-write. See `db-bootstrap.md`.
 - **Secrets (Stripe live keys, `BREVO_API_KEY`, `PAYLOAD_SECRET`) never appear in any committed file or chat** — runtime env only (Coolify); if one leaks, rotate it.
 - **`.gitignore` blocks every `.env*` except `.env.example`** (the committed template).
 - **Don't relax the security baseline** — `next.config.ts` security headers + `payload.config.ts` fail-fast on missing `PAYLOAD_SECRET`. That baseline is what lets `/scan/[token]` be safely public.
+- **An agent may merge its own PR once every check is green, and never a moment before** (granted 2026-09-12, replacing the rule that reserved the merge click for a human). Since 2026-09-12 a push to `main` deploys straight to production ([ADR-0026](docs/adr/0026-production-auto-deploy-from-main.md)), so with the human checkpoint gone CI is the only gate left in front of a system taking real card payments: wait for all six checks to report, read them, then `gh pr merge`. A pending check is not a passing one. **Never force-merge past a failing check and never use the admin bypass** — Coolify deploys on the push webhook, not on CI success, so a bypass reaches production directly. Nothing at the GitHub level enforces any of this (a solo maintainer cannot approve their own PR, and an agent authenticates with the same token), so it is a rule, not a lock.
+- **Never gate a deploy on a health check that fails when the database blips.** `/api/health` is liveness, never readiness: it answers 200 whenever the server is up and reports `dbOk` in the body without letting it change the status code. A failed `bootstrap-db.mjs` is already caught, because the container's `CMD` means `server.js` never starts. Rationale in `src/lib/health/health.ts`.
 
 ---
 
@@ -39,7 +45,7 @@ Website for HGD Sveta Cecilija, a 143-year-old cultural organisation from Korču
 
 ### Organisation registry details
 
-Use these when filling out third-party platform business/verification forms (Meta Business Manager, Stripe, Google Ads, etc.). Source: https://www.fininfo.hr/Poduzece/Pregled/hrvatsko-glazbeno-drustvo-svcecilija-korcula/Detaljno/605996.
+Use these when filling out third-party platform business/verification forms (Meta Business Manager, Stripe, Google Ads, etc.). **Authoritative source is the RNO register** (Registar neprofitnih organizacija, RNO broj `0163001`): https://banovac.mfin.hr/rnoprt/ — search by OIB. `fininfo.hr` mirrors it but lags, so cite banovac when a reviewer needs proof.
 
 | Field | Value |
 |---|---|
@@ -53,7 +59,7 @@ Use these when filling out third-party platform business/verification forms (Met
 | Authorised representative | Velebit Veršić (President) |
 | Website (for new forms) | `https://moreska.eu` |
 
-Registry still lists `www.korcula-moreska.com` as the official website — update post-DNS-cutover.
+RNO registry updated 2026-08-17 (#369): website `https://moreska.eu/`, e-mail `info@moreska.eu`. The `fininfo.hr` mirror still shows the old `www.korcula-moreska.com` and will catch up on its own — don't chase it.
 
 ### Stack
 
@@ -68,7 +74,7 @@ Registry still lists `www.korcula-moreska.com` as the official website — updat
 - **Email receiving:** Google Workspace (ADR-0010, cutover #223 done 2026-08-13). MX is the single record `1 smtp.google.com`; `info@moreska.eu` is a real mailbox at `mail.google.com`. `tickets@` is a free alias on that user, and every unrecognized address catch-alls to it via Gmail → Default routing. **ImprovMX is retired** — no forwarding path survives, so any new `@moreska.eu` address must be an alias or it only works via the catch-all.
 - **Analytics & ad tracking:** GA4 (`NEXT_PUBLIC_GA_ID`) loaded via `next/script` in `src/components/CookieConsent.tsx`, gated on consent. A single umbrella Google tag (`GT-*`) covers both GA4 and Google Ads — fire **one** `gtag('event', 'purchase', …)` on the confirmation page (don't load a second `gtag/js?id=AW-…` script). The `gtag()` helper must push the `arguments` object, not an Array. **Meta tracking:** browser Pixel (loaded in `CookieConsent.tsx`, gated on consent) + **server-side Conversions API Purchase** fired from the Stripe webhook (`src/lib/meta/capi.ts`), deduped by a shared `event_id = order_<orderId>` on both legs (`MetaPixelPurchase.tsx` sets the browser `eventID`). Verified live end-to-end 2026-07. **Paid campaign management (#45, #46) and marketing listings (#35, #36, #39) are owned by a separate HGD member, not the developer** — dev scope stops at tag firing + measurement correctness.
 - **Infrastructure:** Hetzner Cloud + Coolify (Nuremberg). SSL automatic via Traefik (set the domain to `https://` in Coolify). See `docs/agents/deployment.md`.
-- **DNS:** Hetzner DNS. Domain `moreska.eu` registered at Totohost; nameserver handoff to Hetzner in progress.
+- **DNS:** Hetzner DNS. Domain `moreska.eu` registered at Totohost; nameserver handoff to Hetzner in progress. `app.moreska.eu` does **not** resolve and that is deliberate (#479, 2026-09-12): `moreska.eu/app` is the address, and staff reach the app by QR, installed icon or invitation link rather than by typing. The 301 code is already merged and inert (`src/lib/app-subdomain.ts`); turning the host on is one DNS record plus one Coolify domain, spelled out in `docs/agents/domains.md`. If you ever turn it on, the redirect stays in code, never a hand-written Traefik label, because Coolify regenerates its labels whenever the domain list changes.
 
 ### Pages
 
@@ -83,7 +89,9 @@ Registry still lists `www.korcula-moreska.com` as the official website — updat
 | `/checkout/[showId]/confirmation` | `…/confirmation/page.tsx` | Post-payment landing; looks up Order by `pi` (5×400ms retry to bridge the webhook race) |
 | `/privacy-policy`, `/cookie-policy` | `src/app/(frontend)/…/page.tsx` | Legal pages (EN+HR), via `LegalPage.tsx` |
 | `/scan/[token]` | `src/app/scan/[token]/page.tsx` (+ `scan/layout.tsx`) | Auth-aware door scan — buyer view if unauth, staff atomic mark-and-read if internal. Outside `(frontend)` (own minimal layout). Logic in `src/lib/scan-token.ts`; CSRF caveats in `payload-admin.md` |
-| `/admin`, `/admin/stats`, `/admin/stats/[showId]` | Payload + `src/components/payload/AdminStatsView.tsx`, `AdminShowStatsView.tsx` | Admin dashboard + role-aware stats views |
+| `/app`, `/app/moje`, `/app/vise`, `/app/izvedba/[id]`, `/app/statistika`, `/app/dobrodosli`, `/app/login`, `/app/prijava`, `/app/authorize`, `/app/set-password`, `/app/forgot`, `/app/instalacija`, `/app/povezi`, `/app/pozivnice`, `/app/join/[code]` | `src/app/app/…` (own route group + layout) | **Cecilija** (the app's name since #489; "moreškant" now names only the dancer and the roster section), Croatian only, noindex, outside `(frontend)`/`(payload)`. Access decision in `src/lib/app/access.ts`; attendance answers write through `POST /api/app/attendance`; a dancer's login is issued by the invitation (`POST /api/app/invite`), never self-registered; `/app/authorize` is the MCP connector's consent screen (#438); tabs Izvedbe / Moje / Više are real routes and `/app/dobrodosli` is the once-per-device walkthrough (#457, glossary *Dobrodošlica*, *Ljestvica*); `/app/instalacija` is the install guide and the ONLY `/app` page outside the access decision, because it is the QR target for a rehearsal (#455); `/app/povezi` is where a voditelj who dances links their own Member, the one sanctioned way past the `Users.member` field lock (#462); **since #463 an invitation LINK is what signs a dancer in** (`/app/prijava?token=…` → `POST /api/app/session`) and a password is an optional row in Više, a voditelj hands invitations over by SMS from `/app/pozivnice`, and `/app/join/[code]` is the rehearsal QR — the second `/app` page outside the access decision, public because the person scanning has no login yet, and the only public page that WRITES (a claim a voditelj approves); see `docs/agents/moreskant-app.md`. **These Croatian segments are being renamed screen by screen** to the English target table in that doc's *Cecilija route map* section (#473), two of whose 308s (`instalacija`, `prijava`) are permanent. Shape and scope of the app: [ADR-0027](docs/adr/0027-cecilija-one-staff-app-payload-backoffice.md) |
+| `/api/mcp/[transport]` | `src/app/api/mcp/[transport]/route.ts` | MCP server for the Claude app (ADR-0024, #438): five roster tools behind hand-written OAuth 2.1 (`src/lib/mcp/`, discovery under `src/app/.well-known/`). See `docs/agents/moreskant-app.md` |
+| `/admin`, `/admin/stats`, `/admin/stats/[showId]` | Payload + `src/components/payload/AdminStatsView.tsx`, `AdminShowStatsView.tsx` | Admin dashboard + permission-aware stats views |
 | `/api/stripe/webhook` | `src/app/api/stripe/webhook/route.ts` | Creates Order + Tickets on payment success |
 
 ### Key files
@@ -93,7 +101,7 @@ Registry still lists `www.korcula-moreska.com` as the official website — updat
 | `src/proxy.ts` | Locale detection (Next.js 16 "proxy" convention) |
 | `src/lib/shows.ts` | **Only** server-side entry point for frontend show data: `getUpcomingShows()`, `getNextShow()` (canonical "active door show"); derives `remaining` from `VENUE_CAPACITY` |
 | `src/lib/scan-token.ts` | Pure DI logic for `/scan/[token]` → `VALID \| ALREADY_SCANNED \| INVALID`; race-safety delegated to `deps.atomicMarkScanned` (raw `UPDATE tickets … WHERE scanned=false RETURNING …`) |
-| `src/lib/access/roles.ts` | Role predicates (`isSuperadmin`, `isAdminTier`, `isAuthed`, `isPartner`, `partnerIdOf`) — source of truth for roles |
+| `src/lib/access/permissions.ts` | The permission vocabulary + `can()` / `hasAny()`: source of truth for access (ADR-0023) |
 | `src/lib/access/partner.ts` | Partner ownership `Where` scoping, shared by collection access + partner routes |
 | `src/lib/data.ts` | Locale-agnostic data: performances, history vignettes, section/service card + page meta |
 | `src/messages/{en,hr}.json` | All UI strings (identical structure) |
@@ -112,41 +120,53 @@ Field-level detail lives in `src/collections/*.ts` — this table is purpose + k
 
 | Collection (slug) | Purpose |
 |---|---|
-| `Shows` (`shows`) | Show schedule: date/time/venue, sold counters, `status`, bad-weather venue-move audit fields (#94). Capacity derived per venue, never stored. |
-| `Orders` (`orders`) | One purchase: buyer + counts + `total` (EUR cents) + `stripePaymentIntentId` + `refundStatus` → Shows. `channel` (`online \| partner \| comp`); `partner` link for reseller scoping; `member` link for comp attribution (ADR-0019); `promoCode` link for online promo orders (ADR-0018, still `channel=online`) |
+| `Shows` (`shows`) | **Every** performance, public or not (ADR-0024): `kind` + `isPublic` decide whether a row sells tickets. Public rows keep the old shape (date/time/venue, sold counters, `status`, #94 venue-move audit); capacity derived per venue, never stored. Rules: `docs/agents/features.md`. |
+| `Orders` (`orders`) | One purchase: buyer + counts + `total` (EUR cents) + `stripePaymentIntentId` + `refundStatus` → Shows. `channel` (`online \| partner \| comp`); `partner` link for reseller scoping; `member` link for comp attribution (ADR-0019); `promoCode` link for online promo orders (ADR-0018, still `channel=online`); `compIssuedBy` (`admin \| self`, NULL reads as `admin`) marks a comp a moreškant issued for themselves from `/app` (#434, capped at 4 per performance) |
 | `OrderLookups` (`order-lookups`) | Buyer-facing order lookup support |
 | `Tickets` (`tickets`) | **Per-person** ticket + QR token → Orders; `scanned`/`scannedAt`. Seats = COUNT of active tickets (`online_sold` retired). Renamed from `qr_tokens`. |
 | `ContactSubmissions` (`contact-submissions`) | Enquiry-form submissions |
-| `Users` (`users`) | Payload auth + `role` (see `roles.ts`). Hybrid username login (ADR-0011): unique `username`, email optional but required for superadmin/admin. Shared door account is username `tehnika` (no email). `partner` logins carry a `partner` → Partners relationship. |
-| `Partners` (`partners`) | Reseller channel (ADR-0008): `name`, `oib`, `commissionPercent`, `active`. Admin-tier CRUD; a partner reads only its own record. |
-| `Members` (`members`) | Society members (ADR-0019): `name`, `active`, `note`. Shared attribution target for comp tickets (`orders.member`) and promo codes (`promoCodes.member`). No email/login. Admin-tier CRUD; hidden from tehnika/partner. |
-| `PromoCodes` (`promo-codes`) | Member promo codes (ADR-0018): `code` (unique), `member` (→ Members), `discountType` (`adult-price-override`), `adultPriceEur` (default 15), `active`. Applied at online checkout, best-of-two vs 5-for-4. Admin-tier CRUD. |
-| `Posts` (`posts`) | Blog posts (heroImage may be a remote URL) |
+| `Users` (`users`) | Payload auth + `permissions` (see `permissions.ts`) + `shared`. Hybrid username login (ADR-0011): unique `username` (field-locked to `users` since #424), email optional but required for `users` / `tickets` / `moreska` / `finance` / `editor` holders (a `moreskant` needed one until #463, when the invitation became a link a voditelj can send by SMS). Shared door account is username `tehnika` (no email), shared society login is `member`. A `partner` holder carries a `partner` → Partners relationship; a dancer's login carries a `member` → Members one (`docs/agents/moreskant-app.md`). |
+| `Partners` (`partners`) | Reseller channel (ADR-0008): `name`, `oib`, `commissionPercent`, `active`. `tickets` CRUD; a partner reads only its own record. |
+| `Members` (`members`) | Society members (ADR-0019): `name`, `active`, `note`. Shared attribution target for comp tickets (`orders.member`) and promo codes (`promoCodes.member`). Since #420 also the moreškant identity (ADR-0024): `isMoreskant` + nickname, mobile, email, dance roles, primary role, locked to `moreska`; rules in `docs/agents/moreskant-app.md`. |
+| `PromoCodes` (`promo-codes`) | Member promo codes (ADR-0018): `code` (unique), `member` (→ Members), `discountType` (`adult-price-override`), `adultPriceEur` (default 15), `active`. Applied at online checkout, best-of-two vs 5-for-4. `tickets` CRUD. |
+| `Attendance` (`attendance`) | One moreškant's answer for one performance (ADR-0024, #422): `performance` → Shows, `member` → Members, `status` (`coming \| not_coming`), `army` (`crni \| bili \| null`), `answeredBy`, `answeredAt`. Unique on (performance, member); **"no answer" is the absence of a row**. Written only by `POST /api/app/attendance`; rules + army count in `docs/agents/moreskant-app.md`. |
+| `Lineups` (`lineups`) | The postava of one performance (ADR-0024, #432): `performance` → Shows, `member` → Members, `role` from the dance-role enum. Unique on (performance, member); confirmation is one flag per evening (`shows.lineupConfirmed`), and only confirmed lineups reach a dancer or the season statistics. Written only by `POST /api/app/lineup`; rules in `docs/agents/moreskant-app.md`. |
+| `Posts` (`posts`) | Blog posts (heroImage may be a remote URL). Gated by `editor` since #500, not `tickets`. |
+| `offline_sales` | **Raw table, NOT a Payload collection** (ADR-0025): the append-only ledger of seats sold with no order and no ticket. One line = `source` (`door \| legacy`) + `ticket_type` (`adult \| child`) + `quantity` (may be negative, that is how a miscount is corrected) + `unit_price_cents` + optional `discount_label`. `shows.in_person_sold` / `shows.legacy_reserved` are its cached per-source totals. Money and the adult/child split read the ledger, never the counters. `db/schema/migrate-zz-da-offline-sales.sql`. |
 | `marketing_optouts` | **Raw table, NOT a Payload collection** (#57): `email` PK, `source`, `optedOutAt`. Created in `db/schema/app.sql`; see `docs/agents/features.md`. |
+| `push_subscriptions`, `performance_notifications` | **Raw tables, NOT Payload collections** (#431, #435): the roster's devices and its notification claims. `db/schema/migrate-push.sql`; see `docs/agents/moreskant-app.md`. |
+| `oauth_codes`, `oauth_tokens` | **Raw tables, NOT Payload collections** (#438): the MCP connector's credentials. `db/schema/migrate-zz-d-oauth.sql`; see `docs/agents/moreskant-app.md`. |
+| `app_join_codes`, `app_join_claims` | **Raw tables, NOT Payload collections** (#463): the rehearsal join code and the claims a voditelj approves. `db/schema/migrate-zz-db-join.sql`; see `docs/agents/moreskant-app.md`. |
 
-### Role-based access controls
+### Permission-based access controls
 
-Access is keyed off `user.role` via the predicates in `src/lib/access/roles.ts` (`isAuthed` = internal staff: superadmin/admin/tehnika, **not** partner). Partner ownership scoping lives in `src/lib/access/partner.ts` and is re-derived by partner-facing routes (the local API runs `overrideAccess: true`).
+Every decision reads the permission set via `can()` / `hasAny()` from `src/lib/access/permissions.ts` (ADR-0023). Partner ownership scoping lives in `src/lib/access/partner.ts` and is re-derived by partner-facing routes, because the local API runs `overrideAccess: true`. Vocabulary, bundles and gotchas: `docs/agents/permissions.md`.
 
 | Collection | read | create/update/delete |
 |---|---|---|
-| `Orders` | admin-tier; `partner` → only own | admin-tier |
-| `ContactSubmissions` | admin-tier | admin-tier |
-| `Shows` | authed (for `/scan` + stats) | admin-tier |
-| `Tickets` | authed (door scanning); `partner` → only own | admin-tier |
-| `Partners` | admin-tier; `partner` → only own | admin-tier |
-| `Members` | admin-tier | admin-tier |
-| `PromoCodes` | admin-tier | admin-tier |
-| `Users` | self-or-superadmin | create/delete superadmin-only; update self-or-superadmin |
+| `Orders` | `tickets`; `partner` → only own (`partnerOwnOrdersWhere`) | `tickets` |
+| `ContactSubmissions` | `tickets` | `tickets` |
+| `Shows` | `tickets` or `moreska`; `door` → public performances only | `tickets`; `moreska` → non-public rows, plus the roster fields on any row (#408) |
+| `Tickets` | `tickets` or `door`; `partner` → only own (`partnerOwnTicketsWhere`) | `tickets` |
+| `Partners` | `tickets`; `partner` → only own (`partnerOwnRecordWhere`) | `tickets` |
+| `Members` | `tickets` or `moreska` | `tickets` or `moreska`; delete `tickets` only. Moreškant fields read+write locked to `moreska`; `name`/`active`/`note` update locked to `tickets` |
+| `PromoCodes` | `tickets` | `tickets` |
+| `Lineups` | `moreska`; `moreskant` → only rows of a confirmed performance (`lineupReadAccess`) | `moreska` only (`lineupWriteAccess`), a boolean for the same reason. Dancers never write a lineup |
+| `Attendance` | `moreska`; `moreskant` → only own rows (`attendanceReadAccess`) | `moreska` only (`attendanceWriteAccess`) — never a `Where`, which Payload's create would read as plain "allowed". Dancers write through `POST /api/app/attendance`, where the rules live |
+| `OrderLookups` | `tickets` | `tickets` |
+| `Posts`, `Faqs` | public, published rows only; `editor` also sees drafts | `editor` (not `tickets`, since #500) |
+| `Users` | `users`, else own row only | create/delete `users`; update `users` or self, except a `shared` account, which may never edit itself |
 
-`POST /api/orders/[id]/refund` re-checks the role in-handler and 403s otherwise (the local API's `overrideAccess: true` means collection access alone doesn't gate it). The Stripe webhook and frontend show queries use the local API, so collection access doesn't affect them.
+`Users.permissions` and `Users.shared` are additionally field-locked to `users` (read, update and create); the `Users.partner` link is write-locked to `users` with read left open, and the `Users.member` link is locked for read *and* write, so no one can grant themselves anything (or repoint themselves at another dancer) through the self-edit path. The legacy `role` column and its enum were dropped in #398.
+
+`POST /api/orders/[id]/refund` and every other staff route re-check in-handler through `requirePermission` and 403 otherwise (the local API's `overrideAccess: true` means collection access alone doesn't gate them). The Stripe webhook and frontend show queries use the local API, so collection access doesn't affect them.
 
 ### Ticketing rules
 
 - **Prices:** €20 adult, €10 child (fixed). **PDV-inclusive at 25%** (€20 = €16 base + €4 PDV), same rate both categories — confirmed by the accountant, may drop pending a ministry opinion, so treat the rate as configurable rather than a constant (ADR-0020).
-- **Venue capacities:** `ljetno-kino` (Summer Cinema / Ljetno kino) = 320; `zimsko-kino` (Cultural Center Korčula / Centar za kulturu) = 250. Always derived from `VENUE_CAPACITY` in `src/lib/shows.ts`; remaining = capacity − sold tickets.
+- **Venue capacities:** `ljetno-kino` (Summer Cinema / Ljetno kino) = 350; `zimsko-kino` (Cultural Center Korčula / Centar za kulturu) = 250. (Ljetno kino was recorded as 320 until PR #448; the house holds 350 — [ADR-0025](docs/adr/0025-offline-sales-ledger.md).) Always derived from `VENUE_CAPACITY` in `src/lib/shows.ts`; remaining = capacity − sold tickets.
 - **Public venue names differ from DB values** — EN "Summer Cinema" / "Cultural Center Korčula", HR "Ljetno kino" / "Centar za kulturu". Keys: `schedule.venue*`, `performancesPage.venue*`. Buyer-facing names come from `VENUE_LABEL` in `src/lib/venues.ts`. Venue shown on every show card; a bad-weather note tops the tickets page (zimsko is the fallback).
-- **Show types in `docs/performances.md`:** only `Redovna` (public ticketed) shows appear on `/tickets`; `Gulliver` / `Adriatic DMC` (private tour operator) and `Crveni križ` (charity) are scheduling context only, not in the DB.
+- **Every performance is a `shows` row; only `isPublic` ones sell tickets** (ADR-0024) — filter every buyer/partner/door/stats query through `src/lib/show-performance.ts`, never by spelling `isPublic` yourself. Rules: `docs/agents/features.md`. `docs/performances.md` is a frozen print, not the source of truth.
 - **QR codes:** generated server-side at order creation, one per ticket, each encoding `https://moreska.eu/scan/[token]`. Door scanning is the browser-based `/scan/[token]` page only (Pretix dropped from MVP).
 - **Comp & promo:** admin-issued free tickets ride `channel='comp'` (`total=0`, `orders.member` attribution, kept out of revenue, capacity-guarded like a partner sell; ADR-0019). Member promo codes apply at online checkout (`adultPriceEur` override, best-of-two vs the automatic 5-for-4, never stacking; server recomputes; ADR-0018) and stay `channel='online'`.
 - **Refunds:** admin-initiated, plus buyer self-serve on a rescheduled show (ADR-0021: token-authed `/order/[token]/refund`, eligible while unscanned). Both *money-moving* paths share one idempotent, safely re-runnable engine — the route checks `refundStatus` before calling Stripe, the Stripe call carries a stable `refund:<paymentIntentId>` idempotency key (`src/lib/refund/create-stripe-refund.ts`), and a retry on an already-`refunded` order re-voids any still-active tickets (self-heal). Regression probe: `scripts/probe-refund-void.mjs`.

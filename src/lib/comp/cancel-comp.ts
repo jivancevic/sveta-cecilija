@@ -7,7 +7,7 @@
 //
 // Policy: admin-tier only, NO time window (the same-day rule is partner
 // self-service, not an admin constraint) — the gate lives in the route via
-// requireRole. This module owns only the comp-scoping decision, kept pure + DI so
+// requirePermission. This module owns only the comp-scoping decision, kept pure + DI so
 // it is unit-testable with fake void primitives:
 //   - the order MUST exist and be a comp (channel='comp'); voiding a paid online
 //     order here would cancel seats without a refund, and a partner order has its

@@ -19,6 +19,13 @@ const baseShow: EventShowInput = {
 }
 
 describe('buildStartDate / buildEndDate', () => {
+  it('emits the offset that actually applies on the date (CET in winter)', () => {
+    // Review fix on #426: the offset used to be a hard-coded +02:00, which was
+    // an hour out for anything outside the May-September ticketed season.
+    expect(buildStartDate('2026-11-07', '20:00')).toBe('2026-11-07T20:00:00+01:00')
+    expect(buildEndDate('2026-11-07', '20:00')).toBe('2026-11-07T21:00:00+01:00')
+  })
+
   it('emits ISO with local Korčula offset', () => {
     expect(buildStartDate('2026-08-14', '21:00')).toBe('2026-08-14T21:00:00+02:00')
   })
@@ -48,13 +55,13 @@ describe('deriveAvailability', () => {
   })
 
   it('returns LimitedAvailability at <=20% of capacity', () => {
-    // 20% of 320 = 64
-    expect(deriveAvailability(64, cap)).toBe('https://schema.org/LimitedAvailability')
+    // 20% of 350 = 70
+    expect(deriveAvailability(70, cap)).toBe('https://schema.org/LimitedAvailability')
     expect(deriveAvailability(1, cap)).toBe('https://schema.org/LimitedAvailability')
   })
 
   it('returns InStock above 20% capacity', () => {
-    expect(deriveAvailability(65, cap)).toBe('https://schema.org/InStock')
+    expect(deriveAvailability(71, cap)).toBe('https://schema.org/InStock')
     expect(deriveAvailability(cap, cap)).toBe('https://schema.org/InStock')
   })
 })

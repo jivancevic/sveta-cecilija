@@ -69,7 +69,7 @@ Popis svega što je napravljeno u sklopu pokretanja novog web sjedišta i sustav
 
 - `/checkout/[showId]`, quantity picker (odrasli / djeca), forma kupca, Stripe Payment Element.
 - Cijena: €20 odrasli / €10 djeca, fiksno.
-- Kapacitet po dvorani fiksan (Ljetno kino 320, Centar za kulturu 250); preostala mjesta računaju se iz baze u realnom vremenu.
+- Kapacitet po dvorani fiksan (Ljetno kino 350, Centar za kulturu 250); preostala mjesta računaju se iz baze u realnom vremenu.
 - Webhook `POST /api/stripe/webhook`: na uspješno plaćanje stvara Order i jedan QRToken po ulaznici.
 - Potvrdna stranica `/checkout/[showId]/confirmation` s retry-om (5×400 ms) zbog race-a s webhookom.
 - E-mail s ulaznicama (QR kodovi inline u poruci) preko Brevo-a.

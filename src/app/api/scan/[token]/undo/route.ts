@@ -1,15 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { sql } from '@payloadcms/db-postgres'
 import { undoScan } from '@/lib/scan-token'
-import { isAuthed } from '@/lib/access/roles'
-import { requireRole } from '@/lib/access/route-guard'
+import { requirePermission } from '@/lib/access/route-guard'
 import { scanRedirectUrl } from '@/lib/site-url'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ token: string }> }) {
-  const gate = await requireRole(req, isAuthed)
+  const gate = await requirePermission(req, ['door', 'tickets'])
   if (gate.error) return gate.error
   const { payload } = gate
 

@@ -1,12 +1,15 @@
 import type { CollectionConfig, Where } from 'payload'
-import { isAdminTier } from '@/lib/access/roles'
+import { can, type PermissionUser } from '@/lib/access/permissions'
 
-const adminOnly = ({ req }: { req: { user: unknown } }) =>
-  isAdminTier(req.user as { role?: string } | null)
+// Published content is the `editor` permission since #500 (Cecilija, #476):
+// `tickets` is the ticketing backoffice and no longer reaches Objave or FAQ.
+const contentEditor = ({ req }: { req: { user: unknown } }) =>
+  can(req.user as PermissionUser, 'editor')
 
-// Public reads: only published FAQs. Admins see everything (drafts included).
+// Public reads: only published FAQs. An `editor` sees everything (drafts too);
+// everyone else, staff included, reads as a visitor does.
 const publicRead = ({ req }: { req: { user: unknown } }): true | Where => {
-  if (isAdminTier(req.user as { role?: string } | null)) return true
+  if (can(req.user as PermissionUser, 'editor')) return true
   return { status: { equals: 'published' } } as Where
 }
 
@@ -14,16 +17,16 @@ export const Faqs: CollectionConfig = {
   slug: 'faqs',
   access: {
     read: publicRead,
-    create: adminOnly,
-    update: adminOnly,
-    delete: adminOnly,
+    create: contentEditor,
+    update: contentEditor,
+    delete: contentEditor,
   },
   admin: {
     useAsTitle: 'question',
     defaultColumns: ['question', 'category', 'locale', 'order', 'status'],
     description:
       'Frequently asked questions, shown on /faq grouped by category. Pick a locale; FAQs only appear on the public /faq of that locale. Answers must be verified by HGD before publishing.',
-    hidden: ({ user }) => !isAdminTier(user as { role?: string } | null),
+    hidden: ({ user }) => !can(user as PermissionUser, 'editor'),
   },
   fields: [
     { name: 'question', type: 'text', required: true },

@@ -37,6 +37,17 @@ describe('sitemap', () => {
     expect(urls).toContain(`${SITE_URL}/blog/klapa-na-skverina`)
   })
 
+  // #421: Cecilija is an internal tool. It must never be advertised in
+  // the sitemap, whatever else the sitemap grows.
+  it('lists no /app URL', async () => {
+    vi.mocked(getAllPublishedSlugs).mockResolvedValue([
+      { slug: 'moreska-history', locale: 'en', updatedAt: '2026-05-01T08:00:00.000Z' },
+    ])
+    const urls = (await sitemap()).map((r) => r.url)
+    expect(urls).not.toContain(`${SITE_URL}/app`)
+    expect(urls.filter((u) => u.startsWith(`${SITE_URL}/app`))).toEqual([])
+  })
+
   it('still emits the static routes if posts lookup throws (build-time DB outage)', async () => {
     vi.mocked(getAllPublishedSlugs).mockRejectedValue(new Error('db down'))
     const urls = (await sitemap()).map((r) => r.url)

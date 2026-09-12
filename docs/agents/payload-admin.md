@@ -12,8 +12,9 @@ Never direct React imports. Every component slot in `buildConfig` and collection
 - **Replace the `/admin` dashboard itself**: `admin.components.views.dashboard.Component` (no `path`). `admin.dashboard.widgets` is *additive* — it appends widgets to the built-in `CollectionCards`, not a replacement. To make the dashboard your component only, use the dashboard view override.
 - **Button in collection list header**: `collection.admin.components.views.list.actions`
 - **Item in edit view 3-dot menu**: `collection.admin.components.edit.editMenuItems`
-- **Hide a collection from the sidebar (per-role)**: `collection.admin.hidden: ({ user }) => !isAdminTier(user)`. Hidden collections also return 404 on direct URL access, not just sidebar omission.
-- **Field-level access** (e.g. lock a role/permission field against self-promotion): `field.access: { read, update, create }`. Each takes a function of `{ req }`. The field is silently dropped from updates if the predicate returns false — no error to the caller.
+- **Hide a collection from the sidebar (per-permission)**: `collection.admin.hidden: ({ user }) => !can(user, 'tickets')`. Hidden collections also return 404 on direct URL access, not just sidebar omission. Predicates come from `src/lib/access/permissions.ts`; see `docs/agents/permissions.md`.
+- **Field-level access** (e.g. lock the `permissions` field against self-promotion): `field.access: { read, update, create }`. Each takes a function of `{ req }`. The field is silently dropped from updates if the predicate returns false, with no error to the caller, so a missing lock fails open and quietly.
+- **`field.admin.hidden: true` does not remove the field from the form.** Payload renders it as an `<input type="hidden">` whose form-state value round-trips on save, so a hidden select still needs a valid (or null) value. It is invisible in the UI, which is what the retired `Users.role` field relied on while the column was still there (#397, dropped in #398). Combine it with `field.access.read` when the value must also stay out of the API payload.
 - **No per-row list actions exist in v3** — cancel/single-doc actions belong in the edit view.
 
 ## `importMap.js` is manually maintained
@@ -29,6 +30,8 @@ Two tied-together gotchas you must keep in place or every custom admin component
 
 Only `titleSuffix` and `defaultOGImageType` are Payload additions on top of Next.js `Metadata`. There is no `favicon` property.
 
+**Icons:** admin pages emit Payload's own metadata icons, which override the app-root `src/app/apple-icon.png` link tag — `/admin` HTML has no `apple-touch-icon`. That's why the same 180×180 icon also lives at `public/apple-touch-icon.png`: Safari's home-screen fallback probes that exact root path when no link tag is present. Keep both files in sync (and fully opaque — iOS renders transparency as black).
+
 ## Auth in custom API routes
 
 Use `payload.auth({ headers: req.headers })` to verify the admin session before calling `payload.create` / `payload.find` / etc.
@@ -39,3 +42,9 @@ Payload pushes `serverURL` into its `csrf` allowlist during sanitization. When e
 
 1. **Locally**, `NEXT_PUBLIC_BASE_URL` must match the actual port `next dev` runs on. If they diverge (e.g. `.env.local` says `:3000` but `PORT=3456`), every cookie-authenticated request — including `payload.auth({ headers })` inside server components like `/scan/[token]` — silently returns `user: null` and you get the unauthenticated branch. The `Authorization: JWT` header bypasses this check, which is why `/api/users/me` curls work with header auth but not cookie auth.
 2. **In production**, real phone camera scans of QR codes navigate to `https://moreska.eu/scan/[token]` with `Sec-Fetch-Site: none` and no Origin → cookie accepted. Address-bar typing and in-app `/admin` links also work (`none` / `same-origin`). Cross-site initiations (clicking the URL from Slack, Gmail, etc.) get `cross-site` → cookie rejected → page renders the buyer view and the token is never marked scanned. Staff must navigate from within `moreska.eu` for the staff path to trigger.
+
+## A permission that opens a collection needs a dashboard branch, or its holder loops forever
+
+`AdminDashboardView` turns the `none` branch of `dashboardBranchFor` into `redirect('/admin/login?redirect=/admin')`, and Payload's own login view redirects a signed-in user straight to that `redirect` target. The two bounce off each other: a signed-in account whose permission set produces `none` gets `ERR_TOO_MANY_REDIRECTS` at `/admin`, never a page, and can only work by typing a collection URL by hand.
+
+This is why `editor` got its own branch in #500 rather than falling through: it grants Posts and Faqs, so its holder is a Backoffice user with nothing to land on. The rule generalises — **any new permission whose whole purpose is a Backoffice collection must also get a branch in `src/lib/dashboard/branch.ts` and a landing in the dashboard view.** A permission that grants no `/admin` surface at all (`moreskant`, whose home is `/app`) is the sanctioned exception; its holder has no reason to open `/admin`, and the loop is the same one, just never triggered.

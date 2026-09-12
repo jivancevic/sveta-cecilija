@@ -60,3 +60,29 @@ describe('createSlidingWindowLimiter', () => {
     expect(blocked.retryAfterMs).toBe(800) // 1000 - 200
   })
 })
+
+describe('eviction (#445 review)', () => {
+  it('forgets a key whose whole window has aged out', () => {
+    let t = 1_000_000
+    const rl = createSlidingWindowLimiter({ limit: 2, windowMs: 1000, now: () => t })
+
+    // 512 distinct keys: the sweep runs on the last of them and finds every one
+    // still fresh, so nothing is dropped yet.
+    for (let i = 0; i < 512; i++) rl.hit(`k${i}`)
+    expect(rl.size()).toBe(512)
+
+    // A whole window later, 512 hits on ONE key sweep the stale ones away.
+    t += 2000
+    for (let i = 0; i < 512; i++) rl.hit('survivor')
+    expect(rl.size()).toBe(1)
+  })
+
+  it('keeps a key that is still inside its window', () => {
+    let t = 1_000_000
+    const rl = createSlidingWindowLimiter({ limit: 1000, windowMs: 10_000, now: () => t })
+    rl.hit('recent')
+    t += 1000
+    for (let i = 0; i < 512; i++) rl.hit('noisy')
+    expect(rl.size()).toBe(2)
+  })
+})

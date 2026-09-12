@@ -1,11 +1,11 @@
 import type { CollectionConfig } from 'payload'
-import { isAdminTier, isAuthed } from '@/lib/access/roles'
+import { can, hasAny } from '@/lib/access/permissions'
 import { partnerOwnTicketsWhere } from '@/lib/access/partner'
 
-type ReqUser = { role?: string; partner?: unknown } | null | undefined
+type ReqUser = { permissions?: unknown; partner?: unknown } | null | undefined
 
-const adminOnly = ({ req }: { req: { user: unknown } }) =>
-  isAdminTier(req.user as ReqUser)
+const backoffice = ({ req }: { req: { user: unknown } }) =>
+  can(req.user as ReqUser, 'tickets')
 
 // One ticket per person (ADR-0007). Was `QRTokens` / `qr_tokens`; the QR is just
 // how a ticket is presented at the door. Each ticket is self-describing (adult/
@@ -14,21 +14,21 @@ const adminOnly = ({ req }: { req: { user: unknown } }) =>
 export const Tickets: CollectionConfig = {
   slug: 'tickets',
   access: {
-    // Internal staff (superadmin/admin/tehnika) read every ticket — tehnika
-    // needs the full set for door scanning. A partner reads only tickets under
-    // its own orders (tickets.order.partner = self).
+    // Internal staff read every ticket: the backoffice (`tickets`) and the door
+    // (`door`), which needs the full set to scan against. A partner reads only
+    // tickets under its own orders (tickets.order.partner = self).
     read: ({ req }) => {
       const user = req.user as ReqUser
-      if (isAuthed(user)) return true
+      if (hasAny(user, ['tickets', 'door'])) return true
       return partnerOwnTicketsWhere(user)
     },
-    create: adminOnly,
-    update: adminOnly,
-    delete: adminOnly,
+    create: backoffice,
+    update: backoffice,
+    delete: backoffice,
   },
   admin: {
     defaultColumns: ['token', 'order', 'type', 'status', 'scanned', 'scannedAt'],
-    hidden: ({ user }) => !isAdminTier(user as { role?: string } | null),
+    hidden: ({ user }) => !can(user as ReqUser, 'tickets'),
   },
   fields: [
     { name: 'token', type: 'text', required: true, unique: true },

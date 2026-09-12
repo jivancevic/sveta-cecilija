@@ -2,6 +2,37 @@
 
 Deeper notes on the features whose design is non-obvious. CLAUDE.md keeps a one-line pointer to each.
 
+## Offline sales: at the door and the legacy site (ADR-0025)
+
+Seats that produce **no `Order` and no `Ticket` row** are recorded as counted **lines** in the raw `offline_sales` table, one line per (ticket type, quantity, unit price, optional discount reason). Two sources: `door` (paid at the entrance) and `legacy` (the old WordPress site, frozen at the 2026-06-07 cutover).
+
+Rules worth knowing before you touch it:
+
+- **A discounted seat keeps its real type.** The 32 pensioners who paid €15 on 2026-06-08 are `adult` lines carrying `discount_label`, not a third price category. Type says who sat there, the discount says why it cost less.
+- **A line priced below face value MUST carry a reason** (`resolveOfflineSaleLines` refuses otherwise), and a price *above* face is refused outright as a typo.
+- **The ledger is append-only.** A miscount is corrected by appending the inverse line (negative `quantity`). Nothing updates or deletes a row.
+- **`shows.in_person_sold` and `shows.legacy_reserved` are a cache**, not the truth: they are the per-source `SUM(quantity)`, written in the same transaction as the insert. Capacity reads the counters (so `remainingSeats` and its call sites are untouched); **money and the adult/child split read the ledger**.
+- **The only writer that maintains the pair is `POST /api/shows/[id]/offline-sales`** (permission `tickets`). Never move a counter from anywhere else or the pair drifts. One other writer exists and does exactly that: the Shows `beforeValidate` hook zeroes both counters when a performance is saved **non-public** (#409) without touching the ledger, so flipping a performance with door sales to non-public orphans its lines. The counters are `readOnly` in the admin precisely so this is the only way it can happen.
+- Entry points: the inline control on each **upcoming** dashboard card, and the **Shows edit-menu item**, which is the only one that reaches a *past* performance and the only one that can record a `legacy` line.
+- Backfill of a whole season: `scripts/backfill-offline-sales-2026.mjs` (idempotent; recomputes the counters from the ledger rather than incrementing, and asserts the invariant on the way out).
+
+
+## Non-public performances (ADR-0024 phase 2, #404)
+
+`Shows` is the record of **every** performance, not only the ticketed ones. `kind` (`redovna | dmc | gulliver | koncert | ostalo`) says what it is; `isPublic` says whether it sells. A **public** performance is what a show has always been: venue, capacity, online and partner sales, `/tickets`, door scan, ticket statistics. A **non-public** one (a cruise-ship call, a concert, a one-off) carries a free-text `location` and an optional `client` (the ship or organiser), `venue` NULL, no capacity, no sales, and is hidden from every buyer, partner, door and ticket-statistics surface. Save-time rules (`src/lib/show-performance.ts`): `redovna` must be public, public needs a venue, non-public needs a location and gets `venue` NULL plus `inPersonSold` / `legacyReserved` zeroed and `onlineSalesPaused` false.
+
+There is exactly **one** spelling of "is public" — `PUBLIC_PERFORMANCE_WHERE`, `publicPerformanceSql()`, `isPublicPerformance()` in `src/lib/show-performance.ts` — and `src/lib/show-performance-guard.test.ts` scans `src/` and fails the build on any shows read that neither uses it nor is on the allow-list with a justification. Who may edit what: `tickets` owns public rows (dates, venue, status, sales); a `moreska` holder (the voditelj) creates, edits and deletes non-public rows and may set the roster fields (`thresholdCrni` / `thresholdBili`, default 8/8, and `voditeljNote`) on any row, but can never flip a row public or touch a public row's sales fields; `door` sees public rows only.
+
+The 14 non-public performances of 2026 were imported once by `db/schema/seed-zz-nonpublic-performances.sql` (#411). Its guard is the whole INSERT firing only while `NOT EXISTS (SELECT 1 FROM shows WHERE is_public = false)` — bootstrap re-applies every schema file on every restart, so a per-row guard would resurrect a performance the voditelj deleted. Behaviour proof: `scripts/probe-nonpublic-seed.mjs` (throwaway DB, three bootstraps). `docs/performances.md` and the print `.ods` are frozen prints from then on; the database is the source of truth.
+
+## The moreškant section of Cecilija (`/app`, ADR-0024 phase 3, #419; the app was called Moreškant until #489)
+
+The dancer-facing roster: who is coming to which izvedba, per army, against a threshold. Everything about it — the route group and its `.app` scope, the access decision (a function of the login *and* the linked Member, not of a permission alone), the loaders, the attendance rules and army count, the invitation / set-password / forgot flows and the "Ima prijavu" column — lives in **`docs/agents/moreskant-app.md`**. Permission wording is in `permissions.md`, the vocabulary in `CONTEXT.md` → *Moreškant*.
+
+Two facts worth carrying here, because they cross into ticketing: the roster reads **every** performance of the season, public and non-public alike (it uses `isPublicPerformance` to decide how a row renders, never to filter), and nothing in `/app` touches capacity, sales, refunds or the public site.
+
+One exception since #434: a moreškant issues up to four **comp** tickets for themselves on a public performance, through the same comp engine, the same sell lock and the same ticket email `/api/comp/issue` uses — those seats are real seats. `orders.compIssuedBy` (`admin | self`) is what tells the two apart and what the cap counts. Rules: **`docs/agents/moreskant-app.md`** → *Self-issued comps*.
+
 ## Bad-weather venue change, Ljetno → Zimsko (#94)
 
 Admin edit-view action `MarkMovedToZimskoMenuItem`, 2-step:
@@ -17,7 +48,7 @@ Claim-before-send means two concurrent confirmations can't double-notify (the lo
 
 The notice is **deduped by email** (`DISTINCT ON (lower(email))` — one per person, not per order) and is **not a refund trigger** (the show still happens). Buyers who want out reply to `info@` and admin refunds case-by-case via the existing flow.
 
-Pure DI orchestration in `src/lib/venue-change.ts`; route `POST/GET /api/shows/[id]/move-to-zimsko`. All buyer-facing venue names come from the shared `VENUE_LABEL` in `src/lib/venues.ts`.
+Pure DI orchestration in `src/lib/venue-change.ts`; route `POST/GET /api/shows/[id]/move-to-indoor`. All buyer-facing venue names come from the shared `VENUE_LABEL` in `src/lib/venues.ts`.
 
 ## Reschedule a show + notify buyers
 
@@ -49,6 +80,39 @@ So after the claim + notice, `rescheduleShow` **reissues the ticket itself** as 
 - The `reissue` copy line in `send-date-change-email.ts` announces the second message and states that the QR codes did not change. **Keep the two in sync** — if the reissue is ever dropped, drop that line with it.
 
 Items 2 (follow-up to non-openers via Brevo `opened` events) and 3 (admin view of non-openers) of #379 ship separately.
+
+## Cancel a show + refund and notify every buyer (#497)
+
+Admin edit-view action `CancelShowMenuItem`, the harsher sibling of the reschedule flow. Before #497 it was a bare `PATCH /api/shows/<id> {status:'cancelled'}`: the row left `/tickets` and **nothing else happened** — every ticket stayed `active`, no buyer heard, no money moved, and the secretary was left to find and refund each order by hand.
+
+1. **Preview** (`GET /api/shows/[id]/cancel`, readable by `tickets` **or** `refunds`) — money to refund, partner + comp seats to void, buyers to mail, sample addresses, whether the row is **already cancelled**, and a warning when the sends alone could exhaust a day of Brevo. No writes.
+2. **Send test to me** — the EN+HR notice (online buyer's version, the one that carries money) to the caller's own inbox. No writes, no buyer mail. The only rehearsal available for an action that cannot be undone.
+3. **Confirm** (`POST /api/shows/[id]/cancel`, gated **`refunds`** because money moves):
+   ```sql
+   UPDATE shows SET status='cancelled', updated_at=NOW()
+   WHERE id=$show AND status <> 'cancelled' RETURNING id
+   ```
+   The claim runs **first**, so the show stops selling before a single refund does. Losing the claim is *not* a reason to stop: an already-cancelled row means an earlier run may have died halfway, and finishing that job is the point.
+
+Then, per order (`src/lib/show-cancel.ts`, pure DI; route wires DB + Stripe + Brevo):
+
+- **online** → full refund through the shared idempotent engine (`refund:<paymentIntentId>`), which also voids the tickets with `cancel_reason='refund'`. The engine's own generic "your refund of €X" email is **replaced** by the cancellation notice, so the buyer gets one message that explains itself instead of two that don't.
+- **partner / comp** → `voidOrderTickets(…, 'storno')`. Storno, not refund: that is what takes a partner's seats off the **monthly statement** (ADR-0008). No money moves — a partner charged the buyer, so the partner returns it.
+- **mail** → one notice per order with an address on file, in the buyer's locale, **transactional** (never checks `marketing_optouts`). Deliberately *not* deduped by email the way the reschedule notice is: each order carries its own money, and a buyer with two orders is owed two refund lines. Three money blocks by channel: refunded to the original payment method / returned at the point of sale / nothing to return.
+
+**Re-runnability is the design constraint**, not a nicety: a Brevo hiccup or a Stripe timeout partway through 300 orders must be fixable by pressing the button again, never by hand-reconciling money. Each half carries its own durable record of "done" and is skipped when it says so:
+
+| half | record |
+|---|---|
+| money | `orders.refund_status` (+ Stripe's idempotency key) |
+| seats | `tickets.status` (the void targets `status='active'` only) |
+| mail | `orders.cancel_notified_at` (#497, `db/schema/migrate-zz-dc-orders-cancel-notified.sql`) |
+
+Two rules inside that loop are worth keeping: a buyer whose refund just **failed** is *not* mailed (never promise money that did not move — the retry mails them), and the notify stamp is written **after** a confirmed send, so the one thing a failure can cause is a duplicate notice rather than a lost one. Every failure is written to `critical_events` (`show_cancel_refund_failed`, `show_cancel_void_failed`, `show_cancel_email_failed`, `show_cancel_stamp_failed`) and counted in the response the modal prints.
+
+Brevo's free tier is **300 mails/day** and there is no queue in v1: the route sends sequentially and the preview warns. It cannot see how much of today's quota is already spent, so the warning is about the day's ceiling and the copy says so.
+
+Like the reschedule, the cancel is a raw claim, so **no Payload hook fires**: the route calls `notifyRawPerformanceSave` itself (#441) and the roster hears that the evening is off. A **non-public** performance is refused (#409) — cancel one of those by setting the status field by hand.
 
 ## Marketing-class email + opt-outs (#57)
 

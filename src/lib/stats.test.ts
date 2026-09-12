@@ -87,8 +87,8 @@ describe('computeStats — season header', () => {
     const ljetno = out.rows.find((r) => r.id === 'ljetno')!
     const zimsko = out.rows.find((r) => r.id === 'zimsko')!
 
-    expect(ljetno.capacity).toBe(320)
-    expect(ljetno.remaining).toBe(200)
+    expect(ljetno.capacity).toBe(350)
+    expect(ljetno.remaining).toBe(230)
     expect(ljetno.scanned).toBe(80)
     expect(zimsko.capacity).toBe(250)
     expect(zimsko.remaining).toBe(200)

@@ -3,16 +3,59 @@ import { Orders } from './Orders'
 import { ContactSubmissions } from './ContactSubmissions'
 import { Shows } from './Shows'
 import { Tickets } from './Tickets'
-import { Users } from './Users'
+import { Users, showPartnerLinkField } from './Users'
 import { Partners } from './Partners'
 import { PromoCodes } from './PromoCodes'
+import { Members } from './Members'
+import { Attendance } from './Attendance'
+import { OrderLookups } from './OrderLookups'
+import { Faqs } from './Faqs'
+import { Posts } from './Posts'
 
-const superadmin = { id: '1', role: 'superadmin' }
-const admin = { id: '2', role: 'admin' }
-const tehnika = { id: '3', role: 'tehnika' }
-const partner = { id: '4', role: 'partner', partner: 7 }
-const partnerNoLink = { id: '5', role: 'partner' }
+// Permission-set fixtures, one per migration bundle (#393, ADR-0023). Every
+// access decision below reads `permissions`; `noPermissions` is the control
+// that proves an authenticated session with no set opens nothing.
+const developer = {
+  id: '1',
+  permissions: [
+    'users',
+    'tickets',
+    'refunds',
+    'door',
+    'partner',
+    'season_stats',
+    'moreska',
+    'moreskant',
+    'finance',
+    'editor',
+    'dev',
+  ],
+}
+const ticketAdmin = { id: '2', permissions: ['tickets', 'refunds', 'door'] }
+const doorAccount = { id: '3', permissions: ['door'], shared: true }
+const partner = { id: '4', permissions: ['partner'], partner: 7 }
+const partnerNoLink = { id: '5', permissions: ['partner'] }
+const memberAccount = { id: '6', permissions: ['season_stats'], shared: true }
+const voditelj = { id: '7', permissions: ['moreska'] }
+// Published content is `editor` since #500: Objave and FAQ left `tickets`.
+const editorAccount = { id: '10', permissions: ['editor'] }
+const noPermissions = { id: '8' }
+// A dancer's own login (#420, ADR-0024): the `moreskant` permission plus the
+// Member link. It reaches /app and nothing in /admin.
+const moreskantAccount = { id: '9', permissions: ['moreskant'], member: 3 }
 const anon = null
+
+// Every account that is NOT the ticketing backoffice. Used to assert the
+// backoffice collections are shut to all of them in one sweep.
+const outsiders = [
+  ['door', doorAccount],
+  ['partner', partner],
+  ['partner without a link', partnerNoLink],
+  ['member', memberAccount],
+  ['voditelj', voditelj],
+  ['no permission set', noPermissions],
+  ['anonymous', anon],
+] as const
 
 function call(fn: unknown, user: unknown): boolean {
   if (typeof fn !== 'function') return true // Payload default
@@ -25,11 +68,109 @@ function raw(fn: unknown, user: unknown): unknown {
   return (fn as (args: { req: { user: unknown } }) => unknown)({ req: { user } })
 }
 
+function hidden(cfg: { admin?: { hidden?: unknown } }, user: unknown): boolean {
+  const fn = cfg.admin?.hidden as ((args: { user: unknown }) => boolean) | undefined
+  if (typeof fn !== 'function') return false
+  return fn({ user })
+}
+
+const CRUD = ['create', 'update', 'delete'] as const
+
+// ---------------------------------------------------------------------------
+// The pure-backoffice collections: `tickets` and nobody else, on every verb.
+// ---------------------------------------------------------------------------
+describe.each([
+  ['ContactSubmissions', ContactSubmissions],
+  ['PromoCodes', PromoCodes],
+  ['OrderLookups', OrderLookups],
+] as const)('%s access', (_name, cfg) => {
+  it('a `tickets` holder reads and mutates', () => {
+    for (const op of ['read', ...CRUD] as const) {
+      expect(call(cfg.access?.[op], ticketAdmin)).toBe(true)
+      expect(call(cfg.access?.[op], developer)).toBe(true)
+    }
+  })
+
+  it.each(outsiders)('%s can neither read nor mutate', (_label, user) => {
+    for (const op of ['read', ...CRUD] as const) {
+      expect(call(cfg.access?.[op], user)).toBe(false)
+    }
+  })
+
+  it('is in the sidebar for the backoffice only', () => {
+    expect(hidden(cfg, ticketAdmin)).toBe(false)
+    expect(hidden(cfg, developer)).toBe(false)
+    for (const [, user] of outsiders) expect(hidden(cfg, user)).toBe(true)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// The two public-content collections: anyone reads the published rows; only an
+// `editor` sees drafts and writes (#500 — `tickets` lost them).
+// ---------------------------------------------------------------------------
+describe.each([
+  ['Faqs', Faqs],
+  ['Posts', Posts],
+] as const)('%s access', (_name, cfg) => {
+  it('an editor reads everything, drafts included (true, no filter)', () => {
+    expect(raw(cfg.access?.read, editorAccount)).toBe(true)
+    expect(raw(cfg.access?.read, developer)).toBe(true)
+  })
+
+  it('the ticketing backoffice reads as a visitor does since #500', () => {
+    const result = raw(cfg.access?.read, ticketAdmin)
+    expect(typeof result).toBe('object')
+    expect(JSON.stringify(result)).toContain('published')
+  })
+
+  it.each(outsiders)('%s reads as a public visitor does (published-only filter)', (_label, user) => {
+    const result = raw(cfg.access?.read, user)
+    expect(typeof result).toBe('object')
+    expect(JSON.stringify(result)).toContain('published')
+  })
+
+  it('only an editor can create/update/delete', () => {
+    for (const op of CRUD) {
+      expect(call(cfg.access?.[op], editorAccount)).toBe(true)
+      expect(call(cfg.access?.[op], developer)).toBe(true)
+      expect(call(cfg.access?.[op], ticketAdmin)).toBe(false)
+      for (const [, user] of outsiders) expect(call(cfg.access?.[op], user)).toBe(false)
+    }
+  })
+
+  it('is in the sidebar for an editor only', () => {
+    expect(hidden(cfg, editorAccount)).toBe(false)
+    expect(hidden(cfg, ticketAdmin)).toBe(true)
+    for (const [, user] of outsiders) expect(hidden(cfg, user)).toBe(true)
+  })
+})
+
+// Scheduled posts must not leak: the public read filter is published-only AND
+// dated in the past. This is the Posts-only half of the shared filter asserted
+// above (Faqs has no publishedAt).
+describe('Posts public read filter', () => {
+  it.each(outsiders)('%s never sees a post dated in the future', (_label, user) => {
+    const result = raw(Posts.access?.read, user) as { and: Array<Record<string, unknown>> }
+    expect(result.and).toEqual(
+      expect.arrayContaining([{ status: { equals: 'published' } }]),
+    )
+    const dated = result.and.find((f) => 'publishedAt' in f) as
+      | { publishedAt: { less_than_equal: string } }
+      | undefined
+    expect(dated).toBeDefined()
+    // The filter snapshots "now" at access time; verify the shape.
+    expect(dated!.publishedAt.less_than_equal).toMatch(/^\d{4}-\d{2}-\d{2}T/)
+  })
+})
+
 describe('Orders access', () => {
-  it('admin-tier (superadmin + admin) can read; tehnika cannot', () => {
-    expect(call(Orders.access?.read, superadmin)).toBe(true)
-    expect(call(Orders.access?.read, admin)).toBe(true)
-    expect(call(Orders.access?.read, tehnika)).toBe(false)
+  it('a `tickets` holder reads every order; a door account does not', () => {
+    expect(call(Orders.access?.read, developer)).toBe(true)
+    expect(call(Orders.access?.read, ticketAdmin)).toBe(true)
+    // Door lookups go through the audited /api/orders/lookup route, not this.
+    expect(call(Orders.access?.read, doorAccount)).toBe(false)
+    expect(call(Orders.access?.read, memberAccount)).toBe(false)
+    expect(call(Orders.access?.read, noPermissions)).toBe(false)
     expect(call(Orders.access?.read, anon)).toBe(false)
   })
 
@@ -41,45 +182,48 @@ describe('Orders access', () => {
     expect(raw(Orders.access?.read, partnerNoLink)).toBe(false)
   })
 
-  it('a partner cannot mutate orders', () => {
-    for (const op of ['create', 'update', 'delete'] as const) {
-      expect(call(Orders.access?.[op], partner)).toBe(false)
+  it('only a `tickets` holder can mutate', () => {
+    for (const op of CRUD) {
+      expect(call(Orders.access?.[op], developer)).toBe(true)
+      expect(call(Orders.access?.[op], ticketAdmin)).toBe(true)
+      for (const [, user] of outsiders) expect(call(Orders.access?.[op], user)).toBe(false)
     }
   })
 
-  it('admin-tier can mutate (CRUD); tehnika cannot', () => {
-    for (const op of ['create', 'update', 'delete'] as const) {
-      expect(call(Orders.access?.[op], superadmin)).toBe(true)
-      expect(call(Orders.access?.[op], admin)).toBe(true)
-      expect(call(Orders.access?.[op], tehnika)).toBe(false)
-    }
+  it('is in the sidebar for the backoffice only', () => {
+    expect(hidden(Orders, ticketAdmin)).toBe(false)
+    for (const [, user] of outsiders) expect(hidden(Orders, user)).toBe(true)
   })
 })
 
 describe('Partners access', () => {
-  it('admin-tier reads all partners', () => {
-    expect(call(Partners.access?.read, superadmin)).toBe(true)
-    expect(call(Partners.access?.read, admin)).toBe(true)
+  it('the backoffice reads all partners', () => {
+    expect(call(Partners.access?.read, developer)).toBe(true)
+    expect(call(Partners.access?.read, ticketAdmin)).toBe(true)
   })
 
   it('a partner reads only its own record (partners.id = self)', () => {
     expect(raw(Partners.access?.read, partner)).toEqual({ id: { equals: 7 } })
   })
 
-  it('a partner with no linked record reads nothing; tehnika + anon read nothing', () => {
+  it('a partner with no linked record reads nothing; door + member + anon read nothing', () => {
     expect(raw(Partners.access?.read, partnerNoLink)).toBe(false)
-    expect(call(Partners.access?.read, tehnika)).toBe(false)
+    expect(call(Partners.access?.read, doorAccount)).toBe(false)
+    expect(call(Partners.access?.read, memberAccount)).toBe(false)
     expect(call(Partners.access?.read, anon)).toBe(false)
   })
 
-  it('only admin-tier can create/update/delete (set commission); partner + tehnika cannot', () => {
-    for (const op of ['create', 'update', 'delete'] as const) {
-      expect(call(Partners.access?.[op], superadmin)).toBe(true)
-      expect(call(Partners.access?.[op], admin)).toBe(true)
-      expect(call(Partners.access?.[op], partner)).toBe(false)
-      expect(call(Partners.access?.[op], tehnika)).toBe(false)
-      expect(call(Partners.access?.[op], anon)).toBe(false)
+  it('only the backoffice can create/update/delete (set commission)', () => {
+    for (const op of CRUD) {
+      expect(call(Partners.access?.[op], developer)).toBe(true)
+      expect(call(Partners.access?.[op], ticketAdmin)).toBe(true)
+      for (const [, user] of outsiders) expect(call(Partners.access?.[op], user)).toBe(false)
     }
+  })
+
+  it('is in the sidebar for the backoffice only', () => {
+    expect(hidden(Partners, ticketAdmin)).toBe(false)
+    for (const [, user] of outsiders) expect(hidden(Partners, user)).toBe(true)
   })
 
   it('commissionPercent defaults to 10 (clamped 0..100)', () => {
@@ -92,17 +236,7 @@ describe('Partners access', () => {
   })
 })
 
-describe('PromoCodes access', () => {
-  it('only admin-tier can read + mutate (CRUD); tehnika + partner + anon cannot', () => {
-    for (const op of ['read', 'create', 'update', 'delete'] as const) {
-      expect(call(PromoCodes.access?.[op], superadmin)).toBe(true)
-      expect(call(PromoCodes.access?.[op], admin)).toBe(true)
-      expect(call(PromoCodes.access?.[op], tehnika)).toBe(false)
-      expect(call(PromoCodes.access?.[op], partner)).toBe(false)
-      expect(call(PromoCodes.access?.[op], anon)).toBe(false)
-    }
-  })
-
+describe('PromoCodes fields', () => {
   it('code is a unique, required text field', () => {
     const f = PromoCodes.fields.find(
       (x) => 'name' in x && x.name === 'code',
@@ -147,41 +281,228 @@ describe('PromoCodes access', () => {
   })
 })
 
-describe('ContactSubmissions access', () => {
-  it('admin-tier can read + mutate; tehnika cannot', () => {
-    for (const op of ['read', 'create', 'update', 'delete'] as const) {
-      expect(call(ContactSubmissions.access?.[op], superadmin)).toBe(true)
-      expect(call(ContactSubmissions.access?.[op], admin)).toBe(true)
-      expect(call(ContactSubmissions.access?.[op], tehnika)).toBe(false)
+// ---------------------------------------------------------------------------
+// Members: two audiences on one table (#420, ADR-0024). `tickets` owns the
+// comp-attribution half, `moreska` the moreškant half. The rules themselves are
+// unit-tested in src/lib/access/members-access.ts; this block checks the wiring.
+// ---------------------------------------------------------------------------
+describe('Members access', () => {
+  const memberFieldOf = (name: string) =>
+    Members.fields.find((f) => 'name' in f && f.name === name) as
+      | {
+          type?: string
+          hasMany?: boolean
+          defaultValue?: unknown
+          options?: { value: string }[]
+          access?: { read?: unknown; update?: unknown; create?: unknown }
+        }
+      | undefined
+
+  const MORESKANT_FIELDS = [
+    'isMoreskant',
+    'nickname',
+    'mobile',
+    'email',
+    'roles',
+    'primaryRole',
+  ] as const
+  const ATTRIBUTION_FIELDS = ['name', 'active', 'note'] as const
+
+  it('the backoffice and the voditelj both read and mutate every row', () => {
+    for (const op of ['read', 'create', 'update'] as const) {
+      expect(call(Members.access?.[op], ticketAdmin)).toBe(true)
+      expect(call(Members.access?.[op], voditelj)).toBe(true)
+      expect(call(Members.access?.[op], developer)).toBe(true)
     }
+  })
+
+  it('only the backoffice deletes a member (comp history hangs off the row)', () => {
+    expect(call(Members.access?.delete, ticketAdmin)).toBe(true)
+    expect(call(Members.access?.delete, developer)).toBe(true)
+    expect(call(Members.access?.delete, voditelj)).toBe(false)
+  })
+
+  it.each([
+    ['door', doorAccount],
+    ['partner', partner],
+    ['member', memberAccount],
+    ['moreškant', moreskantAccount],
+    ['no permission set', noPermissions],
+    ['anonymous', anon],
+  ] as const)('%s can neither read nor mutate', (_label, user) => {
+    for (const op of ['read', 'create', 'update', 'delete'] as const) {
+      expect(call(Members.access?.[op], user)).toBe(false)
+    }
+  })
+
+  it('the sidebar is visible to the backoffice and the voditelj only', () => {
+    expect(hidden(Members, ticketAdmin)).toBe(false)
+    expect(hidden(Members, voditelj)).toBe(false)
+    expect(hidden(Members, developer)).toBe(false)
+    for (const user of [doorAccount, partner, memberAccount, moreskantAccount, noPermissions, anon]) {
+      expect(hidden(Members, user)).toBe(true)
+    }
+  })
+
+  it.each(MORESKANT_FIELDS)(
+    '%s is read/write locked to a `moreska` holder',
+    (name) => {
+      const field = memberFieldOf(name)
+      expect(field).toBeDefined()
+      for (const op of ['read', 'update', 'create'] as const) {
+        expect(call(field?.access?.[op], voditelj)).toBe(true)
+        expect(call(field?.access?.[op], developer)).toBe(true)
+        // Tatjana holds `tickets` and never sees a dancer's data (#419, story 39).
+        expect(call(field?.access?.[op], ticketAdmin)).toBe(false)
+        expect(call(field?.access?.[op], doorAccount)).toBe(false)
+        expect(call(field?.access?.[op], anon)).toBe(false)
+      }
+    },
+  )
+
+  // #424: "ima prijavu" on the Members list.
+  it('hasLogin is a read-only virtual field, readable by a `moreska` holder only', () => {
+    const field = memberFieldOf('hasLogin') as
+      | { type?: string; virtual?: boolean; access?: Record<string, unknown> }
+      | undefined
+    expect(field).toBeDefined()
+    expect(field?.type).toBe('checkbox')
+    // Virtual: no column, so it cannot drift from `users.member`, which is the
+    // truth it reports.
+    expect(field?.virtual).toBe(true)
+    expect(call(field?.access?.read, voditelj)).toBe(true)
+    expect(call(field?.access?.read, developer)).toBe(true)
+    expect(call(field?.access?.read, ticketAdmin)).toBe(false)
+    // Nothing writes it, the invitation included.
+    for (const op of ['create', 'update'] as const) {
+      expect(call(field?.access?.[op], developer)).toBe(false)
+      expect(call(field?.access?.[op], voditelj)).toBe(false)
+    }
+  })
+
+  it('the invitation is an edit-menu item on Members', () => {
+    const items = (
+      Members.admin?.components as { edit?: { editMenuItems?: string[] } } | undefined
+    )?.edit?.editMenuItems
+    expect(items).toContain('@/components/payload/InviteMoreskantMenuItem#InviteMoreskantMenuItem')
+  })
+
+  it.each(ATTRIBUTION_FIELDS)(
+    '%s stays readable by both but is only the backoffice’s to change',
+    (name) => {
+      const field = memberFieldOf(name)
+      expect(field).toBeDefined()
+      // Read left open: the voditelj needs the real name behind a nickname.
+      expect(field?.access?.read).toBeUndefined()
+      expect(call(field?.access?.update, ticketAdmin)).toBe(true)
+      expect(call(field?.access?.update, voditelj)).toBe(false)
+    },
+  )
+
+  // A voditelj may create a Member (a new dancer is a new row), so `name` has
+  // to be writable on create — it is required. `active` and `note` are not:
+  // leaving create open let a `moreska`-only holder file a new member as
+  // already retired, or write comp-reporting free text, which the update lock
+  // exists to prevent (#420).
+  it('name is creatable by the voditelj because a new dancer needs one', () => {
+    expect(memberFieldOf('name')?.access?.create).toBeUndefined()
+  })
+
+  it.each(['active', 'note'] as const)(
+    '%s is the backoffice’s on create as well as on update',
+    (name) => {
+      const field = memberFieldOf(name)
+      expect(call(field?.access?.create, ticketAdmin)).toBe(true)
+      expect(call(field?.access?.create, developer)).toBe(true)
+      expect(call(field?.access?.create, voditelj)).toBe(false)
+    },
+  )
+
+  it('roles is a hasMany select over the six dance roles; primaryRole is the same vocabulary', () => {
+    const roles = memberFieldOf('roles')
+    expect(roles?.type).toBe('select')
+    expect(roles?.hasMany).toBe(true)
+    expect(roles?.options?.map((o) => o.value)).toEqual([
+      'crni',
+      'bili',
+      'crni_kralj',
+      'otmanovic',
+      'bili_kralj',
+      'bula',
+    ])
+    const primary = memberFieldOf('primaryRole')
+    expect(primary?.type).toBe('select')
+    expect(primary?.hasMany).toBeFalsy()
+    expect(primary?.options?.map((o) => o.value)).toEqual(
+      roles?.options?.map((o) => o.value),
+    )
+  })
+
+  it('isMoreskant defaults to false, so the 14 existing members stay attribution rows', () => {
+    expect(memberFieldOf('isMoreskant')?.type).toBe('checkbox')
+    expect(memberFieldOf('isMoreskant')?.defaultValue).toBe(false)
   })
 })
 
 describe('Shows access', () => {
-  it('all authed roles can read (needed for stats + scanning)', () => {
-    expect(call(Shows.access?.read, superadmin)).toBe(true)
-    expect(call(Shows.access?.read, admin)).toBe(true)
-    expect(call(Shows.access?.read, tehnika)).toBe(true)
+  // The full phase-2 matrix (ADR-0024, #408) lives in
+  // src/lib/access/shows-access.test.ts; this block checks the wiring.
+  it('the backoffice and the voditelj read every performance', () => {
+    expect(raw(Shows.access?.read, developer)).toBe(true)
+    expect(raw(Shows.access?.read, ticketAdmin)).toBe(true)
+    expect(raw(Shows.access?.read, voditelj)).toBe(true)
+  })
+
+  it('the door reads public performances only (a Where, so findByID is covered too)', () => {
+    expect(raw(Shows.access?.read, doorAccount)).toEqual({ isPublic: { equals: true } })
+  })
+
+  it('a partner, the member login, an empty session and anon do not read', () => {
+    expect(call(Shows.access?.read, partner)).toBe(false)
+    expect(call(Shows.access?.read, memberAccount)).toBe(false)
+    expect(call(Shows.access?.read, noPermissions)).toBe(false)
     expect(call(Shows.access?.read, anon)).toBe(false)
   })
 
-  it('admin-tier can mutate; tehnika cannot', () => {
-    for (const op of ['create', 'update', 'delete'] as const) {
-      expect(call(Shows.access?.[op], superadmin)).toBe(true)
-      expect(call(Shows.access?.[op], admin)).toBe(true)
-      expect(call(Shows.access?.[op], tehnika)).toBe(false)
+  it('a voditelj creates and deletes non-public performances only', () => {
+    expect(raw(Shows.access?.create, voditelj)).toEqual({ isPublic: { equals: false } })
+    expect(raw(Shows.access?.delete, voditelj)).toEqual({ isPublic: { equals: false } })
+    // Update reaches every row: the roster note and thresholds belong on public
+    // shows too. The field-level locks below decide what may change there.
+    expect(raw(Shows.access?.update, voditelj)).toBe(true)
+  })
+
+  it('the backoffice mutates without a filter; the door and outsiders never write', () => {
+    for (const op of CRUD) {
+      expect(raw(Shows.access?.[op], developer)).toBe(true)
+      expect(raw(Shows.access?.[op], ticketAdmin)).toBe(true)
+      expect(call(Shows.access?.[op], doorAccount)).toBe(false)
+      expect(call(Shows.access?.[op], partner)).toBe(false)
+      expect(call(Shows.access?.[op], memberAccount)).toBe(false)
+      expect(call(Shows.access?.[op], noPermissions)).toBe(false)
+      expect(call(Shows.access?.[op], anon)).toBe(false)
     }
   })
 
-  it('legacyReserved is admin-tier-only edit (defense-in-depth field-level access)', () => {
+  it('is in the sidebar for the backoffice and the voditelj, nobody else', () => {
+    expect(hidden(Shows, ticketAdmin)).toBe(false)
+    expect(hidden(Shows, voditelj)).toBe(false)
+    expect(hidden(Shows, doorAccount)).toBe(true)
+    for (const [label, user] of outsiders) {
+      if (label === 'voditelj') continue
+      expect(hidden(Shows, user)).toBe(true)
+    }
+  })
+
+  it('legacyReserved is backoffice-only edit (defense-in-depth field-level access)', () => {
     const legacy = Shows.fields.find(
       (f) => 'name' in f && f.name === 'legacyReserved',
     ) as { access?: { update?: unknown } } | undefined
     expect(legacy).toBeDefined()
     const updateAccess = legacy?.access?.update
-    expect(call(updateAccess, superadmin)).toBe(true)
-    expect(call(updateAccess, admin)).toBe(true)
-    expect(call(updateAccess, tehnika)).toBe(false)
+    expect(call(updateAccess, developer)).toBe(true)
+    expect(call(updateAccess, ticketAdmin)).toBe(true)
+    expect(call(updateAccess, doorAccount)).toBe(false)
     expect(call(updateAccess, anon)).toBe(false)
   })
 
@@ -194,86 +515,216 @@ describe('Shows access', () => {
   })
 })
 
-describe('Users access', () => {
-  const callWith = (fn: unknown, user: unknown) => {
-    if (typeof fn !== 'function') return true
-    return (fn as (args: { req: { user: unknown } }) => unknown)({ req: { user } })
-  }
-
-  it('superadmin reads all; admin + tehnika see only their own row', () => {
-    expect(callWith(Users.access?.read, superadmin)).toBe(true)
-    expect(callWith(Users.access?.read, { id: 42, role: 'admin' })).toEqual({ id: { equals: 42 } })
-    expect(callWith(Users.access?.read, { id: 43, role: 'tehnika' })).toEqual({ id: { equals: 43 } })
-    expect(callWith(Users.access?.read, anon)).toBe(false)
+describe('Tickets access', () => {
+  it('the backoffice and the door read every ticket (door scanning)', () => {
+    expect(call(Tickets.access?.read, developer)).toBe(true)
+    expect(call(Tickets.access?.read, ticketAdmin)).toBe(true)
+    expect(call(Tickets.access?.read, doorAccount)).toBe(true)
+    expect(call(Tickets.access?.read, memberAccount)).toBe(false)
+    expect(call(Tickets.access?.read, noPermissions)).toBe(false)
+    expect(call(Tickets.access?.read, anon)).toBe(false)
   })
 
-  it('only superadmin can create users (admin tier cannot promote / add)', () => {
-    expect(call(Users.access?.create, superadmin)).toBe(true)
-    expect(call(Users.access?.create, admin)).toBe(false)
-    expect(call(Users.access?.create, tehnika)).toBe(false)
+  it('a partner reads only tickets under its own orders (via order relationship)', () => {
+    expect(raw(Tickets.access?.read, partner)).toEqual({ 'order.partner': { equals: 7 } })
+    expect(raw(Tickets.access?.read, partnerNoLink)).toBe(false)
   })
 
-  it('only superadmin can delete users', () => {
-    expect(call(Users.access?.delete, superadmin)).toBe(true)
-    expect(call(Users.access?.delete, admin)).toBe(false)
-    expect(call(Users.access?.delete, tehnika)).toBe(false)
-  })
-
-  it('superadmin can update any; admin + tehnika can only update self', () => {
-    expect(callWith(Users.access?.update, superadmin)).toBe(true)
-    expect(callWith(Users.access?.update, { id: 42, role: 'admin' })).toEqual({ id: { equals: 42 } })
-    expect(callWith(Users.access?.update, { id: 43, role: 'tehnika' })).toEqual({ id: { equals: 43 } })
-    expect(callWith(Users.access?.update, anon)).toBe(false)
-  })
-
-  it('role field is locked to superadmin (self-promotion is blocked)', () => {
-    const roleField = Users.fields.find(
-      (f) => 'name' in f && f.name === 'role',
-    ) as { access?: { read?: unknown; update?: unknown; create?: unknown } } | undefined
-    expect(roleField?.access).toBeDefined()
-    for (const op of ['read', 'update', 'create'] as const) {
-      expect(call(roleField?.access?.[op], superadmin)).toBe(true)
-      expect(call(roleField?.access?.[op], admin)).toBe(false)
-      expect(call(roleField?.access?.[op], tehnika)).toBe(false)
+  it('only the backoffice can mutate', () => {
+    for (const op of CRUD) {
+      expect(call(Tickets.access?.[op], developer)).toBe(true)
+      expect(call(Tickets.access?.[op], ticketAdmin)).toBe(true)
+      for (const [, user] of outsiders) expect(call(Tickets.access?.[op], user)).toBe(false)
     }
   })
 
-  // Users is hidden from the sidebar for everyone but superadmin (the account
-  // page lives at the dedicated /admin/account route, so this doesn't 404 the
-  // profile — an earlier removal of this predicate left Users leaking into the
-  // partner/tehnika/secretary sidebar).
-  it('Users sidebar is visible only to superadmin', () => {
-    const hidden = Users.admin?.hidden as ((args: { user: unknown }) => boolean) | undefined
-    expect(typeof hidden).toBe('function')
-    expect(hidden?.({ user: superadmin })).toBe(false)
-    expect(hidden?.({ user: admin })).toBe(true)
-    expect(hidden?.({ user: tehnika })).toBe(true)
-    expect(hidden?.({ user: partner })).toBe(true)
-    expect(hidden?.({ user: anon })).toBe(true)
+  it('is in the sidebar for the backoffice only', () => {
+    expect(hidden(Tickets, ticketAdmin)).toBe(false)
+    for (const [, user] of outsiders) expect(hidden(Tickets, user)).toBe(true)
+  })
+})
+
+describe('Users access', () => {
+  const usersFieldOf = (name: string) =>
+    Users.fields.find((f) => 'name' in f && f.name === name) as
+      | {
+          type?: string
+          required?: boolean
+          hasMany?: boolean
+          defaultValue?: unknown
+          options?: { value: string }[]
+          admin?: { hidden?: unknown }
+          access?: { read?: unknown; update?: unknown; create?: unknown }
+        }
+      | undefined
+
+  it('a `users` holder reads everyone; everybody else sees only their own row', () => {
+    expect(raw(Users.access?.read, developer)).toBe(true)
+    expect(raw(Users.access?.read, ticketAdmin)).toEqual({ id: { equals: '2' } })
+    expect(raw(Users.access?.read, doorAccount)).toEqual({ id: { equals: '3' } })
+    expect(raw(Users.access?.read, partner)).toEqual({ id: { equals: '4' } })
+    expect(raw(Users.access?.read, memberAccount)).toEqual({ id: { equals: '6' } })
+    expect(raw(Users.access?.read, anon)).toBe(false)
   })
 
-  it('role options include partner', () => {
-    const roleField = Users.fields.find(
-      (f) => 'name' in f && f.name === 'role',
-    ) as { options?: { value: string }[] } | undefined
-    expect(roleField?.options?.map((o) => o.value)).toContain('partner')
+  it('only a `users` holder can create or delete accounts', () => {
+    for (const op of ['create', 'delete'] as const) {
+      expect(call(Users.access?.[op], developer)).toBe(true)
+      expect(call(Users.access?.[op], ticketAdmin)).toBe(false)
+      expect(call(Users.access?.[op], doorAccount)).toBe(false)
+      expect(call(Users.access?.[op], noPermissions)).toBe(false)
+      expect(call(Users.access?.[op], anon)).toBe(false)
+    }
   })
 
-  it('partner link field: write locked to admin-tier, read left open for scoping', () => {
-    const partnerField = Users.fields.find(
-      (f) => 'name' in f && f.name === 'partner',
-    ) as { access?: { read?: unknown; update?: unknown; create?: unknown } } | undefined
+  it('a `users` holder updates anyone; a personal account updates itself; a shared one updates nobody', () => {
+    expect(raw(Users.access?.update, developer)).toBe(true)
+    expect(raw(Users.access?.update, ticketAdmin)).toEqual({ id: { equals: '2' } })
+    expect(raw(Users.access?.update, partner)).toEqual({ id: { equals: '4' } })
+    // The door and the society login are shared: no self-edit, so one holder
+    // cannot rotate the password on everyone else (ADR-0022).
+    expect(raw(Users.access?.update, doorAccount)).toBe(false)
+    expect(raw(Users.access?.update, memberAccount)).toBe(false)
+    expect(raw(Users.access?.update, anon)).toBe(false)
+  })
+
+  it('Users sidebar is visible only to a `users` holder', () => {
+    expect(hidden(Users, developer)).toBe(false)
+    expect(hidden(Users, ticketAdmin)).toBe(true)
+    expect(hidden(Users, doorAccount)).toBe(true)
+    expect(hidden(Users, partner)).toBe(true)
+    expect(hidden(Users, memberAccount)).toBe(true)
+    expect(hidden(Users, noPermissions)).toBe(true)
+    expect(hidden(Users, anon)).toBe(true)
+  })
+
+  // #398: the legacy tier column is gone from the collection and the database.
+  it('has no `role` field any more', () => {
+    expect(usersFieldOf('role')).toBeUndefined()
+  })
+
+  // #420: the Member link behind a `moreskant` login. Unlike `partner`, read is
+  // locked too — nothing reads it off the session (/app re-reads it with
+  // overrideAccess) and a moreškant must never repoint themselves.
+  it('member link field: read AND write locked to a `users` holder', () => {
+    const memberField = usersFieldOf('member')
+    expect(memberField).toBeDefined()
+    expect(memberField?.type).toBe('relationship')
+    expect((memberField as { relationTo?: string } | undefined)?.relationTo).toBe('members')
+    for (const op of ['read', 'update', 'create'] as const) {
+      expect(call(memberField?.access?.[op], developer)).toBe(true)
+      expect(call(memberField?.access?.[op], ticketAdmin)).toBe(false)
+      expect(call(memberField?.access?.[op], voditelj)).toBe(false)
+      expect(call(memberField?.access?.[op], moreskantAccount)).toBe(false)
+      expect(call(memberField?.access?.[op], anon)).toBe(false)
+    }
+  })
+
+  // #424: the invitation issues the username; the dancer may not rename it.
+  it('username field: write locked to a `users` holder, read left open', () => {
+    const usernameField = usersFieldOf('username')
+    expect(usernameField).toBeDefined()
+    // Payload adds the base username field itself (loginWithUsername,
+    // ADR-0011); our declaration merges into it to carry the lock, so `unique`
+    // and `required` are deliberately NOT re-stated here.
+    expect(usernameField?.access?.read).toBeUndefined()
+    for (const op of ['update', 'create'] as const) {
+      expect(call(usernameField?.access?.[op], developer)).toBe(true)
+      expect(call(usernameField?.access?.[op], ticketAdmin)).toBe(false)
+      expect(call(usernameField?.access?.[op], voditelj)).toBe(false)
+      // Self-edit is allowed on the record, so this lock is the only thing
+      // between a moreškant and the login name the voditelj issued.
+      expect(call(usernameField?.access?.[op], moreskantAccount)).toBe(false)
+      expect(call(usernameField?.access?.[op], anon)).toBe(false)
+    }
+  })
+
+  // #424: the reset-token length is passed per call (seven days for an
+  // invitation, one hour for "Zaboravljena lozinka"). Payload reads
+  // `collectionConfig.auth?.forgotPassword?.expiration ?? expiration ?? 3600000`,
+  // so a value here would WIN over the argument and silently freeze both.
+  it('sets no forgotPassword.expiration, which would override the per-call one', () => {
+    const auth = Users.auth as { forgotPassword?: { expiration?: number } } | undefined
+    expect(auth?.forgotPassword?.expiration).toBeUndefined()
+  })
+
+  it('partner link field: write locked to a `users` holder, read left open for scoping', () => {
+    const partnerField = usersFieldOf('partner')
     expect(partnerField).toBeDefined()
     // Read intentionally undefined (open) so req.user.partner survives for
     // ownership scoping; a partner could otherwise not be scoped to itself.
     expect(partnerField?.access?.read).toBeUndefined()
-    // Write locked: a partner can self-edit its profile, so without this it
-    // could repoint itself at another partner and read that partner's data.
+    // Write locked: repointing a login at another partner is account
+    // administration, not backoffice work (#393).
     for (const op of ['update', 'create'] as const) {
-      expect(call(partnerField?.access?.[op], superadmin)).toBe(true)
-      expect(call(partnerField?.access?.[op], admin)).toBe(true)
+      expect(call(partnerField?.access?.[op], developer)).toBe(true)
+      expect(call(partnerField?.access?.[op], ticketAdmin)).toBe(false)
       expect(call(partnerField?.access?.[op], partner)).toBe(false)
-      expect(call(partnerField?.access?.[op], tehnika)).toBe(false)
+      expect(call(partnerField?.access?.[op], doorAccount)).toBe(false)
+    }
+  })
+
+  it('the partner link field shows for a `partner` holder', () => {
+    expect(showPartnerLinkField({ permissions: ['partner'] })).toBe(true)
+    expect(showPartnerLinkField({ permissions: ['tickets', 'partner'] })).toBe(true)
+  })
+
+  it('the partner link field is hidden for every other account', () => {
+    expect(showPartnerLinkField({ permissions: ['tickets', 'refunds', 'door'] })).toBe(false)
+    expect(showPartnerLinkField({ permissions: ['season_stats'] })).toBe(false)
+    expect(showPartnerLinkField({ permissions: [] })).toBe(false)
+    expect(showPartnerLinkField({ permissions: 'partner' })).toBe(false)
+    expect(showPartnerLinkField({})).toBe(false)
+    expect(showPartnerLinkField()).toBe(false)
+  })
+
+  it('permissions field is a required multi-select over the eleven-word vocabulary, with no default', () => {
+    const field = usersFieldOf('permissions')
+    expect(field).toBeDefined()
+    expect(field?.type).toBe('select')
+    expect(field?.hasMany).toBe(true)
+    expect(field?.required).toBe(true)
+    expect(field?.defaultValue).toBeUndefined()
+    expect(field?.options?.map((o) => o.value)).toEqual([
+      'users',
+      'tickets',
+      'refunds',
+      'door',
+      'partner',
+      'season_stats',
+      'moreska',
+      'moreskant',
+      'finance',
+      'editor',
+      'dev',
+    ])
+  })
+
+  it('permissions field read/update/create are locked to `users` holders', () => {
+    const access = usersFieldOf('permissions')?.access
+    expect(access).toBeDefined()
+    for (const op of ['read', 'update', 'create'] as const) {
+      expect(call(access?.[op], developer)).toBe(true)
+      expect(call(access?.[op], ticketAdmin)).toBe(false)
+      expect(call(access?.[op], doorAccount)).toBe(false)
+      expect(call(access?.[op], partner)).toBe(false)
+      expect(call(access?.[op], memberAccount)).toBe(false)
+      expect(call(access?.[op], anon)).toBe(false)
+      // An authenticated session with no permission set opens nothing.
+      expect(call(access?.[op], noPermissions)).toBe(false)
+    }
+  })
+
+  it('shared checkbox defaults to false and is locked to `users` holders', () => {
+    const field = usersFieldOf('shared')
+    expect(field?.type).toBe('checkbox')
+    expect(field?.defaultValue).toBe(false)
+    for (const op of ['read', 'update', 'create'] as const) {
+      expect(call(field?.access?.[op], developer)).toBe(true)
+      expect(call(field?.access?.[op], ticketAdmin)).toBe(false)
+      expect(call(field?.access?.[op], doorAccount)).toBe(false)
+      expect(call(field?.access?.[op], memberAccount)).toBe(false)
+      expect(call(field?.access?.[op], anon)).toBe(false)
     }
   })
 
@@ -283,48 +734,99 @@ describe('Users access', () => {
   })
 })
 
-describe('Sidebar visibility (admin.hidden)', () => {
-  const callHidden = (cfg: { admin?: { hidden?: unknown } }, user: unknown): boolean => {
-    const fn = cfg.admin?.hidden as ((args: { user: unknown }) => boolean) | undefined
-    if (typeof fn !== 'function') return false
-    return fn({ user })
+// ---------------------------------------------------------------------------
+// Attendance: the voditelj's table, scoped to a dancer's own rows (#422).
+// The access functions are ASYNC because `Users.member` is field-locked to
+// `users` (#420), so the link has to be re-read with overrideAccess.
+// ---------------------------------------------------------------------------
+describe('Attendance access', () => {
+  /** A Payload stand-in that hands back the account's Member link. */
+  const payloadWith = (rows: Record<string, { member?: unknown }>) => ({
+    findByID: async ({ id }: { id: string | number }) => rows[String(id)] ?? null,
+  })
+
+  const linked = payloadWith({ '9': { member: 3 }, '7': { member: null }, '10': { member: 5 } })
+
+  async function scoped(op: 'read' | 'create' | 'update' | 'delete', user: unknown) {
+    const fn = Attendance.access?.[op] as
+      | ((args: { req: { user: unknown; payload: unknown } }) => unknown)
+      | undefined
+    if (typeof fn !== 'function') return true
+    return await fn({ req: { user, payload: linked } })
   }
 
-  it.each([
-    ['Orders', Orders],
-    ['Shows', Shows],
-    ['Tickets', Tickets],
-    ['ContactSubmissions', ContactSubmissions],
-    ['Partners', Partners],
-    ['PromoCodes', PromoCodes],
-  ] as const)('%s is visible to admin-tier, hidden from tehnika + partner', (_name, cfg) => {
-    expect(callHidden(cfg, superadmin)).toBe(false)
-    expect(callHidden(cfg, admin)).toBe(false)
-    expect(callHidden(cfg, tehnika)).toBe(true)
-    expect(callHidden(cfg, partner)).toBe(true)
-    expect(callHidden(cfg, anon)).toBe(true)
-  })
-})
+  const WRITES = ['create', 'update', 'delete'] as const
+  const OPS = ['read', ...WRITES] as const
 
-describe('Tickets access', () => {
-  it('all internal staff roles read every ticket (door scanning)', () => {
-    expect(call(Tickets.access?.read, superadmin)).toBe(true)
-    expect(call(Tickets.access?.read, admin)).toBe(true)
-    expect(call(Tickets.access?.read, tehnika)).toBe(true)
-    expect(call(Tickets.access?.read, anon)).toBe(false)
-  })
-
-  it('a partner reads only tickets under its own orders (via order relationship)', () => {
-    expect(raw(Tickets.access?.read, partner)).toEqual({ 'order.partner': { equals: 7 } })
-    expect(raw(Tickets.access?.read, partnerNoLink)).toBe(false)
-  })
-
-  it('admin-tier can mutate; tehnika + partner cannot', () => {
-    for (const op of ['create', 'update', 'delete'] as const) {
-      expect(call(Tickets.access?.[op], superadmin)).toBe(true)
-      expect(call(Tickets.access?.[op], admin)).toBe(true)
-      expect(call(Tickets.access?.[op], tehnika)).toBe(false)
-      expect(call(Tickets.access?.[op], partner)).toBe(false)
+  it('a voditelj reads and mutates every row', async () => {
+    for (const op of OPS) {
+      expect(await scoped(op, voditelj)).toBe(true)
+      expect(await scoped(op, developer)).toBe(true)
     }
+  })
+
+  it('a moreškant READS their own rows, as a Where', async () => {
+    expect(await scoped('read', moreskantAccount)).toEqual({ member: { equals: 3 } })
+  })
+
+  // The hole this asserts against: Payload's create operation only tests the
+  // access result for TRUTHINESS, so an own-rows `Where` on create would read
+  // as "allowed" and the row's own values would never be compared to it — a
+  // dancer could POST /api/attendance for anybody, with the same session cookie
+  // /app hands them. Writes are `moreska`-only; a dancer writes through the
+  // answer route, which runs overrideAccess and applies the rules.
+  it('a moreškant may NOT create, update or delete a row directly', async () => {
+    for (const op of WRITES) {
+      expect(await scoped(op, moreskantAccount)).toBe(false)
+    }
+  })
+
+  it('no write access ever answers with a Where', async () => {
+    for (const op of WRITES) {
+      for (const user of [voditelj, developer, moreskantAccount, ticketAdmin, anon]) {
+        const result = await scoped(op, user)
+        expect(typeof result).toBe('boolean')
+      }
+    }
+  })
+
+  it('resolves the Member link through the account, not through req.user', async () => {
+    // The session carries no `member` (field-locked), so the scoping has to come
+    // from the re-read: id 10 is linked to Member 5 in the fake payload.
+    const sessionWithoutLink = { id: '10', permissions: ['moreskant'] }
+    expect(await scoped('read', sessionWithoutLink)).toEqual({ member: { equals: 5 } })
+  })
+
+  it('a moreškant whose account has no Member link reads nothing', async () => {
+    const unlinked = { id: '7', permissions: ['moreskant'] }
+    expect(await scoped('read', unlinked)).toBe(false)
+  })
+
+  it.each([
+    ['tickets backoffice', ticketAdmin],
+    ['door', doorAccount],
+    ['partner', partner],
+    ['member', memberAccount],
+    ['no permission set', noPermissions],
+    ['anonymous', anon],
+  ])('%s reaches nothing', async (_label, user) => {
+    for (const op of OPS) expect(await scoped(op, user)).toBe(false)
+  })
+
+  it('is in the sidebar for the voditelj only', () => {
+    expect(hidden(Attendance, voditelj)).toBe(false)
+    expect(hidden(Attendance, developer)).toBe(false)
+    for (const [, user] of outsiders.filter(([label]) => label !== 'voditelj')) {
+      expect(hidden(Attendance, user)).toBe(true)
+    }
+    expect(hidden(Attendance, ticketAdmin)).toBe(true)
+    expect(hidden(Attendance, moreskantAccount)).toBe(true)
+  })
+
+  it('carries the fields the answer route writes', () => {
+    const names = Attendance.fields.map((f) => ('name' in f ? f.name : ''))
+    expect(names).toEqual(
+      expect.arrayContaining(['performance', 'member', 'status', 'army', 'answeredBy', 'answeredAt']),
+    )
   })
 })

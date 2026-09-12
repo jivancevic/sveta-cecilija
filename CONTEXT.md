@@ -17,7 +17,7 @@ Two venues are used. Capacity is fixed per venue — no per-show overrides.
 |---|---|---|---|
 | Admin value | Croatian (public) | English (public) | Capacity | Notes |
 |---|---|---|---|---|
-| `ljetno-kino` | Ljetno kino | Summer Cinema | 320 | Default for all public ticketed shows |
+| `ljetno-kino` | Ljetno kino | Summer Cinema | 350 | Default for all public ticketed shows |
 | `zimsko-kino` | Centar za kulturu | Cultural Center Korčula | 250 | Same building as Zimsko kino. Used for private/tour-operator shows; fallback when bad weather forces a move indoors |
 
 Venue is exposed on the public-facing `Show` type — a `Redovna` show may be moved to Zimsko kino due to bad weather, and ticket buyers must see this.
@@ -36,7 +36,7 @@ Other venue block details (always shown):
 Stored and displayed as `HH:MM` (24-hour, e.g. `21:00`, `10:30`). Validated on input — the admin rejects any value that doesn't match the pattern. No predefined pick-list; free text with format enforcement.
 
 ### 2026 season
-22 Redovna shows from 2026-05-18 to 2026-10-14, all at `ljetno-kino`, all 21:00. Seeded into the `shows` collection via `db/schema/seed-shows.sql` (idempotent `WHERE NOT EXISTS` guard). The full schedule in `docs/performances.md` lists 36 rows total — the 14 non-Redovna entries (Adriatic DMC charter shows on cruise ships like Le Ponant / Le Bougainville / NG Orion / Lady Eleganza, Gulliver group tours, KONCERT at Sv. Justina, and the Sv. Todor pilgrimage performance) stay in the docs as scheduling context for the secretary but are deliberately not in the DB — they aren't publicly ticketed and would clutter `/tickets`.
+22 Redovna shows from 2026-05-18 to 2026-10-14, all at `ljetno-kino`, all 21:00. Seeded into the `shows` collection via `db/schema/seed-shows.sql` (idempotent `WHERE NOT EXISTS` guard). The other 14 rows of the 36-row season (Adriatic DMC charter shows on cruise ships like Le Ponant / Le Bougainville / NG Orion / Lady Eleganza, Gulliver group tours, KONCERT at Sv. Justina, and the Sv. Todor pilgrimage performance) are **also in the `shows` table** since #411 (ADR-0024 phase 2), as non-public performances (`isPublic = false`, `kind` other than `redovna`), seeded by `db/schema/seed-zz-nonpublic-performances.sql`. They carry a free-text `location` and `client` instead of a venue, sell nothing, and never reach `/tickets`, the door or a ticket statistic. `docs/performances.md` is now a frozen historical print; the database is the source of truth.
 
 ### Performance visibility
 Only performances whose date >= today (YYYY-MM-DD, compared at midnight) are shown on the tickets page. Today's show is always visible; it disappears when the next calendar day begins.
@@ -54,8 +54,35 @@ Two names, used in different contexts. See [ADR-0003](../docs/adr/0003-brand-lay
 
 Reason: competitor `moreska.hr` owns the "Moreška Korčula" experience keyword in search. The brand layer reclaims share of voice while preserving the 143-year heritage differentiator.
 
+### Product surfaces: Cecilija / Web / Backoffice
+The society runs three software surfaces, each with exactly one name (decided in [Cecilija: rebrand surfaces](https://github.com/jivancevic/sveta-cecilija/issues/477), map #471; recorded in [ADR-0027](docs/adr/0027-cecilija-one-staff-app-payload-backoffice.md)):
+
+- **Cecilija**: the staff and member app at `/app`. Everyone who works for or dances in the society uses it: the secretary, the door crew, partners, voditelji and moreškanti. It replaces both the old *Moreškant* app name and, screen by screen, the Backoffice as a daily tool.
+- **Web**: the public site at `moreska.eu`, where visitors read about the society and buy tickets.
+- **Backoffice**: the raw-edit administration behind the `dev` permission (the Payload admin at `/admin`), which an `editor` also opens, for Objave and FAQ only. Once Cecilija covers a screen, nobody but the developer opens the Backoffice for it.
+
+_Avoid_: **admin** as a name for any surface. For months it would mean both the Backoffice and the new app; say Cecilija or Backoffice. **Moreškant** is no longer the name of an app: it names a person and a section of Cecilija (see below).
+
+**Rename rule (Moreškant → Cecilija):** anything named after the *product* takes the name Cecilija (the app title, its icon, its install and sign-in copy, its account mails, its home-screen entry). Anything named after the *section* or the *person* keeps "moreškant" (the permissions, the dancer profile, the roster's tab, the roster's alarm). When in doubt ask "is this the app, or the dancers?".
+
+**Declension:** "Cecilija" is a Croatian feminine noun and declines like a name in every text: "Dodaj Ceciliju na ekran", "Prijavi se u Ceciliju", "Pozivnica za Ceciliju", "u Ceciliji". Never keep it invariant as if it were a foreign brand. English copy, if any, keeps "Cecilija" unchanged.
+
+### Screen (ekran) and landing screen (ulazni ekran)
+A screen is one place in Cecilija with one address and one Croatian label (Narudžbe, Izvedbe, Ljestvica, Skener, Prodaja, Obračun, Upiti, Gratis, Korisnici, Statistika, Više). A permission unlocks screens; an account is inside Cecilija when its permissions unlock at least one, and the **landing screen** is the first of them in the bar order. Izvedbe is one screen for everyone who has it: what it shows depends on the permissions, never on a second address. Statistika is the sales screen; dancer statistics live on *Ljestvica*.
+_Avoid_: page, view, module, "admin screen".
+
+### Nemate pristup (no access)
+What a signed-in account sees when its permissions unlock no screen, or when it opens a screen it does not unlock: the sentence naming the situation, a way back to the landing screen, and Odjava. Never a silent redirect and never a "not found". The Backoffice link appears only for a `dev` holder.
+
+### Sandučić obavijesti (notification inbox)
+Every notification Cecilija sends a person is also kept for them to read later ([ADR-0027](docs/adr/0027-cecilija-one-staff-app-payload-backoffice.md) narrows ADR-0024: push stays the only way a notification is *delivered*, the inbox is where every one of them is *kept*): a bell in the header of every screen shows how many are unread, and the inbox lists them. Kept per account, not per device, so the count is the same on the phone and the laptop. Roster notifications (see *Notification types*) go to moreškanti and voditelji; a `tickets` holder also gets a new inquiry and a new card dispute, never every order.
+_Avoid_: feed, activity log, message centre.
+
 ### Croatian capitalisation: moreška
 "moreška" and its declensions (moreške, morešku, moreškom…) are always **lowercase** in Croatian — it is a common noun (a type of dance), not a proper name. Use uppercase only when it is the **leading word of a unit that is sentence-cased**: the start of a sentence, or the first word of a standalone title / heading / card-name label (a card whose name is "Moreška" or "Moreška iskustvo"). Keep it lowercase **mid-sentence, mid-title** (e.g. "Privatna moreška", "Nastanak moreške"), and in **mid-list descriptor fragments** (e.g. the programme note "1 sat · nastup klape · moreška uz živi puhaći orkestar" — not a title). In English, "Moreška" is treated as a proper name and capitalised throughout, so a `name` field reads "Moreška" in `en.json` but "moreška" mid-phrase in `hr.json` by design — that EN↔HR asymmetry is correct, not a bug.
+
+### Dancer noun: moreškant
+A performer of the moreška is a **moreškant** (pl. **moreškanti**, gen. pl. **moreškanata**; adjective **moreškantski**, e.g. "moreškantska sezona", "moreškantski ansambl"). **"Moreškar" and its derivations are wrong and must never appear in copy** — it is a common outsider coinage, and the society uses `moreškant` for its own dancers. Applies to `src/messages/hr.json`, HR copy docs, marketing templates, posters and email. English copy currently says "dancers" and needs no change; if the Croatian term is ever used in EN, keep it as `moreškant`/`moreškanti`. Sweep for regressions **case-insensitively** (`grep -rniE "more[sš]k[ao]r"`) — the capitalised sentence-initial form is easy to miss otherwise.
 
 ### Event noun: Performance / izvedba
 One scheduled moreška event has a **single canonical user-facing noun in each language**, used everywhere (public site + admin + partner): **English "Performance"**, **Croatian "izvedba"**. Chosen for EN↔HR register parity (izvedba is the true cognate of "Performance"), for matching a 143-year cultural institution's voice over a casual "show/gig", and because every event is a *rendition of the one canonical traditional work* — which "izvedba" captures precisely.
@@ -63,20 +90,30 @@ One scheduled moreška event has a **single canonical user-facing noun in each l
 - **Still allowed:** the **verb** ("grupa nastupa / izvodi morešku"); the **idiom** "Showtime 21:00"; the internal **DB type/collection `Show`/`shows`** (not user-facing — do NOT rename); and **"Moreška"** as the proper-noun brand/the dance itself ("the next Moreška performance" — brand noun + generic noun stack, they don't compete). "Izvedba" was already the artistic/private-context word ("Privatne izvedbe", "prva poznata izvedba"); it now becomes universal, so that copy already fits.
 - _Avoid (HR):_ predstava, nastup (as the event noun). _Avoid (EN):_ Show (as the event noun).
 
-### Legacy reservations
-Tickets sold on the previous site (`korcula-moreska.com`) before the moreska.eu cutover. Tracked as a per-show integer `legacyReserved` on the `Shows` collection, hand-entered by admin from counts supplied by the old-site operator. Subtracted from venue capacity so the booking flow can't oversell against seats already promised on the old system:
+### Offline sale (at the door / legacy)
+A sale that produced **no `Order` and no `Ticket` row** in this system, and is therefore recorded as a **counted line** rather than as per-person rows. Two sources, one ledger (`offline_sales`, a raw table — see [ADR-0025](../docs/adr/0025-offline-sales-ledger.md)):
 
-`remaining = VENUE_CAPACITY[venue] − onlineSold − inPersonSold − legacyReserved`
+- **`door`** — paid at the entrance on the night. Croatian **"Na ulazu"**, English **"At the door"**. (Never called *box office* or *na blagajni*: there is no box office. `door` is also the *permission* name for scanner staff, a different axis, so the user-facing text never uses the bare word.)
+- **`legacy`** — sold on the previous site (`korcula-moreska.com`, WordPress + Tickera) before the 2026-06-07 cutover. Final and closed; the old store sells nothing.
 
-The field is write-once-per-show in normal use; after the old site is frozen, the count for a given show only changes if a legacy buyer is refunded by the old-site operator.
+Each line carries a **ticket type** (`adult | child`, the same two the rest of the system uses), a **quantity**, the **unit price actually charged**, and an optional **discount label** explaining why that price is below face value. A discounted seat keeps its real type: 32 pensioners at €15 are *adult* lines with a discount label, **not** a third price category. Prices are stored on the line so a later price change cannot rewrite history.
+
+The ledger is **append-only**. A miscount is corrected by appending the inverse line (negative `quantity`), never by editing or deleting, so the error and its correction both stay visible.
+
+Legacy seats **count as sold** everywhere. They were completed sales on a closed system, not reservations, and their money is real (the legacy site charged the same €20/€10 into the same Stripe account).
+
+**Cached counters.** `shows.inPersonSold` and `shows.legacyReserved` survive as a denormalised cache of the ledger, maintained in the same transaction as the insert:
+
+`inPersonSold = SUM(quantity) WHERE source='door'` · `legacyReserved = SUM(quantity) WHERE source='legacy'`
+
+They exist so the seat formula and its eight call sites keep working unchanged. Money and the adult/child split are read from the **ledger**, never from the counters.
 
 ### Seats sold / remaining capacity
 Source of truth for sold seats is the **`tickets` table**, not maintained counters. Each active ticket = one seat. The `onlineSold` counter (and any per-partner counter) is **retired**:
 
 `remaining = VENUE_CAPACITY[venue] − COUNT(active tickets for show) − inPersonSold − legacyReserved`
 
-- `inPersonSold` stays a counter — it is the artifact-less door tally that produces no `tickets` rows.
-- `legacyReserved` stays a counter — old-site seats with no rows here.
+- `inPersonSold` and `legacyReserved` stay counters — they are the **cached totals of the offline sales ledger** (see *Offline sale*), covering seats that produce no `tickets` rows. Capacity reads the counters; money and the adult/child split read the ledger.
 - A **cancelled** ticket (partner storno, or an online refund) is excluded from the active count, so the seat frees itself with no counter to decrement. This requires a ticket lifecycle state (see Ticket) — voiding is the single mechanism behind both storno and refund.
 - Consequence: the Stripe refund route must now **void the order's tickets** (previously it only set `order.refund_status`), and the webhook no longer increments `onlineSold`. Stats reads that summed `onlineSold` switch to counting tickets.
 
@@ -88,6 +125,21 @@ Whether a given **online** purchase is valid *right now*: the order is non-empty
 ### Online sales pause
 An admin toggle on one show that closes the **online** sales channel only. A paused show stays publicly listed with an "online sales closed" note (it is not cancelled and not hidden); partner sells, comp tickets, door scanning and stats are unaffected. Pausing applies to new purchase attempts — a payment already in flight completes normally. Distinct from *cancelled* (show doesn't happen) and *sold out* (no seats left).
 
+
+### Show cancellation
+Withdrawing a public performance that will not happen. Built in [#497](https://github.com/jivancevic/sveta-cecilija/issues/497) (2026-09-12), one action behind `POST /api/shows/[id]/cancel`, gated on `refunds` because it moves money:
+
+- the show is marked cancelled **first**, so it stops selling before a single refund runs;
+- every **online** order is refunded in full through the shared idempotent engine (which also voids its tickets), and its buyer is emailed;
+- every **partner** and **comp** order is voided as a *storno*, so the seats leave the show and a partner's leave the monthly statement; a claimed slip with an address gets the notice too, an unclaimed one has nobody to write to;
+- the notice says what happened to the money, and that differs by channel: refunded to the original payment method (online), returned at the point of sale that charged it (partner), nothing to return (comp).
+
+Refunds are **automatic, not a self-serve link**: a cancelled evening leaves the buyer nothing to keep a ticket for, and a link would leave money unreturned with everyone who never opens the mail. Stripe's fees are not returned to the society; that is the cost of cancelling.
+
+The action is **safely re-runnable**, which is the documented fix for a half-finished run rather than hand bookkeeping: `orders.refundStatus` records the money, `tickets.status` the seats and `orders.cancelNotifiedAt` the mail, so a second press skips what is done and retries only the failures. Every failure is written to the *critical-events log*. Brevo's free tier sends 300 mails a day and there is no queue in v1, so the preview warns when the sends alone could exhaust it.
+
+A non-public performance is simply marked cancelled: nothing to refund, nobody to tell. Distinct from *Online sales pause* (the show still happens) and from *Self-serve reschedule refund* (the show moved, the buyer chooses).
+_Avoid_: "cancel" for a single ticket (that is a *storno* or a *refund*).
 ### Free-ticket discount
 Every 5th ticket in a single order is free. The free ticket's type matches the most expensive category present in the order: adult (€20) if any adult tickets were purchased, otherwise child (€10).
 
@@ -172,6 +224,8 @@ This split exists because buyers used to burn their own tickets by tapping the l
 ALREADY_SCANNED additionally renders **Undo scan** above these two when the original scan was within the last 2 minutes (see "Undo-scan window"). Buttons are stacked vertical, full-width, 48px min-height for thumb-tap reliability at the door.
 
 ### Admin tiers
+> **Superseded by *Permission*** (see the Moreškant section below and [ADR-0023](docs/adr/0023-permissions-replace-roles-app-surface.md)). A user now holds a *set* of permissions; the role tier is gone from code as of #397, and the `role` column and its enum were dropped in #398. Kept here as the historical reading of who does what, and as the map from an old tier to its permission bundle: `superadmin` = every permission, `admin` = `tickets`+`refunds`+`door`, `tehnika` = `door`+`shared`, `partner` = `partner`, `member` = `season_stats`+`shared`. _Avoid_ these words when describing current behaviour; name the permission instead.
+
 Payload user roles — three internal tiers from [ADR-0006](../docs/adr/0006-three-tier-admin-roles.md), plus the reseller `partner` ([ADR-0008](../docs/adr/0008-partner-sales-channel.md)) and the read-only `member` ([ADR-0022](../docs/adr/0022-member-season-dashboard.md)):
 
 | Role | Who | Can do |
@@ -200,10 +254,10 @@ The `/admin` landing is **one business-language dashboard**, not a per-role rede
 
 **Critical-events log.** A persisted table the app writes to at known failure seams — **silent email-send failures** (e.g. Brevo 200-but-undelivered), webhook signature failures, refund failures, unhandled API 500s — each row carrying timestamp, kind, and context. The dev strip shows the last N. This is the deliberate counter to this project's recurring failure mode: errors that return success and are seen by no one (the dead contact form, the silent ticket-email failures). Raw container/stdout logs are explicitly **out of scope** — this is a curated critical-events sink, not log aggregation.
 
-**Admin language (Payload-native i18n).** The admin is localized via Payload's built-in i18n (`supportedLanguages: { en, hr }` — Croatian ships in `@payloadcms/translations`), so the *entire* admin chrome (sidebar, tables, forms) localizes, not just the custom dashboard; the custom dashboard reads the active `req.i18n.language` and renders its own copy from a small HR/EN string map. Language is a **per-user preference** with a **role-based default** (`defaultLanguageForRole`, `src/lib/admin-i18n.ts`): `admin` → **Croatian**, `partner` → **Croatian**, `superadmin` → **English**, `tehnika` → **English**. The default is seeded per role but each user can override it via Payload's native language selector in account settings (the persisted `payload-lng` cookie wins — so the shared door account can still be flipped to Croatian, and a stale `hr` cookie from prior use overrides the new English default until cleared). The non-technical secretary therefore gets Croatian automatically; the developer and the door account get English. The **door-scan overlay itself is always English** regardless of this preference (short universal words — VALID/INVALID — that a guest at the door can also read).
+**Admin language (Payload-native i18n).** The admin is localized via Payload's built-in i18n (`supportedLanguages: { en, hr }` — Croatian ships in `@payloadcms/translations`), so the *entire* admin chrome (sidebar, tables, forms) localizes, not just the custom dashboard; the custom dashboard reads the active `req.i18n.language` and renders its own copy from a small HR/EN string map. Language is a **per-user preference** with a **permission-based default** (`defaultLanguageForUser`, `src/lib/admin-i18n.ts`): **English** for a `dev` holder and for a door-only account, **Croatian** for everyone else. The default is seeded once at login but each user can override it via Payload's native language selector in account settings (the persisted `payload-lng` cookie wins — so the shared door account can still be flipped to Croatian, and a stale `hr` cookie from prior use overrides the new English default until cleared). The non-technical secretary therefore gets Croatian automatically; the developer and the door account get English. The **door-scan overlay itself is always English** regardless of this preference (short universal words — VALID/INVALID — that a guest at the door can also read).
 
 **Money on the dashboard — never the word "profit".** The system cannot know costs (musicians, venue), so any "profit" tile would be a mislabeled gross figure. The dashboard shows two distinct, separately-labeled money facts:
-- **Revenue collected** — money actually in hand: online orders (Stripe, net of refunds) + in-person cash. The current `totalRevenueCents` is *online gross only* and must not be presented as the whole.
+- **Revenue collected** — money actually in hand: online orders (Stripe, net of refunds) + the **offline sales ledger** (door and legacy lines, summed as `quantity × unit_price_cents`, so a child seat and a discounted seat are valued at what was actually charged). It is never a headcount multiplied by a flat price. The bare `totalRevenueCents` is *online gross only* and must not be presented as the whole.
 - **Partner receivable (invoiced monthly)** — tickets issued through partners and the amount we will invoice them at month-end (`(sold − cancelled) × face − commission`). This is **not cash in hand** and is always shown apart from Revenue collected so the two are never summed into a false "profit".
 
 ### Enquiry (contact submission)
@@ -250,9 +304,11 @@ One real mailbox (`info@moreska.eu`) read by Josip and the secretary; everything
 Transactional mail sends from root `moreska.eu` via Brevo. Future bulk post-show mail will send from subdomain `bilten.moreska.eu` (separate DKIM, isolated reputation) once Brevo Starter (~€9/mo) is activated. See [ADR-0004](../docs/adr/0004-email-infrastructure.md).
 
 ### Channel
-Every `Order` records the **channel** it came from: `online` (buyer paid via Stripe on moreska.eu), `partner` (a reseller sold it on their own POS), or `comp` (a complimentary ticket issued for free by an admin — see *Comp ticket*). When `channel = partner`, the order also references **which partner** (see Partner). The legacy bare-counter `inPersonSold` on `Shows` is a separate, artifact-less tally and is not an `Order` channel.
+Every `Order` records the **channel** it came from: `online` (buyer paid via Stripe on moreska.eu), `partner` (a reseller sold it on their own POS), or `comp` (a complimentary ticket issued for free by an admin — see *Comp ticket*). When `channel = partner`, the order also references **which partner** (see Partner). Seats sold **at the door** or on the **legacy site** are not `Order` channels at all: they produce no order and no ticket, and live in the offline sales ledger (see *Offline sale*). A discount on such a line is a separate axis from the channel, exactly as a promo code is on an online order.
 
 A `comp` order carries no Stripe payment (`stripePaymentIntentId = null`) and `total = 0`, so it never enters revenue math — it is deliberately a distinct channel (not a €0 `online` order) precisely so it stays out of "Revenue collected", the online channel-mix chart, and the "last Stripe webhook" health signal.
+
+That exclusion is about **sales**, not about seats. A comp still occupies a chair, so it is counted wherever a chart measures where the seats in a house came from: the season-trajectory bars are stacked into online / at the door / partner / comp, while the "Sales channels" split beneath them stays online / at the door / partner. The two disagreeing is the design, not a bug — don't "fix" either one to match the other.
 
 ### Member (society member)
 A first-class entity (Payload `Members` collection, slug `members`) representing a member of HGD Sveta Cecilija, used to **attribute comp tickets** (see *Comp ticket*) and — as a **shared relationship target** — member **promo codes** (see *Promo code* / ADR-0018-member-promo-codes; promo needs only `id` + `name`, which this shape provides). It is a single collection built once and depended on by both features. Deliberately minimal — unlike `Partners` there is no money, law, login, or commission involved:
@@ -292,11 +348,11 @@ A **partner sale** is the third sales channel: the buyer pays the partner direct
 - **Live "ovaj mjesec / this month" standing card** — the same euros the org dashboard calls **partner receivable**, shown from the partner's side and **live month-to-date**, not only in the end-of-month PDF: tickets sold this month (still **net of cancelled** in the figure; the "bez storniranih / net of cancelled" sub-label under it was **removed** as noise), **Za platiti HGD-u / you owe HGD** = `(sold − cancelled) × face − commission`, and **Vaša provizija / your commission**. (Mid-month figures move as same-day stornos settle; that's accepted.)
 - **Recent orders = one merged list (storno folded in).** A **single "Nedavne narudžbe / Recent orders"** list. Shows the **newest 3** by default; **"Prikaži više / Show more"** opens a **pager** (10 orders per page, ‹ › navigation through the partner's whole history), and **"Prikaži manje / Show less"** collapses back to 3 (scoped endpoint `/api/partner/sales`, page + size params). Each order is a **dense single row**: code · 🕒 sold date+time · ⚔ **show (izvedba) date** · people · money · a **download-tickets** icon · and (today only) a **cancel** icon. Meta dates are disambiguated by **inline SVG icons** (clock = sold; **crossed-swords = the izvedba**, since moreška is a sword dance) with tooltips. **Download** (opens the order's always-English ticket PDF) is on **every** row (reprints). A **today** (Europe/Zagreb) order shows a **chevron** and **expands** to its per-person tickets, each individually cancellable; **earlier-day** orders are flat (no chevron, no cancel — outside the same-day storno window), download-only, under a "RANIJE / Earlier" divider. The cancel control is a **red trash icon**. **No confirm dialog** — tapping it **cancels immediately** and shows an **undo banner** (see below).
 - **Cancel = delete-then-undo (no confirm).** Tapping the trash voids at once and shows a **single muted status banner at the top of the panel** (not green — green = created) with a countdown bar + **"Poništi / Undo"**: a whole **order** delete (row removed) holds for **6 s**, a **per-ticket** cancel for **4 s**; if a per-ticket cancel empties the order, the order drops too and Undo restores both. The void commits immediately (seat frees, invoice updates); **Undo** calls a new **restore endpoint** that re-activates the storno'd tickets (`status='active'` where `cancel_reason='storno'`), re-checking ownership + same-day window + that the seat is still free (fails soft: "Nije moguće poništiti, mjesto je zauzeto"). Immediate-void + restore beats a deferred/"pending" delete (no half-freed seat, survives navigating away). One banner at a time, latest-delete-wins.
-- **Statistika (was "Vaše narudžbe").** The per-show table is replaced by a **stacked bar chart** of the partner's own tickets sold per izvedba (gold = adults, lighter = children), with the season total + legend on top. **Scaled to the partner's own busiest izvedba** (not venue capacity — a partner sells a sliver of a 320-seat house). **Responsive orientation: horizontal rows on phone (≤768px via admin `custom.css`), vertical admin-style columns on desktop.** Chronological, only izvedbe they sold for. The formal **monthly statement PDF** is kept below it.
+- **Statistika (was "Vaše narudžbe").** The per-show table is replaced by a **stacked bar chart** of the partner's own tickets sold per izvedba (gold = adults, lighter = children), with the season total + legend on top. **Scaled to the partner's own busiest izvedba** (not venue capacity — a partner sells a sliver of a 350-seat house). **Responsive orientation: horizontal rows on phone (≤768px via admin `custom.css`), vertical admin-style columns on desktop.** Chronological, only izvedbe they sold for. The formal **monthly statement PDF** is kept below it.
 - **Help / contact at the foot.** Below "Prijavljeni kao <partner>" sits a **"Trebate pomoć?"** line with a **`mailto:` link to `admin@moreska.eu`** (subject prefilled, e.g. "Partnerska ploča — pomoć (<partner>)"). A `mailto:` over an in-app form deliberately: it can't fail silently (the org's recurring email-send failure mode), uses the partner's own client, and makes their address the natural reply-to.
-- **Croatian by default, and actually localized.** Every partner-facing string runs through `adminT(lang, …)` with HR + EN copy. Partners default to HR (`defaultLanguageForRole`), so an un-localized literal silently showed English; the whole surface must track the active admin language.
+- **Croatian by default, and actually localized.** Every partner-facing string runs through `adminT(lang, …)` with HR + EN copy. Partners default to HR (`defaultLanguageForUser`), so an un-localized literal silently showed English; the whole surface must track the active admin language.
 
-**Partner vocabulary: "narudžba / order" vs "prodaja / sale".** In the **partner-facing** UI, a completed purchase record is a **narudžba / order** (the unit the partner browses, downloads, and cancels): *Nedavne narudžbe / Recent orders*, *Vaše narudžbe / Your orders*, *Otkaži narudžbu / Cancel order*. The word **prodaja / sale** is reserved for the **act of selling** — the sell form (*Prodaja ulaznica / Sell tickets*) and the admin-only *Prodaja na blagajni* / *Prodajni kanali* keep it. The success banner ("Prodaja dovršena / Sale completed") is the *act* completing, so it stays "prodaja/sale". The partner cancel verb is **otkazati / cancel** (user-facing), even though the **internal mechanism and the domain term remain *Storno*** (`tickets.cancel_reason = 'storno'`, the same-day window) — don't surface "storno" to partners, but it's still the glossary term in code/admin/docs.
+**Partner vocabulary: "narudžba / order" vs "prodaja / sale".** In the **partner-facing** UI, a completed purchase record is a **narudžba / order** (the unit the partner browses, downloads, and cancels): *Nedavne narudžbe / Recent orders*, *Vaše narudžbe / Your orders*, *Otkaži narudžbu / Cancel order*. The word **prodaja / sale** is reserved for the **act of selling** — the sell form (*Prodaja ulaznica / Sell tickets*) and the admin-only *Prodajni kanali* keep it. The success banner ("Prodaja dovršena / Sale completed") is the *act* completing, so it stays "prodaja/sale". The partner cancel verb is **otkazati / cancel** (user-facing), even though the **internal mechanism and the domain term remain *Storno*** (`tickets.cancel_reason = 'storno'`, the same-day window) — don't surface "storno" to partners, but it's still the glossary term in code/admin/docs.
 
 ### Order code & ticket reference
 Every `Order` carries a short **code** — a **human reference only, not a secret** (the per-ticket `token` remains the security boundary for admission and claiming). Format: **4 characters** from an **unambiguous uppercase alphabet** (excludes confusable `0/O`, `1/I/L`) ≈ 920k codes. Uniqueness enforced by a DB unique constraint on `orders.code`; generate-random-and-regenerate on the rare collision. Not derived from the order id (that would leak sales volume and be enumerable).
@@ -336,7 +392,7 @@ When HGD **reschedules** a show, every online buyer's tickets are automatically 
 
 - **Reschedule refund token:** a stateless **per-order HMAC** (`base64url(orderId).HMAC-SHA256(orderId, PAYLOAD_SECRET)`, same construction as the *unsubscribe token*) carried in the email link. Possession = authorization for that one order. No DB row, no expiry — it proves identity only; **eligibility is always re-derived server-side**.
 - **Eligibility (all re-checked in the handler):** the order's show was actually rescheduled (`shows.dateChangedAt IS NOT NULL`), `channel='online'` (a comp is free, a partner didn't pay us online), `refundStatus='none'`, and **no ticket in the order has been scanned**. The gate is **scan status, not the calendar** — there is *no* time cutoff, so a no-show can still refund after the date; a scan is the proof-of-consumption that closes the door. Full-order only (all sibling tickets void together).
-- **Surface:** a dedicated buyer page `/order/[token]/refund` (outside `(frontend)`, like `/scan/[token]`) with a **secondary** "Cancel & refund" CTA and an explicit **confirm step** before firing; states = eligible / already-refunded / not-eligible / invalid-token; bilingual via `orders.locale`. The mutation is `POST /api/order/[token]/refund`, rate-limited per-token + per-IP, which reuses the existing admin **refund engine** (`refundOrder()` — Stripe refund → mark refunded → void tickets → refund email). A **token/signature-authed public route**, the sanctioned exception to the `requireRole` rule (alongside the Stripe webhook, claim, unsubscribe, cron).
+- **Surface:** a dedicated buyer page `/order/[token]/refund` (outside `(frontend)`, like `/scan/[token]`) with a **secondary** "Cancel & refund" CTA and an explicit **confirm step** before firing; states = eligible / already-refunded / not-eligible / invalid-token; bilingual via `orders.locale`. The mutation is `POST /api/order/[token]/refund`, rate-limited per-token + per-IP, which reuses the existing admin **refund engine** (`refundOrder()` — Stripe refund → mark refunded → void tickets → refund email). A **token/signature-authed public route**, the sanctioned exception to the `requirePermission` rule (alongside the Stripe webhook, claim, unsubscribe, cron).
 
 ### Stats dashboard
 Lives at `/admin` (the route is the admin landing page itself; the old `/admin/stats` URL is collapsed into it). Visible to `tehnika`, `admin`, and `superadmin`. See [ADR-0006](../docs/adr/0006-three-tier-admin-roles.md). Role-aware — different layouts:
@@ -351,6 +407,9 @@ Lives at `/admin` (the route is the admin landing page itself; the old `/admin/s
 - **No season aggregate. No revenue. No other shows.** Tehnika does not need season-wide numbers; revenue is a PII-adjacent metric that ADR-0006 keeps out of the tehnika tier.
 - Action row: a single **Scan a ticket** button that lazy-loads the in-browser QR scanner. Auto-opens when the page is loaded with `?scan=1` (used by the scan-result screen's "Scan new" button to chain admits in one tap).
 
+
+### Financije
+The money screen of Cecilija (decided in #476): revenue collected, refunds, partner receivable per month with the statement download, the door-sales ledger per performance. Unlocked by `finance`, never by `tickets` alone, and it shows no buyer. *Statistika* is its counterpart: counts and fill for `tickets`, `season_stats` and `finance`, never money.
 ### Scanned (people)
 The "Scanned" number on the dashboard counts **people through the door**, not orders or tokens. After the "one QR per order" rule, a single scanned token represents an entire party; the number that actually matters to door staff is the seat-equivalent count.
 
@@ -367,3 +426,81 @@ A small **curated sink** the app writes to at known failure seams that would oth
 - **Writer:** `src/lib/critical-events/record.ts` (`recordCriticalEvent`). **Best-effort by construction** — it swallows its own errors, so a writer can call it unguarded and a logging failure can never cascade into failing the operation that was trying to report a problem.
 - **First write-site (#235):** the enquiry-notification path. Before this, a contact-form submission was stored but the admin email silently failed to deliver on a bad/missing `BREVO_API_KEY`, and nobody was told. `submitEnquiry` now records `enquiry_notification_failed` when the Brevo send throws, and `enquiry_notification_skipped` when no notifier is wired (the adapter omits it exactly when the key is missing). The stored enquiry stays successful either way.
 - **Reader / UI:** `src/lib/critical-events/list.ts` (`listRecentCriticalEvents`) feeds a **collapsed, superadmin-only dev strip** on the `/admin` landing (`CriticalEventsDevStrip`). `admin`, `tehnika`, and `partner` never see it.
+
+## Moreškant (dancer roster app)
+
+Terms for the roster / attendance / lineup module ([ADR-0023](docs/adr/0023-permissions-replace-roles-app-surface.md), [ADR-0024](docs/adr/0024-moreskant-roster-domain.md)). The module lives inside **Cecilija** (see *Product surfaces*) at `/app`; "Moreškant" was the app's name until 2026-09 and now names only the dancer and this section.
+
+### Permission
+A named capability granted to a user; a user holds a *set* of them. Replaces the role tier. Vocabulary: `users`, `tickets`, `refunds`, `door`, `partner`, `season_stats`, `moreska`, `moreskant`, **`finance`** (money without buyers: revenue, refunds, partner receivable; also unlocks Statistika), **`editor`** (Objave and FAQ in the Backoffice, which `tickets` no longer reaches), `dev`. `finance` exists because the society's tajnik and blagajnik are different people by statute: the president reads revenue without holding `tickets`. "Superadmin" is no longer an entity, only shorthand for "all permissions". `partner` requires a Partner link; `moreskant` requires a Member link. **One person is one account**: a second job is a permission a `users` holder adds to the account the person already has, never a second login, and never something a voditelj or the person themselves may grant (#487).
+_Avoid_: role, tier, admin-tier, superadmin (as a role).
+
+### Voditelj
+A user holding the `moreska` permission: runs the roster, edits performances, sets lineups, sends alarms, reads dancer stats, uses the MCP server. Josip and Branimir. Not every ticket admin is a voditelj (Tatjana is not).
+_Avoid_: admin, coach, leader.
+
+### Moreškant
+A person who dances the Moreška. Modelled as a **Member** with `isMoreskant`, plus nickname, mobile, email, dance roles and a primary role. A moreškant need not have a login (a guest in a lineup is still a Member row). A moreškant with a login holds the `moreskant` permission and a Member link. Sees nicknames and mobiles of other moreškanti, never emails.
+_Avoid_: dancer (in code names only), performer, user.
+
+### Active moreškant
+A moreškant is **active** when they are dancing this season. `active: false` does not mean "left the society": it means *in the system, not dancing now* — the person keeps their profile, their lineup history and their statistics, but drops out of the postava and attendance pickers, so nobody waits on an answer that is never coming. That is the same `active` flag ADR-0019 uses to retire a comp-attribution Member, read for the roster; six of the 2026 roster carry it.
+_Avoid_: retired, inactive member, former moreškant.
+
+### Nadimak (nickname)
+The name shown everywhere in the app for a moreškant ("Cici" for Ivan Fabris). Full name is kept for the voditelj and for comp attribution. Required and **unique among moreškanti, case-insensitively** ("cici" and "Cici" are one person), which is also where a dancer's username comes from when they are invited (`Cici` → `cici`, a second one → `cici2`).
+
+### Dance role
+What a moreškant can dance: `crni` ⚫, `bili` 🔴 (the "white" army wears red), `crni_kralj`, `otmanovic`, `bili_kralj`, `bula`. A member may hold several. `crni_kralj` and `otmanovic` are special roles of a *crni* and require `crni`; `bili_kralj` requires `bili`. Only a voditelj edits roles.
+
+### Primary role
+The single dance role displayed on a moreškant's profile card (Cici: `crni_kralj`), chosen by the voditelj from the member's roles.
+
+### Performance (in Moreškant)
+Every occasion the Moreška is danced, public or not. Extends the existing `Shows` record with a **kind** (`redovna | dmc | gulliver | koncert | ostalo`) and a **public** flag. Only public performances have a venue, capacity, sales, and appear on `/tickets`; non-public ones carry a free-text **location** ("Le Ponant, luka"). Each performance has an **army threshold** (default 8 crni / 8 bili) and an optional **voditelj note** visible to moreškanti.
+_Avoid_: show (for non-public ones), gig, event.
+
+### Attendance
+A moreškant's answer for one performance: **no answer** / **coming** / **not coming** — no answer being the *absence of a row*, never a third value. A multi-role dancer only says "coming"; the voditelj picks the army, and until they do the answer counts in the army of the dancer's **primary role** (`crni`/`crni_kralj`/`otmanović` → crni, `bili`/`bili kralj` → bili, `bula` → neither). A voditelj may answer on someone's behalf, at any time. A dancer's own answer is changeable until the performance starts.
+_Avoid_: RSVP, availability, sign-up.
+
+### Army count
+Headcount of "coming" per army, compared to the threshold. `crni_kralj` and `otmanovic` count as crni, `bili_kralj` as bili, `bula` counts in neither. "3 bilih, 7 crnih" always states the *current* headcount, never the shortfall.
+
+### Pozivnica (invitation)
+The only way a moreškant gets a login. A voditelj presses "Pošalji pozivnicu" on the Member; the account is created with exactly the `moreskant` permission and the Member link, and the dancer gets a Croatian email with a link to choose a password, **valid for seven days**. Pressing again sends a fresh link to the same login, never a second one. An invitation may land only on a login whose permissions stay inside `moreskant` and `door` (#520); aimed at any other staff account it refuses, because sending it would move that account's e-mail and mail its reset link wherever the presser chose. A dancer who forgets their password asks for one themselves from the login page and gets the same page behind a **one-hour** link.
+_Avoid_: registration, sign-up, account request.
+
+
+### Članovi
+The voditelj's roster screen in Cecilija (decided in #476): the list of moreškanti, each dancer's profile (nadimak, mobile, email, dance roles, primary role, active), adding a dancer by hand, and every *Pozivnica* affordance (the rehearsal join code, pending claims, invitations per dancer). Unlocked by `moreska`. Deleting a member and the attribution half of a *Member* stay in the Backoffice.
+### Alarm
+The push "Sokoliću, fali nas! Stanje za nastup <date time>: 3 bilih, 7 crnih" sent to moreškanti with **no answer** when an army is below threshold. Automatic once per performance at T-6h (or 18:00 the day before when the performance starts before 14:00, Europe/Zagreb), plus manual by a voditelj at any time. "Sokoliću" is a generic greeting, not a vocative of the nickname. The automatic one is claimed once per performance whether or not it is sent, so an evening judged covered at T-6h stays judged.
+
+### Lineup (postava)
+Who danced which dance role at a performance: one entry per member, exactly one role each. Enterable before or after the performance; **confirmed** by a voditelj marks it final. Only confirmed lineups feed statistics. A role outside the member's profile is a warning, not a block. The MCP `set_lineup` tool always writes an *unconfirmed* lineup.
+_Avoid_: cast, roster (roster = the whole membership).
+
+### Dancer statistics
+Per season (calendar year, as in ADR-0022): confirmed performances per moreškant, and how many times each danced `crni_kralj`, `bili_kralj`, `otmanovic`, `bula`. Past seasons selectable. Confirmed lineups of past performances are visible to every moreškant.
+
+### Ljestvica (leaderboard)
+The dancer's own tab in Cecilija (decided in [Cecilija: route map](https://github.com/jivancevic/sveta-cecilija/issues/473)): a moreškant's own season on one side and the season's moreškanti ranked by confirmed performances on the other, the same count as *Dancer statistics*, shown in full with nicknames. A voditelj sees the whole table there; the tab replaces the former "Moje" tab and the separate dancer statistics page. Every active moreškant is on it, equal counts share a rank. The count is a lineup fact, never an attendance answer, so saying "coming" moves nobody. Milestones (5, 10, 15 and 20 performances, and **puna sezona** = danced every confirmed performance of the season) are read off that same count. No streaks. Past seasons selectable.
+_Avoid_: points, streak, ranking by answers, "Moje", statistika (that word is the sales screen).
+
+### Dobrodošlica (onboarding)
+The three-step walkthrough a moreškant sees once per device after signing in: add to the home screen (left out when the app is already opened as an installed app), turn on notifications, subscribe to the calendar feed. Every step can be skipped and skipping counts as seen. Remembered on the device only, so a new phone shows it again.
+_Avoid_: tutorial, wizard, setup.
+
+### Moreškant comp
+A comp ticket (see *Comp ticket*) a moreškant issues for themselves at a public performance, attributed to their own Member row, capped at **4 tickets per performance** for self-issued ones only; admin-issued comps do not count. Cancelable by the moreškant until the performance starts, while unscanned.
+
+### Notification types
+Push is the only channel that reaches a phone; since the route map decision every notification is also kept in the *Sandučić obavijesti* for reading later. (1) Alarm; (2) answer reminder at T-48h to *no answer*, and its window **closes 24 hours later** — a performance entered inside T-24h gets no reminder at all, the alarm covers it; (3) performance change (date, time, place, cancellation, voditelj note) to everyone except *not coming*, cannot be muted; (4) new performance to everyone; (5) to voditelji: a "coming" withdrawn within 24h. A user may hold several push subscriptions, **one per device**: the endpoint is unique across the whole table, not per user, so a shared phone rings for whoever signed in last rather than for both.
+
+### Calendar feed
+One **shared** tokenised ICS subscription (`CALENDAR_FEED_TOKEN`, amended #433) of the current and future seasons' performances, for Google/Apple/Outlook calendars. The same URL for everybody, safe to paste in the WhatsApp group: it carries dates, places and the voditelj note, and nothing personal.
+
+### MCP (Moreškant connector)
+The server a voditelj adds to the Claude app (`https://moreska.eu/api/mcp/mcp`, the full URL) so a postava can be dictated from a photo of the paper list (ADR-0024). Behind OAuth 2.1 with PKCE and one pre-registered public client; consent happens once at `/app/authorize`, restricted to `moreska`, and the **access token lives one year with no refresh token**. A token acts as its user and the permission is re-checked on every call, so revoking is either deleting the token row or removing `moreska`. Five tools: read the season, read one performance, read the roster, write an *unconfirmed* postava, create non-public performances in bulk. Nothing that confirms, alarms, answers attendance or issues a ticket.
+_Avoid_: API key, integration, bot.

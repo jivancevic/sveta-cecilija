@@ -1,21 +1,21 @@
 import type { CollectionConfig } from 'payload'
-import { isAdminTier } from '@/lib/access/roles'
+import { can, type PermissionUser } from '@/lib/access/permissions'
 
-const adminOnly = ({ req }: { req: { user: unknown } }) =>
-  isAdminTier(req.user as { role?: string } | null)
+const backoffice = ({ req }: { req: { user: unknown } }) =>
+  can(req.user as PermissionUser, 'tickets')
 
 export const ContactSubmissions: CollectionConfig = {
   slug: 'contact-submissions',
   access: {
-    read: adminOnly,
-    update: adminOnly,
-    delete: adminOnly,
-    create: adminOnly,
+    read: backoffice,
+    update: backoffice,
+    delete: backoffice,
+    create: backoffice,
   },
   admin: {
     useAsTitle: 'name',
     defaultColumns: ['name', 'email', 'enquiryType', 'status', 'createdAt'],
-    hidden: ({ user }) => !isAdminTier(user as { role?: string } | null),
+    hidden: ({ user }) => !can(user as PermissionUser, 'tickets'),
     components: {
       edit: {
         editMenuItems: ['@/components/payload/MarkHandledMenuItem#MarkHandledMenuItem'],

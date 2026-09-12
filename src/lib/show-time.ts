@@ -9,9 +9,11 @@
 //   - the public schedule keeps listing a show until 1h after it starts, and
 //   - online checkout stays open for that same window (late walk-up buyers).
 //
-// `buildStartDate` applies the summer-season +02:00 offset; ticketed shows only
-// run May–September (all CEST), so that offset is exact for every real show.
-import { buildStartDate } from './event-jsonld'
+// The conversion is a REAL Europe/Zagreb zone conversion (`zagreb-time.ts`),
+// not a fixed +02:00: the roster (#421) reads the whole calendar year, so a
+// performance after the October DST switch has to resolve at +01:00 or it looks
+// an hour early everywhere it is compared to `now`.
+import { zagrebWallClockMs } from './zagreb-time'
 
 /**
  * How long after a show's start time it stays publicly listed and purchasable
@@ -21,7 +23,7 @@ export const SHOW_GRACE_MS = 60 * 60 * 1000 // 1 hour
 
 /** Epoch ms of a show's start, combining its dayOnly `date` with `HH:MM` local time. */
 export function showStartMs(date: string, time: string): number {
-  return new Date(buildStartDate(date, time)).getTime()
+  return zagrebWallClockMs(date, time)
 }
 
 /**

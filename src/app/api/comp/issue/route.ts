@@ -1,28 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { randomInt } from 'crypto'
-import { isAdminTier } from '@/lib/access/roles'
-import { requireRole } from '@/lib/access/route-guard'
-import {
-  createCompIssue,
-  CompIssueError,
-  type CompIssueShow,
-} from '@/lib/comp/create-comp-issue'
-import { VENUE_CAPACITY, type Venue } from '@/lib/venues'
+import { requirePermission } from '@/lib/access/route-guard'
+import { createCompIssue, CompIssueError } from '@/lib/comp/create-comp-issue'
+import { buildCompIssueDeps, type CompIssuePayload } from '@/lib/comp/comp-issue-deps'
 import { sendOrderTicketEmail, type OrderEmailPayload } from '@/lib/email/send-order-ticket-email'
-import { getActiveTicketCountForShow, type PoolQuery } from '@/lib/tickets/sold-seats'
-import { withShowSellLock, type SellLockPool } from '@/lib/tickets/sell-lock'
-import { generateQrToken } from '@/lib/qr-token'
-import { generateOrderCode as makeOrderCode } from '@/lib/tickets/order-code'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 // POST /api/comp/issue — an admin issues free (comp) tickets to a society member
-// for an active upcoming show (ADR-0019). Admin-tier only: the local API runs
-// overrideAccess, so this route re-checks the role in-handler (CLAUDE.md hard
-// rule). The member is required — attribution is the whole point.
+// for an active upcoming show (ADR-0019). `tickets` only: the local API runs
+// overrideAccess, so this route re-checks the permission in-handler (CLAUDE.md
+// hard rule). The member is required — attribution is the whole point.
 export async function POST(req: NextRequest) {
-  const gate = await requireRole(req, isAdminTier)
+  const gate = await requirePermission(req, 'tickets')
   if (gate.error) return gate.error
   const { payload } = gate
 
@@ -60,74 +50,21 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Member not found', code: 'MEMBER_REQUIRED' }, { status: 400 })
   }
 
-  const pool = (payload.db as unknown as { pool: { query: PoolQuery } & SellLockPool }).pool
   // Today's date in the venue's timezone for the upcoming-show guard.
   const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Zagreb' })
 
   try {
     const result = await createCompIssue(
       { memberId, showId, adults, children, today, buyerName, email },
-      {
-        loadShow: async (id): Promise<CompIssueShow | null> => {
-          const doc = await payload.findByID({ collection: 'shows', id, depth: 0 }).catch(() => null)
-          if (!doc) return null
-          const venue = doc.venue as Venue
-          return {
-            id: Number(doc.id),
-            date: doc.date as string,
-            status: doc.status as 'active' | 'cancelled',
-            capacity: VENUE_CAPACITY[venue],
-            inPersonSold: (doc.inPersonSold as number) ?? 0,
-            legacyReserved: (doc.legacyReserved as number) ?? 0,
-          }
-        },
-        countActiveTickets: (id) =>
-          getActiveTicketCountForShow((sql, params) => pool.query(sql, params), id),
-        // Same per-show advisory lock partner sells use, so comps participate in
-        // the shared oversell serialization.
-        withSeatLock: (sid, critical) => withShowSellLock(pool, sid, critical),
-        generateOrderCode: () =>
-          makeOrderCode({
-            isUnique: async (code) => {
-              const r = await payload.find({
-                collection: 'orders',
-                where: { code: { equals: code } },
-                limit: 1,
-                depth: 0,
-              })
-              return r.docs.length === 0
-            },
-            randomInt: (max) => randomInt(max),
-          }),
-        generateToken: generateQrToken,
-        persist: async ({ order, tickets }) => {
-          const orderDoc = await payload.create({
-            collection: 'orders',
-            data: {
-              code: order.code,
-              channel: 'comp',
-              member: memberId,
-              buyerName: order.buyerName,
-              email: order.email,
-              adultCount: order.adultCount,
-              childCount: order.childCount,
-              total: order.totalCents,
-              refundStatus: 'none',
-              show: order.showId,
-              locale: order.locale,
-            },
-          })
-          // One row per person, sequential so serial ids stay in issuance order
-          // (the PDF derives CODE-N from that order).
-          for (const t of tickets) {
-            await payload.create({
-              collection: 'tickets',
-              data: { token: t.token, type: t.type, status: 'active', order: Number(orderDoc.id) },
-            })
-          }
-          return { orderId: String(orderDoc.id) }
-        },
-      },
+      // The shared comp wiring (#434): the show read, the active-ticket count,
+      // the seat lock, the order code and the order + ticket writes live in ONE
+      // place, so /admin and /app cannot drift apart. `compIssuedBy: 'admin'` is
+      // written explicitly rather than left to a column default — a default
+      // would also label every online and partner order "Admin" in the list.
+      buildCompIssueDeps(payload as unknown as CompIssuePayload, {
+        memberId,
+        compIssuedBy: 'admin',
+      }),
     )
 
     // Send the ticket email to the recipient the admin entered, if any. The

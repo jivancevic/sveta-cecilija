@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { isAdminTier } from '@/lib/access/roles'
-import { requireRole } from '@/lib/access/route-guard'
+import { requirePermission } from '@/lib/access/route-guard'
 import {
   rescheduleShow,
   previewReschedule,
@@ -13,6 +12,10 @@ import { sendOrderTicketEmail, type OrderEmailPayload } from '@/lib/email/send-o
 import { signRescheduleRefundToken } from '@/lib/refund/reschedule-refund-token'
 import { refundUrl } from '@/lib/site-url'
 import { toIsoDate } from '@/lib/to-iso-date'
+import { assertPublicPerformance } from '@/lib/show-admin-actions'
+import { isPublicPerformance } from '@/lib/show-performance'
+import { createPushDeps, type PushPayload } from '@/lib/push/push-data'
+import { loadPerformanceFacts, notifyRawPerformanceSave } from '@/lib/push/raw-save'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -54,11 +57,16 @@ function buildDeps(
 ): RescheduleDeps {
   return {
     getShow: async (showId): Promise<RescheduleShow | null> => {
-      const res = await pool.query(`SELECT id, date, time, venue FROM shows WHERE id = $1`, [Number(showId)])
+      const res = await pool.query(`SELECT id, date, time, venue, is_public FROM shows WHERE id = $1`, [
+        Number(showId),
+      ])
       const row = res.rows[0]
       if (!row) return null
       return {
         id: String(row.id),
+        // #409 — a non-public performance has no buyers; the reschedule seam
+        // rejects it (and so does the test-send path below).
+        isPublic: isPublicPerformance(row),
         // pg returns the timestamptz column as a JS Date — normalise to YYYY-MM-DD
         // (a raw String(date).slice would yield "Mon Jun 22" → "Invalid Date").
         date: toIsoDate(row.date),
@@ -137,7 +145,7 @@ function buildDeps(
 }
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const gate = await requireRole(req, isAdminTier)
+  const gate = await requirePermission(req, 'tickets')
   if (gate.error) return gate.error
   const { payload } = gate
   const { id } = await params
@@ -158,7 +166,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 }
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const gate = await requireRole(req, isAdminTier)
+  const gate = await requirePermission(req, 'tickets')
   if (gate.error) return gate.error
   const { payload, user } = gate
   const { id } = await params
@@ -188,6 +196,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     try {
       const show = await deps.getShow(id)
       if (!show) return NextResponse.json({ error: 'Show not found' }, { status: 404 })
+      // #409 — the test send bypasses rescheduleShow, so it needs its own gate.
+      assertPublicPerformance(show as unknown as Record<string, unknown>)
       const sample = { orderId: 'TEST', buyer: { name: 'Ivan Horvat', email: adminEmail } }
       const showDates = { oldDate: show.date, newDate, time: show.time, venue: show.venue }
       // Sign a real token for the sample so the CTA renders and lands on the
@@ -207,8 +217,18 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     }
   }
 
+  const push = createPushDeps(payload as unknown as PushPayload)
+  const before = await loadPerformanceFacts(push.query, id)
   try {
     const result = await rescheduleShow({ showId: id, userId: String(user.id), newDate }, deps)
+
+    // The write is a raw `UPDATE … RETURNING` claim, so no Payload hook fires
+    // for it (#441 review): the roster is told here instead, from the row as it
+    // stood before the claim and as it stands after. Never fails the request —
+    // the buyers have already been emailed by the time this runs.
+    // A moved date also invalidates the alarm and reminder claims, which is
+    // the #440 defect this route would otherwise still have.
+    await notifyRawPerformanceSave(id, before, push)
     return NextResponse.json(result)
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Reschedule failed'

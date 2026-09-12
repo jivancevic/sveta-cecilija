@@ -3,7 +3,7 @@ import { headers } from 'next/headers'
 import Link from 'next/link'
 import QRCode from 'qrcode'
 import config from '@payload-config'
-import { scanToken, canUndoScan, type ScanResult, type ScanViewer } from '@/lib/scan-token'
+import { scanToken, canUndoScan, scanViewerFor, type ScanResult, type ScanViewer } from '@/lib/scan-token'
 import { buildScanDeps } from '@/lib/scan-deps'
 import { scanUrl } from '@/lib/site-url'
 import { maskEmail } from '@/lib/claim/claim-order'
@@ -433,8 +433,7 @@ async function resolveViewer(): Promise<ScanViewer> {
     const payload = await getPayload({ config })
     const h = await headers()
     const { user } = await payload.auth({ headers: h })
-    const role = (user as { role?: string } | null)?.role
-    if (role === 'superadmin' || role === 'admin' || role === 'tehnika') return 'staff'
+    return scanViewerFor(user as { permissions?: unknown } | null)
   } catch {
     // fall through to buyer
   }
