@@ -26,9 +26,11 @@ one thing a screen ticket changes in that file is moving its permission from
 
 ### Screens and the permission that unlocks each
 
-Rank is the bar order from #472: the first four screens a person's permissions
-unlock are tabs, the rest live under Više, and Izvedbe jumps to the front for a
-`moreskant` holder.
+Rank was the bar order from #472 (the first four screens a person unlocked were
+tabs, Izvedbe jumping to the front for a `moreskant` holder). **Since #563 the
+bar is three screens chosen per account** — see "The tabs belong to the
+account" below — and rank is what orders Više, the sidebar inside a workspace,
+and the generic order's top-up.
 
 | Rank | Screen (label) | Route | Unlocked by | Today | Old path |
 |---|---|---|---|---|---|
@@ -104,6 +106,42 @@ only Izvedbe and Ljestvica are built, because the same two permissions unlock
 both; the first screen ticket that lands makes it reachable. No `/app` page links to `/admin` for
 anyone but `dev`: the denied page, Više, the consent screen and the staff
 buttons on `/scan/[token]` all lose it.
+
+### The tabs belong to the account (#563)
+
+A bar was the first four screens a permission set unlocked, in rank order. It
+is now **three screens chosen per account** (decisions Q52, Q56, Q57, Q60),
+stored on `Users.tabs` as an ordered list of screen keys, plus Više (and
+Početna once T3/#564 lands), neither of which is ever stored. `MAX_TABS` is 3.
+
+- **Who chooses.** A `users` holder, on the Korisnici detail: the sixth named
+  action "Tabovi", a sheet of the account's unlocked screens, tap to add or
+  remove in order. **Nobody arranges their own bar** (409) — a bar is somebody
+  else's decision about an account, like the permission set it follows.
+- **The write.** `PATCH /api/app/users/[id]/tabs`, behind
+  `requirePermission(req, 'users')` like the other five, rules in
+  `src/lib/app/users-tabs.ts`: 409 on the caller's own row, 400 for a key that
+  is not a screen, a fourth key, a repeated one, or a screen the account's set
+  does not unlock. An empty list is a real answer and means the generic order.
+- **A tab is an order, never a permission.** A stored key the account stops
+  unlocking is dropped on read (`tabKeysOf` is lenient, `appNav` filters), so a
+  bar can never be the reason somebody reaches a screen.
+- **The generic order**, for an account nobody has chosen for, lives in
+  `screens.ts` beside the table: `moreskant` → Moreška · Ljestvica; `door` →
+  Skener; `partner` → Prodaja · Obračun; `season_stats` → Statistika;
+  `finance` → Financije · Statistika; `tickets` → Narudžbe · Izvedbe · Upiti;
+  `moreska` → Moreška · Članovi · Izvedbe. A set holding several merges dancer
+  → box → other, duplicates collapse, the first three win, and a bar shorter
+  than three is topped up in rank order. (Until T4/#565 builds the Moreška
+  screen, "Moreška" reads as Izvedbe — one constant in `screens.ts`.)
+- **Storage.** `Users.tabs` is a `json` column, field-locked to `users` for
+  read, update and create like `permissions`. Deliberately not a
+  `select hasMany` enum child table: the vocabulary is the screen table, which
+  grows with every screen ticket, and an enum would turn "add a screen" into a
+  schema migration. `db/schema/migrate-zz-dh-users-tabs.sql`.
+
+Više still lists every other unlocked screen, and the laptop sidebar still
+shows everything grouped by workspace, so a chosen bar hides nothing.
 
 ### Header
 
