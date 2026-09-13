@@ -3927,3 +3927,290 @@ a.app__ob-link {
   background: var(--warn);
   color: var(--card);
 }
+
+/* ── Izvedbe: the blagajna's half (#502) ───────────────────────────────────
+   Sales under a row, the numbers on the evening's own page, and the six named
+   actions. Everything here is additive to the roster screen above: the same
+   rows, the same agenda, two more lines on the public ones. */
+
+/* The one line that reads the room: "132/350", then what is left of it. */
+.app__row-sales {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: 3px;
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.app__row-sales span {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* Where the seats came from. Small, wrapping, and the whole line is muted:
+   the split is read when the total prompts a question, never before it. */
+.app__row-split {
+  display: block;
+  margin-top: 2px;
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+  letter-spacing: 0.01em;
+  color: var(--muted);
+}
+
+.app__row-flags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 5px;
+}
+
+/* A flag is not a badge: it states a fact about the sale rather than an answer
+   somebody owes, so it is an outline rather than a fill, and only the pause —
+   the one that is still a decision — carries the warning colour. */
+.app__flag {
+  padding: 1px 6px;
+  border: 1px solid var(--rule);
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.app__flag--paused {
+  border-color: var(--warn);
+  color: var(--warn);
+}
+
+/* ── Prodaja, on one evening ──────────────────────────────── */
+.app__sales {
+  margin-bottom: 22px;
+  padding: 14px;
+  background: var(--card);
+  border: 1px solid var(--cardEdge);
+}
+
+.app__sales-head {
+  margin: 0 0 10px;
+  font-family: var(--font-bodoni), Georgia, serif;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+/* Two columns on a phone, four from the tablet up: nine numbers in one column
+   is a scroll, and in one row is unreadable. */
+.app__sales-numbers {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px 14px;
+  margin: 0 0 14px;
+}
+
+.app__sales-number dt {
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.app__sales-number dd {
+  margin: 2px 0 0;
+  font-variant-numeric: tabular-nums;
+  font-size: 19px;
+  line-height: 1.2;
+  color: var(--ink);
+}
+
+@media (min-width: 560px) {
+  .app__sales-numbers {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* ── The named actions ────────────────────────────────────── */
+.app__acts {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--rule);
+}
+
+.app__acts-head {
+  margin: 0 0 10px;
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.app__acts-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.app__acts-buttons .app__button {
+  flex: 1 1 150px;
+  width: auto;
+  text-align: center;
+}
+
+/* Otkaži is last and alone on its row: the one action here that cannot be
+   undone must not sit shoulder to shoulder with "Narudžbe za ovu izvedbu". */
+.app__acts-buttons .app__button--danger {
+  flex-basis: 100%;
+}
+
+/* ── The confirmation sheet ───────────────────────────────── */
+/* The same shape Narudžbe uses (#501): in the flow under the buttons, never a
+   modal, because on a phone a dialog is a wall of system chrome over the page
+   the decision is about. */
+.app__sheet {
+  margin-top: 14px;
+  padding: 14px;
+  background: var(--sunk);
+  border: 1px solid var(--cardEdge);
+}
+
+.app__sheet-title {
+  margin: 0 0 8px;
+  font-family: var(--font-bodoni), Georgia, serif;
+  font-size: 19px;
+  font-weight: 600;
+}
+
+.app__sheet-body {
+  margin: 0 0 10px;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.app__sheet-sub {
+  margin: 14px 0 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--rule);
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.app__sheet-list {
+  margin: 0 0 10px;
+  padding-left: 18px;
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.app__sheet-list li {
+  margin-bottom: 4px;
+}
+
+/* What the reader has to take in before pressing: a quota that may run out, a
+   run that half failed, a permission they do not hold. */
+.app__sheet-warn {
+  margin: 0 0 10px;
+  font-size: 13px;
+  color: var(--warn);
+}
+
+.app__sheet-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.app__sheet-buttons .app__button {
+  flex: 1 1 150px;
+  width: auto;
+  text-align: center;
+}
+
+/* ── The door batch ───────────────────────────────────────── */
+/* A count by tens and by ones, never `<input type="number">`: a door batch is
+   68 adults, and the native spinner is a 12px target beside a keyboard that
+   covers the page. It goes negative, because a correction is the same control
+   with the other sign (ADR-0025). */
+.app__count {
+  margin-bottom: 12px;
+}
+
+.app__count-label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.app__count-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.app__count-controls .app__stepper-button {
+  flex: 1 1 auto;
+  font-size: 14px;
+}
+
+.app__count-value {
+  flex: 0 0 62px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  font-size: 19px;
+  color: var(--ink);
+}
+
+/* What is already on the books. This is a safety feature rather than a
+   convenience: a correction typed from memory can land the right number of
+   seats and the wrong amount of money (ADR-0025), so the lines are on screen
+   while the correction is entered. */
+.app__ledger {
+  margin-bottom: 12px;
+  padding: 10px;
+  background: var(--card);
+  border: 1px solid var(--rule);
+}
+
+.app__ledger-head {
+  margin: 0 0 6px;
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.app__ledger-line {
+  margin: 0 0 2px;
+  font-variant-numeric: tabular-nums;
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.app__ledger-hint {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* The public flag on Dodaj: offered only to somebody who may write both kinds
+   of evening, so it is a real question rather than a disabled control. */
+.app__perf-switch {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  font-size: 14px;
+  color: var(--ink);
+}
+
+.app__perf-switch input {
+  width: 22px;
+  height: 22px;
+  accent-color: var(--gold);
+}

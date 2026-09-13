@@ -1,5 +1,8 @@
 import Link from 'next/link'
+import { can } from '@/lib/access/permissions'
 import { getSeasonPerformances } from '@/lib/app/roster-data'
+import { loadSeasonSales } from '@/lib/app/sales-data'
+import { salesRowView, type PerformanceSales } from '@/lib/app/sales-view'
 import {
   countLabel,
   daysUntil,
@@ -33,9 +36,12 @@ import { openScreen } from '../gate'
 // bottom, because a dancer opens this app to look forward and the past is
 // something they go looking for.
 //
-// It serves the dancer and the voditelj today; the blagajna's half of the same
-// screen (sales, door sales, per-show numbers) is #502, and the table in
-// `lib/app/screens.ts` is what lets `tickets` in when it lands.
+// Since #502 it serves the blagajna too, and that is ONE screen rather than a
+// second one: a `tickets` holder reads the same agenda in the same order, with
+// a sales line under each PUBLIC row (sold of capacity, where the seats came
+// from, what is left) and the paused / cancelled / moved badges beside it.
+// Somebody who holds `tickets` AND dances sees both halves on the same rows,
+// which is the whole reason Izvedbe was never split in two (#476).
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -75,6 +81,7 @@ function PerformanceRow({
   p,
   badge,
   showAnswer,
+  sales,
 }: {
   p: RosterPerformance
   badge?: React.ReactNode
@@ -84,8 +91,14 @@ function PerformanceRow({
    * would read as a list of things they are late on (#457 review).
    */
   showAnswer: boolean
+  /**
+   * The blagajna's two lines under the row (#502), or null: a non-public
+   * evening has no sales, and a viewer without `tickets` is never handed any.
+   */
+  sales?: PerformanceSales | null
 }) {
   const where = performancePlace(p)
+  const view = sales ? salesRowView(sales) : null
   return (
     <Link
       className={`app__row${p.cancelled ? ' app__row--cancelled' : ''}`}
@@ -104,6 +117,24 @@ function PerformanceRow({
           {KIND_LABELS[p.kind]}
           {p.cancelled && ` · ${APP_STRINGS.home.cancelled}`}
         </span>
+        {view && (
+          <>
+            <span className="app__row-sales">
+              <b>{view.soldOf}</b>
+              <span>{view.remaining}</span>
+            </span>
+            <span className="app__row-split">{view.split}</span>
+            {view.badges.length > 0 && (
+              <span className="app__row-flags">
+                {view.badges.map((b) => (
+                  <span className={`app__flag app__flag--${b.key}`} key={b.key}>
+                    {b.label}
+                  </span>
+                ))}
+              </span>
+            )}
+          </>
+        )}
       </span>
       {badge ?? (showAnswer ? <AnswerBadge p={p} /> : <span />)}
     </Link>
@@ -116,8 +147,17 @@ export default async function PerformancesPage() {
 
   const me = viewer.me
   const voditelj = viewer.voditelj
+  // The blagajna's half (#502). `can()` over the set the viewer already
+  // carries, never a second read and never a role word.
+  const blagajna = can({ permissions: viewer.permissions }, 'tickets')
 
-  const season = await getSeasonPerformances({ memberId: me?.id ?? null, voditelj })
+  // One season-wide read, not one per row: the numbers are five aggregates and
+  // the alternative is a round trip per evening on the page a secretary opens
+  // twenty times a week.
+  const [season, sales] = await Promise.all([
+    getSeasonPerformances({ memberId: me?.id ?? null, voditelj }),
+    blagajna ? loadSeasonSales() : Promise.resolve(null),
+  ])
 
   const next = pickNextPerformance(season.upcoming)
   const months = groupByMonth(season.upcoming)
@@ -211,12 +251,12 @@ export default async function PerformancesPage() {
         </section>
       )}
 
-      {/* "Dodaj izvedbu" (#503): a voditelj's own booking, entered where the
-          schedule is read. Closed until it is asked for, and under the hero
-          rather than over it, because the question this screen answers first is
-          still "where am I next". A dancer never sees it and the route refuses
-          them anyway. */}
-      {voditelj && <AddPerformance />}
+      {/* "Dodaj izvedbu" (#503, #502): the voditelj's own booking, or the
+          blagajna's public evening, entered where the schedule is read. Closed
+          until it is asked for, and under the hero rather than over it, because
+          the question this screen answers first is still "where am I next". A
+          dancer never sees it and the route refuses them anyway. */}
+      <AddPerformance canPublic={blagajna} canBooking={voditelj} />
 
       {months.map((group) => (
         <section className="app__month" key={`${group.year}-${group.month}`}>
@@ -228,7 +268,12 @@ export default async function PerformancesPage() {
             <b>{countLabel(group.performances.filter((p) => !p.cancelled).length)}</b>
           </h2>
           {group.performances.map((p) => (
-            <PerformanceRow key={p.id} p={p} showAnswer={me != null} />
+            <PerformanceRow
+              key={p.id}
+              p={p}
+              showAnswer={me != null}
+              sales={sales?.get(p.id) ?? null}
+            />
           ))}
         </section>
       ))}
@@ -241,6 +286,7 @@ export default async function PerformancesPage() {
               key={p.id}
               p={p}
               showAnswer={me != null}
+              sales={sales?.get(p.id) ?? null}
               badge={
                 p.lineupConfirmed ? (
                   <span className="app__badge app__badge--lineup">
