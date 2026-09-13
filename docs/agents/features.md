@@ -175,3 +175,23 @@ Two design points worth not re-litigating:
 So `claimEvent` must **not** swallow (a failure has to 500 so Stripe retries), `releaseEvent` hands the claim back when the work then throws, and only `finalizeEvent` — enrichment after the money and tickets are already correct — is best-effort. Same claim/release shape as the review-email cron.
 
 **Manual step, without which none of this fires:** the live webhook endpoint must be subscribed to `charge.dispute.created` and `charge.dispute.closed` in the Stripe dashboard. See the runbook in `docs/agents/deployment.md`.
+
+## Customer support contact: email only (#383, #546, #548)
+
+The uprava decided on 2026-09-13 that **there is no phone path**. Support is one address, `info@moreska.eu`, answered by the secretary **within 24 hours** in Croatian and English. Nobody is on duty, and other languages are handled in writing. The board picked `info@` over `tickets@` so there is a single mailbox to maintain. Rejected, with the estimates they were given per season: a separate SIM for a volunteer (40-80 EUR, fixes nothing but the phone's owner), an external multilingual answering service (900-1800 EUR), a seasonal person on the phone (2400-3200 EUR).
+
+**The "Need help?" / "Trebate pomoć?" block (#546) lives on exactly three surfaces**, all EN + HR, all stating the 24 hour reply:
+
+| Surface | Where | Order-number hint |
+|---|---|---|
+| Public schedule `/tickets` | `src/components/HelpBlock.tsx` via `PerformancesPage` | no, the visitor has no order yet |
+| Purchase confirmation | `src/app/(frontend)/checkout/[showId]/confirmation/page.tsx` | yes |
+| Ticket email footer | `src/lib/email/render-ticket-email.tsx` | yes |
+
+Two seams to know before editing that copy. The two web surfaces share a top-level **`help` namespace** in `src/messages/{en,hr}.json`, so the response time cannot drift between them. **The email does not read the dictionary at all** — `render-ticket-email.tsx` keeps its own local `COPY` object, as does every mailer in `src/lib/email/`, so the same two facts are stated twice on purpose and both have to be edited together. The block turns the address into a `mailto:` by splitting `body` on an **`{email}` placeholder** (the convention `ticketsAlsoSentTo` already uses); splitting on the address itself silently unlinks whichever locale is edited, which is what `src/components/HelpBlock.test.ts` guards.
+
+**Never publish a phone number on a buyer-facing surface.** `+385 92 1532305` is the president's private mobile. Until #548 it sat in the footer identity line of every page and in the Organization JSON-LD's `telephone` field, which is what a search engine reads to offer a call button, so the site was advertising a support line nobody had agreed to answer. Both are gone.
+
+**The impressum keeps the number and that is deliberate** — do not "clean it up". ZZP art. 46(1) point 2 lists the pre-contractual details a trader owes a consumer in a distance contract as *"nazivu i sjedištu trgovca, telefonskom broju te, ako postoji, adresi elektroničke pošte"*: the "ako postoji" qualifier attaches to the email address, not to the phone number, and this site sells tickets online. The impressum says in both locales that the number is the society's registered administrative contact and that ticket questions go to `info@` with a 24 hour reply. Taking it out entirely is the board's call, not a tidy-up, and would need the legal question re-checked first.
+
+Turistička zajednica Korčula is out of scope for this repo: they hand stranded visitors a number, and the board deals with them directly. Google Business Profile never carried the president's number (checked 2026-09-13), so the site was the only thing publishing it.
