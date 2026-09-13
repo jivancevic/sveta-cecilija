@@ -1,36 +1,69 @@
-// The top three of Ljestvica, as three steps (#562).
+// The top three of Ljestvica, as three steps (#562, grown up in #568).
 //
 // Second, first, third, left to right, the way a podium actually stands, with
 // the winner's step in gold. It rises when it appears, which is the one piece
 // of celebration this app allows itself, and it says nothing about the reader's
 // own place: that line goes under it, in the tile's caption.
+//
+// Two sizes, one shape. The small one is the glance on Početna, inside a tile
+// half a phone wide. The `large` one is the head of the Ljestvica screen: the
+// same three steps, tall enough to carry a `RoleMark` and a caption, because
+// there the podium IS the screen's first sentence rather than a preview of it.
 
 export interface PodiumEntry {
   /** A nickname: "Brko". */
   label: string
-  /** The count that put them there. */
-  value: number | string
+  /** The count that put them there; a node, so a screen can count it up. */
+  value: React.ReactNode
+  /**
+   * A distinct key. Two moreškanti can share a nickname and `label` alone
+   * would then collide; the screens pass the member id.
+   */
+  id?: string
+  /** The 28px mark above the name on the large podium (a `RoleMark`). */
+  mark?: React.ReactNode
+  /** The line under the name: "1. mjesto". Large podium only. */
+  caption?: React.ReactNode
+  /** The reader's own step, marked the way their row in the list is. */
+  me?: boolean
 }
 
 export interface PodiumProps {
   /** In finishing order: first, second, third. Fewer than three is fine. */
   entries: PodiumEntry[]
+  /** The head of a screen rather than the glance inside a tile. */
+  large?: boolean
   className?: string
 }
 
 /** Second on the left, first in the middle, third on the right. */
 const PLACES = [1, 0, 2] as const
 
-export function Podium({ entries, className }: PodiumProps) {
+export function Podium({ entries, large = false, className }: PodiumProps) {
+  const classes = ['ui-podium', large ? 'ui-podium--lg' : '', className ?? '']
+    .filter(Boolean)
+    .join(' ')
+
   return (
-    <div className={['ui-podium', className ?? ''].filter(Boolean).join(' ')}>
+    <div className={classes}>
       {PLACES.map((index) => {
         const entry = entries[index]
         if (!entry) return null
+        const step = [
+          'ui-podium__step',
+          `ui-podium__step--${index + 1}`,
+          entry.me ? 'ui-podium__step--me' : '',
+        ]
+          .filter(Boolean)
+          .join(' ')
         return (
-          <div key={entry.label} className={`ui-podium__step ui-podium__step--${index + 1}`}>
+          <div key={entry.id ?? entry.label} className={step}>
+            {large && entry.mark}
             <b>{entry.value}</b>
-            {entry.label}
+            <span className="ui-podium__name">{entry.label}</span>
+            {large && entry.caption != null && (
+              <small className="ui-podium__place">{entry.caption}</small>
+            )}
           </div>
         )
       })}

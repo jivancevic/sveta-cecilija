@@ -40,11 +40,14 @@ export const APP_ROUTE_RENAMES: AppRouteRename[] = [
   // first. One tap, rather than a wrong year.
   {
     source: '/app/moje',
-    destination: '/app/leaderboard?season=:sezona',
+    destination: '/app/leaderboard?season=:sezona&part=mine',
     keep: 'one-release',
     has: [{ type: 'query', key: 'sezona', value: '(?<sezona>.*)' }],
   },
-  { source: '/app/moje', destination: '/app/leaderboard', keep: 'one-release' },
+  // `part=mine` since #568: the screen opens on the board now, and `/app/moje`
+  // is a bookmark that means "my season". The value the old `?dio=` carried is
+  // still not mapped; the PATH's own meaning is, because it has exactly one.
+  { source: '/app/moje', destination: '/app/leaderboard?part=mine', keep: 'one-release' },
   {
     source: '/app/statistika',
     destination: '/app/leaderboard?season=:sezona&part=all',

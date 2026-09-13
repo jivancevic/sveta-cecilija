@@ -18,17 +18,26 @@ function dancer(memberId: string, nickname: string, performances: number): Dance
 }
 
 function stats(rows: DancerStats[], confirmedPerformances: number): SeasonStats {
-  return { season: 2026, seasons: [2026, 2025], rows, confirmedPerformances }
+  return {
+    season: 2026,
+    seasons: [2026, 2025],
+    rows,
+    confirmedPerformances,
+    confirmedByKind: Object.fromEntries(
+      PERFORMANCE_KINDS.map((k) => [k, k === 'redovna' ? confirmedPerformances : 0]),
+    ) as Record<PerformanceKind, number>,
+    primaryRoles: {},
+  }
 }
 
 describe('parseLeaderboardSegment', () => {
-  it('opens on the dancer own season by default', () => {
-    expect(parseLeaderboardSegment(undefined)).toBe('mine')
-    expect(parseLeaderboardSegment('nesto')).toBe('mine')
+  it('opens on the board by default, because the screen is called Ljestvica', () => {
+    expect(parseLeaderboardSegment(undefined)).toBe('all')
+    expect(parseLeaderboardSegment('nesto')).toBe('all')
   })
 
-  it('opens on the board when the URL asks for it', () => {
-    expect(parseLeaderboardSegment('all')).toBe('all')
+  it('opens on the dancer own season when the URL asks for it', () => {
+    expect(parseLeaderboardSegment('mine')).toBe('mine')
   })
 })
 

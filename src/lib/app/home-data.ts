@@ -35,7 +35,7 @@ import { getSeasonStats } from './stats-data'
 import { getSeasonPerformances } from './roster-data'
 import { pickNextPerformance, type RosterPerformance } from './roster-loaders'
 import { armyLabel, heroView, type HeroView } from './moreska-screen'
-import { buildLeaderboard } from './leaderboard-loaders'
+import { kindsOf, myStanding, rankDancers } from './leaderboard-rank'
 import { formatEur } from './orders-view'
 import { APP_STRINGS } from './strings'
 import {
@@ -237,11 +237,27 @@ export async function loadHomeScreen(viewer: AppViewer): Promise<HomeScreen> {
         cards.push(statsCard(next ? { ...next, today } : null))
         break
       case 'leaderboard': {
-        const built = board ? buildLeaderboard({ stats: board, myMemberId: viewer.me?.id ?? null }) : null
+        // The MOREŠKA list, not the whole season (#568): the card's podium and
+        // its "ti si N." have to be the ones the reader finds when they tap it,
+        // and the screen opens on that list. A season ranked one way on the
+        // card and another on the screen would be the same mistake as two
+        // aggregations of one season.
+        const ranked = board
+          ? rankDancers({
+              rows: board.rows,
+              kind: 'moreska',
+              myMemberId: viewer.me?.id ?? null,
+              confirmed: kindsOf('moreska').reduce(
+                (sum, k) => sum + board.confirmedByKind[k],
+                0,
+              ),
+            })
+          : []
+        const standing = myStanding(ranked)
         cards.push(
           leaderboardCard({
-            top: (built?.rows ?? []).slice(0, 3),
-            me: built?.me ?? null,
+            top: ranked.slice(0, 3),
+            me: standing,
             // Ljestvica answers to `moreskant` and `moreska` and to nobody
             // else, so its count is in the dancer's register: "1. s 11
             // nastupa", never "izvedbi" (CONTEXT.md, two registers).

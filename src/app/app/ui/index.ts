@@ -1,7 +1,11 @@
 // Cecilija's shared shapes (#562).
 //
-// Fifteen components and one stylesheet (`ui.css`, loaded by the route group's
-// layout). A screen composes these; a screen does not restyle them, and a
+// Seventeen components and one stylesheet (`ui.css`, loaded by the route
+// group's layout). Fifteen landed with T1; Ljestvica (#568) brought the
+// segmented control it needed and the count that runs up on first paint, here
+// rather than beside itself, which is the rule.
+//
+// A screen composes these; a screen does not restyle them, and a
 // screen that needs a sixteenth shape brings it here rather than inventing one
 // beside itself — that is exactly how the app ended up with five kinds of
 // button and no rule about which was primary (audit, pattern 2).
@@ -17,6 +21,7 @@ export { armyStatus, type ArmyStatus } from './army-status'
 export { Button, type ButtonProps, type ButtonVariant } from './Button'
 export { Card, type CardProps } from './Card'
 export { Chip, type ChipProps, type ChipTone } from './Chip'
+export { CountUp, type CountUpProps } from './CountUp'
 export { DateDisc, type DateDiscProps } from './DateDisc'
 export { Hero, type HeroProps } from './Hero'
 export { List, ListRow, type ListRowProps } from './ListRow'
@@ -25,6 +30,7 @@ export { Podium, type PodiumEntry, type PodiumProps } from './Podium'
 export { Ring, type RingProps } from './Ring'
 export { RoleMark, type Army, type DanceTitle, type RoleMarkProps } from './RoleMark'
 export { Section, type SectionProps } from './Section'
+export { Segmented, type SegmentedItem, type SegmentedProps } from './Segmented'
 export { Sheet, SheetOption, type SheetProps } from './Sheet'
 export { Tile, Tiles, type TileProps } from './Tile'
 export { Toast, type ToastProps } from './Toast'

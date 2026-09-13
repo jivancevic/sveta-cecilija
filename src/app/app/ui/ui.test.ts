@@ -11,10 +11,12 @@ import { DateDisc } from './DateDisc'
 import { Hero } from './Hero'
 import { List, ListRow } from './ListRow'
 import { Note } from './Note'
+import { CountUp } from './CountUp'
 import { Podium } from './Podium'
 import { Ring } from './Ring'
 import { RoleMark } from './RoleMark'
 import { Section } from './Section'
+import { Segmented } from './Segmented'
 import { Sheet, SheetOption } from './Sheet'
 import { Tile, Tiles } from './Tile'
 import { Toast } from './Toast'
@@ -139,6 +141,45 @@ describe('the rest of the shapes render', () => {
     expect(render(h(Podium, { entries: [{ label: 'Brko', value: 14 }] }))).toContain(
       'ui-podium__step--1',
     )
+  })
+
+  it('renders the count at its final value on the server, so nothing reflows', () => {
+    // The animation is something the browser does to a number that is already
+    // right (#568): a reader with no JavaScript, or a screen reader, gets the
+    // count itself and the row never changes width after first paint.
+    expect(render(h(CountUp, { value: 14 }))).toContain('14')
+  })
+
+  it('a segmented control says which of its views is on', () => {
+    const seg = render(
+      h(Segmented, {
+        items: [
+          { key: 'all', label: 'Ljestvica' },
+          { key: 'mine', label: 'Moja sezona' },
+        ],
+        value: 'all',
+        onSelect: () => {},
+        label: 'Ljestvica',
+        panelId: 'p',
+      }),
+    )
+    expect(seg).toContain('ui-seg__item--on')
+    expect(seg).toContain('aria-selected="true"')
+  })
+
+  it('a large podium carries a mark, a place and the reader own step', () => {
+    const podium = render(
+      h(Podium, {
+        large: true,
+        entries: [
+          { id: '1', label: 'Brko', value: 14, caption: '1. mjesto', me: true },
+          { id: '2', label: 'Cico', value: 12, caption: '2. mjesto' },
+        ],
+      }),
+    )
+    expect(podium).toContain('ui-podium--lg')
+    expect(podium).toContain('ui-podium__step--me')
+    expect(podium).toContain('1. mjesto')
   })
 
   it('a sheet is nothing at all until it is open', () => {

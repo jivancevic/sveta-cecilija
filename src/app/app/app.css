@@ -1765,9 +1765,7 @@ html:has(> .app) {
    (#490): a serif at 13 px in a column of counts does not scan. */
 .app__stats-table td,
 .app__stats-table th,
-.app__tile2 b,
-.app__board-count,
-.app__board-rank {
+.app__tile2 b {
   font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
   font-variant-numeric: tabular-nums;
 }
@@ -2512,210 +2510,165 @@ a.app__ob-link {
   }
 }
 
-/* ── Ljestvica, the second panel of Moje (#457) ──────────── */
+/* ── Ljestvica: the board, the full list and Moja sezona (#568) ────────────
+   The screen is two panels behind one `ui-seg`: a ranking, which is about
+   everybody, and one dancer's own season, which is about the reader. The
+   shapes are T1's (Podium, List, ListRow, RoleMark, Card, Section, Chip); what
+   is left here is the handful of things only this screen draws.
 
-.app__segments--two {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+   Nothing in this block treats the bottom of a list: no red, no "zadnji". A
+   dancer with two nastupa is on the same list as one with twenty because they
+   are in the same society. */
+.app__lb {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
 }
 
-.app__segments--two .app__segment {
-  padding: 11px 4px;
+.app__lb-list,
+.app__lb-group {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
 }
 
-/* The reader's own standing, before the list: the one number they opened the
-   panel for should not be somewhere down a scroll of thirty nicknames. */
-.app__board-me {
+/* The rank and the mark travel together in the row's 48px lead slot, so every
+   nickname on the list starts at the same x whatever its place. */
+.app__lb-lead {
+  flex: none;
   display: flex;
   align-items: center;
-  gap: 16px;
-  margin-top: 16px;
-  padding: 14px 16px;
-  border: 1px solid var(--goldText);
-  background: var(--card);
+  gap: 10px;
 }
 
-.app__board-mine {
-  text-align: center;
+.app__lb-rank {
+  min-width: 26px;
+  font-style: normal;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+  text-align: right;
+}
+
+.app__lb-count {
+  font-family: var(--serif);
+  font-size: 20px;
+  font-variant-numeric: tabular-nums;
   line-height: 1;
 }
 
-.app__board-mine b {
-  display: block;
-  font-family: var(--font-bodoni), Georgia, serif;
-  font-size: 34px;
-  font-weight: 600;
+/* The reader's own row: a gold wash and a gold count, the same gold the podium
+   step they are not on is wearing. */
+.app__lb-row--me {
+  background: var(--goldSoft);
+}
+
+.app__lb-row--me .app__lb-rank,
+.app__lb-row--me .app__lb-count {
   color: var(--goldText);
 }
 
-.app__board-mine small {
-  display: block;
-  margin-top: 4px;
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--muted);
+/* The row pinned under the list for a reader further down than the cut. It is
+   its own card, with a gap above it, so it reads as "and you" rather than as
+   the twenty-first place. */
+.app__lb-pinned {
+  margin-top: -2px;
 }
 
-.app__board-says {
-  min-width: 0;
-}
-
-.app__board-says p {
+/* "Ti si 5. s 11 nastupa. Još 2 nastupa do 4. mjesta." */
+.app__lb-standing {
   margin: 0;
   font-size: 14px;
   color: var(--muted);
 }
 
-.app__board-says .app__board-count-mine {
-  font-size: 16px;
-  color: var(--ink);
-}
-
-.app__board-says .app__board-milestone-line {
-  margin-top: 4px;
+.app__lb-standing span {
   color: var(--goldText);
 }
 
-/* Three tiles, the winner in the middle and tallest: a podium read left to
-   right would put second place first. */
-.app__podium {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  align-items: end;
-  gap: 8px;
-  margin-top: 18px;
+.app__lb-all {
+  align-self: flex-start;
 }
 
-.app__podium-tile {
-  padding: 12px 8px 10px;
-  border: 1px solid var(--rule);
-  background: var(--card);
-  text-align: center;
+.app__lb-back {
+  align-self: flex-start;
+  gap: 4px;
+  margin-bottom: 4px;
+  padding-left: 0;
 }
 
-.app__podium-tile--first {
-  padding-top: 24px;
-  border-color: var(--gold);
-}
-
-.app__podium-tile b {
-  display: block;
-  font-family: var(--font-bodoni), Georgia, serif;
-  font-size: 24px;
-  font-weight: 600;
-  line-height: 1.1;
-}
-
-.app__podium-tile span {
-  display: block;
-  margin-top: 2px;
+.app__lb-footer {
+  margin: 4px 0 0;
   font-size: 13px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.app__podium-tile small {
-  display: block;
-  margin-top: 4px;
-  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
-  font-size: 11px;
   color: var(--muted);
 }
 
-.app__board-rows {
-  margin-top: 20px;
-}
-
-.app__board-row {
+/* ── Moja sezona ─────────────────────────────────────────── */
+/* Four figures in one card rather than four cards: they are one fact about one
+   season, and four lifted surfaces would say they are four things. */
+.app__lb-figs {
   display: grid;
-  grid-template-columns: 32px minmax(0, 1fr) auto;
-  gap: 12px;
-  align-items: center;
-  padding: 10px 0;
-  border-top: 1px solid var(--rule);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px 12px;
 }
 
-.app__board-row:last-child {
-  border-bottom: 1px solid var(--rule);
+.app__lb-fig b {
+  display: block;
+  font-family: var(--serif);
+  font-size: 32px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.05;
 }
 
-.app__board-rank {
-  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
-  font-size: 14px;
+.app__lb-fig span {
+  font-size: 13px;
   color: var(--muted);
-  text-align: right;
 }
 
-.app__board-main {
-  min-width: 0;
+.app__lb-nomember b {
+  display: block;
 }
 
-.app__board-name {
+.app__lb-nomember p {
+  margin: 4px 0 0;
+  color: var(--muted);
+}
+
+/* The four prekretnice, as discs. A reached one is gold; one still ahead is
+   the sunk tone, never a warning colour: it is not something the reader is
+   late on. */
+.app__lb-marks {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 6px;
-  font-size: 16px;
+  gap: 8px;
 }
 
-.app__board-row--me .app__board-name {
-  color: var(--goldText);
-}
-
-.app__board-chip {
-  padding: 2px 7px;
-  border: 1px solid var(--cardEdge);
-  font-size: 11px;
-  font-style: normal;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-
-.app__board-chip--me {
-  border-color: var(--gold);
-  color: var(--goldText);
-}
-
-/* A reached milestone, as a small gold square with its number in it. */
-.app__board-milestone {
-  display: inline-grid;
+.app__lb-mark {
+  display: grid;
   place-items: center;
-  width: 20px;
-  height: 20px;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--rPill);
+  background: var(--sunk);
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.app__lb-mark--on {
   background: var(--gold);
   color: var(--onGold);
-  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
-  font-size: 11px;
-  font-style: normal;
-  font-weight: 600;
 }
 
-.app__board-bar {
-  display: block;
-  height: 3px;
-  margin-top: 6px;
-  background: var(--sunk);
+.app__lb-next {
+  margin: 12px 0 0;
+  font-size: 14px;
+  color: var(--goldText);
 }
 
-.app__board-bar i {
-  display: block;
-  height: 100%;
-  background: var(--gold);
-}
-
-.app__board-count {
-  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
-  font-size: 16px;
-  font-weight: 600;
-}
-
-.app__board-footer {
-  margin: 16px 0 0;
-  font-size: 13px;
-  color: var(--muted);
-}
 
 /* ── Poveži svoj račun s članom (#462) ──────────────────── */
 /* The rows ARE .app__more-row: one tap, a chevron, a hairline under it. Only
