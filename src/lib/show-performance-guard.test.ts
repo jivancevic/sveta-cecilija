@@ -49,6 +49,8 @@ export const ALLOW_LIST: Record<string, string> = {
     'Order-joined read (JOIN shows ON orders.show_id): only shows with paid orders are considered.',
   'src/lib/partner/recent-sales-page.ts':
     'Order-joined read: partner ledger page, driven by the partner’s own orders.',
+  'src/lib/comp/comp-report.ts':
+    'Order-joined read (#506): every one of the three queries is driven by orders with channel=comp, and a comp only exists for a performance that sells tickets (createCompIssue refuses a non-public one), so no non-public row can surface. The join is there for the evening’s date, which is what the season window and the row label are about.',
   'src/lib/refund/reschedule-refund-context.ts':
     'Order-joined read: refund context for an existing order.',
   'src/lib/app/detail-data.ts':

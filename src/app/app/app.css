@@ -4303,3 +4303,130 @@ span.app__sale-head {
 .app__swatch--child {
   background: rgba(184, 136, 26, 0.4);
 }
+
+/* ── Gratis: the comp screen (#506) ────────────────────────────────────────
+   A port of the Backoffice comp panel, so most of it is the shell's vocabulary
+   already: `app__stepper*` for the counts, `app__sale*` for the void list (a
+   comp order is shaped exactly like a partner sale), `app__stats` for the
+   season table, `app__order-sheet` for the confirmation. What is new is the
+   member picker, which is a search box over a scrollable list of names rather
+   than a `<select>`: a roster of a hundred members is unreadable in a native
+   picker on a phone, and the one thing the secretary knows is the name. */
+.app__comp-issue,
+.app__comp-recent,
+.app__comp-permember {
+  margin: 26px 0 0;
+}
+
+.app__comp-hint {
+  margin: -4px 0 12px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* The last line on the screen: where promo codes actually live (#476). */
+.app__comp-codes {
+  margin-top: 22px;
+  padding-top: 12px;
+  border-top: 1px solid var(--rule);
+}
+
+/* The picker: one screenful, scrolled rather than paged, because the search
+   box above it is what shortens the list. */
+.app__member-list {
+  margin: 0 0 10px;
+  padding: 0;
+  list-style: none;
+  max-height: 210px;
+  overflow-y: auto;
+  border: 1px solid var(--cardEdge);
+  border-radius: var(--radius);
+  background: var(--sunk);
+}
+
+.app__member-row {
+  display: block;
+  width: 100%;
+  padding: 11px 12px;
+  font: inherit;
+  font-size: 15px;
+  text-align: left;
+  color: var(--ink);
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--rule);
+  cursor: pointer;
+}
+
+.app__member-list li:last-child .app__member-row {
+  border-bottom: none;
+}
+
+/* The picked member is the form's one piece of state a reader has to be sure
+   of: attribution is required, and a comp on the wrong name cannot be moved. */
+.app__member-row--picked {
+  font-weight: 600;
+  color: var(--goldText);
+  background: var(--card);
+  box-shadow: inset 3px 0 0 var(--gold);
+}
+
+.app__member-row[disabled] {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.app__member-add {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.app__member-add .app__input {
+  flex: 1 1 160px;
+  margin-bottom: 0;
+}
+
+.app__member-add .app__button {
+  width: auto;
+  padding: 10px 14px;
+  font-size: 13px;
+}
+
+/* The e-mail outcome under the confirmation: a whole line, because "sent to
+   whom" is the half of it that matters. */
+.app__comp-email {
+  flex-basis: 100%;
+  color: var(--muted);
+}
+
+/* A comp whose mail did not leave has something for the reader to do (print
+   the PDF, resend from the order), so that banner stays put instead of
+   draining away under them. */
+.app__drain--warn {
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  background: var(--card);
+  border: 1px solid var(--warn);
+  border-radius: var(--radius);
+}
+
+.app__comp-warn {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--warn);
+}
+
+/* The printed holder and the address, at the foot of an expanded comp: the two
+   facts that are about the SLIP rather than about the member. */
+.app__comp-holder {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.app__comp-permember .app__stats td {
+  font-variant-numeric: tabular-nums;
+}

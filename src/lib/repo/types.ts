@@ -7,7 +7,8 @@
 // local API — is "reimplement `repo/payload/`", not "audit seventy call sites".
 //
 // **It grows one screen at a time, never as a sweep.** The research document
-// (section 6.2) names eleven repos; this file declares the three Skener needs.
+// (section 6.2) names eleven repos; this file started with the three Skener
+// needs.
 // A screen ticket adds its own, with the methods that screen actually calls, so
 // no member of this interface is ever speculative.
 //
@@ -24,14 +25,18 @@
 //      instead of reaching into `payload.db`; the statements do not move.
 
 import type { AuthRepo, SessionUser, WriteCtx } from './auth'
+import type { CompOrderRow, CompRepo, CompTicketRow } from './comp'
 import type { DbRepo } from './db'
+import type { MemberOption, MembersRepo } from './members'
 import type { OrdersRepo } from './orders'
 import type { PartnerRecord, PartnersRepo } from './partners'
 import type { PerformancePatch, PerformanceRow, ShowsRepo } from './shows'
 
 export interface Repo {
   auth: AuthRepo
+  comp: CompRepo
   db: DbRepo
+  members: MembersRepo
   orders: OrdersRepo
   partners: PartnersRepo
   shows: ShowsRepo
@@ -39,7 +44,12 @@ export interface Repo {
 
 export type {
   AuthRepo,
+  CompOrderRow,
+  CompRepo,
+  CompTicketRow,
   DbRepo,
+  MemberOption,
+  MembersRepo,
   OrdersRepo,
   PartnerRecord,
   PartnersRepo,
@@ -47,4 +57,5 @@ export type {
   PerformanceRow,
   SessionUser,
   ShowsRepo,
+  WriteCtx,
 }

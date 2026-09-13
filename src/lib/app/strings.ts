@@ -1357,6 +1357,103 @@ export const APP_STRINGS = {
     yesterday: 'jučer',
   },
 
+  /**
+   * Gratis (#506): the secretary hands a society member free seats.
+   *
+   * Three things on one screen, in the order of the moment they serve: give
+   * some away, take one back, and see who has had how many this season. The
+   * words are the ones spoken in the office — *gratis* for a comp, *član* for
+   * the member it is attributed to, *nositelj* for the name printed on the
+   * slip, which ADR-0019 keeps deliberately apart from the attribution.
+   *
+   * Poništi is *storno*, never *povrat*: no money ever moved through a comp, so
+   * the word that means "the money went back" would be a lie about the event.
+   * And unlike the partner's cancel there is no way back — `/api/comp/cancel`
+   * offers no undo — so the tap is behind a confirmation rather than a bar that
+   * drains.
+   */
+  gratis: {
+    /** Podijeli gratis: the issue form. */
+    issueTitle: 'Podijeli gratis',
+    show: 'Izvedba',
+    noShows: 'Nema nadolazećih izvedbi za koje se dijele ulaznice.',
+    seatsLeft: (n: number) => `${n} slobodno`,
+    soldOut: 'rasprodano',
+    member: 'Član',
+    memberSearch: 'Traži po imenu',
+    memberRequired: 'Odaberi člana kojemu gratis ide.',
+    noMembers: 'Još nema članova. Dodaj prvoga.',
+    noMatch: 'Nema člana s tim imenom.',
+    addMember: '+ Dodaj člana',
+    newMemberName: 'Ime i prezime',
+    saveMember: 'Spremi člana',
+    savingMember: 'Spremam...',
+    addMemberFailed: 'Član nije dodan. Pokušaj ponovno.',
+    adults: 'Odrasli',
+    children: 'Djeca',
+    /** The printed holder row (ADR-0019), prefilled from the member. */
+    holder: 'Ime na ulaznici',
+    holderHint: 'Prazno znači ime člana.',
+    email: 'E-pošta',
+    emailHint: 'Nije obavezno. Ako je upišeš, ulaznice idu na nju.',
+    issue: 'Izdaj gratis',
+    issuing: 'Izdajem...',
+    tooMany: 'Nema toliko slobodnih mjesta.',
+    failed: 'Gratis nije izdan. Pokušaj ponovno.',
+    network: 'Veza je pukla. Pokušaj ponovno.',
+    /** The confirmation, and the three honest outcomes of the e-mail. */
+    doneTitle: 'Gratis je izdan.',
+    doneBody: (tickets: number, code: string) => `${tickets} ulaznica · ${code}`,
+    openPdf: 'Otvori PDF',
+    emailSent: (address: string) => `Ulaznice su poslane na ${address}.`,
+    emailSkipped: 'E-pošta nije upisana, pa ulaznice idu samo na ispis.',
+    emailFailed: (address: string) =>
+      `Ulaznice nisu otišle na ${address}. Otvori PDF i ispiši ih, ili pošalji ponovno iz narudžbe.`,
+
+    /** Zadnji gratisi: the void list. */
+    recentTitle: 'Zadnji gratisi',
+    recentEmpty: 'Još nije izdan nijedan gratis.',
+    noMember: 'Bez člana',
+    noHolder: 'Bez imena',
+    issuedAt: 'Izdano',
+    performance: 'Izvedba',
+    people: 'Osoba',
+    typeAdult: 'Odrasla',
+    typeChild: 'Dječja',
+    statusCancelled: 'poništena',
+    statusScanned: 'ušlo',
+    allCancelled: 'Poništeno',
+    tickets: 'Ulaznice',
+    downloadTickets: 'Otvori PDF',
+    /** Poništi gratis: a confirmation, because the void cannot be undone. */
+    cancelOrder: 'Poništi gratis',
+    cancelTicket: 'Poništi ulaznicu',
+    cancelling: 'Poništavam...',
+    confirm: 'Potvrdi',
+    cancel: 'Odustani',
+    confirmOrderTitle: 'Poništiti cijeli gratis?',
+    confirmOrderBody: (code: string, tickets: number) =>
+      `${code}: ${tickets} ulaznica prestaje vrijediti i mjesta se vraćaju u prodaju. Poništenje se ne može vratiti.`,
+    confirmTicketTitle: 'Poništiti jednu ulaznicu?',
+    confirmTicketBody: (ref: string) =>
+      `${ref} prestaje vrijediti i mjesto se vraća u prodaju. Poništenje se ne može vratiti.`,
+    confirmScanned: 'Pažnja: ta je ulaznica već skenirana na ulazu.',
+    cancelled: 'Gratis je poništen.',
+    cancelFailed: 'Poništenje nije uspjelo. Pokušaj ponovno.',
+
+    /** Gratis po članu: the season report. */
+    perMemberTitle: 'Gratis po članu',
+    perMemberEmpty: 'U ovoj sezoni nije izdan nijedan gratis.',
+    colMember: 'Član',
+    colAdults: 'Odrasle',
+    colChildren: 'Dječje',
+    colIssued: 'Izdano',
+    colVoided: 'Poništeno',
+    seasonLabel: 'Sezona',
+    /** Promo codes are not on this screen and never were (#476). */
+    codesNote: 'Promo kodovi se uređuju u Backofficeu.',
+  },
+
   /** The OAuth consent screen for the MCP connector (#438, stories 56-59). */
   authorize: {
     title: 'Poveži Claude',
