@@ -237,11 +237,47 @@ describe('decideAttendanceAnswer — what', () => {
 })
 
 describe('decideAttendanceAnswer — the army', () => {
-  it('a moreškant may not choose an army', () => {
-    expect(decide({ army: 'crni' })).toEqual({
-      ok: false,
-      status: 403,
-      error: ANSWER_ERRORS.armyNotAllowed,
+  // #565: a dancer answers with ONE tap and the Moreška screen has no army
+  // control, so an army in a dancer's body is ignored rather than refused. What
+  // decides where the answer counts is their primary role, never the request.
+  it('a dancer holding both armies lands in the primary role’s army with one tap', () => {
+    const member = dancer({ roles: ['crni', 'bili'], primaryRole: 'bili' })
+    expect(decide({ member })).toEqual({
+      ok: true,
+      op: 'write',
+      status: 'coming',
+      army: 'bili',
+    })
+  })
+
+  it('ignores an army a dancer sends, counting them in their primary role’s army', () => {
+    const member = dancer({ roles: ['crni', 'bili'], primaryRole: 'crni' })
+    expect(decide({ member, army: 'bili' })).toEqual({
+      ok: true,
+      op: 'write',
+      status: 'coming',
+      army: 'crni',
+    })
+  })
+
+  it('ignores a nonsense army from a dancer rather than 400ing on it', () => {
+    expect(decide({ army: 'purple' })).toEqual({
+      ok: true,
+      op: 'write',
+      status: 'coming',
+      army: 'crni',
+    })
+  })
+
+  it('keeps the voditelj’s army when a dancer re-answers an existing row', () => {
+    // The voditelj moved them; the dancer tapping Dolazim again must not
+    // silently move them back to their profile's army.
+    const member = dancer({ roles: ['crni', 'bili'], primaryRole: 'crni' })
+    expect(decide({ member, hasExisting: true, existingArmy: 'bili' })).toEqual({
+      ok: true,
+      op: 'write',
+      status: 'coming',
+      army: 'bili',
     })
   })
 

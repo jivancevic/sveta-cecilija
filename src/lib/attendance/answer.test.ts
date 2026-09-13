@@ -131,9 +131,9 @@ describe('handleAttendanceAnswer — the rules reach the status code', () => {
     expect(out).toMatchObject({ status: 403, body: { error: ANSWER_ERRORS.started } })
   })
 
-  it('403s a moreškant trying to set an army', async () => {
+  it('ignores an army a moreškant sends and counts the primary role’s (#565)', async () => {
     const out = await handleAttendanceAnswer(body({ army: 'bili' }), deps())
-    expect(out).toMatchObject({ status: 403, body: { error: ANSWER_ERRORS.armyNotAllowed } })
+    expect(out).toMatchObject({ status: 200, body: { ok: true, status: 'coming', army: 'crni' } })
   })
 
   it('400s an army the member does not dance', async () => {
