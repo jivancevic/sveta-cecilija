@@ -92,12 +92,17 @@ export function zagrebToday(nowMs: number): string {
 }
 
 /**
- * Morning until 10, afternoon until 18, evening after.
+ * The small hours are still the evening, then morning until 10, afternoon until
+ * 18, evening after.
  *
- * The evening boundary is the one that matters: the moreška is danced at 21:00
- * and a dancer opening the app on the way to it should not be told "dobar dan".
+ * The evening boundary at 18 is the one that matters most: the moreška is
+ * danced at 21:00 and a dancer opening the app on the way to it should not be
+ * told "dobar dan". The one at 4 is the same thought running the other way — a
+ * dancer opening the app at 01:00 on the way home from a nastup is still having
+ * tonight, and "dobro jutro" would be the app insisting otherwise.
  */
 export function dayPart(hour: number): DayPart {
+  if (hour < 4) return 'evening'
   if (hour < 10) return 'morning'
   if (hour < 18) return 'afternoon'
   return 'evening'

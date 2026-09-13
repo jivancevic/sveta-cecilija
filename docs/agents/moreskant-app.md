@@ -1933,7 +1933,8 @@ rather than re-deriving a count, which is what keeps both panels of
 
 `/app/orders` and `/app/orders/[id]`, for a `tickets` holder: the blagajna's
 list of orders, and the one order behind it. It is the first screen a `tickets`
-login unlocks, so it is also the landing screen for one (`/app` → `/app/orders`).
+login unlocks, so it is the first tab after Početna for one, and the first card
+under the greeting (#564).
 
 **The screen state is the URL.** `src/lib/app/orders-query.ts` parses `?q=`,
 `?show=`, `?state=` and `?page=` and builds the address back; nothing about the

@@ -83,6 +83,15 @@ describe('homeCardKeys', () => {
     ])
   })
 
+  it('gives a voditelj the dance, the roster and the schedule', () => {
+    expect(homeCardKeys(appNav(user('moreska'), ctx()))).toEqual([
+      'moreska',
+      'members',
+      'performances',
+      'notifications',
+    ])
+  })
+
   it('gives a finance holder the euros card and the counts card', () => {
     expect(homeCardKeys(appNav(user('finance'), ctx()))).toEqual([
       'finance',
@@ -99,8 +108,11 @@ describe('homeCardKeys', () => {
 })
 
 describe('the greeting', () => {
-  it('turns over at 10 and at 18, so the evening starts before the moreška does', () => {
-    expect(dayPart(0)).toBe('morning')
+  it('turns over at 4, at 10 and at 18, so the evening starts before the moreška does', () => {
+    // 01:00 is the walk home from a nastup, not the next morning.
+    expect(dayPart(0)).toBe('evening')
+    expect(dayPart(1)).toBe('evening')
+    expect(dayPart(4)).toBe('morning')
     expect(dayPart(9)).toBe('morning')
     expect(dayPart(10)).toBe('afternoon')
     expect(dayPart(17)).toBe('afternoon')
