@@ -47,6 +47,26 @@ function clockLabel(now: Date): string {
   return `${hh}:${mm}`
 }
 
+/**
+ * Anything that covers the screen is NOT the screen, and must not be pulled.
+ *
+ * A `position: fixed; inset: 0` overlay rendered inside the wrapper — the
+ * Skener camera, a Sheet — resolves its inset against that wrapper the moment
+ * the wrapper is transformed, so a finger dragged down over the camera would
+ * take the viewfinder with it and then refresh the page behind it. The gesture
+ * simply never starts there.
+ *
+ * `data-no-pull` is the general way to say so and the one a new overlay should
+ * use; the class and the role are belt and braces for the two that exist.
+ * `document.body.style.overflow` covers a modal that has locked the scroll:
+ * nothing is scrollable then, so nothing is pullable either.
+ */
+function isShielded(target: EventTarget | null): boolean {
+  if (document.body.style.overflow === 'hidden') return true
+  if (!(target instanceof Element)) return false
+  return target.closest('[data-no-pull], .app__scan-overlay, [role="dialog"]') !== null
+}
+
 export function PullToRefresh({ children }: { children: React.ReactNode }) {
   const router = useRouter()
   const pull = useRef<HTMLDivElement | null>(null)
@@ -82,8 +102,9 @@ export function PullToRefresh({ children }: { children: React.ReactNode }) {
       ring.classList.remove('app__ptr--armed')
     }
 
-    function start(y: number) {
+    function start(y: number, target: EventTarget | null) {
       if (busy || scroller.scrollTop > 0) return
+      if (isShielded(target)) return
       origin = y
       delta = 0
       block?.classList.remove('app__pull--settle')
@@ -155,7 +176,7 @@ export function PullToRefresh({ children }: { children: React.ReactNode }) {
       }, SPIN_MS)
     }
 
-    const onStart = (event: TouchEvent) => start(event.touches[0]?.clientY ?? 0)
+    const onStart = (event: TouchEvent) => start(event.touches[0]?.clientY ?? 0, event.target)
     const onMove = (event: TouchEvent) => move(event.touches[0]?.clientY ?? 0, event)
 
     scroller.addEventListener('touchstart', onStart, { passive: true })

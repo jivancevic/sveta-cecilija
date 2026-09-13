@@ -143,4 +143,11 @@ describe('the rest of the shapes render', () => {
     expect(open).toContain('ui-sheet__grab')
     expect(open).toContain('ui-sheet__opt--on')
   })
+
+  it('shields both halves of a sheet from the pull gesture', () => {
+    // Without this the wrapper's transform drags the sheet down with the page
+    // and then refreshes it away underneath the reader (#562 review).
+    const open = render(h(Sheet, { open: true, onClose: () => {}, children: 'x' }))
+    expect(open.match(/data-no-pull/g)).toHaveLength(2)
+  })
 })

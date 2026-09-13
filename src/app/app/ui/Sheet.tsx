@@ -37,13 +37,18 @@ export function Sheet({ open, title, onClose, children }: SheetProps) {
 
   return (
     <>
+      {/* `data-no-pull` on both halves: a sheet covers the screen, and a
+          wrapper transformed under it would drag the sheet with it (#562). The
+          panel's `role="dialog"` would be caught anyway; the scrim has no role
+          to catch. */}
       <button
         type="button"
         className="ui-sheet__scrim"
         aria-label={APP_STRINGS.ui.sheetClose}
         onClick={onClose}
+        data-no-pull
       />
-      <div className="ui-sheet" role="dialog" aria-modal="true">
+      <div className="ui-sheet" role="dialog" aria-modal="true" data-no-pull>
         <div className="ui-sheet__grab" aria-hidden="true" />
         {title != null && <h2>{title}</h2>}
         {children}
