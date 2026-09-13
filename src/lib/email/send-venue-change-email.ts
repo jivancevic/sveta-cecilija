@@ -5,6 +5,7 @@
 // senders; all mail goes through postBrevoEmail so DEV_EMAIL_OVERRIDE applies.
 import { VENUE_LABEL } from '../venues'
 import { postBrevoEmail } from './post-brevo-email'
+import { directionsFor } from './directions'
 
 // Transactional show stream: same Brevo-authenticated tickets@ sender as ticket
 // confirmations + refunds, Reply-To info@ (set on the send body below). One
@@ -12,8 +13,31 @@ import { postBrevoEmail } from './post-brevo-email'
 const SENDER = { email: 'tickets@moreska.eu', name: 'HGD Sveta Cecilija' }
 
 // This action always moves Ljetno kino → the indoor Centar za kulturu, so the
-// from/to venue names come straight from the shared VENUE_LABEL source.
-const MAP_URL = 'https://www.google.com/maps/search/?api=1&query=Centar+za+kulturu+Kor%C4%8Dula'
+// from/to venue names come straight from the shared VENUE_LABEL source, and
+// the directions block is the new venue's, from the same `directions`
+// namespace the ticket e-mail reads (#543): the guest already holds correct
+// directions to the wrong place, so this mail has to carry the right ones.
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+}
+
+function renderDirectionsHtml(locale: 'en' | 'hr', gold: string, text: string): string {
+  const d = directionsFor(locale, 'zimsko-kino')
+  const p = (s: string) => `<p style="margin:0 0 8px 0;font-size:15px;line-height:1.55;color:${text};">${escapeHtml(s)}</p>`
+  return `
+    <tr><td style="padding:0 32px 24px 32px;">
+      <table role="presentation" align="center" cellpadding="0" cellspacing="0" border="0">
+        <tr><td style="width:496px;background:#faf6ef;border-left:3px solid ${gold};padding:18px 20px;">
+          <p style="margin:0 0 10px 0;font-size:11px;letter-spacing:2px;text-transform:uppercase;color:${gold};">${escapeHtml(d.heading)}</p>
+          <p style="margin:0 0 8px 0;font-size:18px;color:${text};">${escapeHtml(d.venue)}</p>
+          ${d.prose.map(p).join('\n          ')}
+          ${p(d.walk)}
+          ${p(d.entrance)}
+          <p style="margin:4px 0 0 0;font-size:15px;"><a href="${d.mapUrl}" style="color:${gold};">${escapeHtml(d.mapLabel)}</a></p>
+        </td></tr>
+      </table>
+    </td></tr>`
+}
 
 export interface SendVenueChangeEmailInput {
   orderId: string
@@ -53,8 +77,9 @@ function renderHtml(input: SendVenueChangeEmailInput, locale: 'en' | 'hr'): stri
       <p style="margin:0 0 16px 0;font-size:16px;line-height:1.55;">Poštovani ${buyer.name},</p>
       <p style="margin:0 0 16px 0;font-size:16px;line-height:1.55;">Zbog vremenskih uvjeta, izvedba <strong>${show.date} u ${show.time}</strong> premještena je iz ${oldVenue} u <strong>${newVenue}</strong>. Izvedba se održava prema rasporedu, vaše ulaznice i dalje vrijede.</p>
     </td></tr>
+${renderDirectionsHtml('hr', gold, text)}
     <tr><td align="center" style="padding:4px 32px 24px 32px;">
-      <a href="${MAP_URL}" style="${buttonStyle}">Pogledaj novu lokaciju na karti</a>
+      <a href="${directionsFor('hr', 'zimsko-kino').mapUrl}" style="${buttonStyle}">Pogledaj novu lokaciju na karti</a>
     </td></tr>
     <tr><td style="padding:0 32px 28px 32px;">
       <p style="margin:0;font-size:15px;line-height:1.55;">Ako vam nova lokacija ne odgovara, jednostavno odgovorite na ovaj e-mail i pronaći ćemo rješenje.</p>
@@ -78,8 +103,9 @@ function renderHtml(input: SendVenueChangeEmailInput, locale: 'en' | 'hr'): stri
       <p style="margin:0 0 16px 0;font-size:16px;line-height:1.55;">Hi ${buyer.name},</p>
       <p style="margin:0 0 16px 0;font-size:16px;line-height:1.55;">Because of the weather, the performance on <strong>${show.date} at ${show.time}</strong> has moved from the ${oldVenue} to the <strong>${newVenue}</strong>. The show goes ahead as scheduled and your tickets remain valid.</p>
     </td></tr>
+${renderDirectionsHtml('en', gold, text)}
     <tr><td align="center" style="padding:4px 32px 24px 32px;">
-      <a href="${MAP_URL}" style="${buttonStyle}">See the new venue on the map</a>
+      <a href="${directionsFor('en', 'zimsko-kino').mapUrl}" style="${buttonStyle}">See the new venue on the map</a>
     </td></tr>
     <tr><td style="padding:0 32px 28px 32px;">
       <p style="margin:0;font-size:15px;line-height:1.55;">If the new venue no longer works for you, just reply to this email and we will sort it out with you.</p>

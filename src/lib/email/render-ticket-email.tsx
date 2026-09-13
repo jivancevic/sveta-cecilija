@@ -10,6 +10,16 @@ import {
 } from '@react-email/components'
 import { render } from '@react-email/render'
 import type { Venue } from '../venues'
+import { eveningFacts } from '../evening'
+import { programmeUrl } from '../site-url'
+import { directionsFor } from './directions'
+import en from '../../messages/en.json'
+import hr from '../../messages/hr.json'
+
+// The three facts about the evening and the front-row sentence are the web
+// copy's own strings (#542's `evening` namespace, #544's `programmePage`),
+// imported rather than re-typed, so the e-mail can never drift from the site.
+const MESSAGES = { en, hr } as const
 
 const VENUE_LABEL: Record<'en' | 'hr', Record<Venue, string>> = {
   en: { 'ljetno-kino': 'Summer Cinema, Korčula', 'zimsko-kino': 'Cultural Center Korčula' },
@@ -44,7 +54,12 @@ const COPY = {
     questions: 'Questions?',
     responseTime: 'We reply within 24 hours.',
     orderHint: 'Please include your order number so we can find it straight away.',
+    programmeHeading: 'Before the show',
+    programmeLink: 'Read the story and the programme in your language',
     org: 'HGD Sveta Cecilija',
+    // The society's office, not the venue: a footer address next to walking
+    // directions is a place a guest can walk to by mistake (#543).
+    registeredOffice: 'Registered office (not the venue):',
     address: 'Knežev prolaz 1, 20260 Korčula, Croatia',
     contact: 'info@moreska.eu',
   },
@@ -69,7 +84,10 @@ const COPY = {
     questions: 'Imate pitanje?',
     responseTime: 'Odgovaramo u roku od 24 sata.',
     orderHint: 'Molimo navedite broj narudžbe kako bismo je odmah pronašli.',
+    programmeHeading: 'Prije izvedbe',
+    programmeLink: 'Pročitajte priču i program',
     org: 'HGD Sveta Cecilija',
+    registeredOffice: 'Sjedište društva (nije mjesto izvedbe):',
     address: 'Knežev prolaz 1, 20260 Korčula, Hrvatska',
     contact: 'info@moreska.eu',
   },
@@ -246,6 +264,53 @@ const styles = {
     letterSpacing: '0.5px',
     borderRadius: '4px',
   } as const,
+  // The two guest-facing blocks #543 adds. Tables with align="center" and
+  // fixed-pixel cells, never width:100%: that is what centres in every client
+  // (the house rule). 488px = the 560px container minus its 36px side padding.
+  infoTable: {
+    borderCollapse: 'collapse' as const,
+    margin: '0 0 24px',
+  } as const,
+  infoCell: {
+    width: '488px',
+    backgroundColor: BG,
+    borderLeft: `3px solid ${GOLD}`,
+    padding: '18px 20px',
+    verticalAlign: 'top' as const,
+  } as const,
+  infoEyebrow: {
+    fontFamily: "'Courier New', monospace",
+    fontSize: '10px',
+    letterSpacing: '2px',
+    textTransform: 'uppercase' as const,
+    color: GOLD,
+    margin: '0 0 10px',
+  } as const,
+  infoVenue: {
+    fontFamily: "'Georgia', 'Times New Roman', serif",
+    fontSize: '18px',
+    color: INK,
+    margin: '0 0 8px',
+  } as const,
+  infoText: {
+    fontSize: '14px',
+    color: INK,
+    lineHeight: '1.55',
+    margin: '0 0 8px',
+  } as const,
+  infoLink: {
+    fontSize: '14px',
+    color: GOLD,
+    textDecoration: 'underline',
+    margin: '4px 0 0',
+  } as const,
+  frontRow: {
+    fontSize: '14px',
+    color: INK,
+    lineHeight: '1.55',
+    margin: '12px 0 0',
+    fontStyle: 'italic' as const,
+  } as const,
   footerHr: {
     border: 'none',
     borderTop: `1px solid ${BG}`,
@@ -270,10 +335,14 @@ export interface RenderTicketEmailInput {
 
 function TicketEmail(input: RenderTicketEmailInput) {
   const c = COPY[input.locale]
+  const m = MESSAGES[input.locale]
   const venueLabel = VENUE_LABEL[input.locale][input.show.venue]
   const dateLabel = formatDate(input.show.date, input.locale)
   const adultTotal = input.order.adultCount * 2000
   const childTotal = input.order.childCount * 1000
+  const facts = eveningFacts(m.evening)
+  const directions = directionsFor(input.locale, input.show.venue)
+  const programmeHref = programmeUrl()
 
   return (
     <Html lang={input.locale}>
@@ -304,6 +373,58 @@ function TicketEmail(input: RenderTicketEmailInput) {
               {venueLabel}
             </Text>
           </Section>
+
+          {/* What the evening is: the three shared facts, in the site's own
+              words and order (#542). */}
+          <table align="center" cellPadding={0} cellSpacing={0} style={styles.infoTable}>
+            <tbody>
+              <tr>
+                <td style={styles.infoCell}>
+                  <Text style={styles.infoEyebrow}>{m.evening.label}</Text>
+                  {facts.map((fact) => (
+                    <Text key={fact} style={styles.infoText}>{fact}</Text>
+                  ))}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          {/* How to find the venue: prose from a landmark first, the map link
+              under it, chosen by the performance's venue (#543). */}
+          <table align="center" cellPadding={0} cellSpacing={0} style={styles.infoTable}>
+            <tbody>
+              <tr>
+                <td style={styles.infoCell}>
+                  <Text style={styles.infoEyebrow}>{directions.heading}</Text>
+                  <Text style={styles.infoVenue}>{directions.venue}</Text>
+                  {directions.prose.map((sentence) => (
+                    <Text key={sentence} style={styles.infoText}>{sentence}</Text>
+                  ))}
+                  <Text style={styles.infoText}>{directions.walk}</Text>
+                  <Text style={styles.infoText}>{directions.entrance}</Text>
+                  <Text style={styles.infoLink}>
+                    <a href={directions.mapUrl} style={{ color: GOLD }}>{directions.mapLabel}</a>
+                  </Text>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+
+          {/* The programme link and the front-row note, the latter in the
+              programme page's own words (#544). A plain link, never a QR. */}
+          <table align="center" cellPadding={0} cellSpacing={0} style={styles.infoTable}>
+            <tbody>
+              <tr>
+                <td style={styles.infoCell}>
+                  <Text style={styles.infoEyebrow}>{c.programmeHeading}</Text>
+                  <Text style={styles.infoLink}>
+                    <a href={programmeHref} style={{ color: GOLD }}>{c.programmeLink}</a>
+                  </Text>
+                  <Text style={styles.frontRow}>{m.programmePage.frontRow}</Text>
+                </td>
+              </tr>
+            </tbody>
+          </table>
 
           <Text style={styles.sectionHeading}>{c.summaryHeading}</Text>
           <table style={styles.summaryTable} cellPadding={0} cellSpacing={0}>
@@ -344,7 +465,7 @@ function TicketEmail(input: RenderTicketEmailInput) {
             <br />
             {c.responseTime} {c.orderHint}
             <br />
-            {c.org} · {c.address}
+            {`${c.org} · ${c.registeredOffice} ${c.address}`}
           </Text>
         </Container>
       </Body>

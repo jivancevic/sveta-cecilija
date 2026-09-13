@@ -565,5 +565,25 @@
     "runtime": "Izvedba traje otprilike sat vremena.",
     "parts": "Večer otvara klapa, a zatim se moreška pleše uz puhaći orkestar, uz govorni uvod u priču na nekoliko jezika prije same borbe.",
     "seating": "Mjesta nisu numerirana i sjeda se redom dolaska, pa ranijim dolaskom birate bolje mjesto."
+  },
+  "directions": {
+    "heading": "Kako do nas",
+    "mapLabel": "Otvori u Google kartama",
+    "ljetnoKino": {
+      "venue": "Ljetno kino, Korčula",
+      "prose": [
+        "NACRT, ČEKA JOSIPA: dvije-tri rečenice od orijentira u starom gradu do Ljetnog kina."
+      ],
+      "walk": "NACRT, ČEKA JOSIPA: koliko traje hod.",
+      "entrance": "NACRT, ČEKA JOSIPA: kako izgleda ulaz."
+    },
+    "zimskoKino": {
+      "venue": "Centar za kulturu, Korčula",
+      "prose": [
+        "NACRT, ČEKA JOSIPA: dvije-tri rečenice od orijentira u starom gradu do Centra za kulturu."
+      ],
+      "walk": "NACRT, ČEKA JOSIPA: koliko traje hod.",
+      "entrance": "NACRT, ČEKA JOSIPA: kako izgleda ulaz."
+    }
   }
 }
