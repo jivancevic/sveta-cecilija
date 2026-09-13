@@ -2,6 +2,7 @@ import { loadFinanceScreen } from '@/lib/app/finance-data'
 import { statementMonths, statementYears } from '@/lib/app/finance-view'
 import type { LedgerPerformance, PartnerReceivableRow } from '@/lib/app/finance-view'
 import { formatEur } from '@/lib/app/orders-view'
+import { pluralize } from '@/lib/app/roster-loaders'
 import { APP_STRINGS, formatPerformanceDateLong } from '@/lib/app/strings'
 import { VENUE_LABEL } from '@/lib/venues'
 import { AppShell } from '../AppShell'
@@ -85,7 +86,7 @@ export default async function FinancePage({
       <section className="app__finance-card">
         <h2 className="app__finance-head">{S.refundsTitle}</h2>
         <p className="app__finance-figure">{formatEur(money.refundedCents)}</p>
-        <p className="app__finance-count">{S.refundsCount(money.refundCount)}</p>
+        <p className="app__finance-count">{pluralize(money.refundCount, S.refundsCount)}</p>
         <p className="app__finance-note">{S.refundsNote}</p>
       </section>
 
@@ -115,7 +116,9 @@ export default async function FinancePage({
                   <b>{row.code}</b>
                   {row.memberName !== '' && <i>{row.memberName}</i>}
                 </span>
-                <span className="app__finance-row-sub">{S.promoTickets(row.ticketsSold)}</span>
+                <span className="app__finance-row-sub">
+                  {pluralize(row.ticketsSold, S.promoTickets)}
+                </span>
                 <b className="app__finance-num">{formatEur(row.revenueCents)}</b>
               </li>
             ))}
@@ -192,7 +195,13 @@ function PartnerRow({
   return (
     <li className="app__finance-partner">
       <div className="app__finance-partner-head">
-        <b>{row.partnerName}</b>
+        <b>
+          {row.partnerName}
+          {/* A deactivated reseller can no longer sell but can still owe, and
+              the badge is how the reader tells "nothing this month" from "gone
+              from the channel" without opening the Backoffice. */}
+          {!row.active && <i className="app__finance-inactive">{S.inactivePartner}</i>}
+        </b>
         <b className="app__finance-num">{formatEur(row.netCents)}</b>
       </div>
       <dl className="app__finance-split">

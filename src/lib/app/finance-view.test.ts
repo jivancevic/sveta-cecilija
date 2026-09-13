@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   groupLedgerByPerformance,
   partnerReceivable,
+  partnersInvolved,
   promoRevenue,
   resolveReceivableMonth,
   seasonMoney,
@@ -11,9 +12,9 @@ describe('seasonMoney', () => {
   it('adds online order totals net of refunds to the offline ledger', () => {
     const out = seasonMoney({
       orders: [
-        { totalCents: 4000, refundStatus: 'none' },
-        { totalCents: 3000, refundStatus: 'refunded' },
-        { totalCents: 1000, refundStatus: 'pending' },
+        { channel: 'online', totalCents: 4000, refundStatus: 'none' },
+        { channel: 'online', totalCents: 3000, refundStatus: 'refunded' },
+        { channel: 'online', totalCents: 1000, refundStatus: 'pending' },
       ],
       offlineRevenueCents: 2500,
     })
@@ -24,13 +25,47 @@ describe('seasonMoney', () => {
     expect(out.collectedCents).toBe(7500)
   })
 
+  it('leaves a partner sale out: that money is a receivable, not collected', () => {
+    // A partner order stores `total` at FACE VALUE even though the society has
+    // not seen a cent of it, so counting it here would put the same euros in
+    // both cards and make the sum ADR-0015 forbids come out right.
+    const out = seasonMoney({
+      orders: [
+        { channel: 'online', totalCents: 4000, refundStatus: 'none' },
+        { channel: 'partner', totalCents: 6000, refundStatus: 'none' },
+      ],
+      offlineRevenueCents: 0,
+    })
+
+    expect(out.onlineNetCents).toBe(4000)
+    expect(out.collectedCents).toBe(4000)
+  })
+
+  it('leaves a storno out too, which no refund status would have caught', () => {
+    // A storno voids the TICKETS and touches neither `total` nor
+    // `refund_status`, so a cancelled partner sale looks like live revenue
+    // forever unless the channel itself is excluded.
+    const out = seasonMoney({
+      orders: [
+        { channel: 'partner', totalCents: 6000, refundStatus: 'none' },
+        { channel: 'comp', totalCents: 0, refundStatus: 'none' },
+      ],
+      offlineRevenueCents: 0,
+    })
+
+    expect(out.collectedCents).toBe(0)
+    expect(out.refundCount).toBe(0)
+  })
+
   it('counts refunded orders and what went back with them', () => {
     const out = seasonMoney({
       orders: [
-        { totalCents: 4000, refundStatus: 'refunded' },
-        { totalCents: 2000, refundStatus: 'refunded' },
-        { totalCents: 6000, refundStatus: 'none' },
-        { totalCents: 500, refundStatus: 'failed' },
+        { channel: 'online', totalCents: 4000, refundStatus: 'refunded' },
+        { channel: 'online', totalCents: 2000, refundStatus: 'refunded' },
+        { channel: 'online', totalCents: 6000, refundStatus: 'none' },
+        { channel: 'online', totalCents: 500, refundStatus: 'failed' },
+        // A refunded partner order is not a refund of collected money either.
+        { channel: 'partner', totalCents: 9900, refundStatus: 'refunded' },
       ],
       offlineRevenueCents: 0,
     })
@@ -52,9 +87,9 @@ describe('seasonMoney', () => {
   })
 })
 
-const KALETA = { id: '1', name: 'Kaleta', commissionPercent: 10 }
-const AMINESS = { id: '2', name: 'Aminess', commissionPercent: 15 }
-const MARCO = { id: '3', name: 'Marco Polo', commissionPercent: 10 }
+const KALETA = { id: '1', name: 'Kaleta', commissionPercent: 10, active: true }
+const AMINESS = { id: '2', name: 'Aminess', commissionPercent: 15, active: true }
+const MARCO = { id: '3', name: 'Marco Polo', commissionPercent: 10, active: true }
 
 describe('partnerReceivable', () => {
   it('bills each partner its own rate over its own active tickets', () => {
@@ -108,6 +143,38 @@ describe('partnerReceivable', () => {
     expect(out.rows).toHaveLength(1)
     expect(out.totalNetCents).toBe(0)
   })
+
+  it('carries the partner’s active flag onto its row', () => {
+    const retired = { ...AMINESS, active: false }
+    const out = partnerReceivable(
+      [retired],
+      [{ partnerId: '2', type: 'adult', status: 'active' }],
+    )
+    expect(out.rows[0]).toMatchObject({ partnerName: 'Aminess', active: false, netCents: 1700 })
+  })
+})
+
+const ROW = (partner: typeof KALETA) =>
+  ({ partnerId: partner.id, type: 'adult', status: 'active', partner }) as const
+
+describe('partnersInvolved', () => {
+  it('finds a partner that only the rows know about', () => {
+    // The season receivable must be derived from the SALES, never from the
+    // list of partners who may still sell: a reseller deactivated in August
+    // still owes for what it sold in July, and taking the list first would
+    // make that debt vanish from the total.
+    const retired = { ...AMINESS, active: false }
+    expect(partnersInvolved([], [ROW(retired)])).toEqual([retired])
+  })
+
+  it('keeps a known partner that sold nothing, and adds one that did', () => {
+    const retired = { ...AMINESS, active: false }
+    expect(partnersInvolved([KALETA, MARCO], [ROW(retired)])).toEqual([retired, KALETA, MARCO])
+  })
+
+  it('lists a partner once, however many rows it has', () => {
+    expect(partnersInvolved([KALETA], [ROW(KALETA), ROW(KALETA)])).toEqual([KALETA])
+  })
 })
 
 const JULY = { showId: '5', showDate: '2026-07-17', venue: 'ljetno-kino' as const }
@@ -156,6 +223,12 @@ describe('resolveReceivableMonth', () => {
   it('opens on the current Zagreb month when nothing is asked for', () => {
     expect(resolveReceivableMonth(NOW, undefined, undefined)).toEqual(NOW)
     expect(resolveReceivableMonth(NOW, 'rujan', 'devet')).toEqual(NOW)
+  })
+
+  it('reads an empty parameter as absent, not as January', () => {
+    // `Number('')` is 0, which would clamp to month 1 and look like a choice.
+    expect(resolveReceivableMonth(NOW, '', '')).toEqual(NOW)
+    expect(resolveReceivableMonth(NOW, '2025', '')).toEqual({ year: 2025, month: 12 })
   })
 
   it('takes a month that has already begun', () => {

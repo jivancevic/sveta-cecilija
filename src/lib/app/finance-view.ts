@@ -45,11 +45,15 @@ import {
 } from './statement-view'
 import type { Venue } from '@/lib/venues'
 
-/** One order of the season, reduced to the two things money cares about. */
+/** One order of the season, reduced to the three things money cares about. */
 export interface FinanceOrderRow {
+  /** `orders.channel`: only `online` money is ever collected by the society. */
+  channel: OrderChannel
   totalCents: number
   refundStatus: RefundStatus
 }
+
+export type OrderChannel = 'online' | 'partner' | 'comp'
 
 /**
  * The season in euros: what came in, and what went back out.
@@ -78,7 +82,24 @@ export function seasonMoney({
   orders: readonly FinanceOrderRow[]
   offlineRevenueCents: number
 }): SeasonMoney {
-  const rows = [...orders]
+  // ONLY the online channel is collected money, and the reason is worth
+  // stating where the arithmetic is:
+  //
+  //   - a **partner** order stores `total` at FACE VALUE the moment a reseller
+  //     issues the seat, but the society sees none of it until the monthly
+  //     obračun. Counting it here would put the same euros in Prikupljeni
+  //     prihod AND in Potraživanje od partnera, which is exactly the sum
+  //     ADR-0015 forbids;
+  //   - worse, a **storno** voids the tickets and touches neither `total` nor
+  //     `refund_status`, so a cancelled partner sale would sit in revenue for
+  //     ever with nothing on the row to betray it;
+  //   - a **comp** order carries `total = 0` (ADR-0019), so dropping it changes
+  //     no figure — it is excluded by the same clause rather than by a second
+  //     rule someone has to remember.
+  //
+  // `finance-data.ts` already asks the database for online rows only; this is
+  // the belt to that braces, and it is where the rule is tested.
+  const rows = orders.filter((o) => o.channel === 'online')
   const refunded = rows.filter((o) => o.refundStatus === 'refunded')
 
   return {
@@ -90,11 +111,14 @@ export function seasonMoney({
   }
 }
 
-/** A Partners row as this screen reads it: who, and at what rate (ADR-0008). */
+/** A Partners row as this screen reads it: who, at what rate, still selling? */
 export interface FinancePartner {
   id: string
   name: string
+  /** Percent of gross the partner keeps (ADR-0008). */
   commissionPercent: number
+  /** `Partners.active`: false means it can no longer sell, not that it is paid. */
+  active: boolean
 }
 
 /** One partner-channel ticket, with the partner it was sold under. */
@@ -102,6 +126,38 @@ export interface PartnerTicketRow {
   partnerId: string
   type: TicketType
   status: 'active' | 'cancelled'
+  /**
+   * The partner as the ticket's own join hands it over.
+   *
+   * This is what makes a DEACTIVATED reseller's debt visible: the list of
+   * partners who may still sell does not contain it, but its sales do.
+   */
+  partner?: FinancePartner
+}
+
+/**
+ * Every partner these rows concern: the ones already known, plus any the rows
+ * themselves name. Partners the rows discovered come first, then the known
+ * ones, each group by name.
+ *
+ * The order matters less than the membership. A partner deactivated in August
+ * still owes for what it sold in July, so a total built from `activeList()`
+ * alone would quietly drop that debt and a month panel built from it would
+ * leave Velebit with no way to download that month's statement.
+ */
+export function partnersInvolved(
+  known: readonly FinancePartner[],
+  rows: readonly PartnerTicketRow[],
+): FinancePartner[] {
+  const byName = (a: FinancePartner, b: FinancePartner) => a.name.localeCompare(b.name, 'hr')
+  const knownIds = new Set(known.map((p) => p.id))
+
+  const discovered = new Map<string, FinancePartner>()
+  for (const row of rows) {
+    if (row.partner && !knownIds.has(row.partner.id)) discovered.set(row.partner.id, row.partner)
+  }
+
+  return [...[...discovered.values()].sort(byName), ...[...known].sort(byName)]
 }
 
 /**
@@ -113,6 +169,8 @@ export interface PartnerReceivableRow {
   partnerId: string
   partnerName: string
   commissionPercent: number
+  /** False for a reseller that may no longer sell but may still owe. */
+  active: boolean
   /** Active (billable) tickets. A cancelled one is context, never money. */
   ticketsSold: number
   cancelledCount: number
@@ -168,6 +226,7 @@ export function partnerReceivable(
       partnerId: partner.id,
       partnerName: partner.name,
       commissionPercent: partner.commissionPercent,
+      active: partner.active,
       ticketsSold: statement.totalActive,
       cancelledCount: statement.cancelledCount,
       grossCents: statement.grossCents,
@@ -315,17 +374,31 @@ export function resolveReceivableMonth(
   rawMonth: string | undefined,
 ): MonthKey {
   const years = statementYears(now)
-  const parsedYear = Number(rawYear)
-  const year = years.includes(parsedYear) ? parsedYear : now.year
+  const parsedYear = asNumber(rawYear)
+  const year = parsedYear !== null && years.includes(parsedYear) ? parsedYear : now.year
 
-  const parsedMonth = Number(rawMonth)
-  const month = Number.isInteger(parsedMonth)
-    ? clampStatementMonth(now, year, parsedMonth)
-    : year === now.year
-      ? now.month
-      : 12
+  const parsedMonth = asNumber(rawMonth)
+  const month =
+    parsedMonth !== null
+      ? clampStatementMonth(now, year, parsedMonth)
+      : year === now.year
+        ? now.month
+        : 12
 
   return { year, month }
+}
+
+/**
+ * A query-string integer, or null when there isn't one.
+ *
+ * `Number('')` is 0, so an empty `?month=` — which is what a form submitted
+ * with a cleared field produces — would otherwise clamp to January and look
+ * like a deliberate choice.
+ */
+function asNumber(raw: string | undefined): number | null {
+  if (raw === undefined || raw.trim() === '') return null
+  const value = Number(raw)
+  return Number.isInteger(value) ? value : null
 }
 
 export type { MonthKey, MonthOption, OfflineSource, OfflineTicketType, RefundStatus }

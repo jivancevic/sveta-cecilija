@@ -5440,6 +5440,22 @@ a.app__statrow-main:focus-visible {
   font-size: 17px;
 }
 
+/* "neaktivan": a reseller that may no longer sell but may still owe. A quiet
+   outline rather than a warning colour, because it is a fact about the
+   partner's status and not a problem with the figure next to it. */
+.app__finance-inactive {
+  margin-left: 8px;
+  padding: 1px 6px;
+  border: 1px solid var(--rule);
+  color: var(--muted);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+
 .app__finance-csv {
   margin-top: 12px;
 }

@@ -41,6 +41,7 @@ import type { Venue } from '@/lib/venues'
 import {
   groupLedgerByPerformance,
   partnerReceivable,
+  partnersInvolved,
   promoRevenue,
   resolveReceivableMonth,
   seasonMoney,
@@ -51,6 +52,7 @@ import {
   type MonthKey,
   type OfflineSource,
   type OfflineTicketType,
+  type OrderChannel,
   type PartnerReceivable,
   type PartnerTicketRow,
   type PromoCodeRow,
@@ -83,17 +85,31 @@ const YEAR_BOUNDS = (season: number): [string, string] => [
   `${season + 1}-01-01T00:00:00.000Z`,
 ]
 
-/** Order totals and refund state for the season. `orders` alone: no ticket join. */
+/**
+ * Order totals and refund state for the season, ONLINE ORDERS ONLY. `orders`
+ * alone: no ticket join.
+ *
+ * The channel clause is not an optimisation, it is the correctness of the whole
+ * screen. A partner order stores `total` at face value the moment a reseller
+ * issues the seat, but that money is the reseller's until the monthly obračun,
+ * so counting it as collected would put the same euros in both cards; and a
+ * storno voids the tickets while leaving `total` and `refund_status` alone, so
+ * a cancelled partner sale would never leave the figure. A comp order carries
+ * `total = 0` and is excluded by the same clause rather than a second rule.
+ * `seasonMoney` re-applies the filter, and that is where it is tested.
+ */
 async function seasonOrders(query: PoolQuery, season: number): Promise<FinanceOrderRow[]> {
   const [from, to] = YEAR_BOUNDS(season)
   const res = await query(
-    `SELECT o.total AS total, o.refund_status AS refund_status
+    `SELECT o.channel AS channel, o.total AS total, o.refund_status AS refund_status
      FROM orders o
      JOIN shows s ON s.id = o.show_id
-     WHERE s.date >= $1 AND s.date < $2 AND ${publicPerformanceSql('s')}`,
+     WHERE o.channel = 'online'
+       AND s.date >= $1 AND s.date < $2 AND ${publicPerformanceSql('s')}`,
     [from, to],
   )
   return res.rows.map((r) => ({
+    channel: ((r.channel as OrderChannel) ?? 'online') as OrderChannel,
     totalCents: Number(r.total) || 0,
     refundStatus: ((r.refund_status as RefundStatus) ?? 'none') as RefundStatus,
   }))
@@ -124,19 +140,28 @@ async function seasonLedger(query: PoolQuery, season: number): Promise<LedgerLin
   }))
 }
 
-/** Partner-channel tickets of the season, windowed by the performance date. */
+/**
+ * Partner-channel tickets of the season, windowed by the performance date,
+ * each carrying its own Partner row.
+ *
+ * The join to `partners` is what makes the season receivable correct rather
+ * than merely plausible (the same shape `dashboard/revenue-data.ts` uses): a
+ * reseller deactivated in August still owes for what it sold in July, and
+ * building the total from the list of partners who may still SELL would drop
+ * that debt without a trace.
+ */
 async function seasonPartnerTickets(
   query: PoolQuery,
   season: number,
 ): Promise<PartnerTicketRow[]> {
   const [from, to] = YEAR_BOUNDS(season)
   const res = await query(
-    `SELECT o.partner_id AS partner_id, t.type AS type, t.status AS status
+    `SELECT ${PARTNER_TICKET_COLUMNS}
      FROM tickets t
      JOIN orders o ON o.id = t.order_id
+     JOIN partners p ON p.id = o.partner_id
      JOIN shows s ON s.id = o.show_id
-     WHERE o.partner_id IS NOT NULL
-       AND s.date >= $1 AND s.date < $2 AND ${publicPerformanceSql('s')}`,
+     WHERE s.date >= $1 AND s.date < $2 AND ${publicPerformanceSql('s')}`,
     [from, to],
   )
   return res.rows.map(toPartnerTicket)
@@ -154,24 +179,45 @@ async function monthPartnerTickets(
   { year, month }: MonthKey,
 ): Promise<PartnerTicketRow[]> {
   const res = await query(
-    `SELECT o.partner_id AS partner_id, t.type AS type, t.status AS status
+    `SELECT ${PARTNER_TICKET_COLUMNS}
      FROM tickets t
      JOIN orders o ON o.id = t.order_id
-     WHERE o.partner_id IS NOT NULL
-       AND EXTRACT(YEAR  FROM (o.created_at AT TIME ZONE 'Europe/Zagreb')) = $1
+     JOIN partners p ON p.id = o.partner_id
+     WHERE EXTRACT(YEAR  FROM (o.created_at AT TIME ZONE 'Europe/Zagreb')) = $1
        AND EXTRACT(MONTH FROM (o.created_at AT TIME ZONE 'Europe/Zagreb')) = $2`,
     [year, month],
   )
   return res.rows.map(toPartnerTicket)
 }
 
+/**
+ * One ticket plus the Partner it was sold under. The inner join to `partners`
+ * replaces the old `o.partner_id IS NOT NULL`: it is the same filter and it
+ * brings the name, the rate and the active flag with it.
+ */
+const PARTNER_TICKET_COLUMNS = `p.id AS partner_id, p.name AS partner_name,
+            p.commission_percent AS commission_percent, p.active AS partner_active,
+            t.type AS type, t.status AS status`
+
+/** `Partners.active` defaults to true, so only an explicit false deactivates. */
 function toPartnerTicket(r: Record<string, unknown>): PartnerTicketRow {
+  const commission = Number(r.commission_percent)
+  const id = String(r.partner_id)
   return {
-    partnerId: String(r.partner_id),
+    partnerId: id,
     type: r.type as TicketType,
     status: (r.status as 'active' | 'cancelled') ?? 'active',
+    partner: {
+      id,
+      name: (r.partner_name as string) ?? `Partner ${id}`,
+      commissionPercent: Number.isFinite(commission) ? commission : DEFAULT_COMMISSION_PERCENT,
+      active: r.partner_active !== false,
+    },
   }
 }
+
+/** The Partners collection's own default (ADR-0008), for a row that has none. */
+const DEFAULT_COMMISSION_PERCENT = 10
 
 /**
  * Promo-code tickets and revenue for the season (ADR-0018).
@@ -252,21 +298,32 @@ export async function loadFinanceScreen(params: {
 
   const performances = groupLedgerByPerformance(ledger)
   const offlineRevenueCents = performances.reduce((sum, p) => sum + p.revenueCents, 0)
-  const channel: FinancePartner[] = partners.map((p) => ({
+
+  const stillSelling: FinancePartner[] = partners.map((p) => ({
     id: p.id,
     name: p.name,
     commissionPercent: p.commissionPercent,
+    active: p.active,
   }))
+
+  // The SEASON total is derived from the sales and nothing else, so a reseller
+  // deactivated mid-season is still in it. The MONTH panel starts from the
+  // partners who may still sell — so an active one with no sales gets a row
+  // saying it owes nothing — and adds whoever the month's rows name, so a
+  // deactivated partner with an unpaid month keeps its figures and its
+  // statement download.
+  const seasonPartners = partnersInvolved([], seasonTickets)
+  const monthPartners = partnersInvolved(stillSelling, monthTickets)
 
   return {
     season,
     seasons,
     money: seasonMoney({ orders, offlineRevenueCents }),
-    seasonReceivableCents: partnerReceivable(channel, seasonTickets).totalNetCents,
+    seasonReceivableCents: partnerReceivable(seasonPartners, seasonTickets).totalNetCents,
     promo: promoRevenue(promoRows),
     month,
     now,
-    receivable: partnerReceivable(channel, monthTickets),
+    receivable: partnerReceivable(monthPartners, monthTickets),
     ledger: performances,
   }
 }
