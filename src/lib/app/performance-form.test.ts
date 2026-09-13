@@ -168,11 +168,16 @@ describe('handleEditPerformance', () => {
     ])
   })
 
-  it('refuses a PUBLIC performance: moving one mails every buyer', async () => {
+  // The ROW decides the shape (#567): a booking's five fields sent at a public
+  // evening are not a permission refusal any more, they are the wrong body —
+  // the public half asks for a house and this one has none. The date it carries
+  // is refused by omission, which is the rule that matters: moving a public
+  // evening is *Pomakni datum*, with a preview and a mail to every buyer.
+  it('refuses a booking’s body at a PUBLIC performance, and writes nothing', async () => {
     const { deps: d, updated } = deps(REDOVNA)
     const res = await handleEditPerformance('9', GOOD_BODY, d)
 
-    expect(res.status).toBe(403)
+    expect(res.status).toBe(400)
     expect(updated).toEqual([])
   })
 
@@ -336,17 +341,29 @@ describe('Dodaj, when the body asks for a PUBLIC performance', () => {
     })
   })
 
-  it('refuses a voditelj, whose rows never sell a ticket', async () => {
+  // #567's acceptance, first half: the voditelj enters the season's public
+  // evenings themselves. The second half — that the same login cannot cancel
+  // one — is `/api/shows/[id]/cancel`'s own test, because the refusal that
+  // matters is the ROUTE's and not a greyed button.
+  it('lets a `moreska`-only login create one too (#567, Q53)', async () => {
     const { deps: d, created } = deps(BOOKING, OK_REQUEST, ['moreska'])
     const res = await handleCreatePerformance(PUBLIC_BODY, d)
 
-    expect(res.status).toBe(403)
-    expect(created).toEqual([])
+    expect(res.status).toBe(200)
+    expect(created[0]![0]!.data).toMatchObject({ isPublic: true, venue: 'ljetno-kino' })
   })
 
-  it('refuses a `tickets` holder a NON-public row: that is the voditelj’s', async () => {
+  it('lets a `tickets` holder enter a booking, which is the same schedule', async () => {
     const { deps: d, created } = deps(BOOKING, OK_REQUEST, ['tickets'])
     const res = await handleCreatePerformance(GOOD_BODY, d)
+
+    expect(res.status).toBe(200)
+    expect(created[0]![0]!.data).toMatchObject({ isPublic: false, client: 'Le Ponant' })
+  })
+
+  it('refuses a caller who holds neither word, and writes nothing', async () => {
+    const { deps: d, created } = deps(BOOKING, OK_REQUEST, ['door'])
+    const res = await handleCreatePerformance(PUBLIC_BODY, d)
 
     expect(res.status).toBe(403)
     expect(created).toEqual([])
@@ -420,17 +437,39 @@ describe('Uredi, on a PUBLIC performance', () => {
     expect(Object.keys(updated[0]!.patch)).not.toContain('date')
   })
 
-  it('refuses a voditelj, even one who also holds `moreskant`', async () => {
+  it('lets a voditelj correct one too, the hour, the house and the kind (#567)', async () => {
     const { deps: d, updated } = deps(REDOVNA, OK_REQUEST, ['moreska', 'moreskant'])
     const res = await handleEditPerformance('9', EDIT, d)
 
-    expect(res.status).toBe(403)
+    expect(res.status).toBe(200)
+    expect(updated).toEqual([
+      { id: '9', patch: { time: '21:30', kind: 'redovna', venue: 'zimsko-kino' } },
+    ])
+  })
+
+  // The row still decides WHAT may change, which is the half of the old split
+  // that was never about the caller: a voditelj editing a public evening gets
+  // the public evening's three fields and its sold-house lock, not the five of
+  // a booking.
+  it('refuses to move a voditelj’s sold house as surely as the blagajna’s', async () => {
+    const { deps: d, updated } = deps(REDOVNA, OK_REQUEST, ['moreska'], 3)
+    const res = await handleEditPerformance('9', EDIT, d)
+
+    expect(res.status).toBe(409)
     expect(updated).toEqual([])
   })
 
-  it('refuses a `tickets` holder a BOOKING: that stays the voditelj’s row', async () => {
+  it('lets a `tickets` holder correct a BOOKING, date and client and all', async () => {
     const { deps: d, updated } = deps(BOOKING, OK_REQUEST, ['tickets'])
     const res = await handleEditPerformance('7', GOOD_BODY, d)
+
+    expect(res.status).toBe(200)
+    expect(updated[0]!.patch).toMatchObject({ client: 'Le Ponant', location: 'Luka' })
+  })
+
+  it('refuses a caller who holds neither word', async () => {
+    const { deps: d, updated } = deps(REDOVNA, OK_REQUEST, ['door', 'refunds'])
+    const res = await handleEditPerformance('9', EDIT, d)
 
     expect(res.status).toBe(403)
     expect(updated).toEqual([])

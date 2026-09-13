@@ -34,9 +34,21 @@ const poolQuery = vi.fn<(...a: unknown[]) => Promise<{ rows: Record<string, unkn
 const pushQuery = vi.fn()
 const send = vi.fn(async () => ({ recipients: 1, devices: 1, delivered: 1, dead: 0, failed: 0 }))
 const release = vi.fn(async () => {})
+/**
+ * The caller the guard lets through. Tatjana holds both words Otkaži needs
+ * since #567: `refunds` is the guard's own, `tickets` is the second check the
+ * handler makes, because cancelling an evening is the box office's action as
+ * well as a refund run.
+ */
+const guardUser = (permissions: string[] = ['tickets', 'refunds']) => ({
+  id: 8,
+  email: 'tatjana@moreska.eu',
+  permissions,
+})
+
 const requirePermission = vi.fn<(...a: unknown[]) => Promise<Record<string, unknown>>>(async () => ({
   payload: { db: { pool: { query: poolQuery }, drizzle: { execute: vi.fn() } } },
-  user: { id: 8, email: 'tatjana@moreska.eu' },
+  user: guardUser(),
   error: null,
 }))
 
@@ -117,6 +129,34 @@ describe('POST /api/shows/[id]/cancel', () => {
   it('is gated on `refunds`, because it moves money', async () => {
     await POST(post(), params)
     expect(requirePermission.mock.calls[0][1]).toBe('refunds')
+  })
+
+  // #567, Q53: Izvedbe greys Otkaži for a reader who is not the blagajna, and
+  // a caption is not a refusal — the handler makes the second check itself.
+  it('refuses a caller who may refund but is not the blagajna (#567)', async () => {
+    requirePermission.mockResolvedValueOnce({
+      payload: { db: { pool: { query: poolQuery }, drizzle: { execute: vi.fn() } } },
+      user: guardUser(['refunds', 'moreska']),
+      error: null,
+    })
+
+    const res = await POST(post(), params)
+
+    expect(res.status).toBe(403)
+    expect(cancelShow).not.toHaveBeenCalled()
+  })
+
+  it('refuses a `moreska`-only login, which may now CREATE a public evening', async () => {
+    requirePermission.mockResolvedValueOnce({
+      payload: { db: { pool: { query: poolQuery }, drizzle: { execute: vi.fn() } } },
+      user: guardUser(['moreska']),
+      error: null,
+    })
+
+    const res = await POST(post(), params)
+
+    expect(res.status).toBe(403)
+    expect(cancelShow).not.toHaveBeenCalled()
   })
 
   it('returns 500 without a Brevo key rather than cancelling silently', async () => {

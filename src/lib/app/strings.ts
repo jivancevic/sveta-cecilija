@@ -749,14 +749,19 @@ export const APP_STRINGS = {
     publicRow:
       'Ovo je javna izvedba. Njezin datum, mjesto i otkazivanje vodi blagajna, jer o tome ovise prodane ulaznice.',
     /**
-     * The two halves of Dodaj, each refusing the other's row (#502).
+     * The one refusal Dodaj and Uredi have left (#567, Q53).
      *
-     * Both name the person who CAN do it rather than the permission that is
-     * missing: "blagajna" and "voditelj" are words the reader uses about their
-     * own society, and `tickets` is a word from the codebase.
+     * Both halves of Izvedbe may now enter and correct both kinds of evening,
+     * so the two sentences that told each half off the other's row are gone
+     * (#502's `publicNeedsTickets` and `nonPublicNeedsMoreska`). What remains
+     * is the caller who holds neither word and has no business on this screen
+     * at all — the route's own gate answers that first, so this is the
+     * handler's backstop rather than something a reader meets.
+     *
+     * It names the SCREEN rather than a permission: `tickets` and `moreska` are
+     * words from the codebase.
      */
-    publicNeedsTickets: 'Javnu izvedbu, koja prodaje ulaznice, unosi blagajna.',
-    nonPublicNeedsMoreska: 'Izvedbu koja ne prodaje ulaznice unosi voditelj.',
+    needsIzvedbe: 'Izvedbe unose blagajna i voditelj.',
     /** The blagajna's own fields on a public evening (#502). */
     venue: 'Mjesto',
     isPublic: 'Javna izvedba, prodaje ulaznice',

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requirePermission } from '@/lib/access/route-guard'
+import { can, type PermissionUser } from '@/lib/access/permissions'
 import {
   cancelShow,
   previewCancel,
@@ -163,6 +164,15 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const gate = await requirePermission(req, 'refunds')
   if (gate.error) return gate.error
+  // **Otkaži asks for BOTH words** (#567, Q53). It moves money, which is
+  // `refunds`, and it is the box office's own action, which is `tickets`: since
+  // #567 a voditelj reads this evening and its six actions on Izvedbe, so the
+  // screen greys this button for them and the route has to refuse the same
+  // request rather than trust a caption. The second half is checked here rather
+  // than through the guard's array, which means "any of these" by contract.
+  if (!can(gate.user as PermissionUser, 'tickets')) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+  }
   const { payload, user } = gate
   const { id } = await params
 
