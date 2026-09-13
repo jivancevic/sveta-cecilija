@@ -224,6 +224,7 @@ export const Shows: CollectionConfig = {
         { label: 'Adriatic DMC', value: 'dmc' },
         { label: 'Gulliver', value: 'gulliver' },
         { label: 'Koncert', value: 'koncert' },
+        { label: 'Moreška Experience', value: 'experience' },
         { label: 'Ostalo', value: 'ostalo' },
       ],
       admin: {

@@ -557,6 +557,9 @@ export const APP_STRINGS = {
     active: 'Aktivan moreškant',
     activeHint:
       'Neaktivan moreškant ostaje u povijesti i na dnu popisa, ali ispada iz postave i s popisa dolazaka.',
+    yearRound: 'Cijelu godinu u Korčuli',
+    yearRoundHint:
+      'U predsezoni i postsezoni mogu plesati samo moreškanti koji su cijelu godinu u Korčuli.',
     save: 'Spremi',
     saving: 'Spremam...',
     saved: 'Spremljeno.',
@@ -2326,6 +2329,7 @@ export const KIND_LABELS: Record<PerformanceKind, string> = {
   dmc: 'Adriatic DMC',
   gulliver: 'Gulliver',
   koncert: 'Koncert',
+  experience: 'Moreška Experience',
   ostalo: 'Ostalo',
 }
 

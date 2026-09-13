@@ -12,8 +12,12 @@
 // and every other buyer-facing consumer import the predicate from here rather
 // than spelling `isPublic` themselves.
 
-/** The five performance kinds (ADR-0024). `crveni-kriz` is deliberately absent. */
-export const PERFORMANCE_KINDS = ['redovna', 'dmc', 'gulliver', 'koncert', 'ostalo'] as const
+/**
+ * The six performance kinds (ADR-0024). `experience` is the Moreška Experience,
+ * the short form sold on the public site and danced by three pairs in the
+ * society's own premises (CONTEXT.md); `crveni-kriz` is deliberately absent.
+ */
+export const PERFORMANCE_KINDS = ['redovna', 'dmc', 'gulliver', 'koncert', 'experience', 'ostalo'] as const
 
 export type PerformanceKind = (typeof PERFORMANCE_KINDS)[number]
 

@@ -95,6 +95,7 @@ export function toMcpMoreskant(
     active: doc.active !== false,
     roles: Array.isArray(doc.roles) ? doc.roles.filter((r): r is string => typeof r === 'string') : [],
     primaryRole: str(doc.primaryRole),
+    yearRound: doc.yearRound === true,
     hasLogin,
   }
 }

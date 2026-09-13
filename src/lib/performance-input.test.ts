@@ -94,7 +94,7 @@ describe('parseNonPublicPerformance', () => {
   })
 
   it('never offers redovna as a kind', () => {
-    expect(NON_PUBLIC_KINDS).toEqual(['dmc', 'gulliver', 'koncert', 'ostalo'])
+    expect(NON_PUBLIC_KINDS).toEqual(['dmc', 'gulliver', 'koncert', 'experience', 'ostalo'])
   })
 
   it('refuses a booking with no place, in Croatian', () => {

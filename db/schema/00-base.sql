@@ -156,6 +156,7 @@ CREATE TYPE public.enum_shows_kind AS ENUM (
     'dmc',
     'gulliver',
     'koncert',
+    'experience',
     'ostalo'
 );
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
@@ -305,6 +306,7 @@ CREATE TABLE IF NOT EXISTS public.members (
     mobile character varying,
     email character varying,
     primary_role public.enum_members_primary_role,
+    year_round boolean DEFAULT false,
     updated_at timestamp(3) with time zone DEFAULT now() NOT NULL,
     created_at timestamp(3) with time zone DEFAULT now() NOT NULL
 );

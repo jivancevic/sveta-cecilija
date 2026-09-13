@@ -31,6 +31,8 @@ export interface MemberRosterRow {
   roles: string[]
   primaryRole: string | null
   active: boolean
+  /** Lives in Korčula all year (the notebook's "c"); castable off-season. */
+  yearRound: boolean
   /**
    * Is this row a dancer at all (ADR-0024)?
    *
@@ -65,6 +67,7 @@ export function toMemberListInput(member: MemberRosterRow): MemberListInput {
     roles: member.roles,
     primaryRole: member.primaryRole,
     active: member.active,
+    yearRound: member.yearRound,
     isMoreskant: member.isMoreskant,
   }
 }

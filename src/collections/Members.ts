@@ -313,6 +313,23 @@ export const Members: CollectionConfig = {
       },
       access: MORESKANT_FIELD_ACCESS,
     },
+    // The notebook's "c": lives in Korčula the whole year, so can be cast in
+    // the pre-season and post-season when the students are away. Independent
+    // of `active` (CONTEXT.md → *Cijelu godinu u Korčuli*).
+    {
+      name: 'yearRound',
+      type: 'checkbox',
+      defaultValue: false,
+      label: { en: 'Year-round in Korčula', hr: 'Cijelu godinu u Korčuli' },
+      admin: {
+        condition: moreskantOnly,
+        description: {
+          en: 'Lives in Korčula all year, so can dance in the pre-season and post-season.',
+          hr: 'Živi u Korčuli cijelu godinu, pa može plesati u predsezoni i postsezoni.',
+        },
+      },
+      access: MORESKANT_FIELD_ACCESS,
+    },
     // "Ima prijavu": has this dancer been invited yet (#424, #419 story 9)?
     //
     // Virtual, so it owns no column and cannot drift from the truth, which

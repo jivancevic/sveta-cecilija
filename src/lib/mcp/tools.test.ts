@@ -183,8 +183,8 @@ describe('get_performance', () => {
 describe('list_moreskanti', () => {
   it('sorts by nickname and carries no mobile or e-mail', async () => {
     const moreskanti: McpMoreskant[] = [
-      { id: '2', nickname: 'Bepo', name: 'Josip Bepo', active: true, roles: ['bili'], primaryRole: 'bili', hasLogin: false },
-      { id: '1', nickname: 'Ćići', name: 'Ivan Fabris', active: true, roles: ['crni'], primaryRole: 'crni', hasLogin: true },
+      { id: '2', nickname: 'Bepo', name: 'Josip Bepo', active: true, roles: ['bili'], primaryRole: 'bili', yearRound: false, hasLogin: false },
+      { id: '1', nickname: 'Ćići', name: 'Ivan Fabris', active: true, roles: ['crni'], primaryRole: 'crni', yearRound: true, hasLogin: true },
     ]
     const { store } = fakeStore({ moreskanti })
     const res = await listMoreskanti(store)
