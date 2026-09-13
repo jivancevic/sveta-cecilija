@@ -33,3 +33,11 @@ export function scanRedirectUrl(token: string, params: Record<string, string> = 
   for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value)
   return url
 }
+
+// The digital programme (#544): the "what you are watching" page a guest opens
+// from the ticket PDF footer or the confirmation e-mail. Built against
+// siteBaseUrl() like every other link that leaves the server, so a staging slip
+// links to the staging page rather than to production.
+export function programmeUrl(): string {
+  return `${siteBaseUrl()}/programme`
+}

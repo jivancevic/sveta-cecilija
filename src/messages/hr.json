@@ -372,6 +372,88 @@
       "body3": "Osim glazbenog izraza, zbor ima i važnu društvenu ulogu: okuplja ljude, njeguje prijateljstva i prenosi ljubav prema zajedničkom pjevanju na mlađe naraštaje, stvarajući prostor u kojem tradicija ostaje živa, ali uvijek otvorena novim glasovima i novim interpretacijama."
     }
   },
+  "programmePage": {
+    "metaTitle": "Program moreške: priča, uloge i sedam kolapa",
+    "metaDescription": "Što gledate večeras: tko su dva kralja i Bula, što se događa u kojem dijelu večeri i kojih je sedam kolapa moreške.",
+    "eyebrow": "Program",
+    "headline": "Moreška",
+    "lead": "Dva kralja, jedna zarobljena djevojka i sedam borbi da se odluči njezina sudbina.",
+    "castHeading": "Tko je tko",
+    "cast": [
+      {
+        "name": "Bula",
+        "line": "Zarobljena djevojka, zaručnica Bijelog kralja."
+      },
+      {
+        "name": "Osman",
+        "line": "Bijeli kralj. Nosi crveno."
+      },
+      {
+        "name": "Moro",
+        "line": "Crni kralj, koji je Bulu uzeo silom. Nosi crno."
+      },
+      {
+        "name": "Otmanović",
+        "line": "Otac Crnog kralja."
+      },
+      {
+        "name": "Bila vojska",
+        "line": "Osmanovi vojnici, u crvenom."
+      },
+      {
+        "name": "Crna vojska",
+        "line": "Morovi vojnici, u crnom."
+      }
+    ],
+    "eveningHeading": "Večer",
+    "parts": [
+      {
+        "title": "Klapa",
+        "line": "Dalmatinsko višeglasje, samo glasovi."
+      },
+      {
+        "title": "Moreška uz puhaći orkestar",
+        "line": "Priča se najprije izgovori, zatim Sfida, izazov, pa sedam kolapa, dok se Crni kralj ne preda."
+      }
+    ],
+    "frontRow": "Prvi redovi su mjesto za iskre i zvuk željeza. S malom djecom sjednite koji red dalje.",
+    "storyHeading": "Priča",
+    "kolapiHeading": "Sedam kolapa",
+    "kolapiIntro": "Svaki plesač drži dva željezna mača: desna ruka udara, lijeva para. Figure idu utvrđenim redom i svaka je brža od prethodne.",
+    "kolapi": [
+      {
+        "name": "Rugier",
+        "line": "Nazvan po sicilijanskom plesu Ruggero."
+      },
+      {
+        "name": "Moreška",
+        "line": "Najstarija figura: kruženje i usklađeni udarci."
+      },
+      {
+        "name": "Finta",
+        "line": "Varke i lažni udarci."
+      },
+      {
+        "name": "Moro in dentro",
+        "line": "Crni vojnici pomiču se prema unutra."
+      },
+      {
+        "name": "Križ",
+        "line": "Mačevi tvore križeve."
+      },
+      {
+        "name": "Rugier de fuorivia",
+        "line": "Rugier okrenut prema van, u širim krugovima."
+      },
+      {
+        "name": "Završna figura",
+        "line": "Punom brzinom, dok Crna vojska nije opkoljena i Crni kralj ne preda mač."
+      }
+    ],
+    "historyHeading": "Kratka povijest",
+    "historyBody": "Od svih plesova s mačevima koji su nekad prošarali Sredozemlje, samo je moreška s Korčule preživjela netaknuta. Prvi zapis u gradu datira iz 1666. Dijalog se govori na korčulanskom dijalektu 17. stoljeća, a puhaći orkestar svira partituru koju je Krsto Odak napisao 1937. i koja se izvodi na svakoj izvedbi od 1947.",
+    "ticketsLink": "Ulaznice za drugu večer"
+  },
   "footer": {
     "tagline": "Čuvari korčulanske baštine od 1883.",
     "visitLabel": "Posjeti",

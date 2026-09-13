@@ -1993,3 +1993,87 @@ a.perf-booking__confirm {
   line-height: 1.45;
   opacity: 0.7;
 }
+
+/* ─── programme (#544) ──────────────────────────────────────────────
+   The digital programme is read on a phone in a dark open-air theatre in the
+   minutes before the show, so it is the one public page set dark on purpose:
+   ink ground, paper text, gold only for the labels. Type is a step larger
+   than the rest of the inner pages because the reader is not at a desk. */
+.inner-page .programme {
+  background: var(--ink);
+  color: var(--light);
+  padding: clamp(40px, 6vw, 80px) clamp(20px, 5vw, 40px) clamp(60px, 8vw, 100px);
+}
+.inner-page .programme__head,
+.inner-page .programme__section {
+  max-width: 640px;
+  margin: 0 auto;
+}
+.inner-page .programme__section { margin-top: 44px; }
+.inner-page .programme__eyebrow {
+  font-size: 11px; letter-spacing: 0.36em; text-transform: uppercase;
+  color: var(--gold); margin: 0 0 10px;
+}
+.inner-page .programme__h {
+  font-size: clamp(36px, 8vw, 56px); line-height: 1.02; letter-spacing: -0.015em;
+  margin: 0 0 12px; color: var(--light);
+}
+.inner-page .programme__lead {
+  font-family: var(--font-bodoni, serif); font-style: italic;
+  font-size: 19px; line-height: 1.5; color: rgba(245, 242, 236, 0.72); margin: 0;
+}
+.inner-page .programme__h2 {
+  font-size: 12px; letter-spacing: 0.28em; text-transform: uppercase; font-weight: 500;
+  color: var(--goldBright); margin: 0 0 14px;
+  display: flex; align-items: center; gap: 14px;
+}
+.inner-page .programme__h2::after { content: ''; height: 1px; flex: 1; background: rgba(217, 165, 38, 0.35); }
+.inner-page .programme__body {
+  font-size: 18px; line-height: 1.62; color: rgba(245, 242, 236, 0.9); margin: 0 0 14px;
+}
+
+/* Cast: name column fixed so the descriptions align down the list. */
+.inner-page .programme__cast { margin: 0; }
+.inner-page .programme__cast-row {
+  display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 14px;
+  padding: 11px 0; border-top: 1px solid rgba(245, 242, 236, 0.14); font-size: 17px; line-height: 1.45;
+}
+.inner-page .programme__cast-row:last-child { border-bottom: 1px solid rgba(245, 242, 236, 0.14); }
+.inner-page .programme__cast dt { font-weight: 600; color: var(--light); margin: 0; }
+.inner-page .programme__cast dd { margin: 0; color: rgba(245, 242, 236, 0.82); }
+
+/* The evening: two parts, numbered because the order is the information. */
+.inner-page .programme__parts { list-style: none; margin: 0; padding: 0; }
+.inner-page .programme__part {
+  display: grid; grid-template-columns: 36px minmax(0, 1fr); gap: 12px; padding: 12px 0;
+}
+.inner-page .programme__part-n { font-size: 32px; line-height: 1; color: var(--gold); font-weight: 500; }
+.inner-page .programme__part-title { font-size: 19px; font-weight: 600; margin: 0 0 4px; line-height: 1.3; color: var(--light); }
+.inner-page .programme__part-line { font-size: 17px; line-height: 1.5; margin: 0; color: rgba(245, 242, 236, 0.82); }
+.inner-page .programme__front-row {
+  margin: 18px 0 0; padding: 14px 16px; font-size: 17px; line-height: 1.5;
+  background: rgba(184, 136, 26, 0.12); border-left: 3px solid var(--gold); color: var(--light);
+}
+
+/* The seven kolapi: numbered because the sequence is fixed. */
+.inner-page .programme__kolapi { list-style: none; margin: 8px 0 0; padding: 0; }
+.inner-page .programme__kolap {
+  display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 10px; padding: 10px 0;
+  border-top: 1px solid rgba(245, 242, 236, 0.14); font-size: 17px; line-height: 1.45;
+}
+.inner-page .programme__kolap:last-child { border-bottom: 1px solid rgba(245, 242, 236, 0.14); }
+.inner-page .programme__kolap-n { color: var(--gold); font-variant-numeric: tabular-nums; }
+.inner-page .programme__kolap-name { display: block; font-weight: 600; color: var(--light); }
+.inner-page .programme__kolap-line { display: block; color: rgba(245, 242, 236, 0.82); font-size: 16px; }
+
+.inner-page .programme__tickets {
+  display: inline-block; margin-top: 10px; font-size: 14px; letter-spacing: 0.08em; text-transform: uppercase;
+  color: var(--goldBright); border-bottom: 1px solid rgba(217, 165, 38, 0.5); padding-bottom: 2px;
+}
+.inner-page .programme__tickets:hover { border-bottom-color: currentColor; }
+
+@media (max-width: 768px) {
+  /* The mobile nav is fixed and 72px tall; the head has to clear it. */
+  .inner-page .programme { padding-top: 100px; }
+  .inner-page .programme__cast-row { grid-template-columns: 96px minmax(0, 1fr); gap: 12px; }
+}

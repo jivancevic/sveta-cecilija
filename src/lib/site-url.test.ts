@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest'
-import { scanRedirectUrl, scanUrl, siteBaseUrl } from './site-url'
+import { programmeUrl, scanRedirectUrl, scanUrl, siteBaseUrl } from './site-url'
 
 const ORIGINAL = process.env.NEXT_PUBLIC_BASE_URL
 
@@ -36,5 +36,17 @@ describe('scanRedirectUrl', () => {
     expect(scanRedirectUrl('tok', { claimed: '1' }).toString()).toBe(
       'https://dev.moreska.eu/scan/tok?claimed=1',
     )
+  })
+})
+
+describe('programmeUrl', () => {
+  it('follows the deployment, so a staging ticket links to the staging programme (#544)', () => {
+    process.env.NEXT_PUBLIC_BASE_URL = 'https://dev.moreska.eu/'
+    expect(programmeUrl()).toBe('https://dev.moreska.eu/programme')
+  })
+
+  it('falls back to prod when unset', () => {
+    delete process.env.NEXT_PUBLIC_BASE_URL
+    expect(programmeUrl()).toBe('https://moreska.eu/programme')
   })
 })

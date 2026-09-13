@@ -134,4 +134,24 @@ describe('renderTicketsPdf (real react-pdf render)', () => {
     expect(buf.subarray(0, 5).toString('latin1')).toBe('%PDF-')
     expect(countPages(buf)).toBe(1)
   }, 90000)
+
+  it('links the programme from the footer as a tappable URI, and adds no second QR (#544)', async () => {
+    const original = process.env.NEXT_PUBLIC_BASE_URL
+    process.env.NEXT_PUBLIC_BASE_URL = 'https://dev.moreska.eu'
+    try {
+      let qrCalls = 0
+      const buf = await renderTicketsPdf(
+        { ...baseInput, tickets: tickets(2), locale: 'en' },
+        { generateQrPng: async () => { qrCalls++; return STUB_PNG } },
+      )
+      const raw = buf.toString('latin1')
+      // pdfkit writes a link annotation as /URI (…): the footer link resolves
+      // against the deployment that issued the slip, exactly like the scan QR.
+      expect(raw).toContain('/URI (https://dev.moreska.eu/programme)')
+      expect(qrCalls).toBe(2) // one QR per person, and only the door code
+    } finally {
+      if (original === undefined) delete process.env.NEXT_PUBLIC_BASE_URL
+      else process.env.NEXT_PUBLIC_BASE_URL = original
+    }
+  }, 90000)
 })
