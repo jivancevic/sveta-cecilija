@@ -7,8 +7,10 @@
 // local API — is "reimplement `repo/payload/`", not "audit seventy call sites".
 //
 // **It grows one screen at a time, never as a sweep.** The research document
-// (section 6.2) names eleven repos; this file started with the three Skener
-// needs.
+// (section 6.2) names eleven repos; this file declares the ones the built
+// screens actually call — `auth` and `db` from Skener, `orders` and `shows`
+// grown by Narudžbe and Izvedbe, `partners` by Prodaja, `roster` by Izvedbe,
+// `comp` and `members` by Gratis.
 // A screen ticket adds its own, with the methods that screen actually calls, so
 // no member of this interface is ever speculative.
 //
@@ -29,6 +31,7 @@ import type { CompOrderRow, CompRepo, CompTicketRow } from './comp'
 import type { DbRepo } from './db'
 import type { MemberOption, MembersRepo } from './members'
 import type { OrdersRepo } from './orders'
+import type { RosterRepo, RosterViewer } from './roster'
 import type { PartnerRecord, PartnersRepo } from './partners'
 import type { PerformancePatch, PerformanceRow, ShowsRepo } from './shows'
 
@@ -38,6 +41,7 @@ export interface Repo {
   db: DbRepo
   members: MembersRepo
   orders: OrdersRepo
+  roster: RosterRepo
   partners: PartnersRepo
   shows: ShowsRepo
 }
@@ -55,6 +59,8 @@ export type {
   PartnersRepo,
   PerformancePatch,
   PerformanceRow,
+  RosterRepo,
+  RosterViewer,
   SessionUser,
   ShowsRepo,
   WriteCtx,

@@ -34,7 +34,7 @@ unlock are tabs, the rest live under Više, and Izvedbe jumps to the front for a
 |---|---|---|---|---|---|
 | | landing | `/app` | any screen | **307 to the person's first tab** (#495) | done |
 | 1 | Narudžbe | `/app/orders`, `/app/orders/[id]` | `tickets` | **live** (#501): the list with search (name, e-mail or code), a performance filter, a state filter (`active\|refunded\|partner\|comp`) and a pager, all in the query string; the detail with the order's facts, its tickets and four named actions — Povrat (`refunds` only, and only on a paid, unrefunded order), Pošalji ulaznice ponovno, Otvori PDF, Uredi kupca | none, the Backoffice keeps its list |
-| 2 | Izvedbe (one screen, content by `can()`) | `/app/performances`, `/app/performances/[id]` | `tickets`, `moreska`, `moreskant` | **live for `moreska` + `moreskant`** (#495), with the voditelj's Dodaj / Uredi / Otkaži / Pragovi on it since #503; the blagajna's half is #502 | 308 from `/app/izvedba/[id]`; push messages now carry the new path |
+| 2 | Izvedbe (one screen, content by `can()`) | `/app/performances`, `/app/performances/[id]` | `tickets`, `moreska`, `moreskant` | **live for all three** (#495): the dancer's agenda and answers, the voditelj's Dodaj / Uredi / Otkaži / Pragovi (#503), and the blagajna's sold-of-capacity, channel split, per-show numbers and six named actions (#502), which is where the old `/admin/stats/[id]` drill-down now lives | 308 from `/app/izvedba/[id]`; push messages now carry the new path |
 | 2.5 | Članovi (dancer profiles, invitations, join code; absorbs Pozivnice, added by #476) | `/app/members` | `moreska` | `/admin/collections/members`, `/app/invitations` | `/app/pozivnice` already 308s to `/app/invitations` (#495); **#511 repoints that 308 at `/app/members`** and folds the screen in |
 | 3 | Ljestvica (own season + roster ranking; voditelj sees the full table) | `/app/leaderboard?season=2026&part=mine\|all` | `moreskant`, `moreska` | **live** (#495): both panels on one screen, the voditelj's *Ljestvica* panel is the old scoreboard | 308 from `/app/moje` and `/app/statistika` |
 | 4 | Skener (camera, code entry, door list) | `/app/scan` | `door` | **live** (#504): the camera and the four result states, Pusti ostatak grupe (n), Poništi propuštanje, Pronađi ulaznicu and the "ušlo X od Y" ring, all on one screen | `/admin/scan` 308s here and the Backoffice view is deleted; the ticket QR stays `/scan/[token]`, whose staff buttons point at `/app/scan` |
@@ -43,7 +43,7 @@ unlock are tabs, the rest live under Više, and Izvedbe jumps to the front for a
 | 7 | Upiti | `/app/inquiries` | `tickets` | `/admin/collections/contact-submissions` | none |
 | 8 | Gratis (comp tickets; promo codes stay in the Backoffice for v1) | `/app/comp` | `tickets` | **live** (#506): Podijeli gratis (izvedba picker with seats left, a REQUIRED member picker with search and an inline Dodaj člana, the two steppers, the holder name prefilled from the member, an optional e-mail) → `/api/comp/issue`, which opens the PDF and says whether the mail was sent, skipped or failed; Zadnji gratisi with Poništi gratis on a whole order or one ticket behind a confirmation (`/api/comp/cancel` has no undo, so there is none offered); and the Gratis po članu season table with a season picker | none |
 | 9 | Korisnici | `/app/users`, `/app/users/[id]` | `users` | `/admin/collections/users` | none |
-| 10 | Statistika (counts only; the single-show drill-down folds into `/app/performances/[id]`) | `/app/stats?season=2026` | `tickets`, `season_stats`, `finance` | `/admin/stats`, `/admin/stats/[id]` | 308 from both |
+| 10 | Statistika (counts only) | `/app/stats?season=2026` | `tickets`, `season_stats`, `finance` | `/admin/stats`. **The single-show drill-down has already moved**: `/app/performances/[id]` carries the per-show numbers since #502, so `/admin/stats/[id]` has nothing left to show and its 308 lands with #508 | 308 from both |
 | 11 | Financije (money without buyers, added by #476) | `/app/finance` | `finance` | money band on the Backoffice dashboard | none |
 | last | Više (a list, always the last tab) | `/app/more` | any screen | **live** (#495): the overflow screens, then the standing rows | 308 from `/app/vise` |
 
@@ -985,18 +985,38 @@ else.**
 
 | Route | Guard | Does |
 |---|---|---|
-| `POST /api/app/performances` | `requirePermission('moreska')` + `/app` guard | one non-public performance: kind, date, time, location, client, optional note |
-| `PATCH /api/app/performances/[id]` | same | the same five fields on an existing row; **403 on a public row**, **409 on a cancelled one** |
-| `POST /api/app/performances/[id]/cancel` | same | `status = 'cancelled'` and nothing else; **403 on a public row**; a row that is already cancelled is a 200 with no write |
+| `POST /api/app/performances` | `requirePermission(['moreska','tickets'])` + `/app` guard | one performance. `isPublic: false` in the body is the voditelj's booking (kind, date, time, location, client, optional note) and needs `moreska`; `isPublic: true` is the blagajna's public evening (#502) and needs `tickets` |
+| `PATCH /api/app/performances/[id]` | same | a BOOKING: the same five fields, `moreska`, **409 on a cancelled one**. A PUBLIC row (#502): time, venue, kind, `tickets`, never the date. Each half **403s** the other's row |
+| `POST /api/app/performances/[id]/cancel` | `requirePermission('moreska')` | `status = 'cancelled'` and nothing else; **403 on a public row**; a row that is already cancelled is a 200 with no write |
 | `POST /api/app/performances/[id]/thresholds` | same | `{ crni, bili }`, both or neither, 0 to `MAX_THRESHOLD` (40). The one voditelj write that DOES reach a public row |
+| `POST /api/app/performances/[id]/pause` | `requirePermission('tickets')` | `{ paused }` → `onlineSalesPaused` (#502). **400 on a non-public row**, which sells nothing to pause. The one action on the blagajna's half whose route did not already exist |
 
-- **A public row is refused in the handler, never by the collection.** The
-  local API runs `overrideAccess: true`, so `canEditScheduleField` does not gate
-  these writes; `handleEditPerformance` / `handleCancelPerformance` re-read the
-  stored row and refuse on `isPublic`. The refusal is a **403** rather than a
-  404, because the voditelj can see the evening and simply may not do this to
-  it. Cancelling a Redovna refunds every buyer and mails them and is
-  `POST /api/shows/[id]/cancel` (#497), not a harder version of this.
+- **Which half may touch a row is decided by the ROW, never by the URL.** Dodaj
+  and Uredi are one route each and the gate lets either half knock; the handler
+  then reads `isPublic` (off the body on a create, off the stored row on an
+  edit) and asks the caller's own permission set. That is why
+  `PerformanceFormDeps` carries `permissions`: the local API runs
+  `overrideAccess: true`, so `canEditScheduleField` does not gate these writes
+  and the collection cannot be the one to say no.
+- **A public row is refused in the handler, never by the collection**, and the
+  refusal is a **403** rather than a 404, because the voditelj can see the
+  evening and simply may not do this to it. Cancelling a Redovna refunds every
+  buyer and mails them and is `POST /api/shows/[id]/cancel` (#497), not a
+  harder version of this. The mirror holds too: a `tickets` holder is refused a
+  booking, which is nobody's ticket.
+- **Uredi on a public row carries no date, and no HOUSE once a ticket is sold.**
+  Moving a public evening's date mails every buyer and reissues every ticket
+  (#379), so it is *Pomakni datum* with a preview and a test send, not a field
+  beside the start time. The venue is the same shape of fact: moving a sold
+  evening to another house is *Preseli u zimsko*, which mails every buyer and
+  stamps `venue_changed_at` — and that stamp is also what makes the button
+  disappear afterwards, so a quiet edit of the column would move the room, tell
+  nobody, and then hide the only control that would have told them. So the
+  handler asks `activeTickets` when and only when the house is changing, and
+  refuses with a **409** if there are any: the request is well-formed and the
+  row IS the blagajna's, it is simply in a state where this is the wrong way to
+  do it. An evening that has sold nothing (or only at the door, where there is
+  no buyer to write to) still moves freely, because nobody has to be told.
 - **A cancelled booking is not editable, and that is a 409.** The request is
   well-formed and the row is the voditelj's; it is simply in a state where the
   edit is not allowed, the same shape of refusal as a confirmed postava. The
@@ -1031,6 +1051,71 @@ else.**
   Thresholds are a **stepper**, never a native number input — on a phone that is
   a pair of tiny arrows next to a keyboard that covers the page. Otkaži is two
   visible taps rather than `confirm()`.
+
+## The blagajna's half of Izvedbe: numbers and named actions (#502)
+
+The same screen, read by the person who answers for the seats. Tatjana opened
+`/admin` for this: a Shows list with twelve columns, five edit-menu items and a
+stats view one click further on. #502 is those jobs on `/app/performances`, and
+**one screen is the point** — a secretary who also dances reads the sales line
+and the headcount chip on the same row.
+
+**What is on the list.** Every PUBLIC row carries `sold/capacity`, what is left,
+where the seats came from (`online · partner · gratis · vrata · staro`, the
+empty ones dropped) and flags for paused, cancelled, moved and rescheduled. A
+viewer who is neither a voditelj nor a dancer gets the ticketed schedule only:
+a ship call sells nothing, and a row with no numbers on a sales screen is noise.
+`showsRosterHalf()` (`src/lib/app/sales-view.ts`) states that line once and both
+the list and the detail read it. The detail also **`notFound()`s a booking** for
+such a viewer (`mayOpenPerformance()`): the page prints the client and the
+voditelj's note, and an evening the list deliberately leaves out must not be
+reachable by typing its id.
+
+**Where the numbers come from.** Nothing is re-derived (`sales-data.ts`,
+`sales-view.ts`):
+
+| Figure | Source |
+|---|---|
+| capacity | `VENUE_CAPACITY[venue]` — there is no `capacity` column |
+| remaining | `remainingSeats()`, the same function the sell lock refuses a sale with |
+| online / partner / gratis | `getActiveTicketCountsByShowAndChannel` (`tickets/sold-seats.ts`) |
+| vrata / staro | `getOfflineTotalsByShow` — the LEDGER's own sums, not the cached counters (ADR-0025) |
+| ušlo | `getScannedTicketCountsByShow` |
+| prihod | non-refunded `orders.total` grouped by `show_id`, plus the ledger. **Never a SUM across the join to tickets** — that multiplies by the party size |
+
+`computeShowStats` (the old drill-down) is deliberately NOT reused: it folds
+partner seats into `onlineSold`, and the split this screen is asked for names
+partner separately. Every query carries `publicPerformanceSql()`.
+
+**Both loaders moved behind the seam with this ticket.** `roster-data.ts` and
+`detail-data.ts` were the two entries in `repo-guard.test.ts`'s allow-list that
+named #502, and they are gone: the Payload calls are now
+`src/lib/repo/payload/roster.ts` and the two `*-data.ts` modules are one line
+each. Nothing about the queries changed in the move, and the rules never left
+`roster-loaders.ts` / `detail-loaders.ts`, which still unit-test without a
+database. `RosterRepo` is separate from `ShowsRepo` on purpose: the roster reads
+EVERY performance of the season, public or not, while the buyer's schedule
+applies the public predicate — two different questions.
+
+**Revenue is gated on the DATA, not on a class.** `performanceNumbers(sales,
+canFinance)` simply does not put the money in the list for a viewer without
+`finance`, so no template can leak it by forgetting a condition.
+
+**The six actions.** Five reuse their route unchanged — this is a port, so the
+behaviour, the idempotency and the audit writes stay where they are:
+
+| Action | Route | Notes |
+|---|---|---|
+| Pauziraj / Nastavi online prodaju | `POST /api/app/performances/[id]/pause` | **The one new route.** #366 shipped the pause as a checkbox on the Shows form, so the only way to flip it was the Backoffice. Stops ONLINE checkout only; the sheet says so, because "pauzirano" must not read as "cancelled" |
+| Pomakni datum | `GET`/`POST /api/shows/[id]/reschedule` | preview → "pošalji probni mail meni" → confirm (#379) |
+| Preseli u zimsko | `GET`/`POST /api/shows/[id]/move-to-indoor` | preview → confirm; offered only on a Ljetno row that has not already moved (#94) |
+| Prodaja na vratima | `GET`/`POST /api/shows/[id]/offline-sales` | door and legacy lines, negative corrections, a discount label required below face value; **allowed on a past evening**, because a season is backfilled after the fact (ADR-0025). The GET's existing lines are shown while a correction is typed, which is the safety half: a correction from memory can land the right seats and the wrong money. Its refusals are **translated by code**, not by message: the route answers a stable `OfflineSaleValidationError` code and `ledgerErrorMessage()` turns it into the Croatian sentence naming what to change, because these are the refusals a cashier at the entrance can fix. The mapping is typed `Record<OfflineSaleErrorCode, string>`, so a new code fails `tsc` rather than reaching them as "pokušaj ponovno" |
+| Narudžbe za ovu izvedbu | link to `/app/orders?show=<id>` | #501's filter, in the query string |
+| Otkaži izvedbu | `GET`/`POST /api/shows/[id]/cancel` | `refunds` for the confirm, `tickets` or `refunds` for the preview. The sheet prints the money, the seats and the buyers, warns about Brevo's daily ceiling, and on a partial run says the thing #497 designed for: **press it again**, it skips what is done |
+
+Each is a button with a sheet under it that names the consequence, never a
+`confirm()` and never a modal. Uredi on a public row is time, venue and kind and
+**not the date** — moving a public evening is *Pomakni datum*, with a preview.
 
 ## Sandučić obavijesti: the inbox behind the bell (#496)
 

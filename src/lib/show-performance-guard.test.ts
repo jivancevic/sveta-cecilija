@@ -53,8 +53,8 @@ export const ALLOW_LIST: Record<string, string> = {
     'Order-joined read (#506): every one of the three queries is driven by orders with channel=comp, and a comp only exists for a performance that sells tickets (createCompIssue refuses a non-public one), so no non-public row can surface. The join is there for the evening’s date, which is what the season window and the row label are about.',
   'src/lib/refund/reschedule-refund-context.ts':
     'Order-joined read: refund context for an existing order.',
-  'src/lib/app/detail-data.ts':
-    'Roster read (#423): the moreškant app covers EVERY performance of the season, public or not (ADR-0024) — filtering on the predicate would hide a ship call from the dancers who have to turn up for it. Id-addressed, behind the /app access decision.',
+  'src/lib/repo/payload/roster.ts':
+    'Roster read (#423, moved behind the seam by #502): the moreškant app covers EVERY performance of the season, public or not (ADR-0024) — filtering on the predicate would hide a ship call from the dancers who have to turn up for it. The season read is bounded by one calendar year and the detail read is id-addressed; both are behind the /app access decision.',
   'src/lib/push/raw-save.ts':
     'Roster read (#436): an id-addressed read of the row a raw admin action just wrote, so the moreškanti can be told what changed. Every performance is on the roster, public or not (ADR-0024), and the read surfaces nothing to a buyer — it only builds a push message.',
   'src/lib/calendar/calendar-data.ts':

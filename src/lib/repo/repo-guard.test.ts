@@ -78,10 +78,6 @@ export const ALLOW_LIST: Record<string, string> = {
     'Issues a dancer login (creates the Users row and mints the reset token, #424/#463). Half of it is repo.users and half is repo.auth, so it lands with Članovi (#511), which owns the invitation, once repo.auth exists.',
 
   // ── Screens that shipped before the seam, each with its rebuild ticket ───
-  'src/lib/app/roster-data.ts':
-    'The Izvedbe season list (#421). Retired by #502, which rebuilds that screen for the blagajna and is the ticket that adds sales to this loader.',
-  'src/lib/app/detail-data.ts':
-    'The performance detail (#423). Retired by #502 (the blagajna’s per-show numbers on the same page); #503 touches the same loader for the voditelj’s half, so whichever lands first moves it.',
   'src/lib/app/invite-list-data.ts':
     'The invitations list (#463), which folds into Članovi. Retired by #511.',
   'src/lib/app/join-data.ts':

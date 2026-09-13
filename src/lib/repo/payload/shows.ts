@@ -44,6 +44,7 @@ function count(value: unknown, fallback: number): number {
 /** A Shows document → the row the voditelj's forms read. */
 export function toPerformanceRow(doc: Record<string, unknown>): PerformanceRow {
   const isPublic = doc.isPublic !== false
+  const venue = typeof doc.venue === 'string' ? (doc.venue as PerformanceRow['venue']) : null
   return {
     id: String(doc.id),
     // `toIsoDate`, never `String(...).slice(0, 10)`: a `dayOnly` column comes
@@ -55,6 +56,13 @@ export function toPerformanceRow(doc: Record<string, unknown>): PerformanceRow {
     cancelled: doc.status === 'cancelled',
     location: isPublic ? null : text(doc.location),
     client: isPublic ? null : text(doc.client),
+    // The mirror of the two above (#502): a booking has no house and sells
+    // nothing, so it can carry neither a venue nor a pause. The collection's
+    // own `beforeValidate` already forces both down on save; saying it here as
+    // well means a row written before that hook cannot show a phone a venue
+    // that the ledger and the capacity do not believe in.
+    venue: isPublic ? venue : null,
+    paused: isPublic && doc.onlineSalesPaused === true,
     thresholdCrni: count(doc.thresholdCrni, 8),
     thresholdBili: count(doc.thresholdBili, 8),
   }

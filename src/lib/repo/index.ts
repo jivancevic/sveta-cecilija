@@ -15,6 +15,7 @@ import { createCompRepo } from './payload/comp'
 import { createDbRepo } from './payload/db'
 import { createMembersRepo } from './payload/members'
 import { createOrdersRepo } from './payload/orders'
+import { createRosterRepo } from './payload/roster'
 import { createPartnersRepo } from './payload/partners'
 import { createShowsRepo } from './payload/shows'
 import type { Repo } from './types'
@@ -28,6 +29,7 @@ function build(): Repo {
     db: createDbRepo(),
     members: createMembersRepo(),
     orders: createOrdersRepo(),
+    roster: createRosterRepo(),
     partners: createPartnersRepo(),
     shows: createShowsRepo(),
   }
