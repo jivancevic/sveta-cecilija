@@ -267,6 +267,8 @@ A message sent through a public form (`ContactSubmissions`). The `enquiryType` d
 
 An enquiry has a **lifecycle**: `status: new → handled` (default `new`). The dashboard's inquiries badge counts `status = 'new'` and calls out how many of those are booking enquiries (e.g. "5 new — incl. 2 booking enquiries"); the secretary marks an enquiry `handled` to clear it. The earlier time-window approximation of "new" is rejected — it both re-surfaces answered enquiries and hides un-answered old ones.
 
+Since #507 that lifecycle has a screen: **Upiti** (`/app/inquiries`), the inbox a `tickets` holder reads and clears. It orders unanswered enquiries first and booking ones above general ones within each state, and it carries two actions — *Odgovori*, a `mailto:` that opens the reply in Gmail with the enquiry quoted (Cecilija never sends this mail), and *Označi riješenim*, which writes the same `status` column the Backoffice's "Mark handled" writes and undoes with the same button.
+
 **Notification email (implemented):** since #220 the public forms persist to `ContactSubmissions` **and** send a best-effort org-notification email (`sendEnquiryNotification` → `info@`, Reply-To the enquirer, sender `tickets@moreska.eu`). The notification is **best-effort**: a bad/missing `BREVO_API_KEY` is swallowed, so on 2026-06-03/04 it looked "dead" purely because the key was invalid (rotated 2026-06-04, confirmed working in prod). The residual risk is the *silent* failure — addressed by the critical-events log (ADR-0016 / #235), which wires this seam as its first write-site. The dashboard badge and the inbox notification are complementary, not redundant. An optional *enquirer* acknowledgement email is a separate enhancement (#236).
 
 ### Tehnika role
