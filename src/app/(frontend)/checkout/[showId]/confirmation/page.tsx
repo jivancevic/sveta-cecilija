@@ -8,6 +8,7 @@ import Nav from '@/components/Nav'
 import Footer from '@/components/Footer'
 import PurchaseEvent from '@/components/PurchaseEvent'
 import MetaPixelPurchase from '@/components/MetaPixelPurchase'
+import HelpBlock from '@/components/HelpBlock'
 import { signTicketLink } from '@/lib/ticket-link'
 
 export const dynamic = 'force-dynamic'
@@ -86,6 +87,7 @@ export default async function ConfirmationRoute({ params, searchParams }: RouteP
             </a>
           </div>
         )}
+        <HelpBlock t={dict.help} showOrderHint />
         <Link href="/tickets" className="checkout-page__back">{dict.checkoutPage.pageBack}</Link>
       </main>
       <Footer locale={locale} t={dict.footer} />

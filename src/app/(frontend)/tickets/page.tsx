@@ -71,6 +71,7 @@ export default async function PerformancesRoute({
       <PerformancesPage
         t={dict.performancesPage}
         tSchedule={dict.schedule}
+        tHelp={dict.help}
         shows={shows}
         locale={locale}
         initialDate={initialDate}

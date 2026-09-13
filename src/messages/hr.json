@@ -472,5 +472,11 @@
       "dancers": "Plesači",
       "history": "Povijest"
     }
+  },
+  "help": {
+    "heading": "Trebate pomoć?",
+    "body": "Pišite nam na info@moreska.eu i odgovaramo u roku od 24 sata.",
+    "orderHint": "Molimo navedite broj narudžbe kako bismo odmah pronašli vašu kupnju.",
+    "email": "info@moreska.eu"
   }
 }

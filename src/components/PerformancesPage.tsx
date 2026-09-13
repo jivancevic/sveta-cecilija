@@ -7,10 +7,12 @@ import type { Show } from '@/lib/shows';
 import type { Dictionary } from '@/lib/i18n';
 import type { Locale } from '@/proxy';
 import { calculateOrderTotal } from '@/lib/pricing';
+import HelpBlock from '@/components/HelpBlock';
 
 interface Props {
   t: Dictionary['performancesPage'];
   tSchedule: Dictionary['schedule'];
+  tHelp: Dictionary['help'];
   shows: Show[];
   locale: Locale;
   initialDate?: string;
@@ -28,7 +30,7 @@ function formatDate(isoDate: string, locale: Locale) {
   return { day, month, year, weekday };
 }
 
-export default function PerformancesPage({ t, tSchedule, shows, locale, initialDate, images }: Props) {
+export default function PerformancesPage({ t, tSchedule, tHelp, shows, locale, initialDate, images }: Props) {
   const initialMatch = initialDate
     ? shows.find((s) => s.date === initialDate && !s.onlineSalesPaused)
     : undefined;
@@ -222,6 +224,9 @@ export default function PerformancesPage({ t, tSchedule, shows, locale, initialD
           })}
         </div>
       )}
+
+      {/* No order number here: the visitor has not bought anything yet. */}
+      <HelpBlock t={tHelp} />
     </section>
   );
 }

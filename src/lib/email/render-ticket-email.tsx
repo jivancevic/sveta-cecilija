@@ -42,6 +42,8 @@ const COPY = {
       'Tickets are non-refundable by customer choice but 100% refundable if the performance is cancelled by the organiser.',
     addToGoogle: 'Add to Google Calendar',
     questions: 'Questions?',
+    responseTime: 'We reply within 24 hours.',
+    orderHint: 'Please include your order number so we can find your booking straight away.',
     org: 'HGD Sveta Cecilija',
     address: 'Knežev prolaz 1, 20260 Korčula, Croatia',
     contact: 'info@moreska.eu',
@@ -65,6 +67,8 @@ const COPY = {
       'Povrat novca na zahtjev kupca nije moguć, no ulaznice su 100% povratne ako organizator otkaže izvedbu.',
     addToGoogle: 'Dodaj u Google Calendar',
     questions: 'Imate pitanje?',
+    responseTime: 'Odgovaramo u roku od 24 sata.',
+    orderHint: 'Molimo navedite broj narudžbe kako bismo odmah pronašli vašu kupnju.',
     org: 'HGD Sveta Cecilija',
     address: 'Knežev prolaz 1, 20260 Korčula, Hrvatska',
     contact: 'info@moreska.eu',
@@ -336,7 +340,10 @@ function TicketEmail(input: RenderTicketEmailInput) {
 
           <Hr style={styles.footerHr} />
           <Text style={styles.footerText}>
-            {c.questions} <a href={`mailto:${c.contact}`} style={{ color: GOLD }}>{c.contact}</a>
+            {c.questions} <a href={`mailto:${c.contact}`} style={{ color: GOLD }}>{c.contact}</a>{' '}
+            {c.responseTime}
+            <br />
+            {c.orderHint}
             <br />
             {c.org} · {c.address}
           </Text>
