@@ -28,10 +28,10 @@ import { compareLineupRows, type LineupEntry } from '@/lib/lineup/rules'
 import { roleWarnings } from '@/lib/lineup/rules'
 import type { LineupWriteOutcome } from '@/lib/lineup/write-tx'
 import {
-  DANCE_ROLES,
-  DANCE_ROLE_LABELS,
-  isDanceRole,
-  type DanceRole,
+  LINEUP_ROLES,
+  LINEUP_ROLE_LABELS,
+  isLineupRole,
+  type LineupRole,
 } from '@/lib/moreskant-profile'
 import {
   NON_PUBLIC_KINDS,
@@ -85,7 +85,7 @@ export interface McpAttendanceRow extends AttendanceRow {
 
 export interface McpLineupRow {
   memberId: string
-  role: DanceRole
+  role: LineupRole
 }
 
 /**
@@ -203,7 +203,7 @@ export interface McpPerformanceDetail {
   noAnswer: string[]
   lineup: {
     confirmed: boolean
-    entries: { memberId: string; nickname: string; role: DanceRole; roleLabel: string }[]
+    entries: { memberId: string; nickname: string; role: LineupRole; roleLabel: string }[]
   }
 }
 
@@ -255,7 +255,7 @@ export async function getPerformance(
       memberId: String(row.memberId),
       nickname: nicknameOf(String(row.memberId)),
       role: row.role,
-      roleLabel: DANCE_ROLE_LABELS[row.role],
+      roleLabel: LINEUP_ROLE_LABELS[row.role],
     }))
     .sort(compareLineupRows)
 
@@ -309,7 +309,7 @@ export function nicknameMatchKey(nickname: unknown): string {
 }
 
 export interface SetLineupResult {
-  written: { nickname: string; role: DanceRole; roleLabel: string }[]
+  written: { nickname: string; role: LineupRole; roleLabel: string }[]
   /** Names no active moreškant answers to. Reported, never guessed at. */
   unmatched: string[]
   /**
@@ -376,9 +376,9 @@ export async function setLineup(
     const item = (raw ?? {}) as { nickname?: unknown; role?: unknown }
     const nickname = typeof item.nickname === 'string' ? item.nickname.trim() : ''
     if (!nickname) return fail('Svaki redak treba nadimak.')
-    if (!isDanceRole(item.role)) {
+    if (!isLineupRole(item.role)) {
       return fail(
-        `Nepoznata plesna uloga "${String(item.role)}". Dopuštene su: ${DANCE_ROLES.join(', ')}.`,
+        `Nepoznata plesna uloga "${String(item.role)}". Dopuštene su: ${LINEUP_ROLES.join(', ')}.`,
       )
     }
 
@@ -403,7 +403,7 @@ export async function setLineup(
     written.push({
       nickname: member.nickname?.trim() || nickname,
       role: item.role,
-      roleLabel: DANCE_ROLE_LABELS[item.role],
+      roleLabel: LINEUP_ROLE_LABELS[item.role],
     })
   }
 

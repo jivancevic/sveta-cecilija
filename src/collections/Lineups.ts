@@ -4,7 +4,7 @@ import {
   lineupReadAccess,
   lineupWriteAccess,
 } from '@/lib/access/lineup-access'
-import { DANCE_ROLE_LABELS, DANCE_ROLES } from '@/lib/moreskant-profile'
+import { LINEUP_ROLE_LABELS, LINEUP_ROLES } from '@/lib/moreskant-profile'
 
 type ReqUser = { id?: string | number; permissions?: unknown } | null | undefined
 
@@ -68,16 +68,17 @@ export const Lineups: CollectionConfig = {
       name: 'role',
       type: 'select',
       required: true,
-      // The vocabulary itself is spelled out once, in moreskant-profile.ts.
-      options: DANCE_ROLES.map((role) => ({
+      // The vocabulary itself is spelled out once, in moreskant-profile.ts: the
+      // six dance roles plus `voditelj`, who ran the evening without dancing.
+      options: LINEUP_ROLES.map((role) => ({
         value: role,
-        label: { en: DANCE_ROLE_LABELS[role], hr: DANCE_ROLE_LABELS[role] },
+        label: { en: LINEUP_ROLE_LABELS[role], hr: LINEUP_ROLE_LABELS[role] },
       })),
       label: { en: 'Danced as', hr: 'Plesao kao' },
       admin: {
         description: {
-          en: 'The role this moreškant actually danced. A role outside their profile is allowed: it is a warning in the app, not a rule.',
-          hr: 'Uloga koju je moreškant stvarno plesao. Uloga izvan njegovog profila je dopuštena: u aplikaciji je upozorenje, ne pravilo.',
+          en: 'The role this moreškant actually danced. A role outside their profile is allowed: it is a warning in the app, not a rule. "Voditelj" ran the evening and did not dance; it counts for nothing in the statistics.',
+          hr: 'Uloga koju je moreškant stvarno plesao. Uloga izvan njegovog profila je dopuštena: u aplikaciji je upozorenje, ne pravilo. „Voditelj” je vodio izvedbu i nije plesao; ne broji se u statistiku.',
         },
       },
     },

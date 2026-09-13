@@ -13,8 +13,8 @@
 import type { Permission } from '@/lib/access/permissions'
 import type { EnquiryType } from '@/lib/contact/enquiry-type'
 import type { PerformanceKind } from '@/lib/show-performance'
-import type { DanceRole } from '@/lib/moreskant-profile'
-import { DANCE_ROLE_LABELS } from '@/lib/moreskant-profile'
+import type { LineupRole } from '@/lib/moreskant-profile'
+import { LINEUP_ROLE_LABELS } from '@/lib/moreskant-profile'
 
 export const APP_STRINGS = {
   /** The product name: the manifest, the header and the browser tab all use it. */
@@ -2333,8 +2333,8 @@ export const KIND_LABELS: Record<PerformanceKind, string> = {
   ostalo: 'Ostalo',
 }
 
-/** Croatian labels for the dance roles; the vocabulary itself lives in lib. */
-export const ROLE_LABELS: Record<DanceRole, string> = DANCE_ROLE_LABELS
+/** Croatian labels for a lineup line (dance roles + voditelj); the vocabulary itself lives in lib. */
+export const ROLE_LABELS: Record<LineupRole, string> = LINEUP_ROLE_LABELS
 
 const WEEKDAYS = [
   'nedjelja',

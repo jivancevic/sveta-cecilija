@@ -1292,6 +1292,16 @@ Who danced which dance role at one performance: the `lineups` collection
 on (performance, member) — one role per dancer per evening, which is what stops
 the statistics double counting. Glossary: `CONTEXT.md` → *Lineup (postava)*.
 
+The role column speaks `LINEUP_ROLES` (`moreskant-profile.ts`): the six dance
+roles plus `voditelj`, the member who ran the evening without dancing (every
+Moreška Experience has one). `voditelj` is deliberately NOT in `DANCE_ROLES`, so
+a profile cannot hold it, `roleWarnings` skips it, and the two loaders that feed
+counts (`stats-loaders.ts`, `my-season-loaders.ts`) drop it through their
+existing `isDanceRole` filter — a voditelj line counts for nothing. The editor,
+the Backoffice select, `set_lineup` and the detail screen all read
+`LINEUP_ROLES` / `LINEUP_ROLE_LABELS`. Glossary: *Voditelj (u postavi)*;
+migration `migrate-zz-dg-lineup-voditelj.sql`.
+
 **Confirmation is one flag per evening, not per row**: `shows.lineupConfirmed`
 plus `lineupConfirmedAt`, both roster fields (`moreska`). A postava is confirmed
 as a whole, and half a confirmed evening is not a state anybody means.

@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { Lineups } from './Lineups'
 import { Shows, cascadeShowLineupDelete } from './Shows'
 import { Members, cascadeMemberLineupDelete } from './Members'
-import { DANCE_ROLES } from '@/lib/moreskant-profile'
+import { LINEUP_ROLES } from '@/lib/moreskant-profile'
 
 // #432 — who reaches the lineups collection, and the two cascade hooks.
 //
@@ -84,11 +84,11 @@ describe('Lineups access', () => {
     }
   })
 
-  it('carries the dance-role vocabulary and nothing invented beside it', () => {
+  it('carries the lineup vocabulary (the dance roles plus voditelj) and nothing invented beside it', () => {
     const role = Lineups.fields.find(
       (f) => (f as { name?: string }).name === 'role',
     ) as { options?: { value: string }[] } | undefined
-    expect(role?.options?.map((o) => o.value)).toEqual([...DANCE_ROLES])
+    expect(role?.options?.map((o) => o.value)).toEqual([...LINEUP_ROLES])
   })
 })
 

@@ -33,17 +33,22 @@
 
 import {
   ARMY_OF_ROLE,
-  DANCE_ROLE_LABELS,
+  LINEUP_ROLE_LABELS,
   isDanceRole,
+  isLineupRole,
   type DanceRole,
+  type LineupRole,
 } from '@/lib/moreskant-profile'
 import type { Army, AttendanceMember } from '@/lib/attendance/rules'
 import type { AttendanceRow } from '@/lib/attendance/army-count'
 
-/** One line of a lineup: this member danced this role. */
+/**
+ * One line of a lineup: this member danced this role, or ran the evening as
+ * its `voditelj` without dancing (glossary: *Voditelj (u postavi)*).
+ */
 export interface LineupEntry {
   memberId: string
-  role: DanceRole
+  role: LineupRole
 }
 
 /** The plain army role each army maps to, for a dancer whose army is assigned. */
@@ -117,13 +122,14 @@ export function buildLineupFromAttendance(
  * written in. Within one role it falls back to the nickname, so the list is
  * stable between renders.
  */
-export const LINEUP_ROLE_ORDER: readonly DanceRole[] = [
+export const LINEUP_ROLE_ORDER: readonly LineupRole[] = [
   'crni_kralj',
   'otmanovic',
   'bili_kralj',
   'bula',
   'crni',
   'bili',
+  'voditelj',
 ]
 
 const ROLE_RANK = new Map(LINEUP_ROLE_ORDER.map((role, index) => [role, index]))
@@ -134,8 +140,8 @@ const ROLE_RANK = new Map(LINEUP_ROLE_ORDER.map((role, index) => [role, index]))
  * can never present one evening in two orders.
  */
 export function compareLineupRows(
-  a: { role: DanceRole; nickname: string },
-  b: { role: DanceRole; nickname: string },
+  a: { role: LineupRole; nickname: string },
+  b: { role: LineupRole; nickname: string },
 ): number {
   const rank = (ROLE_RANK.get(a.role) ?? 99) - (ROLE_RANK.get(b.role) ?? 99)
   return rank !== 0 ? rank : a.nickname.localeCompare(b.nickname, 'hr')
@@ -144,7 +150,7 @@ export function compareLineupRows(
 /** One warning: this member's profile does not list the role they are down for. */
 export interface RoleWarning {
   memberId: string
-  role: DanceRole
+  role: LineupRole
   /** Croatian, shown inline next to the row. */
   message: string
 }
@@ -155,6 +161,9 @@ export interface RoleWarning {
  * A warning, never a refusal: the emergency substitution is exactly the case a
  * lineup has to be able to record. A member who is not on the roster at all
  * gets one too, since nothing can be said about a profile that is not there.
+ *
+ * A `voditelj` line never warns: no profile lists it, because it is not a
+ * dance role, and "Brane nema ulogu Voditelj u profilu" would be nonsense.
  */
 export function roleWarnings(
   entries: readonly LineupEntry[],
@@ -165,13 +174,13 @@ export function roleWarnings(
   for (const entry of entries) {
     const member = byId.get(String(entry.memberId))
     const roles = member?.roles ?? []
-    if (member && roles.includes(entry.role)) continue
+    if (member && (entry.role === 'voditelj' || roles.includes(entry.role))) continue
     const who = member?.nickname?.trim() || member?.name?.trim() || `#${entry.memberId}`
     out.push({
       memberId: String(entry.memberId),
       role: entry.role,
       message: member
-        ? `${who} nema ulogu "${DANCE_ROLE_LABELS[entry.role]}" u svom profilu.`
+        ? `${who} nema ulogu "${LINEUP_ROLE_LABELS[entry.role]}" u svom profilu.`
         : `${who} nije na popisu aktivnih moreškanata.`,
     })
   }
@@ -220,7 +229,7 @@ export function validateLineupEntries(
           ? String(row.memberId)
           : ''
     if (!memberId) return { ok: false, error: LINEUP_ERRORS.badEntry }
-    if (!isDanceRole(row.role)) return { ok: false, error: LINEUP_ERRORS.unknownRole }
+    if (!isLineupRole(row.role)) return { ok: false, error: LINEUP_ERRORS.unknownRole }
     if (seen.has(memberId)) return { ok: false, error: LINEUP_ERRORS.duplicateMember }
     if (!known.has(memberId)) return { ok: false, error: LINEUP_ERRORS.unknownMember }
     seen.add(memberId)

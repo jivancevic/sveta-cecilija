@@ -10,7 +10,7 @@
 // Nothing in this file loads anything. `detail-loaders.ts` still owns what the
 // page reads; this owns how the read is presented.
 
-import type { DanceRole } from '@/lib/moreskant-profile'
+import type { LineupRole } from '@/lib/moreskant-profile'
 import { LINEUP_ROLE_ORDER } from '@/lib/lineup/rules'
 import type { LineupRow } from './detail-loaders'
 
@@ -37,10 +37,10 @@ export function parseSegment(raw: string | undefined | null): DetailSegment {
  * when nobody holds them: an empty Crni kralj row is the point, because a
  * postava missing its king is the thing a dancer scanning the list must see.
  */
-const SPECIAL_ROLES: readonly DanceRole[] = ['crni_kralj', 'bili_kralj', 'otmanovic', 'bula']
+const SPECIAL_ROLES: readonly LineupRole[] = ['crni_kralj', 'bili_kralj', 'otmanovic', 'bula']
 
 export interface LineupRoleGroup {
-  role: DanceRole
+  role: LineupRole
   entries: LineupRow[]
 }
 
@@ -54,10 +54,11 @@ export interface LineupRoleGroup {
  *
  * A special role with nobody in it still gets a section, so the gap is visible;
  * an empty plain army does not, because "no crni at all" is not a gap, it is an
- * evening that was never going to have one and a heading over nothing.
+ * evening that was never going to have one and a heading over nothing. The
+ * voditelj section is the same: shown when somebody ran the evening, else not.
  */
 export function groupLineupByRole(entries: readonly LineupRow[]): LineupRoleGroup[] {
-  const byRole = new Map<DanceRole, LineupRow[]>()
+  const byRole = new Map<LineupRole, LineupRow[]>()
   for (const entry of entries) {
     const list = byRole.get(entry.role)
     if (list) list.push(entry)

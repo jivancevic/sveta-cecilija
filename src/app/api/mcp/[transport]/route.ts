@@ -4,7 +4,7 @@ import { getPayload } from 'payload'
 import { z } from 'zod'
 import config from '@payload-config'
 import { can, type PermissionUser } from '@/lib/access/permissions'
-import { DANCE_ROLES } from '@/lib/moreskant-profile'
+import { LINEUP_ROLES } from '@/lib/moreskant-profile'
 import {
   issuerUrl,
   mcpResourceUrl,
@@ -136,7 +136,7 @@ const handler = createMcpHandler(
             .array(
               z.object({
                 nickname: z.string().describe('Nadimak moreškanta, npr. "Ćići".'),
-                role: z.enum(DANCE_ROLES).describe('Plesna uloga.'),
+                role: z.enum(LINEUP_ROLES).describe('Plesna uloga, ili "voditelj" za onoga tko je vodio izvedbu bez plesanja (svaki Experience ima jednog).'),
               }),
             )
             .describe('Cijela postava: svaki moreškant točno jednom.'),

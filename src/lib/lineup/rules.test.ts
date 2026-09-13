@@ -115,6 +115,11 @@ describe('roleWarnings', () => {
     expect(warnings[0].message).toContain('Bula')
   })
 
+  // A voditelj line is not a dance role, so no profile could ever list it.
+  it('says nothing about a voditelj line', () => {
+    expect(roleWarnings([{ memberId: '2', role: 'voditelj' }], roster)).toEqual([])
+  })
+
   it('warns about a member who is not on the roster at all', () => {
     const warnings = roleWarnings([{ memberId: '77', role: 'crni' }], roster)
     expect(warnings).toHaveLength(1)
@@ -149,6 +154,13 @@ describe('validateLineupEntries', () => {
         { memberId: '1', role: 'crni_kralj' },
         { memberId: '2', role: 'bili' },
       ],
+    })
+  })
+
+  it('accepts a voditelj line: the person who ran the evening without dancing', () => {
+    expect(validateLineupEntries([{ memberId: '2', role: 'voditelj' }], roster)).toEqual({
+      ok: true,
+      entries: [{ memberId: '2', role: 'voditelj' }],
     })
   })
 

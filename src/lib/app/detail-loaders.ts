@@ -29,7 +29,7 @@ import {
   type AttendanceStatus,
 } from '@/lib/attendance/rules'
 import { relationIdString } from '@/lib/payload-relation'
-import { isDanceRole, type DanceRole } from '@/lib/moreskant-profile'
+import { isDanceRole, isLineupRole, type DanceRole, type LineupRole } from '@/lib/moreskant-profile'
 import {
   buildLineupFromAttendance,
   compareLineupRows,
@@ -44,7 +44,7 @@ import { toRosterPerformance, type RosterPerformance } from './roster-loaders'
 export interface LineupRow {
   memberId: string
   nickname: string
-  role: DanceRole
+  role: LineupRole
 }
 
 /** A candidate for the "Dodaj moreškanta" picker. */
@@ -221,7 +221,7 @@ export function toAttendanceRow(doc: Record<string, unknown>): AttendanceRow | n
 export function toLineupEntry(doc: Record<string, unknown>): LineupEntry | null {
   const memberId = relationIdString(doc.member)
   if (!memberId) return null
-  if (!isDanceRole(doc.role)) return null
+  if (!isLineupRole(doc.role)) return null
   return { memberId, role: doc.role }
 }
 

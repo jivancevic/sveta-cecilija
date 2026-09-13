@@ -70,6 +70,32 @@ export function isDanceRole(value: unknown): value is DanceRole {
   return typeof value === 'string' && KNOWN.has(value)
 }
 
+/**
+ * What a LINEUP line can say: the six dance roles, plus `voditelj`, the person
+ * who ran the evening without dancing (glossary: *Voditelj (u postavi)*).
+ *
+ * A Moreška Experience always has one, and the 2026 notebook needed him written
+ * down; he is not a dancer that evening, so the role is NOT a dance role: a
+ * profile can never hold it, and the statistics and the dancer's own season
+ * skip it (`isDanceRole` is their filter, and it does not know this value).
+ */
+export const LINEUP_ROLES = [...DANCE_ROLES, 'voditelj'] as const
+
+export type LineupRole = (typeof LINEUP_ROLES)[number]
+
+/** Croatian labels for a lineup line: the dance roles plus the voditelj. */
+export const LINEUP_ROLE_LABELS: Record<LineupRole, string> = {
+  ...DANCE_ROLE_LABELS,
+  voditelj: 'Voditelj',
+}
+
+const KNOWN_LINEUP = new Set<string>(LINEUP_ROLES)
+
+/** Narrows an arbitrary value to something a lineup line may say. */
+export function isLineupRole(value: unknown): value is LineupRole {
+  return typeof value === 'string' && KNOWN_LINEUP.has(value)
+}
+
 /** Thrown by {@link validateAndNormaliseMoreskant}; the collection hook re-wraps it as a 400. */
 export class MoreskantProfileError extends Error {
   constructor(message: string) {

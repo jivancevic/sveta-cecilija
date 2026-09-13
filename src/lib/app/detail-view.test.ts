@@ -42,10 +42,18 @@ describe('groupLineupByRole', () => {
       row('4', 'Frane', 'bula'),
       row('5', 'Grgo', 'bili_kralj'),
       row('6', 'Ivo', 'otmanovic'),
+      row('7', 'Brane', 'voditelj'),
     ])
     // Imported from `lib/lineup/rules.ts`, not restated here: crni kralj, his
-    // otmanović, then the bili kralj and the bula, then the two armies.
+    // otmanović, then the bili kralj and the bula, then the two armies, and the
+    // voditelj last.
     expect(groups.map((g) => g.role)).toEqual([...LINEUP_ROLE_ORDER])
+  })
+
+  it('shows the voditelj section only when somebody ran the evening', () => {
+    expect(groupLineupByRole([row('1', 'Cici', 'crni')]).map((g) => g.role)).not.toContain('voditelj')
+    const groups = groupLineupByRole([row('1', 'Cici', 'crni'), row('7', 'Brane', 'voditelj')])
+    expect(groups.at(-1)).toEqual({ role: 'voditelj', entries: [row('7', 'Brane', 'voditelj')] })
   })
 
   it('keeps an empty special role as a section and drops an empty army', () => {
