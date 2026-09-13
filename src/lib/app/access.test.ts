@@ -152,8 +152,9 @@ describe('decideAppAccess — everybody else', () => {
     // Today's live table. Every screen ticket that flips a `servesToday` word
     // moves one of these to `true`, and this line is where that shows up:
     // `door` joined when Skener landed (#504), `tickets` when Narudžbe did
-    // (#501), `season_stats` + `finance` when Statistika did (#508) and `users`
-    // when Korisnici did (#510).
+    // (#501), and `season_stats` + `finance` when Statistika did (#508).
+    // Financije (#509) added a second screen for `finance` without adding a
+    // word here: it was already in. `users` joined with Korisnici (#510).
     const live = ['moreska', 'moreskant', 'door', 'tickets', 'season_stats', 'finance', 'users']
     for (const p of PERMISSIONS) {
       const expected = live.includes(p)

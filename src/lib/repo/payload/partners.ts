@@ -11,12 +11,7 @@ import { payloadClient, type PayloadClient } from './client'
 
 const DEFAULT_COMMISSION_PERCENT = 10
 
-/** Seven resellers today; this is a wall, not a page size. */
-const MAX_PARTNERS = 500
-
-type PartnerRow = { id: unknown; name?: unknown; active?: unknown; commissionPercent?: unknown }
-
-function toPartnerRecord(doc: PartnerRow): PartnerRecord {
+function toRecord(doc: Record<string, unknown>): PartnerRecord {
   const commission = Number(doc.commissionPercent)
   return {
     id: String(doc.id),
@@ -35,7 +30,7 @@ export function createPartnersRepo(
       try {
         const doc = await payload.findByID({ collection: 'partners', id, depth: 0 })
         if (!doc) return null
-        return toPartnerRecord(doc as unknown as PartnerRow) satisfies PartnerRecord
+        return toRecord(doc as unknown as Record<string, unknown>)
       } catch {
         // A dangling link (the Partners row was deleted) is not an error page:
         // it is "this login owns nothing", which the screen states in a sentence.
@@ -43,19 +38,20 @@ export function createPartnersRepo(
       }
     },
 
-    async listActive() {
+    async activeList() {
       const payload = await load()
-      const res = await payload.find({
+      // `active` defaults to true, so the filter has to be "not false" rather
+      // than "equals true" — an older row saved before the field existed has a
+      // null there and is still a live partner.
+      const result = await payload.find({
         collection: 'partners',
-        // `active` defaults to true, so a row written before the column existed
-        // has a null there and is still a partner (the same reading as above).
         where: { active: { not_equals: false } },
         sort: 'name',
-        limit: MAX_PARTNERS,
+        limit: 1000,
         depth: 0,
         overrideAccess: true,
       })
-      return res.docs.map((doc) => toPartnerRecord(doc as unknown as PartnerRow))
+      return (result.docs as unknown as Record<string, unknown>[]).map(toRecord)
     },
   }
 }

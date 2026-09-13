@@ -45,7 +45,7 @@ export async function loadAccount(id: string): Promise<UserAccount | null> {
 
 /** The live resellers a login may be pointed at. */
 export async function loadPartnerOptions(): Promise<PartnerRecord[]> {
-  return getRepo().partners.listActive()
+  return getRepo().partners.activeList()
 }
 
 /**
