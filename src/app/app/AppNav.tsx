@@ -18,7 +18,7 @@ import {
   Wallet,
 } from 'lucide-react'
 import { APP_STRINGS } from '@/lib/app/strings'
-import { activeScreenKey, type AppNav as Nav, type AppScreenKey } from '@/lib/app/screens'
+import { activeScreenKey, activeTabKey, type AppNav as Nav, type AppScreenKey } from '@/lib/app/screens'
 
 // The two faces of one navigation (#472, #495, #562): the phone's floating
 // pill bar and the laptop's grouped sidebar, both built from the same `AppNav`
@@ -94,9 +94,12 @@ function Icon({ k, on, size = 24 }: { k: AppScreenKey; on?: boolean; size?: numb
   return <>{ICONS[k]({ size, strokeWidth: on ? STROKE_ON : STROKE })}</>
 }
 
-/** The bottom bar: the person's first four screens, then Više. */
+/** The bottom bar: the three screens this account carries, then Više (#563). */
 export function TabBar({ nav }: { nav: Nav }) {
-  const active = activeScreenKey(usePathname() ?? '/app')
+  // `activeTabKey`, not `activeScreenKey`: a screen the bar does not carry is
+  // one the reader reached through Više, so Više is the tab that lights. With
+  // three tabs per account that is an everyday page, not an edge case.
+  const active = activeTabKey(nav, usePathname() ?? '/app')
   if (nav.tabs.length === 0) return null
 
   const index = nav.tabs.findIndex((screen) => screen.key === active)

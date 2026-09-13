@@ -2,11 +2,16 @@ import { describe, expect, it } from 'vitest'
 import type { Permission } from '@/lib/access/permissions'
 import {
   APP_SCREENS,
+  MAX_TABS,
   MORE_SCREEN,
   activeScreenKey,
+  activeTabKey,
   appNav,
+  genericTabs,
+  isTabKey,
   screenByKey,
   screenForPath,
+  tabKeysOf,
   unlockedScreens,
   type AppScreenKey,
 } from './screens'
@@ -207,17 +212,17 @@ describe('unlockedScreens', () => {
 })
 
 describe('appNav', () => {
-  it('puts Izvedbe first for a moreskant holder and lands there', () => {
+  it('puts the dance first for a moreskant holder and lands there', () => {
     const nav = appNav(user('moreskant'), ctx({ hasMember: true }))
     expect(keys(nav.tabs)).toEqual(['performances', 'leaderboard', 'more'])
     expect(nav.landing).toBe('/app/performances')
     expect(nav.overflow).toEqual([])
   })
 
-  it('always ends the bar with Više, and never counts it against the four', () => {
+  it('always ends the bar with Više, and never counts it against the three', () => {
     const nav = appNav(user('moreska'), ctx())
     expect(nav.tabs.at(-1)?.key).toBe('more')
-    expect(nav.tabs.filter((t) => t.key !== 'more').length).toBeLessThanOrEqual(4)
+    expect(nav.tabs.filter((t) => t.key !== 'more').length).toBeLessThanOrEqual(MAX_TABS)
   })
 
   it('has no tabs and no landing screen for an account that unlocks nothing', () => {
@@ -248,17 +253,20 @@ describe('appNav', () => {
     ])
   })
 
-  it('caps the bar at four screens and pushes the rest into Više', () => {
+  it('caps the bar at three screens and pushes the rest into Više', () => {
     // The cap is exercised against the TARGET table, so it is tested before the
-    // screens that will fill the bar exist: the same ranking, run over every
+    // screens that will fill the bar exist: the same merge, run over every
     // screen a full set unlocks.
     const nav = appNav(user('users', 'tickets', 'door', 'partner', 'moreska', 'moreskant'), {
       hasMember: true,
       hasPartner: true,
       target: true,
     })
-    expect(keys(nav.tabs)).toEqual(['performances', 'orders', 'members', 'leaderboard', 'more'])
+    // Dancer first (Moreška, Ljestvica), then the voditelj's Članovi; the
+    // blagajna's three and everything else are one tap away in Više.
+    expect(keys(nav.tabs)).toEqual(['performances', 'leaderboard', 'members', 'more'])
     expect(keys(nav.overflow)).toEqual([
+      'orders',
       'scan',
       'sell',
       'statement',
@@ -270,10 +278,10 @@ describe('appNav', () => {
     expect(nav.landing).toBe('/app/performances')
   })
 
-  it('ranks Narudžbe first for the secretary, who does not dance', () => {
+  it('gives the secretary who also works the door the box\u2019s three', () => {
     const nav = appNav(user('tickets', 'refunds', 'door'), { ...ctx(), target: true })
-    expect(keys(nav.tabs)).toEqual(['orders', 'performances', 'scan', 'inquiries', 'more'])
-    expect(keys(nav.overflow)).toEqual(['comp', 'stats'])
+    expect(keys(nav.tabs)).toEqual(['orders', 'performances', 'inquiries', 'more'])
+    expect(keys(nav.overflow)).toEqual(['scan', 'comp', 'stats'])
     expect(nav.landing).toBe('/app/orders')
   })
 
@@ -281,6 +289,126 @@ describe('appNav', () => {
     const nav = appNav(user('partner'), { hasMember: false, hasPartner: true, target: true })
     expect(keys(nav.tabs)).toEqual(['sell', 'statement', 'more'])
     expect(nav.landing).toBe('/app/sell')
+  })
+})
+
+// The per-account bar (#563, decisions Q52/Q56/Q57/Q60). Three screens belong
+// to the ACCOUNT: a `users` holder picks them on Korisnici, and everybody
+// nobody has picked for reads the generic order below.
+//
+// Every expectation here that names Izvedbe for "Moreška" is waiting on T4
+// (#565): the Moreška screen is not in the table yet, so the generic order maps
+// that name onto `performances` and these tests move with it when it lands.
+describe('the generic order', () => {
+  const generic = (held: Permission[], over: Parameters<typeof ctx>[0] = {}) =>
+    genericTabs(unlockedScreens(user(...held), { ...ctx(over), target: true }), held)
+
+  it('gives every permission that opens a screen the bar its holder came for', () => {
+    // The table from the decision, one row per permission, and nothing else in
+    // this file is allowed to re-type it.
+    expect(generic(['moreskant'], { hasMember: true })).toEqual(['performances', 'leaderboard'])
+    expect(generic(['moreska'])).toEqual(['performances', 'members', 'leaderboard'])
+    expect(generic(['tickets'])).toEqual(['orders', 'performances', 'inquiries'])
+    expect(generic(['door'])).toEqual(['scan'])
+    expect(generic(['partner'], { hasPartner: true })).toEqual(['sell', 'statement'])
+    expect(generic(['season_stats'])).toEqual(['stats'])
+    expect(generic(['finance'])).toEqual(['finance', 'stats'])
+  })
+
+  it('merges a multi-permission set dancer → box → other, first three winning', () => {
+    // A voditelj who also works the till opens the app on the dance: the half
+    // only they can do comes first, and the box is one tap away in Više.
+    expect(generic(['tickets', 'moreskant'], { hasMember: true })).toEqual([
+      'performances',
+      'leaderboard',
+      'orders',
+    ])
+    expect(generic(['finance', 'tickets'])).toEqual(['orders', 'performances', 'inquiries'])
+    expect(generic(['door', 'season_stats'])).toEqual(['scan', 'stats'])
+  })
+
+  it('collapses a duplicate rather than spending a tab on it twice', () => {
+    // Until T4, Moreška and Izvedbe are the same screen for a voditelj, so the
+    // third tab comes from the top-up rather than from a repeated key.
+    expect(generic(['moreska'])).toEqual(['performances', 'members', 'leaderboard'])
+  })
+
+  it('tops the bar up in rank order for a set the table has no row for', () => {
+    // `users` opens Korisnici and has no generic row of its own: a one-screen
+    // bar is still a bar, and a second screen joins it by rank rather than
+    // leaving a tab empty while Više carries something the person holds.
+    expect(generic(['users', 'refunds'])).toEqual(['users'])
+    expect(generic(['users', 'season_stats'])).toEqual(['stats', 'users'])
+  })
+
+  it('offers nothing for a set that unlocks nothing', () => {
+    expect(generic(['refunds', 'dev'])).toEqual([])
+  })
+
+  it('never offers a screen the account does not unlock', () => {
+    // `moreskant` without a live Member is stripped before the table is read,
+    // so its generic bar is empty rather than two screens that would 403.
+    expect(generic(['moreskant'])).toEqual([])
+  })
+})
+
+describe('a chosen bar', () => {
+  const holder = user('tickets', 'refunds')
+
+  it('wins over the generic order, in the order it was chosen', () => {
+    const nav = appNav(holder, ctx(), ['inquiries', 'stats', 'orders'])
+    expect(keys(nav.tabs)).toEqual(['inquiries', 'stats', 'orders', 'more'])
+    expect(nav.landing).toBe('/app/inquiries')
+    // Everything else the account unlocks is still reachable under Više.
+    expect(keys(nav.overflow)).toEqual(['performances', 'comp'])
+  })
+
+  it('drops a key the permission set does not unlock rather than obeying it', () => {
+    // A bar is an order, never a permission: `finance` was taken away and the
+    // stored key goes with it, on the next request and with no migration.
+    const nav = appNav(holder, ctx(), ['finance', 'orders'])
+    expect(keys(nav.tabs)).toEqual(['orders', 'more'])
+  })
+
+  it('falls back to the generic order when every stored key is stale', () => {
+    const nav = appNav(holder, ctx(), ['finance'])
+    expect(keys(nav.tabs)).toEqual(['orders', 'performances', 'inquiries', 'more'])
+  })
+
+  it('never carries more than three, whatever was stored', () => {
+    const nav = appNav(holder, ctx(), ['orders', 'performances', 'inquiries', 'comp', 'stats'])
+    expect(keys(nav.tabs)).toEqual(['orders', 'performances', 'inquiries', 'more'])
+  })
+
+  it('spends a tab once on a key that was stored twice', () => {
+    const nav = appNav(holder, ctx(), ['orders', 'orders', 'comp'])
+    expect(keys(nav.tabs)).toEqual(['orders', 'comp', 'more'])
+  })
+})
+
+describe('tabKeysOf', () => {
+  it('reads a stored list leniently: this is a row, not a form', () => {
+    expect(tabKeysOf(['orders', 'stats'])).toEqual(['orders', 'stats'])
+    expect(tabKeysOf(['orders', 'pozivnice', 42, null])).toEqual(['orders'])
+    expect(tabKeysOf(['orders', 'orders'])).toEqual(['orders'])
+    expect(tabKeysOf(['orders', 'comp', 'stats', 'inquiries'])).toHaveLength(MAX_TABS)
+  })
+
+  it('reads anything that is not a list as no choice at all', () => {
+    expect(tabKeysOf(null)).toEqual([])
+    expect(tabKeysOf(undefined)).toEqual([])
+    expect(tabKeysOf('orders')).toEqual([])
+    expect(tabKeysOf({ 0: 'orders' })).toEqual([])
+  })
+
+  it('never accepts Više, which is the last tab and never a chosen one', () => {
+    expect(isTabKey('more')).toBe(false)
+    expect(tabKeysOf(['more', 'orders'])).toEqual(['orders'])
+  })
+
+  it('accepts every key the table has and nothing else', () => {
+    for (const screen of APP_SCREENS) expect(isTabKey(screen.key)).toBe(true)
+    expect(isTabKey('home')).toBe(false)
   })
 })
 
@@ -311,6 +439,44 @@ describe('the laptop sidebar', () => {
     const nav = appNav(user('moreskant'), ctx({ hasMember: true }))
     expect(nav.groups.map((g) => g.group)).toEqual(['moreskant'])
     for (const group of nav.groups) expect(group.screens.length).toBeGreaterThan(0)
+  })
+})
+
+describe('activeTabKey', () => {
+  // Tatjana's bar (#563): three chosen screens, everything else under Više.
+  const nav = appNav(user('tickets'), ctx(), ['orders', 'stats', 'inquiries'])
+
+  it('lights the tab you are on', () => {
+    expect(activeTabKey(nav, '/app/orders')).toBe('orders')
+    expect(activeTabKey(nav, '/app/orders/42')).toBe('orders')
+    expect(activeTabKey(nav, '/app/stats?season=2026')).toBe('stats')
+  })
+
+  it('lights Više for a screen the bar does not carry', () => {
+    // The everyday case now that a bar is three screens: Gratis and the
+    // performance detail are both one tap into Više, and a bar that lit nothing
+    // would tell the reader they are nowhere.
+    expect(activeTabKey(nav, '/app/comp')).toBe('more')
+    expect(activeTabKey(nav, '/app/performances/42')).toBe('more')
+  })
+
+  it('lights Više for Više itself and for the rows under it', () => {
+    expect(activeTabKey(nav, '/app/more')).toBe('more')
+    expect(activeTabKey(nav, '/app/notifications')).toBe('more')
+    expect(activeTabKey(nav, '/app/account')).toBe('more')
+  })
+
+  it('lights nothing on a page with no bar, or on a screen this account cannot open', () => {
+    expect(activeTabKey(nav, '/app/login')).toBeNull()
+    expect(activeTabKey(nav, '/app/welcome')).toBeNull()
+    // Financije answers to `finance`; this account never reaches it, so there
+    // is nothing honest to light.
+    expect(activeTabKey(nav, '/app/finance')).toBeNull()
+  })
+
+  it('lights nothing at all for an account with no bar', () => {
+    const nowhere = appNav(user('refunds'), ctx())
+    expect(activeTabKey(nowhere, '/app/orders')).toBeNull()
   })
 })
 

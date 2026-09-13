@@ -1,15 +1,19 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { Permission } from '@/lib/access/permissions'
+import { MAX_TABS, type AppScreenKey } from '@/lib/app/screens'
 import { APP_STRINGS } from '@/lib/app/strings'
 import type { Handover } from '@/lib/app/users-account'
+import type { TabOption } from '@/lib/app/users-data'
 import type { UserAccount } from '@/lib/app/users-view'
+import { Button, Chip, Sheet as UiSheet, SheetOption, Toast } from '../../ui'
 import { PermissionChecklist } from '../NewUserForm'
 import { HandoverPanel, Sheet } from '../UserSheet'
 
-// The five named actions of one account (#510, #476's "named actions only").
+// The six named actions of one account (#510, #563; #476's "named actions
+// only").
 //
 // Each is a button with a verb on it and a confirmation under it, never a raw
 // edit form, because each of them changes who can do what: a permission set
@@ -26,11 +30,16 @@ import { HandoverPanel, Sheet } from '../UserSheet'
 
 const S = APP_STRINGS.users
 
-type Which = 'permissions' | 'reset' | 'partner' | 'member' | 'shared' | null
+type Which = 'permissions' | 'reset' | 'partner' | 'member' | 'shared' | 'tabs' | null
 
 export interface PickerOption {
   id: string
   label: string
+}
+
+/** The Croatian name of a chosen screen, from the list the server sent. */
+function labelOf(options: TabOption[], key: AppScreenKey): string {
+  return options.find((o) => o.key === key)?.label ?? key
 }
 
 export function UserActions({
@@ -38,12 +47,19 @@ export function UserActions({
   self,
   partners,
   candidates,
+  tabOptions,
 }: {
   account: UserAccount
-  /** Is this the reader's own login? Three refusals hang off it. */
+  /** Is this the reader's own login? Four refusals hang off it. */
   self: boolean
   partners: PickerOption[]
   candidates: PickerOption[]
+  /**
+   * The screens this account may carry in its bar, resolved on the server by
+   * the same rule the route applies (#563), so the picker can never offer a
+   * screen the PATCH then refuses.
+   */
+  tabOptions: TabOption[]
 }) {
   const router = useRouter()
   const [sheet, setSheet] = useState<Which>(null)
@@ -55,6 +71,15 @@ export function UserActions({
   const [permissions, setPermissions] = useState<Permission[]>([...account.permissions])
   const [partnerId, setPartnerId] = useState(account.partnerId ?? '')
   const [memberId, setMemberId] = useState(account.memberId ?? '')
+  const [tabs, setTabs] = useState<AppScreenKey[]>([...account.tabs])
+
+  // The toast says it landed and then stops saying it (#562). The state it
+  // reads is the same `done` every action already set; only the shape changed.
+  useEffect(() => {
+    if (!done) return
+    const timer = setTimeout(() => setDone(null), 3200)
+    return () => clearTimeout(timer)
+  }, [done])
 
   function open(which: Which) {
     setSheet(which)
@@ -64,6 +89,7 @@ export function UserActions({
     setPermissions([...account.permissions])
     setPartnerId(account.partnerId ?? '')
     setMemberId(account.memberId ?? '')
+    setTabs([...account.tabs])
   }
 
   function close() {
@@ -141,6 +167,25 @@ export function UserActions({
     router.refresh()
   }
 
+  /** Add at the end, remove from anywhere: the order IS the bar (#563). */
+  function toggleTab(key: AppScreenKey) {
+    setTabs((chosen) =>
+      chosen.includes(key)
+        ? chosen.filter((k) => k !== key)
+        : chosen.length >= MAX_TABS
+          ? chosen
+          : [...chosen, key],
+    )
+  }
+
+  async function saveTabs() {
+    const res = await call(`/api/app/users/${account.id}/tabs`, json({ tabs }, 'PATCH'), S.tabs.failed)
+    if (!res.ok) return
+    setDone((res.body?.message as string) ?? S.tabs.saved)
+    setSheet(null)
+    router.refresh()
+  }
+
   async function saveShared(next: boolean) {
     const res = await call(`/api/app/users/${account.id}/shared`, json({ shared: next }), S.shared.failed)
     if (!res.ok) return
@@ -151,7 +196,9 @@ export function UserActions({
 
   return (
     <section className="app__user-actions">
-      {done && <p className="app__user-done">{done}</p>}
+      {/* One toast, the shape the whole app confirms with since T1 (#562), for
+          all six actions rather than a second one for the newest. */}
+      <Toast message={done ?? ''} open={done !== null} />
 
       <div className="app__user-buttons">
         <button type="button" className="app__button" onClick={() => open('permissions')}>
@@ -165,6 +212,9 @@ export function UserActions({
         </button>
         <button type="button" className="app__button app__button--link" onClick={() => open('member')}>
           {S.actions.linkMember}
+        </button>
+        <button type="button" className="app__button app__button--link" onClick={() => open('tabs')}>
+          {S.actions.tabs}
         </button>
         <button type="button" className="app__button app__button--link" onClick={() => open('shared')}>
           {S.actions.shared}
@@ -275,6 +325,81 @@ export function UserActions({
           )}
         </Sheet>
       )}
+
+      {/* The one sheet on this screen that is a CHOICE rather than a
+          confirmation, so it is T1's bottom sheet (#562) and not the inline
+          panel the five confirmations use. */}
+      <UiSheet
+        open={sheet === 'tabs'}
+        title={S.tabs.title}
+        onClose={close}
+        // The answer stays put while the options scroll: five screens and a
+        // paragraph are taller than a landscape phone (#563).
+        footer={
+          <>
+            {/* The reader's own row says why there is nothing to confirm, and
+                the refusal sits with the button it removed. */}
+            {self && <p className="app__sheet-warn">{S.tabs.notSelf}</p>}
+            {error && <p className="app__error">{error}</p>}
+            <div className="app__sheet-buttons">
+              {!self && tabOptions.length > 0 && (
+                <Button variant="primary" disabled={busy} onClick={() => void saveTabs()}>
+                  {busy ? S.actions.working : S.tabs.save}
+                </Button>
+              )}
+              <Button variant="link" disabled={busy} onClick={close}>
+                {S.actions.cancel}
+              </Button>
+            </div>
+          </>
+        }
+      >
+        <p className="app__sheet-body">{S.tabs.body}</p>
+
+        {tabOptions.length === 0 ? (
+          <p className="app__sheet-warn">{S.tabs.empty}</p>
+        ) : (
+          <>
+            <div className="app__tabs-order">
+              <span>{S.tabs.order}</span>
+              <span className="app__tabs-chips">
+                {tabs.length === 0 ? (
+                  <Chip>{S.tabs.none}</Chip>
+                ) : (
+                  tabs.map((key, index) => (
+                    <Chip key={key} tone="gold">
+                      {index + 1}. {labelOf(tabOptions, key)}
+                    </Chip>
+                  ))
+                )}
+              </span>
+            </div>
+
+            {tabOptions.map((option) => {
+              const at = tabs.indexOf(option.key)
+              const full = at < 0 && tabs.length >= MAX_TABS
+              return (
+                <SheetOption
+                  key={option.key}
+                  on={at >= 0}
+                  // Full is not a disabled row: it still answers, by taking the
+                  // tap that removes something else first.
+                  lead={<span className="app__tabs-mark">{at >= 0 ? at + 1 : ''}</span>}
+                  note={full ? S.tabs.tooMany(MAX_TABS) : undefined}
+                  onClick={() => toggleTab(option.key)}
+                >
+                  {option.label}
+                </SheetOption>
+              )
+            })}
+
+            <p className="app__tabs-note">
+              {S.tabs.count(tabs.length, MAX_TABS)} · {S.tabs.note}
+            </p>
+          </>
+        )}
+
+      </UiSheet>
 
       {sheet === 'shared' && (
         <Sheet

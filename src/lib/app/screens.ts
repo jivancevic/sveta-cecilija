@@ -13,11 +13,14 @@
 //   - `moreskant` unlocks nothing unless the linked Member is a live dancer,
 //     and `partner` nothing without a Partner link. Both are conditions on the
 //     CONTEXT, so they are stripped from the set before the table is read.
-//   - The first four screens a person unlocks are tabs, in rank order, and
-//     Izvedbe jumps to the front for a `moreskant` holder. Više is always the
-//     last tab and never counts against the four.
+//   - **Three tabs belong to the ACCOUNT, not to the rank** (#563). A `users`
+//     holder picks them on Korisnici and they are stored on `Users.tabs`; an
+//     account nobody has picked for reads the generic order below. Više is
+//     always the last tab and never counts against the three, and neither will
+//     Početna once T3 (#564) builds it.
 //   - The laptop groups the same screens by workspace; a screen sits in the
-//     first of its groups the person holds.
+//     first of its groups the person holds. The sidebar shows everything at
+//     once, so a chosen set never hides a screen there.
 //
 // **Two columns, one table.** `unlockedBy` is the TARGET from the route map;
 // `servesToday` is the subset the built screen actually serves. The shell ships
@@ -218,6 +221,103 @@ export function screenByKey(key: AppScreenKey): AppScreen {
   return screen
 }
 
+/** How many screens an account carries in its bar (#563). Više is extra. */
+export const MAX_TABS = 3
+
+/**
+ * A key that may be STORED on `Users.tabs`.
+ *
+ * Everything in the table except Više, which is always the last tab and is
+ * therefore never chosen, and never Početna, which will be the first one for
+ * the same reason once T3 (#564) builds it.
+ */
+export function isTabKey(value: unknown): value is AppScreenKey {
+  return typeof value === 'string' && APP_SCREENS.some((s) => s.key === value)
+}
+
+/**
+ * `Users.tabs` as the app reads it: an ordered list of at most three keys.
+ *
+ * Deliberately LENIENT, unlike the route that writes it. A stored key can stop
+ * being a tab key between two deploys (a screen is renamed, a permission is
+ * taken away), and the honest answer to a row the table no longer recognises is
+ * a smaller bar, not a crash on the way into the app. The refusals live in
+ * `users-tabs.ts`, where a person is looking at what they typed.
+ */
+export function tabKeysOf(value: unknown): AppScreenKey[] {
+  if (!Array.isArray(value)) return []
+  const seen = new Set<AppScreenKey>()
+  for (const entry of value) {
+    if (isTabKey(entry)) seen.add(entry)
+  }
+  return [...seen].slice(0, MAX_TABS)
+}
+
+/**
+ * The bar an account gets when nobody has chosen one for it (#563, Q57).
+ *
+ * One list per permission, in the words the decision used: what a person who
+ * holds THIS and opens the app came to do. `moreskant` leads with the dance,
+ * `tickets` with the money, `door` has exactly one screen and needs no rank to
+ * find it.
+ *
+ * A permission that opens no screen of its own (`refunds`, `dev`, `editor`) is
+ * absent rather than empty: it contributes nothing to a bar, and a set made
+ * only of those unlocks nothing at all.
+ */
+// T4 (#565): swap to 'moreska' — the Moreška screen is being built in parallel
+// and is not in the table yet, so "Moreška" reads as Izvedbe until it lands.
+const MORESKA_SCREEN: AppScreenKey = 'performances'
+
+const GENERIC_TABS: Partial<Record<Permission, AppScreenKey[]>> = {
+  moreskant: [MORESKA_SCREEN, 'leaderboard'],
+  moreska: [MORESKA_SCREEN, 'members', 'performances'],
+  tickets: ['orders', 'performances', 'inquiries'],
+  door: ['scan'],
+  partner: ['sell', 'statement'],
+  season_stats: ['stats'],
+  finance: ['finance', 'stats'],
+}
+
+/**
+ * Dancer first, then the box, then the rest: the merge order for a set that
+ * holds several of them (#563). A voditelj who also works the till opens the
+ * app on the dance, because that is the half only they can do.
+ */
+const GENERIC_MERGE: Permission[] = [
+  'moreskant',
+  'moreska',
+  'tickets',
+  'door',
+  'partner',
+  'season_stats',
+  'finance',
+]
+
+/**
+ * The three tabs of an account with no stored choice.
+ *
+ * The merged generic lists first, duplicates collapsed and anything not
+ * unlocked dropped, then — when that is fewer than three — the rest of the
+ * unlocked screens in rank order, so nobody is left with a one-tab bar while a
+ * screen they hold sits in Više.
+ */
+export function genericTabs(unlocked: readonly AppScreen[], held: readonly Permission[]): AppScreenKey[] {
+  const open = new Set(unlocked.map((s) => s.key))
+  const chosen: AppScreenKey[] = []
+  const take = (key: AppScreenKey) => {
+    if (open.has(key) && !chosen.includes(key) && chosen.length < MAX_TABS) chosen.push(key)
+  }
+
+  for (const permission of GENERIC_MERGE) {
+    if (!held.includes(permission)) continue
+    for (const key of GENERIC_TABS[permission] ?? []) take(key)
+  }
+  for (const screen of unlocked) take(screen.key)
+
+  return chosen
+}
+
 /**
  * The two conditional permissions, plus the test-only `target` switch.
  *
@@ -267,30 +367,33 @@ export interface AppNav {
   groups: { group: AppGroup; label: string; screens: AppScreen[] }[]
 }
 
-const MAX_TABS = 4
-
 /**
  * The whole navigation for one account: the bar, the overflow, the landing
  * screen and the sidebar, all from the one table.
+ *
+ * `chosen` is `Users.tabs` (#563) — what a `users` holder picked for this
+ * account on Korisnici. A key the account does not unlock is dropped rather
+ * than obeyed: the choice decides the ORDER of a bar, never who may open a
+ * screen, and the permission set is still the only thing that answers that.
+ * Empty or absent falls back to the generic order.
  */
-export function appNav(user: PermissionUser, ctx: NavContext): AppNav {
+export function appNav(
+  user: PermissionUser,
+  ctx: NavContext,
+  chosen?: readonly AppScreenKey[] | null,
+): AppNav {
   const unlocked = unlockedScreens(user, ctx)
   if (unlocked.length === 0) return { tabs: [], overflow: [], landing: null, groups: [] }
 
-  // A dancer opens this app to see where they dance next, whatever else they
-  // hold (#472). Only Izvedbe jumps; every other screen keeps its rank.
-  const dancer = effectivePermissions(user, ctx).includes('moreskant')
-  const ordered = dancer
-    ? [
-        ...unlocked.filter((s) => s.key === 'performances'),
-        ...unlocked.filter((s) => s.key !== 'performances'),
-      ]
-    : unlocked
-
-  const tabs = ordered.slice(0, MAX_TABS)
-  const overflow = ordered.slice(MAX_TABS)
-
   const held = effectivePermissions(user, ctx)
+
+  const picked = [...new Set(chosen ?? [])].filter((key) => unlocked.some((s) => s.key === key))
+  const keys = (picked.length > 0 ? picked : genericTabs(unlocked, held)).slice(0, MAX_TABS)
+
+  const tabs = keys.map(screenByKey)
+  // Više lists every other screen the account unlocks, in rank order.
+  const overflow = unlocked.filter((s) => !keys.includes(s.key))
+
   const heldGroups = GROUP_ORDER.filter((g) => GROUP_UNLOCK[g].some((p) => held.includes(p)))
   const groups = heldGroups
     .map((group) => ({
@@ -329,6 +432,25 @@ export function activeScreenKey(pathname: string): AppScreenKey | null {
   const path = normalize(pathname)
   if (isUnder(path, MORE_SCREEN.route) || UNDER_MORE.some((r) => isUnder(path, r))) return 'more'
   return APP_SCREENS.find((s) => isUnder(path, s.route))?.key ?? null
+}
+
+/**
+ * Which TAB a pathname lights (#563).
+ *
+ * `activeScreenKey` answers a different question — which SCREEN am I on — and
+ * with three chosen tabs per account the answer is often a screen the bar does
+ * not carry. Lighting nothing there tells the reader they are nowhere; they are
+ * in fact somewhere they reached through Više, so **Više lights**. A path that
+ * belongs to no screen at all (the login, the walkthrough) still lights
+ * nothing, which is right: those pages have no bar to be in.
+ *
+ * Pure, and tested without a router: the browser only supplies the pathname.
+ */
+export function activeTabKey(nav: AppNav, pathname: string): AppScreenKey | null {
+  const screen = activeScreenKey(pathname)
+  if (screen === null) return null
+  if (nav.tabs.some((tab) => tab.key === screen)) return screen
+  return nav.overflow.some((s) => s.key === screen) ? MORE_SCREEN.key : null
 }
 
 /** The screen a route belongs to, so a page can gate on the table (#473). */

@@ -1,6 +1,12 @@
 import Link from 'next/link'
+import { screenByKey } from '@/lib/app/screens'
 import { APP_STRINGS } from '@/lib/app/strings'
-import { loadAccount, loadMemberCandidates, loadPartnerOptions } from '@/lib/app/users-data'
+import {
+  loadAccount,
+  loadMemberCandidates,
+  loadPartnerOptions,
+  loadTabOptions,
+} from '@/lib/app/users-data'
 import { displayName, emailLabel, permissionChips } from '@/lib/app/users-view'
 import { AppShell } from '../../AppShell'
 import { openScreen } from '../../gate'
@@ -8,7 +14,7 @@ import { UserActions } from './UserActions'
 
 // `/app/users/[id]` — one account (#510).
 //
-// The facts first, then the five named actions. The facts are the ones that
+// The facts first, then the six named actions. The facts are the ones that
 // decide access: the permission set as Croatian chips, the address (or its
 // absence, which is what decides how a password is handed over), the shared
 // flag and the two links by name.
@@ -53,7 +59,13 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
   // The two pickers, loaded on the server so the sheets open with their list
   // already in them: a picker that fetches on open is a spinner in the middle
   // of a decision.
-  const [partners, candidates] = await Promise.all([loadPartnerOptions(), loadMemberCandidates()])
+  const [partners, candidates, tabOptions] = await Promise.all([
+    loadPartnerOptions(),
+    loadMemberCandidates(),
+    // The screens this account may carry in its bar (#563), by the same rule
+    // the PATCH behind the sheet applies.
+    loadTabOptions(account),
+  ])
 
   const name = displayName(account)
   const self = account.id === viewer.userId
@@ -86,6 +98,11 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
         <Fact label={S.shared.title}>
           {account.shared ? S.shared.isShared : S.shared.isPersonal}
         </Fact>
+        <Fact label={S.tabs.title}>
+          {account.tabs.length === 0
+            ? S.tabs.none
+            : account.tabs.map((key) => screenByKey(key).label).join(' · ')}
+        </Fact>
         <Fact label={S.partnerLabel}>{account.partnerName ?? S.link.partnerNone}</Fact>
         <Fact label={S.memberLabel}>{account.memberName ?? S.link.memberNone}</Fact>
       </section>
@@ -98,6 +115,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
           id: c.id,
           label: c.nickname ? `${c.nickname} (${c.name})` : c.name,
         }))}
+        tabOptions={tabOptions}
       />
 
       <p className="app__user-note">{S.deleteNote}</p>

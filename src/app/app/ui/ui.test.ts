@@ -155,10 +155,28 @@ describe('the rest of the shapes render', () => {
     expect(open).toContain('ui-sheet__opt--on')
   })
 
-  it('shields both halves of a sheet from the pull gesture', () => {
+  it('keeps its answer out of the half that scrolls', () => {
+    // A sheet taller than the screen scrolls in the middle and nowhere else
+    // (#563): the handle, the title and the buttons stay put, or a landscape
+    // phone loses the title off the top with nothing to scroll back to.
+    const open = render(
+      h(Sheet, {
+        open: true,
+        title: 'Brko',
+        onClose: () => {},
+        footer: h('button', {}, 'Spremi'),
+        children: h(SheetOption, { on: true }, 'Crni kralj'),
+      }),
+    )
+    expect(open.indexOf('ui-sheet__body')).toBeLessThan(open.indexOf('ui-sheet__foot'))
+    expect(open.indexOf('ui-sheet__opt')).toBeLessThan(open.indexOf('ui-sheet__foot'))
+  })
+
+  it('shields every half of a sheet from the pull gesture', () => {
     // Without this the wrapper's transform drags the sheet down with the page
-    // and then refreshes it away underneath the reader (#562 review).
+    // and then refreshes it away underneath the reader (#562 review). Three
+    // since #563: the scrim, the panel, and the half that scrolls inside it.
     const open = render(h(Sheet, { open: true, onClose: () => {}, children: 'x' }))
-    expect(open.match(/data-no-pull/g)).toHaveLength(2)
+    expect(open.match(/data-no-pull/g)).toHaveLength(3)
   })
 })

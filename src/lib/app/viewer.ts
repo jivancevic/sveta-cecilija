@@ -106,6 +106,11 @@ export async function resolveAppAccessFor(
   let memberDoc: Record<string, unknown> | null = null
   let memberLinkId: string | null = null
   let partnerId: string | null = null
+  // The account's chosen bar (#563). Read from the ROW rather than from the
+  // session for the same reason the two links are: a set chosen after a login
+  // was issued must reach that phone on its next request, not on its next
+  // sign-in.
+  let tabs: unknown = null
   try {
     const account = await payload.findByID({
       collection: 'users',
@@ -118,6 +123,7 @@ export async function resolveAppAccessFor(
     memberLinkId = memberId == null ? null : String(memberId)
     const partner = relationId(row?.partner)
     partnerId = partner == null ? null : String(partner)
+    tabs = row?.tabs ?? null
     if (memberId != null) {
       memberDoc = (await payload.findByID({
         collection: 'members',
@@ -133,7 +139,7 @@ export async function resolveAppAccessFor(
   }
 
   return {
-    access: decideAppAccess(user, toAppMember(memberDoc), { partnerId }),
+    access: decideAppAccess(user, toAppMember(memberDoc), { partnerId, tabs }),
     memberLinkId,
   }
 }

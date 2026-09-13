@@ -20,6 +20,7 @@ function account(over: Partial<UserAccount> = {}): UserAccount {
     email: 'tatjana@moreska.eu',
     permissions: ['tickets', 'refunds'],
     shared: false,
+    tabs: [],
     partnerId: null,
     partnerName: null,
     memberId: null,

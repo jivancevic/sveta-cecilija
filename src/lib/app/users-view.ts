@@ -13,6 +13,7 @@
 // Pure and no Payload, so the search and the fallbacks are table-tested.
 
 import { PERMISSIONS, type Permission } from '@/lib/access/permissions'
+import type { AppScreenKey } from './screens'
 import { APP_STRINGS } from './strings'
 import type { UsersTarget } from './users-admin'
 
@@ -30,6 +31,12 @@ export interface UserAccount extends UsersTarget {
   partnerName: string | null
   memberId: string | null
   memberName: string | null
+  /**
+   * The three screens this account opens on, in order (#563), or empty for the
+   * generic order. Already filtered to keys the table still knows, because the
+   * seam reads it through `tabKeysOf`.
+   */
+  tabs: AppScreenKey[]
 }
 
 export interface PermissionChip {

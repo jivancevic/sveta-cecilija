@@ -1,0 +1,34 @@
+-- `users.tabs`: the three screens an account opens Cecilija on (#563).
+--
+-- A tab bar belongs to the ACCOUNT and not to the screen table's rank. Two
+-- people holding the same permission set open the app for different reasons,
+-- so a `users` holder picks up to three screens per account on Korisnici
+-- ("Tabovi"), and an account nobody has picked for reads the generic order in
+-- `src/lib/app/screens.ts`.
+--
+-- `jsonb`, not a `users_tabs` enum child table like `users_permissions`. The
+-- vocabulary here is the screen table itself, and that table grows with every
+-- screen ticket: an enum column would turn "add a screen" into a schema
+-- migration and a drift-gate failure on a ticket that never touched the
+-- database. The keys are validated where they are written
+-- (`PATCH /api/app/users/[id]/tabs`, which refuses a key the account does not
+-- unlock) and read leniently (`tabKeysOf`), so a key that stops existing
+-- shrinks a bar instead of breaking one.
+--
+-- Nullable, and NULL means the generic order. There is no default: "nobody has
+-- chosen for this account" is a real and permanent state, not a gap to fill.
+--
+-- Declared on the collection (`src/collections/Users.ts`), so Payload's own
+-- push adds it in development; this file is what adds it on a deployment,
+-- where push is off.
+--
+-- ORDERING: bootstrap-db.mjs applies db/schema/*.sql in plain filename order on
+-- every restart (db/schema/README.md). This file touches a table `00-base.sql`
+-- creates first and carries no foreign key, so it only has to keep sorting
+-- BEFORE `migrate-zz-drop-users-role.sql`, which must stay the last `migrate-*`
+-- file (#398, asserted by `src/lib/db-schema-safety.test.ts`). `zz-dh-`
+-- continues the `zz-d…` sequence after `zz-dg-` and does.
+--
+-- Guarded and safe to re-run: it adds a column and writes no row.
+
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS tabs jsonb;

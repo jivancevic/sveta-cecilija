@@ -8,7 +8,7 @@
 // imports no Payload and needs no entry in the repo guard's allow-list — the
 // first write-heavy screen for which that is true.
 //
-// The five dep factories exist so the five routes are four lines each. Every
+// The six dep factories exist so the six routes are four lines each. Every
 // one of them carries the caller twice over, for two different reasons: as a
 // `UsersCaller`, which the pure rules read (the self-lockout, the shared
 // refusal), and inside a `WriteCtx`, which the seam hands to Payload's local
@@ -18,9 +18,11 @@
 // is, and so a hook that wants the actor later finds it already flowing.
 
 import { getRepo } from '@/lib/repo'
+import { isActiveMoreskant } from './access'
 import type { WriteCtx } from '@/lib/repo/auth'
 import type { PartnerRecord } from '@/lib/repo/partners'
 import { eligibleCandidates, type LinkSelfCandidate } from './link-self'
+import { unlockedScreens, type AppScreenKey, type NavContext } from './screens'
 import type { AppRequestMeta } from './request-guard'
 import {
   generateTemporaryPassword,
@@ -34,6 +36,7 @@ import type {
   UsersCaller,
 } from './users-admin'
 import type { LinkUserDeps } from './users-link'
+import type { SetTabsDeps, TabsTarget } from './users-tabs'
 import type { UserAccount } from './users-view'
 
 const baseUrl = () => process.env.NEXT_PUBLIC_BASE_URL ?? ''
@@ -126,6 +129,78 @@ export function createResetPasswordDeps(
     setPassword: (id, password) => users.setPassword(id, password, ctx),
     issueResetToken: (target, ms) => users.issueResetToken(target, ms),
     temporaryPassword: () => generateTemporaryPassword(),
+  }
+}
+
+/** One screen an account may carry in its bar, named in Croatian (#563). */
+export interface TabOption {
+  key: AppScreenKey
+  label: string
+}
+
+/**
+ * The two conditional facts about an account, as the access decision reads
+ * them: `moreskant` needs a live Member, `partner` needs a Partner link.
+ *
+ * Resolved in one place so the picker on Korisnici and the PATCH behind it
+ * cannot disagree about which screens this account unlocks.
+ */
+async function navContextFor(account: UserAccount): Promise<NavContext> {
+  const member = account.memberId ? await getRepo().users.memberById(account.memberId) : null
+  return {
+    // One definition of "a live dancer", shared with the access decision. The
+    // Member arrives as a `LinkSelfMember`, whose roster fields are `unknown`
+    // by design (it is read straight off a document), and the decision only
+    // reads `active` and `isMoreskant`.
+    hasMember: isActiveMoreskant(
+      member && {
+        id: String(member.id),
+        active: member.active !== false,
+        isMoreskant: member.isMoreskant === true,
+      },
+    ),
+    hasPartner: account.partnerId !== null,
+  }
+}
+
+/** What the Tabovi sheet may offer for this account, in rank order. */
+export async function loadTabOptions(account: UserAccount): Promise<TabOption[]> {
+  const ctx = await navContextFor(account)
+  return unlockedScreens({ permissions: account.permissions }, ctx).map((screen) => ({
+    key: screen.key,
+    label: screen.label,
+  }))
+}
+
+/**
+ * The sixth write: which three screens an account opens on (#563).
+ *
+ * The target is loaded as the ACCESS decision sees it, not as the list does:
+ * `unlockedScreens` strips `moreskant` without a live Member and `partner`
+ * without a Partner link, so the two conditional facts are resolved here, once,
+ * from the same rows `decideAppAccess` reads. Without that, a bar could be
+ * given a screen the gate then refuses, which is the one failure this write can
+ * produce and the only reason it loads a second row at all.
+ */
+export function createSetTabsDeps(
+  request: AppRequestMeta,
+  caller: UsersCaller,
+  ctx: WriteCtx,
+): SetTabsDeps {
+  const users = getRepo().users
+  return {
+    request,
+    caller,
+    loadTarget: async (id): Promise<TabsTarget | null> => {
+      const account = await users.byId(id)
+      if (!account) return null
+      return {
+        id: account.id,
+        permissions: account.permissions,
+        ctx: await navContextFor(account),
+      }
+    },
+    save: (id, tabs) => users.setTabs(id, tabs, ctx),
   }
 }
 

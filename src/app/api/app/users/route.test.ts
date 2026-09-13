@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 
 /**
- * The gate in front of the five Korisnici routes (#510).
+ * The gate in front of the six Korisnici routes (#510, #563).
  *
  * This file matters more than the usual route test, because on this screen the
  * route IS the lock. `Users.permissions`, `Users.shared` and `Users.member` are
@@ -10,13 +10,14 @@ import { NextRequest } from 'next/server'
  * true`, which turns field access off. So a missing `requirePermission` here
  * would not fail loudly: Payload would drop the denied field and answer **200**
  * with nothing changed — or, on these routes, write it. The assertions below
- * are that the check is there on all five, and that no other permission in the
+ * are that the check is there on all six, and that no other permission in the
  * vocabulary gets past it.
  *
  * The business rules are elsewhere and unit-tested there: `users-admin.test.ts`
  * (the permission diff, the self-lockout, the shared-self refusal, the e-mail
  * rule), `users-account.test.ts` (the create and the two handovers),
- * `users-link.test.ts` (`taken` and `not-active`). What is here is the gate,
+ * `users-link.test.ts` (`taken` and `not-active`), `users-tabs.test.ts` (the
+ * bar: the self refusal, the locked screen, the three-key cap). What is here is the gate,
  * plus the 200 and 409 that prove the wiring reaches the rules at all.
  *
  * The seam is stubbed at `getRepo()`, which is the whole point of it: no
@@ -37,6 +38,7 @@ const ACCOUNT: {
   email: string | null
   permissions: string[]
   shared: boolean
+  tabs: string[]
   partnerId: string | null
   partnerName: string | null
   memberId: string | null
@@ -48,6 +50,7 @@ const ACCOUNT: {
   email: null,
   permissions: ['door'],
   shared: true,
+  tabs: [],
   partnerId: null,
   partnerName: null,
   memberId: null,
@@ -57,6 +60,7 @@ const ACCOUNT: {
 const byId = vi.fn(async (_id: string) => ACCOUNT as typeof ACCOUNT | null)
 const updatePermissions = vi.fn(async (_id: string, _p: readonly string[], _ctx?: unknown) => {})
 const setShared = vi.fn(async (_id: string, _shared: boolean, _ctx?: unknown) => {})
+const setTabs = vi.fn(async (_id: string, _tabs: readonly string[], _ctx?: unknown) => {})
 const setPassword = vi.fn(async (_id: string, _password: string, _ctx?: unknown) => {})
 const linkMember = vi.fn(async (_id: string, _memberId: string | null, _ctx?: unknown) => {})
 const linkPartner = vi.fn(async (_id: string, _partnerId: string | null, _ctx?: unknown) => {})
@@ -88,6 +92,7 @@ vi.mock('@/lib/repo', () => ({
       byId,
       updatePermissions,
       setShared,
+      setTabs,
       setPassword,
       linkMember,
       linkPartner,
@@ -107,6 +112,7 @@ import { PATCH as permissionsPatch } from './[id]/permissions/route'
 import { POST as sharedPost } from './[id]/shared/route'
 import { POST as resetPost } from './[id]/reset-password/route'
 import { POST as linkPost } from './[id]/link/route'
+import { PATCH as tabsPatch } from './[id]/tabs/route'
 
 function signIn(permissions: readonly string[] | null, over: Record<string, unknown> = {}) {
   if (permissions === null) auth.mockResolvedValue({ user: null })
@@ -150,6 +156,11 @@ const ROUTES = [
   [
     'POST /api/app/users/[id]/link',
     () => linkPost(request('/api/app/users/7/link', 'POST', { member: '18' }), { params }),
+  ],
+  [
+    'PATCH /api/app/users/[id]/tabs',
+    () =>
+      tabsPatch(request('/api/app/users/7/tabs', 'PATCH', { tabs: ['scan'] }), { params }),
   ],
 ] as const
 
@@ -202,7 +213,15 @@ describe.each(ROUTES)('%s', (_label, call) => {
   it('writes nothing when the gate refuses', async () => {
     signIn(['tickets'])
     await call()
-    for (const write of [updatePermissions, setShared, setPassword, linkMember, linkPartner, create]) {
+    for (const write of [
+      updatePermissions,
+      setShared,
+      setTabs,
+      setPassword,
+      linkMember,
+      linkPartner,
+      create,
+    ]) {
       expect(write).not.toHaveBeenCalled()
     }
   })
@@ -227,6 +246,26 @@ describe('the rules are reached, not re-implemented in the route', () => {
       { params },
     )
     expect(res.status).toBe(400)
+  })
+
+  it('409s the caller arranging their own bar (#563)', async () => {
+    signIn(['users'])
+    byId.mockResolvedValue({ ...ACCOUNT, id: '1', shared: false, permissions: ['users'] })
+    const res = await tabsPatch(request('/api/app/users/1/tabs', 'PATCH', { tabs: ['users'] }), {
+      params: Promise.resolve({ id: '1' }),
+    })
+    expect(res.status).toBe(409)
+    expect(setTabs).not.toHaveBeenCalled()
+  })
+
+  it('400s a tab the target account does not unlock (#563)', async () => {
+    signIn(['users'])
+    // The account holds `door` and nothing else: Financije is not its to carry.
+    const res = await tabsPatch(request('/api/app/users/7/tabs', 'PATCH', { tabs: ['finance'] }), {
+      params,
+    })
+    expect(res.status).toBe(400)
+    expect(setTabs).not.toHaveBeenCalled()
   })
 
   it('409s a Member another login already signs in as', async () => {

@@ -20,10 +20,21 @@ export interface SheetProps {
   open: boolean
   title?: React.ReactNode
   onClose: () => void
+  /**
+   * The sheet's answer, kept out of the scroll (#563).
+   *
+   * A sheet is short by design, but "short" is a phone in landscape away from
+   * taller than the screen: the first one with five options and a paragraph
+   * over it was 637 px on a 599 px viewport, with its title cut off the top and
+   * nothing to scroll. The handle, the title and this row stay put; everything
+   * between them scrolls. A sheet with no footer keeps its buttons in the
+   * scrolling half, which is right for one that has none to keep.
+   */
+  footer?: React.ReactNode
   children: React.ReactNode
 }
 
-export function Sheet({ open, title, onClose, children }: SheetProps) {
+export function Sheet({ open, title, onClose, footer, children }: SheetProps) {
   useEffect(() => {
     if (!open) return
     function onKey(event: KeyboardEvent) {
@@ -51,7 +62,13 @@ export function Sheet({ open, title, onClose, children }: SheetProps) {
       <div className="ui-sheet" role="dialog" aria-modal="true" data-no-pull>
         <div className="ui-sheet__grab" aria-hidden="true" />
         {title != null && <h2>{title}</h2>}
-        {children}
+        {/* `data-no-pull` again on the half that scrolls: the panel's own
+            already shields it (the gesture reads `closest()`), and saying it
+            here is what a reader moving this markup will see. */}
+        <div className="ui-sheet__body" data-no-pull>
+          {children}
+        </div>
+        {footer != null && <div className="ui-sheet__foot">{footer}</div>}
       </div>
     </>
   )
