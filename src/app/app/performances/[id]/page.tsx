@@ -347,7 +347,11 @@ export default async function PerformanceDetailPage({
 }) {
   const { id } = await params
   const { dio } = await searchParams
-  const { viewer, refusal } = await openScreen('performances')
+  // Two screens open this one evening (#565): Izvedbe for the blagajna and the
+  // voditelj, Moreška for the dancer, who since #565 does not unlock the Izvedbe
+  // list at all. Until #566 builds Stanje its own route, this page answers to
+  // both tabs, and the gate says so rather than each caller guessing.
+  const { viewer, refusal } = await openScreen(['performances', 'moreska'])
   if (refusal) return refusal
 
   const me = viewer.me
@@ -406,10 +410,17 @@ export default async function PerformanceDetailPage({
         ? { cls: 'app__chip--no', label: APP_STRINGS.home.answerNo }
         : { cls: 'app__chip--none', label: APP_STRINGS.home.answerNone }
 
+  // Back to the screen this reader actually holds. A `moreskant` login has no
+  // Izvedbe to go back to, and a link into the refusal page is worse than none.
+  const back = viewer.access.kind === 'ok' &&
+    viewer.access.screens.some((s) => s.key === 'performances')
+      ? { href: '/app/performances', label: APP_STRINGS.detail.back }
+      : { href: '/app/moreska', label: APP_STRINGS.screens.moreska }
+
   const intro = (
     <header className="app__detail-head">
-      <Link className="app__back" href="/app/performances">
-        ‹ {APP_STRINGS.detail.back}
+      <Link className="app__back" href={back.href}>
+        ‹ {back.label}
       </Link>
       <p className="app__detail-when">
         {formatPerformanceDateLong(p.date)}

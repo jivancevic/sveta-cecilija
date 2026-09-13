@@ -29,6 +29,13 @@ export interface RosterViewer {
   memberId?: string | null
   /** Holds `moreska`: headcount chips, the postava draft, no answer time lock. */
   voditelj?: boolean
+  /**
+   * Count the two armies per evening even for a reader who is not a voditelj.
+   * Moreška's hero draws the ArmyBar for a dancer (#565); Izvedbe does not ask
+   * for it, so the blagajna's schedule stays two queries lighter and free of
+   * headcounts it has no part in. Defaults to `voditelj`.
+   */
+  armyCounts?: boolean
 }
 
 export interface RosterRepo {

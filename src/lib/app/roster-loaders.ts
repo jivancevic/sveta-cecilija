@@ -341,6 +341,15 @@ export interface SeasonPerformancesDeps {
   memberId?: string | null
   /** True when the viewer holds `moreska`: no time lock on their own answer. */
   voditelj?: boolean
+  /**
+   * Whether to count the two armies per evening (`chip`). Defaults to
+   * `voditelj`, which is who needed them until #565: Moreška draws the ArmyBar
+   * on its hero for a DANCER too, and "are we enough tonight" is a question the
+   * whole roster reads (ADR-0024, visibility is society-wide). It stays an
+   * explicit flag rather than "always on" because it is two more queries, and
+   * Izvedbe must not start showing headcount chips to the blagajna.
+   */
+  armyCounts?: boolean
 }
 
 /**
@@ -399,9 +408,10 @@ export async function loadSeasonPerformances(
     armies,
   )
 
-  // The voditelj's headcount chips: two more queries, and only for the account
-  // that has a reason to see them. A dancer gets the numbers on the detail page.
-  if (deps.voditelj && rows.length > 0) {
+  // The headcount chips: two more queries, and only for a caller that asked.
+  // The voditelj's card chips (#423) and Moreška's ArmyBar (#565) are the same
+  // two numbers, counted once, by the one counting rule.
+  if ((deps.armyCounts ?? deps.voditelj === true) && rows.length > 0) {
     // Scoped to this season's performances: without the filter this reads every
     // answer ever recorded, which grows without bound one season at a time and
     // is thrown away immediately.

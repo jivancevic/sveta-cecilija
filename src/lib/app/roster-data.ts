@@ -10,7 +10,7 @@ import type { SeasonPerformances } from './roster-loaders'
 // three pages already call.
 
 export async function getSeasonPerformances(
-  viewer: { memberId?: string | null; voditelj?: boolean } = {},
+  viewer: { memberId?: string | null; voditelj?: boolean; armyCounts?: boolean } = {},
 ): Promise<SeasonPerformances> {
   return getRepo().roster.seasonPerformances(viewer)
 }
