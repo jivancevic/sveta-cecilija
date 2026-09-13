@@ -25,6 +25,7 @@
 
 import { formatEur } from './orders-view'
 import { remainingSeats } from '@/lib/tickets/seat-availability'
+import type { OfflineSaleErrorCode } from '@/lib/offline-sales/lines'
 import { VENUE_CAPACITY, type Venue } from '@/lib/venues'
 import { APP_STRINGS } from './strings'
 
@@ -110,6 +111,34 @@ export function seatsSold(s: PerformanceSales): number {
 }
 
 /**
+ * Seats held by a real `tickets` row: the three channels that produced an
+ * ORDER, and so a person who can be written to.
+ *
+ * This, not `seatsSold`, is what locks the venue field on Uredi (#502 review):
+ * a door line has no buyer and no address, so it is not what makes moving a
+ * house something people have to be told about. The route measures the same
+ * thing with `getActiveTicketCountForShow`, so the field a cashier sees
+ * disabled is exactly the one the server would refuse.
+ */
+export function ticketedSeats(s: PerformanceSales): number {
+  return s.online + s.partner + s.comp
+}
+
+/**
+ * Whether this viewer may open this evening at all.
+ *
+ * The mirror of the rule that keeps bookings off a sales list: a blagajna
+ * account that neither leads nor dances is not shown a ship call, so it must
+ * not be able to READ one by typing its id either. The detail page renders the
+ * client and the voditelj's note, which are roster facts about an evening that
+ * sells nothing — a `notFound()` is the honest answer and it matches what the
+ * list already says exists.
+ */
+export function mayOpenPerformance(opts: { roster: boolean; isPublic: boolean }): boolean {
+  return opts.roster || opts.isPublic
+}
+
+/**
  * Seats still sellable. May be NEGATIVE, and is left that way on purpose: an
  * oversold room is a miscounted door batch somebody has to notice, and a
  * `Math.max(0, …)` here would hide it behind a comfortable zero.
@@ -127,6 +156,30 @@ export function seatsRemaining(s: PerformanceSales): number {
 export function revenueCents(s: PerformanceSales): number {
   return s.ticketRevenueCents + s.offlineRevenueCents
 }
+
+/**
+ * Why the offline sales ledger refused, in a sentence the person can act on.
+ *
+ * `POST /api/shows/[id]/offline-sales` predates Cecilija and answers `/admin`
+ * too, so its `error` is developer English ("That correction takes back more
+ * adult tickets at €20.00 than were ever recorded"). It also answers a stable
+ * `code` (`OfflineSaleValidationError`), and these are the refusals a cashier
+ * standing at the entrance can FIX — a price above face value, a missing
+ * reason, a correction bigger than what went in. So the code is translated
+ * here and the rule stays the route's. An unknown code is the generic
+ * sentence: a new one must not render as `undefined`.
+ */
+export function ledgerErrorMessage(code: string | undefined): string {
+  const known: Record<string, string | undefined> = LEDGER_MESSAGES
+  return (code && known[code]) || APP_STRINGS.showActions.failed
+}
+
+/**
+ * The typing is the drift guard: a code added to or renamed in
+ * `OfflineSaleErrorCode` fails `tsc` here rather than reaching a cashier as
+ * "pokušaj ponovno".
+ */
+const LEDGER_MESSAGES: Record<OfflineSaleErrorCode, string> = APP_STRINGS.showActions.door.errors
 
 export interface ChannelCount {
   key: 'online' | 'partner' | 'comp' | 'door' | 'legacy'

@@ -3,7 +3,13 @@ import { notFound } from 'next/navigation'
 import { can } from '@/lib/access/permissions'
 import { getPerformanceDetail } from '@/lib/app/detail-data'
 import { loadPerformanceSales } from '@/lib/app/sales-data'
-import { performanceNumbers, salesBadges, showsRosterHalf } from '@/lib/app/sales-view'
+import {
+  mayOpenPerformance,
+  performanceNumbers,
+  salesBadges,
+  showsRosterHalf,
+  ticketedSeats,
+} from '@/lib/app/sales-view'
 import {
   compUnavailableReason,
   formatConfirmedAt,
@@ -361,6 +367,12 @@ export default async function PerformanceDetailPage({
   // postava it has no part in, two of them empty (#476: one screen, content by
   // `can()`). The list applies the same rule to decide which evenings it shows.
   const roster = showsRosterHalf(voditelj, me != null)
+
+  // A blagajna account that neither leads nor dances is not shown a booking in
+  // the list, so it must not reach one by typing an id either (#502 review):
+  // this page prints the client and the voditelj's note, which are roster facts
+  // about an evening that sells nothing.
+  if (!mayOpenPerformance({ roster, isPublic: p.isPublic })) notFound()
   const segment: DetailSegment = parseSegment(typeof dio === 'string' ? dio : undefined)
   const place = performancePlace(p)
   // A public evening is named by its kind; a booking is named by who booked it,
@@ -456,6 +468,7 @@ export default async function PerformanceDetailPage({
           {!p.cancelled && (
             <PublicPerformanceEditor
               performanceId={p.id}
+              venueLocked={ticketedSeats(sales) > 0}
               initial={{
                 kind: p.kind,
                 date: p.date,

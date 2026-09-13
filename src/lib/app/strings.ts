@@ -415,6 +415,17 @@ export const APP_STRINGS = {
     venue: 'Mjesto',
     isPublic: 'Javna izvedba, prodaje ulaznice',
     notPublicNoSales: 'Ova izvedba ne prodaje ulaznice, pa nema što pauzirati.',
+    /**
+     * The one field Uredi will not change once a ticket exists (#502 review).
+     *
+     * Moving a sold evening to another house is a thing every buyer has to
+     * hear about: *Preseli u zimsko* mails them and stamps `venue_changed_at`,
+     * and a quiet edit of the same column would move the room, tell nobody, and
+     * then hide the button that would have told them. So the edit is refused
+     * while there are seats sold, and offered on an evening that has none.
+     */
+    venueLocked:
+      'Ova izvedba ima prodane ulaznice, pa se mjesto mijenja radnjom "Preseli u zimsko", koja o tome obavijesti kupce.',
     missing: 'Ta izvedba ne postoji.',
     failed: 'Izvedba nije spremljena. Pokušaj ponovno.',
     rejected: 'Zahtjev nije prihvaćen. Pokušaj ponovno iz aplikacije.',
@@ -1508,6 +1519,31 @@ export const APP_STRINGS = {
       needsReason: 'Sniženi redak treba razlog.',
       confirm: 'Upiši',
       done: (total: number) => `Upisano. Novi zbroj: ${total}.`,
+      /**
+       * Why the ledger refused, in Croatian, keyed by the route's own
+       * `OfflineSaleValidationError` code.
+       *
+       * The route predates Cecilija and answers `/admin` too, so its `error`
+       * field is developer English ("That correction takes back more adult
+       * tickets at €20.00 than were ever recorded"). A cashier standing at the
+       * entrance needs the sentence in their own language and, more to the
+       * point, needs to know WHICH of their numbers to change. The generic
+       * "pokušaj ponovno" told them neither.
+       */
+      errors: {
+        EMPTY: 'Upiši barem jednu ulaznicu.',
+        BAD_TYPE: 'Nepoznata vrsta ulaznice.',
+        BAD_QUANTITY:
+          'Brojevi moraju biti cijeli, a ispravak ne smije izvedbu ostaviti s manje od nula prodanih ulaznica.',
+        BAD_PRICE: 'Cijena mora biti broj, i ne smije biti negativna.',
+        PRICE_ABOVE_FACE:
+          'Cijena je viša od pune cijene ulaznice. Odrasla je 20 €, dječja 10 €, a više se ne naplaćuje.',
+        DISCOUNT_REASON_REQUIRED:
+          'Sniženi redak treba razlog, na primjer "umirovljenici". Bez njega se kasnije ne zna zašto je ulaznica bila jeftinija.',
+        LABEL_TOO_LONG: 'Razlog sniženja je predug.',
+        OVER_CORRECTION:
+          'Ispravak vraća više ulaznica nego što je upisano po toj cijeni. Redak se ispravlja istom vrstom i istom cijenom po kojoj je upisan, a gore piše što je već upisano.',
+      },
     },
   },
 

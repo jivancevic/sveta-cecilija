@@ -1,13 +1,17 @@
 import { describe, expect, it } from 'vitest'
+import { APP_STRINGS } from './strings'
 import {
   channelSplit,
   emptySales,
+  ledgerErrorMessage,
+  mayOpenPerformance,
   performanceNumbers,
   salesBadges,
   salesRowView,
   seatsSold,
   seatsRemaining,
   showsRosterHalf,
+  ticketedSeats,
   type PerformanceSales,
 } from './sales-view'
 
@@ -128,6 +132,74 @@ describe('which halves of the screen a viewer gets', () => {
     // Which is also what keeps a ship call, with no numbers on it, off a sales
     // list (ADR-0024).
     expect(showsRosterHalf(false, false)).toBe(false)
+  })
+})
+
+describe('the seats that carry a buyer', () => {
+  it('counts the three ticketed channels and neither ledger source', () => {
+    // 80 + 12 + 4, worked by hand: the 30 at the door and the 6 from the old
+    // site produced no order, so there is nobody to write to about them.
+    expect(ticketedSeats(sales())).toBe(96)
+    expect(ticketedSeats(sales({ door: 300, legacy: 40 }))).toBe(96)
+  })
+
+  it('is zero on an evening that has only sold at the door', () => {
+    // Which is what lets Uredi still move that evening's house: there is no
+    // buyer the move would have to be announced to.
+    expect(ticketedSeats(sales({ online: 0, partner: 0, comp: 0, door: 58 }))).toBe(0)
+  })
+})
+
+describe('which evenings a viewer may open', () => {
+  it('opens a public evening for anybody the screen admits', () => {
+    expect(mayOpenPerformance({ roster: false, isPublic: true })).toBe(true)
+    expect(mayOpenPerformance({ roster: true, isPublic: true })).toBe(true)
+  })
+
+  it('opens a booking for the roster', () => {
+    expect(mayOpenPerformance({ roster: true, isPublic: false })).toBe(true)
+  })
+
+  it('hides a booking from a blagajna-only account, which is not shown one', () => {
+    // The detail page prints the client and the voditelj's note. An account
+    // whose list deliberately leaves bookings out must not reach one by typing
+    // an id.
+    expect(mayOpenPerformance({ roster: false, isPublic: false })).toBe(false)
+  })
+})
+
+describe('why the ledger refused', () => {
+  // The vocabulary is the route's, not this module's: every code the writer can
+  // throw has to have a sentence, or a cashier meets "pokušaj ponovno" for
+  // something they could have fixed in one tap.
+  const CODES = [
+    'EMPTY',
+    'BAD_TYPE',
+    'BAD_QUANTITY',
+    'BAD_PRICE',
+    'PRICE_ABOVE_FACE',
+    'DISCOUNT_REASON_REQUIRED',
+    'LABEL_TOO_LONG',
+    'OVER_CORRECTION',
+  ] as const
+
+  it('has a Croatian sentence for every code the ledger throws', () => {
+    for (const code of CODES) {
+      const message = ledgerErrorMessage(code)
+      expect(message, code).not.toBe(APP_STRINGS.showActions.failed)
+      expect(message.length, code).toBeGreaterThan(20)
+    }
+  })
+
+  it('names what to change rather than restating the rule', () => {
+    expect(ledgerErrorMessage('PRICE_ABOVE_FACE')).toContain('20 €')
+    expect(ledgerErrorMessage('DISCOUNT_REASON_REQUIRED')).toContain('umirovljenici')
+  })
+
+  it('falls back to the generic sentence for a code it has never seen', () => {
+    // A new code must render a sentence, never `undefined`.
+    expect(ledgerErrorMessage('SOMETHING_NEW')).toBe(APP_STRINGS.showActions.failed)
+    expect(ledgerErrorMessage(undefined)).toBe(APP_STRINGS.showActions.failed)
   })
 })
 

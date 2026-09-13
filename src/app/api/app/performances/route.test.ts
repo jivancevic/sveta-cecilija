@@ -30,8 +30,16 @@ const createPerformances = vi.fn(async (rows: readonly unknown[], _actor?: unkno
 }))
 const updatePerformance = vi.fn(async (_id: string, _patch: unknown, _actor?: unknown) => {})
 
+/** The venue lock's one read (#502 review): active tickets on the row. */
+const activeTicketRows = vi.fn(async (_sql: string, _params?: unknown[]) => ({
+  rows: [{ sold: 0 }] as Record<string, unknown>[],
+}))
+
 vi.mock('@/lib/repo', () => ({
-  getRepo: () => ({ shows: { performanceById, createPerformances, updatePerformance } }),
+  getRepo: () => ({
+    shows: { performanceById, createPerformances, updatePerformance },
+    db: { query: (sql: string, params?: unknown[]) => activeTicketRows(sql, params) },
+  }),
 }))
 
 import { POST as createPost } from './route'
@@ -120,6 +128,7 @@ beforeEach(() => {
   vi.clearAllMocks()
   performanceById.mockResolvedValue(BOOKING)
   createPerformances.mockResolvedValue({ created: ['2027-05-04'] })
+  activeTicketRows.mockResolvedValue({ rows: [{ sold: 0 }] })
 })
 
 describe.each([...VODITELJ_ONLY, ...SHARED])('%s', (_label, call) => {
@@ -269,5 +278,25 @@ describe('the box office gets past the gate and reaches the seam (#502)', () => 
       { time: '21:30', kind: 'redovna', venue: 'zimsko-kino' },
       { id: 1, permissions: ['tickets'] },
     )
+  })
+
+  it('refuses to move the house of a SOLD evening, end to end (#502 review)', async () => {
+    // Moving one mails every buyer and stamps `venue_changed_at`, which is
+    // `/api/shows/[id]/move-to-indoor` and not this route.
+    signIn(['tickets'])
+    performanceById.mockResolvedValue(REDOVNA)
+    activeTicketRows.mockResolvedValue({ rows: [{ sold: 137 }] })
+
+    const res = await editPatch(
+      request('/api/app/performances/9', 'PATCH', {
+        time: '21:00',
+        kind: 'redovna',
+        venue: 'zimsko-kino',
+      }),
+      { params: Promise.resolve({ id: '9' }) },
+    )
+
+    expect(res.status).toBe(409)
+    expect(updatePerformance).not.toHaveBeenCalled()
   })
 })

@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { APP_STRINGS } from '@/lib/app/strings'
 import { formatEur } from '@/lib/app/orders-view'
+import { ledgerErrorMessage } from '@/lib/app/sales-view'
 import { MAX_DISCOUNT_LABEL_LENGTH } from '@/lib/offline-sales/lines'
 import { Stepper } from '../../Stepper'
 
@@ -211,18 +212,36 @@ export function PerformanceActions({
     setNewDate('')
   }, [])
 
-  /** One request, and the one Croatian sentence it can fail with. */
-  async function call<T>(url: string, init?: RequestInit): Promise<T | null> {
+  /**
+   * One request, and the Croatian sentence it can fail with.
+   *
+   * `translate` is how a ported route gets a sentence a cashier can act on. The
+   * routes under `/api/shows/` predate Cecilija and answer `/admin` too, so
+   * their `error` field is developer English ("Show not found") and must never
+   * reach a phone; the default is therefore one generic sentence. The ledger
+   * is the exception and the reason this parameter exists: its refusals are the
+   * ones the person can FIX (a price above face value, a missing reason, a
+   * correction that takes back more than went in), and "pokušaj ponovno" tells
+   * them neither what was wrong nor which number to change. It answers a stable
+   * `code`, so the wording is ours and the rule stays the route's.
+   */
+  async function call<T>(
+    url: string,
+    init?: RequestInit,
+    translate?: (body: { error?: string; code?: string } | null) => string,
+  ): Promise<T | null> {
     setBusy(true)
     setError(null)
     try {
       const res = await fetch(url, init)
-      const body = (await res.json().catch(() => null)) as (T & { error?: string }) | null
+      const body = (await res.json().catch(() => null)) as
+        | (T & { error?: string; code?: string })
+        | null
       if (!res.ok) {
-        // The three ported routes predate Cecilija and answer `/admin` too, so
-        // their `error` field is developer English ("Show not found") and must
-        // never reach a phone. Only the `/app` routes speak for themselves.
-        setError(url.startsWith('/api/app/') ? (body?.error ?? S.failed) : S.failed)
+        if (translate) setError(translate(body))
+        // Only the `/app` routes, whose refusals are APP_STRINGS already, are
+        // allowed to speak for themselves.
+        else setError(url.startsWith('/api/app/') ? (body?.error ?? S.failed) : S.failed)
         return null
       }
       return body as T
@@ -233,6 +252,7 @@ export function PerformanceActions({
       setBusy(false)
     }
   }
+
 
   async function open(next: Exclude<Sheet, null>) {
     setSheet(next)
@@ -365,6 +385,7 @@ export function PerformanceActions({
     const body = await call<{ counter: number }>(
       `/api/shows/${performanceId}/offline-sales`,
       json({ source, lines: batch }),
+      (body) => ledgerErrorMessage(body?.code),
     )
     if (!body) return
     setAdults(0)

@@ -1004,9 +1004,19 @@ else.**
   buyer and mails them and is `POST /api/shows/[id]/cancel` (#497), not a
   harder version of this. The mirror holds too: a `tickets` holder is refused a
   booking, which is nobody's ticket.
-- **Uredi on a public row carries no date.** Moving a public evening mails every
-  buyer and reissues every ticket (#379), so it is *Pomakni datum* with a
-  preview and a test send, not a field beside the start time.
+- **Uredi on a public row carries no date, and no HOUSE once a ticket is sold.**
+  Moving a public evening's date mails every buyer and reissues every ticket
+  (#379), so it is *Pomakni datum* with a preview and a test send, not a field
+  beside the start time. The venue is the same shape of fact: moving a sold
+  evening to another house is *Preseli u zimsko*, which mails every buyer and
+  stamps `venue_changed_at` — and that stamp is also what makes the button
+  disappear afterwards, so a quiet edit of the column would move the room, tell
+  nobody, and then hide the only control that would have told them. So the
+  handler asks `activeTickets` when and only when the house is changing, and
+  refuses with a **409** if there are any: the request is well-formed and the
+  row IS the blagajna's, it is simply in a state where this is the wrong way to
+  do it. An evening that has sold nothing (or only at the door, where there is
+  no buyer to write to) still moves freely, because nobody has to be told.
 - **A cancelled booking is not editable, and that is a 409.** The request is
   well-formed and the row is the voditelj's; it is simply in a state where the
   edit is not allowed, the same shape of refusal as a confirmed postava. The
@@ -1056,7 +1066,10 @@ empty ones dropped) and flags for paused, cancelled, moved and rescheduled. A
 viewer who is neither a voditelj nor a dancer gets the ticketed schedule only:
 a ship call sells nothing, and a row with no numbers on a sales screen is noise.
 `showsRosterHalf()` (`src/lib/app/sales-view.ts`) states that line once and both
-the list and the detail read it.
+the list and the detail read it. The detail also **`notFound()`s a booking** for
+such a viewer (`mayOpenPerformance()`): the page prints the client and the
+voditelj's note, and an evening the list deliberately leaves out must not be
+reachable by typing its id.
 
 **Where the numbers come from.** Nothing is re-derived (`sales-data.ts`,
 `sales-view.ts`):
@@ -1096,7 +1109,7 @@ behaviour, the idempotency and the audit writes stay where they are:
 | Pauziraj / Nastavi online prodaju | `POST /api/app/performances/[id]/pause` | **The one new route.** #366 shipped the pause as a checkbox on the Shows form, so the only way to flip it was the Backoffice. Stops ONLINE checkout only; the sheet says so, because "pauzirano" must not read as "cancelled" |
 | Pomakni datum | `GET`/`POST /api/shows/[id]/reschedule` | preview → "pošalji probni mail meni" → confirm (#379) |
 | Preseli u zimsko | `GET`/`POST /api/shows/[id]/move-to-indoor` | preview → confirm; offered only on a Ljetno row that has not already moved (#94) |
-| Prodaja na vratima | `GET`/`POST /api/shows/[id]/offline-sales` | door and legacy lines, negative corrections, a discount label required below face value; **allowed on a past evening**, because a season is backfilled after the fact (ADR-0025). The GET's existing lines are shown while a correction is typed, which is the safety half: a correction from memory can land the right seats and the wrong money |
+| Prodaja na vratima | `GET`/`POST /api/shows/[id]/offline-sales` | door and legacy lines, negative corrections, a discount label required below face value; **allowed on a past evening**, because a season is backfilled after the fact (ADR-0025). The GET's existing lines are shown while a correction is typed, which is the safety half: a correction from memory can land the right seats and the wrong money. Its refusals are **translated by code**, not by message: the route answers a stable `OfflineSaleValidationError` code and `ledgerErrorMessage()` turns it into the Croatian sentence naming what to change, because these are the refusals a cashier at the entrance can fix. The mapping is typed `Record<OfflineSaleErrorCode, string>`, so a new code fails `tsc` rather than reaching them as "pokušaj ponovno" |
 | Narudžbe za ovu izvedbu | link to `/app/orders?show=<id>` | #501's filter, in the query string |
 | Otkaži izvedbu | `GET`/`POST /api/shows/[id]/cancel` | `refunds` for the confirm, `tickets` or `refunds` for the preview. The sheet prints the money, the seats and the buyers, warns about Brevo's daily ceiling, and on a partial run says the thing #497 designed for: **press it again**, it skips what is done |
 

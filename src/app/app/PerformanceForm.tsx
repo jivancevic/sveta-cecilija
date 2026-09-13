@@ -163,12 +163,20 @@ function PublicFields({
   onChange,
   disabled,
   withDate,
+  venueLocked,
 }: {
   idPrefix: string
   values: PublicFormValues
   onChange: (next: PublicFormValues) => void
   disabled: boolean
   withDate: boolean
+  /**
+   * Seats have been sold, so the house is not a field any more (#502 review).
+   * The select goes read-only and says which action moves it, because the route
+   * refuses the change with the same sentence and a control that looks editable
+   * until the save is a control that lies.
+   */
+  venueLocked?: boolean
 }) {
   const set = <K extends keyof PublicFormValues>(key: K, value: PublicFormValues[K]) =>
     onChange({ ...values, [key]: value })
@@ -225,7 +233,7 @@ function PublicFields({
           id={`${idPrefix}-venue`}
           className="app__select"
           value={values.venue}
-          disabled={disabled}
+          disabled={disabled || venueLocked === true}
           onChange={(e) => set('venue', e.target.value as Venue)}
         >
           {VENUES.map((venue) => (
@@ -234,6 +242,9 @@ function PublicFields({
             </option>
           ))}
         </select>
+        {venueLocked && (
+          <i className="app__perf-locked">{APP_STRINGS.performance.venueLocked}</i>
+        )}
       </label>
     </div>
   )
@@ -393,9 +404,12 @@ export function AddPerformance({
 export function PublicPerformanceEditor({
   performanceId,
   initial,
+  venueLocked,
 }: {
   performanceId: string
   initial: PublicFormValues
+  /** Active tickets exist: the house moves through "Preseli u zimsko" instead. */
+  venueLocked: boolean
 }) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
@@ -435,6 +449,7 @@ export function PublicPerformanceEditor({
             onChange={setValues}
             disabled={busy}
             withDate={false}
+            venueLocked={venueLocked}
           />
           <div className="app__perf-actions">
             <button type="button" className="app__button" disabled={busy} onClick={save}>

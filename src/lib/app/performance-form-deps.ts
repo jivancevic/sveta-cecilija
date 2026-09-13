@@ -9,6 +9,7 @@
 
 import { permissionsOf } from '@/lib/access/permissions'
 import { getRepo } from '@/lib/repo'
+import { getActiveTicketCountForShow } from '@/lib/tickets/sold-seats'
 import type { PerformanceFormDeps } from './performance-form'
 
 /**
@@ -19,9 +20,14 @@ import type { PerformanceFormDeps } from './performance-form'
  * never end up being two different people.
  */
 export function performanceFormDeps(actor: unknown): Omit<PerformanceFormDeps, 'request'> {
-  const shows = getRepo().shows
+  const repo = getRepo()
+  const shows = repo.shows
   return {
     permissions: permissionsOf(actor as { permissions?: unknown }),
+    // The venue lock's one question (#502 review), through the SAME counter the
+    // seat model uses everywhere else: one active ticket is one person who
+    // would have to be told the room moved.
+    activeTickets: (id) => getActiveTicketCountForShow(repo.db.query, id),
     loadPerformance: (id) => shows.performanceById(id),
     createPerformances: (rows) => shows.createPerformances(rows, actor),
     updatePerformance: (id, patch) => shows.updatePerformance(id, patch, actor),

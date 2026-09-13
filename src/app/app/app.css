@@ -3874,6 +3874,20 @@ a.app__ob-link {
   opacity: 0.75;
 }
 
+/* Why a field is read-only, under the field (#502 review). A disabled control
+   with no explanation reads as a bug; this one names the action that does the
+   job instead. */
+.app__perf-locked {
+  display: block;
+  margin-top: 6px;
+  font-style: normal;
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
 .app__perf-field .app__select {
   display: block;
   width: 100%;

@@ -57,6 +57,15 @@ export interface PerformanceFormDeps {
    * access never runs (CLAUDE.md).
    */
   permissions: readonly Permission[]
+  /**
+   * Active tickets on one performance, for the venue lock (#502 review).
+   *
+   * Asked only when Uredi is about to change the HOUSE of a public row, so the
+   * common edit (a typo in the start time) costs no extra query. Active
+   * tickets, not seats: a door line has no buyer to mail, so it is not what
+   * makes a venue change a thing people have to be told about.
+   */
+  activeTickets: (id: string) => Promise<number>
   /** The row the action is about; null when the id is not a performance. */
   loadPerformance: (id: string) => Promise<PerformanceRow | null>
   /** `getRepo().shows.createPerformances` — the ONE shared writer. */
@@ -219,6 +228,21 @@ export async function handleEditPerformance(
 
     const parsed = parsePublicPerformanceEdit(body)
     if (!parsed.ok) return refuse(400, parsed.error)
+
+    // The house of a SOLD evening is not a field (#502 review). Moving one is
+    // `/api/shows/[id]/move-to-indoor`: it mails every buyer and stamps
+    // `venue_changed_at`. Changing the column here instead would move the room,
+    // tell nobody, and then hide the button that would have told them, because
+    // "Preseli u zimsko" is only offered on a Ljetno row. A 409 rather than a
+    // 403: the request is well-formed and the row IS theirs, it is simply in a
+    // state where this particular edit is the wrong way to do it — the same
+    // shape of refusal a cancelled row gets, and the message names the action
+    // that is the right way.
+    if (parsed.patch.venue !== found.row.venue) {
+      if ((await deps.activeTickets(found.row.id)) > 0) {
+        return refuse(409, APP_STRINGS.performance.venueLocked)
+      }
+    }
 
     await deps.updatePerformance(found.row.id, parsed.patch)
     return ok()

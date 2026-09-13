@@ -71,12 +71,16 @@ function deps(
   request: AppRequestMeta = OK_REQUEST,
   /** The caller's set. The default is the voditelj, whose half this file began as. */
   permissions: Permission[] = ['moreska'],
+  /** Active tickets on the row, for the venue lock (#502 review). */
+  sold = 0,
 ) {
   const created: { dateStr: string; data: Record<string, unknown> }[][] = []
   const updated: { id: string; patch: PerformancePatch }[] = []
+  const activeTickets = vi.fn(async () => sold)
   const d: PerformanceFormDeps = {
     request,
     permissions,
+    activeTickets,
     loadPerformance: vi.fn(async () => row),
     createPerformances: async (rows) => {
       created.push([...rows])
@@ -86,7 +90,7 @@ function deps(
       updated.push({ id, patch })
     },
   }
-  return { deps: d, created, updated }
+  return { deps: d, created, updated, activeTickets }
 }
 
 describe('handleCreatePerformance', () => {
@@ -366,6 +370,47 @@ describe('Uredi, on a PUBLIC performance', () => {
     expect(updated).toEqual([
       { id: '9', patch: { time: '21:30', kind: 'redovna', venue: 'zimsko-kino' } },
     ])
+  })
+
+  // The money-and-buyer rule (#502 review). Moving a SOLD evening to another
+  // house is `/api/shows/[id]/move-to-indoor`: it mails every buyer and stamps
+  // `venue_changed_at`. A quiet edit of the same column would move the room,
+  // tell nobody, and then hide the button that would have told them, because
+  // "Preseli u zimsko" only shows on a Ljetno row.
+  it('refuses to move a house once a ticket has been sold', async () => {
+    const { deps: d, updated } = deps(REDOVNA, OK_REQUEST, ['tickets'], 1)
+    const res = await handleEditPerformance('9', EDIT, d)
+
+    expect(res.status).toBe(409)
+    expect(updated).toEqual([])
+  })
+
+  it('still lets the hour and the kind change on that sold evening', async () => {
+    const { deps: d, updated } = deps(REDOVNA, OK_REQUEST, ['tickets'], 40)
+    const res = await handleEditPerformance(
+      '9',
+      { time: '21:30', kind: 'koncert', venue: 'ljetno-kino' },
+      d,
+    )
+
+    expect(res.status).toBe(200)
+    expect(updated).toEqual([
+      { id: '9', patch: { time: '21:30', kind: 'koncert', venue: 'ljetno-kino' } },
+    ])
+  })
+
+  it('moves the house freely while nothing has been sold', async () => {
+    const { deps: d, updated } = deps(REDOVNA, OK_REQUEST, ['tickets'], 0)
+    expect((await handleEditPerformance('9', EDIT, d)).status).toBe(200)
+    expect(updated[0]!.patch.venue).toBe('zimsko-kino')
+  })
+
+  it('does not even ask how many tickets there are when the house is unchanged', async () => {
+    // One less query on the common edit (a typo in the start time), and it is
+    // also what keeps a sold evening editable at all.
+    const { deps: d, activeTickets } = deps(REDOVNA, OK_REQUEST, ['tickets'], 12)
+    await handleEditPerformance('9', { ...EDIT, venue: 'ljetno-kino' }, d)
+    expect(activeTickets).not.toHaveBeenCalled()
   })
 
   it('never writes the date: moving a public evening is its own action', async () => {
