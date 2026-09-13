@@ -214,15 +214,6 @@ async function seasonPromoCodes(query: PoolQuery, season: number): Promise<Promo
   }))
 }
 
-/** The calendar year of the earliest performance ever recorded, for the dropdown. */
-async function firstSeason(query: PoolQuery): Promise<number | null> {
-  const res = await query(`SELECT MIN(date) AS first FROM shows`)
-  const first = res.rows[0]?.first
-  if (first == null) return null
-  const year = Number(isoDate(first).slice(0, 4))
-  return Number.isInteger(year) && year > 1900 ? year : null
-}
-
 /** pg hands `shows.date` back as a JS Date (noon UTC) or a string; normalise. */
 function isoDate(value: unknown): string {
   if (typeof value === 'string') return value.slice(0, 10)
@@ -241,7 +232,10 @@ export async function loadFinanceScreen(params: {
 
   const today = params.now ?? new Date()
   const current = seasonYear(today)
-  const seasons = seasonOptions(await firstSeason(query), current)
+  // The same lower bound Statistika's picker uses (#508): the two season
+  // screens must offer the same years, or "2024" existing on one and not the
+  // other reads as missing data rather than as two different pickers.
+  const seasons = seasonOptions(await repo.stats.firstSeason(), current)
   const season = resolveSeason(params.season, current, seasons)
 
   const now = monthKeyInZagreb(today.toISOString())
