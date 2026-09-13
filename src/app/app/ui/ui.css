@@ -730,8 +730,8 @@ button.ui-army:active {
   transform: translateX(-50%) translateY(10px);
   padding: 10px 16px;
   border-radius: var(--rPill);
-  background: #1a140c;
-  color: #f5f2ec;
+  background: var(--toast);
+  color: var(--onToast);
   font-size: 14px;
   font-weight: 500;
   opacity: 0;

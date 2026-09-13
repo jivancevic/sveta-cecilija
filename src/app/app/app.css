@@ -46,6 +46,8 @@
   --barBg: rgba(255, 255, 255, 0.92); /* the tab bar and any floating bar */
   --markEdge: transparent; /* a crni disc needs no edge on paper */
   --thumb: #1a140c; /* the pill behind the active tab */
+  --toast: #1a140c; /* the one surface that inverts the page it sits on */
+  --onToast: #f5f2ec;
 
   --shadowCard: 0 2px 4px rgba(26, 20, 12, 0.05), 0 18px 36px -14px rgba(26, 20, 12, 0.26);
   --shadowHero: 0 2px 4px rgba(26, 20, 12, 0.05), 0 22px 44px -18px rgba(26, 20, 12, 0.32);
@@ -141,6 +143,9 @@ html:has(> .app) {
   --barBg: rgba(29, 23, 16, 0.92);
   --markEdge: rgba(217, 212, 204, 0.4);
   --thumb: rgba(217, 171, 60, 0.16);
+  /* Night's toast cannot be ink on ink: it lifts off the page instead. */
+  --toast: #3b322a;
+  --onToast: #f5f2ec;
   --shadowCard: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 14px 30px -12px rgba(0, 0, 0, 0.7);
   --shadowHero: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 22px 44px -18px rgba(0, 0, 0, 0.8);
   --shadowBar: 0 10px 30px -10px rgba(0, 0, 0, 0.8);
@@ -449,8 +454,8 @@ html:has(> .app) {
   left: 50%;
   bottom: calc(var(--tabH) + env(safe-area-inset-bottom, 0px) + 28px);
   transform: translateX(-50%) translateY(10px);
-  background: #1a140c;
-  color: #f5f2ec;
+  background: var(--toast);
+  color: var(--onToast);
   padding: 10px 16px;
   border-radius: var(--rPill);
   font-size: 14px;
@@ -3088,6 +3093,10 @@ a.app__ob-link {
   .app {
     /* Density is a breakpoint, not a toggle (#490). */
     --rowY: 6px;
+    /* There is no bar at this width, so everything that clears one has nothing
+       to clear: the toast and the answer bar sit at the bottom of the window
+       rather than 64px above it, and neither of them has to know why. */
+    --tabH: 0px;
   }
 
   .app__frame {
