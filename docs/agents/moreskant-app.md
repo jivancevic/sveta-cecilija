@@ -2030,3 +2030,70 @@ in `src/lib/comp/comp-report.ts` the way every raw statement does. There is no
 comp WRITE in the seam and there must not be: issuing and voiding go through the
 two existing routes, which take the per-show advisory lock and the `storno` void
 primitive, and a second writer would be a second way to spend a seat.
+
+## The skin: tokens, shapes and the shell (#562)
+
+The visual redesign (map #560) lands as one system ticket and then screen by
+screen. T1 is the system; everything under it is a screen's own ticket.
+
+**Three files, and nothing else decides how Cecilija looks.**
+
+| | |
+|---|---|
+| `src/app/app/app.css`, the `.app` block | the tokens: colour, shadow, radius, type, motion. Light on `.app`, night on `.app[data-theme="dark"]` |
+| `src/app/app/ui/` | the shared shapes, fifteen of them, plus `ui.css` |
+| `src/lib/app/screens.ts` | which screens exist, unchanged by the redesign |
+
+**Never hard-code a value a token names.** A theme re-points the token; a hex
+does not follow it. The same rule is why the two night islands (#490) re-point
+tokens rather than restating colours.
+
+**The night skin ships switched off.** The values are all there under
+`.app[data-theme="dark"]`; the switch is T8, in Više · Profil, and it sets that
+one attribute. There is deliberately no `prefers-color-scheme`: a phone's system
+setting does not know whether its owner is at a rehearsal or at the door. To
+look at it before T8, set `data-theme="dark"` on the `<body>` by hand.
+
+**Four token names and two font variables are aliases, and they are meant to
+die.** `--frame`, `--cardEdge`, `--radius` and `--rowY` were the old contract
+and are still spelled across the screens the redesign has not reached;
+`--font-inter` and `--font-ibm-plex-mono` are `next/font`'s, re-declared on
+`.app` so that body copy is the system stack rather than Labrada without every
+rule that names them being rewritten. Each screen ticket deletes its own
+spellings. When the last one goes, so do the aliases.
+
+**A shape goes in `src/app/app/ui/`, or it does not exist.** Button, Card, Hero,
+Tile, ListRow, Chip, DateDisc, Note, Section, ArmyBar, RoleMark, Sheet, Toast,
+Ring, Podium. A screen COMPOSES them; a screen does not restyle them, and a
+screen that needs a sixteenth shape brings it here rather than inventing one
+beside itself — inventing beside itself is exactly how the app ended up with
+five kinds of button and no rule about which was primary. Only `Sheet` is a
+client component; the rest render on the server.
+
+Two rules travel with the shapes:
+
+- **One primary button per screen.** If a screen wants two, the screen has two
+  jobs. Red is destructive, always last, never without a confirmation.
+- **The uppercase micro-label survives only as a section heading.** On a button
+  or a chip it said nothing and made the whole app read as a printed programme.
+
+**The shell.** The document never scrolls: `.app` (the `<body>`) is the scroll
+container and `html` is `overflow: hidden`, which is what lets the tab bar be a
+pill fixed to the viewport that no rubber-band can move. Two consequences worth
+knowing before debugging anything:
+
+- the top of the scroll is `document.body.scrollTop`, **not**
+  `document.scrollingElement.scrollTop`, which stays 0 forever here;
+- `PullToRefresh` adds `will-change: transform` for the length of the gesture
+  and takes it off again. Left standing it would make that wrapper the
+  containing block of every `position: fixed` descendant — the scanner overlay,
+  a sheet — for the whole life of the screen.
+
+Pull to refresh arms only at the top of the scroll and only downwards, calls
+`router.refresh()`, and does nothing at all under `prefers-reduced-motion`.
+
+**The laptop** hides the bar, sets `--tabH: 0` so everything that clears a bar
+has nothing to clear, and offers two layout classes for a screen to opt into:
+`.app__col` (760px, a list or a form) and `.app__cols` (a detail: what happened
+on the left, what you can do on the right).
+

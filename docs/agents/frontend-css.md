@@ -2,6 +2,8 @@
 
 Companion to the **CSS architecture** section in `CLAUDE.md` (which holds the scope map and breakpoints). This file collects the gotchas and the conventions detail.
 
+**This file is the PUBLIC site.** Cecilija (`/app`) has its own scope, its own tokens and its own shared shapes, and none of the rules below apply to it: see "The skin: tokens, shapes and the shell" in `moreskant-app.md`.
+
 ## CSS gotchas
 
 - **`backdrop-filter` pitfall:** Never put `backdrop-filter` on an element that starts at `opacity: 0`. Browsers (especially Safari) apply the filter regardless of opacity, leaking the effect before the animation starts. Use background overlays only for elements that animate in from invisible.
