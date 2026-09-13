@@ -2,6 +2,7 @@ import { APIError, type CollectionConfig } from 'payload'
 import { PERMISSIONS, can, type Permission } from '@/lib/access/permissions'
 import { assertUserEmailPolicy, UserEmailRequiredError } from '@/lib/access/user-email-policy'
 import { userUpdateAccess } from '@/lib/access/user-self-update'
+import { MAX_TABS, isTabKey } from '@/lib/app/screens'
 import { ADMIN_LANG_COOKIE, seedAdminLangCookie } from '@/lib/admin-i18n'
 
 type ReqUser = { id?: string | number; permissions?: unknown; shared?: unknown } | null | undefined
@@ -184,6 +185,50 @@ export const Users: CollectionConfig = {
         // survives, so "superadmin" is only shorthand for holding every
         // permission. The bootstrap migration gives the developer's row `users`
         // before anyone logs in, so there is no chicken-and-egg.
+        read: ({ req }) => usersHolder(req.user as ReqUser),
+        update: ({ req }) => usersHolder(req.user as ReqUser),
+        create: ({ req }) => usersHolder(req.user as ReqUser),
+      },
+    },
+    // The three screens this account's tab bar carries, in order (#563).
+    //
+    // A bar belongs to the ACCOUNT, not to the rank: Tatjana opens Cecilija on
+    // Narudžbe and Luka on the dance, and both of them hold `tickets`. A `users`
+    // holder picks them on Korisnici ("Tabovi"), nobody picks their own, and an
+    // empty value is the generic order in `lib/app/screens.ts` rather than a
+    // missing bar.
+    //
+    // **A `json` column rather than a `select hasMany`**, which is what
+    // `permissions` is and what this would otherwise copy. The vocabulary here
+    // is the screen table, and that table grows with every screen ticket: an
+    // enum column would make "add a screen" a schema migration and a drift-gate
+    // failure on a ticket that never touched the database. The keys are
+    // validated where they are written — `POST`ed through
+    // `/api/app/users/[id]/tabs`, which refuses a key the account does not
+    // unlock — and read leniently by `tabKeysOf`, so a key that stops existing
+    // shrinks a bar instead of breaking one.
+    //
+    // Field-locked to a `users` holder like `permissions`: a bar is not access,
+    // but it is somebody else's decision about this account, and the same rule
+    // keeps the Backoffice from being a second way to make it.
+    {
+      name: 'tabs',
+      type: 'json',
+      label: { en: 'Tabs', hr: 'Tabovi' },
+      admin: {
+        description: {
+          en: 'Up to three screen keys, in bar order. Edited in Cecilija (Korisnici → Tabovi); empty means the generic order.',
+          hr: 'Najviše tri ključa ekrana, redom. Uređuje se u Ceciliji (Korisnici → Tabovi); prazno znači zadani redoslijed.',
+        },
+      },
+      validate: (value: unknown) => {
+        if (value == null) return true
+        if (!Array.isArray(value)) return 'Tabs must be a list of screen keys.'
+        if (value.length > MAX_TABS) return `At most ${MAX_TABS} tabs.`
+        if (!value.every((key) => isTabKey(key))) return 'Unknown screen key.'
+        return true
+      },
+      access: {
         read: ({ req }) => usersHolder(req.user as ReqUser),
         update: ({ req }) => usersHolder(req.user as ReqUser),
         create: ({ req }) => usersHolder(req.user as ReqUser),

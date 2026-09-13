@@ -1670,6 +1670,7 @@ export const APP_STRINGS = {
       linkPartner: 'Poveži partnera',
       linkMember: 'Poveži člana',
       shared: 'Dijeljeni račun',
+      tabs: 'Tabovi',
       confirm: 'Potvrdi',
       cancel: 'Odustani',
       working: 'Spremam...',
@@ -1696,6 +1697,39 @@ export const APP_STRINGS = {
       /** The other half of the rule above: nobody grants `users` to a shared login. */
       sharedUsers:
         'Zajednički račun ne može imati dozvolu Korisnici. Prvo makni oznaku zajedničkog računa.',
+    },
+
+    /**
+     * The sixth action (#563): which three screens this account opens on.
+     *
+     * The copy says what a tab IS, because the word is the reader's own and the
+     * mistake it prevents is thinking a tab grants something. Every refusal
+     * names the repair: a locked screen names the screen, and the permission it
+     * would take is one sheet away in Dozvole.
+     */
+    tabs: {
+      title: 'Tabovi',
+      body: 'Odaberi do tri ekrana koja stoje u traci ovog računa, redom kojim ih dodaješ. Prazno znači zadani redoslijed.',
+      /** The line under the chips: Više is not a choice and never was. */
+      note: 'Više je uvijek zadnji tab i ne troši mjesto.',
+      /** "2 od 3 odabrana": what is still free, without a second sentence. */
+      count: (chosen: number, max: number) => `${chosen} od ${max} odabrano`,
+      /** The order a bar reads in, so the chips are not just a set. */
+      order: 'Redoslijed u traci',
+      /** The chip that stands where the order would be when nothing is chosen. */
+      none: 'Zadani redoslijed',
+      empty: 'Ovaj račun ne otvara nijedan ekran, pa nema što staviti u traku.',
+      save: 'Spremi',
+      saved: 'Tabovi su spremljeni.',
+      cleared: 'Traka je vraćena na zadani redoslijed.',
+      failed: 'Spremanje tabova nije uspjelo. Pokušaj ponovno.',
+      invalid: 'Nepoznat ekran.',
+      duplicate: 'Isti ekran je odabran dvaput.',
+      tooMany: (max: number) => `Najviše ${max} taba.`,
+      locked: (screen: string) =>
+        `${screen} ovaj račun ne otvara. Prvo mu dodaj dozvolu u Dozvolama.`,
+      /** Q52: a bar is somebody else's decision about this account. */
+      notSelf: 'Vlastite tabove mijenja drugi korisnik s dozvolom Korisnici.',
     },
 
     create: {

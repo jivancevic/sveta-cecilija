@@ -12,8 +12,8 @@
 // Two consequences shape the shape:
 //
 //  1. **No generic `update`.** There is one method per decision — a permission
-//     set, the shared flag, a partner link, a member link, a password — so a
-//     new caller cannot write a field nobody reviewed. `MembersRepo.create` is
+//     set, the shared flag, the chosen tabs, a partner link, a member link, a
+//     password — so a new caller cannot write a field nobody reviewed. `MembersRepo.create` is
 //     name-only for the same reason: the signature is the refusal.
 //  2. **Never a Payload document.** A Users row carries `salt`, `hash`, the
 //     reset token and the session list. `UserAccount` is an explicit
@@ -28,6 +28,7 @@
 // is not in this path at all: it fires on a login, not on a write.)
 
 import type { Permission } from '@/lib/access/permissions'
+import type { AppScreenKey } from '@/lib/app/screens'
 import type { LinkSelfMember } from '@/lib/app/link-self'
 import type { NewUserData } from '@/lib/app/users-account'
 import type { UserAccount } from '@/lib/app/users-view'
@@ -60,6 +61,15 @@ export interface UsersRepo {
 
   /** ADR-0022's only marker of a login several people hold. */
   setShared(id: string, shared: boolean, ctx: WriteCtx): Promise<void>
+
+  /**
+   * The three screens this account opens on, in order (#563).
+   *
+   * Replaced whole, like the permission set, and for the same reason: a bar is
+   * one decision with an order in it, not three independent flags. The rules
+   * that decide it are in `users-tabs.ts`; an empty list is the generic order.
+   */
+  setTabs(id: string, tabs: AppScreenKey[], ctx: WriteCtx): Promise<void>
 
   /** The reseller this login sells for, or null to unlink. */
   linkPartner(id: string, partnerId: string | null, ctx: WriteCtx): Promise<void>

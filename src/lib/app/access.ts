@@ -27,7 +27,7 @@
 
 import { can, type PermissionUser } from '@/lib/access/permissions'
 import { isMoreskantRow } from '@/lib/moreskant-profile'
-import { appNav, unlockedScreens, type AppNav, type AppScreen } from './screens'
+import { appNav, tabKeysOf, unlockedScreens, type AppNav, type AppScreen } from './screens'
 
 /** The Member fields the decision and the app chrome need. Never an email. */
 export interface AppMember {
@@ -55,9 +55,16 @@ export type AppAccess =
     }
   | { kind: 'denied' }
 
-/** The links the two conditional permissions hang on. */
+/** The links the two conditional permissions hang on, and the chosen bar. */
 export interface AppLinks {
   partnerId?: string | null
+  /**
+   * `Users.tabs` as it sits on the row (#563): the three screens a `users`
+   * holder put in this account's bar, in order. Raw and unvalidated, because
+   * the reader of a row is not the writer of one — `tabKeysOf` is lenient, and
+   * a key the set no longer unlocks is dropped by `appNav` rather than obeyed.
+   */
+  tabs?: unknown
 }
 
 /**
@@ -94,7 +101,7 @@ export function decideAppAccess(
   // itself has to clear. A voditelj without it is a voditelj who does not dance.
   const self = can(user, 'moreskant') && ctx.hasMember ? (member as AppMember) : null
 
-  return { kind: 'ok', screens, nav: appNav(user, ctx), self, partnerId }
+  return { kind: 'ok', screens, nav: appNav(user, ctx, tabKeysOf(links.tabs)), self, partnerId }
 }
 
 /** The Member whose nickname and roles the app chrome shows, if any. */

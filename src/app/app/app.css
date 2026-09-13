@@ -6322,10 +6322,36 @@ a.app__statrow-main:focus-visible {
   gap: 10px;
 }
 
-.app__user-done {
-  margin: 0 0 10px;
-  font-size: 14px;
+/* ── Tabovi: the bar of one account (#563) ────────────────── */
+.app__tabs-order {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.app__tabs-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* The place in the bar, on the row that holds it. Always the same width, so a
+   chosen row and an unchosen one do not shift under the thumb. */
+.app__tabs-mark {
+  flex: none;
+  width: 22px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
   color: var(--goldText);
+}
+
+.app__tabs-note {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--muted);
 }
 
 .app__user-note {

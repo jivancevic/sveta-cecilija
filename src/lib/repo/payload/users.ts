@@ -12,6 +12,7 @@
 
 import { relationIdForWrite as relId, relationIdString } from '@/lib/payload-relation'
 import { permissionsOf } from '@/lib/access/permissions'
+import { tabKeysOf } from '@/lib/app/screens'
 import type { LinkSelfMember } from '@/lib/app/link-self'
 import type { UserAccount } from '@/lib/app/users-view'
 import { issueAppResetToken } from '@/lib/app/account-data'
@@ -56,6 +57,9 @@ export function toUserAccount(row: Row | null | undefined): UserAccount | null {
     email: text(row.email),
     permissions: permissionsOf(row as { permissions?: unknown }),
     shared: row.shared === true,
+    // Lenient by contract (#563): a key the table no longer knows shrinks a
+    // bar rather than breaking the screen that lists it.
+    tabs: tabKeysOf(row.tabs),
     partnerId: partner.id,
     partnerName: partner.name,
     memberId: member.id,
@@ -153,6 +157,18 @@ export function createUsersRepo(
         collection: 'users',
         id,
         data: { permissions } as never,
+        user: actor(ctx),
+        overrideAccess: true,
+      })
+    },
+
+    async setTabs(id, tabs, ctx) {
+      const payload = await load()
+      await payload.update({
+        collection: 'users',
+        id,
+        // A jsonb column: the array IS the value, order included (#563).
+        data: { tabs } as never,
         user: actor(ctx),
         overrideAccess: true,
       })
