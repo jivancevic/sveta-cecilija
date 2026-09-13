@@ -51,4 +51,16 @@ export interface WriteCtx {
 export interface AuthRepo {
   /** The caller behind a request, or null when there is no session. */
   userFromHeaders(headers: Headers): Promise<SessionUser | null>
+
+  /**
+   * Mint a session for an account and return the `Set-Cookie` value.
+   *
+   * The first of the login operations to cross the seam (#511), because the
+   * rehearsal join code needs it: a voditelj approves a claim and the waiting
+   * phone is signed in, with no password anywhere in the story. It is
+   * deliberately not tied to HOW the caller proved who they are — an invitation
+   * link and an approved claim are two proofs that end in the same session, and
+   * each of those rules lives with its own route.
+   */
+  openSession(userId: string | number): Promise<string>
 }

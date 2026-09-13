@@ -1,21 +1,45 @@
-// MembersRepo — the attribution list, and the one row Gratis may add to it
-// (#506, #475).
+// MembersRepo — the Members collection, from both sides (#506, #511, #475).
 //
-// Two methods, because the comp form asks exactly two things of the Members
-// collection: who may a comp be attributed to, and "this person is not on the
-// list yet, put them on it". Everything else about a Member — the moreškant
-// half, the nickname, the dance roles, the invitation — belongs to Članovi
-// (#511) and to the Backoffice, and none of it is here.
+// A Member row has two halves and two audiences (`members-access.ts`), and this
+// interface has grown one method set per half:
 //
-// The create is deliberately name-only. `tickets` may create a Member (the
-// collections table), and the field locks say a `tickets` holder may not write
-// the moreškant fields; passing a name and nothing else means the seam cannot
-// carry a field the caller is not allowed to set. Field-level access does NOT
-// run under `overrideAccess: true`, so that is a real guarantee rather than a
-// hope: the shape of this method is the refusal.
+//   - the **attribution** half, ADR-0019's comp-and-promo name, which Gratis
+//     asks two things of (#506): who may a comp be attributed to, and "this
+//     person is not on the list yet, put them on it";
+//   - the **roster** half, ADR-0024's dancer, which Članovi is the first screen
+//     whose whole subject is (#511): who is on the roster, does a login point at
+//     them, change one, add one. The invitation list, the self-link list and the
+//     rehearsal join code each used to ask the first two with their own
+//     `payload.find`; they now ask here.
+//
+// What comes back is a screen's own shape — `MemberOption`, `MemberRosterRow` —
+// never a Payload document, so phase B is a rewrite of
+// `repo/payload/members.ts` and nothing above it. The attribution half's `note`
+// is deliberately absent from the roster shape: it is the Backoffice's and
+// Cecilija never shows it.
+//
+// **Writes go through the local API** so the `beforeValidate` hook runs: it is
+// the only writer that can see the other rows, so it is the only place nickname
+// uniqueness can be decided. Field-level access does NOT run under
+// `overrideAccess: true`, so WHICH fields a caller may send is decided above the
+// seam, in the route, where it is testable. `create` carries that rule in its
+// SHAPE — a name and nothing else, because `tickets` may not write the
+// moreškant fields — and `createMoreskant` is the voditelj's counterpart.
 
 import type { MemberOption } from '@/lib/app/comp-screen'
+import type { MemberRosterRow } from '@/lib/app/members-screen'
 import type { WriteCtx } from './auth'
+
+/** A dancer as Članovi writes one: the moreškant half plus a name. */
+export interface NewMoreskant {
+  name: string
+  nickname?: string
+  mobile?: string | null
+  email?: string | null
+  roles?: string[]
+  primaryRole?: string
+  isMoreskant: true
+}
 
 export interface MembersRepo {
   /**
@@ -32,6 +56,52 @@ export interface MembersRepo {
    * the `WriteCtx` so Payload attributes the row to whoever typed it.
    */
   create(name: string, ctx: WriteCtx): Promise<MemberOption>
+
+  /**
+   * Every moreškant row, active and retired alike.
+   *
+   * Retired ones ride along because Članovi lists them under the active ones
+   * rather than hiding them (`members-screen.ts`): a dancer retired by accident
+   * has to be findable. The society is tens of rows, so this is one page.
+   */
+  listMoreskanti(): Promise<MemberRosterRow[]>
+
+  /** One Member by id, or null when the id is not one. */
+  byId(id: string): Promise<MemberRosterRow | null>
+
+  /**
+   * The ids of Members some login points at.
+   *
+   * The "Ima prijavu" question (#424), asked once for a whole list rather than
+   * once per row. It answers whether an account exists and never what is in it.
+   */
+  idsWithLogin(): Promise<Set<string>>
+
+  /**
+   * Patch one Member through the collection, so the hook runs.
+   *
+   * Rejects with {@link MemberHookError} when the hook refuses; the caller
+   * (`handleMemberPatch`) turns that into a 400 the voditelj can read.
+   */
+  update(id: string, patch: Record<string, unknown>, ctx: WriteCtx): Promise<MemberRosterRow>
+
+  /** Add a dancer by hand, `isMoreskant` included. Same hook, same refusals. */
+  createMoreskant(input: NewMoreskant, ctx: WriteCtx): Promise<MemberRosterRow>
 }
 
-export type { MemberOption }
+/**
+ * The Members `beforeValidate` hook said no, in Croatian.
+ *
+ * A named error rather than a string comparison at the call site: the data
+ * layer catches this one and hands its message to `handleMemberPatch`, which
+ * turns it into a 400 a voditelj can read. Anything else stays a 500, because
+ * a dead connection has no sentence anybody can act on.
+ */
+export class MemberHookError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'MemberHookError'
+  }
+}
+
+export type { MemberOption, MemberRosterRow }

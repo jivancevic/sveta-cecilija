@@ -47,16 +47,11 @@ export default async function MorePage() {
           </Link>
         ))}
 
-        {/* The voditelj's own onboarding screen (#463): invitations by SMS and
-            the rehearsal join code. It is here rather than in the Backoffice
-            because both are done standing in the room, on the phone in their
-            hand. It folds into Članovi when that screen lands (#511). */}
-        {viewer.voditelj && (
-          <Link className="app__more-row" href="/app/invitations">
-            {APP_STRINGS.inviteLink.title}
-            <span aria-hidden="true">›</span>
-          </Link>
-        )}
+        {/* Pozivnice used to be a row here (#463). It folded into Članovi with
+            #511: the roster and the list of dancers who cannot get in yet were
+            always the same list, so the invitation is now something that
+            happens ON a row, and Članovi is a screen in the bar rather than a
+            row in this list. `/app/invitations` 308s there. */}
 
         {/* The same screen the bell opens (#496). It is listed here too because
             Više is where a person looks for a screen they cannot see a way

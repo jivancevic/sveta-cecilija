@@ -35,7 +35,7 @@ unlock are tabs, the rest live under Više, and Izvedbe jumps to the front for a
 | | landing | `/app` | any screen | **307 to the person's first tab** (#495) | done |
 | 1 | Narudžbe | `/app/orders`, `/app/orders/[id]` | `tickets` | **live** (#501): the list with search (name, e-mail or code), a performance filter, a state filter (`active\|refunded\|partner\|comp`) and a pager, all in the query string; the detail with the order's facts, its tickets and four named actions — Povrat (`refunds` only, and only on a paid, unrefunded order), Pošalji ulaznice ponovno, Otvori PDF, Uredi kupca | none, the Backoffice keeps its list |
 | 2 | Izvedbe (one screen, content by `can()`) | `/app/performances`, `/app/performances/[id]` | `tickets`, `moreska`, `moreskant` | **live for all three** (#495): the dancer's agenda and answers, the voditelj's Dodaj / Uredi / Otkaži / Pragovi (#503), and the blagajna's sold-of-capacity, channel split, per-show numbers and six named actions (#502), which is where the old `/admin/stats/[id]` drill-down now lives | 308 from `/app/izvedba/[id]`; push messages now carry the new path |
-| 2.5 | Članovi (dancer profiles, invitations, join code; absorbs Pozivnice, added by #476) | `/app/members` | `moreska` | `/admin/collections/members`, `/app/invitations` | `/app/pozivnice` already 308s to `/app/invitations` (#495); **#511 repoints that 308 at `/app/members`** and folds the screen in |
+| 2.5 | Članovi (dancer profiles, invitations, join code; absorbs Pozivnice, added by #476) | `/app/members`, `/app/members/[id]` | `moreska` | **live** (#511): the rehearsal join code and its pending claims at the top, Dodaj plesača beside them, then the roster — a diacritic-insensitive search, active moreškanti first and retired ones under them, one row per dancer carrying the nickname, the real name, the primary role, whether a login exists, and the two invitation channels behind a disclosure (`POST /api/app/invite/link` for the SMS link, `POST /api/app/invite` for the letter), plus "Pošalji pozivnice svima"; the profile at `/app/members/[id]` writes nadimak, mobitel, e-mail, plesne uloge, glavna uloga and aktivan through `PATCH /api/app/members/[id]`, and Dodaj plesača through `POST /api/app/members` | `/app/invitations` and `/app/pozivnice` both 308 here; the Backoffice Members list stays for the attribution half |
 | 3 | Ljestvica (own season + roster ranking; voditelj sees the full table) | `/app/leaderboard?season=2026&part=mine\|all` | `moreskant`, `moreska` | **live** (#495): both panels on one screen, the voditelj's *Ljestvica* panel is the old scoreboard | 308 from `/app/moje` and `/app/statistika` |
 | 4 | Skener (camera, code entry, door list) | `/app/scan` | `door` | **live** (#504): the camera and the four result states, Pusti ostatak grupe (n), Poništi propuštanje, Pronađi ulaznicu and the "ušlo X od Y" ring, all on one screen | `/admin/scan` 308s here and the Backoffice view is deleted; the ticket QR stays `/scan/[token]`, whose staff buttons point at `/app/scan` |
 | 5 | Prodaja | `/app/sell` | `partner` | **live** (#505): the izvedba picker with seats left, the two steppers, Izdaj ulaznice → the PDF, Zadnje prodaje with the delete-then-undo storno, and the live month card | the Backoffice partner dashboard stays until #512 |
@@ -52,7 +52,8 @@ Rows under Više, after the overflow screens:
 | Row | Route | Unlocked by | Today | Old path |
 |---|---|---|---|---|
 | Kalendar | `/app/calendar` | `moreskant`, `moreska` | a row in Više | new |
-| Pozivnice | folds into Članovi (`/app/members`, #476) | `moreska` | `/app/pozivnice` | 308 to `/app/members` |
+<!-- Pozivnice was a row here until #511 folded it into Članovi; both of its old
+     paths now 308 to /app/members. -->
 | Moj račun (password, member link, push on/off) | `/app/account` | any screen | **live** (#495): profile, install + push, self-link, password | 308 from `/app/set-password` and `/app/povezi` |
 | Backoffice (link to `/admin`) | `/admin` | `dev` only | **live** (#495): the row, the denied panel and the consent screen all lost their general `/admin` link | done |
 | Odjava | `POST /api/app/logout` | any screen | same | unchanged |
@@ -690,14 +691,19 @@ random password, the takeover guard). Three callers depend on it now: the mail,
 the copied link and a voditelj approving a join claim. The channel changes
 exactly **one** rule: whether a missing address is a refusal.
 
-`/app/invitations` is the voditelj's screen, on the phone they are already
-holding: every active moreškant, the ones without a login first, one tap to mint
-a fresh seven-day link, then the message in full with SMS, WhatsApp and Kopiraj
-under it. The message is **shown** rather than silently copied, because the
-voditelj is about to leave for Messages and should see what they are sending. A
-dancer who already has a login stays on the list, under a disclosure: re-issuing
-is the whole answer to a lost phone. "Kopiraj pozivnicu" is also an edit-menu
-item on a Member, for the desktop `/admin` where `sms:` does nothing.
+**Članovi (`/app/members`) is where a voditelj hands one over**, on the phone
+they are already holding (#511; it was `/app/invitations` until then, which now
+308s there). Every moreškant is on that list whether or not they already have a
+login, because re-issuing is the whole answer to a lost phone, and both channels
+sit on the dancer's own row behind a "Pozivnica" disclosure: one tap mints a
+fresh seven-day link, then the message appears in full with SMS, WhatsApp and
+Kopiraj under it. The message is **shown** rather than silently copied, because
+the voditelj is about to leave for Messages and should see what they are
+sending. The letter ("Pošalji pozivnicu") is offered on every row rather than
+only on a dancer who has an address, because an e-mail must never reach an
+`/app` payload (ADR-0024's PII boundary) and the route answers "Član nema e-mail
+adresu" when there is none. Both are also edit-menu items on a Member, for the
+desktop Backoffice where `sms:` does nothing.
 
 **Send it by SMS, not WhatsApp and not Viber, and the UI says so.** A messenger
 opens a link in its own in-app browser, where "Add to Home Screen" does not exist
@@ -713,7 +719,7 @@ silently, which is how a composer opens with an empty body.
 ### `/app/join/<kod>`: the rehearsal QR
 
 For the dancer with no e-mail and no number on file. A voditelj shows a code
-(QR on `/app/invitations`, or a printed sheet), the dancer taps their own name,
+(QR on `/app/members`, or a printed sheet), the dancer taps their own name,
 and a voditelj approves with one tap; the dancer's phone then drops into `/app`
 signed in.
 

@@ -55,7 +55,12 @@ export const APP_ROUTE_RENAMES: AppRouteRename[] = [
   { source: '/app/vise', destination: '/app/more', keep: 'one-release' },
   { source: '/app/set-password', destination: '/app/account', keep: 'one-release' },
   { source: '/app/povezi', destination: '/app/account', keep: 'one-release' },
-  { source: '/app/pozivnice', destination: '/app/invitations', keep: 'one-release' },
+  // Pozivnice folded into Članovi (#511), so the Croatian path skips the
+  // intermediate English one and lands where the screen actually is: a 308 to a
+  // 308 costs a second round trip for no gain, and this one is a Više row
+  // nobody bookmarks anyway.
+  { source: '/app/pozivnice', destination: '/app/members', keep: 'one-release' },
+  { source: '/app/invitations', destination: '/app/members', keep: 'one-release' },
   { source: '/app/dobrodosli', destination: '/app/welcome', keep: 'one-release' },
 ]
 

@@ -92,7 +92,7 @@ export const APP_SCREENS: AppScreen[] = [
     route: '/app/members',
     rank: 2.5,
     unlockedBy: ['moreska'],
-    servesToday: [],
+    servesToday: ['moreska'],
     groups: ['moreskant'],
   },
   {
@@ -305,7 +305,7 @@ export function appNav(user: PermissionUser, ctx: NavContext): AppNav {
 }
 
 /** Rows that live under Više and light its tab rather than one of their own. */
-const UNDER_MORE = ['/app/account', '/app/invitations', '/app/calendar', '/app/notifications']
+const UNDER_MORE = ['/app/account', '/app/calendar', '/app/notifications']
 
 /** The path without its query string and without a trailing slash. */
 function normalize(pathname: string): string {
