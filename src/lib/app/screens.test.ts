@@ -42,6 +42,7 @@ describe('the screen table', () => {
   it('carries every route map screen, each on an English segment under /app', () => {
     expect(keys(APP_SCREENS)).toEqual([
       'orders',
+      'moreska',
       'performances',
       'members',
       'leaderboard',
@@ -70,6 +71,7 @@ describe('the screen table', () => {
     const live = APP_SCREENS.filter((s) => s.servesToday.length > 0)
     expect(keys(live)).toEqual([
       'orders',
+      'moreska',
       'performances',
       'members',
       'leaderboard',
@@ -113,9 +115,11 @@ describe('the screen table', () => {
 })
 
 describe('unlockedScreens', () => {
-  it('gives a dancer with a live Member row Izvedbe and Ljestvica', () => {
+  it('gives a dancer with a live Member row Moreška and Ljestvica, never Izvedbe', () => {
+    // #565: Izvedbe is the blagajna's schedule now, in the selling register.
+    // The dancer reads the same evenings on Moreška, as "nastupi".
     expect(keys(unlockedScreens(user('moreskant'), ctx({ hasMember: true })))).toEqual([
-      'performances',
+      'moreska',
       'leaderboard',
     ])
   })
@@ -139,8 +143,11 @@ describe('unlockedScreens', () => {
     expect(unlockedScreens(user('refunds', 'dev'), ctx())).toEqual([])
   })
 
-  it('gives a voditelj Izvedbe, Članovi and Ljestvica without any Member link', () => {
+  it('gives a voditelj Moreška, Izvedbe, Članovi and Ljestvica without any Member link', () => {
+    // A voditelj who does not dance still leads the roster, so Moreška is
+    // theirs to read (#565); the hero simply carries no answer of their own.
     expect(keys(unlockedScreens(user('moreska'), ctx()))).toEqual([
+      'moreska',
       'performances',
       'members',
       'leaderboard',
@@ -212,11 +219,20 @@ describe('unlockedScreens', () => {
 })
 
 describe('appNav', () => {
-  it('puts the dance first for a moreskant holder and lands there', () => {
+  it('puts Moreška first for a moreskant holder and lands there', () => {
     const nav = appNav(user('moreskant'), ctx({ hasMember: true }))
-    expect(keys(nav.tabs)).toEqual(['performances', 'leaderboard', 'more'])
-    expect(nav.landing).toBe('/app/performances')
+    expect(keys(nav.tabs)).toEqual(['moreska', 'leaderboard', 'more'])
+    expect(nav.landing).toBe('/app/moreska')
     expect(nav.overflow).toEqual([])
+  })
+
+  it('never offers a moreskant-only login Izvedbe, in the bar or in Više (#565)', () => {
+    // Under #563 the overflow is "everything unlocked minus the tabs", so this
+    // asserts the TABLE and not a bar order: a dancer does not unlock Izvedbe
+    // at all, and there is nowhere left for it to appear.
+    const nav = appNav(user('moreskant'), ctx({ hasMember: true }))
+    expect([...keys(nav.tabs), ...keys(nav.overflow)]).not.toContain('performances')
+    for (const group of nav.groups) expect(keys(group.screens)).not.toContain('performances')
   })
 
   it('always ends the bar with Više, and never counts it against the three', () => {
@@ -264,9 +280,10 @@ describe('appNav', () => {
     })
     // Dancer first (Moreška, Ljestvica), then the voditelj's Članovi; the
     // blagajna's three and everything else are one tap away in Više.
-    expect(keys(nav.tabs)).toEqual(['performances', 'leaderboard', 'members', 'more'])
+    expect(keys(nav.tabs)).toEqual(['moreska', 'leaderboard', 'members', 'more'])
     expect(keys(nav.overflow)).toEqual([
       'orders',
+      'performances',
       'scan',
       'sell',
       'statement',
@@ -275,7 +292,7 @@ describe('appNav', () => {
       'users',
       'stats',
     ])
-    expect(nav.landing).toBe('/app/performances')
+    expect(nav.landing).toBe('/app/moreska')
   })
 
   it('gives the secretary who also works the door the box\u2019s three', () => {
@@ -296,18 +313,30 @@ describe('appNav', () => {
 // to the ACCOUNT: a `users` holder picks them on Korisnici, and everybody
 // nobody has picked for reads the generic order below.
 //
-// Every expectation here that names Izvedbe for "Moreška" is waiting on T4
-// (#565): the Moreška screen is not in the table yet, so the generic order maps
-// that name onto `performances` and these tests move with it when it lands.
+// Since T4 (#565) "Moreška" in these rows is the Moreška SCREEN and not a stand
+// -in for Izvedbe, which is the difference between a dancer's bar and a
+// voditelj's: a `moreskant` does not unlock Izvedbe at all any more.
 describe('the generic order', () => {
-  const generic = (held: Permission[], over: Parameters<typeof ctx>[0] = {}) =>
-    genericTabs(unlockedScreens(user(...held), { ...ctx(over), target: true }), held)
+  const generic = (
+    held: Permission[],
+    over: Parameters<typeof ctx>[0] = {},
+    target = true,
+  ) => genericTabs(unlockedScreens(user(...held), { ...ctx(over), target }), held)
 
   it('gives every permission that opens a screen the bar its holder came for', () => {
     // The table from the decision, one row per permission, and nothing else in
     // this file is allowed to re-type it.
-    expect(generic(['moreskant'], { hasMember: true })).toEqual(['performances', 'leaderboard'])
-    expect(generic(['moreska'])).toEqual(['performances', 'members', 'leaderboard'])
+    // The dancer's row is read over the BUILT table, and deliberately: the
+    // route map's `performances.unlockedBy` still carries `moreskant` (#565
+    // only moved it out of `servesToday`), so in target mode the top-up would
+    // hand a dancer Izvedbe as a third tab — a screen the redesign says they
+    // never see. Retiring that word from `unlockedBy` is the day this line can
+    // go back to target mode; until then, what SHIPS is what this asserts.
+    expect(generic(['moreskant'], { hasMember: true }, false)).toEqual([
+      'moreska',
+      'leaderboard',
+    ])
+    expect(generic(['moreska'])).toEqual(['moreska', 'members', 'performances'])
     expect(generic(['tickets'])).toEqual(['orders', 'performances', 'inquiries'])
     expect(generic(['door'])).toEqual(['scan'])
     expect(generic(['partner'], { hasPartner: true })).toEqual(['sell', 'statement'])
@@ -319,7 +348,7 @@ describe('the generic order', () => {
     // A voditelj who also works the till opens the app on the dance: the half
     // only they can do comes first, and the box is one tap away in Više.
     expect(generic(['tickets', 'moreskant'], { hasMember: true })).toEqual([
-      'performances',
+      'moreska',
       'leaderboard',
       'orders',
     ])
@@ -328,9 +357,15 @@ describe('the generic order', () => {
   })
 
   it('collapses a duplicate rather than spending a tab on it twice', () => {
-    // Until T4, Moreška and Izvedbe are the same screen for a voditelj, so the
-    // third tab comes from the top-up rather than from a repeated key.
-    expect(generic(['moreska'])).toEqual(['performances', 'members', 'leaderboard'])
+    // Statistika is on both rows: `season_stats` is the whole of it, and
+    // `finance` lists it after the money. A set holding both must not spend two
+    // of its three tabs on one screen, and with nothing else unlocked the bar
+    // is honestly two long rather than padded to three.
+    //
+    // `season_stats` is merged first (it is earlier in GENERIC_MERGE), so it
+    // lays down Statistika and `finance` adds only the screen Statistika is
+    // not. Two tabs, not three, and Statistika appears once.
+    expect(generic(['season_stats', 'finance'])).toEqual(['stats', 'finance'])
   })
 
   it('tops the bar up in rank order for a set the table has no row for', () => {
@@ -420,7 +455,7 @@ describe('the laptop sidebar', () => {
       target: true,
     })
     expect(nav.groups.map((g) => [g.group, keys(g.screens)])).toEqual([
-      ['moreskant', ['performances', 'members', 'leaderboard']],
+      ['moreskant', ['moreska', 'performances', 'members', 'leaderboard']],
       ['box', ['orders', 'inquiries', 'comp']],
       ['partner', ['sell', 'statement']],
       ['door', ['scan']],
@@ -477,6 +512,27 @@ describe('activeTabKey', () => {
   it('lights nothing at all for an account with no bar', () => {
     const nowhere = appNav(user('refunds'), ctx())
     expect(activeTabKey(nowhere, '/app/orders')).toBeNull()
+  })
+
+  // Stanje is still `/app/performances/[id]` (#565), and the two readers of it
+  // are lit differently — correctly so, and the second one is a known gap that
+  // #566 closes by giving Stanje a route of its own.
+  it('lights Izvedbe for a voditelj reading one evening, because it is their tab', () => {
+    const voditelj = appNav(user('moreska'), ctx())
+    expect(keys(voditelj.tabs)).toEqual(['moreska', 'members', 'performances', 'more'])
+    expect(activeTabKey(voditelj, '/app/performances/42')).toBe('performances')
+  })
+
+  it('lights NOTHING for a dancer reading one evening, until #566 moves Stanje', () => {
+    // A `moreskant` does not unlock Izvedbe at all since #565, so the screen
+    // this path belongs to is neither a tab nor in their Više — and Više would
+    // be a lie, because the page is not reachable from it. The page opens
+    // (the gate takes `['performances','moreska']`); only the bar has nothing
+    // honest to light, which is exactly what #566 fixes.
+    const dancer = appNav(user('moreskant'), ctx({ hasMember: true }))
+    expect(keys(dancer.tabs)).toEqual(['moreska', 'leaderboard', 'more'])
+    expect(activeTabKey(dancer, '/app/performances/42')).toBeNull()
+    expect(activeTabKey(dancer, '/app/moreska')).toBe('moreska')
   })
 })
 

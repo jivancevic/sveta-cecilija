@@ -72,7 +72,7 @@ describe('notifyPerformanceSaved', () => {
     expect(sent).toHaveLength(1)
     // Grgo has no login, so no device could exist for him.
     expect(sent[0]!.userIds).toEqual(['u1', 'u2'])
-    expect(sent[0]!.message.title).toBe('Nova izvedba')
+    expect(sent[0]!.message.title).toBe('Novi nastup')
   })
 
   it('still calls the sender when no dancer has a login (#496)', async () => {
@@ -191,7 +191,7 @@ describe('notifyBulkCreated', () => {
     expect(sent[0]!.userIds).toEqual(['u1', 'u2'])
     expect(sent[0]!.message.url).toBe('/app')
     expect(`${sent[0]!.message.title} ${sent[0]!.message.body}`).toBe(
-      'Nove izvedbe U raspored je dodano 22 novih izvedbi, prva ponedjeljak, 25. svibnja.',
+      'Novi nastupi U raspored je dodano 22 novih nastupa, prvi ponedjeljak, 25. svibnja.',
     )
   })
 
@@ -227,7 +227,7 @@ describe('notifyWithdrawal', () => {
     expect(sent).toHaveLength(1)
     expect(sent[0]!.userIds).toEqual(['u9'])
     expect(`${sent[0]!.message.title} ${sent[0]!.message.body}`).toBe(
-      'Netko je odustao Cici više ne dolazi na izvedbu srijeda, 5. kolovoza u 21:00.',
+      'Netko je odustao Cici više ne dolazi na nastup srijeda, 5. kolovoza u 21:00.',
     )
   })
 

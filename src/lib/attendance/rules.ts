@@ -14,6 +14,10 @@
 // The army a new answer lands in comes from the member's PRIMARY role, never
 // from a guess: `crni` / `crni_kralj` / `otmanovic` are crni, `bili` /
 // `bili_kralj` are bili, a `bula` is in neither army and carries a null army.
+// Since #565 that is also what a dancer's army field does NOT change: Moreška
+// answers with one tap and offers no army control, so an army arriving from a
+// dancer is ignored rather than refused, and even a dancer who holds both
+// `crni` and `bili` lands where their primary role says.
 //
 // No IO here: the caller loads the performance, the member and any existing
 // row and hands them over. `answer.ts` is the route half.
@@ -186,7 +190,8 @@ export const ANSWER_ERRORS = {
   unknownStatus: 'Nepoznat odgovor.',
   started: APP_STRINGS.answer.locked,
   cancelled: APP_STRINGS.answer.cancelled,
-  armyNotAllowed: 'Voditelj određuje vojsku.',
+  // There is no "voditelj određuje vojsku" refusal any more (#565): a dancer's
+  // army is ignored, not argued with, so nobody is ever told about it.
   armyNotInRoles: 'Taj moreškant ne pleše u toj vojsci.',
   unknownArmy: 'Nepoznata vojska.',
 } as const
@@ -194,10 +199,12 @@ export const ANSWER_ERRORS = {
 /**
  * THE answer rule (#422). Pure over (actor, member, performance, request).
  *
- * 403 means "you may not do this": someone else's answer, an evening that has
- * already started or been cancelled, or an army only a voditelj may set.
+ * 403 means "you may not do this": someone else's answer, or an evening that
+ * has already started or been cancelled.
  * 400 means "this makes no sense": an unknown status or army, an army the
- * member's roles do not include, a member who is not a live moreškant.
+ * member's roles do not include, a member who is not a live moreškant. Both
+ * only ever reach a VODITELJ now, because an army from a dancer is dropped
+ * before any of them is considered (#565).
  *
  * `existingArmy` is the army already stored for this pair, so an answer that
  * does not mention the army keeps the one the voditelj chose rather than
@@ -256,9 +263,16 @@ export function decideAttendanceAnswer(input: {
   }
 
   // The army: the voditelj's decision alone (glossary: *Attendance*).
-  const armyGiven = input.army !== undefined && input.army !== null
+  //
+  // A dancer never sends one, and since #565 one that arrives from a dancer is
+  // IGNORED rather than refused. The Moreška screen answers with a single tap
+  // and has no army control to offer, so an army in a dancer's body is noise
+  // from an old client or a hand-made request, not an attempt at anything: the
+  // answer simply counts in the army of their primary role, which is what the
+  // fall-through below computes. Refusing it would only turn a stale tab into a
+  // dancer who cannot say "dolazim".
+  const armyGiven = voditelj && input.army !== undefined && input.army !== null
   if (armyGiven) {
-    if (!voditelj) return { ok: false, status: 403, error: ANSWER_ERRORS.armyNotAllowed }
     if (!isArmy(input.army)) return { ok: false, status: 400, error: ANSWER_ERRORS.unknownArmy }
     if (!allowedArmies(target).includes(input.army)) {
       return { ok: false, status: 400, error: ANSWER_ERRORS.armyNotInRoles }

@@ -6419,3 +6419,79 @@ a.app__statrow-main:focus-visible {
     min-width: 170px;
   }
 }
+
+/* ─────────────────────────────────────────────────────────
+   Moreška — the dancer's register screen (#565)
+
+   Three blocks the design system does not own, because none of them is a
+   shape another screen composes: the identity line at the top, the spacing
+   between a month heading and its list, and the "no next nastup" card. The
+   hero, the rows, the discs, the chips, the note, the buttons and the army
+   bar are all `ui-*` and are NOT restyled here (T1's rule).
+   ───────────────────────────────────────────────────────── */
+
+/* Who is reading: the 44px mark, the legal name, and the role plus what is
+   still ahead. It stands in for a page title, which is why it is the one
+   place on a screen where a name is set in the serif. */
+.app__me {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 2px 0 18px;
+}
+
+.app__me-body {
+  min-width: 0;
+}
+
+.app__me-body h2 {
+  margin: 0;
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 26px;
+  line-height: 1.1;
+}
+
+.app__me-body p {
+  margin: 3px 0 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+/* A voditelj who does not dance. One quiet line, never a warning: having no
+   Member row is a valid state (#419, story 15). */
+.app__me-none {
+  margin: 2px 0 18px;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.app__month-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 22px;
+}
+
+/* The card that stands where the hero would: the season is over, or it has
+   not started. Same card, so the screen keeps its shape either way. */
+.app__empty {
+  margin-top: 4px;
+  align-items: center;
+  gap: 8px;
+  padding: 26px 18px;
+  text-align: center;
+}
+
+.app__empty h2 {
+  margin: 0;
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 20px;
+}
+
+.app__empty p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--muted);
+}

@@ -103,8 +103,8 @@ describe('POST /api/shows/bulk-create', () => {
       { title: string; body: string; url: string },
     ]
     expect(userIds).toEqual(['u1', 'u2'])
-    expect(message.title).toBe('Nove izvedbe')
-    expect(message.body).toContain('3 novih izvedbi')
+    expect(message.title).toBe('Novi nastupi')
+    expect(message.body).toContain('3 novih nastupa')
     expect(message.body).toContain('ponedjeljak, 1. lipnja')
     // The tap lands on the list: no single performance is what this is about.
     expect(message.url).toBe('/app')

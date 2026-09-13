@@ -34,6 +34,7 @@ import { APP_STRINGS } from './strings'
 
 export type AppScreenKey =
   | 'orders'
+  | 'moreska'
   | 'performances'
   | 'members'
   | 'leaderboard'
@@ -79,14 +80,28 @@ export const APP_SCREENS: AppScreen[] = [
     groups: ['box'],
   },
   {
+    // The dancer's own screen (#565): where am I next, and am I going. Rank is
+    // now only the SIDEBAR's and Više's order (#563 gave the bar to the account
+    // and to `GENERIC_TABS`), and 1.5 puts the dance above the ticket schedule
+    // in both, which is the order a voditelj reads them in.
+    key: 'moreska',
+    label: S.moreska,
+    route: '/app/moreska',
+    rank: 1.5,
+    unlockedBy: ['moreskant', 'moreska'],
+    servesToday: ['moreskant', 'moreska'],
+    groups: ['moreskant'],
+  },
+  {
     key: 'performances',
     label: S.performances,
     route: '/app/performances',
     rank: 2,
     unlockedBy: ['tickets', 'moreska', 'moreskant'],
-    // All three halves are live: the dancer's and the voditelj's (#457, #503)
-    // and the blagajna's (#502). One screen, content by `can()`.
-    servesToday: ['tickets', 'moreska', 'moreskant'],
+    // The blagajna's half (#502) and the voditelj's (#503). A dancer reads the
+    // schedule on Moreška since #565, in the dancer's own register, so
+    // `moreskant` went back to being a target-only word here.
+    servesToday: ['tickets', 'moreska'],
     groups: ['moreskant', 'box'],
   },
   {
@@ -265,13 +280,13 @@ export function tabKeysOf(value: unknown): AppScreenKey[] {
  * absent rather than empty: it contributes nothing to a bar, and a set made
  * only of those unlocks nothing at all.
  */
-// T4 (#565): swap to 'moreska' — the Moreška screen is being built in parallel
-// and is not in the table yet, so "Moreška" reads as Izvedbe until it lands.
-const MORESKA_SCREEN: AppScreenKey = 'performances'
-
 const GENERIC_TABS: Partial<Record<Permission, AppScreenKey[]>> = {
-  moreskant: [MORESKA_SCREEN, 'leaderboard'],
-  moreska: [MORESKA_SCREEN, 'members', 'performances'],
+  // The dance itself, and then where the reader stands in the season. A dancer
+  // does not open this app for a schedule of ticket sales, which is why
+  // `performances` is absent here and present for a voditelj: Izvedbe is the
+  // blagajna's screen, and since #565 a `moreskant` does not unlock it at all.
+  moreskant: ['moreska', 'leaderboard'],
+  moreska: ['moreska', 'members', 'performances'],
   tickets: ['orders', 'performances', 'inquiries'],
   door: ['scan'],
   partner: ['sell', 'statement'],

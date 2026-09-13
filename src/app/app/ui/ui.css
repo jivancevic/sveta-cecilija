@@ -92,6 +92,16 @@
 }
 
 /* ── Button ───────────────────────────────────────────────── */
+
+/* The row a pair of buttons sits in. One line, one gap, and the two children
+   share the width unless one of them says otherwise (`--done` takes two parts,
+   `--link` shrinks to its text). A screen never writes this flexbox itself. */
+.ui-btns {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .ui-btn {
   flex: 1;
   height: 52px;
@@ -139,9 +149,16 @@
 }
 
 .ui-btn--link {
+  flex: 0 0 auto;
   color: var(--muted);
   font-weight: 500;
   font-size: 15px;
+}
+
+/* A "Ne dolaziš" that stands where a "Dolaziš" would: the statement is the
+   wide half of the row whichever way the answer went. */
+.ui-btn--wide {
+  flex: 2;
 }
 
 /* Red, last, and never without a confirmation in front of it. */

@@ -76,18 +76,18 @@ describe('diffPerformance', () => {
 describe('the change sentence', () => {
   it('names what changed and states the new date and time', () => {
     expect(text(snapshot(), snapshot({ time: '20:00' }))).toBe(
-      'Promjena izvedbe Izvedba srijeda, 5. kolovoza u 20:00. Promijenjeno: vrijeme.',
+      'Promjena nastupa Nastup srijeda, 5. kolovoza u 20:00. Promijenjeno: vrijeme.',
     )
   })
 
   it('has its own wording for a cancellation', () => {
     expect(text(snapshot(), snapshot({ cancelled: true }))).toBe(
-      'Izvedba je otkazana Izvedba srijeda, 5. kolovoza u 21:00 je otkazana.',
+      'Nastup je otkazan Nastup srijeda, 5. kolovoza u 21:00 je otkazan.',
     )
   })
 
   it('says so when a cancellation is undone', () => {
-    expect(text(snapshot({ cancelled: true }), snapshot())).toContain('izvedba više nije otkazana')
+    expect(text(snapshot({ cancelled: true }), snapshot())).toContain('nastup više nije otkazan')
   })
 
   it('gives every save its own tag, so two changes stack instead of replacing', () => {
@@ -110,7 +110,7 @@ describe('the change sentence', () => {
 })
 
 describe('decidePerformanceNotification', () => {
-  it('sends "nova izvedba" for a create', () => {
+  it('sends "novi nastup" for a create', () => {
     const decision = decidePerformanceNotification({
       previous: null,
       next: snapshot(),
@@ -119,7 +119,7 @@ describe('decidePerformanceNotification', () => {
     expect(decision.kind).toBe('created')
     if (decision.kind !== 'created') return
     expect(`${decision.message.title} ${decision.message.body}`).toBe(
-      'Nova izvedba Redovna, srijeda, 5. kolovoza u 21:00, Ljetno kino. Javi dolaziš li.',
+      'Novi nastup Redovna, srijeda, 5. kolovoza u 21:00, Ljetno kino. Javi dolaziš li.',
     )
   })
 
