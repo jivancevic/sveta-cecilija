@@ -25,6 +25,7 @@
 
 import type { AuthRepo, SessionUser, WriteCtx } from './auth'
 import type { DbRepo } from './db'
+import type { InquiriesRepo, InquiryListQuery, InquiryListResult, InquiryRow } from './inquiries'
 import type { OrdersRepo } from './orders'
 import type { PartnerRecord, PartnersRepo } from './partners'
 import type { PerformancePatch, PerformanceRow, ShowsRepo } from './shows'
@@ -32,6 +33,7 @@ import type { PerformancePatch, PerformanceRow, ShowsRepo } from './shows'
 export interface Repo {
   auth: AuthRepo
   db: DbRepo
+  inquiries: InquiriesRepo
   orders: OrdersRepo
   partners: PartnersRepo
   shows: ShowsRepo
@@ -40,6 +42,10 @@ export interface Repo {
 export type {
   AuthRepo,
   DbRepo,
+  InquiriesRepo,
+  InquiryListQuery,
+  InquiryListResult,
+  InquiryRow,
   OrdersRepo,
   PartnerRecord,
   PartnersRepo,

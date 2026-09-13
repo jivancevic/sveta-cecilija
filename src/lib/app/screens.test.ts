@@ -70,6 +70,7 @@ describe('the screen table', () => {
       'scan',
       'sell',
       'statement',
+      'inquiries',
     ])
   })
 
@@ -112,11 +113,14 @@ describe('unlockedScreens', () => {
     expect(keys(unlockedScreens(user('moreska'), ctx()))).toEqual(['performances', 'leaderboard'])
   })
 
-  it('gives a tickets holder Narudžbe, and the rest as they are built', () => {
-    // Narudžbe landed with #501. Upiti, Gratis and Statistika are ticketed
-    // separately (#507, #506, #508) and Izvedbe serves the blagajna only from
-    // #502, so `tickets` still unlocks exactly one screen.
-    expect(keys(unlockedScreens(user('tickets', 'refunds'), ctx()))).toEqual(['orders'])
+  it('gives a tickets holder Narudžbe and Upiti, and the rest as they are built', () => {
+    // Narudžbe landed with #501 and Upiti with #507. Gratis and Statistika are
+    // ticketed separately (#506, #508) and Izvedbe serves the blagajna only
+    // from #502, so `tickets` unlocks exactly these two screens today.
+    expect(keys(unlockedScreens(user('tickets', 'refunds'), ctx()))).toEqual([
+      'orders',
+      'inquiries',
+    ])
   })
 
   it('never lets an unknown permission string unlock anything', () => {

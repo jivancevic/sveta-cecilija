@@ -1323,6 +1323,84 @@ export const APP_STRINGS = {
     },
   },
 
+  /**
+   * Upiti (#507): the enquiry inbox.
+   *
+   * An inbox rather than a list, so the words are the words of a mailbox: an
+   * enquiry is *nov* until somebody answers it and *riješen* afterwards, and
+   * those are the two states the filter offers. A booking enquiry (a request to
+   * buy a private izvedba or the experience) carries one badge, because it is
+   * the one enquiry with money behind it.
+   *
+   * Two actions, both named (#476): Odgovori opens the mail, Označi riješenim
+   * clears the row. Neither is a raw edit form: the enquiry itself is what a
+   * stranger wrote and nobody in this app rewrites it.
+   */
+  inquiries: {
+    /** The state filter, above the list. */
+    filterLabel: 'Stanje',
+    all: 'Svi upiti',
+    states: {
+      new: 'Novi',
+      handled: 'Riješeni',
+    },
+    /** The two badges on a row: what state it is in, and whether it is money. */
+    newBadge: 'Novo',
+    booking: 'Rezervacija',
+    /** "5 upita" — how many rows the filter matched, above the list. */
+    count: { one: 'upit', few: 'upita', many: 'upita' },
+    empty: 'Nema upita u ovom stanju.',
+    emptyAll: 'Još nema nijednog upita.',
+    /** The pager: two buttons and the one sentence between them. */
+    previous: 'Prethodni',
+    next: 'Sljedeći',
+    pageOf: (page: number, pages: number) => `Stranica ${page} od ${pages}`,
+
+    /** One enquiry: its facts, then the whole message, then the two actions. */
+    detail: {
+      back: 'Svi upiti',
+      missing: 'Ovaj upit ne postoji.',
+      noName: 'Bez imena',
+      noEmail: 'Bez e-pošte',
+      email: 'E-pošta',
+      type: 'Vrsta upita',
+      received: 'Zaprimljeno',
+      state: 'Stanje',
+      message: 'Poruka',
+    },
+
+    actions: {
+      reply: 'Odgovori',
+      /** Why Odgovori is a sentence instead of a button on this one row. */
+      noEmail: 'Ovaj upit nema e-poštu, pa nema kome odgovoriti.',
+      handle: 'Označi riješenim',
+      /** The undo: the same switch, the other way. */
+      reopen: 'Vrati među nove',
+      working: 'Trenutak...',
+      handled: 'Upit je označen riješenim.',
+      reopened: 'Upit je vraćen među nove.',
+      failed: 'Spremanje nije uspjelo. Pokušaj ponovno.',
+      notFound: 'Ovaj upit ne postoji.',
+      rejected: 'Zahtjev nije prihvaćen.',
+      invalid: 'Neispravan zahtjev.',
+    },
+
+    /**
+     * The subject of the reply mail (`inquiries-mailto.ts`).
+     *
+     * The form stores no subject line, so a booking enquiry is answered under
+     * the name of the service it asked about and everything else under "Vaš
+     * upit". These are customer-facing and deliberately not the inbox's own
+     * labels: "Re: Ostalo" is not a thing to send anybody.
+     */
+    replySubjects: {
+      general: 'Vaš upit',
+      'private-moreska': 'Privatna moreška',
+      'moreska-experience': 'Moreška iskustvo',
+      other: 'Vaš upit',
+    } as Record<EnquiryType, string>,
+  },
+
   /** The shared calendar subscription (#433, glossary: *Calendar feed*). */
   calendar: {
     body: 'Dodaj ovu poveznicu u Google, Apple ili Outlook kalendar i sve izvedbe su ti u telefonu.',
