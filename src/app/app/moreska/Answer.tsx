@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useEffect, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { APP_STRINGS } from '@/lib/app/strings'
 import type { AttendanceStatus } from '@/lib/attendance/rules'
@@ -54,6 +54,19 @@ export function Answer({
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [, startTransition] = useTransition()
+
+  // The pop is a one-shot, and it is cleared on a TIMER rather than on
+  // `animationend`: the same tap also starts a `router.refresh()` transition,
+  // and an urgent `setPop(false)` landing inside that transition was observed
+  // to be rolled back by the transition's own render, leaving the class on
+  // forever and the second answer silent. A timer cannot be undone by a
+  // re-render, and it clears the flag even where the animation never runs at
+  // all (`prefers-reduced-motion`, which turns every animation in `/app` off).
+  useEffect(() => {
+    if (!pop) return
+    const handle = setTimeout(() => setPop(false), 600)
+    return () => clearTimeout(handle)
+  }, [pop])
 
   async function send(next: AttendanceStatus) {
     if (disabled || saving) return
@@ -131,7 +144,6 @@ export function Answer({
               check={answer === 'coming'}
               pop={pop}
               className={answer === 'coming' ? undefined : 'ui-btn--wide'}
-              onAnimationEnd={() => setPop(false)}
               onClick={() => setEditing(true)}
             >
               {answer === 'coming'
