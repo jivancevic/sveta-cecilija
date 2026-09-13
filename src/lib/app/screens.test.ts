@@ -537,25 +537,33 @@ describe('activeTabKey', () => {
     expect(activeTabKey(nowhere, '/app/orders')).toBeNull()
   })
 
-  // Stanje is still `/app/performances/[id]` (#565), and the two readers of it
-  // are lit differently — correctly so, and the second one is a known gap that
-  // #566 closes by giving Stanje a route of its own.
+  // Izvedbe's own detail: the blagajna's and the voditelj's evening.
   it('lights Izvedbe for a voditelj reading one evening, because it is their tab', () => {
     const voditelj = appNav(user('moreska'), ctx())
     expect(keys(voditelj.tabs)).toEqual(['home', 'moreska', 'members', 'performances', 'more'])
     expect(activeTabKey(voditelj, '/app/performances/42')).toBe('performances')
   })
 
-  it('lights NOTHING for a dancer reading one evening, until #566 moves Stanje', () => {
-    // A `moreskant` does not unlock Izvedbe at all since #565, so the screen
-    // this path belongs to is neither a tab nor in their Više — and Više would
-    // be a lie, because the page is not reachable from it. The page opens
-    // (the gate takes `['performances','moreska']`); only the bar has nothing
-    // honest to light, which is exactly what #566 fixes.
+  it('lights NOTHING for a dancer on the Izvedbe detail, which is not their path', () => {
+    // A `moreskant` does not unlock Izvedbe at all since #565, and since #566
+    // has no reason to be there: Stanje is `/app/moreska/[id]`, the gate on the
+    // Izvedbe detail is back to `openScreen('performances')` and every push
+    // deep link points at Stanje. A bar that lit Više here would be a lie,
+    // because the page is not reachable from it and would refuse them anyway.
     const dancer = appNav(user('moreskant'), ctx({ hasMember: true }))
     expect(keys(dancer.tabs)).toEqual(['home', 'moreska', 'leaderboard', 'more'])
     expect(activeTabKey(dancer, '/app/performances/42')).toBeNull()
     expect(activeTabKey(dancer, '/app/moreska')).toBe('moreska')
+  })
+
+  // #566 — Stanje is under Moreška, so the prefix rule lights the tab a dancer
+  // and a voditelj are both actually on. Nothing was added to the table for it:
+  // a screen's route covers everything below it, and that is the point.
+  it('lights Moreška on Stanje, for a dancer and for a voditelj alike', () => {
+    const dancer = appNav(user('moreskant'), ctx({ hasMember: true }))
+    const voditelj = appNav(user('moreska'), ctx())
+    expect(activeTabKey(dancer, '/app/moreska/42')).toBe('moreska')
+    expect(activeTabKey(voditelj, '/app/moreska/42')).toBe('moreska')
   })
 })
 
@@ -569,6 +577,11 @@ describe('activeScreenKey', () => {
 
   it('does not light a screen whose route is only a prefix of the path', () => {
     expect(activeScreenKey('/app/performances-archive')).toBeNull()
+  })
+
+  it('lights Moreška on Stanje as well as on the schedule (#566)', () => {
+    expect(activeScreenKey('/app/moreska')).toBe('moreska')
+    expect(activeScreenKey('/app/moreska/42')).toBe('moreska')
   })
 
   it('lights Članovi on a dancer’s profile, not only on the list (#511)', () => {

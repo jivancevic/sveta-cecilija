@@ -15,12 +15,15 @@
 //   2. **Exactly one holder.** Giving a title to somebody takes it off whoever
 //      held it, who falls back to the plain role of their own army. There is no
 //      state in which two dancers wear one crown, so the screen never has to
-//      explain one.
+//      explain one. The bula is the exception that proves it: her role IS her
+//      title, so the dancer she takes it from leaves the postava rather than
+//      staying in it as a "plain bula", which is not a thing.
 //   3. **What the postava IS before anybody saves it.** The plain rows are the
-//      attendance answers (`buildLineupFromAttendance`); the stored rows carry
-//      the titles. `lineupWithTitles` is the overlay, and it is what Stanje
-//      writes whenever a title moves, so the saved postava always matches the
-//      answers on screen rather than the answers as they were an hour ago.
+//      attendance answers (`buildLineupFromAttendance`), FLATTENED to the plain
+//      role of their army; the stored rows carry the titles. `lineupWithTitles`
+//      is the overlay, and it is what Stanje writes whenever a title moves, so
+//      the saved postava always matches the answers on screen rather than the
+//      answers as they were an hour ago.
 //   4. **A confirmed postava carries all four, once each** (CONTEXT.md, decided
 //      2026-09-13). `checkTitles` is that rule, refused with a Croatian
 //      sentence naming what is missing or doubled. An UNCONFIRMED write never
@@ -87,29 +90,50 @@ export function armyOfLineupRole(role: LineupRole): TitleArmy | null {
 /**
  * Give a title to one dancer, or take theirs away (`title: null`).
  *
- * The previous holder is demoted to the plain role of their own army, never
- * removed from the postava: they are still dancing, they are simply not the
- * king any more. A dancer who is not in the list yet cannot be given a title
- * here — the caller builds the list from the answers first
- * ({@link lineupWithTitles}), so somebody with no "dolazim" has no row to
- * decorate.
+ * Exactly one holder, so giving a title takes it off whoever had it. What
+ * happens to them is where the bula differs from the other three: a demoted
+ * king is still a dancer of his army and stays in the postava as a plain crni
+ * or bili, while a bula has **no plain role to fall back to** — the role `bula`
+ * IS the title (glossary: *Title*) — so she leaves the postava instead. She
+ * still answered "dolazim" and still stands in the Bule card; she simply did
+ * not dance the bula that evening, which is exactly what her absence from the
+ * postava says, and it is what keeps her out of the season's bula count.
+ *
+ * A dancer with no row yet gets one, because the only way to hand the bula to
+ * the second of two is to put her in the list the first one is leaving.
  */
 export function assignTitle(
   entries: readonly LineupEntry[],
   input: { memberId: string; title: DanceTitle | null },
 ): LineupEntry[] {
-  return entries.map((entry) => {
+  const out: LineupEntry[] = []
+  let placed = false
+
+  for (const entry of entries) {
     if (entry.memberId === input.memberId) {
-      if (input.title) return { ...entry, role: input.title }
+      placed = true
+      if (input.title) {
+        out.push({ ...entry, role: input.title })
+        continue
+      }
       const army = armyOfLineupRole(entry.role)
-      return army ? { ...entry, role: PLAIN_OF_ARMY[army] } : entry
+      // Taking the bula away is taking her OUT: there is no plain bula.
+      if (army === 'bula') continue
+      out.push(army ? { ...entry, role: PLAIN_OF_ARMY[army] } : entry)
+      continue
     }
-    // Exactly one holder: whoever wore this title is a plain dancer again.
+    // Exactly one holder: whoever wore this title is a plain dancer again, or
+    // out of the postava when the title was the bula.
     if (input.title && entry.role === input.title) {
-      return { ...entry, role: PLAIN_OF_ARMY[TITLE_ARMY[input.title]] }
+      if (input.title === 'bula') continue
+      out.push({ ...entry, role: PLAIN_OF_ARMY[TITLE_ARMY[input.title]] })
+      continue
     }
-    return entry
-  })
+    out.push(entry)
+  }
+
+  if (!placed && input.title) out.push({ memberId: input.memberId, role: input.title })
+  return out
 }
 
 /**
@@ -119,11 +143,22 @@ export function assignTitle(
  * live truth of who is dancing; `stored` is what the `lineups` table holds. The
  * overlay is deliberate and it is what keeps the two from drifting:
  *
+ * - the derived roles are FLATTENED to the plain role of their army first. A
+ *   suggestion built from attendance carries the dancer's primary role, so a
+ *   crni kralj by trade would arrive wearing the crown — and a title comes from
+ *   the evening, never from the profile (Q65). Only a STORED title decorates a
+ *   name here;
  * - a stored title for somebody who has since said "ne dolazim" is DROPPED, so
  *   a crown never sits on an empty place;
  * - a stored title whose army no longer matches the dancer's army tonight is
  *   dropped too, because a voditelj who moves a crni kralj across to the bili
  *   has moved a dancer, not a crown;
+ * - **at most one bula is in the postava.** Her role is her title, so two bule
+ *   who both answered "dolazim" would be two holders of one title and the
+ *   evening could not be confirmed at all. The stored one wins; with none
+ *   stored, the first one in the roster order does, which is the ordinary
+ *   evening where exactly one bula came. The other stands in the Bule card
+ *   without being in the postava, and one tap moves the title across;
  * - a stored `voditelj` line is KEPT whatever the answers say: the member who
  *   runs the evening without dancing has no attendance answer to derive it
  *   from, and Stanje must not be the screen that quietly deletes it.
@@ -136,14 +171,27 @@ export function lineupWithTitles(input: {
   for (const entry of input.stored) {
     if (isDanceTitle(entry.role)) titleOf.set(entry.memberId, entry.role)
   }
+  const storedBula = input.stored.find((entry) => entry.role === 'bula')?.memberId ?? null
+  const bule = input.coming.filter((entry) => armyOfLineupRole(entry.role) === 'bula')
+  const theBula =
+    (storedBula && bule.some((entry) => entry.memberId === storedBula) ? storedBula : null) ??
+    bule[0]?.memberId ??
+    null
 
-  const out: LineupEntry[] = input.coming.map((entry) => {
-    const title = titleOf.get(entry.memberId)
-    if (title && TITLE_ARMY[title] === armyOfLineupRole(entry.role)) {
-      return { ...entry, role: title }
+  const out: LineupEntry[] = []
+  for (const entry of input.coming) {
+    const army = armyOfLineupRole(entry.role)
+    if (army === 'bula') {
+      if (entry.memberId !== theBula) continue
+      out.push({ memberId: entry.memberId, role: 'bula' })
+      continue
     }
-    return entry
-  })
+    // The profile's crown does not travel: a plain role first, the evening's
+    // own title on top of it.
+    const plain: LineupEntry = army ? { ...entry, role: PLAIN_OF_ARMY[army] } : { ...entry }
+    const title = titleOf.get(entry.memberId)
+    out.push(title && TITLE_ARMY[title] === army ? { ...entry, role: title } : plain)
+  }
 
   const seen = new Set(out.map((entry) => entry.memberId))
   for (const entry of input.stored) {

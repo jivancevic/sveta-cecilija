@@ -224,6 +224,28 @@ describe('set_lineup', () => {
     ])
   })
 
+  // #566 — the four-title rule is the CONFIRM's, never the write's. This tool
+  // records a photograph of the paper list as it reads it (story 62) and what
+  // it writes is always unconfirmed, so a postava with no titles in it at all
+  // has to go through untouched.
+  it('writes a postava with no titles in it at all', async () => {
+    const { store, replaced } = fakeStore()
+    const res = await setLineup(
+      {
+        performanceId: '10',
+        entries: [
+          { nickname: 'Ćići', role: 'crni' },
+          { nickname: 'Bepo', role: 'bili' },
+          { nickname: 'Đuro', role: 'crni' },
+        ],
+      },
+      store,
+    )
+    if (!res.ok) throw new Error(res.error)
+    expect(res.written.map((w) => w.role)).toEqual(['crni', 'bili', 'crni'])
+    expect(replaced[0]!.entries.some((e) => e.role.includes('kralj'))).toBe(false)
+  })
+
   it('reports an unmatched name instead of guessing, and still writes the rest', async () => {
     const { store, replaced } = fakeStore()
     const res = await setLineup(
