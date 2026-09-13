@@ -412,12 +412,15 @@ Lives at `/admin` (the route is the admin landing page itself; the old `/admin/s
 
 ### Financije
 The money screen of Cecilija (decided in #476): revenue collected, refunds, partner receivable per month with the statement download, the door-sales ledger per performance. Unlocked by `finance`, never by `tickets` alone, and it shows no buyer. *Statistika* is its counterpart: counts and fill for `tickets`, `season_stats` and `finance`, never money.
+
+### Statistika
+The season screen of Cecilija, live at `/app/stats?season=` since #508. One season of PUBLIC performances in counts: the band (seats sold, comps issued, season capacity, fill), one row per izvedba (sold of capacity, the adult/child split, the four channels — online, vrata, partner, gratis — and how many were scanned), the season trajectory and the channel mix. **No money on it for anybody**, `finance` holders included; euros are *Financije*. A cancelled evening is listed and flagged but counts toward nothing, which is the rule the Backoffice season band has always applied. The four channels fold the old site's held seats into "vrata", because neither has a ticket row or a buyer; *Izvedbe* keeps them apart, because a cashier correcting a miscount needs to know which ledger a line is in. Dancer statistics are a different thing entirely and live on *Ljestvica*.
 ### Scanned (people)
 The "Scanned" number on the dashboard counts **people through the door**, not orders or tokens. After the "one QR per order" rule, a single scanned token represents an entire party; the number that actually matters to door staff is the seat-equivalent count.
 
 Computed via JOIN: `SELECT COALESCE(SUM(o.adult_count + o.child_count), 0) FROM orders o JOIN qr_tokens q ON q.order_id = o.id WHERE o.show = $1 AND q.scanned = true`. Apples-to-apples with `onlineSold` (also seat-based) so `onlineSold − scanned = people still expected to arrive`.
 
-**Per-show drill-down `/admin/stats/[showId]`:**
+**Per-show drill-down `/admin/stats/[showId]` — MOVED.** The evening's numbers live on the evening itself since #502 (`/app/performances/[id]`), and #508 308s the old path there. What it used to say, for the record:
 - For `tehnika`: bigger numbers only — online, in-person, scanned (people), remaining. **No revenue.** No order list.
 - For `admin` and `superadmin`: numbers (including revenue) + full order list (buyer name, email, ticket count, per-QR scanned/unscanned state). Used to find a specific buyer's order on demand.
 

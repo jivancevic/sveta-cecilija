@@ -34,6 +34,10 @@ export const dynamic = 'force-dynamic'
 
 const S = APP_STRINGS.statistics
 
+/** The y-axis travel of a full-capacity venue, in px. The chart scrolls
+ *  sideways rather than growing, so one number sets the whole shape. */
+const CHART_HEIGHT = 124
+
 /** The label under each block of the stacked bars, in stack order. */
 const CHANNEL_LABEL: Record<(typeof TRAJECTORY_CHANNELS)[number], string> = {
   online: S.channels.online,
@@ -62,8 +66,11 @@ export default async function StatsPage({
 
   const screen = await getStatsScreen(requested, { canOpenPerformances, canSeeComps })
 
+  // No `season` on the shell: the picker under the header IS the season, and a
+  // header line naming the same year one row above a control naming it again
+  // reads as two different facts.
   return (
-    <AppShell viewer={viewer} screen="stats" season={screen.season}>
+    <AppShell viewer={viewer} screen="stats">
       <SeasonPicker season={screen.season} seasons={screen.seasons} />
 
       <SeasonBand screen={screen} />
@@ -140,23 +147,26 @@ function Trajectory({ bars, maxCapacity }: { bars: TrajectoryBar[]; maxCapacity:
 
       <div className="app__traj-scroll">
         {bars.map((bar) => {
-          const ceiling = maxCapacity > 0 ? (bar.capacity / maxCapacity) * 100 : 0
-          const shown = Math.min(bar.sold, bar.capacity)
-          const stack = maxCapacity > 0 ? (shown / maxCapacity) * 100 : 0
-          // Per seat against the (possibly capped) stack, so the blocks still
-          // add up to the stack's height even on an oversold evening.
+          // Pixels, not percentages: the column also carries a count above the
+          // bar and a date under it, so a percentage of the column's own height
+          // would push a full house past the top of the chart.
+          const ceiling = maxCapacity > 0 ? (bar.capacity / maxCapacity) * CHART_HEIGHT : 0
+          // Capped at the venue's own ceiling, so an oversold evening never
+          // pokes above its capacity line; the segments are then measured per
+          // seat against the capped stack and still add up to it.
+          const stack = maxCapacity > 0 ? (Math.min(bar.sold, bar.capacity) / maxCapacity) * CHART_HEIGHT : 0
           const perSeat = bar.sold > 0 ? stack / bar.sold : 0
 
           return (
             <div
               key={bar.id}
               className="app__traj-col"
-              title={`${bar.date} ${bar.sold}/${bar.capacity}`}
+              title={`${shortShowDay(bar.date)} ${bar.sold}/${bar.capacity}`}
             >
               <span className="app__traj-count">{bar.sold}</span>
-              <span className="app__traj-track" style={{ height: `${ceiling}%` }}>
+              <span className="app__traj-track" style={{ height: ceiling }}>
                 {bar.cancelled ? (
-                  <i className="app__traj-seg app__traj-seg--cancelled" style={{ height: `${stack}%` }} />
+                  <i className="app__traj-seg app__traj-seg--cancelled" style={{ height: stack }} />
                 ) : (
                   bar.segments
                     .filter((seg) => seg.count > 0)
@@ -164,7 +174,7 @@ function Trajectory({ bars, maxCapacity }: { bars: TrajectoryBar[]; maxCapacity:
                       <i
                         key={seg.key}
                         className={`app__traj-seg app__traj-seg--${seg.key}`}
-                        style={{ height: `${seg.count * perSeat}%` }}
+                        style={{ height: seg.count * perSeat }}
                       />
                     ))
                 )}

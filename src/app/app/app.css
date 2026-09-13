@@ -4651,12 +4651,13 @@ span.app__sale-head {
 }
 
 /* Twenty-two evenings do not fit a phone, so the chart scrolls sideways rather
-   than crushing every bar to a hairline. */
+   than crushing every bar to a hairline. The height comes from the columns
+   (the tallest ceiling plus its two labels), never from this box: the bar
+   heights are px, set by CHART_HEIGHT in the page. */
 .app__traj-scroll {
   display: flex;
   align-items: flex-end;
   gap: 6px;
-  height: 168px;
   padding-bottom: 2px;
   overflow-x: auto;
 }
@@ -4669,7 +4670,6 @@ span.app__sale-head {
   justify-content: flex-end;
   max-width: 56px;
   min-width: 22px;
-  height: 100%;
 }
 
 .app__traj-count {
@@ -4850,10 +4850,6 @@ a.app__statrow-main:focus-visible {
   margin-top: 24px;
 }
 
-/* The laptop has room for the whole season at once, so the chart gets taller
-   and the rows tighten with the rest of the app (#490). */
-@media (min-width: 900px) {
-  .app__traj-scroll {
-    height: 220px;
-  }
-}
+/* A column's bars are sized in px by the page, so there is nothing here for a
+   breakpoint to change: the chart is the same shape on a phone and a laptop,
+   and only the surrounding rhythm tightens (the shell's own #490 rules). */
