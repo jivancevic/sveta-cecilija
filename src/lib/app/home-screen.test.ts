@@ -15,6 +15,7 @@ import {
   inquiriesCard,
   leaderboardCard,
   membersCard,
+  moreskaEmptyCard,
   nextSentence,
   ordersCard,
   performancesCard,
@@ -59,6 +60,11 @@ describe('homeCardKeys', () => {
     // to leave out: the bar already answered the access question (#563).
     const nav = appNav(user('partner'), { hasMember: false, hasPartner: true })
     expect(homeCardKeys(nav)).toEqual(['sell', 'statement', 'notifications'])
+  })
+
+  it('gives a dancer the dance first, as their bar does (#565)', () => {
+    const nav = appNav(user('moreskant'), ctx({ hasMember: true }))
+    expect(homeCardKeys(nav)).toEqual(['moreska', 'leaderboard', 'notifications'])
   })
 
   it('caps at four, so Obavijesti can never push a fifth card on', () => {
@@ -211,6 +217,18 @@ describe('the figure cards', () => {
   it('falls back to a sentence when a count could not be read', () => {
     expect(compCard(null).figure).toBeNull()
     expect(compCard(12).caption).toBe('gratis ulaznica ove sezone')
+  })
+})
+
+describe('the Moreška card with no evening left', () => {
+  it('tells a finished season from one that has not started', () => {
+    expect(moreskaEmptyCard(true).caption).toBe(APP_STRINGS.moreska.eosTitle)
+    expect(moreskaEmptyCard(false).caption).toBe(APP_STRINGS.moreska.eosNothingTitle)
+    expect(moreskaEmptyCard(true)).toMatchObject({
+      figure: null,
+      href: '/app/moreska',
+      action: 'Otvori Morešku',
+    })
   })
 })
 

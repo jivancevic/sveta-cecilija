@@ -33,7 +33,8 @@ import { getPendingJoinClaims } from './join-data'
 import { loadAccounts } from './users-data'
 import { getSeasonStats } from './stats-data'
 import { getSeasonPerformances } from './roster-data'
-import { pickNextPerformance } from './roster-loaders'
+import { pickNextPerformance, type RosterPerformance } from './roster-loaders'
+import { armyLabel, heroView, type HeroView } from './moreska-screen'
 import { buildLeaderboard } from './leaderboard-loaders'
 import { formatEur } from './orders-view'
 import { APP_STRINGS } from './strings'
@@ -54,6 +55,7 @@ import {
   sellCard,
   statementCard,
   statsCard,
+  moreskaEmptyCard,
   usersCard,
   zagrebToday,
   firstNameOf,
@@ -61,11 +63,32 @@ import {
   type HomeCardKey,
 } from './home-screen'
 
+/**
+ * The Moreška card: the hero of the next nastup, with the answer in it (#565).
+ *
+ * It is not a tile, which is why it is not in `cards`: T1's rule is that a
+ * screen has one hero or none, and on Početna the hero is the evening a dancer
+ * came to answer for. Everything in it is `moreska-screen.ts`'s, so the card
+ * and the Moreška screen itself can never describe the same evening differently.
+ */
+export interface MoreskaHero {
+  hero: HeroView
+  performanceId: string
+  /** The reader's own Member, or null for a voditelj who does not dance. */
+  memberId: string | null
+  answer: RosterPerformance['myAnswer']
+  /** "Crni" / "Bili" as the server recorded it, or null. */
+  army: string | null
+  canAnswer: boolean
+}
+
 export interface HomeScreen {
   /** "Dobra večer, Josip." — null for a login with no name of its own. */
   greeting: string | null
   /** "Sutra je nastup." — null when the schedule has nothing left. */
   sentence: string | null
+  /** The hero, when the account carries the Moreška tab and has a nastup left. */
+  moreska: MoreskaHero | null
   /** The cards, in the account's tab order, Obavijesti last. Four at most. */
   cards: HomeCard[]
 }
@@ -96,14 +119,22 @@ export async function loadHomeScreen(viewer: AppViewer): Promise<HomeScreen> {
     has('stats') || has('performances') || has('orders') || register === 'izvedba'
 
   // The roster's own schedule, which is a different question: every evening a
-  // dancer has to turn up for, public or not (ADR-0024). It is read only for
-  // the sentence today; the Moreška card reads the same season when it lands.
-  const needSeason = register === 'nastup'
+  // dancer has to turn up for, public or not (ADR-0024). One read serves both
+  // the sentence and the Moreška hero.
+  const needSeason = has('moreska') || register === 'nastup'
 
   const [shows, season, inquiriesCount, door, roster, pending, accounts, comps] = await Promise.all([
     needShows ? getUpcomingShows() : Promise.resolve(null),
     needSeason
-      ? getSeasonPerformances({ memberId: viewer.me?.id ?? null, voditelj: viewer.voditelj })
+      ? getSeasonPerformances({
+          memberId: viewer.me?.id ?? null,
+          voditelj: viewer.voditelj,
+          // The hero draws the ArmyBar for a dancer too (#565): "are we enough
+          // tonight" is a question the whole roster reads. Asked for only when
+          // the hero is going to be drawn, so a dancer whose bar has no Moreška
+          // tab does not pay for two headcount queries.
+          armyCounts: has('moreska'),
+        })
       : Promise.resolve(null),
     has('inquiries') ? countNewInquiries() : Promise.resolve(null),
     has('scan') ? loadDoorShow() : Promise.resolve(null),
@@ -139,9 +170,27 @@ export async function loadHomeScreen(viewer: AppViewer): Promise<HomeScreen> {
     has('notifications') ? getMyNotifications(viewer.userId) : Promise.resolve(null),
   ])
 
+  const nextNastup = pickNextPerformance(season?.upcoming ?? [])
+  const moreska: MoreskaHero | null =
+    has('moreska') && nextNastup
+      ? {
+          hero: heroView(nextNastup),
+          performanceId: nextNastup.id,
+          memberId: viewer.me?.id ?? null,
+          answer: nextNastup.myAnswer,
+          army: armyLabel(nextNastup.myArmy),
+          canAnswer: nextNastup.canAnswer,
+        }
+      : null
+
   const cards: HomeCard[] = []
   for (const key of keys) {
     switch (key) {
+      case 'moreska':
+        // The hero, not a tile — unless the season has nothing left, in which
+        // case there is no evening to be the hero of and the card says so.
+        if (!moreska) cards.push(moreskaEmptyCard((season?.past.length ?? 0) > 0))
+        break
       case 'orders':
         cards.push(ordersCard({ count: orderCount ?? 0, forNextShow: next !== null }))
         break
@@ -216,6 +265,7 @@ export async function loadHomeScreen(viewer: AppViewer): Promise<HomeScreen> {
   }
 
   return {
+    moreska,
     greeting: greetingLine({
       nowMs,
       firstName: firstNameOf({
@@ -227,10 +277,7 @@ export async function loadHomeScreen(viewer: AppViewer): Promise<HomeScreen> {
       // A dancer's sentence is about the next NASTUP, public or not, which is
       // the roster's question; everybody else's is about the next public
       // evening, which is the buyer's.
-      date:
-        register === 'nastup'
-          ? (pickNextPerformance(season?.upcoming ?? [])?.date ?? null)
-          : (next?.date ?? null),
+      date: register === 'nastup' ? (nextNastup?.date ?? null) : (next?.date ?? null),
       today,
       register,
     }),

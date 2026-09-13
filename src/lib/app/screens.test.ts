@@ -542,7 +542,7 @@ describe('activeTabKey', () => {
   // #566 closes by giving Stanje a route of its own.
   it('lights Izvedbe for a voditelj reading one evening, because it is their tab', () => {
     const voditelj = appNav(user('moreska'), ctx())
-    expect(keys(voditelj.tabs)).toEqual(['moreska', 'members', 'performances', 'more'])
+    expect(keys(voditelj.tabs)).toEqual(['home', 'moreska', 'members', 'performances', 'more'])
     expect(activeTabKey(voditelj, '/app/performances/42')).toBe('performances')
   })
 
@@ -553,7 +553,7 @@ describe('activeTabKey', () => {
     // (the gate takes `['performances','moreska']`); only the bar has nothing
     // honest to light, which is exactly what #566 fixes.
     const dancer = appNav(user('moreskant'), ctx({ hasMember: true }))
-    expect(keys(dancer.tabs)).toEqual(['moreska', 'leaderboard', 'more'])
+    expect(keys(dancer.tabs)).toEqual(['home', 'moreska', 'leaderboard', 'more'])
     expect(activeTabKey(dancer, '/app/performances/42')).toBeNull()
     expect(activeTabKey(dancer, '/app/moreska')).toBe('moreska')
   })

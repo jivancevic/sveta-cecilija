@@ -6,9 +6,11 @@ import type { HomeCard } from '@/lib/app/home-screen'
 import { ONBOARDING_COOKIE, needsOnboarding } from '@/lib/app/onboarding'
 import { APP_STRINGS } from '@/lib/app/strings'
 import { resolveAppViewer } from '@/lib/app/viewer'
-import { Card, Chip, List, ListRow, Podium, Ring, Tile, Tiles } from './ui'
+import { Card, Chip, Hero, List, ListRow, Podium, Ring, Tile, Tiles } from './ui'
 import { AppShell } from './AppShell'
 import { deniedFor } from './DeniedPage'
+import { Answer } from './moreska/Answer'
+import { StateBar } from './moreska/StateBar'
 
 // `/app` — Početna, the front door (#564, decisions Q16, Q26, Q59, Q61).
 //
@@ -33,8 +35,13 @@ import { deniedFor } from './DeniedPage'
 // anywhere: Početna is read by every account that is in, the shared `tehnika`
 // and `member` logins included.
 //
-// Everything is server-rendered. `home-data.ts` loads only the cards this
-// reader is getting, and `home-screen.ts` decides what each of them says.
+// Everything is server-rendered except the two things a browser has to own: the
+// attendance answer on the Moreška hero and that hero's tap into Stanje. Both
+// are **Moreška's own components** (#565), not copies — one evening described
+// by two modules is how two screens come to disagree about it.
+//
+// `home-data.ts` loads only the cards this reader is getting, and
+// `home-screen.ts` decides what each of them says.
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -73,6 +80,37 @@ export default async function AppHomePage() {
           {home.greeting && <b>{home.greeting}</b>}
           {home.sentence && <span>{home.sentence}</span>}
         </p>
+      )}
+
+      {/* The one hero, when the reader's bar carries Moreška: the next nastup,
+          the answer in it, and the two armies under it. There is never a
+          second hero on a screen (T1), which is why every other card is a tile. */}
+      {home.moreska && (
+        <Hero
+          eyebrow={home.moreska.hero.eyebrow}
+          day={home.moreska.hero.day}
+          month={home.moreska.hero.month}
+          meta={home.moreska.hero.meta}
+        >
+          {home.moreska.memberId && (
+            <Answer
+              performanceId={home.moreska.performanceId}
+              memberId={home.moreska.memberId}
+              current={home.moreska.answer}
+              currentArmy={home.moreska.army}
+              disabled={!home.moreska.canAnswer}
+              lockNote={home.moreska.canAnswer ? null : APP_STRINGS.answer.locked}
+            />
+          )}
+          {home.moreska.hero.armies && (
+            <StateBar
+              crni={home.moreska.hero.armies.crni}
+              bili={home.moreska.hero.armies.bili}
+              threshold={home.moreska.hero.armies.threshold}
+              href={home.moreska.hero.href}
+            />
+          )}
+        </Hero>
       )}
 
       {tiles.length > 0 && <Tiles>{tiles.map(renderTile)}</Tiles>}

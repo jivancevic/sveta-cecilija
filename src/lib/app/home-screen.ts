@@ -318,6 +318,24 @@ export function membersCard(input: { active: number; pending: number }): FigureC
   }
 }
 
+/**
+ * Moreška, when there is no nastup left to be the hero of.
+ *
+ * The season is over or has not started, and the card says which — the same two
+ * pieces of news the Moreška screen itself distinguishes (#565), because "sezona
+ * je završila" and "sezona još nije počela" are not the same sentence to
+ * somebody looking for their next evening.
+ */
+export function moreskaEmptyCard(hasPast: boolean): FigureCard {
+  return {
+    kind: 'figure',
+    key: 'moreska',
+    ...base('moreska'),
+    figure: null,
+    caption: hasPast ? APP_STRINGS.moreska.eosTitle : APP_STRINGS.moreska.eosNothingTitle,
+  }
+}
+
 /** Korisnici: how many logins there are. */
 export function usersCard(count: number): FigureCard {
   const { figure, caption } = counted(count, S.captions.users)
