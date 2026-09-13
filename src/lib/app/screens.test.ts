@@ -71,6 +71,8 @@ describe('the screen table', () => {
       'sell',
       'statement',
       'inquiries',
+      'comp',
+      'stats',
       'finance',
     ])
   })
@@ -134,14 +136,16 @@ describe('unlockedScreens', () => {
     expect(keys(unlockedScreens(user('moreska'), ctx()))).toEqual(['performances', 'leaderboard'])
   })
 
-  it('gives a tickets holder Narudžbe, Izvedbe and Upiti, and the rest as built', () => {
-    // Narudžbe landed with #501, the blagajna's half of Izvedbe with #502 and
-    // Upiti with #507. Gratis and Statistika are ticketed separately (#506,
-    // #508), so `tickets` unlocks exactly these three today, in rank order.
+  it('gives a tickets holder every blagajna screen built so far', () => {
+    // Narudžbe landed with #501, the blagajna's half of Izvedbe with #502,
+    // Upiti with #507, Gratis with #506 and Statistika with #508 — which is
+    // every screen `tickets` unlocks, so this list stops growing here.
     expect(keys(unlockedScreens(user('tickets', 'refunds'), ctx()))).toEqual([
       'orders',
       'performances',
       'inquiries',
+      'comp',
+      'stats',
     ])
   })
 
@@ -160,6 +164,35 @@ describe('unlockedScreens', () => {
       expect(keys(unlockedScreens(who, where))).not.toContain('inquiries')
     }
     expect(keys(unlockedScreens(user('tickets'), ctx()))).toContain('inquiries')
+  })
+
+  it('gives the shared member login Statistika and NOTHING else', () => {
+    // `season_stats` is the whole permission set of the society's shared
+    // `member` account (ADR-0022). One screen, no orders, no buyers, no money.
+    expect(keys(unlockedScreens(user('season_stats'), ctx()))).toEqual(['stats'])
+  })
+
+  it('gives a finance holder the season in counts and the season in euros', () => {
+    // Statistika (#508) and Financije (#509) are the pair, and the split
+    // between them is the point: counts on one, cents on the other.
+    expect(keys(unlockedScreens(user('finance'), ctx()))).toEqual(['stats', 'finance'])
+  })
+
+  it('gives the president Skener, Statistika and Financije, and no way into Izvedbe', () => {
+    // Velebit is `finance` + `door` (#500). The pair unlocks the gate and both
+    // season screens, and NEITHER word unlocks Izvedbe — which is what makes
+    // every row on Statistika link-less for him (#508), and what makes his old
+    // `/admin/stats/[id]` bookmark land on the refusal page once that path
+    // 308s to `/app/performances/[id]`.
+    expect(keys(unlockedScreens(user('finance', 'door'), ctx()))).toEqual([
+      'scan',
+      'stats',
+      'finance',
+    ])
+  })
+
+  it('gives a door-only account no Statistika at all', () => {
+    expect(keys(unlockedScreens(user('door'), ctx()))).toEqual(['scan'])
   })
 
   it('never lets an unknown permission string unlock anything', () => {
@@ -182,11 +215,25 @@ describe('appNav', () => {
   })
 
   it('has no tabs and no landing screen for an account that unlocks nothing', () => {
-    // `refunds` and `dev` unlock no screen by design: a refund is an action
-    // inside an order, and `dev` is the diagnostics strip.
-    const nav = appNav(user('refunds', 'dev'), ctx())
+    // `users` is the widest set that still unlocks nothing built: Korisnici
+    // (#510) is an empty column, and `refunds` unlocks no screen by design (a
+    // refund is an action inside an order).
+    const nav = appNav(user('users', 'refunds'), ctx())
     expect(nav.tabs).toEqual([])
     expect(nav.landing).toBeNull()
+  })
+
+  it('lands the shared member login on Statistika, its only screen', () => {
+    // The `season_stats` bundle (ADR-0022) is one tab plus Više, and the
+    // laptop's sidebar shows it under Uprava. Nothing else is reachable, which
+    // is the whole point of a login the society shares.
+    const nav = appNav(user('season_stats'), ctx())
+    expect(nav.tabs.map((t) => t.key)).toEqual(['stats', 'more'])
+    expect(nav.overflow).toEqual([])
+    expect(nav.landing).toBe('/app/stats')
+    expect(nav.groups.map((g) => [g.group, g.screens.map((s) => s.key)])).toEqual([
+      ['admin', ['stats']],
+    ])
   })
 
   it('caps the bar at four screens and pushes the rest into Više', () => {

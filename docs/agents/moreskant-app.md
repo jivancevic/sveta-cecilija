@@ -41,9 +41,9 @@ unlock are tabs, the rest live under Više, and Izvedbe jumps to the front for a
 | 5 | Prodaja | `/app/sell` | `partner` | **live** (#505): the izvedba picker with seats left, the two steppers, Izdaj ulaznice → the PDF, Zadnje prodaje with the delete-then-undo storno, and the live month card | the Backoffice partner dashboard stays until #512 |
 | 6 | Obračun | `/app/statement` | `partner` | **live** (#505): the season's per-izvedba bars, and a month/year picker that shows the statement on screen before offering its CSV | the Backoffice partner dashboard stays until #512 |
 | 7 | Upiti | `/app/inquiries`, `/app/inquiries/[id]` | `tickets` | **live** (#507): the inbox, ordered unanswered first with booking enquiries (`private-moreska`, `moreska-experience`) lifted above general ones, a `state=new\|handled` filter and a pager in the query string; the enquiry itself with the whole message, **Odgovori** as a `mailto:` carrying the subject and the quoted message (Tatjana sends from `info@` in Gmail, in-app sending is out of scope) and **Označi riješenim** in one tap, whose undo is the same button (`POST /api/app/inquiries/[id]/handled`, a switch rather than a toggle, so a retry is harmless) | the Backoffice keeps its list; the "Mark handled" edit-menu item there still writes the same column |
-| 8 | Gratis (comp tickets; promo codes stay in the Backoffice for v1) | `/app/comp` | `tickets` | comp menu item on an order | none |
+| 8 | Gratis (comp tickets; promo codes stay in the Backoffice for v1) | `/app/comp` | `tickets` | **live** (#506): Podijeli gratis (izvedba picker with seats left, a REQUIRED member picker with search and an inline Dodaj člana, the two steppers, the holder name prefilled from the member, an optional e-mail) → `/api/comp/issue`, which opens the PDF and says whether the mail was sent, skipped or failed; Zadnji gratisi with Poništi gratis on a whole order or one ticket behind a confirmation (`/api/comp/cancel` has no undo, so there is none offered); and the Gratis po članu season table with a season picker | none |
 | 9 | Korisnici | `/app/users`, `/app/users/[id]` | `users` | `/admin/collections/users` | none |
-| 10 | Statistika (counts only) | `/app/stats?season=2026` | `tickets`, `season_stats`, `finance` | `/admin/stats`. **The single-show drill-down has already moved**: `/app/performances/[id]` carries the per-show numbers since #502, so `/admin/stats/[id]` has nothing left to show and its 308 lands with #508 | 308 from both |
+| 10 | Statistika (counts only) | `/app/stats?season=2026` | `tickets`, `season_stats`, `finance` | **live for all three** (#508): the season band (prodano, gratis, kapacitet, popunjenost), one row per public izvedba (sold of capacity, odrasli/djeca, the four channels, ušlo), the trajectory and channel-mix charts moved as-is, and "gratis po članu" for `tickets` only, which is Gratis's own table (#506) read through `repo.comp` and tallied by `tallyCompsByMember` rather than counted a second way. Counts only, never money: euros are Financije (#509). A row links into `/app/performances/[id]` only for a reader who unlocks Izvedbe, so the shared `member` login gets the numbers without a link that would refuse itself. **That rule catches a second account, not just the shared one:** Velebit holds `finance` + `door`, which unlocks Statistika but NOT Izvedbe, so he reads every row's numbers with no link on any of them — and his old `/admin/stats/[id]` bookmark, which now 308s to `/app/performances/[id]`, lands on the "Ovaj dio nije za tvoj račun" page rather than on an evening. A `door`-only account does not reach this screen at all, because `door` unlocks neither. **The single-show drill-down had already moved**: `/app/performances/[id]` carries the per-show numbers since #502 | 308 from both, through `src/lib/backoffice-ports.ts` |
 | 11 | Financije (money without buyers, added by #476) | `/app/finance` | `finance` | money band on the Backoffice dashboard | none |
 | last | Više (a list, always the last tab) | `/app/more` | any screen | **live** (#495): the overflow screens, then the standing rows | 308 from `/app/vise` |
 
@@ -1891,3 +1891,82 @@ rather than writing a second query for it.
 The screen reaches the database only through `getRepo()` (ADR-0027 decision 5),
 so it adds no entry to the repo guard's allow-list. It grew the seam by one repo,
 `InquiriesRepo` (`list`, `byId`, `setHandled`, `countNew`).
+
+## Gratis (#506)
+
+`/app/comp`, for a `tickets` holder: the secretary hands a society member free
+seats, takes one back when it was issued in error, and sees who has had how many
+this season. A port of the Backoffice comp panel (`CompIssuePanel` /
+`CompIssueForm`), not a redesign — ADR-0019 already decided everything that
+matters and the two routes behind it are untouched.
+
+**Three sections, in the order of the moments they serve.**
+
+| Section | What it does | Route behind it |
+|---|---|---|
+| Podijeli gratis | Izvedba picker with seats left, a REQUIRED member picker with search and an inline **Dodaj člana**, the two steppers, the holder name prefilled from the member, an optional e-mail | `POST /api/comp/issue`, plus `POST /api/comp/members` for the inline add |
+| Zadnji gratisi | The eight newest comps, each expanding to its per-person tickets; **Poništi gratis** on the whole order or on one ticket | `POST /api/comp/cancel` |
+| Gratis po članu | The season's comps per member: adult, child, issued and voided, with a season picker (`?season=`) | a read, through `repo.comp` |
+
+**The member is required and the form says so by staying disabled.** Per-member
+reporting is the whole reason a comp carries a Member link rather than a note
+(ADR-0019), so an unattributed comp would be a seat nobody can account for. The
+inline add exists because the person at the desk is sometimes not on the list
+yet, and sending the secretary to the Backoffice mid-conversation is how a comp
+ends up attributed to the wrong person. It creates a Member with a **name only**
+— that is the shape of `repo.members.create`, and it is the refusal: a `tickets`
+holder may add a member but may not write the moreškant fields, and a field the
+method cannot carry is a field the route cannot leak.
+
+**Three names live around a comp and the screen keeps them apart** (ADR-0019):
+the `member` is who RECEIVED it and is never printed, the holder is what goes on
+the slip (prefilled from the member, editable, and it stops prefilling the
+moment it is touched), and whoever claims the QR overwrites the holder with
+their own name.
+
+**Poništi is a confirmation, not the partner's delete-then-undo,** and that is a
+fact about the route rather than a matter of taste: `/api/comp/cancel` has no
+undo endpoint, so a bar that drains would offer a way back that does not exist.
+The sheet names what stops working and says the void cannot be taken back; a
+ticket that has already been scanned says so above the button. A voided comp
+stays on the list, struck through — a row that vanished would read as a comp
+that was never issued. **Poništi reaches the eight newest comps and no further:**
+an older one is voided in the Backoffice until a search over comps lands, which
+is the same v1 line Narudžbe draws around its own history.
+
+**Poništi is storno, never povrat.** No money ever moved through a comp
+(`total = 0` by construction), so the word that means "the money went back"
+would be a lie about the event; the void writes `cancel_reason='storno'` and
+`channel='comp'` is what distinguishes it from a partner storno (ADR-0019, no
+new enum value).
+
+**The season table counts tickets, never money.** A SUM across the join to
+tickets would multiply an order's total by its party size, and a comp's total is
+zero anyway. The rule — a live ticket is *izdano*, a voided one is *poništeno*
+and neither adult nor child — is pure and tested (`tallyCompsByMember` in
+`src/lib/app/comp-screen.ts`); the query under it is a plain "every comp ticket
+of this season". The season is the performance's calendar year, the project's
+one definition of a season, and `?season=` resolves exactly as Ljestvica's does.
+**It counts a dancer's self-issued comps too** (`compIssuedBy='self'`, #434):
+those are `channel='comp'` orders attributed to that dancer's own Member, and
+the table answers "how many comps did this member receive", which is exactly
+what they are.
+
+**The screen is called "Gratis", not the route map's "Gratis i kodovi"**
+(`APP_STRINGS.screens.comp`): the second half of that name promised a thing the
+page does not have. The table in `screens.ts` is untouched — a label is a
+string, not a route.
+
+**Promo codes are not here** and that is the #476 decision, not an omission:
+none has ever been created, and the Backoffice's PromoCodes view stays the only
+place one is made. The screen says so in a line at its foot.
+
+The screen reaches the database only through `getRepo()`, so it adds no entry to
+the repo guard's allow-list. It grew the seam by two repos: **`MembersRepo`**
+(`listActive`, `create` — `/api/comp/members` was moved onto it in the same
+change, so the Backoffice comp form and Cecilija share one list and one create)
+and **`CompRepo`** (`recent`, `ticketsInSeason`, `firstSeason`), whose SQL lives
+in `src/lib/comp/comp-report.ts` the way every raw statement does. There is no
+comp WRITE in the seam and there must not be: issuing and voiding go through the
+two existing routes, which take the per-show advisory lock and the `storno` void
+primitive, and a second writer would be a second way to spend a seat.

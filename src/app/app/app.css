@@ -4599,6 +4599,261 @@ span.app__sale-head {
   background: rgba(184, 136, 26, 0.4);
 }
 
+/* ── Statistika: the season in counts (#508) ───────────────────────────────
+   A port of the Backoffice season band and its two charts, plus the shared
+   `member` login's season table, onto the #490 tokens. Every figure is a
+   count: there is no money on this screen for anybody, and no rule below
+   colours one.
+
+   The channel palette is the one the Backoffice charts already teach
+   (`components/payload/dashboard/format.ts`), named here so the stacked bars,
+   the mix bar and the legend all read one token rather than three hexes.
+   Gold is online because it is the primary channel; the other three are the
+   muted earth tones of the same family, distinct enough to tell apart without
+   the legend. */
+.app {
+  --ch-online: var(--gold);
+  --ch-door: #4a6670; /* slate teal */
+  --ch-partner: #8c5a3c; /* terracotta bronze */
+  --ch-comp: #6a5a7d; /* muted plum */
+}
+
+/* ── The season band ─────────────────────────────────────── */
+.app__statband {
+  margin-bottom: 22px;
+}
+
+.app__statband-track {
+  display: block;
+  height: 8px;
+  margin-top: 10px;
+  background: var(--sunk);
+  overflow: hidden;
+}
+
+.app__statband-track i {
+  display: block;
+  height: 100%;
+  background: var(--gold);
+}
+
+/* A sentence that explains a number, never a warning: small, muted, and under
+   the block it is about rather than floating at the foot of the screen. */
+.app__statnote {
+  margin: 8px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* ── Tijek sezone: one column per evening ─────────────────── */
+.app__traj {
+  margin-top: 24px;
+}
+
+/* Twenty-two evenings do not fit a phone, so the chart scrolls sideways rather
+   than crushing every bar to a hairline. The height comes from the columns
+   (the tallest ceiling plus its two labels), never from this box: the bar
+   heights are px, set by CHART_HEIGHT in the page. */
+.app__traj-scroll {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  padding-bottom: 2px;
+  overflow-x: auto;
+}
+
+.app__traj-col {
+  display: flex;
+  flex: 1 0 28px;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  max-width: 56px;
+  min-width: 22px;
+}
+
+.app__traj-count {
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+/* The capacity ceiling, as tall as this venue is against the season's tallest.
+   `column-reverse` anchors the stack to the bottom, so the first segment in
+   display order sits lowest. */
+.app__traj-track {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column-reverse;
+  width: 100%;
+  margin: 4px 0 6px;
+  background: var(--sunk);
+  overflow: hidden;
+}
+
+.app__traj-seg {
+  display: block;
+  flex-shrink: 0;
+  width: 100%;
+}
+
+.app__traj-seg--online,
+.app__mix-seg.app__traj-seg--online {
+  background: var(--ch-online);
+}
+
+.app__traj-seg--inPerson,
+.app__mix-seg.app__traj-seg--inPerson {
+  background: var(--ch-door);
+}
+
+.app__traj-seg--partner,
+.app__mix-seg.app__traj-seg--partner {
+  background: var(--ch-partner);
+}
+
+.app__traj-seg--comp,
+.app__mix-seg.app__traj-seg--comp {
+  background: var(--ch-comp);
+}
+
+/* A cancelled evening is one flat block: its seats no longer mean anything
+   worth splitting apart. */
+.app__traj-seg--cancelled {
+  background: var(--rule);
+}
+
+.app__traj-date {
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 10px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+/* ── Odakle su mjesta: one stacked bar and its legend ─────── */
+.app__mix {
+  margin-top: 24px;
+}
+
+.app__mix-track {
+  display: flex;
+  height: 14px;
+  background: var(--sunk);
+  overflow: hidden;
+}
+
+.app__mix-seg {
+  display: block;
+  height: 100%;
+}
+
+.app__mix-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 18px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+
+/* ── One evening in the season table ──────────────────────── */
+.app__statrows {
+  margin-top: 24px;
+}
+
+.app__statrows ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.app__statrow {
+  padding-block: var(--rowY);
+  border-bottom: 1px solid var(--rule);
+}
+
+/* The tappable half. A row is a link only when the reader can open Izvedbe:
+   the shared `member` login unlocks this screen and nothing else, so it gets a
+   plain block instead of a link that would refuse itself. */
+.app__statrow-main {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+a.app__statrow-main:hover,
+a.app__statrow-main:focus-visible {
+  color: var(--goldText);
+}
+
+.app__statrow-head b {
+  font-weight: 600;
+}
+
+.app__statrow-head span {
+  margin-left: 8px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.app__statrow-sold {
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.app__statrow-sold i {
+  margin-left: 8px;
+  font-style: normal;
+  color: var(--muted);
+}
+
+.app__statrow-track {
+  display: block;
+  height: 6px;
+  margin: 6px 0 5px;
+  background: var(--sunk);
+  overflow: hidden;
+}
+
+.app__statrow-fill {
+  display: block;
+  height: 100%;
+  background: var(--gold);
+}
+
+.app__statrow-fill--off {
+  background: var(--rule);
+}
+
+/* The two count lines under the bar: small, muted and tabular, because they
+   are read when the total prompts a question rather than before it. */
+.app__statrow-line {
+  margin: 0;
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+  letter-spacing: 0.01em;
+  color: var(--muted);
+}
+
+/* ── Gratis po članu ──────────────────────────────────────── */
+.app__comptable {
+  margin-top: 24px;
+}
+
+/* A column's bars are sized in px by the page, so there is nothing here for a
+   breakpoint to change: the chart is the same shape on a phone and a laptop,
+   and only the surrounding rhythm tightens (the shell's own #490 rules). */
+
 /* ─────────────────────────────────────────────────────────────
    Upiti (#507): the enquiry inbox and one enquiry.
 
@@ -4879,4 +5134,131 @@ span.app__sale-head {
     width: auto;
     min-width: 180px;
   }
+}
+
+/* ── Gratis: the comp screen (#506) ────────────────────────────────────────
+   A port of the Backoffice comp panel, so most of it is the shell's vocabulary
+   already: `app__stepper*` for the counts, `app__sale*` for the void list (a
+   comp order is shaped exactly like a partner sale), `app__stats` for the
+   season table, `app__order-sheet` for the confirmation. What is new is the
+   member picker, which is a search box over a scrollable list of names rather
+   than a `<select>`: a roster of a hundred members is unreadable in a native
+   picker on a phone, and the one thing the secretary knows is the name. */
+.app__comp-issue,
+.app__comp-recent,
+.app__comp-permember {
+  margin: 26px 0 0;
+}
+
+.app__comp-hint {
+  margin: -4px 0 12px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* The last line on the screen: where promo codes actually live (#476). */
+.app__comp-codes {
+  margin-top: 22px;
+  padding-top: 12px;
+  border-top: 1px solid var(--rule);
+}
+
+/* The picker: one screenful, scrolled rather than paged, because the search
+   box above it is what shortens the list. */
+.app__member-list {
+  margin: 0 0 10px;
+  padding: 0;
+  list-style: none;
+  max-height: 210px;
+  overflow-y: auto;
+  border: 1px solid var(--cardEdge);
+  border-radius: var(--radius);
+  background: var(--sunk);
+}
+
+.app__member-row {
+  display: block;
+  width: 100%;
+  padding: 11px 12px;
+  font: inherit;
+  font-size: 15px;
+  text-align: left;
+  color: var(--ink);
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--rule);
+  cursor: pointer;
+}
+
+.app__member-list li:last-child .app__member-row {
+  border-bottom: none;
+}
+
+/* The picked member is the form's one piece of state a reader has to be sure
+   of: attribution is required, and a comp on the wrong name cannot be moved. */
+.app__member-row--picked {
+  font-weight: 600;
+  color: var(--goldText);
+  background: var(--card);
+  box-shadow: inset 3px 0 0 var(--gold);
+}
+
+.app__member-row[disabled] {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.app__member-add {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.app__member-add .app__input {
+  flex: 1 1 160px;
+  margin-bottom: 0;
+}
+
+.app__member-add .app__button {
+  width: auto;
+  padding: 10px 14px;
+  font-size: 13px;
+}
+
+/* The e-mail outcome under the confirmation: a whole line, because "sent to
+   whom" is the half of it that matters. */
+.app__comp-email {
+  flex-basis: 100%;
+  color: var(--muted);
+}
+
+/* A comp whose mail did not leave has something for the reader to do (print
+   the PDF, resend from the order), so that banner stays put instead of
+   draining away under them. */
+.app__drain--warn {
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  background: var(--card);
+  border: 1px solid var(--warn);
+  border-radius: var(--radius);
+}
+
+.app__comp-warn {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--warn);
+}
+
+/* The printed holder and the address, at the foot of an expanded comp: the two
+   facts that are about the SLIP rather than about the member. */
+.app__comp-holder {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.app__comp-permember .app__stats td {
+  font-variant-numeric: tabular-nums;
 }

@@ -116,6 +116,15 @@ describe('decideAppAccess — the conditional permissions', () => {
     expect(screenKeys(access)).toEqual(['sell', 'statement'])
   })
 
+  it('opens Statistika, and only Statistika, for the shared society login (#508)', () => {
+    // `season_stats` is the whole set of the shared `member` account
+    // (ADR-0022). It is in, it has one screen, and it has no dancer identity
+    // even with a Member row hanging off the login.
+    const access = decideAppAccess(user('season_stats'), dancer())
+    expect(screenKeys(access)).toEqual(['stats'])
+    expect(access.kind === 'ok' && access.self).toBeNull()
+  })
+
   it('carries the Partner link through for the screens that scope on it', () => {
     const access = decideAppAccess(user('moreska'), null, { partnerId: '7' })
     expect(access.kind === 'ok' && access.partnerId).toBe('7')
@@ -127,7 +136,6 @@ describe('decideAppAccess — everybody else', () => {
     ['anonymous', null],
     ['an authenticated account with no permission set', { id: '2', permissions: undefined }],
     ['a partner POS', user('partner')],
-    ['the society season dashboard', user('season_stats')],
     ['a dev-only account', user('dev')],
     ['an editor-only account', user('editor')],
   ])('denies %s', (_label, u) => {
@@ -144,8 +152,10 @@ describe('decideAppAccess — everybody else', () => {
     // Today's live table. Every screen ticket that flips a `servesToday` word
     // moves one of these to `true`, and this line is where that shows up:
     // `door` joined when Skener landed (#504), `tickets` when Narudžbe did
-    // (#501) and `finance` when Financije did (#509).
-    const live = ['moreska', 'moreskant', 'door', 'tickets', 'finance']
+    // (#501), and `season_stats` + `finance` when Statistika did (#508).
+    // Financije (#509) added a second screen for `finance` without adding a
+    // word here: it was already in.
+    const live = ['moreska', 'moreskant', 'door', 'tickets', 'season_stats', 'finance']
     for (const p of PERMISSIONS) {
       const expected = live.includes(p)
       expect(decideAppAccess(user(p), dancer()).kind === 'ok', `permission ${p}`).toBe(expected)
