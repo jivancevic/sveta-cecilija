@@ -71,21 +71,32 @@ describe('Button', () => {
 })
 
 describe('ArmyBar', () => {
+  /** The society's usual evening. It is a PROP, never a default (#562 review). */
+  const EIGHT = { crni: 8, bili: 8 }
+
   it('fills each half in proportion to twelve, the size of an army', () => {
-    const html = render(h(ArmyBar, { crni: 6, bili: 12 }))
+    const html = render(h(ArmyBar, { crni: 6, bili: 12, threshold: EIGHT }))
     expect(html).toContain('width:25%') // 6 of 12, over half the bar
     expect(html).toContain('width:50%') // a full half
   })
 
   it('marks the number that is short and says how short', () => {
-    const html = render(h(ArmyBar, { crni: 3, bili: 9 }))
+    const html = render(h(ArmyBar, { crni: 3, bili: 9, threshold: EIGHT }))
     expect(html).toContain('ui-army__v--low')
     expect(html).toContain('Fale još 5 crnih')
   })
 
+  it('reads the evening’s own thresholds, so a short night is the voditelj’s call', () => {
+    const html = render(h(ArmyBar, { crni: 6, bili: 6, threshold: { crni: 6, bili: 6 } }))
+    expect(html).not.toContain('ui-army__v--low')
+    expect(html).toContain('Ima nas dovoljno')
+  })
+
   it('is a button only when it leads somewhere', () => {
-    expect(render(h(ArmyBar, { crni: 8, bili: 8 }))).not.toContain('<button')
-    expect(render(h(ArmyBar, { crni: 8, bili: 8, onClick: () => {} }))).toContain('<button')
+    expect(render(h(ArmyBar, { crni: 8, bili: 8, threshold: EIGHT }))).not.toContain('<button')
+    expect(
+      render(h(ArmyBar, { crni: 8, bili: 8, threshold: EIGHT, onClick: () => {} })),
+    ).toContain('<button')
   })
 })
 

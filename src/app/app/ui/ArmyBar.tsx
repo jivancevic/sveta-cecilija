@@ -23,20 +23,19 @@ const FULL_HALF = 12
 export interface ArmyBarProps {
   crni: number
   bili: number
-  /** Per evening and per army. Defaults to the society's usual eight. */
-  threshold?: { crni: number; bili: number }
+  /**
+   * Per evening and per army, and REQUIRED: Shows carries `thresholdCrni` and
+   * `thresholdBili` (#408), so a default here would be a second opinion about
+   * how many dancers an evening needs, quietly overriding the voditelj's on
+   * any screen that forgot to pass it.
+   */
+  threshold: { crni: number; bili: number }
   /** Makes the whole bar a button, with a chevron on the status line. */
   onClick?: React.MouseEventHandler<HTMLButtonElement>
   className?: string
 }
 
-export function ArmyBar({
-  crni,
-  bili,
-  threshold = { crni: 8, bili: 8 },
-  onClick,
-  className,
-}: ArmyBarProps) {
+export function ArmyBar({ crni, bili, threshold, onClick, className }: ArmyBarProps) {
   const status = armyStatus(crni, bili, threshold)
   const half = 50
   const width = (n: number) => `${Math.min(n / FULL_HALF, 1) * half}%`

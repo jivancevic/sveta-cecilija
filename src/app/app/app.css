@@ -123,7 +123,11 @@ html:has(> .app) {
   height: 100%;
   overflow: hidden;
   overscroll-behavior: none;
-  background: #e6e1d7;
+  /* No background here, deliberately. The tokens live on `.app` (the body) and
+     do not reach an ancestor, so a colour written at this level could only ever
+     be a hex — one the night skin would not follow. Leaving `html` transparent
+     lets the body's own `--bg` propagate to the canvas, which is the behaviour
+     we wanted from the hex and gets the theme for free. */
 }
 
 /* The night skin (#562). Same tokens, other values, and NOTHING else in this
@@ -2955,8 +2959,15 @@ a.app__ob-link {
   width: 44px;
   height: 44px;
   margin-right: -10px;
+  border-radius: var(--rPill);
   color: var(--ink);
   text-decoration: none;
+  transition: background 0.15s;
+}
+
+/* The press: the only feedback a control with no label can give. */
+.app__bell:active {
+  background: var(--sunk);
 }
 
 .app__bell-icon {
@@ -2968,21 +2979,19 @@ a.app__ob-link {
    does not move when the number appears. */
 .app__bell-badge {
   position: absolute;
-  top: 4px;
-  right: 4px;
-  min-width: 17px;
-  height: 17px;
+  top: 7px;
+  right: 7px;
+  min-width: 16px;
+  height: 16px;
   padding: 0 4px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  border-radius: var(--rPill);
   background: var(--gold);
   color: var(--onGold);
-  border-radius: 9px;
-  font-family: var(--font-ibm-plex-mono), ui-monospace, monospace;
-  font-size: 11px;
+  font-size: 10px;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
-  line-height: 1;
+  line-height: 16px;
+  text-align: center;
 }
 
 .app__notif-actions {
@@ -3099,6 +3108,14 @@ a.app__ob-link {
     padding: 20px 12px 16px;
     background: var(--bg);
     border-right: 1px solid var(--rule);
+    /* The same hidden scrollbar the page scroller has. One visible native
+       scrollbar beside one invisible one reads as something half-finished, and
+       the sidebar only ever scrolls on a short window with every group open. */
+    scrollbar-width: none;
+  }
+
+  .app__sidebar::-webkit-scrollbar {
+    display: none;
   }
 
   .app__tabbar {
