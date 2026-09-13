@@ -639,6 +639,7 @@ ALTER SEQUENCE public.tickets_id_seq OWNED BY public.tickets.id;
 
 CREATE TABLE IF NOT EXISTS public.users (
     id integer NOT NULL,
+    name character varying,
     shared boolean DEFAULT false,
     partner_id integer,
     member_id integer,

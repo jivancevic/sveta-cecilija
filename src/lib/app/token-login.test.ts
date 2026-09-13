@@ -26,13 +26,26 @@ describe('mayOpenAppSession', () => {
     [['moreskant'], true],
     [['moreska'], true],
     [['moreska', 'users', 'tickets'], true],
-    [['tickets'], false],
-    // #520: the invitation allowlist lets a link be aimed at a door login, but
-    // the session still reads the permission set, so what opens `/app` is
-    // `moreskant` — a `users` holder adds it (#487, #521), never the voditelj.
+    // Since #510 Korisnici mints this same link for a new staff login, so a set
+    // that unlocks a screen opens a session whatever the screen is. Refusing
+    // `tickets` here used to mean the account Korisnici had just created could
+    // not sign in at all.
+    [['tickets'], true],
+    [['finance'], true],
+    [['users'], true],
+    [['season_stats'], true],
+    // #520 aims an invitation at a door login, and Skener is what it lands on.
     [['door', 'moreskant'], true],
-    [['door'], false],
-    [['partner'], false],
+    [['door'], true],
+    // Optimistic on the two conditional words: whether the Partner link still
+    // resolves is the page gate's question, re-read on every request.
+    [['partner'], true],
+    // The three that unlock no screen at all: a refund is an action inside an
+    // order, `dev` is the diagnostics strip, and Objave and FAQ are Backoffice.
+    [['refunds'], false],
+    [['dev'], false],
+    [['editor'], false],
+    [['refunds', 'dev'], false],
     [[], false],
   ])('%s → %s', (permissions, expected) => {
     expect(mayOpenAppSession({ id: 1, permissions })).toBe(expected)
@@ -102,15 +115,41 @@ describe('handleTokenLogin — refusals', () => {
     expect(d.openSession).not.toHaveBeenCalled()
   })
 
-  // The `/app` door opens for `/app` accounts. A ticketing or door login resets
-  // its password in `/admin`; this is not a second way into the backoffice.
-  it('403s an account that has no /app', async () => {
+  // A set that unlocks no screen has nowhere to land, so the link says so
+  // rather than opening a session onto the "Nemate pristup" panel. `editor` is
+  // that set: Objave and FAQ are Backoffice, and #500 gave it its own landing
+  // page there.
+  it('403s an account that unlocks no screen', async () => {
     const d = deps({
-      findUserByToken: vi.fn().mockResolvedValue({ id: 5, permissions: ['tickets'] }),
+      findUserByToken: vi.fn().mockResolvedValue({ id: 5, permissions: ['editor'] }),
     })
     const result = await handleTokenLogin({ token: 'live' }, d)
     expect(result.status).toBe(403)
     expect(result.body).toEqual({ error: APP_STRINGS.signIn.notAppAccount })
+    expect(d.openSession).not.toHaveBeenCalled()
+  })
+
+  // The regression #510's review found: Korisnici mints this link for a new
+  // staff login, and the handler refused the account it had just opened.
+  it.each([['tickets'], ['finance'], ['users']])(
+    'opens a session for a `%s` login, which Korisnici can now create',
+    async (permission) => {
+      const d = deps({
+        findUserByToken: vi.fn().mockResolvedValue({ id: 6, permissions: [permission] }),
+      })
+      const result = await handleTokenLogin({ token: 'live' }, d)
+      expect(result.status).toBe(200)
+      expect(d.openSession).toHaveBeenCalledWith(6)
+    },
+  )
+
+  it('403s a shared login even when its set would unlock a screen', async () => {
+    const d = deps({
+      findUserByToken: vi.fn().mockResolvedValue({ id: 9, permissions: ['door'], shared: true }),
+    })
+    const result = await handleTokenLogin({ token: 'live' }, d)
+    expect(result.status).toBe(403)
+    expect(result.body).toEqual({ error: APP_STRINGS.signIn.sharedAccount })
     expect(d.openSession).not.toHaveBeenCalled()
   })
 

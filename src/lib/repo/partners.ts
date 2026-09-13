@@ -26,7 +26,10 @@ export interface PartnersRepo {
    * rate, so the receivable panel needs the whole channel rather than one row;
    * a deactivated partner is left out because it can no longer sell, and a
    * statement for it is a thing to look up in the Backoffice, not a line on a
-   * screen that is about this month's money.
+   * screen that is about this month's money. Korisnici reads the same list for
+   * its "Poveži partnera" picker (#510), and for the same reason: a retired
+   * reseller must not be offered a new login, while the ones already pointed at
+   * it keep working until somebody unlinks them.
    */
   activeList(): Promise<PartnerRecord[]>
 }

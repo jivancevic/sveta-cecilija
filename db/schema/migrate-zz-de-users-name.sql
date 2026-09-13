@@ -1,0 +1,27 @@
+-- `users.name`: whom a login belongs to, in words (#510).
+--
+-- Korisnici (`/app/users`) lists every account, and until this column the only
+-- thing a staff login carried was its username: a reader had to know that
+-- `ttvigna` is Tatjana and `vele` is the president. A dancer's account gets a
+-- name from its linked Member and a partner POS from its Partner, but a
+-- backoffice login had nowhere to keep one.
+--
+-- Nullable on purpose and forever: the shared `tehnika` door login is not a
+-- person (ADR-0022), and a name on it would say it is. Nothing reads this
+-- column to make a decision — it is display only, plus the greeting
+-- `/api/app/forgot` has always addressed its letter with and never found.
+--
+-- Declared on the collection (`src/collections/Users.ts`), so Payload's own
+-- push would add it in development; this file is what adds it on a deployment,
+-- where push is off.
+--
+-- ORDERING: bootstrap-db.mjs applies db/schema/*.sql in plain filename order on
+-- every restart (db/schema/README.md). This file touches a table `00-base.sql`
+-- creates first and carries no foreign key, so it only has to keep sorting
+-- BEFORE `migrate-zz-drop-users-role.sql`, which must stay the last `migrate-*`
+-- file (#398, asserted by `src/lib/db-schema-safety.test.ts`). `zz-de-`
+-- continues the `zz-d…` sequence and does.
+--
+-- Guarded and safe to re-run: it adds a column and writes no row.
+
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS name character varying;

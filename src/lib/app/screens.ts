@@ -156,7 +156,7 @@ export const APP_SCREENS: AppScreen[] = [
     route: '/app/users',
     rank: 9,
     unlockedBy: ['users'],
-    servesToday: [],
+    servesToday: ['users'],
     groups: ['admin'],
   },
   {

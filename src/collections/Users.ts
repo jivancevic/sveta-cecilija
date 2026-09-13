@@ -273,6 +273,27 @@ export const Users: CollectionConfig = {
         create: ({ req }) => usersHolder(req.user as ReqUser),
       },
     },
+    // Whom this login belongs to, in words (#510). A `moreskant` account gets
+    // its name from the linked Member and a partner POS from its Partner, but
+    // a staff login had nowhere to carry one, so Korisnici listed usernames and
+    // the reader had to know that `ttvigna` is Tatjana. Optional by design: the
+    // shared `tehnika` login is not a person and must not be given a name that
+    // suggests otherwise. Left unlocked, unlike `username`: a person correcting
+    // the spelling of their own name grants themselves nothing.
+    //
+    // `/api/app/forgot` already addressed its letter with `row.name` before the
+    // column existed, and simply never found one.
+    {
+      name: 'name',
+      type: 'text',
+      label: { en: 'Name', hr: 'Ime i prezime' },
+      admin: {
+        description: {
+          en: 'The person this login belongs to. Leave empty for a shared or machine login.',
+          hr: 'Osoba kojoj prijava pripada. Ostavi prazno za zajedničku prijavu.',
+        },
+      },
+    },
     // Log out action on the account view (/admin/account). A `ui` field stores
     // nothing; its component renders a Log out button, scoped to the viewer's
     // own record. Logout was moved here off the dashboards (#167).
