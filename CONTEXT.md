@@ -96,9 +96,15 @@ A performer of the moreška is a **moreškant** (pl. **moreškanti**, gen. pl. *
 
 ### Event noun: Performance / izvedba
 One scheduled moreška event has a **single canonical user-facing noun in each language**, used everywhere (public site + admin + partner): **English "Performance"**, **Croatian "izvedba"**. Chosen for EN↔HR register parity (izvedba is the true cognate of "Performance"), for matching a 143-year cultural institution's voice over a casual "show/gig", and because every event is a *rendition of the one canonical traditional work* — which "izvedba" captures precisely.
-- **Retired as the event noun:** EN "Show", HR "predstava" and "nastup". Align any user-facing occurrences to Performance / izvedba.
+- **Retired as the event noun:** EN "Show", HR "predstava". Align any user-facing occurrences to Performance / izvedba.
 - **Still allowed:** the **verb** ("grupa nastupa / izvodi morešku"); the **idiom** "Showtime 21:00"; the internal **DB type/collection `Show`/`shows`** (not user-facing — do NOT rename); and **"Moreška"** as the proper-noun brand/the dance itself ("the next Moreška performance" — brand noun + generic noun stack, they don't compete). "Izvedba" was already the artistic/private-context word ("Privatne izvedbe", "prva poznata izvedba"); it now becomes universal, so that copy already fits.
-- _Avoid (HR):_ predstava, nastup (as the event noun). _Avoid (EN):_ Show (as the event noun).
+- _Avoid (HR):_ predstava. _Avoid (EN):_ Show (as the event noun).
+
+**Two registers, one entity (decided 2026-09-13).** The same performance carries a different Croatian word depending on who reads it, and the border is the audience, never the screen or the URL:
+- **Selling register: "izvedba".** Everything a buyer, a partner, the blagajna, the door or a statistics reader sees: the public site, tickets and e-mails, Narudžbe, Izvedbe, Statistika, Financije, Skener, Prodaja / Obračun.
+- **Dancer register: "nastup".** Everything a moreškant or a voditelj reads *as a dancer*: the Moreška screen, attendance, the lineup, the roster's push messages ("Stanje za nastup …"), the season count and the leaderboard. This is the word the dancers actually say (the notebook's "vandredni nastup"), and a glossary term people refuse to speak is not a glossary term.
+- A person who holds both sets of permissions reads both words and that is correct: the Moreška tab says "nastup", the Izvedbe tab says "izvedba", for the same evening.
+- English stays "performance" in both registers; the split exists only in Croatian.
 
 ### Offline sale (at the door / legacy)
 A sale that produced **no `Order` and no `Ticket` row** in this system, and is therefore recorded as a **counted line** rather than as per-person rows. Two sources, one ledger (`offline_sales`, a raw table — see [ADR-0025](../docs/adr/0025-offline-sales-ledger.md)):
