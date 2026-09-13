@@ -8,6 +8,7 @@ import type { DanceRole } from '@/lib/moreskant-profile'
 import { Sidebar, TabBar } from './AppNav'
 import { NotificationBell } from './NotificationBell'
 import { PullToRefresh } from './PullToRefresh'
+import { ScrollMemory } from './ScrollMemory'
 import { ShowDayStrip } from './ShowDayStrip'
 
 // The chrome every screen wears (#495): the sidebar, the header, the content
@@ -70,6 +71,10 @@ export function AppShell({
 
   return (
     <div className="app__frame">
+      {/* Renders nothing: it remembers where each list was, because the body
+          scrolls now and the browser only restores the document (#562). */}
+      <ScrollMemory />
+
       <Sidebar nav={viewer.nav} />
 
       {/* Everything that scrolls is inside the gesture (#562); the sidebar and
