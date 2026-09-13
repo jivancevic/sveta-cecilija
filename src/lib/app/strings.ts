@@ -1814,6 +1814,25 @@ export const APP_STRINGS = {
       door: 'Na vratima',
       legacy: 'Prethodna stranica',
     },
+    /**
+     * The one line under Prihod (#538).
+     *
+     * Prihod counts `channel='online'` money and the offline ledger, because a
+     * partner order stores `total` at face value the society has not collected
+     * (ADR-0008) and a storno leaves that total standing. Partner seats must
+     * not silently vanish from the evening's money, though, so they get this
+     * sentence instead: what they are WORTH at face value, named a receivable,
+     * never added to anything.
+     *
+     * The three words are the Croatian plural buckets, handed to `pluralize`
+     * (`roster-loaders.ts`) by `sales-view.ts` the way every other count on
+     * `/app` is.
+     */
+    partnerFace: {
+      ticket: { one: 'ulaznica', few: 'ulaznice', many: 'ulaznica' },
+      line: (tickets: string, amount: string) =>
+        `Partneri: ${tickets}, nominalno ${amount} (potraživanje)`,
+    },
     /** A non-public evening sells nothing, so there is nothing to show. */
     notPublic: 'Ova izvedba ne prodaje ulaznice, pa nema brojki o prodaji.',
     ordersLink: 'Narudžbe za ovu izvedbu',

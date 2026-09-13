@@ -31,28 +31,83 @@ import {
   getScannedTicketCountsByShow,
   type PoolQuery,
 } from '@/lib/tickets/sold-seats'
+import type { OrderChannel, RefundStatus } from '@/lib/dashboard/revenue'
 import type { Venue } from '@/lib/venues'
-import { emptySales, type PerformanceSales } from './sales-view'
+import { emptySales, onlineRevenueByShow, type PerformanceSales } from './sales-view'
 
 /**
- * Non-refunded order money per show, in cents.
+ * Collected order money per show, in cents: ONLINE orders, net of refunds.
  *
- * A refunded order is money that went back, so it is not this evening's take;
- * a comp order carries `total = 0` and adds nothing by arithmetic rather than
- * by a filter, which is what keeps a goodwill seat out of every money figure
- * without a second rule to remember (ADR-0019).
+ * The channel clause is the correctness of the figure, not an optimisation
+ * (#538). A partner order stores `total` at FACE VALUE the moment the reseller
+ * issues the seat (ADR-0008), and the society sees none of it until the monthly
+ * obračun; worse, a storno voids the TICKETS and touches neither `total` nor
+ * `refund_status`, so a cancelled partner sale would sit in this evening's take
+ * for ever with nothing on the order row to betray it. A comp order carries
+ * `total = 0` (ADR-0019) and is excluded by the same clause rather than by a
+ * second rule to remember.
+ *
+ * The rows come back per order rather than pre-summed, so the arithmetic is
+ * `revenueCollectedCents` — the one definition of collected money — applied per
+ * evening in `onlineRevenueByShow`, where it is unit-tested. `orders` alone,
+ * plus the one-to-one join to `shows`: never a join to `tickets`, which would
+ * multiply each total by the party size. The partner half of the evening is not
+ * lost, it is read separately by `partnerTicketsByShow` and shown as a
+ * receivable.
  */
 async function ticketRevenueByShow(query: PoolQuery): Promise<Map<string, number>> {
   const res = await query(
-    `SELECT o.show_id AS show_id, COALESCE(SUM(o.total), 0)::bigint AS revenue
+    `SELECT o.show_id AS show_id, o.channel AS channel, o.total AS total,
+            o.refund_status AS refund_status
      FROM orders o
      JOIN shows s ON s.id = o.show_id
-     WHERE o.refund_status <> 'refunded' AND ${publicPerformanceSql('s')}
-     GROUP BY o.show_id`,
+     WHERE o.channel = 'online' AND ${publicPerformanceSql('s')}`,
   )
-  const byShow = new Map<string, number>()
-  for (const row of res.rows) byShow.set(String(row.show_id), Number(row.revenue) || 0)
+  return onlineRevenueByShow(
+    res.rows.map((row) => ({
+      showId: String(row.show_id),
+      // Rows that predate the column are online by definition, the same fold
+      // `sold-seats.ts` does for the channel counts.
+      channel: ((row.channel as OrderChannel) ?? 'online') as OrderChannel,
+      totalCents: Number(row.total) || 0,
+      refundStatus: ((row.refund_status as RefundStatus) ?? 'none') as RefundStatus,
+    })),
+  )
+}
+
+/**
+ * Active PARTNER tickets per show, split adult/child (#538).
+ *
+ * The split, not the money: the €20/€10 arithmetic is
+ * `partnerFaceValueCents`, so the one line that names these euros is a tested
+ * pure function rather than a SQL expression. Same predicate as the channel
+ * counts (`status='active'`, `channel='partner'`), so the seat count in the
+ * note and the Partner number above it cannot disagree.
+ */
+async function partnerTicketsByShow(query: PoolQuery): Promise<Map<string, PartnerSplit>> {
+  const res = await query(
+    `SELECT o.show_id AS show_id, t.type AS type, COUNT(*)::int AS seats
+     FROM tickets t
+     JOIN orders o ON o.id = t.order_id
+     JOIN shows s ON s.id = o.show_id
+     WHERE t.status = 'active' AND o.channel = 'partner' AND ${publicPerformanceSql('s')}
+     GROUP BY o.show_id, t.type`,
+  )
+  const byShow = new Map<string, PartnerSplit>()
+  for (const row of res.rows) {
+    const showId = String(row.show_id)
+    const entry = byShow.get(showId) ?? { adult: 0, child: 0 }
+    const seats = Number(row.seats) || 0
+    if (String(row.type) === 'child') entry.child += seats
+    else entry.adult += seats
+    byShow.set(showId, entry)
+  }
   return byShow
+}
+
+interface PartnerSplit {
+  adult: number
+  child: number
 }
 
 /** The facts that live on the shows row itself: the house and the three states. */
@@ -92,19 +147,23 @@ async function performanceStates(query: PoolQuery): Promise<Map<string, Performa
 export async function loadSeasonSales(): Promise<Map<string, PerformanceSales>> {
   const query = getRepo().db.query
 
-  const [states, channels, offline, scanned, revenue] = await Promise.all([
+  const [states, channels, offline, scanned, revenue, partnerSplit] = await Promise.all([
     performanceStates(query),
     getActiveTicketCountsByShowAndChannel(query),
     getOfflineTotalsByShow(query),
     getScannedTicketCountsByShow(query),
     ticketRevenueByShow(query),
+    partnerTicketsByShow(query),
   ])
 
   for (const [id, sales] of states) {
     const channel = channels.get(id)
     const lines = offline.get(id)
+    const partner = partnerSplit.get(id)
     sales.online = channel?.online ?? 0
     sales.partner = channel?.partner ?? 0
+    sales.partnerAdult = partner?.adult ?? 0
+    sales.partnerChild = partner?.child ?? 0
     sales.comp = channel?.comp ?? 0
     sales.door = lines?.door.seats ?? 0
     sales.legacy = lines?.legacy.seats ?? 0
