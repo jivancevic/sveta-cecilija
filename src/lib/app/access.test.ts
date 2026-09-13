@@ -111,6 +111,11 @@ describe('decideAppAccess — the conditional permissions', () => {
     expect(decideAppAccess(user('refunds', 'dev'), dancer())).toEqual({ kind: 'denied' })
   })
 
+  it('opens Prodaja and Obračun for a partner login bound to a Partner (#505)', () => {
+    const access = decideAppAccess(user('partner'), null, { partnerId: '7' })
+    expect(screenKeys(access)).toEqual(['sell', 'statement'])
+  })
+
   it('carries the Partner link through for the screens that scope on it', () => {
     const access = decideAppAccess(user('moreska'), null, { partnerId: '7' })
     expect(access.kind === 'ok' && access.partnerId).toBe('7')

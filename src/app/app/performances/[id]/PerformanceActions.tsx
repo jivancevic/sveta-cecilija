@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation'
 import { APP_STRINGS } from '@/lib/app/strings'
 import { formatEur } from '@/lib/app/orders-view'
 import { MAX_DISCOUNT_LABEL_LENGTH } from '@/lib/offline-sales/lines'
+import { Stepper } from '../../Stepper'
 
 // The blagajna's named actions on one public evening (#502, #476's "named
 // actions only").
@@ -97,63 +98,7 @@ interface StoredLine {
   discountLabel: string | null
 }
 
-// ── Two small controls ─────────────────────────────────────────────────────
-
-/**
- * A count, by tens and by ones, and never a native number input.
- *
- * The spinner arrows of `<input type="number">` are 12 px targets next to a
- * keyboard that covers the page, which is why the app does not use one
- * anywhere. A door batch is 68 adults rather than 3, so this one steps by ten
- * as well as by one, and it goes NEGATIVE, because a correction is the same
- * control with the other sign (ADR-0025: the ledger is append-only and a
- * miscount is fixed by appending the inverse).
- */
-function CountStepper({
-  label,
-  value,
-  onChange,
-  disabled,
-}: {
-  label: string
-  value: number
-  onChange: (next: number) => void
-  disabled: boolean
-}) {
-  const clamp = (n: number) => Math.max(-999, Math.min(999, n))
-  return (
-    <div className="app__count">
-      <span className="app__count-label">{label}</span>
-      <div className="app__count-controls">
-        {[-10, -1].map((step) => (
-          <button
-            key={step}
-            type="button"
-            className="app__stepper-button"
-            aria-label={`${label} ${step}`}
-            disabled={disabled}
-            onClick={() => onChange(clamp(value + step))}
-          >
-            {step}
-          </button>
-        ))}
-        <span className="app__count-value">{value}</span>
-        {[1, 10].map((step) => (
-          <button
-            key={step}
-            type="button"
-            className="app__stepper-button"
-            aria-label={`${label} +${step}`}
-            disabled={disabled}
-            onClick={() => onChange(clamp(value + step))}
-          >
-            +{step}
-          </button>
-        ))}
-      </div>
-    </div>
-  )
-}
+// ── The sheet ──────────────────────────────────────────────────────────────
 
 /**
  * The confirmation under the buttons: what is about to happen, then the verb
@@ -663,23 +608,32 @@ export function PerformanceActions({
             </select>
           </label>
 
-          <CountStepper
+          <Stepper
             label={S.door.adults}
             value={adults}
+            min={-999}
+            max={999}
+            bigStep={10}
             onChange={setAdults}
             disabled={busy}
           />
-          <CountStepper
+          <Stepper
             label={S.door.children}
             value={children}
+            min={-999}
+            max={999}
+            bigStep={10}
             onChange={setChildren}
             disabled={busy}
           />
 
           <p className="app__sheet-sub">{S.door.discountHead}</p>
-          <CountStepper
+          <Stepper
             label={S.door.discountCount}
             value={discountCount}
+            min={-999}
+            max={999}
+            bigStep={10}
             onChange={setDiscountCount}
             disabled={busy}
           />

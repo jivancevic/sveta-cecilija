@@ -119,7 +119,7 @@ export const APP_SCREENS: AppScreen[] = [
     route: '/app/sell',
     rank: 5,
     unlockedBy: ['partner'],
-    servesToday: [],
+    servesToday: ['partner'],
     groups: ['partner'],
   },
   {
@@ -128,7 +128,7 @@ export const APP_SCREENS: AppScreen[] = [
     route: '/app/statement',
     rank: 6,
     unlockedBy: ['partner'],
-    servesToday: [],
+    servesToday: ['partner'],
     groups: ['partner'],
   },
   {
