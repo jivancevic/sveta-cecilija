@@ -11,25 +11,25 @@ import {
 describe('revenueCollectedCents', () => {
   it('sums non-refunded online order totals', () => {
     const orders: CollectedOrderRow[] = [
-      { totalCents: 4000, refundStatus: 'none' },
-      { totalCents: 2000, refundStatus: 'none' },
+      { channel: 'online', totalCents: 4000, refundStatus: 'none' },
+      { channel: 'online', totalCents: 2000, refundStatus: 'none' },
     ]
     expect(revenueCollectedCents({ orders, offlineRevenueCents: 0 })).toBe(6000)
   })
 
   it('nets out refunded orders (excludes their total from collected revenue)', () => {
     const orders: CollectedOrderRow[] = [
-      { totalCents: 4000, refundStatus: 'none' },
-      { totalCents: 2000, refundStatus: 'refunded' }, // refunded -> not in hand
+      { channel: 'online', totalCents: 4000, refundStatus: 'none' },
+      { channel: 'online', totalCents: 2000, refundStatus: 'refunded' }, // refunded -> not in hand
     ]
     expect(revenueCollectedCents({ orders, offlineRevenueCents: 0 })).toBe(4000)
   })
 
   it('treats only fully-refunded orders as removed; pending/failed refunds are still collected', () => {
     const orders: CollectedOrderRow[] = [
-      { totalCents: 1000, refundStatus: 'pending' },
-      { totalCents: 1000, refundStatus: 'failed' },
-      { totalCents: 1000, refundStatus: 'refunded' },
+      { channel: 'online', totalCents: 1000, refundStatus: 'pending' },
+      { channel: 'online', totalCents: 1000, refundStatus: 'failed' },
+      { channel: 'online', totalCents: 1000, refundStatus: 'refunded' },
     ]
     // Only the 'refunded' one leaves the till; pending/failed money is still in hand.
     expect(revenueCollectedCents({ orders, offlineRevenueCents: 0 })).toBe(2000)
@@ -45,14 +45,42 @@ describe('revenueCollectedCents', () => {
 
   it('combines online (net of refunds) with offline cash', () => {
     const orders: CollectedOrderRow[] = [
-      { totalCents: 4000, refundStatus: 'none' },
-      { totalCents: 9999, refundStatus: 'refunded' },
+      { channel: 'online', totalCents: 4000, refundStatus: 'none' },
+      { channel: 'online', totalCents: 9999, refundStatus: 'refunded' },
     ]
     expect(revenueCollectedCents({ orders, offlineRevenueCents: 3500 })).toBe(7500)
   })
 
   it('is zero with no orders and no offline sales', () => {
     expect(revenueCollectedCents({ orders: [], offlineRevenueCents: 0 })).toBe(0)
+  })
+
+  // #538 — the channel is the correctness of this figure, not an optimisation.
+  it('counts online money only: a partner order stores face value the society has not collected', () => {
+    const orders: CollectedOrderRow[] = [
+      { channel: 'online', totalCents: 4000, refundStatus: 'none' },
+      // ADR-0008: the reseller holds these euros until the monthly obračun, and
+      // they are already counted once as Potraživanje od partnera.
+      { channel: 'partner', totalCents: 6000, refundStatus: 'none' },
+    ]
+    expect(revenueCollectedCents({ orders, offlineRevenueCents: 0 })).toBe(4000)
+  })
+
+  it('drops a storno-ed partner order, which a refund filter alone cannot see', () => {
+    // A storno voids the TICKETS and touches neither `total` nor
+    // `refund_status`, so only the channel clause takes it out.
+    const orders: CollectedOrderRow[] = [
+      { channel: 'partner', totalCents: 6000, refundStatus: 'none' },
+    ]
+    expect(revenueCollectedCents({ orders, offlineRevenueCents: 0 })).toBe(0)
+  })
+
+  it('needs no second rule for a comp order, which is €0 and on a dropped channel', () => {
+    const orders: CollectedOrderRow[] = [
+      { channel: 'online', totalCents: 2000, refundStatus: 'none' },
+      { channel: 'comp', totalCents: 0, refundStatus: 'none' },
+    ]
+    expect(revenueCollectedCents({ orders, offlineRevenueCents: 0 })).toBe(2000)
   })
 })
 

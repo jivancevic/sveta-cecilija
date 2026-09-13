@@ -19,9 +19,17 @@ import {
 
 export type RefundStatus = 'none' | 'pending' | 'failed' | 'refunded'
 
-// One online order. Only fully-`refunded` orders leave the till; pending/failed
+/** `orders.channel`. Only `online` is ever money the society has collected. */
+export type OrderChannel = 'online' | 'partner' | 'comp'
+
+// One order. Only fully-`refunded` orders leave the till; pending/failed
 // refunds are money still in hand until they actually settle.
+//
+// `channel` is REQUIRED rather than optional (#538), and that is the whole
+// point of it: a caller that forgets to read the column now fails `tsc` instead
+// of quietly counting a reseller's face value as cash in hand.
 export interface CollectedOrderRow {
+  channel: OrderChannel
   totalCents: number
   refundStatus: RefundStatus
 }
@@ -40,10 +48,28 @@ export interface RevenueCollectedInput {
   offlineRevenueCents: number
 }
 
-/** Cash actually collected: online order totals net of refunds + offline sales. */
+/**
+ * Cash actually collected: ONLINE order totals net of refunds + offline sales.
+ *
+ * The channel filter is where the rule lives, for every surface that prints a
+ * collected figure (#538). Three things make it necessary, and no one of them
+ * is an optimisation:
+ *
+ *   - a **partner** order stores `total` at FACE VALUE the moment a reseller
+ *     issues the seat (ADR-0008), but the society sees none of that money until
+ *     the monthly obračun. Counting it here would put the same euros into
+ *     collected revenue AND into the partner receivable, which is exactly the
+ *     sum ADR-0015 and the *Dashboard* glossary entry forbid;
+ *   - a **storno** voids the TICKETS and touches neither `total` nor
+ *     `refund_status`, so a cancelled partner sale would sit in revenue for
+ *     ever with nothing on the order row to betray it. A refund filter cannot
+ *     see it; only dropping the channel can;
+ *   - a **comp** order carries `total = 0` (ADR-0019), so it is excluded by the
+ *     same clause rather than by a second rule someone has to remember.
+ */
 export function revenueCollectedCents({ orders, offlineRevenueCents }: RevenueCollectedInput): number {
   const onlineNet = orders
-    .filter((o) => o.refundStatus !== 'refunded')
+    .filter((o) => o.channel === 'online' && o.refundStatus !== 'refunded')
     .reduce((sum, o) => sum + o.totalCents, 0)
   return onlineNet + offlineRevenueCents
 }

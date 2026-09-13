@@ -8,6 +8,7 @@ import {
   revenueCollectedCents,
   partnerReceivableCents,
   type CollectedOrderRow,
+  type OrderChannel,
   type RefundStatus,
   type PartnerReceivableInput,
 } from './revenue'
@@ -20,14 +21,20 @@ export interface DashboardMoney {
 
 /**
  * The two season money facts, computed apart and returned apart (never summed).
- * - Revenue collected: all order totals net of fully-refunded ones + in-person cash.
+ * - Revenue collected: ONLINE order totals net of fully-refunded ones + in-person cash.
  * - Partner receivable: per-partner reconciliation net, aggregated across partners.
+ *
+ * The two are the same seats read two ways, so counting a partner order's face
+ * value in the first would print the same euros twice (#538). The channel
+ * clause below is what keeps them apart, and `revenueCollectedCents` re-applies
+ * it in pure code, where it is tested.
  */
 export async function getDashboardMoney(query: PoolQuery): Promise<DashboardMoney> {
   // Three independent reads — fire them concurrently.
   const [orderRes, offlineTotals, partnerRes] = await Promise.all([
-    // Online orders: total + refund status (the pure fn drops only 'refunded').
-    query(`SELECT total, refund_status FROM orders`),
+    // Online orders: channel + total + refund status (the pure fn drops every
+    // non-online channel, and of the online ones only 'refunded').
+    query(`SELECT channel, total, refund_status FROM orders WHERE channel = 'online'`),
     // Money taken outside the order system: the offline sales ledger, summed as
     // Σ(quantity × unit price actually charged) rather than a headcount times a
     // flat face value (ADR-0025). Already scoped to PUBLIC performances
@@ -47,6 +54,7 @@ export async function getDashboardMoney(query: PoolQuery): Promise<DashboardMone
   ])
 
   const orders: CollectedOrderRow[] = orderRes.rows.map((r) => ({
+    channel: r.channel as OrderChannel,
     totalCents: Number(r.total) || 0,
     refundStatus: (r.refund_status as RefundStatus) ?? 'none',
   }))

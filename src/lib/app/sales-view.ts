@@ -24,8 +24,11 @@
 // Pure: no IO, no clock, no Payload. `sales-data.ts` is the wiring.
 
 import { formatEur } from './orders-view'
+import { pluralize } from './roster-loaders'
+import { revenueCollectedCents, type CollectedOrderRow } from '@/lib/dashboard/revenue'
 import { remainingSeats } from '@/lib/tickets/seat-availability'
 import type { OfflineSaleErrorCode } from '@/lib/offline-sales/lines'
+import { ADULT_PRICE_EUR, CHILD_PRICE_EUR } from '@/lib/pricing'
 import { VENUE_CAPACITY, type Venue } from '@/lib/venues'
 import { APP_STRINGS } from './strings'
 
@@ -45,6 +48,15 @@ export interface PerformanceSales {
   online: number
   /** Active tickets on `channel='partner'` (ADR-0008). */
   partner: number
+  /**
+   * The same partner seats, split adult/child, which is the only way to price
+   * them at face value (#538). `partnerAdult + partnerChild` is `partner`: both
+   * come from the same `status='active' AND channel='partner'` predicate, and
+   * the split is carried rather than the money so the €20/€10 arithmetic stays
+   * in a pure function that is tested.
+   */
+  partnerAdult: number
+  partnerChild: number
   /** Active tickets on `channel='comp'`: a seat, never a sale (ADR-0019). */
   comp: number
   /** Ledger seats sold at the entrance (ADR-0025, `source='door'`). */
@@ -53,7 +65,15 @@ export interface PerformanceSales {
   legacy: number
   /** People through the door: scanned ACTIVE tickets, one per person. */
   scanned: number
-  /** Non-refunded order totals, in cents. Comps are €0 and add nothing. */
+  /**
+   * Non-refunded ONLINE order totals, in cents (#538).
+   *
+   * Partner money is not here and must never be: a partner order stores `total`
+   * at face value the moment the reseller issues the seat, and a storno voids
+   * the tickets without touching either `total` or `refund_status`. A comp
+   * order is €0 (ADR-0019) and adds nothing by arithmetic as well as by the
+   * channel clause.
+   */
   ticketRevenueCents: number
   /** What the offline ledger says was actually charged, in cents. */
   offlineRevenueCents: number
@@ -85,6 +105,36 @@ export function showsRosterHalf(voditelj: boolean, hasMember: boolean): boolean 
   return voditelj || hasMember
 }
 
+/** One order of one evening, as the money read hands it over. */
+export interface ShowOrderRow extends CollectedOrderRow {
+  showId: string
+}
+
+/**
+ * Collected order money per evening (#538).
+ *
+ * The arithmetic is `revenueCollectedCents`, the one definition of collected
+ * money in this codebase, applied per show with the offline half left at zero
+ * because `sales-data.ts` carries the ledger separately. Doing it that way
+ * rather than summing in SQL is what makes the per-evening Prihod and the
+ * season figure on Financije the same rule rather than two that have to agree:
+ * partner face value out, a storno'd partner sale out with it, a refunded
+ * online order out, a comp adding nothing.
+ */
+export function onlineRevenueByShow(rows: readonly ShowOrderRow[]): Map<string, number> {
+  const byShow = new Map<string, ShowOrderRow[]>()
+  for (const row of rows) {
+    const bucket = byShow.get(row.showId)
+    if (bucket) bucket.push(row)
+    else byShow.set(row.showId, [row])
+  }
+  const out = new Map<string, number>()
+  for (const [showId, orders] of byShow) {
+    out.set(showId, revenueCollectedCents({ orders, offlineRevenueCents: 0 }))
+  }
+  return out
+}
+
 /** A performance with nothing sold yet: the shape every loader starts from. */
 export function emptySales(showId: string, venue: Venue): PerformanceSales {
   return {
@@ -92,6 +142,8 @@ export function emptySales(showId: string, venue: Venue): PerformanceSales {
     venue,
     online: 0,
     partner: 0,
+    partnerAdult: 0,
+    partnerChild: 0,
     comp: 0,
     door: 0,
     legacy: 0,
@@ -152,9 +204,44 @@ export function seatsRemaining(s: PerformanceSales): number {
   })
 }
 
-/** All the money this evening took, ledger included. */
+/**
+ * All the money this evening COLLECTED, ledger included: online orders net of
+ * refunds plus what the door and the old site took in cash.
+ *
+ * Partner face value is deliberately absent (#538) — see `ticketRevenueCents`
+ * — and `partnerFaceNote` is what keeps those seats visible.
+ */
 export function revenueCents(s: PerformanceSales): number {
   return s.ticketRevenueCents + s.offlineRevenueCents
+}
+
+/** The evening's partner seats at the fixed face values (ADR-0008, €20/€10). */
+export function partnerFaceValueCents(s: PerformanceSales): number {
+  return (s.partnerAdult * ADULT_PRICE_EUR + s.partnerChild * CHILD_PRICE_EUR) * 100
+}
+
+/**
+ * The one secondary line under Prihod: what the resellers sold for this evening.
+ *
+ * The amount is FACE VALUE, so the sentence says "prije provizije" and never
+ * the word *potraživanje*. Financije's *Potraživanje od partnera* is
+ * `netCents` from `partner-reconciliation.ts` — face value minus the partner's
+ * own commission — and it is scoped to a month or a season rather than to one
+ * evening. Naming both amounts the same thing would invite reading one off the
+ * other, and they are not equal.
+ *
+ * Null in two cases, and for two different reasons. With no partner seats there
+ * is nothing to say, so the line is simply absent rather than a €0,00. Without
+ * `finance` it is absent because it is MONEY, and money on Izvedbe is the
+ * `finance` gate exactly as `performanceNumbers` applies it: the sentence never
+ * reaches the payload, so no template can leak it by forgetting a condition.
+ *
+ * It is never summed into anything.
+ */
+export function partnerFaceNote(s: PerformanceSales, canFinance: boolean): string | null {
+  const seats = s.partnerAdult + s.partnerChild
+  if (!canFinance || seats === 0) return null
+  return S.partnerFace.line(pluralize(seats, S.partnerFace.ticket), formatEur(partnerFaceValueCents(s)))
 }
 
 /**

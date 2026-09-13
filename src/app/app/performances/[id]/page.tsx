@@ -5,6 +5,7 @@ import { getPerformanceDetail } from '@/lib/app/detail-data'
 import { loadPerformanceSales } from '@/lib/app/sales-data'
 import {
   mayOpenPerformance,
+  partnerFaceNote,
   performanceNumbers,
   salesBadges,
   showsRosterHalf,
@@ -362,6 +363,11 @@ export default async function PerformanceDetailPage({
   // nothing, and only for a `tickets` holder, because the numbers are seats and
   // money rather than a headcount.
   const sales = blagajna && p.isPublic ? await loadPerformanceSales(p.id) : null
+  const canFinance = can({ permissions: viewer.permissions }, 'finance')
+  // The one line under Prihod (#538). Null when the evening sold no partner
+  // seats, and null without `finance`, because it is money: the sentence never
+  // reaches the markup, so no condition here can leak it.
+  const partnerFace = sales ? partnerFaceNote(sales, canFinance) : null
   // Whether the roster half belongs on this screen at all. A blagajna account
   // that neither leads nor dances would otherwise read three segments about a
   // postava it has no part in, two of them empty (#476: one screen, content by
@@ -456,15 +462,18 @@ export default async function PerformanceDetailPage({
         <section className="app__sales">
           <h2 className="app__sales-head">{APP_STRINGS.sales.title}</h2>
           <dl className="app__sales-numbers">
-            {performanceNumbers(sales, can({ permissions: viewer.permissions }, 'finance')).map(
-              (line) => (
-                <div className="app__sales-number" key={line.label}>
-                  <dt>{line.label}</dt>
-                  <dd>{line.value}</dd>
-                </div>
-              ),
-            )}
+            {performanceNumbers(sales, canFinance).map((line) => (
+              <div className="app__sales-number" key={line.label}>
+                <dt>{line.label}</dt>
+                <dd>{line.value}</dd>
+              </div>
+            ))}
           </dl>
+          {/* Under Prihod, and never inside it (#538): partner seats are face
+              value the society has not collected, so they are named at face
+              value rather than summed into the evening's take. Not the word
+              *potraživanje*, which is Financije's net-of-commission figure. */}
+          {partnerFace && <p className="app__sales-partner-face">{partnerFace}</p>}
           {!p.cancelled && (
             <PublicPerformanceEditor
               performanceId={p.id}

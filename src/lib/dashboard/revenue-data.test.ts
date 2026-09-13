@@ -47,7 +47,7 @@ function line(over: Record<string, unknown> = {}) {
 describe('getDashboardMoney', () => {
   it('sums the offline ledger over public performances only', async () => {
     const { query, seen } = fakePool({
-      orders: [{ total: 4000, refund_status: 'none' }],
+      orders: [{ channel: 'online', total: 4000, refund_status: 'none' }],
       offlineLines: [line({ id: 1, quantity: 3 })],
     })
 
@@ -111,8 +111,8 @@ describe('getDashboardMoney', () => {
   it('drops fully refunded orders and reports the partner receivable apart', async () => {
     const { query } = fakePool({
       orders: [
-        { total: 4000, refund_status: 'none' },
-        { total: 2000, refund_status: 'refunded' },
+        { channel: 'online', total: 4000, refund_status: 'none' },
+        { channel: 'online', total: 2000, refund_status: 'refunded' },
       ],
       offlineLines: [],
     })
@@ -120,5 +120,26 @@ describe('getDashboardMoney', () => {
     const money = await getDashboardMoney(query)
     expect(money.revenueCollectedCents).toBe(4000)
     expect(money.partnerReceivableCents).toBe(0)
+  })
+
+  // #538 — the tile above "Partner receivable" must not be the same euros.
+  it('keeps partner face value, a storno and a comp out of the collected tile', async () => {
+    const { query, seen } = fakePool({
+      orders: [
+        { channel: 'online', total: 4000, refund_status: 'none' },
+        { channel: 'online', total: 2000, refund_status: 'refunded' }, // money went back
+        { channel: 'partner', total: 6000, refund_status: 'none' }, // the reseller's, until the obračun
+        { channel: 'partner', total: 4000, refund_status: 'none' }, // storno: tickets void, order untouched
+        { channel: 'comp', total: 0, refund_status: 'none' }, // goodwill, never money
+      ],
+      offlineLines: [line({ quantity: 3 })], // 3 door adults at €20
+    })
+
+    const money = await getDashboardMoney(query)
+    expect(money.revenueCollectedCents).toBe(4000 + 6000)
+
+    // The clause is in the SQL too, so the rows never travel in the first place.
+    const orderSql = seen.find((s) => /FROM orders/i.test(s))!
+    expect(orderSql).toMatch(/channel\s*=\s*'online'/)
   })
 })

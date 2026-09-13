@@ -19,14 +19,23 @@ export function MoneyFigures({
   partnerReceivableCents,
 }: {
   lang: AdminLang
-  /** Cash collected (cents). Today: online gross of non-refunded orders. */
+  /**
+   * Cash collected (cents): `channel='online'` orders net of refunds, plus the
+   * offline sales ledger. Partner face value is NOT in it (#538) — those euros
+   * are the tile beside this one, and counting them here would print the same
+   * money twice (ADR-0015).
+   */
   revenueCents: number
-  /** Partner receivable (cents), invoiced monthly. Today: 0 until #237 wires it. */
+  /** Partner receivable (cents), invoiced monthly. */
   partnerReceivableCents?: number
 }) {
   return (
     <>
-      <Figure label={adminT(lang, 'revenueCollected')} value={eur(revenueCents)} />
+      <Figure
+        label={adminT(lang, 'revenueCollected')}
+        value={eur(revenueCents)}
+        note={adminT(lang, 'revenueCollectedNote')}
+      />
       <Figure
         label={`${adminT(lang, 'partnerReceivable')} ${adminT(lang, 'invoicedMonthly')}`}
         value={eur(partnerReceivableCents ?? 0)}
@@ -35,7 +44,7 @@ export function MoneyFigures({
   )
 }
 
-function Figure({ label, value }: { label: string; value: string }) {
+function Figure({ label, value, note }: { label: string; value: string; note?: string }) {
   return (
     <div style={{ minWidth: 0 }}>
       <div
@@ -50,6 +59,9 @@ function Figure({ label, value }: { label: string; value: string }) {
         {label}
       </div>
       <div style={accentNumberStyle(24)}>{value}</div>
+      {note ? (
+        <div style={{ fontSize: 11, color: 'var(--theme-elevation-500)', marginTop: 2 }}>{note}</div>
+      ) : null}
     </div>
   )
 }

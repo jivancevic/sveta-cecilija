@@ -96,6 +96,9 @@ export const dashboardStrings = {
     revenueCollected: 'Revenue collected',
     partnerReceivable: 'Partner receivable',
     invoicedMonthly: '(invoiced monthly)', // #237 receivable sub-label
+    // #538: what the collected figure is made of, so it is never read as
+    // "everything sold". Partner face value is the tile below, not this one.
+    revenueCollectedNote: '(online + door/legacy cash; partner money excluded)',
     ticketsSold: 'Tickets sold',
     seasonCapacity: 'Season capacity filled',
     remainingSeats: 'Remaining seats',
@@ -272,6 +275,8 @@ export const dashboardStrings = {
     revenueCollected: 'Naplaćeni prihod',
     partnerReceivable: 'Potraživanje od partnera',
     invoicedMonthly: '(fakturirano mjesečno)', // #237 receivable sub-label
+    revenueCollectedNote:
+      '(online + gotovina na vratima i sa stare stranice; partnerski novac nije uključen)',
     ticketsSold: 'Prodane ulaznice',
     seasonCapacity: 'Popunjenost sezone',
     remainingSeats: 'Preostala mjesta',

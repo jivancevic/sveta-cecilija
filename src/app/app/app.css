@@ -4040,6 +4040,17 @@ a.app__ob-link {
   color: var(--ink);
 }
 
+/* The one secondary line under Prihod (#538): what the resellers sold for this
+   evening, at face value before commission, never summed into anything. Quiet
+   by design, because it is a note about a number rather than a number. */
+.app__sales-partner-face {
+  margin: -6px 0 14px;
+  font-size: 13px;
+  line-height: 1.4;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+
 @media (min-width: 560px) {
   .app__sales-numbers {
     grid-template-columns: repeat(4, minmax(0, 1fr));

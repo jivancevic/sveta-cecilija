@@ -5,6 +5,8 @@ import {
   emptySales,
   ledgerErrorMessage,
   mayOpenPerformance,
+  onlineRevenueByShow,
+  partnerFaceNote,
   performanceNumbers,
   salesBadges,
   salesRowView,
@@ -26,6 +28,8 @@ function sales(over: Partial<PerformanceSales> = {}): PerformanceSales {
     ...emptySales('1', 'ljetno-kino'),
     online: 80,
     partner: 12,
+    partnerAdult: 10,
+    partnerChild: 2,
     comp: 4,
     door: 30,
     legacy: 6,
@@ -112,6 +116,62 @@ describe('the detail numbers', () => {
     // 176.000 c of orders + 66.000 c of the offline ledger = 2420,00 €, in the
     // same spelling Narudžbe uses (`formatEur`).
     expect(money?.value).toBe('2420,00 €')
+  })
+})
+
+describe('the money of one evening', () => {
+  // #538 — the four cases that decide what an evening actually took.
+  const rows = [
+    { showId: '1', channel: 'online' as const, totalCents: 4000, refundStatus: 'none' as const },
+    // Refunded: the money went back, so it is not this evening's take.
+    { showId: '1', channel: 'online' as const, totalCents: 2000, refundStatus: 'refunded' as const },
+    // The reseller holds these euros until the obračun (ADR-0008).
+    { showId: '1', channel: 'partner' as const, totalCents: 6000, refundStatus: 'none' as const },
+    // A storno: the tickets are void, `total` and `refund_status` are not.
+    { showId: '1', channel: 'partner' as const, totalCents: 4000, refundStatus: 'none' as const },
+    // Goodwill, €0 (ADR-0019).
+    { showId: '1', channel: 'comp' as const, totalCents: 0, refundStatus: 'none' as const },
+    { showId: '2', channel: 'online' as const, totalCents: 1500, refundStatus: 'none' as const },
+  ]
+
+  it('counts online money only, evening by evening', () => {
+    const byShow = onlineRevenueByShow(rows)
+    expect(byShow.get('1')).toBe(4000)
+    expect(byShow.get('2')).toBe(1500)
+  })
+
+  it('leaves an evening with nothing but partner sales at zero, not at face value', () => {
+    const byShow = onlineRevenueByShow(rows.filter((r) => r.channel === 'partner'))
+    expect(byShow.get('1')).toBe(0)
+  })
+})
+
+// #538 — partner seats leave Prihod, but they do not leave the screen.
+describe('the partner face-value line', () => {
+  it('prices the partner seats of an evening at face value, before commission', () => {
+    // 10 adults at €20 and 2 children at €10, worked by hand: 220,00 €. Face
+    // value, so NOT the same number as Financije's Potraživanje od partnera,
+    // which nets the partner's commission off exactly these seats.
+    const note = partnerFaceNote(sales({ partnerAdult: 10, partnerChild: 2 }), true)
+    expect(note).toBe('Partneri: 12 ulaznica, nominalno 220,00 € (prije provizije, nije u prihodu)')
+  })
+
+  it('says "ulaznica" for one seat, the Croatian singular', () => {
+    const note = partnerFaceNote(sales({ partnerAdult: 1, partnerChild: 0 }), true)
+    expect(note).toBe('Partneri: 1 ulaznica, nominalno 20,00 € (prije provizije, nije u prihodu)')
+  })
+
+  it('says "ulaznice" for the few bucket', () => {
+    const note = partnerFaceNote(sales({ partnerAdult: 3, partnerChild: 0 }), true)
+    expect(note).toBe('Partneri: 3 ulaznice, nominalno 60,00 € (prije provizije, nije u prihodu)')
+  })
+
+  it('is omitted when the evening sold no partner seats', () => {
+    expect(partnerFaceNote(sales({ partnerAdult: 0, partnerChild: 0 }), true)).toBeNull()
+  })
+
+  it('is money, so a viewer without `finance` never gets it', () => {
+    expect(partnerFaceNote(sales({ partnerAdult: 10, partnerChild: 2 }), false)).toBeNull()
   })
 })
 
