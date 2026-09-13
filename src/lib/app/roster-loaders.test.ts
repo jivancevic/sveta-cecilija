@@ -3,6 +3,7 @@ import {
   CANCELLED_WINDOW_MS,
   attachArmyChips,
   attachOwnAnswers,
+  attachOwnTitles,
   countLabel,
   daysUntil,
   groupByMonth,
@@ -357,6 +358,34 @@ describe('loadSeasonPerformances — own answers', () => {
 // ---------------------------------------------------------------------------
 // The voditelj's headcount chip (#423, story 10).
 // ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// The viewer's own title on the card (#566): the crown Moreška's mark wears.
+// ---------------------------------------------------------------------------
+describe('attachOwnTitles', () => {
+  const confirmed = toRosterPerformance(doc({ id: '1', lineupConfirmed: true }))
+  const draft = toRosterPerformance(doc({ id: '2', lineupConfirmed: false }))
+
+  it('folds a title off a CONFIRMED postava onto its own performance', () => {
+    const out = attachOwnTitles([confirmed], new Map([['1', 'bili_kralj']]))
+    expect(out[0]!.myTitle).toBe('bili_kralj')
+  })
+
+  it('says nothing about an unconfirmed postava', () => {
+    // A crown the voditelj is still moving around is not news a dancer may
+    // read (story 34), and Moreška would print it on their own mark.
+    expect(attachOwnTitles([draft], new Map([['2', 'crni_kralj']]))[0]!.myTitle).toBeNull()
+  })
+
+  it('is null for a plain role, which is not a title at all', () => {
+    expect(attachOwnTitles([confirmed], new Map([['1', 'crni']]))[0]!.myTitle).toBeNull()
+    expect(attachOwnTitles([confirmed], new Map([['1', 'voditelj']]))[0]!.myTitle).toBeNull()
+  })
+
+  it('is null for a performance the reader is not in', () => {
+    expect(attachOwnTitles([confirmed], new Map())[0]!.myTitle).toBeNull()
+  })
+})
+
 describe('attachArmyChips', () => {
   const rows = [
     toRosterPerformance(doc({ id: '1', date: '2026-08-20', thresholdCrni: 2, thresholdBili: 1 })),

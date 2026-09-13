@@ -380,6 +380,61 @@ export const APP_STRINGS = {
     noMember: 'Nemaš povezan profil moreškanta, pa ovdje nema tvog odgovora.',
   },
 
+  /**
+   * Stanje: one nastup, its two armies and its titles (#566).
+   *
+   * The DANCER's register throughout ("nastup", never "izvedba"), because the
+   * whole screen is read as a dancer: a voditelj standing in front of the
+   * columns at seven in the evening is not selling anything.
+   *
+   * Two words are worth pinning. **"Mjesto"** is what an unfilled place in a
+   * column is called, never "prazno" or a dash: the columns are a picture of
+   * the two lines on the pier, and a line has places. **"Titula"** is the
+   * glossary's word (CONTEXT.md) and never "uloga", which is the profile fact a
+   * dancer carries from evening to evening.
+   */
+  stanje: {
+    title: 'Stanje',
+    back: 'Moreška',
+    /** The place a column is still short. `n` is the place's own number. */
+    slot: (n: number) => `mjesto ${n}`,
+    /** The head of a column: "7 od 8". */
+    ofThreshold: (count: number, threshold: number) => `${count} od ${threshold}`,
+    bule: 'Bule',
+    noAnswer: 'Bez odgovora',
+    notComing: 'Ne dolaze',
+    nobody: 'Nema nikoga.',
+    lineupConfirmed: 'Postava potvrđena',
+    cancelled: 'Otkazano',
+    /** The tally over the voditelj's two actions: "Titule 3 od 4". */
+    titles: (given: number, all: number) => `Titule ${given} od ${all}`,
+    noTitle: 'Bez titule',
+    /** The person sheet's two halves. */
+    answerFor: 'Odgovor',
+    titleFor: 'Titula',
+    clear: 'Poništi odgovor',
+    /** The chip on a postava row nobody has answered for (#581 review). */
+    noAnswerChip: 'bez odgovora',
+    /** The voditelj's two buttons. */
+    call: 'Pozovi',
+    callTitle: 'Pozovi moreškante',
+    confirm: 'Potvrdi postavu',
+    confirming: 'Potvrđujem...',
+    confirmed: 'Postava je potvrđena.',
+    unlock: 'Otključaj postavu',
+    unlocking: 'Otključavam...',
+    unlocked: 'Postava je otključana.',
+    /** Why Potvrdi is not available yet: the rule, in the voditelj's words. */
+    needTitles: 'Podijeli sve četiri titule pa potvrdi postavu.',
+    /** The confirmed postava, for a dancer: nobody may change it any more. */
+    confirmedNote: 'Postava je potvrđena. Titule vide svi.',
+    /** The Pozovi sheet: the message that goes out, and the two thresholds. */
+    callBody: 'Alarm zvoni na mobitelima onih koji još nisu odgovorili.',
+    callMessage: 'Poruka',
+    saving: 'Spremam...',
+    failed: 'Nije spremljeno. Pokušaj ponovno.',
+  },
+
   /** The "Moje" tab: one dancer's own season (#457). */
   mySeason: {
     title: 'Moje',
@@ -544,7 +599,16 @@ export const APP_STRINGS = {
     noAnswer: 'Bez odgovora',
     call: 'Nazovi',
     move: 'Prebaci',
-    moveTo: (army: string) => `Prebaci u ${army}`,
+    /**
+     * "Prebaci u bile" (#581 review).
+     *
+     * The armies are common nouns and the phrase wants the ACCUSATIVE PLURAL,
+     * so neither "Bili" (the heading's nominative) nor a capital survives here:
+     * the word is not at the start of a sentence. It takes the army ITSELF
+     * rather than a label, so the two surfaces that offer the move, Stanje's
+     * person sheet and the old `ArmyMoveButton`, cannot decline it two ways.
+     */
+    moveTo: (army: 'crni' | 'bili') => (army === 'crni' ? 'Prebaci u crne' : 'Prebaci u bile'),
     missing: 'Ta izvedba ne postoji.',
     /** What the segmented control IS, for a screen reader announcing the tablist. */
     segmentsLabel: 'Dijelovi izvedbe',
@@ -1232,6 +1296,12 @@ export const APP_STRINGS = {
     locked: 'Postava je potvrđena. Otključaj je pa pokušaj ponovno.',
     badConfirm: 'Nejasno je treba li postavu potvrditi ili otključati.',
     confirmEmpty: 'Prazna postava se ne može potvrditi. Dodaj barem jednog moreškanta.',
+    /**
+     * What follows the sentence naming the missing or doubled title (#566).
+     * The rule in one line, so a voditelj reads what is wrong and then why it
+     * matters, rather than a rule with no example in front of it.
+     */
+    confirmTitles: 'Potvrđena postava nosi sve četiri titule, svaku po jednom.',
     failed: 'Postava nije spremljena. Pokušaj ponovno.',
   },
 

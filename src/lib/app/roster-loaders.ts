@@ -32,6 +32,7 @@ import {
   type AttendanceStatus,
 } from '@/lib/attendance/rules'
 import { countArmies, type AttendanceRow } from '@/lib/attendance/army-count'
+import { isDanceTitle, type DanceTitle } from '@/lib/lineup/titles'
 import { relationIdString } from '@/lib/payload-relation'
 import { APP_STRINGS, monthLabel } from '@/lib/app/strings'
 import type { Venue } from '@/lib/venues'
@@ -69,6 +70,18 @@ export interface RosterPerformance {
   myArmy: Army | null
   /** Whether the postava of this evening is confirmed (#432): a past-row badge. */
   lineupConfirmed: boolean
+  /**
+   * The title the viewer wears in this evening's CONFIRMED postava (#566), or
+   * null: no title, no postava, or one the voditelj has not confirmed yet.
+   *
+   * A title belongs to one performance's lineup and never to a person
+   * (glossary: *Title*), which is exactly why it is a field on the performance
+   * rather than on the profile. Moreška reads it off the NEXT nastup for the
+   * crown on the reader's own mark, and an unconfirmed postava yields nothing:
+   * a dancer must not learn they are kralj tonight from a draft the voditelj is
+   * still moving around (story 34).
+   */
+  myTitle: DanceTitle | null
   /** Whether the viewer may still change that answer from the card (#422). */
   canAnswer: boolean
   /**
@@ -136,9 +149,11 @@ export function toRosterPerformance(row: Record<string, unknown>): RosterPerform
     startMs: date && time ? showStartMs(date, time) : Number.NaN,
     thresholdCrni: threshold(row.thresholdCrni),
     thresholdBili: threshold(row.thresholdBili),
-    // Filled in by attachOwnAnswers / attachArmyChips once the viewer is known.
+    // Filled in by attachOwnAnswers / attachOwnTitles / attachArmyChips once
+    // the viewer is known.
     myAnswer: null,
     myArmy: null,
+    myTitle: null,
     canAnswer: false,
     chip: null,
   }
@@ -195,6 +210,27 @@ export function attachOwnAnswers(
     myArmy: armies?.get(p.id) ?? null,
     canAnswer: opts.hasMember && (opts.voditelj || moreskantMayAnswer(p, nowMs)),
   }))
+}
+
+/**
+ * Fold the viewer's OWN title into the cards (#566).
+ *
+ * `titles` is keyed by performance id and holds whatever the viewer's lineup
+ * row says; only a title on a CONFIRMED postava survives, because an
+ * unconfirmed one is a draft no dancer may read (story 34) and a plain crni is
+ * not a title at all.
+ */
+export function attachOwnTitles(
+  rows: RosterPerformance[],
+  titles: Map<string, string>,
+): RosterPerformance[] {
+  return rows.map((p) => {
+    const role = titles.get(p.id)
+    return {
+      ...p,
+      myTitle: p.lineupConfirmed && isDanceTitle(role) ? role : null,
+    }
+  })
 }
 
 /**
@@ -381,19 +417,34 @@ export async function loadSeasonPerformances(
   // Member link (a non-dancing voditelj, story 15) skips it entirely.
   const answers = new Map<string, AttendanceStatus>()
   const armies = new Map<string, Army>()
+  // The viewer's own lineup rows, one query for the whole season, and only for
+  // a reader who has a Member row to be in a postava (#566).
+  const titles = new Map<string, string>()
   if (deps.memberId) {
-    const mine = await deps.find({
-      collection: 'attendance',
-      where: { member: { equals: deps.memberId } },
-      limit: 1000,
-      depth: 0,
-    })
+    const [mine, postave] = await Promise.all([
+      deps.find({
+        collection: 'attendance',
+        where: { member: { equals: deps.memberId } },
+        limit: 1000,
+        depth: 0,
+      }),
+      deps.find({
+        collection: 'lineups',
+        where: { member: { equals: deps.memberId } },
+        limit: 1000,
+        depth: 0,
+      }),
+    ])
     for (const row of mine.docs) {
       const performance = relationIdString(row.performance)
       if (performance && (row.status === 'coming' || row.status === 'not_coming')) {
         answers.set(performance, row.status)
         if (row.army === 'crni' || row.army === 'bili') armies.set(performance, row.army)
       }
+    }
+    for (const row of postave.docs) {
+      const performance = relationIdString(row.performance)
+      if (performance && typeof row.role === 'string') titles.set(performance, row.role)
     }
   }
 
@@ -407,6 +458,7 @@ export async function loadSeasonPerformances(
     },
     armies,
   )
+  rows = attachOwnTitles(rows, titles)
 
   // The headcount chips: two more queries, and only for a caller that asked.
   // The voditelj's card chips (#423) and Moreška's ArmyBar (#565) are the same

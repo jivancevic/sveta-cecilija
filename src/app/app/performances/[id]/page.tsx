@@ -347,11 +347,12 @@ export default async function PerformanceDetailPage({
 }) {
   const { id } = await params
   const { dio } = await searchParams
-  // Two screens open this one evening (#565): Izvedbe for the blagajna and the
-  // voditelj, Moreška for the dancer, who since #565 does not unlock the Izvedbe
-  // list at all. Until #566 builds Stanje its own route, this page answers to
-  // both tabs, and the gate says so rather than each caller guessing.
-  const { viewer, refusal } = await openScreen(['performances', 'moreska'])
+  // Izvedbe's own screen, and only Izvedbe's (#566). It answered to Moreška as
+  // well while Stanje had no route of its own; now it has one
+  // (`/app/moreska/[id]`), a dancer reads the evening there and the push deep
+  // links point at it, so a `moreskant` login has no reason to reach this page
+  // and the gate is back to one screen.
+  const { viewer, refusal } = await openScreen('performances')
   if (refusal) return refusal
 
   const me = viewer.me

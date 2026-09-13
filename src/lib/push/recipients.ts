@@ -119,9 +119,17 @@ export function toUserIds(
   return [...new Set(ids)]
 }
 
-/** Where a tap lands: the performance the notification is about (story 6). */
+/**
+ * Where a tap lands: the performance the notification is about (story 6).
+ *
+ * **Stanje, not Izvedbe** (#566). Every roster notification is addressed to a
+ * dancer, in the dancer's register ("Stanje za nastup ..."), and since #566 a
+ * `moreskant` login does not unlock Izvedbe at all — a deep link into
+ * `/app/performances/[id]` would land half the roster on "Ovaj dio nije za tvoj
+ * račun". A voditelj unlocks both and reads the same evening either way.
+ */
 export function performanceUrl(performanceId: string): string {
-  return `/app/performances/${performanceId}`
+  return `/app/moreska/${performanceId}`
 }
 
 export function buildAlarmMessage(

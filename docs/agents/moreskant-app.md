@@ -46,8 +46,8 @@ two fields apart for this reason.
 |---|---|---|---|---|---|
 | 0 | Početna (the landing screen) | `/app` | any screen | **live** (#564): the logo and the wordmark (the only screen with them), a greeting by time of day with the reader's first name and no vocative, one sentence about the next nastup or izvedba in the reader's own register, and then one card per tab in the account's own order plus Obavijesti — **four at most**. The Moreška card is the hero of the next nastup with Dolazim / Ne dolazim in it and the ArmyBar under it (T4's own `heroView` / `Answer` / `StateBar`, never a copy); Statistika is a Ring of the next public izvedba over the venue's capacity; Ljestvica is the Podium of the top three plus "ti si N. s M"; every other screen is one figure and one action. **A card whose screen the account does not unlock is never built**, because the cards come off `nav.tabs` and there is no second list. Rules in `src/lib/app/home-screen.ts` (pure), loads in `home-data.ts` (only the cards this reader gets, each from the loader its own screen already uses). Početna is the FIRST tab, never storable on `Users.tabs`, never in Više | it used to 307 to the person's first tab (#495) |
 | 1 | Narudžbe | `/app/orders`, `/app/orders/[id]` | `tickets` | **live** (#501): the list with search (name, e-mail or code), a performance filter, a state filter (`active\|refunded\|partner\|comp`) and a pager, all in the query string; the detail with the order's facts, its tickets and four named actions — Povrat (`refunds` only, and only on a paid, unrefunded order), Pošalji ulaznice ponovno, Otvori PDF, Uredi kupca | none, the Backoffice keeps its list |
-| 1.5 | Moreška (the dancer's register screen) | `/app/moreska` | `moreskant`, `moreska` | **live** (#565): the 44px RoleMark with the name and "N nastupa pred tobom"; the hero of the next nastup (the day at 80px, weekday · time · Redovna, the voditelj's note, Dolazim / Ne dolazim, and after an answer "Dolaziš · Crni" or "Ne dolaziš" with Promijeni); the ArmyBar under it, which taps through to Stanje; then the season by month, a gold DateDisc for every Redovna and one chip per row. **A non-regular evening reads "Vanredna" and never names its client or its kind**, there is no seat count or revenue anywhere on it (Q29) and no Dodaj (Q31). What it says is `src/lib/app/moreska-screen.ts`, pure and tested without a database | new; nothing 308s here |
-| 2 | Izvedbe (one screen, content by `can()`) | `/app/performances`, `/app/performances/[id]` | `tickets`, `moreska` (`moreskant` reads the LIST on Moreška since #565, but still opens the DETAIL here) | **live** (#495): the voditelj's Dodaj / Uredi / Otkaži / Pragovi (#503), and the blagajna's sold-of-capacity, channel split, per-show numbers and six named actions (#502), which is where the old `/admin/stats/[id]` drill-down now lives. Since #538 the per-show *Prihod* is online money net of refunds plus the evening's ledger, with the partner seats named under it at face value, before commission | 308 from `/app/izvedba/[id]`; push messages now carry the new path |
+| 1.5 | Moreška (the dancer's register screen) | `/app/moreska` | `moreskant`, `moreska` | **live** (#565): the 44px RoleMark with the name and "N nastupa pred tobom"; the hero of the next nastup (the day at 80px, weekday · time · Redovna, the voditelj's note, Dolazim / Ne dolazim, and after an answer "Dolaziš · Crni" or "Ne dolaziš" with Promijeni); the ArmyBar under it, which taps through to Stanje; then the season by month, a gold DateDisc for every Redovna and one chip per row. **A non-regular evening reads "Vanredna" and never names its client or its kind**, there is no seat count or revenue anywhere on it (Q29) and no Dodaj (Q31). What it says is `src/lib/app/moreska-screen.ts`, pure and tested without a database. **`/app/moreska/[id]` is Stanje** (#566), one nastup with its two armies and its four titles | new; nothing 308s here |
+| 2 | Izvedbe (one screen, content by `can()`) | `/app/performances`, `/app/performances/[id]` | `tickets`, `moreska` (a `moreskant` reads the schedule on Moreška since #565 and one evening on Stanje since #566, so Izvedbe is not theirs at all) | **live** (#495): the voditelj's Dodaj / Uredi / Otkaži / Pragovi (#503), and the blagajna's sold-of-capacity, channel split, per-show numbers and six named actions (#502), which is where the old `/admin/stats/[id]` drill-down now lives. Since #538 the per-show *Prihod* is online money net of refunds plus the evening's ledger, with the partner seats named under it at face value, before commission | 308 from `/app/izvedba/[id]`; push messages now carry the new path |
 | 2.5 | Članovi (dancer profiles, invitations, join code; absorbs Pozivnice, added by #476) | `/app/members`, `/app/members/[id]` | `moreska` | **live** (#511): the rehearsal join code and its pending claims at the top, Dodaj plesača beside them, then the roster — a diacritic-insensitive search, active moreškanti first and retired ones under them, one row per dancer carrying the nickname, the real name, the primary role, whether a login exists, and the two invitation channels behind a disclosure (`POST /api/app/invite/link` for the SMS link, `POST /api/app/invite` for the letter), plus "Pošalji pozivnice svima"; the profile at `/app/members/[id]` writes nadimak, mobitel, e-mail, plesne uloge, glavna uloga and aktivan through `PATCH /api/app/members/[id]`, and Dodaj plesača through `POST /api/app/members` | `/app/invitations` and `/app/pozivnice` both 308 here; the Backoffice Members list stays for the attribution half |
 | 3 | Ljestvica (own season + roster ranking; voditelj sees the full table) | `/app/leaderboard?season=2026&part=mine\|all` | `moreskant`, `moreska` | **live** (#495): both panels on one screen, the voditelj's *Ljestvica* panel is the old scoreboard | 308 from `/app/moje` and `/app/statistika` |
 | 4 | Skener (camera, code entry, door list) | `/app/scan` | `door` | **live** (#504): the camera and the four result states, Pusti ostatak grupe (n), Poništi propuštanje, Pronađi ulaznicu and the "ušlo X od Y" ring, all on one screen | `/admin/scan` 308s here and the Backoffice view is deleted; the ticket QR stays `/scan/[token]`, whose staff buttons point at `/app/scan` |
@@ -107,12 +107,20 @@ stays "performance" in both; the split exists only in Croatian. The copy lives
 in `APP_STRINGS.moreska` and `APP_STRINGS.home` respectively, and the header of
 `src/lib/app/strings.ts` restates the rule for whoever adds the next string.
 
-**Stanje is still `/app/performances/[id]`** until #566 builds it a screen of
-its own, so that one page answers to BOTH tabs: `openScreen` takes a list of
-screen keys and the detail passes `['performances', 'moreska']`. That is what
-keeps a push notification's deep link working for a dancer, who no longer
-unlocks the Izvedbe list itself, and the detail's back link points at whichever
-of the two the reader actually holds.
+**Stanje is `/app/moreska/[id]` since #566**, and with it the two halves of an
+evening finally live on two screens: the dance under Moreška, the ticket shop
+under Izvedbe. Three consequences, all of them deliberate:
+
+- the Izvedbe detail is back to `openScreen('performances')`. It answered to
+  both tabs for one ticket (#565), which was the stopgap that kept a dancer's
+  deep link working;
+- **every roster push points at Stanje**: `performanceUrl` in
+  `src/lib/push/recipients.ts` builds `/app/moreska/<id>`, because every
+  notification the roster gets is addressed to a dancer, and a `moreskant`
+  login does not unlock Izvedbe at all;
+- nothing was added to the screen table for it. A screen's route covers
+  everything under it, so `/app/moreska/[id]` lights the Moreška tab for a
+  dancer and a voditelj alike.
 
 ### The access rule
 
@@ -1531,6 +1539,95 @@ bootstrap applies these files in filename order, the file has to land after
 (#398, asserted by `db-schema-safety.test.ts`) — and a plain
 `migrate-zz-lineups.sql` would sort after it. The two-column unique index lives
 only there, never in the regenerated `00-base.sql`.
+
+## Stanje: one nastup, its armies and its titles (#566)
+
+`/app/moreska/[id]`, the screen a voditelj holds in their hand at seven in the
+evening and a dancer opens to see whether there are enough of them. It replaces
+the Dolaze and Postava segments of the old detail with one picture: the ArmyBar,
+crni and bili as two columns with their empty places, a Bule card, and the
+roster that has not answered behind a sheet. No seats, no revenue, no buyer:
+those are Izvedbe's, one tab away (Q29).
+
+**The columns are the ANSWERS; the lineup only decides whether a crown sits on a
+name.** Who stands in crni is `countArmies` over the attendance rows, the single
+home of the counting rule, so a dancer the voditelj moves across armies moves
+column immediately, before any postava is saved.
+
+**Where a title lives.** In the evening's lineup, never on the profile
+(CONTEXT.md → *Title*). The rules are `src/lib/lineup/titles.ts`, pure:
+
+- `titlesForArmy` — crni: crni kralj and otmanović; bili: bili kralj; bula: the
+  bula. A title is offered in the column the dancer is standing in tonight.
+- `assignTitle` — exactly one holder. Giving a title takes it off whoever had
+  it, who goes back to the plain role of their army. **The bula is the one
+  exception**: the role `bula` IS the title, there is no plain bula to fall back
+  to, so the dancer it is taken from leaves the postava. She still answered
+  "dolazim" and still stands in the Bule card; she did not dance it.
+- `lineupWithTitles` — what the postava IS before anybody saves it: the answers
+  (`buildLineupFromAttendance`) FLATTENED to plain army roles, with the stored
+  titles laid on top. The flattening is the point — the suggestion carries the
+  dancer's primary role, so a crni kralj by trade would otherwise arrive already
+  crowned. A stored title is dropped when its holder says "ne dolazim" or is
+  moved to the other army; a stored `voditelj` line is always kept; at most one
+  bula is in the list.
+- **A stored row for somebody who has not answered AT ALL is kept whole**, role
+  and title (#581 review), and it stands in its column with a quiet "bez
+  odgovora" chip. `set_lineup` and the Backoffice editor both dictate a postava
+  for an evening nobody was asked about (story 62), and a screen that derived
+  the list from answers alone would delete that work on the first title tap and
+  leave an evening whose four titles sit on nobody, so it could never be
+  confirmed. "No answer" is the ABSENCE of a row, which is exactly what tells it
+  apart from a withdrawal. The column's own "N od prag" still counts ANSWERS,
+  because the ArmyBar above it does.
+- `checkTitles` — **a confirmed postava carries all four, once each.**
+
+**The four-title rule is the CONFIRM's and nothing else's.** It lives in
+`decideConfirmation` (`lineup/write-tx.ts`), under the same shows row lock as
+the empty-postava rule, over title counts the locked read takes with one grouped
+`count(*) ... GROUP BY role`. Confirming without them is a 400 naming what is
+missing or doubled ("Postava nema bilog kralja.", "Dva plesača nose titulu
+Otmanović."). Unlocking is never refused for it, or an evening confirmed before
+the rule existed could not be opened to be repaired. An UNCONFIRMED write still
+passes untouched, which is what keeps the MCP `set_lineup` tool working (story
+62) and what lets a voditelj fill the columns in over an afternoon.
+
+**Potvrdi writes the postava and then confirms it**, in two calls. The titles
+are stored the moment they are given, but the plain rows under them are derived
+from answers that keep arriving, so saving the list as it stands on screen is
+the only way the confirmed postava is the evening the voditelj was looking at.
+
+**Six writes, five of them routes that already existed**: `POST
+/api/app/attendance` for an answer on somebody's behalf and for the army move,
+`POST /api/app/lineup` for a title (an unconfirmed replace of the whole list),
+`POST /api/app/lineup/confirm`, `POST /api/app/performances/[id]/thresholds` and
+`POST /api/app/alarm`, the last two both inside the **Pozovi** sheet (Q35: the
+thresholds and the call-out are one decision seen from two sides). The sheet
+shows the alarm before it sends it, and the preview is `PUSH_MESSAGES.alarm`
+itself, so it cannot promise a sentence the phones will not get. Nothing on the
+screen is optimistic: every landed write calls `router.refresh()` and the server
+counts again.
+
+**Stanje writes answers and titles, and preserves what it did not derive.** A
+save from this screen is the answers plus the titles plus every stored row it
+kept, never a list rebuilt from scratch. What it still cannot record is an
+unusual role (a bula danced by a crni, story 29) or the `voditelj` line, so
+**the old `LineupEditor` on the Izvedbe detail stays** until something here can:
+it is the tweezers for a row Stanje has no control for, and #512 must not take
+it away before then.
+
+**A dancer reads the same screen with no action bar and no sheets on the
+names.** The routes refuse them anyway (`requirePermission(req, 'moreska')`), so
+the missing controls are honesty about the account rather than the lock. A
+confirmed postava shows its titles to everyone, with a chip in the header.
+
+What the screen SAYS is `src/lib/app/stanje-screen.ts`, pure and tested without
+a database; what it can DO is `src/app/app/moreska/[id]/Stanje.tsx`, the one
+client island.
+
+Moreška's own top mark wears the title too: `RosterPerformance.myTitle` is the
+reader's role in the next nastup's **confirmed** postava, folded in by
+`attachOwnTitles` and null for a draft (story 34).
 
 ## Statistics (#437 — phase 4 batch C)
 

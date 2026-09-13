@@ -24,6 +24,7 @@
 
 import { sql } from '@payloadcms/db-postgres'
 import { relationIdForWrite } from '@/lib/payload-relation'
+import { isDanceTitle, type TitleCounts } from './titles'
 import type { LineupTxStore, LockedLineupState } from './write-tx'
 import type { LineupEntry } from './rules'
 
@@ -108,15 +109,28 @@ export function createLineupStore(
       if (locked.length === 0) return null
 
       // Counted inside the lock as well: "an empty postava may not be
-      // confirmed" is a statement about the moment of the write.
+      // confirmed" and "all four titles, once each" (#566) are both statements
+      // about the moment of the write, so both are read off one grouped count
+      // taken under the same lock rather than from a list loaded earlier.
       const counted = rowsOf(
-        await execute(sql`SELECT count(*)::int AS n FROM lineups WHERE performance_id = ${id}`),
+        await execute(
+          sql`SELECT role, count(*)::int AS n FROM lineups WHERE performance_id = ${id} GROUP BY role`,
+        ),
       )
+
+      let entryCount = 0
+      const titles: TitleCounts = { crni_kralj: 0, otmanovic: 0, bili_kralj: 0, bula: 0 }
+      for (const row of counted) {
+        const n = Number(row.n ?? 0)
+        entryCount += n
+        if (isDanceTitle(row.role)) titles[row.role] += n
+      }
 
       return {
         confirmed: locked[0].lineup_confirmed === true,
         confirmedAt: isoOf(locked[0].lineup_confirmed_at),
-        entryCount: Number(counted[0]?.n ?? 0),
+        entryCount,
+        titles,
       }
     },
 

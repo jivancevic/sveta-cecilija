@@ -6587,3 +6587,276 @@ a.app__statrow-main:focus-visible {
   font-size: 14px;
   color: var(--muted);
 }
+
+/* ─────────────────────────────────────────────────────────
+   Stanje — one nastup, its two armies and its titles (#566)
+
+   Layout only. Every shape on this screen is a `ui-*` one (Card, Section,
+   RoleMark, ArmyBar, Sheet, Button, Note) and none of them is restyled here;
+   what is below is how they stand next to each other, plus the two things the
+   design system has no shape for: a name inside a column and an empty place.
+   ───────────────────────────────────────────────────────── */
+
+.app__stanje-head {
+  margin-bottom: 16px;
+}
+
+.app__stanje-when {
+  margin: 10px 0 0;
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 22px;
+  line-height: 1.15;
+}
+
+.app__stanje-where {
+  margin: 3px 0 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.app__stanje-bar {
+  margin-bottom: 12px;
+}
+
+/* Crni left, bili right: the two lines as they stand on the pier. They stay
+   two columns at every width, because one above the other would be a list of
+   sixteen names and the whole point is reading them against each other. */
+.app__armies {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+}
+
+.app__army {
+  gap: 8px;
+  padding: 14px 12px;
+}
+
+.app__army-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.app__army-name {
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.app__army-count {
+  font-family: var(--serif);
+  font-size: 17px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Short of the threshold. The same warn the ArmyBar's own number takes, so the
+   bar and the column never disagree about which army is missing people. */
+.app__army-count--low {
+  color: var(--warn);
+}
+
+.app__stanje-names {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* A mark and a nickname, 36px tall: eight of these have to fit in a column on a
+   390px screen and still be a thumb's target when they are tappable. */
+.app__name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+
+.app__name--tap {
+  cursor: pointer;
+  border-radius: var(--rCtl);
+  transition: background 0.15s var(--ease);
+}
+
+.app__name--tap:active {
+  background: var(--sunk);
+}
+
+/* The name and, under it, the chip a dictated row wears. A column, so the chip
+   never squeezes the nickname on a 390px screen. */
+.app__name-body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 0;
+}
+
+.app__name-text {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: 15px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* A postava row with no answer under it sits a little taller, so the chip has
+   its own line rather than pushing the mark off centre. */
+.app__name:has(.ui-chip) {
+  align-items: center;
+  min-height: 50px;
+}
+
+/* An empty place in the line. Dashed on purpose and one of the only dashed
+   edges left in the app (audit pattern 1): "nothing here yet" is exactly what a
+   broken line should mean, and here it is literally a place nobody is standing
+   in. Never a warning: the ArmyBar above says how many are missing. */
+.app__slot {
+  position: relative;
+  display: flex;
+  align-items: center;
+  min-height: 36px;
+  padding-left: 36px;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.app__slot::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  width: 28px;
+  height: 28px;
+  border: 1px dashed var(--ghostEdge);
+  border-radius: var(--rPill);
+}
+
+.app__bule {
+  margin-top: 12px;
+}
+
+.app__stanje-empty {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.app__stanje-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+/* "Bez odgovora · 4": a row that opens a list, not a screen. */
+.app__stanje-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 52px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: var(--rCard);
+  background: var(--card);
+  box-shadow: var(--shadowCard);
+  color: inherit;
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.app__stanje-row svg {
+  color: var(--muted);
+}
+
+/* The screen's own column, and the reason it has a minimum height: a `sticky`
+   bar is only pushed UP when its place in the flow is below the fold, and on a
+   short evening (six dancers, no places to fill) that place is halfway up the
+   screen, where the bar would lie across the columns. The column reaches at
+   least to the bottom of the viewport and `margin-top: auto` puts the bar at
+   the end of it, so the bar has nothing to be pulled up over.
+
+   The 190px is everything above this column, measured once rather than tokenised
+   because none of it is a token: the header (~56px, title plus its margin), the
+   back link (~30px), the date line (~26px), the place line (~20px) and the air
+   between them and the ArmyBar (~58px). Being off by a few pixels costs a few
+   pixels of scroll on a short evening and nothing else, which is why it is a
+   number and not a measurement in JavaScript. */
+.app__stanje {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100dvh - var(--tabH) - 190px);
+}
+
+/* The voditelj's bar: sticky, so it takes its own room in the flow and clears
+   the tab bar, exactly as the answer bar on the old detail does (#562). */
+.app__stanje-actions {
+  margin-top: auto;
+  position: sticky;
+  bottom: calc(var(--tabH) + env(safe-area-inset-bottom, 0px) + 22px);
+  z-index: 15;
+  padding: 12px;
+  border-radius: var(--rCard);
+  background: var(--barBg);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: var(--shadowBar);
+}
+
+.app__stanje-tally {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: center;
+  color: var(--muted);
+}
+
+.app__stanje-why {
+  margin: 8px 0 0;
+  font-size: 13px;
+  text-align: center;
+  color: var(--muted);
+}
+
+.app__stanje-sheet-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.app__stanje-sheet-name {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  font-size: 15px;
+}
+
+.app__stanje-steppers {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+@media (min-width: 1024px) {
+  /* No bar to clear on the laptop (`--tabH: 0`), and the column is narrower
+     than the window, so the actions sit at the foot of the content. */
+  .app__stanje-actions {
+    bottom: 22px;
+  }
+}

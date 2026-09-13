@@ -7,6 +7,7 @@ import {
   type LockedLineupState,
 } from './write-tx'
 import type { LineupEntry } from './rules'
+import type { TitleCounts } from './titles'
 
 // #442 review — the row lock, driven through a fake executor.
 //
@@ -73,7 +74,20 @@ function fakeStore(
   return { store, rec }
 }
 
-const draft: LockedLineupState = { confirmed: false, confirmedAt: null, entryCount: 0 }
+/**
+ * The four titles, all given once: the state a confirm is allowed from (#566).
+ * Everything that is NOT about the title rule uses it, so those tests keep
+ * asserting what they were written to assert.
+ */
+const ALL: TitleCounts = { crni_kralj: 1, otmanovic: 1, bili_kralj: 1, bula: 1 }
+const NONE: TitleCounts = { crni_kralj: 0, otmanovic: 0, bili_kralj: 0, bula: 0 }
+
+const draft: LockedLineupState = {
+  confirmed: false,
+  confirmedAt: null,
+  entryCount: 0,
+  titles: NONE,
+}
 
 describe('replaceLineupInTransaction', () => {
   it('locks first, then writes, then commits', async () => {
@@ -140,7 +154,7 @@ describe('decideConfirmation', () => {
     expect(
       decideConfirmation({
         confirmed: true,
-        state: { confirmed: false, confirmedAt: null, entryCount: 3 },
+        state: { confirmed: false, confirmedAt: null, entryCount: 3, titles: ALL },
         nowIso,
       }),
     ).toEqual({ ok: true, confirmed: true, confirmedAt: nowIso })
@@ -151,7 +165,12 @@ describe('decideConfirmation', () => {
     expect(
       decideConfirmation({
         confirmed: true,
-        state: { confirmed: true, confirmedAt: '2026-08-05T19:00:00.000Z', entryCount: 3 },
+        state: {
+          confirmed: true,
+          confirmedAt: '2026-08-05T19:00:00.000Z',
+          entryCount: 3,
+          titles: ALL,
+        },
         nowIso,
       }),
     ).toEqual({ ok: true, confirmed: true, confirmedAt: '2026-08-05T19:00:00.000Z' })
@@ -161,7 +180,7 @@ describe('decideConfirmation', () => {
     expect(
       decideConfirmation({
         confirmed: true,
-        state: { confirmed: true, confirmedAt: null, entryCount: 1 },
+        state: { confirmed: true, confirmedAt: null, entryCount: 1, titles: ALL },
         nowIso,
       }),
     ).toEqual({ ok: true, confirmed: true, confirmedAt: nowIso })
@@ -171,16 +190,81 @@ describe('decideConfirmation', () => {
     expect(
       decideConfirmation({
         confirmed: true,
-        state: { confirmed: false, confirmedAt: null, entryCount: 0 },
+        state: { confirmed: false, confirmedAt: null, entryCount: 0, titles: ALL },
         nowIso,
       }),
     ).toEqual({ ok: false, reason: 'empty' })
   })
 
+  // #566 — a confirmed postava carries all four titles, once each. The rule
+  // lives under the row lock with the empty-postava one, and for the same
+  // reason: both are statements about the moment of the write.
+  it('refuses to confirm a postava with no bili kralj, and says which title', () => {
+    const out = decideConfirmation({
+      confirmed: true,
+      state: {
+        confirmed: false,
+        confirmedAt: null,
+        entryCount: 12,
+        titles: { crni_kralj: 1, otmanovic: 1, bili_kralj: 0, bula: 1 },
+      },
+      nowIso,
+    })
+    expect(out).toEqual({ ok: false, reason: 'titles', message: 'Postava nema bilog kralja.' })
+  })
+
+  it('refuses to confirm a postava where two dancers wear one title', () => {
+    const out = decideConfirmation({
+      confirmed: true,
+      state: {
+        confirmed: false,
+        confirmedAt: null,
+        entryCount: 12,
+        titles: { crni_kralj: 1, otmanovic: 2, bili_kralj: 1, bula: 1 },
+      },
+      nowIso,
+    })
+    expect(out).toEqual({
+      ok: false,
+      reason: 'titles',
+      message: 'Dva plesača nose titulu Otmanović.',
+    })
+  })
+
+  it('names every problem at once rather than one tap at a time', () => {
+    const out = decideConfirmation({
+      confirmed: true,
+      state: {
+        confirmed: false,
+        confirmedAt: null,
+        entryCount: 12,
+        titles: { crni_kralj: 0, otmanovic: 1, bili_kralj: 0, bula: 1 },
+      },
+      nowIso,
+    })
+    expect(out).toEqual({
+      ok: false,
+      reason: 'titles',
+      message: 'Postava nema crnog kralja. Postava nema bilog kralja.',
+    })
+  })
+
+  it('confirms a postava that carries all four titles', () => {
+    expect(
+      decideConfirmation({
+        confirmed: true,
+        state: { confirmed: false, confirmedAt: null, entryCount: 12, titles: ALL },
+        nowIso,
+      }),
+    ).toEqual({ ok: true, confirmed: true, confirmedAt: nowIso })
+  })
+
   it('unlocks whatever the state is, and clears the stamp', () => {
     for (const state of [
-      { confirmed: true, confirmedAt: '2026-01-01T00:00:00.000Z', entryCount: 4 },
-      { confirmed: false, confirmedAt: null, entryCount: 0 },
+      { confirmed: true, confirmedAt: '2026-01-01T00:00:00.000Z', entryCount: 4, titles: ALL },
+      // Unlocking is never refused for a missing title: an evening confirmed
+      // before the rule existed has to be openable to be repaired (#566).
+      { confirmed: false, confirmedAt: null, entryCount: 0, titles: NONE },
     ]) {
       expect(decideConfirmation({ confirmed: false, state, nowIso })).toEqual({
         ok: true,
@@ -193,7 +277,12 @@ describe('decideConfirmation', () => {
 
 describe('setLineupConfirmationInTransaction', () => {
   it('takes the SAME lock the replace takes, before writing', async () => {
-    const { store, rec } = fakeStore({ confirmed: false, confirmedAt: null, entryCount: 2 })
+    const { store, rec } = fakeStore({
+      confirmed: false,
+      confirmedAt: null,
+      entryCount: 2,
+      titles: ALL,
+    })
     const outcome = await setLineupConfirmationInTransaction(
       '10',
       true,
