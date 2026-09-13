@@ -2100,6 +2100,16 @@ knowing before debugging anything:
 Pull to refresh arms only at the top of the scroll and only downwards, calls
 `router.refresh()`, and does nothing at all under `prefers-reduced-motion`.
 
+**`AppShell` is rendered by every page.tsx, not by the route group's layout, so
+it REMOUNTS on every client navigation.** Anything that has to survive a
+navigation therefore cannot hold its state in the shell: the instance that
+heard the event is unmounted before the next screen mounts, and a fresh one
+starts empty. `ScrollMemory` lives in `layout.tsx` for exactly this reason
+(#562 review), and the tab bar's thumb does not slide between screens — it is
+re-rendered in its new place rather than animated into it. T1 accepts that; a
+later ticket that wants the prototype's slide has to lift the bar into the
+layout first.
+
 **The laptop** hides the bar, sets `--tabH: 0` so everything that clears a bar
 has nothing to clear, and offers two layout classes for a screen to opt into:
 `.app__col` (760px, a list or a form) and `.app__cols` (a detail: what happened

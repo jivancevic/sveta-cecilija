@@ -3,6 +3,7 @@ import { bodoni, ibmPlexMono, inter } from '@/app/(frontend)/fonts'
 import { INSTALL_PROMPT_CAPTURE } from '@/lib/app/platform'
 import { APP_STRINGS } from '@/lib/app/strings'
 import { vapidPublicKey } from '@/lib/push/vapid'
+import { ScrollMemory } from './ScrollMemory'
 import { ServiceWorkerMigration } from './ServiceWorkerMigration'
 import './app.css'
 // The shared shapes (#562), AFTER the tokens and the screens that still carry
@@ -51,6 +52,20 @@ export default function MoreskantAppLayout({ children }: { children: React.React
         */}
         <script dangerouslySetInnerHTML={{ __html: INSTALL_PROMPT_CAPTURE }} />
         <ServiceWorkerMigration vapidPublicKey={vapidPublicKey()} />
+        {/*
+          Renders nothing: it remembers where each list was, because the body
+          scrolls now and the browser only restores the document (#562).
+
+          HERE, and deliberately not in `AppShell`: the shell is rendered by
+          every page.tsx, so it remounts on every client navigation, and a
+          component that must remember something ACROSS one navigation cannot
+          live there — the instance that hears `popstate` is unmounted before
+          the screen it was going to restore has mounted. The layout is the
+          only thing in `/app` that survives. On the shell-less pages (login,
+          the install guide, the rehearsal QR) it costs nothing: there is
+          nothing to scroll, so its listener never fires.
+        */}
+        <ScrollMemory />
         {children}
       </body>
     </html>

@@ -8,7 +8,6 @@ import type { DanceRole } from '@/lib/moreskant-profile'
 import { Sidebar, TabBar } from './AppNav'
 import { NotificationBell } from './NotificationBell'
 import { PullToRefresh } from './PullToRefresh'
-import { ScrollMemory } from './ScrollMemory'
 import { ShowDayStrip } from './ShowDayStrip'
 
 // The chrome every screen wears (#495): the sidebar, the header, the content
@@ -29,6 +28,14 @@ import { ShowDayStrip } from './ShowDayStrip'
 // "Odjava" is NOT in the header: it lives in Više, where the things a person
 // does once a season live. A header button that ends the session sitting one
 // thumb-width from the season label was a mis-tap waiting to happen.
+//
+// **This component is rendered by every page, not by the route group's layout,
+// so it REMOUNTS on every client navigation.** Nothing that has to survive a
+// navigation can keep its state here: a ref set before a `popstate` belongs to
+// an instance that is already gone by the time the next screen mounts. That is
+// why `ScrollMemory` lives in `layout.tsx` (#562 review), and why the tab bar's
+// thumb does not slide between screens — it is re-rendered in its new place
+// rather than animated into it, which T1 accepts.
 
 /** "Cici · Crni kralj, Crni" — the small identity line of story 36. */
 export function identityLine(member: {
@@ -71,10 +78,6 @@ export function AppShell({
 
   return (
     <div className="app__frame">
-      {/* Renders nothing: it remembers where each list was, because the body
-          scrolls now and the browser only restores the document (#562). */}
-      <ScrollMemory />
-
       <Sidebar nav={viewer.nav} />
 
       {/* Everything that scrolls is inside the gesture (#562); the sidebar and
