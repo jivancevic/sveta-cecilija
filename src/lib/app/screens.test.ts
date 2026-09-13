@@ -74,7 +74,28 @@ describe('the screen table', () => {
       'inquiries',
       'comp',
       'stats',
+      'finance',
     ])
+  })
+
+  it('keeps Financije to a finance holder, and tickets alone does not open it', () => {
+    // The page gate IS this table (`openScreen('finance')` asks it), so the
+    // refusal of the money screen is asserted here rather than in a rendered
+    // page. `tickets` is the set that matters: the secretary sees every order
+    // and every seat, and since #500 that is not the same as seeing the money.
+    expect(keys(unlockedScreens(user('finance'), ctx()))).toContain('finance')
+    const others: [ReturnType<typeof user>, ReturnType<typeof ctx>][] = [
+      [user('tickets', 'refunds'), ctx()],
+      [user('door'), ctx()],
+      [user('partner'), ctx({ hasPartner: true })],
+      [user('moreskant'), ctx({ hasMember: true })],
+      [user('moreska'), ctx()],
+      [user('season_stats'), ctx()],
+      [user('users', 'dev'), ctx()],
+    ]
+    for (const [who, where] of others) {
+      expect(keys(unlockedScreens(who, where))).not.toContain('finance')
+    }
   })
 
   it('gives refunds and dev no screen of their own', () => {
@@ -156,17 +177,23 @@ describe('unlockedScreens', () => {
     expect(keys(unlockedScreens(user('season_stats'), ctx()))).toEqual(['stats'])
   })
 
-  it('gives a finance holder Statistika until Financije is built (#509)', () => {
-    expect(keys(unlockedScreens(user('finance'), ctx()))).toEqual(['stats'])
+  it('gives a finance holder the season in counts and the season in euros', () => {
+    // Statistika (#508) and Financije (#509) are the pair, and the split
+    // between them is the point: counts on one, cents on the other.
+    expect(keys(unlockedScreens(user('finance'), ctx()))).toEqual(['stats', 'finance'])
   })
 
-  it('gives the president Statistika and Skener, and no way into Izvedbe', () => {
-    // Velebit is `finance` + `door` (#500). The pair unlocks the season's
-    // counts and the gate, and NEITHER word unlocks Izvedbe — which is what
-    // makes every row on Statistika link-less for him (#508), and what makes
-    // his old `/admin/stats/[id]` bookmark land on the refusal page once that
-    // path 308s to `/app/performances/[id]`.
-    expect(keys(unlockedScreens(user('finance', 'door'), ctx()))).toEqual(['scan', 'stats'])
+  it('gives the president Skener, Statistika and Financije, and no way into Izvedbe', () => {
+    // Velebit is `finance` + `door` (#500). The pair unlocks the gate and both
+    // season screens, and NEITHER word unlocks Izvedbe — which is what makes
+    // every row on Statistika link-less for him (#508), and what makes his old
+    // `/admin/stats/[id]` bookmark land on the refusal page once that path
+    // 308s to `/app/performances/[id]`.
+    expect(keys(unlockedScreens(user('finance', 'door'), ctx()))).toEqual([
+      'scan',
+      'stats',
+      'finance',
+    ])
   })
 
   it('gives a door-only account no Statistika at all', () => {

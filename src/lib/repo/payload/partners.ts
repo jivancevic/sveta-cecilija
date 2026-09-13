@@ -11,6 +11,16 @@ import { payloadClient, type PayloadClient } from './client'
 
 const DEFAULT_COMMISSION_PERCENT = 10
 
+function toRecord(doc: Record<string, unknown>): PartnerRecord {
+  const commission = Number(doc.commissionPercent)
+  return {
+    id: String(doc.id),
+    name: (doc.name as string) ?? `Partner ${String(doc.id)}`,
+    active: doc.active !== false,
+    commissionPercent: Number.isFinite(commission) ? commission : DEFAULT_COMMISSION_PERCENT,
+  }
+}
+
 export function createPartnersRepo(
   load: () => Promise<PayloadClient> = payloadClient,
 ): PartnersRepo {
@@ -20,20 +30,28 @@ export function createPartnersRepo(
       try {
         const doc = await payload.findByID({ collection: 'partners', id, depth: 0 })
         if (!doc) return null
-        const commission = Number(doc.commissionPercent)
-        return {
-          id: String(doc.id),
-          name: (doc.name as string) ?? `Partner ${String(doc.id)}`,
-          active: doc.active !== false,
-          commissionPercent: Number.isFinite(commission)
-            ? commission
-            : DEFAULT_COMMISSION_PERCENT,
-        } satisfies PartnerRecord
+        return toRecord(doc as unknown as Record<string, unknown>)
       } catch {
         // A dangling link (the Partners row was deleted) is not an error page:
         // it is "this login owns nothing", which the screen states in a sentence.
         return null
       }
+    },
+
+    async activeList() {
+      const payload = await load()
+      // `active` defaults to true, so the filter has to be "not false" rather
+      // than "equals true" — an older row saved before the field existed has a
+      // null there and is still a live partner.
+      const result = await payload.find({
+        collection: 'partners',
+        where: { active: { not_equals: false } },
+        sort: 'name',
+        limit: 1000,
+        depth: 0,
+        overrideAccess: true,
+      })
+      return (result.docs as unknown as Record<string, unknown>[]).map(toRecord)
     },
   }
 }

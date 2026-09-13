@@ -153,6 +153,8 @@ describe('decideAppAccess — everybody else', () => {
     // moves one of these to `true`, and this line is where that shows up:
     // `door` joined when Skener landed (#504), `tickets` when Narudžbe did
     // (#501), and `season_stats` + `finance` when Statistika did (#508).
+    // Financije (#509) added a second screen for `finance` without adding a
+    // word here: it was already in.
     const live = ['moreska', 'moreskant', 'door', 'tickets', 'season_stats', 'finance']
     for (const p of PERMISSIONS) {
       const expected = live.includes(p)

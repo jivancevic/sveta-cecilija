@@ -20,6 +20,15 @@ export interface PartnersRepo {
    * ownership is fail-safe (`src/lib/access/partner.ts`).
    */
   byId(id: string | number): Promise<PartnerRecord | null>
+
+  /**
+   * Every ACTIVE partner, by name (#509). Financije bills each one at its own
+   * rate, so the receivable panel needs the whole channel rather than one row;
+   * a deactivated partner is left out because it can no longer sell, and a
+   * statement for it is a thing to look up in the Backoffice, not a line on a
+   * screen that is about this month's money.
+   */
+  activeList(): Promise<PartnerRecord[]>
 }
 
 export type { PartnerRecord }

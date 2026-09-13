@@ -5263,6 +5263,272 @@ a.app__statrow-main:focus-visible {
   font-variant-numeric: tabular-nums;
 }
 
+/* ─────────────────────────────────────────────────────────────
+   Financije (#509): the society's money, and only for `finance`.
+
+   The layout carries the one rule the screen exists for (ADR-0015, glossary
+   *Dashboard*): prikupljeni prihod and potraživanje od partnera are two
+   facts, so they are two CARDS with a gap and a sentence between them, never
+   two columns of one band. Two euro figures side by side invite a reader to
+   add them, and there is no honest sum of those two numbers.
+
+   The receivable card carries `--apart`: a left edge in gold and a little more
+   air above it, which is the only visual difference on the screen and says
+   "this one is not like the two above".
+
+   Every figure is `tabular-nums` through `.app__finance-num`, so a column of
+   euros lines up on the decimal comma. Tokens throughout, never a hex (#490).
+   ───────────────────────────────────────────────────────────── */
+
+/* ── The two pickers ─────────────────────────────────────── */
+.app__finance-season {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.app__finance-label {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.app__finance-picker {
+  display: flex;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.app__finance-picker > div {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* ── The three cards ─────────────────────────────────────── */
+.app__finance-card {
+  margin-bottom: 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--cardEdge);
+  background: var(--card);
+}
+
+/* The receivable: money the society has not collected, and the one card on the
+   screen that is deliberately set apart from the two above it. */
+.app__finance-card--apart {
+  margin-top: 22px;
+  border-left: 3px solid var(--gold);
+}
+
+.app__finance-head {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.app__finance-figure {
+  margin: 6px 0 0;
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+  font-size: 28px;
+  line-height: 1.15;
+}
+
+.app__finance-count {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* The sentence under a figure that says what it is not. Muted and small: it
+   explains, it never warns. */
+.app__finance-note {
+  margin: 8px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+/* ── The "of which" rows inside a card ───────────────────── */
+.app__finance-split {
+  margin: 10px 0 0;
+}
+
+.app__finance-splitrow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding-block: var(--rowY);
+  border-top: 1px solid var(--rule);
+}
+
+.app__finance-splitrow dt {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.app__finance-splitrow dd {
+  margin: 0;
+}
+
+.app__finance-num {
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── A panel: promo codes, the month, the ledger ─────────── */
+.app__finance-panel {
+  margin-top: 28px;
+}
+
+.app__finance-rows {
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* One promo code: the code and the member it belongs to on the left, the
+   tickets in the middle, the euros hard right where the eye scans them. */
+.app__finance-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding-block: var(--rowY);
+  border-top: 1px solid var(--rule);
+}
+
+.app__finance-row-name {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.app__finance-row-name i {
+  color: var(--muted);
+  font-size: 12px;
+  font-style: normal;
+}
+
+.app__finance-row-sub {
+  color: var(--muted);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+/* ── One partner's month ─────────────────────────────────── */
+.app__finance-partners {
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.app__finance-partner {
+  margin-bottom: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--cardEdge);
+  background: var(--card);
+}
+
+.app__finance-partner-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 17px;
+}
+
+/* "neaktivan": a reseller that may no longer sell but may still owe. A quiet
+   outline rather than a warning colour, because it is a fact about the
+   partner's status and not a problem with the figure next to it. */
+.app__finance-inactive {
+  margin-left: 8px;
+  padding: 1px 6px;
+  border: 1px solid var(--rule);
+  color: var(--muted);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 400;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  vertical-align: middle;
+}
+
+.app__finance-csv {
+  margin-top: 12px;
+}
+
+/* ── The ledger, one evening at a time ───────────────────── */
+.app__finance-evening {
+  margin-top: 16px;
+  padding: 12px 14px;
+  border: 1px solid var(--cardEdge);
+  background: var(--card);
+}
+
+.app__finance-evening-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0;
+  font-size: 15px;
+}
+
+.app__finance-lines {
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.app__finance-line {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding-block: var(--rowY);
+  border-top: 1px solid var(--rule);
+}
+
+.app__finance-line-what {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.app__finance-line-what i {
+  color: var(--muted);
+  font-size: 12px;
+  font-style: normal;
+}
+
+/* The reason a seat cost less than face value (ADR-0025). Gold, because it is
+   the one thing on a line that cannot be derived from the other three. */
+.app__finance-discount {
+  color: var(--goldText);
+  font-size: 12px;
+  font-style: normal;
+}
+
+.app__finance-subtotal {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0;
+  padding-top: var(--rowY);
+  border-top: 2px solid var(--cardEdge);
+  font-size: 14px;
+}
+
+/* There is deliberately NO laptop rule that puts the three cards in a row.
+   The stack is the argument: a band of three euro tiles side by side is the
+   Backoffice shape that invited a reader to add them, and the whole reason
+   this screen exists is that two of those numbers must never be summed. The
+   shell's own 640px column is the only width constraint they get. */
 /* ═══════════════════════════════════════════════════════════
    Članovi (#511) — the voditelj's roster screen
    ═══════════════════════════════════════════════════════════
