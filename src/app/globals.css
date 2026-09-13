@@ -1732,6 +1732,70 @@ a.perf-booking__confirm {
   text-align: center;
 }
 
+/* ─── help block ──────────────────────────────────────────────────────
+   Email-only support (#546). Same markup on the schedule and on the
+   confirmation page, so the shape lives here once and each host page
+   only supplies its own palette. */
+.inner-page .help-block {
+  padding: 14px 18px;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.inner-page .help-block__heading {
+  font-family: var(--font-ibm-plex-mono, 'IBM Plex Mono'), monospace;
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  margin: 0 0 6px;
+}
+.inner-page .help-block__body { margin: 0; }
+.inner-page .help-block__hint { margin: 4px 0 0; }
+.inner-page .help-block__link {
+  text-decoration: none;
+  border-bottom: 1px solid currentColor;
+  transition: color 0.2s, border-color 0.2s;
+}
+
+/* Schedule page: dark ground, modelled on the rain-plan callout. */
+.inner-page .perfs-page .help-block {
+  max-width: var(--maxW);
+  margin: 48px auto 0;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px dashed rgba(255, 255, 255, 0.14);
+}
+.inner-page .perfs-page .help-block__heading {
+  color: var(--goldBright);
+  opacity: 0.85;
+}
+.inner-page .perfs-page .help-block__body,
+.inner-page .perfs-page .help-block__hint { opacity: 0.85; }
+.inner-page .perfs-page .help-block__link {
+  color: var(--paper);
+  border-bottom-color: rgba(241, 231, 214, 0.35);
+}
+.inner-page .perfs-page .help-block__link:hover {
+  color: var(--goldBright);
+  border-bottom-color: var(--goldBright);
+}
+
+/* Confirmation page: light ground, modelled on the ticket-PDF card. */
+.inner-page .checkout-confirm .help-block {
+  margin: 24px 0 16px;
+  padding: 16px;
+  border: 1px solid color-mix(in oklab, var(--ink, #1a140c) 12%, transparent);
+  border-radius: var(--radius);
+  text-align: center;
+}
+.inner-page .checkout-confirm .help-block__heading { color: rgba(0, 0, 0, 0.55); }
+.inner-page .checkout-confirm .help-block__hint { color: rgba(0, 0, 0, 0.6); }
+.inner-page .checkout-confirm .help-block__link {
+  color: var(--gold, #b08d57);
+  border-bottom-color: color-mix(in oklab, var(--gold, #b08d57) 45%, transparent);
+}
+.inner-page .checkout-confirm .help-block__link:hover {
+  border-bottom-color: currentColor;
+}
+
 /* ─── blog ────────────────────────────────────────────────────────── */
 
 .inner-page .t-stone .blog-empty,
