@@ -12,12 +12,15 @@
 //      the client, never the kind name. A dancer turns up for the evening;
 //      which agency booked it changes nothing about that, and the notebook has
 //      called them "vandredni nastup" for decades (glossary: *Vanredna
-//      izvedba*).
-//   2. **The mark on a name is the ARMY of their primary role.** The glyph is a
-//      title, and a title belongs to one evening rather than to a person
-//      (glossary: *Title*) — which is why it is read off the PROFILE here, on
-//      the one block that describes the person rather than the night, and why
-//      the per-evening titles live on Stanje (#566).
+//      izvedba*). The guarantee is only as good as the DATA, though: the row's
+//      free-text `location` IS printed, so a booking whose ship was typed into
+//      the place rather than into `client` shows it here and nothing in code
+//      can tell the difference.
+//   2. **The mark on a name is the ARMY of their primary role, and never a
+//      title.** A title belongs to one performance's lineup rather than to a
+//      person (glossary: *Title*, Q65), so a crni kralj wears a plain ink disc
+//      here and the line beside it says "Crni kralj" as the profile fact it is.
+//      The crown arrives with #566, from the evening's confirmed lineup.
 //
 // No IO, no clock, no Payload: the page hands over the rows the seam loaded and
 // gets back what to draw. `moreska-screen.test.ts` is where the rules are
@@ -140,15 +143,22 @@ export interface Identity {
   line: string
   /** The disc: the army of the primary role. */
   army: MarkArmy | null
-  /** The glyph: the titled primary role, when the profile carries one. */
+  /**
+   * The glyph, and it is ALWAYS null here (#565 review).
+   *
+   * A title belongs to one performance's lineup, never to a person (glossary:
+   * *Title*, Q65): until the voditelj hands the four out, everyone who said
+   * "dolazim" is a plain crni, bili or bula, and the profile's primary role
+   * decides only which army their answer counts in. So a dancer whose primary
+   * role is `crni_kralj` wears the ink disc here with no crown on it, and the
+   * line beside the mark says "Crni kralj", which is the profile fact this
+   * block is for.
+   *
+   * The field stays on the shape because #566 fills it: Stanje threads the
+   * title from the next nastup's CONFIRMED lineup into `RoleMark.title`, which
+   * is what that prop has meant since T1 ("the title for THIS evening").
+   */
   title: DanceTitle | null
-}
-
-const TITLED: Record<string, DanceTitle> = {
-  crni_kralj: 'crni_kralj',
-  otmanovic: 'otmanovic',
-  bili_kralj: 'bili_kralj',
-  bula: 'bula',
 }
 
 /**
@@ -156,9 +166,9 @@ const TITLED: Record<string, DanceTitle> = {
  * voditelj who does not dance, #419 story 15).
  *
  * The army comes from the primary role and a bula, who is in neither army, gets
- * the gold disc that IS the bula's mark. Nothing here reads an attendance row:
- * this block describes the person, and which army tonight's answer counted in
- * is the hero's business.
+ * the gold disc that IS the bula's mark. Nothing here reads an attendance row
+ * or a lineup: this block describes the person, and both the army tonight's
+ * answer counted in and the title they wear tonight belong to the evening.
  */
 export function identityOf(
   me: AppMember | null | undefined,
@@ -172,7 +182,8 @@ export function identityOf(
     name: me.name?.trim() || me.nickname?.trim() || '',
     line: [role, ahead].filter(Boolean).join(' · '),
     army,
-    title: primary ? (TITLED[primary] ?? null) : null,
+    // Never from the profile. #566 will pass the evening's own title here.
+    title: null,
   }
 }
 

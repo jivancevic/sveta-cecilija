@@ -153,7 +153,10 @@ describe('aheadLabel', () => {
 })
 
 describe('identityOf', () => {
-  it('marks a crni kralj with the ink disc and the crown', () => {
+  // Q65 and the glossary's *Title*: a title belongs to one evening's lineup,
+  // never to a person, so nobody wears a crown on the screen's own top block.
+  // The profile's primary role survives as the WORD beside the mark.
+  it('gives a crni kralj the ink disc and NO crown', () => {
     expect(
       identityOf(
         {
@@ -169,22 +172,27 @@ describe('identityOf', () => {
       name: 'Josip Ivančević',
       line: 'Crni kralj · 9 nastupa pred tobom',
       army: 'crni',
-      title: 'crni_kralj',
+      title: null,
     })
   })
 
-  it('puts a bula on the gold disc, which is neither army', () => {
+  it('puts a bula on the gold disc, which is neither army, and still untitled', () => {
+    // The white ring that marks the bula OF THE NIGHT is a lineup fact too, so
+    // it is not drawn from a profile whose primary role happens to be `bula`.
     const out = identityOf(
       { id: '2', name: 'Ana', roles: ['bula'], primaryRole: 'bula' },
       '3 nastupa pred tobom',
     )
-    expect(out).toMatchObject({ army: 'bula', title: 'bula', line: 'Bula · 3 nastupa pred tobom' })
+    expect(out).toMatchObject({ army: 'bula', title: null, line: 'Bula · 3 nastupa pred tobom' })
   })
 
-  it('gives a plain bili no title glyph', () => {
-    expect(
-      identityOf({ id: '3', name: 'Ivo', roles: ['bili'], primaryRole: 'bili' }, '1 nastup pred tobom'),
-    ).toMatchObject({ army: 'bili', title: null })
+  it('never carries a title, whatever the primary role says', () => {
+    for (const primaryRole of ['crni', 'bili', 'crni_kralj', 'bili_kralj', 'otmanovic', 'bula']) {
+      expect(
+        identityOf({ id: '3', name: 'Ivo', roles: [primaryRole], primaryRole }, '1 nastup pred tobom')
+          ?.title,
+      ).toBeNull()
+    }
   })
 
   it('falls back to the nickname when the row carries no legal name', () => {
