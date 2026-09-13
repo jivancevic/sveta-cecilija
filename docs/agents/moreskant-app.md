@@ -985,18 +985,28 @@ else.**
 
 | Route | Guard | Does |
 |---|---|---|
-| `POST /api/app/performances` | `requirePermission('moreska')` + `/app` guard | one non-public performance: kind, date, time, location, client, optional note |
-| `PATCH /api/app/performances/[id]` | same | the same five fields on an existing row; **403 on a public row**, **409 on a cancelled one** |
-| `POST /api/app/performances/[id]/cancel` | same | `status = 'cancelled'` and nothing else; **403 on a public row**; a row that is already cancelled is a 200 with no write |
+| `POST /api/app/performances` | `requirePermission(['moreska','tickets'])` + `/app` guard | one performance. `isPublic: false` in the body is the voditelj's booking (kind, date, time, location, client, optional note) and needs `moreska`; `isPublic: true` is the blagajna's public evening (#502) and needs `tickets` |
+| `PATCH /api/app/performances/[id]` | same | a BOOKING: the same five fields, `moreska`, **409 on a cancelled one**. A PUBLIC row (#502): time, venue, kind, `tickets`, never the date. Each half **403s** the other's row |
+| `POST /api/app/performances/[id]/cancel` | `requirePermission('moreska')` | `status = 'cancelled'` and nothing else; **403 on a public row**; a row that is already cancelled is a 200 with no write |
 | `POST /api/app/performances/[id]/thresholds` | same | `{ crni, bili }`, both or neither, 0 to `MAX_THRESHOLD` (40). The one voditelj write that DOES reach a public row |
+| `POST /api/app/performances/[id]/pause` | `requirePermission('tickets')` | `{ paused }` → `onlineSalesPaused` (#502). **400 on a non-public row**, which sells nothing to pause. The one action on the blagajna's half whose route did not already exist |
 
-- **A public row is refused in the handler, never by the collection.** The
-  local API runs `overrideAccess: true`, so `canEditScheduleField` does not gate
-  these writes; `handleEditPerformance` / `handleCancelPerformance` re-read the
-  stored row and refuse on `isPublic`. The refusal is a **403** rather than a
-  404, because the voditelj can see the evening and simply may not do this to
-  it. Cancelling a Redovna refunds every buyer and mails them and is
-  `POST /api/shows/[id]/cancel` (#497), not a harder version of this.
+- **Which half may touch a row is decided by the ROW, never by the URL.** Dodaj
+  and Uredi are one route each and the gate lets either half knock; the handler
+  then reads `isPublic` (off the body on a create, off the stored row on an
+  edit) and asks the caller's own permission set. That is why
+  `PerformanceFormDeps` carries `permissions`: the local API runs
+  `overrideAccess: true`, so `canEditScheduleField` does not gate these writes
+  and the collection cannot be the one to say no.
+- **A public row is refused in the handler, never by the collection**, and the
+  refusal is a **403** rather than a 404, because the voditelj can see the
+  evening and simply may not do this to it. Cancelling a Redovna refunds every
+  buyer and mails them and is `POST /api/shows/[id]/cancel` (#497), not a
+  harder version of this. The mirror holds too: a `tickets` holder is refused a
+  booking, which is nobody's ticket.
+- **Uredi on a public row carries no date.** Moving a public evening mails every
+  buyer and reissues every ticket (#379), so it is *Pomakni datum* with a
+  preview and a test send, not a field beside the start time.
 - **A cancelled booking is not editable, and that is a 409.** The request is
   well-formed and the row is the voditelj's; it is simply in a state where the
   edit is not allowed, the same shape of refusal as a confirmed postava. The
