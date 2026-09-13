@@ -434,6 +434,25 @@ export function activeScreenKey(pathname: string): AppScreenKey | null {
   return APP_SCREENS.find((s) => isUnder(path, s.route))?.key ?? null
 }
 
+/**
+ * Which TAB a pathname lights (#563).
+ *
+ * `activeScreenKey` answers a different question — which SCREEN am I on — and
+ * with three chosen tabs per account the answer is often a screen the bar does
+ * not carry. Lighting nothing there tells the reader they are nowhere; they are
+ * in fact somewhere they reached through Više, so **Više lights**. A path that
+ * belongs to no screen at all (the login, the walkthrough) still lights
+ * nothing, which is right: those pages have no bar to be in.
+ *
+ * Pure, and tested without a router: the browser only supplies the pathname.
+ */
+export function activeTabKey(nav: AppNav, pathname: string): AppScreenKey | null {
+  const screen = activeScreenKey(pathname)
+  if (screen === null) return null
+  if (nav.tabs.some((tab) => tab.key === screen)) return screen
+  return nav.overflow.some((s) => s.key === screen) ? MORE_SCREEN.key : null
+}
+
 /** The screen a route belongs to, so a page can gate on the table (#473). */
 export function screenForPath(pathname: string): AppScreen | null {
   const path = normalize(pathname)

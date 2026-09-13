@@ -5,6 +5,7 @@ import {
   MAX_TABS,
   MORE_SCREEN,
   activeScreenKey,
+  activeTabKey,
   appNav,
   genericTabs,
   isTabKey,
@@ -438,6 +439,44 @@ describe('the laptop sidebar', () => {
     const nav = appNav(user('moreskant'), ctx({ hasMember: true }))
     expect(nav.groups.map((g) => g.group)).toEqual(['moreskant'])
     for (const group of nav.groups) expect(group.screens.length).toBeGreaterThan(0)
+  })
+})
+
+describe('activeTabKey', () => {
+  // Tatjana's bar (#563): three chosen screens, everything else under Više.
+  const nav = appNav(user('tickets'), ctx(), ['orders', 'stats', 'inquiries'])
+
+  it('lights the tab you are on', () => {
+    expect(activeTabKey(nav, '/app/orders')).toBe('orders')
+    expect(activeTabKey(nav, '/app/orders/42')).toBe('orders')
+    expect(activeTabKey(nav, '/app/stats?season=2026')).toBe('stats')
+  })
+
+  it('lights Više for a screen the bar does not carry', () => {
+    // The everyday case now that a bar is three screens: Gratis and the
+    // performance detail are both one tap into Više, and a bar that lit nothing
+    // would tell the reader they are nowhere.
+    expect(activeTabKey(nav, '/app/comp')).toBe('more')
+    expect(activeTabKey(nav, '/app/performances/42')).toBe('more')
+  })
+
+  it('lights Više for Više itself and for the rows under it', () => {
+    expect(activeTabKey(nav, '/app/more')).toBe('more')
+    expect(activeTabKey(nav, '/app/notifications')).toBe('more')
+    expect(activeTabKey(nav, '/app/account')).toBe('more')
+  })
+
+  it('lights nothing on a page with no bar, or on a screen this account cannot open', () => {
+    expect(activeTabKey(nav, '/app/login')).toBeNull()
+    expect(activeTabKey(nav, '/app/welcome')).toBeNull()
+    // Financije answers to `finance`; this account never reaches it, so there
+    // is nothing honest to light.
+    expect(activeTabKey(nav, '/app/finance')).toBeNull()
+  })
+
+  it('lights nothing at all for an account with no bar', () => {
+    const nowhere = appNav(user('refunds'), ctx())
+    expect(activeTabKey(nowhere, '/app/orders')).toBeNull()
   })
 })
 
