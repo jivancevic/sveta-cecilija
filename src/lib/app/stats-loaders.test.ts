@@ -23,6 +23,8 @@ function deps(over: Partial<Parameters<typeof loadSeasonStats>[1]> = {}) {
       { id: 2, performance: 11, member: 1, role: 'crni' },
       { id: 3, performance: 12, member: 2, role: 'crni' },
       { id: 4, performance: 1, member: 2, role: 'bili_kralj' },
+      // Dado ran performance 10 as its voditelj: not dancing, so not counted.
+      { id: 5, performance: 10, member: 2, role: 'voditelj' },
     ].filter((r) => ids.includes(String(r.performance))),
   )
   return {
@@ -70,7 +72,8 @@ describe('loadSeasonStats', () => {
     expect(loadLineups).toHaveBeenCalledTimes(1)
     expect(loadLineups).toHaveBeenCalledWith(['10', '11'])
     expect(result.confirmedPerformances).toBe(2)
-    // The draft's row (member 2 on performance 12) never reached the table.
+    // The draft's row (member 2 on performance 12) never reached the table, and
+    // the voditelj line on performance 10 is not dancing.
     expect(result.rows.find((r) => r.nickname === 'Dado')!.performances).toBe(0)
     expect(result.rows.find((r) => r.nickname === 'Cici')!.performances).toBe(2)
   })

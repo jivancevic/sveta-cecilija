@@ -54,6 +54,8 @@ export function toStatsLineupRow(doc: Record<string, unknown>): StatsLineupRow |
   const performanceId = relationIdString(doc.performance)
   const memberId = relationIdString(doc.member)
   if (!performanceId || !memberId) return null
+  // A `voditelj` line is not a dance role, so it falls out here: running an
+  // Experience is not dancing it, and the scoreboard counts dancing.
   if (!isDanceRole(doc.role)) return null
   return { performanceId, memberId, role: doc.role }
 }

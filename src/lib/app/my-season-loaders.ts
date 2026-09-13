@@ -149,6 +149,8 @@ export function toMySeasonLineupRow(doc: Record<string, unknown>): MySeasonLineu
   const performanceId = relationIdString(doc.performance)
   const memberId = relationIdString(doc.member)
   if (!performanceId || !memberId) return null
+  // A `voditelj` line is not a dance role, so it falls out here: the season a
+  // dancer reads is what they danced, and running an Experience is not that.
   if (!isDanceRole(doc.role)) return null
   return { performanceId, memberId, role: doc.role }
 }

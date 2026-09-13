@@ -67,7 +67,8 @@ CREATE TYPE public.enum_lineups_role AS ENUM (
     'crni_kralj',
     'otmanovic',
     'bili_kralj',
-    'bula'
+    'bula',
+    'voditelj'
 );
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 

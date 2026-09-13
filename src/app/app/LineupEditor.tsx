@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { APP_STRINGS, ROLE_LABELS } from '@/lib/app/strings'
-import { DANCE_ROLES, type DanceRole } from '@/lib/moreskant-profile'
+import { LINEUP_ROLES, type LineupRole } from '@/lib/moreskant-profile'
 import { compareLineupRows, roleWarnings } from '@/lib/lineup/rules'
 import type { LineupPerson, LineupRow } from '@/lib/app/detail-loaders'
 
@@ -77,7 +77,7 @@ export function LineupEditor({
   // Every mutation re-sorts, so the list stays in the one order the dancer's
   // view also uses (`compareLineupRows`): a role change moves a new kralj to
   // the top instead of leaving the page in an order nothing else shares.
-  function setRole(memberId: string, role: DanceRole) {
+  function setRole(memberId: string, role: LineupRole) {
     setEntries((rows) =>
       rows.map((r) => (r.memberId === memberId ? { ...r, role } : r)).sort(compareLineupRows),
     )
@@ -196,9 +196,9 @@ export function LineupEditor({
                   aria-label={entry.nickname}
                   value={entry.role}
                   disabled={confirmed || busy !== null}
-                  onChange={(e) => setRole(entry.memberId, e.target.value as DanceRole)}
+                  onChange={(e) => setRole(entry.memberId, e.target.value as LineupRole)}
                 >
-                  {DANCE_ROLES.map((role) => (
+                  {LINEUP_ROLES.map((role) => (
                     <option key={role} value={role}>
                       {ROLE_LABELS[role]}
                     </option>

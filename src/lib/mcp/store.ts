@@ -21,7 +21,7 @@ import { relationIdString } from '@/lib/payload-relation'
 import { toAttendanceMember } from '@/lib/attendance/rules'
 import { performancePlace } from '@/lib/app/performance-place'
 import { toIsoDate } from '@/lib/to-iso-date'
-import { isDanceRole } from '@/lib/moreskant-profile'
+import { isLineupRole } from '@/lib/moreskant-profile'
 import { loadMemberIdsWithLogin } from '@/lib/access/member-logins'
 import { replaceLineupInTransaction } from '@/lib/lineup/write-tx'
 import { createLineupStore, type LineupStorePayload } from '@/lib/lineup/lineup-store'
@@ -198,7 +198,7 @@ export function createMcpStore(payload: McpPayload, user?: unknown): McpStore {
       const out: McpLineupRow[] = []
       for (const doc of res.docs) {
         const memberId = relationIdString(doc.member)
-        if (!memberId || !isDanceRole(doc.role)) continue
+        if (!memberId || !isLineupRole(doc.role)) continue
         out.push({ memberId, role: doc.role })
       }
       return out

@@ -520,8 +520,12 @@ _Avoid_: roster as the screen's name (roster is the whole membership), "članovi
 The push "Sokoliću, fali nas! Stanje za nastup <date time>: 3 bilih, 7 crnih" sent to moreškanti with **no answer** when an army is below threshold. Automatic once per performance at T-6h (or 18:00 the day before when the performance starts before 14:00, Europe/Zagreb), plus manual by a voditelj at any time. "Sokoliću" is a generic greeting, not a vocative of the nickname. The automatic one is claimed once per performance whether or not it is sent, so an evening judged covered at T-6h stays judged.
 
 ### Lineup (postava)
-Who danced which dance role at a performance: one entry per member, exactly one role each. Enterable before or after the performance; **confirmed** by a voditelj marks it final. Only confirmed lineups feed statistics. A role outside the member's profile is a warning, not a block. The MCP `set_lineup` tool always writes an *unconfirmed* lineup.
+Who danced which dance role at a performance: one entry per member, exactly one role each. Enterable before or after the performance; **confirmed** by a voditelj marks it final. Only confirmed lineups feed statistics. A role outside the member's profile is a warning, not a block. The MCP `set_lineup` tool always writes an *unconfirmed* lineup. A lineup may also carry one line that is not a dance role: the *Voditelj (u postavi)*.
 _Avoid_: cast, roster (roster = the whole membership).
+
+### Voditelj (u postavi)
+The member who ran a performance without dancing it, written into its lineup with the role `voditelj`. Every Moreška Experience has one (in 2026, Brane on all of them). It is a lineup role, not a dance role: a profile never lists it, it warns about nothing, and it counts for nothing in *Dancer statistics* or a dancer's own season, because running an evening is not dancing it. Distinct from the *Voditelj* permission holder, although in practice the same people.
+_Avoid_: leader, host, coach.
 
 ### Dancer statistics
 Per season (calendar year, as in ADR-0022): confirmed performances per moreškant, and how many times each danced `crni_kralj`, `bili_kralj`, `otmanovic`, `bula`. Past seasons selectable. Confirmed lineups of past performances are visible to every moreškant.
