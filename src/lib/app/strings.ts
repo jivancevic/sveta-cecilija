@@ -1579,6 +1579,9 @@ export const APP_STRINGS = {
 
     shared: {
       title: 'Dijeljeni račun',
+      /** The two states, as the facts block prints them. */
+      isShared: 'Zajednički',
+      isPersonal: 'Osobni',
       on: 'Označi kao zajednički',
       off: 'Označi kao osobni',
       bodyOn:

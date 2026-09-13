@@ -5262,3 +5262,327 @@ a.app__statrow-main:focus-visible {
 .app__comp-permember .app__stats td {
   font-variant-numeric: tabular-nums;
 }
+
+/* ─────────────────────────────────────────────────────────────
+   Korisnici (#510): the accounts and what each may do.
+
+   A permission set is the whole content of this screen, so the chip is the one
+   new shape: a small outlined word, the badge's vocabulary at the badge's size
+   but in a wrapping row rather than beside a heading. Everything else is the
+   shell's — `app__sheet*` for the five confirmations, `app__field` for the
+   inputs, `app__button` for the verbs.
+
+   No numbers on this screen, so no `tabular-nums` anywhere in it except the
+   count line above the list, which is a count.
+   ───────────────────────────────────────────────────────────── */
+.app__users-search {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.app__users-search-field {
+  flex: 1 1 200px;
+}
+
+.app__users-search .app__input {
+  margin-bottom: 0;
+}
+
+.app__users-search .app__button {
+  width: auto;
+  padding: 10px 14px;
+  font-size: 13px;
+}
+
+.app__users-clear {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.app__users-count {
+  margin: 16px 0 2px;
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* ── One account in the list ──────────────────────────────── */
+.app__user-row {
+  display: block;
+  padding: var(--rowY) 0;
+  border-top: 1px solid var(--rule);
+  color: inherit;
+  text-decoration: none;
+}
+
+.app__users-list .app__user-row:last-child {
+  border-bottom: 1px solid var(--rule);
+}
+
+.app__user-row:hover {
+  background: rgba(184, 136, 26, 0.07);
+}
+
+.app__user-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+/* The username, which is what the person types to sign in: monospaced, because
+   it is an identifier and `lbrkic` next to `Luka Brkić` must not read as two
+   spellings of a name. */
+.app__user-name {
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 15px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app__user-badges {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* A login several people hold (ADR-0022). Dashed, the same way an unanswered
+   row is: it is a shape with somebody missing from it. */
+.app__badge--shared {
+  border-style: dashed;
+  border-color: var(--gold);
+  color: var(--goldText);
+}
+
+.app__user-sub {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin-top: 3px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* An account with nowhere to send a password to. Not a warning: the shared door
+   login is supposed to be like this, and the word is what decides which half of
+   "Resetiraj lozinku" the reader gets. */
+.app__user-noemail {
+  font-style: italic;
+}
+
+.app__user-chips,
+.app__user-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.app__user-links {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.app__chip {
+  padding: 2px 7px;
+  border: 1px solid var(--cardEdge);
+  border-radius: var(--radius);
+  font-size: 12px;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+/* Nothing ticked: an account that reaches no screen at all, which is how a
+   login is retired here (deleting stays Backoffice work). */
+.app__chip--none {
+  border-style: dashed;
+  color: var(--muted);
+}
+
+.app__users-new {
+  margin-top: 22px;
+  padding-top: 14px;
+  border-top: 1px solid var(--rule);
+}
+
+.app__users-hint {
+  margin: -6px 0 10px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.app__users-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 10px;
+  font-size: 14px;
+}
+
+/* ── The permission checklist ─────────────────────────────── */
+/* Eleven words with a sentence each, which is the only place in the app where
+   what a permission MEANS is written down for the person granting it. */
+.app__perm-list {
+  margin: 12px 0 0;
+  padding: 0;
+  border: none;
+}
+
+.app__perm-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 9px;
+  padding: 7px 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.app__perm-item:last-child {
+  border-bottom: none;
+}
+
+.app__perm-item input {
+  margin-top: 3px;
+  flex: 0 0 auto;
+}
+
+.app__perm-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  font-size: 14px;
+}
+
+.app__perm-text small {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* ── One account ──────────────────────────────────────────── */
+.app__user-back {
+  display: inline-block;
+  margin: 14px 0 4px;
+  font-size: 13px;
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.app__user-facts {
+  margin-top: 10px;
+  border-top: 1px solid var(--rule);
+}
+
+.app__user-fact {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--rule);
+  font-size: 14px;
+}
+
+.app__user-fact > span {
+  flex: 0 0 auto;
+  color: var(--muted);
+}
+
+.app__user-fact > b {
+  font-weight: 600;
+  text-align: right;
+}
+
+.app__user-fact .app__user-chips {
+  justify-content: flex-end;
+  margin-top: 0;
+}
+
+.app__user-actions {
+  margin-top: 18px;
+}
+
+.app__user-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.app__user-done {
+  margin: 0 0 10px;
+  font-size: 14px;
+  color: var(--goldText);
+}
+
+.app__user-note {
+  margin: 18px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* ── The handover: a credential shown once ────────────────── */
+/* It replaces the sheet rather than sitting beside it, because there is exactly
+   one thing to do with the screen at that moment: take the value away. */
+.app__handover {
+  margin-top: 14px;
+  padding: 14px;
+  background: var(--sunk);
+  border: 1px solid var(--gold);
+}
+
+.app__handover-title {
+  margin: 0 0 6px;
+  font-family: var(--font-bodoni), Georgia, serif;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.app__handover-body {
+  margin: 0 0 10px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.app__handover-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+/* Selectable and wrapping: the clipboard is the fast path, and reading it out
+   loud is the one that always works. */
+.app__handover-value {
+  flex: 1 1 200px;
+  padding: 9px 10px;
+  background: var(--card);
+  border: 1px solid var(--cardEdge);
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 14px;
+  word-break: break-all;
+  user-select: all;
+}
+
+.app__handover-row .app__button {
+  width: auto;
+}
+
+@media (min-width: 700px) {
+  .app__user-buttons {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  .app__user-buttons .app__button {
+    width: auto;
+    min-width: 170px;
+  }
+}
