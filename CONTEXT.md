@@ -96,9 +96,15 @@ A performer of the moreška is a **moreškant** (pl. **moreškanti**, gen. pl. *
 
 ### Event noun: Performance / izvedba
 One scheduled moreška event has a **single canonical user-facing noun in each language**, used everywhere (public site + admin + partner): **English "Performance"**, **Croatian "izvedba"**. Chosen for EN↔HR register parity (izvedba is the true cognate of "Performance"), for matching a 143-year cultural institution's voice over a casual "show/gig", and because every event is a *rendition of the one canonical traditional work* — which "izvedba" captures precisely.
-- **Retired as the event noun:** EN "Show", HR "predstava" and "nastup". Align any user-facing occurrences to Performance / izvedba.
+- **Retired as the event noun:** EN "Show", HR "predstava". Align any user-facing occurrences to Performance / izvedba.
 - **Still allowed:** the **verb** ("grupa nastupa / izvodi morešku"); the **idiom** "Showtime 21:00"; the internal **DB type/collection `Show`/`shows`** (not user-facing — do NOT rename); and **"Moreška"** as the proper-noun brand/the dance itself ("the next Moreška performance" — brand noun + generic noun stack, they don't compete). "Izvedba" was already the artistic/private-context word ("Privatne izvedbe", "prva poznata izvedba"); it now becomes universal, so that copy already fits.
-- _Avoid (HR):_ predstava, nastup (as the event noun). _Avoid (EN):_ Show (as the event noun).
+- _Avoid (HR):_ predstava. _Avoid (EN):_ Show (as the event noun).
+
+**Two registers, one entity (decided 2026-09-13).** The same performance carries a different Croatian word depending on who reads it, and the border is the audience, never the screen or the URL:
+- **Selling register: "izvedba".** Everything a buyer, a partner, the blagajna, the door or a statistics reader sees: the public site, tickets and e-mails, Narudžbe, Izvedbe, Statistika, Financije, Skener, Prodaja / Obračun.
+- **Dancer register: "nastup".** Everything a moreškant or a voditelj reads *as a dancer*: the Moreška screen, attendance, the lineup, the roster's push messages ("Stanje za nastup …"), the season count and the leaderboard. This is the word the dancers actually say (the notebook's "vandredni nastup"), and a glossary term people refuse to speak is not a glossary term.
+- A person who holds both sets of permissions reads both words and that is correct: the Moreška tab says "nastup", the Izvedbe tab says "izvedba", for the same evening.
+- English stays "performance" in both registers; the split exists only in Croatian.
 
 ### Offline sale (at the door / legacy)
 A sale that produced **no `Order` and no `Ticket` row** in this system, and is therefore recorded as a **counted line** rather than as per-person rows. Two sources, one ledger (`offline_sales`, a raw table — see [ADR-0025](../docs/adr/0025-offline-sales-ledger.md)):
@@ -522,6 +528,10 @@ The push "Sokoliću, fali nas! Stanje za nastup <date time>: 3 bilih, 7 crnih" s
 ### Lineup (postava)
 Who danced which dance role at a performance: one entry per member, exactly one role each. Enterable before or after the performance; **confirmed** by a voditelj marks it final. Only confirmed lineups feed statistics. A role outside the member's profile is a warning, not a block. The MCP `set_lineup` tool always writes an *unconfirmed* lineup. A lineup may also carry one line that is not a dance role: the *Voditelj (u postavi)*.
 _Avoid_: cast, roster (roster = the whole membership).
+
+### Title (titula)
+One of the four named parts of a performance: **crni kralj, bili kralj, otmanović, bula**. A title belongs to one performance's lineup, never to a person: it is given by the voditelj for that nastup, and a confirmed lineup carries **exactly one of each**, no more and no fewer (decided 2026-09-13). Until the voditelj gives them, every moreškant who said "coming" is a plain crni, bili or bula in the *Stanje*, whatever their profile's *Primary role* says; the profile role decides only which army the answer counts in. A title is what the dancer wears in the app that evening (the crown on the mark); the profile keeps the *Dance roles* a person is able to dance.
+_Avoid_: rank, position; "kralj" as a permanent attribute of a person.
 
 ### Voditelj (u postavi)
 The member who ran a performance without dancing it, written into its lineup with the role `voditelj`. Every Moreška Experience has one (in 2026, Brane on all of them). It is a lineup role, not a dance role: a profile never lists it, it warns about nothing, and it counts for nothing in *Dancer statistics* or a dancer's own season, because running an evening is not dancing it. Distinct from the *Voditelj* permission holder, although in practice the same people.
