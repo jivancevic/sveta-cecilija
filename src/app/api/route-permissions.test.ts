@@ -35,6 +35,7 @@ vi.mock('@/lib/scan-deps', () => ({
 
 import { POST as refundPost } from './orders/[id]/refund/route'
 import { PATCH as buyerPatch } from './app/orders/[id]/buyer/route'
+import { POST as inquiryHandledPost } from './app/inquiries/[id]/handled/route'
 import { POST as compIssuePost } from './comp/issue/route'
 import { GET as compMembersGet } from './comp/members/route'
 import { POST as scanPost } from './scan/[token]/route'
@@ -187,6 +188,48 @@ describe('tickets class — PATCH /api/app/orders/[id]/buyer', () => {
     const res = await buyerPatch(patch('/api/app/orders/42/buyer', body), { params })
     expect(res.status).not.toBe(401)
     expect(res.status).not.toBe(403)
+  })
+})
+
+describe('tickets class — POST /api/app/inquiries/[id]/handled', () => {
+  // Upiti's one write (#507). Same shape as the buyer edit above: a `/app`
+  // route, so the cross-site guard lives in the pure handler and is tested
+  // there; here the question is only the permission gate.
+  const params = Promise.resolve({ id: '7' })
+  const body = { handled: true }
+
+  it('401s without a session', async () => {
+    signIn(null)
+    expect(
+      (await inquiryHandledPost(post('/api/app/inquiries/7/handled', body), { params })).status,
+    ).toBe(401)
+  })
+
+  it.each([
+    ['tehnika', BUNDLES.tehnika],
+    ['partner', BUNDLES.partner],
+    ['member', BUNDLES.member],
+    ['refunds without tickets', ['refunds']],
+    ['a dancer', ['moreskant']],
+    ['empty set', []],
+  ])('403s for %s', async (_label, permissions) => {
+    signIn(permissions)
+    expect(
+      (await inquiryHandledPost(post('/api/app/inquiries/7/handled', body), { params })).status,
+    ).toBe(403)
+  })
+
+  it.each([
+    ['admin', BUNDLES.admin],
+    ['superadmin', BUNDLES.superadmin],
+  ])('lets %s through the gate', async (_label, permissions) => {
+    signIn(permissions)
+    // The pool is stubbed to no rows, so a caller that passes the gate reaches
+    // the handler's own 404 — which is exactly what "through the gate" means.
+    const res = await inquiryHandledPost(post('/api/app/inquiries/7/handled', body), { params })
+    expect(res.status).not.toBe(401)
+    expect(res.status).not.toBe(403)
+    expect(res.status).toBe(404)
   })
 })
 
