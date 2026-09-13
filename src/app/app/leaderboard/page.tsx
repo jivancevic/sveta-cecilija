@@ -136,7 +136,10 @@ export default async function LeaderboardPage({
         <section className="app__eos">
           <h2>{APP_STRINGS.mySeason.emptyTitle}</h2>
           <p>{APP_STRINGS.mySeason.emptyBody}</p>
-          <Link className="app__button app__button--link" href="/app/performances">
+          {/* Moreška, not Izvedbe (#565): the reader is a dancer with no
+              confirmed postava yet, and answering is done on the dancer's own
+              screen. A `moreskant` login cannot open Izvedbe at all any more. */}
+          <Link className="app__button app__button--link" href="/app/moreska">
             {APP_STRINGS.mySeason.emptyLink}
           </Link>
         </section>
