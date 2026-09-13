@@ -292,6 +292,17 @@ describe('activeScreenKey', () => {
     expect(activeScreenKey('/app/performances-archive')).toBeNull()
   })
 
+  it('lights Članovi on a dancer’s profile, not only on the list (#511)', () => {
+    expect(activeScreenKey('/app/members')).toBe('members')
+    expect(activeScreenKey('/app/members/4')).toBe('members')
+  })
+
+  it('lights nothing on the retired Pozivnice path, which now 308s away (#511)', () => {
+    // It was a Više row until Članovi absorbed it; a stale bookmark is a 308
+    // before any bar is rendered, so no tab should claim the path.
+    expect(activeScreenKey('/app/invitations')).toBeNull()
+  })
+
   it('lights Više for the rows that live under it', () => {
     expect(activeScreenKey('/app/account')).toBe('more')
     expect(activeScreenKey('/app/calendar')).toBe('more')

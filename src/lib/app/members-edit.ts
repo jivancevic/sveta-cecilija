@@ -234,13 +234,23 @@ export async function handleMemberCreate(
   }
   const input = body as Record<string, unknown>
 
+  // `note` is the ADR-0019 attribution half and a create is not a way around
+  // the lock a patch enforces: refused with the same sentence and the same 403,
+  // rather than dropped on the floor, so a caller who sent it learns that it
+  // did not land. `name` is the deliberate exception — it is required, so a
+  // voditelj could not add a dancer at all without it, which is exactly the
+  // exception `canEditAttributionField` already carves out on the collection.
+  if ('note' in input) return fail(403, S.lockedField)
+
   const name = text(input.name)
   if (name === '') return fail(400, S.missingName)
 
   // The rest is exactly a profile patch, so it is read by the same reader and
   // judged by the same rules; `name` is handed over separately because it is
-  // the one field the moreškant rules say nothing about.
-  const { name: _name, note: _note, active: _active, ...rest } = input
+  // the one field the moreškant rules say nothing about, and `active` is
+  // dropped because a new dancer is active and the collection's default says
+  // so (a voditelj must not be able to file one as already retired).
+  const { name: _name, active: _active, ...rest } = input
   const read = readPatch(rest)
   if ('error' in read) return fail(read.status, read.error)
 

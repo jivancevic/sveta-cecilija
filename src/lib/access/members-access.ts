@@ -86,6 +86,15 @@ export function canEditMoreskantField(user: PermissionUser): boolean {
  * and the field is required, so locking it would make create impossible for
  * them. Payload falls back to a field's `defaultValue` when access strips the
  * incoming value, so a voditelj's new member is still `active = true`.
+ *
+ * **One deliberate hole, and it is not here.** `active` on a MOREŠKANT row is
+ * also written by `PATCH /api/app/members/[id]` for a `moreska` holder (#511):
+ * the local API runs `overrideAccess: true`, so that route enforces its own
+ * field rules, and retiring a DANCER is the voditelj's act — this same file
+ * says so under {@link membersDeleteAccess}. It is narrowed to rows where
+ * `isMoreskant` is true, so a plain comp-attribution name stays the
+ * backoffice's, `name` and `note` are refused there as they are here, and the
+ * rule lives in `src/lib/app/members-edit.ts` where it is unit-tested.
  */
 export function canEditAttributionField(user: PermissionUser): boolean {
   return can(user, 'tickets')

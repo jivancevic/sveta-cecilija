@@ -3,6 +3,7 @@ import QRCode from 'qrcode'
 import { getCurrentJoinCode, getPendingJoinClaims } from '@/lib/app/join-data'
 import { formatDateTimeHr } from '@/lib/app/join'
 import { loadRoster } from '@/lib/app/members-data'
+import { toMemberListInput } from '@/lib/app/members-screen'
 import { APP_STRINGS } from '@/lib/app/strings'
 import { AppShell } from '../AppShell'
 import { openScreen } from '../gate'
@@ -62,8 +63,11 @@ export default async function MembersPage() {
 
       <AddDancer />
 
+      {/* The e-mail comes off here, not in the component: `MembersList` is a
+          client component, so every field it is handed ships in the HTML, and
+          ADR-0024 lets a mobile cross into `/app` and not an address. */}
       <MembersList
-        members={members}
+        members={members.map(toMemberListInput)}
         memberIdsWithLogin={[...idsWithLogin]}
       />
     </AppShell>

@@ -525,8 +525,13 @@ export const APP_STRINGS = {
     /** The list */
     searchLabel: 'Traži moreškanta',
     searchPlaceholder: 'Nadimak ili ime',
-    found: (count: number) =>
-      count === 1 ? '1 moreškant' : count < 5 && count > 0 ? `${count} moreškanta` : `${count} moreškanata`,
+    /**
+     * The three Croatian plural buckets, as every other count on `/app` spells
+     * them: `pluralize` picks between them (`roster-loaders.ts`), so 22 reads
+     * "22 moreškanta" and 12 reads "12 moreškanata" without this screen owning
+     * a rule of its own.
+     */
+    count: { one: 'moreškant', few: 'moreškanta', many: 'moreškanata' },
     empty: 'Nema moreškanta po tom upitu.',
     emptyAll: 'Još nema nijednog moreškanta na popisu.',
     listTitle: 'Moreškanti',

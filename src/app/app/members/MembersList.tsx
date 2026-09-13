@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
-import { memberListRows, type MemberRosterRow } from '@/lib/app/members-screen'
+import { foundLabel, memberListRows, type MemberListInput } from '@/lib/app/members-screen'
 import { APP_STRINGS } from '@/lib/app/strings'
 import { InviteActions } from './InviteActions'
 
@@ -21,12 +21,18 @@ import { InviteActions } from './InviteActions'
 // A row is a link to the profile and a button beside it, never a link wrapping
 // a button: "Pozovi" is a write and the name is a navigation, and one tap
 // target that did both would be the wrong one half the time.
+//
+// The rows arrive as `MemberListInput`, which is the roster row WITHOUT the
+// e-mail: this is a client component, so anything it is handed is in the HTML,
+// and ADR-0024's boundary lets a mobile cross into `/app` and not an address.
+// The page projects it away (`toMemberListInput`) rather than this file
+// promising not to render it.
 
 export function MembersList({
   members,
   memberIdsWithLogin,
 }: {
-  members: MemberRosterRow[]
+  members: MemberListInput[]
   /** An array rather than a Set: a server component may not hand one down. */
   memberIdsWithLogin: string[]
 }) {
@@ -83,7 +89,7 @@ export function MembersList({
       </label>
 
       <p className="app__members-count" aria-live="polite">
-        {APP_STRINGS.members.found(rows.length)}
+        {foundLabel(rows.length)}
       </p>
 
       {/* The bulk invitation, which only goes to the dancers whose row carries

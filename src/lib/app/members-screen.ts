@@ -11,6 +11,7 @@
 // so the page is a renderer and the rules are a table in the test file.
 
 import { DANCE_ROLE_LABELS, type DanceRole } from '@/lib/moreskant-profile'
+import { pluralize } from './roster-loaders'
 import { normaliseNickname } from './username'
 import { APP_STRINGS } from './strings'
 
@@ -42,6 +43,30 @@ export interface MemberRosterRow {
    * moreškant" rather than three.
    */
   isMoreskant: boolean
+}
+
+/**
+ * What the CLIENT list is handed: the roster row with the e-mail taken off.
+ *
+ * ADR-0024's PII boundary is that a mobile may cross into `/app` and an e-mail
+ * may not. The list needs the mobile (the SMS deep link dials it) and never the
+ * address, so the page projects it away with {@link toMemberListInput} before
+ * the row reaches a `'use client'` component and, with it, the HTML.
+ */
+export type MemberListInput = Omit<MemberRosterRow, 'email'>
+
+/** Drop the e-mail. Explicit, because a spread would carry it silently. */
+export function toMemberListInput(member: MemberRosterRow): MemberListInput {
+  return {
+    id: member.id,
+    name: member.name,
+    nickname: member.nickname,
+    mobile: member.mobile,
+    roles: member.roles,
+    primaryRole: member.primaryRole,
+    active: member.active,
+    isMoreskant: member.isMoreskant,
+  }
 }
 
 /** One line of the list. A projection, never a spread. */
@@ -82,7 +107,7 @@ export function memberSearchKey(value: string | null | undefined): string {
  * spaces, "###") filters nothing: an empty search box is not a filter.
  */
 export function memberMatchesSearch(
-  member: MemberRosterRow,
+  member: Pick<MemberRosterRow, 'name' | 'nickname'>,
   query: string | null | undefined,
 ): boolean {
   const needle = memberSearchKey(query)
@@ -91,6 +116,16 @@ export function memberMatchesSearch(
     memberSearchKey(member.nickname).includes(needle) ||
     memberSearchKey(member.name).includes(needle)
   )
+}
+
+/**
+ * "22 moreškanta" — the count over the list.
+ *
+ * `pluralize` and nothing hand-written: Croatian has three plural buckets and
+ * the 11-14 exception, and a screen that spells its own rule gets 12 wrong.
+ */
+export function foundLabel(count: number): string {
+  return pluralize(count, APP_STRINGS.members.count)
 }
 
 /** The Croatian label of a dance role, or the "no role yet" word. */
@@ -116,7 +151,7 @@ export function shownName(member: Pick<MemberRosterRow, 'name' | 'nickname'>): s
  * looks for it.
  */
 export function memberListRows(
-  members: readonly MemberRosterRow[],
+  members: readonly MemberListInput[],
   idsWithLogin: ReadonlySet<string>,
   query: string | null | undefined,
 ): MemberListRow[] {

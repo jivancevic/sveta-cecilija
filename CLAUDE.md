@@ -151,7 +151,7 @@ Every decision reads the permission set via `can()` / `hasAny()` from `src/lib/a
 | `Shows` | `tickets` or `moreska`; `door` → public performances only | `tickets`; `moreska` → non-public rows, plus the roster fields on any row (#408) |
 | `Tickets` | `tickets` or `door`; `partner` → only own (`partnerOwnTicketsWhere`) | `tickets` |
 | `Partners` | `tickets`; `partner` → only own (`partnerOwnRecordWhere`) | `tickets` |
-| `Members` | `tickets` or `moreska` | `tickets` or `moreska`; delete `tickets` only. Moreškant fields read+write locked to `moreska`; `name`/`active`/`note` update locked to `tickets` |
+| `Members` | `tickets` or `moreska` | `tickets` or `moreska`; delete `tickets` only. Moreškant fields read+write locked to `moreska`; `name`/`active`/`note` update locked to `tickets` — except that `active` on a moreškant row is also written by `PATCH /api/app/members/[id]` for `moreska` (#511), the one deliberate hole, narrowed to dancer rows and enforced in that route because the local API bypasses field access |
 | `PromoCodes` | `tickets` | `tickets` |
 | `Lineups` | `moreska`; `moreskant` → only rows of a confirmed performance (`lineupReadAccess`) | `moreska` only (`lineupWriteAccess`), a boolean for the same reason. Dancers never write a lineup |
 | `Attendance` | `moreska`; `moreskant` → only own rows (`attendanceReadAccess`) | `moreska` only (`attendanceWriteAccess`) — never a `Where`, which Payload's create would read as plain "allowed". Dancers write through `POST /api/app/attendance`, where the rules live |

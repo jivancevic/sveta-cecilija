@@ -229,6 +229,16 @@ describe('handleMemberCreate', () => {
     })
   })
 
+  it('refuses the attribution note on create too, rather than dropping it', async () => {
+    // A create must not be a way around the lock a patch enforces: the caller
+    // who sent it has to learn that it did not land.
+    const d = deps()
+    const res = await handleMemberCreate({ ...NEW, note: 'nešto' }, d)
+    expect(res.status).toBe(403)
+    expect(res.body).toEqual({ error: S.lockedField })
+    expect(d.create).not.toHaveBeenCalled()
+  })
+
   it('requires a name, which is the one field the moreškant rules do not cover', async () => {
     const res = await handleMemberCreate({ ...NEW, name: '  ' }, deps())
     expect(res.status).toBe(400)
