@@ -2,6 +2,7 @@ import { withPayload } from '@payloadcms/next/withPayload'
 import type { NextConfig } from 'next'
 import { appSubdomainRedirects } from './src/lib/app-subdomain'
 import { appRouteRedirects } from './src/lib/app/route-renames'
+import { backofficeRedirects } from './src/lib/backoffice-ports'
 
 const securityHeaders = [
   { key: 'Strict-Transport-Security', value: 'max-age=63072000; includeSubDomains; preload' },
@@ -51,11 +52,15 @@ const nextConfig: NextConfig = {
         permanent: true,
       },
 
-      // #504: the door scanner moved out of the Backoffice into Cecilija.
-      // `/admin/scan` is on printed instructions and in the door volunteers'
-      // browser history, and the Backoffice is being retired screen by screen,
-      // so the old path 308s to the new one for a release.
-      { source: '/admin/scan', destination: '/app/scan', permanent: true },
+      // ── Backoffice screens that moved into Cecilija ────────────────────
+      //
+      // The door scanner (#504) and the season statistics (#508). Each old
+      // `/admin` path is on printed instructions, in a browser history or in
+      // somebody's bookmark bar, so it 308s to its Cecilija address for a
+      // release. The table lives in `src/lib/backoffice-ports.ts`, where the
+      // ordering rule that lets `/admin/stats/:showId` through is stated and
+      // tested; #512 drops the whole set with the views themselves.
+      ...backofficeRedirects(),
 
       // ── Cecilija's Croatian segments (#473, #495) ──────────────────────
       //

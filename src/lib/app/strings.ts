@@ -1562,6 +1562,59 @@ export const APP_STRINGS = {
   },
 
   /**
+   * Statistika (#508): the season in counts, and never in euros.
+   *
+   * The screen answers to `tickets`, `season_stats` and `finance`, and the
+   * money question is a different screen (Financije, #509). So there is no
+   * `revenue` key here and there must never be one: a label that does not
+   * exist cannot be rendered by accident.
+   *
+   * The channel words are deliberately the same four `sales.channels` uses on
+   * Izvedbe, because the two screens count the same seats and a second
+   * vocabulary would read as a second rule.
+   */
+  statistics: {
+    season: 'Sezona',
+    /** The band: four figures, read before anything is scrolled. */
+    sold: 'Prodano',
+    comps: 'Gratis',
+    capacity: 'Kapacitet',
+    fill: 'Popunjenost',
+    /** The three sections under it. */
+    performances: 'Izvedbe',
+    trajectory: 'Tijek sezone',
+    mix: 'Odakle su mjesta',
+    compsByMember: 'Gratis po članu',
+    /** The per-izvedba row and its columns. */
+    soldOf: (sold: number, capacity: number) => `${sold}/${capacity}`,
+    adults: 'Odrasli',
+    children: 'Djeca',
+    scanned: 'Ušlo',
+    cancelled: 'Otkazano',
+    channels: {
+      online: 'online',
+      door: 'vrata',
+      partner: 'partner',
+      comp: 'gratis',
+    },
+    /**
+     * Two footnotes, both about a number that would otherwise be questioned:
+     * the old site's seats are counted at the door because they have no other
+     * home, and an otkazana izvedba has no seats to sell so it is out of every
+     * season figure (the same rule `seasonCapacity` has always applied).
+     */
+    doorNote: 'U "vrata" su i mjesta prenesena sa stare stranice.',
+    cancelledNote: 'Otkazane izvedbe ne ulaze u zbroj sezone.',
+    compsHint: 'Aktivne gratis ulaznice ove sezone, po članu kojemu su pripisane.',
+    member: 'Član',
+    total: 'Ukupno',
+    /** Nothing to show, one sentence per reason there is nothing. */
+    empty: 'U ovoj sezoni nema izvedbi s prodajom.',
+    noSales: 'Još nema prodaje.',
+    noComps: 'Ove sezone nema gratis ulaznica.',
+  },
+
+  /**
    * The blagajna's named actions on one public evening (#502).
    *
    * Each one is a button with a verb on it and a sheet under it that says what
