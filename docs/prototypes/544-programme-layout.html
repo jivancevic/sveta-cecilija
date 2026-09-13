@@ -1,0 +1,252 @@
+<title>Program moreške</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Labrada:ital,wght@0,400;0,500;0,600;0,700;1,400&display=swap">
+<style>
+  :root{
+    --ink:#1A140C; --ink2:#241C12; --paper:#F5F2EC; --paper2:#EDE9E0; --gold:#B8881A; --goldBright:#D9A93A; --muted:#B5A88F; --mutedLight:#6B5E45;
+    --serif:'Labrada',Georgia,'Times New Roman',serif;
+  }
+  body{background:#0E0B07;color:var(--paper);font-family:var(--serif);margin:0;padding:28px 20px 60px;line-height:1.55}
+  .wrap{max-width:1320px;margin:0 auto}
+  h1{font-size:28px;font-weight:600;margin:0 0 6px;letter-spacing:-.01em;text-wrap:balance}
+  .sub{color:var(--muted);margin:0 0 28px;max-width:70ch}
+  .frames{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:28px;align-items:start}
+  .frame{border:1px solid #3a3020;border-radius:22px;overflow:hidden;background:#000;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+  .frame__label{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--goldBright);padding:10px 16px;border-bottom:1px solid #3a3020;background:#161108;display:flex;justify-content:space-between}
+  .frame__label span{color:var(--muted);letter-spacing:0;text-transform:none;font-size:12px}
+  .screen{height:720px;overflow-y:auto;-webkit-overflow-scrolling:touch}
+  .screen *{box-sizing:border-box}
+  /* shared nav stub */
+  .nav{display:flex;align-items:center;gap:10px;padding:14px 18px;font-size:11px;letter-spacing:.2em;text-transform:uppercase}
+  .nav b{font-weight:600;letter-spacing:.06em;font-size:12px}
+  .nav i{font-style:normal;margin-left:auto;opacity:.6}
+  .eyebrow{font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--gold);margin:0 0 8px}
+  ol,ul{margin:0;padding:0;list-style:none}
+  .ff{font-size:12px;color:var(--muted);padding:26px 18px;text-align:center;border-top:1px solid rgba(255,255,255,.08)}
+
+  /* ===== A: tamno, sve otvoreno ===== */
+  .A{background:var(--ink);color:var(--paper)}
+  .A .nav{color:var(--paper);border-bottom:1px solid rgba(255,255,255,.08)}
+  .A main{padding:22px 20px 10px}
+  .A h1{font-size:34px;line-height:1.05;margin:0 0 6px}
+  .A .lead{font-size:17px;color:var(--muted);margin:0 0 26px;font-style:italic}
+  .A h2{font-size:13px;letter-spacing:.22em;text-transform:uppercase;color:var(--goldBright);margin:30px 0 12px;font-weight:500}
+  .A .cast li{display:grid;grid-template-columns:96px 1fr;gap:12px;padding:10px 0;border-top:1px solid rgba(255,255,255,.1);font-size:17px}
+  .A .cast li:last-child{border-bottom:1px solid rgba(255,255,255,.1)}
+  .A .cast b{font-weight:600;color:var(--paper)}
+  .A .cast span{color:#D8CFBE}
+  .A .parts li{display:grid;grid-template-columns:34px 1fr;gap:10px;padding:12px 0;font-size:18px;line-height:1.45}
+  .A .parts .n{font-size:30px;line-height:1;color:var(--gold);font-weight:500}
+  .A .parts b{display:block;font-weight:600}
+  .A .parts span{color:#D8CFBE;font-size:17px}
+  .A p{font-size:18px;line-height:1.6;color:#E8E1D3;margin:0 0 14px}
+  .A .kol li{display:grid;grid-template-columns:28px 1fr;gap:8px;padding:9px 0;border-top:1px solid rgba(255,255,255,.1);font-size:17px}
+  .A .kol .n{color:var(--gold);font-variant-numeric:tabular-nums}
+  .A .kol b{font-weight:600}
+  .A .kol span{display:block;color:#D8CFBE;font-size:16px}
+  .A .row{background:#2A2114;border-left:3px solid var(--gold);padding:14px 16px;margin:26px 0 8px;font-size:17px;line-height:1.5}
+
+  /* ===== B: svijetlo, hero foto, kao sekcija ===== */
+  .B{background:var(--paper);color:var(--ink)}
+  .B .hero{height:300px;background:linear-gradient(rgba(20,16,11,.25),rgba(20,16,11,.75)),repeating-linear-gradient(135deg,#5a4630 0 12px,#3c2e1e 12px 24px);color:#fff;display:flex;flex-direction:column;justify-content:flex-end;padding:22px 20px}
+  .B .hero .nav{position:absolute;padding:0;color:#fff}
+  .B .hero h1{font-size:34px;line-height:1.05;margin:0 0 6px;color:#fff}
+  .B .hero p{margin:0;color:#E8E1D3;font-size:16px}
+  .B main{padding:26px 20px 10px}
+  .B .back{font-size:12px;letter-spacing:.2em;text-transform:uppercase;color:var(--mutedLight);display:block;margin-bottom:22px}
+  .B .lead{font-size:19px;line-height:1.6;font-style:italic;color:var(--ink);opacity:.85;margin:0 0 28px}
+  .B .photo{height:190px;background:repeating-linear-gradient(45deg,#c9b99a 0 10px,#b3a283 10px 20px);border-radius:6px;margin:0 0 14px}
+  .B h3{font-size:22px;margin:0 0 8px;font-weight:600}
+  .B p{font-size:16px;line-height:1.7;color:var(--ink);opacity:.82;margin:0 0 40px}
+  .B .cta{background:var(--ink);color:var(--paper);padding:40px 20px;text-align:center}
+  .B .cta h2{font-size:24px;margin:0 0 8px}
+  .B .btn{display:inline-block;background:var(--gold);color:#fff;padding:12px 20px;border-radius:2px;font-size:13px;letter-spacing:.06em;text-transform:uppercase}
+
+  /* ===== C: tamno, sažetak pa sklopljeno ===== */
+  .C{background:#000;color:var(--paper)}
+  .C .nav{color:var(--paper)}
+  .C main{padding:10px 16px 16px}
+  .C .card{background:var(--ink);border-radius:14px;padding:20px 18px;margin-bottom:14px}
+  .C .card h1{font-size:30px;line-height:1.05;margin:0 0 4px}
+  .C .card .lead{color:var(--muted);margin:0 0 18px;font-size:15px}
+  .C .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .C .grid div{background:#2A2114;border-radius:10px;padding:12px}
+  .C .grid b{display:block;font-size:17px;font-weight:600}
+  .C .grid span{font-size:14px;color:#D8CFBE;line-height:1.35;display:block}
+  .C .grid .w{grid-column:1/-1}
+  .C .steps{margin-top:16px;display:grid;gap:8px}
+  .C .steps li{display:flex;gap:12px;align-items:flex-start;font-size:16px;line-height:1.4}
+  .C .steps .n{width:28px;height:28px;border-radius:50%;background:var(--gold);color:#000;display:grid;place-items:center;font-weight:600;flex:none}
+  .C details{background:var(--ink);border-radius:14px;margin-bottom:10px}
+  .C summary{list-style:none;cursor:pointer;padding:18px;font-size:19px;font-weight:600;display:flex;justify-content:space-between;align-items:center}
+  .C summary::after{content:'+';color:var(--gold);font-size:26px;font-weight:400}
+  .C details[open] summary::after{content:'–'}
+  .C details p,.C details li{padding:0 18px 16px;margin:0;font-size:17px;line-height:1.6;color:#E8E1D3}
+  .C details li{padding-bottom:10px}
+  .C details li b{color:var(--paper)}
+  .C .row{border:1px solid var(--gold);border-radius:12px;padding:14px 16px;font-size:16px;line-height:1.5;margin:6px 0 10px}
+
+  /* pitanja */
+  .q{margin-top:56px;max-width:80ch}
+  .q h2{font-size:22px;margin:0 0 6px}
+  .q ol{list-style:decimal;padding-left:26px;display:grid;gap:22px;margin-top:18px}
+  .q li{font-size:17px}
+  .q .r{display:block;margin-top:6px;color:var(--goldBright);font-size:16px}
+  .q .r::before{content:'Preporuka: ';color:var(--muted);font-size:12px;letter-spacing:.16em;text-transform:uppercase}
+  .q .why{display:block;color:var(--muted);font-size:15px;margin-top:3px}
+  code{font-family:ui-monospace,Menlo,monospace;font-size:14px;background:#221a0e;padding:1px 5px;border-radius:3px}
+  @media (prefers-reduced-motion:reduce){*{scroll-behavior:auto}}
+</style>
+
+<div class="wrap">
+  <h1>Program moreške: tri rasporeda za mobitel u mraku</h1>
+  <p class="sub">Prototip za #544. Isti tekst u sve tri varijante, sastavljen iz postojećih izvora (sekcija o moreški, docs/sveta-cecilija.md). Svaki okvir je širine mobitela i skrola se zasebno. Pitanja i preporuke su ispod okvira.</p>
+
+  <div class="frames">
+
+    <!-- A -->
+    <div class="frame">
+      <div class="frame__label">A <span>tamno, sve otvoreno, bez foto-heroa</span></div>
+      <div class="screen A">
+        <div class="nav"><b>HGD SVETA CECILIJA</b><i>EN · HR ≡</i></div>
+        <main>
+          <p class="eyebrow">Program</p>
+          <h1>Moreška</h1>
+          <p class="lead">Dva kralja, jedna zarobljena djevojka i sedam borbi da se odluči njezina sudbina.</p>
+
+          <h2>Tko je tko</h2>
+          <ul class="cast">
+            <li><b>Bula</b><span>Zarobljena djevojka, zaručnica Bijelog kralja.</span></li>
+            <li><b>Osman</b><span>Bijeli kralj. Nosi crveno.</span></li>
+            <li><b>Moro</b><span>Crni kralj, koji je Bulu uzeo silom. Nosi crno.</span></li>
+            <li><b>Otmanović</b><span>Otac Crnog kralja.</span></li>
+            <li><b>Bila vojska</b><span>Osmanovi vojnici, u crvenom.</span></li>
+            <li><b>Crna vojska</b><span>Morovi vojnici, u crnom.</span></li>
+          </ul>
+
+          <h2>Večer</h2>
+          <ol class="parts">
+            <li><span class="n">1</span><div><b>Klapa</b><span>Dalmatinsko višeglasje bez instrumenata.</span></div></li>
+            <li><span class="n">2</span><div><b>Moreška uz puhaći orkestar</b><span>Priča se najprije izgovori, zatim Sfida, izazov, pa sedam kolapa do predaje Crnog kralja.</span></div></li>
+          </ol>
+
+          <div class="row">Prvi redovi su najbolje mjesto za iskre i zvuk željeza. S malom djecom sjednite koji red dalje.</div>
+
+          <h2>Priča</h2>
+          <p>Bijeli kralj Osman dolazi da povrati svoju zaručnicu, Bulu, od Crnog kralja Mora, koji ju je uzeo silom. Bula odbija popustiti: „Veće mi je jado tvoja nehtjena ljubav neg li čelik.” Slijedi Sfida, izazov, a zatim sedam kolapa. Crna vojska je opkoljena, krug se sužava sa svakom figurom, dok Crni kralj ne položi mač pred Osmanovim nogama. Bula je slobodna.</p>
+
+          <h2>Sedam kolapa</h2>
+          <ol class="kol">
+            <li><span class="n">1</span><div><b>Rugier</b><span>Vezan uz sicilijanski ples „Ruggero”.</span></div></li>
+            <li><span class="n">2</span><div><b>Moreška</b><span>Najstarija figura: kruženje i usklađeni udarci.</span></div></li>
+            <li><span class="n">3</span><div><b>Finta</b><span>Varke i lažni udarci.</span></div></li>
+            <li><span class="n">4</span><div><b>Moro in dentro</b><span>Crni se pomiču prema unutra.</span></div></li>
+            <li><span class="n">5</span><div><b>Križ</b><span>Mačevi tvore križeve.</span></div></li>
+            <li><span class="n">6</span><div><b>Rugier de fuorivia</b><span>Rugier prema van, širi krugovi.</span></div></li>
+            <li><span class="n">7</span><div><b>Završna figura</b><span>Punom brzinom, do predaje.</span></div></li>
+          </ol>
+
+          <h2>Povijest</h2>
+          <p>Od svih plesova s mačevima koji su nekad prošarali Sredozemlje, samo je moreška s Korčule preživjela netaknuta. Prvi zapis u gradu datira iz 1666. Izvodi se na korčulanskom dijalektu 17. stoljeća, s teškim željeznim mačevima.</p>
+        </main>
+        <div class="ff">HGD Sveta Cecilija · moreska.eu</div>
+      </div>
+    </div>
+
+    <!-- B -->
+    <div class="frame">
+      <div class="frame__label">B <span>svijetlo, hero foto, kao stranica sekcije</span></div>
+      <div class="screen B">
+        <div class="hero">
+          <h1>Program moreške</h1>
+          <p>Priča, uloge i sedam kolapa</p>
+        </div>
+        <main>
+          <span class="back">← Natrag</span>
+          <p class="lead">Dva kralja. Jedna zarobljena djevojka. Sedam borbi da se odluči njezina sudbina.</p>
+          <div class="photo"></div>
+          <h3>Tko je tko</h3>
+          <p>Bula je zarobljena djevojka, zaručnica Bijelog kralja Osmana, koji nosi crveno. Moro je Crni kralj koji ju je uzeo silom; njegova vojska nosi crno. Otmanović je otac Crnog kralja.</p>
+          <div class="photo"></div>
+          <h3>Večer</h3>
+          <p>Najprije pjeva klapa. Zatim moreška uz puhaći orkestar: priča se izgovori, slijedi Sfida, pa sedam kolapa do predaje Crnog kralja.</p>
+          <div class="photo"></div>
+          <h3>Priča</h3>
+          <p>Bijeli kralj Osman dolazi da povrati svoju zaručnicu, Bulu, od Crnog kralja Mora. Bula odbija popustiti. Slijedi Sfida, a zatim sedam kolapa. Crna vojska je opkoljena, dok Crni kralj ne položi mač pred Osmanovim nogama.</p>
+          <h3>Sedam kolapa</h3>
+          <p>Rugier, Moreška, Finta, Moro in dentro, Križ, Rugier de fuorivia i Završna figura.</p>
+        </main>
+        <div class="cta"><h2>Doživite morešku</h2><span class="btn">Ulaznice</span></div>
+        <div class="ff" style="color:var(--mutedLight)">HGD Sveta Cecilija · moreska.eu</div>
+      </div>
+    </div>
+
+    <!-- C -->
+    <div class="frame">
+      <div class="frame__label">C <span>tamno, sažetak gore, ostalo sklopljeno</span></div>
+      <div class="screen C">
+        <div class="nav"><b>HGD SVETA CECILIJA</b><i>EN · HR ≡</i></div>
+        <main>
+          <div class="card">
+            <p class="eyebrow">Za pet minuta</p>
+            <h1>Moreška</h1>
+            <p class="lead">Što gledate večeras</p>
+            <div class="grid">
+              <div><b>Osman</b><span>Bijeli kralj, u crvenom</span></div>
+              <div><b>Moro</b><span>Crni kralj, u crnom</span></div>
+              <div class="w"><b>Bula</b><span>Zarobljena djevojka, Osmanova zaručnica, koju je Moro uzeo silom</span></div>
+              <div><b>Bila vojska</b><span>u crvenom</span></div>
+              <div><b>Crna vojska</b><span>u crnom</span></div>
+            </div>
+            <ol class="steps">
+              <li><span class="n">1</span><span><b>Klapa</b> pjeva.</span></li>
+              <li><span class="n">2</span><span><b>Moreška uz puhaći orkestar</b>: priča, Sfida, sedam kolapa, predaja.</span></li>
+            </ol>
+          </div>
+          <div class="row">Prvi redovi su najbolje mjesto za iskre i zvuk željeza. S malom djecom sjednite koji red dalje.</div>
+          <details><summary>Priča</summary><p>Bijeli kralj Osman dolazi da povrati svoju zaručnicu, Bulu, od Crnog kralja Mora. Bula odbija popustiti. Slijedi Sfida, a zatim sedam kolapa. Crna vojska je opkoljena, dok Crni kralj ne položi mač pred Osmanovim nogama. Bula je slobodna.</p></details>
+          <details><summary>Sedam kolapa</summary>
+            <ul>
+              <li><b>1 Rugier</b>: vezan uz sicilijanski „Ruggero”.</li>
+              <li><b>2 Moreška</b>: najstarija figura, kruženje.</li>
+              <li><b>3 Finta</b>: varke.</li>
+              <li><b>4 Moro in dentro</b>: Crni prema unutra.</li>
+              <li><b>5 Križ</b>: mačevi tvore križeve.</li>
+              <li><b>6 Rugier de fuorivia</b>: širi krugovi.</li>
+              <li><b>7 Završna figura</b>: punom brzinom.</li>
+            </ul>
+          </details>
+          <details><summary>Povijest</summary><p>Samo je moreška s Korčule preživjela netaknuta. Prvi zapis u gradu datira iz 1666. Izvodi se na korčulanskom dijalektu 17. stoljeća.</p></details>
+        </main>
+        <div class="ff">HGD Sveta Cecilija · moreska.eu</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="q">
+    <h2>Pitanja</h2>
+    <p class="sub" style="margin:0">Odgovori brojem, ili „sve kao preporuka”.</p>
+    <ol>
+      <li>Tamna ili svijetla stranica?
+        <span class="r">tamna (A ili C), na postojećim tokenima: pozadina <code>--ink</code>, tekst <code>--paper</code>, zlatni akcent.</span>
+        <span class="why">Bijeli ekran u mračnom gledalištu blješti gostu i susjedima; sve ostale javne stranice ostaju svijetle, ovo je jedina koja se čita u mraku.</span></li>
+      <li>Hero fotografija na vrhu?
+        <span class="r">bez (A ili C); samo Nav, mali nadnaslov i naslov.</span>
+        <span class="why">Fotografija gura ono zbog čega je gost otvorio link ispod ruba ekrana; stranica sekcije ima hero jer prodaje, ova objašnjava.</span></li>
+      <li>Sve otvoreno (A) ili sažetak pa sklopljene sekcije (C)?
+        <span class="r">A, sve otvoreno.</span>
+        <span class="why">Skrolanje palcem je jeftinije od ciljanja gumba u mraku, a sažetak je ionako na vrhu; sklopljeno sakriva sadržaj i od „traži na stranici”.</span></li>
+      <li>Tipografija: tijelo 17–18 px, prored 1.6, naslovi Labrada; naslovi sekcija kao zlatni razmaknuti nadnaslovi (A)?
+        <span class="r">da, kao u A.</span></li>
+      <li>Nav i Footer stranice ostaju (kao na sekcijama)?
+        <span class="r">da, oba; Footer je ionako taman, a gost koji želi ulaznice za idući put ima kamo.</span></li>
+      <li>Otmanović u popisu uloga? docs/sveta-cecilija.md ga navodi kao oca Crnog kralja, tekst sekcije ga ne spominje.
+        <span class="r">ne znam je li na pozornici u našoj izvedbi; reci.</span></li>
+      <li>Redoslijed kolapa: Rugier, Moreška, Finta, Moro in dentro, Križ, Rugier de fuorivia, Završna figura, isti kao u već objavljenom tekstu sekcije. Potvrđuje li voditelj?
+        <span class="r">tiket to traži prije objave; ako je red već točan na moreska.eu/sections/moreska, potvrdi jednom riječju.</span></li>
+      <li>Putanja stranice <code>/programme</code>, veza u PDF-u i e-mailu vodi na nju.
+        <span class="r">da.</span></li>
+      <li>Za #543 (e-mail) fale mi stvarni podaci koje repo nema: orijentir u starom gradu od kojeg se opisuje hod, koliko minuta hoda, kako izgleda ulaz, za Ljetno kino i za Centar za kulturu.
+        <span class="r">napiši mi u dvije-tri rečenice po dvorani, na hrvatskom je dosta; ja prevodim.</span></li>
+    </ol>
+  </div>
+</div>
