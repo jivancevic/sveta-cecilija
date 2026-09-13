@@ -6,8 +6,11 @@
 // beside itself — that is exactly how the app ended up with five kinds of
 // button and no rule about which was primary (audit, pattern 2).
 //
-// The shell already uses Toast (the pull-to-refresh confirmation) and Button;
-// the rest land as their screen tickets rebuild their screens (T2 onwards).
+// `PullToRefresh` renders `Toast` — imported from its own file rather than
+// through this barrel, because a client island should not pull fifteen shapes
+// into its bundle to use one. Everything else lands as the screen tickets
+// rebuild their screens (T2 onwards), and until then the only thing keeping
+// these honest is `ui.test.ts`, which renders every one of them.
 
 export { ArmyBar, type ArmyBarProps } from './ArmyBar'
 export { armyStatus, type ArmyStatus } from './army-status'

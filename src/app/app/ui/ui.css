@@ -721,8 +721,8 @@ button.ui-army:active {
 }
 
 /* ── Toast ────────────────────────────────────────────────
-   The shell's own toast (`.app__toast`) wears the same shape; this is the one
-   a screen renders for itself. */
+   The only one. The shell's "Osvježeno · 21:05" renders this same component,
+   so there is one shape and one place to change it. */
 .ui-toast {
   position: fixed;
   left: 50%;

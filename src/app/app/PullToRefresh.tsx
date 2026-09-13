@@ -3,6 +3,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { APP_STRINGS } from '@/lib/app/strings'
+// Straight from the file, not through `./ui`: this is a client island, and the
+// barrel would pull all fifteen shapes into its bundle to use one of them.
+import { Toast } from './ui/Toast'
 
 // Pull down to refresh (#562).
 //
@@ -226,9 +229,7 @@ export function PullToRefresh({ children }: { children: React.ReactNode }) {
         {children}
       </div>
 
-      <div className={`app__toast${toast ? ' app__toast--on' : ''}`} role="status" aria-live="polite">
-        {toast}
-      </div>
+      <Toast message={toast} open={toast !== null} />
     </>
   )
 }

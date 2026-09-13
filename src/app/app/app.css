@@ -453,29 +453,8 @@ html:has(> .app) {
   }
 }
 
-/* ── Toast (#562): one line, above the bar, gone in 1.6s ─── */
-.app__toast {
-  position: fixed;
-  left: 50%;
-  bottom: calc(var(--tabH) + env(safe-area-inset-bottom, 0px) + 28px);
-  transform: translateX(-50%) translateY(10px);
-  background: var(--toast);
-  color: var(--onToast);
-  padding: 10px 16px;
-  border-radius: var(--rPill);
-  font-size: 14px;
-  font-weight: 500;
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.25s, transform 0.25s var(--ease);
-  z-index: 40;
-  white-space: nowrap;
-}
-
-.app__toast--on {
-  opacity: 1;
-  transform: translateX(-50%);
-}
+/* The shell's "Osvježeno · 21:05" is the `Toast` from `ui/`, not a second copy
+   of it: one shape, one stylesheet, `ui.css`. */
 
 /* ── Hero: the next evening (#457) ──────────────────────── */
 .app__hero {
