@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import { can } from '@/lib/access/permissions'
 import type { AppMember } from '@/lib/app/access'
 import type { AppScreenKey } from '@/lib/app/screens'
@@ -19,7 +20,13 @@ import { ShowDayStrip } from './ShowDayStrip'
 // was: server-rendered data with no store.
 //
 // The header is the same everywhere (#473): the screen's title on the left, the
-// notification bell on the right, phone and laptop alike. The bell landed with
+// notification bell on the right, phone and laptop alike. **Početna is the one
+// exception and the only screen with the logo** (#564): its left-hand side is
+// the mark and the wordmark, because a landing screen titled "Početna" would
+// name the tab the reader just pressed instead of naming the app they are in.
+// One screen carries the brand and eleven carry their own name.
+//
+// The bell landed with
 // the inbox (#496) and is now unconditional — it is the one control that is on
 // every screen, and a slot that appeared and disappeared with a screen's own
 // `actions` would move the bell under the reader's thumb. A screen's `actions`
@@ -55,6 +62,7 @@ export function AppShell({
   viewer,
   screen,
   title,
+  brand = false,
   season,
   actions,
   intro,
@@ -66,6 +74,11 @@ export function AppShell({
   screen?: AppScreenKey
   /** A title of the page's own, when the screen's label is not specific enough. */
   title?: string
+  /**
+   * Wear the logo and the wordmark instead of a title. Početna, and nowhere
+   * else (#564): Cecilija is named once.
+   */
+  brand?: boolean
   /** The season label under the title; omitted where it means nothing. */
   season?: number | null
   /** Extra controls left of the bell. The bell itself is always there (#496). */
@@ -84,15 +97,30 @@ export function AppShell({
           the bar are outside it, because neither of them moves. */}
       <PullToRefresh>
         <div className="app__shell">
-          <header className="app__header">
-            <div className="app__header-title">
-              <h1>{heading}</h1>
-              {season != null && (
-                <p className="app__season">
-                  {APP_STRINGS.list.season} {season}
-                </p>
-              )}
-            </div>
+          <header className={`app__header${brand ? ' app__header--brand' : ''}`}>
+            {brand ? (
+              <div className="app__header-brand">
+                {/* Decorative: the wordmark beside it is the accessible name. */}
+                <Image
+                  className="app__logo"
+                  src="/cecilija-logo.webp"
+                  alt=""
+                  width={32}
+                  height={40}
+                  priority
+                />
+                <h1 className="app__wordmark">{APP_STRINGS.landing.brand}</h1>
+              </div>
+            ) : (
+              <div className="app__header-title">
+                <h1>{heading}</h1>
+                {season != null && (
+                  <p className="app__season">
+                    {APP_STRINGS.list.season} {season}
+                  </p>
+                )}
+              </div>
+            )}
             <div className="app__header-actions">
               {actions}
               <NotificationBell unread={viewer.unreadNotifications} />

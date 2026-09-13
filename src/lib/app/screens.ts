@@ -15,9 +15,9 @@
 //     CONTEXT, so they are stripped from the set before the table is read.
 //   - **Three tabs belong to the ACCOUNT, not to the rank** (#563). A `users`
 //     holder picks them on Korisnici and they are stored on `Users.tabs`; an
-//     account nobody has picked for reads the generic order below. Više is
-//     always the last tab and never counts against the three, and neither will
-//     Početna once T3 (#564) builds it.
+//     account nobody has picked for reads the generic order below. Početna is
+//     always the FIRST tab and Više always the last, and neither of them counts
+//     against the three (#564).
 //   - The laptop groups the same screens by workspace; a screen sits in the
 //     first of its groups the person holds. The sidebar shows everything at
 //     once, so a chosen set never hides a screen there.
@@ -33,6 +33,7 @@ import { permissionsOf, type Permission, type PermissionUser } from '@/lib/acces
 import { APP_STRINGS } from './strings'
 
 export type AppScreenKey =
+  | 'home'
   | 'orders'
   | 'moreska'
   | 'performances'
@@ -201,6 +202,29 @@ export const APP_SCREENS: AppScreen[] = [
 ]
 
 /**
+ * Početna: the first tab, always, and the landing screen of every account the
+ * access decision admits (#564).
+ *
+ * Outside `APP_SCREENS` for the same reason Više is: it is not ranked, it never
+ * overflows into Više, it is unlocked by no permission (being IN Cecilija is
+ * the whole of its condition) and it must never be storable on `Users.tabs` —
+ * `isTabKey('home')` is false, so a `users` holder cannot spend one of the
+ * three tabs on the tab everybody already has.
+ *
+ * Its route is `/app` itself, which is why `activeScreenKey` has to answer it
+ * by an exact match: `/app` is a prefix of every other screen's route.
+ */
+export const HOME_SCREEN: AppScreen = {
+  key: 'home',
+  label: S.home,
+  route: '/app',
+  rank: Number.NEGATIVE_INFINITY,
+  unlockedBy: [],
+  servesToday: [],
+  groups: [],
+}
+
+/**
  * Više: the last tab, always, and a screen every account that is in unlocks.
  * It is outside `APP_SCREENS` because it is not ranked and never overflows.
  */
@@ -227,7 +251,7 @@ const GROUP_ORDER: AppGroup[] = ['moreskant', 'box', 'partner', 'door', 'admin']
 export const GROUP_LABEL: Record<AppGroup, string> = APP_STRINGS.groups
 
 const BY_KEY = new Map<AppScreenKey, AppScreen>(
-  [...APP_SCREENS, MORE_SCREEN].map((s) => [s.key, s]),
+  [...APP_SCREENS, HOME_SCREEN, MORE_SCREEN].map((s) => [s.key, s]),
 )
 
 export function screenByKey(key: AppScreenKey): AppScreen {
@@ -242,9 +266,9 @@ export const MAX_TABS = 3
 /**
  * A key that may be STORED on `Users.tabs`.
  *
- * Everything in the table except Više, which is always the last tab and is
- * therefore never chosen, and never Početna, which will be the first one for
- * the same reason once T3 (#564) builds it.
+ * Everything in the table except the two fixed ends of the bar: Početna, which
+ * is always the first tab, and Više, which is always the last. Neither is ever
+ * chosen, so neither is ever stored (#563, #564).
  */
 export function isTabKey(value: unknown): value is AppScreenKey {
   return typeof value === 'string' && APP_SCREENS.some((s) => s.key === value)
@@ -372,11 +396,20 @@ export function unlockedScreens(user: PermissionUser, ctx: NavContext): AppScree
 }
 
 export interface AppNav {
-  /** The bottom bar, Više included and always last. Empty when denied. */
+  /**
+   * The bottom bar: Početna first, the account's chosen screens, Više last.
+   * Empty when denied. Five entries at most, and the pill reads its own count.
+   */
   tabs: AppScreen[]
   /** What Više lists above its standing rows. */
   overflow: AppScreen[]
-  /** The landing route: the first tab, or null when nothing is unlocked. */
+  /**
+   * Where `/app` puts somebody, and where a refusal points back to.
+   *
+   * It is Početna for every account that is in (#564); it was the first tab
+   * until T3, when `/app` stopped redirecting and became a screen of its own.
+   * Null means the account unlocks nothing at all.
+   */
   landing: string | null
   /** The laptop sidebar, grouped by workspace; only groups with a screen. */
   groups: { group: AppGroup; label: string; screens: AppScreen[] }[]
@@ -420,7 +453,15 @@ export function appNav(
     }))
     .filter((g) => g.screens.length > 0)
 
-  return { tabs: [...tabs, MORE_SCREEN], overflow, landing: tabs[0]?.route ?? null, groups }
+  // Početna first and Više last, neither of them counted against the three:
+  // the bar is between two and five entries, and `TabBar` hands its own length
+  // to the CSS, so nothing here has to know how wide a phone is.
+  return {
+    tabs: [HOME_SCREEN, ...tabs, MORE_SCREEN],
+    overflow,
+    landing: HOME_SCREEN.route,
+    groups,
+  }
 }
 
 /** Rows that live under Više and light its tab rather than one of their own. */
@@ -445,6 +486,9 @@ function isUnder(path: string, route: string): boolean {
  */
 export function activeScreenKey(pathname: string): AppScreenKey | null {
   const path = normalize(pathname)
+  // Exact, and first: `/app` is a prefix of every other route in the table, so
+  // `isUnder` would light Početna on all of them (#564).
+  if (path === HOME_SCREEN.route) return 'home'
   if (isUnder(path, MORE_SCREEN.route) || UNDER_MORE.some((r) => isUnder(path, r))) return 'more'
   return APP_SCREENS.find((s) => isUnder(path, s.route))?.key ?? null
 }
@@ -471,6 +515,7 @@ export function activeTabKey(nav: AppNav, pathname: string): AppScreenKey | null
 /** The screen a route belongs to, so a page can gate on the table (#473). */
 export function screenForPath(pathname: string): AppScreen | null {
   const path = normalize(pathname)
+  if (path === HOME_SCREEN.route) return HOME_SCREEN
   if (isUnder(path, MORE_SCREEN.route)) return MORE_SCREEN
   return APP_SCREENS.find((s) => isUnder(path, s.route)) ?? null
 }

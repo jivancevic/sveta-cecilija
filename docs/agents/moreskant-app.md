@@ -44,7 +44,7 @@ two fields apart for this reason.
 
 | Rank | Screen (label) | Route | Unlocked by | Today | Old path |
 |---|---|---|---|---|---|
-| | landing | `/app` | any screen | **307 to the person's first tab** (#495) | done |
+| 0 | Početna (the landing screen) | `/app` | any screen | **live** (#564): the logo and the wordmark (the only screen with them), a greeting by time of day with the reader's first name and no vocative, one sentence about the next nastup or izvedba in the reader's own register, and then one card per tab in the account's own order plus Obavijesti — **four at most**. The Moreška card is the hero of the next nastup with Dolazim / Ne dolazim in it and the ArmyBar under it (T4's own `heroView` / `Answer` / `StateBar`, never a copy); Statistika is a Ring of the next public izvedba over the venue's capacity; Ljestvica is the Podium of the top three plus "ti si N. s M"; every other screen is one figure and one action. **A card whose screen the account does not unlock is never built**, because the cards come off `nav.tabs` and there is no second list. Rules in `src/lib/app/home-screen.ts` (pure), loads in `home-data.ts` (only the cards this reader gets, each from the loader its own screen already uses). Početna is the FIRST tab, never storable on `Users.tabs`, never in Više | it used to 307 to the person's first tab (#495) |
 | 1 | Narudžbe | `/app/orders`, `/app/orders/[id]` | `tickets` | **live** (#501): the list with search (name, e-mail or code), a performance filter, a state filter (`active\|refunded\|partner\|comp`) and a pager, all in the query string; the detail with the order's facts, its tickets and four named actions — Povrat (`refunds` only, and only on a paid, unrefunded order), Pošalji ulaznice ponovno, Otvori PDF, Uredi kupca | none, the Backoffice keeps its list |
 | 1.5 | Moreška (the dancer's register screen) | `/app/moreska` | `moreskant`, `moreska` | **live** (#565): the 44px RoleMark with the name and "N nastupa pred tobom"; the hero of the next nastup (the day at 80px, weekday · time · Redovna, the voditelj's note, Dolazim / Ne dolazim, and after an answer "Dolaziš · Crni" or "Ne dolaziš" with Promijeni); the ArmyBar under it, which taps through to Stanje; then the season by month, a gold DateDisc for every Redovna and one chip per row. **A non-regular evening reads "Vanredna" and never names its client or its kind**, there is no seat count or revenue anywhere on it (Q29) and no Dodaj (Q31). What it says is `src/lib/app/moreska-screen.ts`, pure and tested without a database | new; nothing 308s here |
 | 2 | Izvedbe (one screen, content by `can()`) | `/app/performances`, `/app/performances/[id]` | `tickets`, `moreska` (`moreskant` reads the LIST on Moreška since #565, but still opens the DETAIL here) | **live** (#495): the voditelj's Dodaj / Uredi / Otkaži / Pragovi (#503), and the blagajna's sold-of-capacity, channel split, per-show numbers and six named actions (#502), which is where the old `/admin/stats/[id]` drill-down now lives. Since #538 the per-show *Prihod* is online money net of refunds plus the evening's ledger, with the partner seats named under it at face value, before commission | 308 from `/app/izvedba/[id]`; push messages now carry the new path |
@@ -76,7 +76,7 @@ screen with the unread count, opening the inbox at `/app/notifications`
 (**live**, #496; also listed as a row in Više, because the bell carries no
 label); **Dobrodošlica** at `/app/welcome` (was `/app/dobrodosli`, 308) is
 shown once per device and only to a `moreskant` holder, everyone else lands
-straight on their first tab.
+straight on Početna.
 
 Public pages, no session:
 
@@ -1933,7 +1933,8 @@ rather than re-deriving a count, which is what keeps both panels of
 
 `/app/orders` and `/app/orders/[id]`, for a `tickets` holder: the blagajna's
 list of orders, and the one order behind it. It is the first screen a `tickets`
-login unlocks, so it is also the landing screen for one (`/app` → `/app/orders`).
+login unlocks, so it is the first tab after Početna for one, and the first card
+under the greeting (#564).
 
 **The screen state is the URL.** `src/lib/app/orders-query.ts` parses `?q=`,
 `?show=`, `?state=` and `?page=` and builds the address back; nothing about the

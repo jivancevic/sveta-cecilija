@@ -249,6 +249,98 @@ html:has(> .app) {
   gap: 8px;
 }
 
+/* ── Početna: the one screen that wears the brand (#564) ────
+   Every other screen is titled with its own name; the landing screen is titled
+   with the app's, because "Početna" over a Početna tab names the button the
+   reader just pressed. The row is centred rather than baseline-aligned: an
+   image has no useful baseline to align a wordmark to. */
+.app__header--brand {
+  align-items: center;
+}
+
+.app__header-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.app__logo {
+  flex: none;
+  width: 32px;
+  height: 40px;
+  object-fit: contain;
+}
+
+.app__wordmark {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+/* The greeting: the reader's name in the serif, the evening's news under it. */
+.app__home-greet {
+  margin: 0 0 4px;
+}
+
+.app__home-greet b {
+  display: block;
+  font-family: var(--serif);
+  font-size: 34px;
+  font-weight: 600;
+  line-height: 1.12;
+  letter-spacing: -0.01em;
+}
+
+.app__home-greet span {
+  color: var(--muted);
+}
+
+/* A card's one number. Big enough to be the thing you see, well short of the
+   hero's 80px day, which stays the biggest thing the app draws.
+
+   `app__home-` and not `app__figure`: Obračun already owns that name for its
+   statement rows (#505), and a second rule under it put a hairline under every
+   number on Početna. */
+.app__home-figure {
+  display: flex;
+  align-items: flex-end;
+  /* The same 72px slot the Ring and the Podium fill, so a row of tiles lines
+     its captions up whether the tile draws a number, an arc or three steps. */
+  min-height: 72px;
+  font-family: var(--serif);
+  font-size: 44px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+
+/* A figure is usually two digits. Financije's is "7.350,00 €", and a tile is
+   half a phone wide: the type steps down by length rather than wrapping a
+   number across two lines or running off the card. */
+.app__home-figure--md {
+  font-size: 34px;
+}
+
+.app__home-figure--sm {
+  font-size: 26px;
+}
+
+/* The gold disc in front of a row that is news rather than a record. */
+.app__home-ico {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--goldSoft);
+  color: var(--goldText);
+}
+
 .app__brand {
   font-family: var(--font-bodoni), Georgia, serif;
   font-size: 26px;
