@@ -155,6 +155,19 @@ describe('unlockedScreens', () => {
     expect(keys(unlockedScreens(user('finance'), ctx()))).toEqual(['stats'])
   })
 
+  it('gives the president Statistika and Skener, and no way into Izvedbe', () => {
+    // Velebit is `finance` + `door` (#500). The pair unlocks the season's
+    // counts and the gate, and NEITHER word unlocks Izvedbe — which is what
+    // makes every row on Statistika link-less for him (#508), and what makes
+    // his old `/admin/stats/[id]` bookmark land on the refusal page once that
+    // path 308s to `/app/performances/[id]`.
+    expect(keys(unlockedScreens(user('finance', 'door'), ctx()))).toEqual(['scan', 'stats'])
+  })
+
+  it('gives a door-only account no Statistika at all', () => {
+    expect(keys(unlockedScreens(user('door'), ctx()))).toEqual(['scan'])
+  })
+
   it('never lets an unknown permission string unlock anything', () => {
     expect(unlockedScreens({ permissions: ['superadmin'] }, ctx({ hasMember: true }))).toEqual([])
   })
