@@ -76,6 +76,8 @@ export function PullToRefresh({ children }: { children: React.ReactNode }) {
   const ptr = useRef<HTMLDivElement | null>(null)
   const arc = useRef<SVGCircleElement | null>(null)
   const [toast, setToast] = useState<string | null>(null)
+  /** Only for the live region: the ring itself is decoration (#562 review). */
+  const [refreshing, setRefreshing] = useState(false)
 
   const showToast = useCallback((text: string) => {
     setToast(text)
@@ -169,6 +171,7 @@ export function PullToRefresh({ children }: { children: React.ReactNode }) {
       }
 
       busy = true
+      setRefreshing(true)
       block.style.transform = 'translateY(56px)'
       ring.style.transform = 'translateY(8px) scale(1)'
       ring.classList.add('app__ptr--spin')
@@ -178,6 +181,7 @@ export function PullToRefresh({ children }: { children: React.ReactNode }) {
         ring.classList.remove('app__ptr--spin', 'app__ptr--armed')
         rest()
         block.classList.remove('app__pull--pulling')
+        setRefreshing(false)
         showToast(APP_STRINGS.ui.refreshed(clockLabel(new Date())))
         busy = false
       }, SPIN_MS)
@@ -224,6 +228,13 @@ export function PullToRefresh({ children }: { children: React.ReactNode }) {
           <circle ref={arc} cx="12" cy="12" r="9" />
         </svg>
       </div>
+
+      {/* The ring is decoration and says so (`aria-hidden`), so the wait itself
+          has to be said somewhere. This is that somewhere: "Osvježavam" while
+          the ring spins, then the toast's "Osvježeno · 21:05" when it lands. */}
+      <p className="app__sr-only" role="status" aria-live="polite">
+        {refreshing ? APP_STRINGS.ui.refreshing : ''}
+      </p>
 
       <div className="app__pull" ref={pull}>
         {children}
