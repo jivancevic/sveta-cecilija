@@ -123,6 +123,23 @@ describe('unlockedScreens', () => {
     ])
   })
 
+  it('keeps Upiti to the blagajna, whatever else an account holds', () => {
+    // The page gate is this table (`openScreen('inquiries')` asks it), so the
+    // refusal of the enquiry inbox for every non-`tickets` account is asserted
+    // here rather than in a rendered page.
+    const others: [ReturnType<typeof user>, ReturnType<typeof ctx>][] = [
+      [user('door'), ctx()],
+      [user('partner'), ctx({ hasPartner: true })],
+      [user('moreskant'), ctx({ hasMember: true })],
+      [user('moreska'), ctx()],
+      [user('season_stats', 'finance', 'refunds', 'dev'), ctx()],
+    ]
+    for (const [who, where] of others) {
+      expect(keys(unlockedScreens(who, where))).not.toContain('inquiries')
+    }
+    expect(keys(unlockedScreens(user('tickets'), ctx()))).toContain('inquiries')
+  })
+
   it('never lets an unknown permission string unlock anything', () => {
     expect(unlockedScreens({ permissions: ['superadmin'] }, ctx({ hasMember: true }))).toEqual([])
   })

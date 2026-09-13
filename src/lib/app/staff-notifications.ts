@@ -24,9 +24,9 @@ import type { EnquiryType } from '@/lib/contact/enquiry-type'
  *
  * The Cecilija routes from the route map (#473), not a Backoffice link: the
  * Backoffice is behind `dev` since ADR-0027, so a `tickets` holder could not
- * open one. Upiti is #504 and Narudžbe is #501; until those land the row still
- * carries the whole fact in its title and body, which is what a person standing
- * at a desk actually reads.
+ * open one. Both screens are live now (Narudžbe #501, Upiti #507), so an inbox
+ * row lands on the thing it is about; the row still carries the whole fact in
+ * its title and body, which is what a person standing at a desk reads first.
  */
 const INQUIRY_URL = '/app/inquiries'
 const DISPUTE_URL = '/app/orders'
