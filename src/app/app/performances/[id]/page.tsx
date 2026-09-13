@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import { can } from '@/lib/access/permissions'
 import { getPerformanceDetail } from '@/lib/app/detail-data'
 import { loadPerformanceSales } from '@/lib/app/sales-data'
-import { performanceNumbers, salesBadges } from '@/lib/app/sales-view'
+import { performanceNumbers, salesBadges, showsRosterHalf } from '@/lib/app/sales-view'
 import {
   compUnavailableReason,
   formatConfirmedAt,
@@ -359,8 +359,8 @@ export default async function PerformanceDetailPage({
   // Whether the roster half belongs on this screen at all. A blagajna account
   // that neither leads nor dances would otherwise read three segments about a
   // postava it has no part in, two of them empty (#476: one screen, content by
-  // `can()`).
-  const roster = voditelj || me != null
+  // `can()`). The list applies the same rule to decide which evenings it shows.
+  const roster = showsRosterHalf(voditelj, me != null)
   const segment: DetailSegment = parseSegment(typeof dio === 'string' ? dio : undefined)
   const place = performancePlace(p)
   // A public evening is named by its kind; a booking is named by who booked it,
@@ -519,9 +519,14 @@ export default async function PerformanceDetailPage({
               {/* Uredi and Otkaži, for a booking only (#503). A public evening
                   gets the sentence instead of the controls: moving or
                   cancelling one reaches ticket holders, and that is the
-                  blagajna's action (#497), not a harder version of this one. */}
+                  blagajna's action (#497), not a harder version of this one.
+                  Unless the reader IS the blagajna (#502), in which case the
+                  controls are in the Prodaja card above and the sentence would
+                  point them at themselves. */}
               {p.isPublic ? (
-                <p className="app__lead-note">{APP_STRINGS.performance.publicRow}</p>
+                blagajna ? null : (
+                  <p className="app__lead-note">{APP_STRINGS.performance.publicRow}</p>
+                )
               ) : (
                 <PerformanceEditor
                   performanceId={p.id}

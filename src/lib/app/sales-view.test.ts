@@ -7,6 +7,7 @@ import {
   salesRowView,
   seatsSold,
   seatsRemaining,
+  showsRosterHalf,
   type PerformanceSales,
 } from './sales-view'
 
@@ -107,6 +108,26 @@ describe('the detail numbers', () => {
     // 176.000 c of orders + 66.000 c of the offline ledger = 2420,00 €, in the
     // same spelling Narudžbe uses (`formatEur`).
     expect(money?.value).toBe('2420,00 €')
+  })
+})
+
+describe('which halves of the screen a viewer gets', () => {
+  it('gives the roster half to a voditelj who does not dance', () => {
+    expect(showsRosterHalf(true, false)).toBe(true)
+  })
+
+  it('gives it to a dancer', () => {
+    expect(showsRosterHalf(false, true)).toBe(true)
+  })
+
+  it('gives it to a secretary who also dances: both halves, same rows', () => {
+    expect(showsRosterHalf(false, true)).toBe(true)
+  })
+
+  it('withholds it from a blagajna account that neither leads nor dances', () => {
+    // Which is also what keeps a ship call, with no numbers on it, off a sales
+    // list (ADR-0024).
+    expect(showsRosterHalf(false, false)).toBe(false)
   })
 })
 

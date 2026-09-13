@@ -1296,6 +1296,11 @@ export const APP_STRINGS = {
     /** A non-public evening sells nothing, so there is nothing to show. */
     notPublic: 'Ova izvedba ne prodaje ulaznice, pa nema brojki o prodaji.',
     ordersLink: 'Narudžbe za ovu izvedbu',
+    /**
+     * The hero's way into the evening, for a reader who is only the blagajna.
+     * "Tko dolazi, postava, ulaznice" names three segments they do not get.
+     */
+    detailLink: 'Prodaja i radnje',
   },
 
   /**

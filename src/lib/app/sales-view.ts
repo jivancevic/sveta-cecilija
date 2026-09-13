@@ -65,6 +65,25 @@ export interface PerformanceSales {
   rescheduled: boolean
 }
 
+/**
+ * Whether the ROSTER half of Izvedbe belongs on this viewer's screen.
+ *
+ * One screen, content by `can()` (#476), and this is the line between the two
+ * halves. It is not "do they hold `tickets`" but "are they on the roster at
+ * all": a secretary who also dances reads both halves on the same rows, and a
+ * blagajna account that neither leads nor dances would otherwise get a booking
+ * with no numbers on it in the list and three segments about a postava it has
+ * no part in on the page.
+ *
+ * The same answer also decides which performances are listed: the roster reads
+ * EVERY evening of the season, public or not (ADR-0024), because a ship call is
+ * an evening a dancer has to turn up for; the blagajna's schedule is the
+ * ticketed one, because a booking sells nothing.
+ */
+export function showsRosterHalf(voditelj: boolean, hasMember: boolean): boolean {
+  return voditelj || hasMember
+}
+
 /** A performance with nothing sold yet: the shape every loader starts from. */
 export function emptySales(showId: string, venue: Venue): PerformanceSales {
   return {

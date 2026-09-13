@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { can } from '@/lib/access/permissions'
 import { getSeasonPerformances } from '@/lib/app/roster-data'
 import { loadSeasonSales } from '@/lib/app/sales-data'
-import { salesRowView, type PerformanceSales } from '@/lib/app/sales-view'
+import { salesRowView, showsRosterHalf, type PerformanceSales } from '@/lib/app/sales-view'
 import {
   countLabel,
   daysUntil,
@@ -154,10 +154,24 @@ export default async function PerformancesPage() {
   // One season-wide read, not one per row: the numbers are five aggregates and
   // the alternative is a round trip per evening on the page a secretary opens
   // twenty times a week.
-  const [season, sales] = await Promise.all([
+  const [loaded, sales] = await Promise.all([
     getSeasonPerformances({ memberId: me?.id ?? null, voditelj }),
     blagajna ? loadSeasonSales() : Promise.resolve(null),
   ])
+
+  // Who sees a BOOKING (ADR-0024). The roster reads every evening of the
+  // season, public or not, because a ship call is an evening a dancer has to
+  // turn up for; the blagajna's schedule is the ticketed one, because a booking
+  // sells nothing and a row with no numbers on a sales screen is noise. So a
+  // viewer who is neither a voditelj nor a dancer gets the public rows only.
+  const roster = showsRosterHalf(voditelj, me != null)
+  const season = roster
+    ? loaded
+    : {
+        ...loaded,
+        upcoming: loaded.upcoming.filter((p) => p.isPublic),
+        past: loaded.past.filter((p) => p.isPublic),
+      }
 
   const next = pickNextPerformance(season.upcoming)
   const months = groupByMonth(season.upcoming)
@@ -231,7 +245,7 @@ export default async function PerformancesPage() {
           )}
 
           <Link className="app__hero-link" href={`/app/performances/${next.id}`}>
-            {APP_STRINGS.home.detailLink}
+            {roster ? APP_STRINGS.home.detailLink : APP_STRINGS.sales.detailLink}
           </Link>
         </section>
       ) : (
