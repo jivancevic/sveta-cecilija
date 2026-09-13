@@ -4,7 +4,7 @@
 > the repo's *domain documentation*. This file tracks **registered domains, DNS, and
 > legacy org email addresses** — surfaced by issue #107 and tied to the #11 cutover.
 
-Last updated: 2026-07-16 (added §5 email-auth DNS). Owner: Josip (dev). Source trigger: legacy credentials folder
+Last updated: 2026-09-13 (`app` host turned on, #479). Owner: Josip (dev). Source trigger: legacy credentials folder
 (`cecilija-passes/`) found on Desktop, which revealed a second registrar ("Regica") nobody
 knew about, plus a set of deprecated `t-com.hr` email aliases.
 
@@ -27,13 +27,25 @@ knew about, plus a set of deprecated `t-com.hr` email aliases.
 |---|---|---|
 | `www` | yes | prod. Traefik strips the `www` (Coolify's per-app redirect setting, a 307). |
 | `dev` | yes | staging. Second Coolify app on the same box, tracks `main`. |
-| `app` | **no, parked by decision (2026-09-12, #479)** | nothing, see below |
+| `app` | yes, since 2026-09-13 (#479) | nothing of its own: a 301 to `https://moreska.eu/app`, path and query preserved, see below |
 
-**`app.moreska.eu` is deliberately not live.** The redirect code shipped (`src/lib/app-subdomain.ts`, wired into `next.config.ts` `redirects()`, PR #485) and sits inert on prod because the host does not resolve. Josip's call when the ticket came up: `moreska.eu/app` is enough, because staff reach the app through the rehearsal QR, the installed PWA icon and the invitation link, never by typing an address. A vanity host buys nothing technical, only a shorter string to print or say out loud.
+**`app.moreska.eu` is a redirect host and nothing else.** The redirect code shipped in PR #485 (`src/lib/app-subdomain.ts`, wired into `next.config.ts` `redirects()`) and was inert until 2026-09-13, when Josip un-parked #479 (parked 2026-09-12 because `moreska.eu/app` is enough for staff, who arrive by QR, installed icon or invitation link). The short host exists for a poster or a spoken instruction, where the slash is friction.
 
-Turning it on is two clicks whenever a poster wants the short name: add the `app` `A` record here, then append `https://app.moreska.eu` to the prod Coolify app's Domains field. DNS first, or Let's Encrypt cannot answer the HTTP-01 challenge. Every path then 301s to `https://moreska.eu/app`.
+How it was turned on, both steps through APIs and repeatable from a script (the one that ran is in the #479 resolution comment):
 
-**If you do turn it on, keep the redirect in code.** Coolify regenerates an app's Traefik labels whenever the domain list changes, so a hand-written `redirectregex` middleware disappears silently on the next domain edit. Config `redirects()` also runs *before* `src/proxy.ts`, which is what keeps the locale cookie off the vanity host.
+1. **DNS:** `A` rrset `app` → `178.105.206.9`, TTL 300, in the `moreska.eu` zone through the Hetzner **Cloud** DNS API (`api.hetzner.cloud/v1/zones/{id}/rrsets`; the zone moved into the Cloud project, so a Cloud token with write scope edits it). DNS first, or Let's Encrypt cannot answer the HTTP-01 challenge.
+2. **Coolify:** `PATCH /api/v1/applications/zek88q652dijih0ywodgffux` with `domains` = `https://moreska.eu,https://www.moreska.eu,https://app.moreska.eu`, then one redeploy so Traefik regenerated its labels (`http-2`/`https-2` routers for the new host) and requested the certificate. The Coolify UI sits behind Cloudflare Access, so an API call needs the `CF-Access-Client-Id` / `CF-Access-Client-Secret` service-token headers as well as the bearer token.
+3. **Verify** (a fresh laptop resolver may cache the old NXDOMAIN for a while; `--resolve app.moreska.eu:443:178.105.206.9` sidesteps it):
+
+```sh
+curl -I https://app.moreska.eu/               # 301 -> https://moreska.eu/app
+curl -I https://app.moreska.eu/app/scan?x=1   # 301 -> https://moreska.eu/app/scan?x=1
+curl -I https://moreska.eu/tickets            # 200, unchanged
+```
+
+Certificate: Let's Encrypt, `CN=app.moreska.eu`, renewed by Traefik. The redirect response carries no `Set-Cookie`, so the locale cookie never lands on the vanity host.
+
+**Keep the redirect in code.** Coolify regenerates an app's Traefik labels whenever the domain list changes, so a hand-written `redirectregex` middleware disappears silently on the next domain edit. Config `redirects()` also runs *before* `src/proxy.ts`, which is what keeps the locale cookie off the vanity host.
 
 ### Regica — UNKNOWN, needs human login (issue #107, Task 1)
 
