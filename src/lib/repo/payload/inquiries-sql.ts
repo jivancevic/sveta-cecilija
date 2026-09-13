@@ -74,7 +74,7 @@ export function inquiryCountSql(state: InquiryState | null): Statement {
 
 /** The one number the landing strip and the tab badge would show (#496, #507). */
 export function inquiryNewCountSql(): Statement {
-  return inquiryCountSql(UNANSWERED) as Statement
+  return inquiryCountSql(UNANSWERED)
 }
 
 /** One row of `contact_submissions`, as `pg` hands it back. */
