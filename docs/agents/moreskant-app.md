@@ -1074,6 +1074,16 @@ the list and the detail read it.
 partner seats into `onlineSold`, and the split this screen is asked for names
 partner separately. Every query carries `publicPerformanceSql()`.
 
+**Both loaders moved behind the seam with this ticket.** `roster-data.ts` and
+`detail-data.ts` were the two entries in `repo-guard.test.ts`'s allow-list that
+named #502, and they are gone: the Payload calls are now
+`src/lib/repo/payload/roster.ts` and the two `*-data.ts` modules are one line
+each. Nothing about the queries changed in the move, and the rules never left
+`roster-loaders.ts` / `detail-loaders.ts`, which still unit-test without a
+database. `RosterRepo` is separate from `ShowsRepo` on purpose: the roster reads
+EVERY performance of the season, public or not, while the buyer's schedule
+applies the public predicate — two different questions.
+
 **Revenue is gated on the DATA, not on a class.** `performanceNumbers(sales,
 canFinance)` simply does not put the money in the list for a viewer without
 `finance`, so no template can leak it by forgetting a condition.
