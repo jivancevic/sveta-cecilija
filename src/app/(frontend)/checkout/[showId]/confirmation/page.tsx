@@ -9,6 +9,7 @@ import Footer from '@/components/Footer'
 import PurchaseEvent from '@/components/PurchaseEvent'
 import MetaPixelPurchase from '@/components/MetaPixelPurchase'
 import HelpBlock from '@/components/HelpBlock'
+import EveningBlock from '@/components/EveningBlock'
 import { signTicketLink } from '@/lib/ticket-link'
 
 export const dynamic = 'force-dynamic'
@@ -87,6 +88,12 @@ export default async function ConfirmationRoute({ params, searchParams }: RouteP
             </a>
           </div>
         )}
+        <section className="checkout-confirm__evening">
+          <EveningBlock t={dict.evening} variant="line" />
+          {buyerEmail && (
+            <p className="checkout-confirm__eveningMore">{dict.checkoutPage.eveningMoreInEmail}</p>
+          )}
+        </section>
         <HelpBlock t={dict.help} showOrderHint />
         <Link href="/tickets" className="checkout-page__back">{dict.checkoutPage.pageBack}</Link>
       </main>

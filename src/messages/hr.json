@@ -189,8 +189,6 @@
     "venuePrimary": "Ljetno kino, Korčula",
     "venuePrimaryMapUrl": "https://maps.app.goo.gl/bVYpoQAHw6sixyYk9",
     "venueViewMap": "Otvori na karti →",
-    "venueDetailsLabel": "Svaka izvedba",
-    "venueDetails": "1 sat · nastup klape · moreška uz puhaći orkestar",
     "rainPlanLabel": "Ako pada kiša",
     "rainPlanIntro": "Izvedbe se sele u",
     "rainPlanVenue": "Centar za kulturu, Korčula",
@@ -440,7 +438,8 @@
     "orderRefLabel": "Broj narudžbe",
     "ticketCountLabel": "Ulaznice",
     "ticketsAlsoSentTo": "Ulaznice šaljemo i na {email}. Ako ne stignu unutar 5 minuta, provjerite spam ili koristite gumb ispod.",
-    "downloadTicketsPdf": "Preuzmi ulaznice (PDF)"
+    "downloadTicketsPdf": "Preuzmi ulaznice (PDF)",
+    "eveningMoreInEmail": "Sve ostalo što trebate znati o toj večeri nalazi se u tom emailu."
   },
   "blogPage": {
     "heroHeadline": "Priče s Korčule",
@@ -478,5 +477,11 @@
     "body": "Pišite nam na {email}, odgovaramo u roku od 24 sata.",
     "orderHint": "Molimo navedite broj narudžbe kako bismo je odmah pronašli.",
     "email": "info@moreska.eu"
+  },
+  "evening": {
+    "label": "Što vas čeka",
+    "runtime": "Izvedba traje otprilike sat vremena.",
+    "parts": "Večer otvara klapa, a zatim se moreška pleše uz puhaći orkestar, uz govorni uvod u priču na nekoliko jezika prije same borbe.",
+    "seating": "Mjesta nisu numerirana i sjeda se redom dolaska, pa ranijim dolaskom birate bolje mjesto."
   }
 }

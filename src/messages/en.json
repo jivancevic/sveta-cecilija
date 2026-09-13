@@ -215,8 +215,6 @@
     "venuePrimary": "Summer Cinema, Korčula",
     "venuePrimaryMapUrl": "https://maps.app.goo.gl/bVYpoQAHw6sixyYk9",
     "venueViewMap": "View on map →",
-    "venueDetailsLabel": "Each performance",
-    "venueDetails": "1 hour · Klapa performance · Moreška with live wind orchestra",
     "rainPlanLabel": "If it rains",
     "rainPlanIntro": "Performances move indoors to",
     "rainPlanVenue": "Cultural Center Korčula",
@@ -440,7 +438,8 @@
     "orderRefLabel": "Order reference",
     "ticketCountLabel": "Tickets",
     "ticketsAlsoSentTo": "Tickets are also being sent to {email}. If they don't arrive in 5 minutes, check spam, or use the button below.",
-    "downloadTicketsPdf": "Download tickets (PDF)"
+    "downloadTicketsPdf": "Download tickets (PDF)",
+    "eveningMoreInEmail": "Everything else you need for the evening is in that email."
   },
   "blogPage": {
     "heroHeadline": "Stories from Korčula",
@@ -478,5 +477,11 @@
     "body": "Write to {email} and we reply within 24 hours.",
     "orderHint": "Please include your order number so we can find it straight away.",
     "email": "info@moreska.eu"
+  },
+  "evening": {
+    "label": "What to expect",
+    "runtime": "The performance runs about an hour.",
+    "parts": "The klapa opens the evening, and the Moreška is then danced to the live wind orchestra, the story spoken in several languages before the combat.",
+    "seating": "Seating is first come, first served, so arriving early means a better seat."
   }
 }
