@@ -6765,13 +6765,25 @@ a.app__statrow-main:focus-visible {
   color: var(--muted);
 }
 
+/* The screen's own column, and the reason it has a minimum height: a `sticky`
+   bar is only pushed UP when its place in the flow is below the fold, and on a
+   short evening (six dancers, no places to fill) that place is halfway up the
+   screen, where the bar would lie across the columns. The column reaches at
+   least to the bottom of the viewport and `margin-top: auto` puts the bar at
+   the end of it, so the bar has nothing to be pulled up over. */
+.app__stanje {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100dvh - var(--tabH) - 190px);
+}
+
 /* The voditelj's bar: sticky, so it takes its own room in the flow and clears
    the tab bar, exactly as the answer bar on the old detail does (#562). */
 .app__stanje-actions {
+  margin-top: auto;
   position: sticky;
   bottom: calc(var(--tabH) + env(safe-area-inset-bottom, 0px) + 22px);
   z-index: 15;
-  margin-top: 18px;
   padding: 12px;
   border-radius: var(--rCard);
   background: var(--barBg);

@@ -148,7 +148,7 @@ export function Stanje({
   const tap = voditelj ? setPerson : null
 
   return (
-    <>
+    <div className="app__stanje">
       <ArmyBar
         crni={view.armies.crni}
         bili={view.armies.bili}
@@ -287,7 +287,7 @@ export function Stanje({
           }
         />
       )}
-    </>
+    </div>
   )
 }
 
