@@ -10,6 +10,7 @@
 // "moreškant" and never a "moreškar", the event noun is "izvedba" (never
 // "nastup" or "predstava"), and no em-dashes in anything a person reads.
 
+import type { Permission } from '@/lib/access/permissions'
 import type { EnquiryType } from '@/lib/contact/enquiry-type'
 import type { PerformanceKind } from '@/lib/show-performance'
 import type { DanceRole } from '@/lib/moreskant-profile'
@@ -1428,6 +1429,170 @@ export const APP_STRINGS = {
       'moreska-experience': 'Moreška iskustvo',
       other: 'Vaš upit',
     } as Record<EnquiryType, string>,
+  },
+
+  /**
+   * Korisnici (#510): the accounts and what each of them may do.
+   *
+   * `permissionLabels` and `permissionHints` are keyed by the `Permission` type
+   * with `satisfies`, not with `as`: a twelfth word added to the vocabulary in
+   * `src/lib/access/permissions.ts` then fails `tsc` here until somebody writes
+   * the Croatian for it, which is the only way a new permission cannot ship as
+   * an unlabelled checkbox.
+   *
+   * The copy is careful about one thing throughout: this screen hands out a
+   * live password or a live sign-in link, so every sentence that carries one
+   * says out loud that it is shown once and where it must not be left.
+   */
+  users: {
+    /** The search box over the list; one field over three columns. */
+    searchLabel: 'Traži po korisničkom imenu, imenu ili e-mailu',
+    searchPlaceholder: 'Traži',
+    clear: 'Svi računi',
+    /** "1 račun", "7 računa": Croatian only splits at one for this noun. */
+    found: (n: number) => (n === 1 ? '1 račun' : `${n} računa`),
+    empty: 'Nema računa koji odgovaraju pretrazi.',
+    /** The one thing a Users row may not have and a person always does. */
+    noEmail: 'bez e-pošte',
+    noPermissions: 'bez dozvola',
+    sharedBadge: 'Zajednički',
+    selfBadge: 'Ti',
+    partnerLabel: 'Partner',
+    memberLabel: 'Član',
+    back: 'Natrag na korisnike',
+    missing: 'Taj račun ne postoji.',
+
+    permissionLabels: {
+      users: 'Korisnici',
+      tickets: 'Blagajna',
+      refunds: 'Povrati',
+      door: 'Vrata',
+      partner: 'Partner',
+      season_stats: 'Sezonski pregled',
+      moreska: 'Voditelj',
+      moreskant: 'Moreškant',
+      finance: 'Financije',
+      editor: 'Sadržaj',
+      dev: 'Razvoj',
+    } satisfies Record<Permission, string>,
+
+    permissionHints: {
+      users: 'Otvara i uređuje račune i njihove dozvole.',
+      tickets: 'Narudžbe, izvedbe, gratis, upiti i partneri.',
+      refunds: 'Vraćanje novca na narudžbi.',
+      door: 'Skener na ulazu.',
+      partner: 'Partnerska prodaja, samo za vlastitog partnera.',
+      season_stats: 'Samo brojke sezone, bez kupaca.',
+      moreska: 'Postava, članovi i pozivnice.',
+      moreskant: 'Vlastiti dolasci i ljestvica. Traži vezu na člana.',
+      finance: 'Prihodi i obračuni, bez kupaca.',
+      editor: 'Objave i česta pitanja.',
+      dev: 'Razvojna dijagnostika i Backoffice.',
+    } satisfies Record<Permission, string>,
+
+    /** The named actions, all of them on the detail except the first. */
+    actions: {
+      create: 'Novi korisnik',
+      permissions: 'Dozvole',
+      resetPassword: 'Resetiraj lozinku',
+      linkPartner: 'Poveži partnera',
+      linkMember: 'Poveži člana',
+      shared: 'Dijeljeni račun',
+      confirm: 'Potvrdi',
+      cancel: 'Odustani',
+      working: 'Spremam...',
+      copy: 'Kopiraj',
+      copied: 'Kopirano.',
+    },
+
+    /** Deleting an account is Backoffice work and stays there (#476). */
+    deleteNote:
+      'Brisanje računa radi se u Backofficeu. Ovdje se račun gasi tako da mu se oduzmu sve dozvole.',
+
+    permissions: {
+      title: 'Dozvole',
+      body: 'Označi što ovaj račun smije. Spremanje mijenja pristup odmah, na svim uređajima.',
+      saved: 'Dozvole su spremljene.',
+      unchanged: 'Ništa nije promijenjeno.',
+      failed: 'Spremanje dozvola nije uspjelo. Pokušaj ponovno.',
+      /** The lockout guard: the only refusal aimed at the reader themselves. */
+      selfLockout:
+        'Ne možeš sebi oduzeti dozvolu Korisnici. Neka to napravi drugi korisnik s tom dozvolom.',
+      emailRequired:
+        'Za taj skup dozvola račun mora imati e-mail. Upiši adresu u Backofficeu pa probaj ponovno.',
+      invalid: 'Nepoznata dozvola.',
+    },
+
+    create: {
+      title: 'Novi korisnik',
+      body: 'Korisničko ime je obavezno. E-mail traže dozvole imenovane osobe (Korisnici, Blagajna, Voditelj, Financije, Sadržaj).',
+      username: 'Korisničko ime',
+      usernameHint: 'Mala slova, brojke, točka, crtica. Bez razmaka.',
+      name: 'Ime i prezime',
+      email: 'E-mail',
+      sharedLabel: 'Zajednički račun (koristi ga više osoba)',
+      submit: 'Otvori račun',
+      created: (username: string) => `Račun ${username} je otvoren.`,
+      failed: 'Otvaranje računa nije uspjelo. Pokušaj ponovno.',
+      missingUsername: 'Upiši korisničko ime.',
+      badUsername: 'Korisničko ime smije imati samo mala slova, brojke, točku i crticu.',
+      badEmail: 'E-mail nije ispravan.',
+      usernameTaken: 'To korisničko ime je zauzeto.',
+      emailTaken: 'Taj e-mail već ima račun.',
+    },
+
+    /** The two branches of "how does this person get in the first time". */
+    handover: {
+      passwordTitle: 'Privremena lozinka',
+      passwordBody:
+        'Ova lozinka piše samo ovdje i samo sada. Prepiši je osobi koja će se prijaviti i zatvori ovaj prozor.',
+      linkTitle: 'Poveznica za prijavu',
+      linkBody: 'Poveznica vrijedi jedan sat i prijavljuje onoga tko je otvori. Pošalji je osobi kojoj račun pripada i nikome drugome.',
+      done: 'Gotovo',
+    },
+
+    reset: {
+      title: 'Resetiraj lozinku',
+      bodyEmail: 'Račun ima e-mail, pa dobiva poveznicu za prijavu koju mu proslijediš.',
+      bodyNoEmail:
+        'Račun nema e-mail, pa dobiva novu privremenu lozinku. Stara prestaje vrijediti odmah.',
+      failed: 'Reset lozinke nije uspio. Pokušaj ponovno.',
+    },
+
+    link: {
+      partnerTitle: 'Poveži partnera',
+      partnerBody: 'Partnerska prijava prodaje samo za partnera na koji je vezana.',
+      partnerNone: 'Bez partnera',
+      partnerEmpty: 'Nema aktivnih partnera.',
+      memberTitle: 'Poveži člana',
+      memberBody:
+        'Na popisu su aktivni moreškanti koji još nemaju prijavu. Dozvolu Moreškant dodaj zasebno, u Dozvolama.',
+      memberNone: 'Bez člana',
+      memberEmpty: 'Svi aktivni moreškanti već imaju prijavu.',
+      unlinkPartner: 'Odveži partnera',
+      unlinkMember: 'Odveži člana',
+      saved: 'Veza je spremljena.',
+      failed: 'Povezivanje nije uspjelo. Pokušaj ponovno.',
+      missingTarget: 'Odaberi s popisa.',
+      unknownPartner: 'Taj partner ne postoji.',
+    },
+
+    shared: {
+      title: 'Dijeljeni račun',
+      on: 'Označi kao zajednički',
+      off: 'Označi kao osobni',
+      bodyOn:
+        'Zajednički račun koristi više osoba, pa ne može sam sebi mijenjati zapis ni lozinku.',
+      bodyOff: 'Osobni račun pripada jednoj osobi i sam si mijenja lozinku.',
+      saved: 'Spremljeno.',
+      failed: 'Spremanje nije uspjelo. Pokušaj ponovno.',
+      /** A holder marking their own login shared would lock themselves out of it. */
+      notSelf: 'Oznaku zajedničkog računa na vlastitoj prijavi mijenja drugi korisnik.',
+    },
+
+    /** Every route on this screen refuses the same two things the same way. */
+    rejected: 'Promjena trenutno nije moguća. Pokušaj ponovno iz aplikacije.',
+    sharedSelf: 'Ovu prijavu koristi više osoba, pa ne može uređivati vlastiti zapis.',
   },
 
   /**
