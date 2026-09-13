@@ -11,6 +11,21 @@ import { payloadClient, type PayloadClient } from './client'
 
 const DEFAULT_COMMISSION_PERCENT = 10
 
+/** Seven resellers today; this is a wall, not a page size. */
+const MAX_PARTNERS = 500
+
+type PartnerRow = { id: unknown; name?: unknown; active?: unknown; commissionPercent?: unknown }
+
+function toPartnerRecord(doc: PartnerRow): PartnerRecord {
+  const commission = Number(doc.commissionPercent)
+  return {
+    id: String(doc.id),
+    name: (doc.name as string) ?? `Partner ${String(doc.id)}`,
+    active: doc.active !== false,
+    commissionPercent: Number.isFinite(commission) ? commission : DEFAULT_COMMISSION_PERCENT,
+  }
+}
+
 export function createPartnersRepo(
   load: () => Promise<PayloadClient> = payloadClient,
 ): PartnersRepo {
@@ -20,20 +35,27 @@ export function createPartnersRepo(
       try {
         const doc = await payload.findByID({ collection: 'partners', id, depth: 0 })
         if (!doc) return null
-        const commission = Number(doc.commissionPercent)
-        return {
-          id: String(doc.id),
-          name: (doc.name as string) ?? `Partner ${String(doc.id)}`,
-          active: doc.active !== false,
-          commissionPercent: Number.isFinite(commission)
-            ? commission
-            : DEFAULT_COMMISSION_PERCENT,
-        } satisfies PartnerRecord
+        return toPartnerRecord(doc as unknown as PartnerRow) satisfies PartnerRecord
       } catch {
         // A dangling link (the Partners row was deleted) is not an error page:
         // it is "this login owns nothing", which the screen states in a sentence.
         return null
       }
+    },
+
+    async listActive() {
+      const payload = await load()
+      const res = await payload.find({
+        collection: 'partners',
+        // `active` defaults to true, so a row written before the column existed
+        // has a null there and is still a partner (the same reading as above).
+        where: { active: { not_equals: false } },
+        sort: 'name',
+        limit: MAX_PARTNERS,
+        depth: 0,
+        overrideAccess: true,
+      })
+      return res.docs.map((doc) => toPartnerRecord(doc as unknown as PartnerRow))
     },
   }
 }

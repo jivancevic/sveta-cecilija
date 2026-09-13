@@ -20,6 +20,17 @@ export interface PartnersRepo {
    * ownership is fail-safe (`src/lib/access/partner.ts`).
    */
   byId(id: string | number): Promise<PartnerRecord | null>
+
+  /**
+   * Every live partner, by name, for the "Poveži partnera" picker on Korisnici
+   * (#510).
+   *
+   * Active only: a retired reseller must not be offered a new login, and the
+   * ones already pointed at it keep working until somebody unlinks them. Still
+   * no write here — a reseller may never edit its own commission, so Partners
+   * CRUD stays in the Backoffice (ADR-0027, #476).
+   */
+  listActive(): Promise<PartnerRecord[]>
 }
 
 export type { PartnerRecord }

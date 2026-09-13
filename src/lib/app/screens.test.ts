@@ -72,6 +72,7 @@ describe('the screen table', () => {
       'statement',
       'inquiries',
       'comp',
+      'users',
       'stats',
     ])
   })
@@ -188,12 +189,18 @@ describe('appNav', () => {
   })
 
   it('has no tabs and no landing screen for an account that unlocks nothing', () => {
-    // `users` is the widest set that still unlocks nothing built: Korisnici
-    // (#510) is an empty column, and `refunds` unlocks no screen by design (a
-    // refund is an action inside an order).
-    const nav = appNav(user('users', 'refunds'), ctx())
+    // `refunds` unlocks no screen by design (a refund is an action inside an
+    // order) and `dev` unlocks the diagnostics strip rather than a screen, so
+    // holding both is a signed-in account with nowhere to be.
+    const nav = appNav(user('refunds', 'dev'), ctx())
     expect(nav.tabs).toEqual([])
     expect(nav.landing).toBeNull()
+  })
+
+  it('lands a `users` holder on Korisnici, which #510 built', () => {
+    const nav = appNav(user('users', 'refunds'), ctx())
+    expect(nav.tabs.map((t) => t.key)).toEqual(['users', 'more'])
+    expect(nav.landing).toBe('/app/users')
   })
 
   it('lands the shared member login on Statistika, its only screen', () => {
