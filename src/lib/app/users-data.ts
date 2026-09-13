@@ -9,8 +9,13 @@
 // first write-heavy screen for which that is true.
 //
 // The five dep factories exist so the five routes are four lines each. Every
-// one of them carries the caller in a `WriteCtx`, so the Users hooks attribute
-// the change to whoever pressed the button.
+// one of them carries the caller twice over, for two different reasons: as a
+// `UsersCaller`, which the pure rules read (the self-lockout, the shared
+// refusal), and inside a `WriteCtx`, which the seam hands to Payload's local
+// API as `req.user`. No Users hook reads that today — the collection's only
+// write hook is the e-mail policy, which judges the document — so the second is
+// there so a change made from a phone is attributable the way a Backoffice one
+// is, and so a hook that wants the actor later finds it already flowing.
 
 import { getRepo } from '@/lib/repo'
 import type { WriteCtx } from '@/lib/repo/auth'
@@ -88,10 +93,15 @@ export function createSetSharedDeps(
   }
 }
 
-export function createCreateUserDeps(request: AppRequestMeta, ctx: WriteCtx): CreateUserDeps {
+export function createCreateUserDeps(
+  request: AppRequestMeta,
+  caller: UsersCaller,
+  ctx: WriteCtx,
+): CreateUserDeps {
   const users = getRepo().users
   return {
     request,
+    caller,
     baseUrl: baseUrl(),
     usernameTaken: (username) => users.usernameTaken(username),
     emailTaken: (email) => users.emailTaken(email),
@@ -131,7 +141,14 @@ export function createLinkUserDeps(
     loadUser: (id) => repo.users.byId(id),
     loadMember: (memberId) => repo.users.memberById(memberId),
     userIdsByMember: (memberId) => repo.users.userIdsByMember(memberId),
-    partnerExists: async (partnerId) => (await repo.partners.byId(partnerId)) !== null,
+    // Exists AND is still active: the picker offers active rows only, so this
+    // is the rule that makes a stale tab refuse rather than bind a POS login to
+    // a reseller that can no longer sell.
+    partnerLinkable: async (partnerId) => {
+      const partner = await repo.partners.byId(partnerId)
+      if (!partner) return 'missing'
+      return partner.active ? 'ok' : 'inactive'
+    },
     linkMember: (userId, memberId) => repo.users.linkMember(userId, memberId, ctx),
     linkPartner: (userId, partnerId) => repo.users.linkPartner(userId, partnerId, ctx),
   }

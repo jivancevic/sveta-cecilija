@@ -1666,6 +1666,9 @@ export const APP_STRINGS = {
       emailRequired:
         'Za taj skup dozvola račun mora imati e-mail. Upiši adresu u Backofficeu pa probaj ponovno.',
       invalid: 'Nepoznata dozvola.',
+      /** The other half of the rule above: nobody grants `users` to a shared login. */
+      sharedUsers:
+        'Zajednički račun ne može imati dozvolu Korisnici. Prvo makni oznaku zajedničkog računa.',
     },
 
     create: {
@@ -1691,6 +1694,9 @@ export const APP_STRINGS = {
       passwordTitle: 'Privremena lozinka',
       passwordBody:
         'Ova lozinka piše samo ovdje i samo sada. Prepiši je osobi koja će se prijaviti i zatvori ovaj prozor.',
+      /** A create that could not mint a link: the ACCOUNT is there, only the link is not. */
+      noneTitle: 'Račun je otvoren',
+      noneBody: 'Poveznicu za prijavu nismo uspjeli napraviti. Pošalji je preko Resetiraj lozinku na tom računu.',
       linkTitle: 'Poveznica za prijavu',
       linkBody: 'Poveznica vrijedi jedan sat i prijavljuje onoga tko je otvori. Pošalji je osobi kojoj račun pripada i nikome drugome.',
       done: 'Gotovo',
@@ -1720,6 +1726,7 @@ export const APP_STRINGS = {
       failed: 'Povezivanje nije uspjelo. Pokušaj ponovno.',
       missingTarget: 'Odaberi s popisa.',
       unknownPartner: 'Taj partner ne postoji.',
+      inactivePartner: 'Taj partner više nije aktivan, pa se prijava ne može vezati na njega.',
     },
 
     shared: {
@@ -1740,7 +1747,15 @@ export const APP_STRINGS = {
 
     /** Every route on this screen refuses the same two things the same way. */
     rejected: 'Promjena trenutno nije moguća. Pokušaj ponovno iz aplikacije.',
-    sharedSelf: 'Ovu prijavu koristi više osoba, pa ne može uređivati vlastiti zapis.',
+    /**
+     * ADR-0022, widened by the #510 review: a login several people hold may not
+     * administer accounts AT ALL, not merely its own record. The collection
+     * only denies it self-edit, and the shared `tehnika` password is written on
+     * a wall, so a shared account with `users` would be account administration
+     * anybody who works the door could reach.
+     */
+    sharedCaller:
+      'Ovu prijavu koristi više osoba, pa ne može uređivati korisničke račune. Prijavi se vlastitim računom.',
   },
 
   /**

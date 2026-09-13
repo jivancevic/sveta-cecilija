@@ -110,20 +110,37 @@ describe('PATCH /api/app/users/[id]/permissions', () => {
     expect(res.status).toBe(404)
   })
 
-  it('refuses a shared login editing its own record, as the collection does', async () => {
+  it('refuses a shared caller outright, not only on its own row (ADR-0022)', async () => {
     const save = vi.fn(async () => {})
+    const loadUser = vi.fn(async () => target())
     const res = await handleUpdatePermissions(
       '7',
       { permissions: ['door'] },
+      deps({ caller: { id: '1', shared: true }, loadUser, save }),
+    )
+
+    // The shared `tehnika` password is written on a wall: a login several
+    // people hold administers no account at all, its own included.
+    expect(res.status).toBe(403)
+    expect(res.body).toEqual({ error: S.sharedCaller })
+    expect(loadUser).not.toHaveBeenCalled()
+    expect(save).not.toHaveBeenCalled()
+  })
+
+  it('refuses leaving `users` on a shared account', async () => {
+    const save = vi.fn(async () => {})
+    const res = await handleUpdatePermissions(
+      '9',
+      { permissions: ['users'] },
       deps({
-        caller: { id: '7', shared: true },
-        loadUser: async () => target({ id: '7', shared: true, email: null, permissions: ['door'] }),
+        loadUser: async () =>
+          target({ id: '9', shared: true, email: 'sef@moreska.eu', permissions: ['door'] }),
         save,
       }),
     )
 
-    expect(res.status).toBe(403)
-    expect(res.body).toEqual({ error: S.sharedSelf })
+    expect(res.status).toBe(409)
+    expect(res.body).toEqual({ error: S.permissions.sharedUsers })
     expect(save).not.toHaveBeenCalled()
   })
 
@@ -222,6 +239,35 @@ describe('POST /api/app/users/[id]/shared', () => {
 
     expect(res.status).toBe(200)
     expect(setShared).toHaveBeenCalledWith('7', true)
+  })
+
+  it('refuses marking an account shared while it holds `users`', async () => {
+    const setShared = vi.fn(async () => {})
+    const res = await handleSetShared(
+      '7',
+      { shared: true },
+      {
+        ...deps({ loadUser: async () => target({ permissions: ['users'] }) }),
+        setShared,
+      },
+    )
+
+    // Otherwise the rule above has a back door: grant `users` first, flip the
+    // flag after.
+    expect(res.status).toBe(409)
+    expect(res.body).toEqual({ error: S.permissions.sharedUsers })
+    expect(setShared).not.toHaveBeenCalled()
+  })
+
+  it('refuses a shared caller here too', async () => {
+    const setShared = vi.fn(async () => {})
+    const res = await handleSetShared(
+      '7',
+      { shared: true },
+      { ...deps({ caller: { id: '1', shared: true } }), setShared },
+    )
+    expect(res.status).toBe(403)
+    expect(setShared).not.toHaveBeenCalled()
   })
 
   it('refuses the caller changing the flag on their own login', async () => {

@@ -20,9 +20,12 @@
 //     projection, so none of that can leave the seam by accident.
 //
 // The writes go through Payload's local API (phase A), so the collection's
-// `beforeValidate` e-mail policy and the admin-language hook keep running, and
-// `WriteCtx` carries the caller so an edit made from a phone is attributed the
-// way a Backoffice edit is.
+// `beforeValidate` e-mail policy keeps running — it is the only write hook
+// Users has, and it judges the resulting document rather than the actor.
+// `WriteCtx` is carried anyway, as `req.user`: nothing reads it here today, and
+// it is what makes an edit made from a phone attributable the way a Backoffice
+// edit is if a hook ever wants the actor. (The `afterLogin` admin-language hook
+// is not in this path at all: it fires on a login, not on a write.)
 
 import type { Permission } from '@/lib/access/permissions'
 import type { LinkSelfMember } from '@/lib/app/link-self'

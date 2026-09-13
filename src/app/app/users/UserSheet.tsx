@@ -90,11 +90,23 @@ function CopyRow({ value }: { value: string }) {
  * `none` is not a failure of the account — the row exists — so it names the
  * repair (press Resetiraj lozinku) instead of an error.
  */
-export function HandoverPanel({ handover, close }: { handover: Handover; close: () => void }) {
+export function HandoverPanel({
+  handover,
+  close,
+}: {
+  handover: Handover
+  close: () => void
+}) {
   if (handover.kind === 'none') {
+    // Only a create reaches this: a reset that cannot mint a token answers 500,
+    // because nothing has happened yet and 500 is the honest ending. Here the
+    // ACCOUNT exists, so the panel says so and names the repair rather than
+    // reading as "that failed", which would have the reader press Novi korisnik
+    // again into their own username.
     return (
       <div className="app__handover">
-        <p className="app__sheet-warn">{S.reset.failed}</p>
+        <p className="app__handover-title">{S.handover.noneTitle}</p>
+        <p className="app__handover-body">{S.handover.noneBody}</p>
         <button type="button" className="app__button app__button--link" onClick={close}>
           {S.handover.done}
         </button>

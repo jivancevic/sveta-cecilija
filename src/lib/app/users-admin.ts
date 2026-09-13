@@ -12,9 +12,15 @@
 //     CALLER and not about the permission: demoting another `users` holder is
 //     ordinary work, and a "there must always be one" rule would be a race
 //     between two tabs rather than a guarantee.
-//  2. **A shared login may not edit its own record** (ADR-0022). The collection
-//     says so in `userUpdateAccess`, and the local API runs `overrideAccess:
-//     true`, so this route says it again or it is not said at all.
+//  2. **A shared login may not administer accounts at all** (ADR-0022, widened
+//     by the #510 review). The collection only denies a shared account
+//     self-edit, and the local API runs `overrideAccess: true` so even that
+//     does not reach a route. The wider rule is the honest one: the shared
+//     `tehnika` password is written on a wall and handed to whoever works the
+//     gate that evening, so a shared login holding `users` would put account
+//     administration in the hands of everybody who has ever scanned a ticket.
+//     Hence both halves — a shared CALLER is refused on all five routes, and
+//     no write may leave `users` on a shared account.
 //  3. **A named person needs an e-mail** (`user-email-policy.ts`). The Users
 //     `beforeValidate` hook enforces it too and would answer a 400 of its own,
 //     but in English and about `permissions`; the reader gets a Croatian
@@ -63,15 +69,32 @@ export function fail(status: number, error: string): UsersResult {
 }
 
 /**
- * The cross-site guard, as the four write routes of this screen share it.
+ * The two things every route on this screen refuses before it reads anything:
+ * a cross-site or non-JSON request, and a shared caller.
  *
- * Returned rather than thrown so each handler keeps a single exit shape, and
- * the sentence is one for all of them: a reader who sees it has a browser
- * problem, not a permissions problem.
+ * Returned rather than thrown so each handler keeps a single exit shape. The
+ * shared check is here rather than per-route precisely because it must be on
+ * ALL of them: a rule that has to be remembered five times is a rule that is
+ * eventually applied four times.
  */
-export function rejectedRequest(request: AppRequestMeta): UsersResult | null {
+export function refuseCaller(
+  request: AppRequestMeta,
+  caller: UsersCaller,
+): UsersResult | null {
   const rejection = rejectAppRequest(request)
-  return rejection ? fail(rejection.status, S.rejected) : null
+  if (rejection) return fail(rejection.status, S.rejected)
+  if (caller.shared) return fail(403, S.sharedCaller)
+  return null
+}
+
+/**
+ * May this permission set sit on this account?
+ *
+ * One rule, checked by all three writers that can produce the pair: a `shared`
+ * login never holds `users` (see the note at the top of this file).
+ */
+export function sharedMayHold(shared: boolean, permissions: readonly Permission[]): boolean {
+  return !(shared && permissions.includes('users'))
 }
 
 /**
@@ -124,20 +147,25 @@ export async function handleUpdatePermissions(
   input: { permissions?: unknown } | null | undefined,
   deps: UpdatePermissionsDeps,
 ): Promise<UsersResult> {
-  const rejected = rejectedRequest(deps.request)
-  if (rejected) return rejected
+  const refused = refuseCaller(deps.request, deps.caller)
+  if (refused) return refused
 
   const target = await loadOr404(targetId, deps.loadUser)
   if ('missing' in target) return target.missing
 
   const self = target.user.id === deps.caller.id
-  if (self && deps.caller.shared) return fail(403, S.sharedSelf)
 
   const next = parsePermissionSet(input?.permissions)
   if (!next) return fail(400, S.permissions.invalid)
 
   // The lockout guard. Only the caller's own row, and only this one word.
   if (self && !next.includes('users')) return fail(409, S.permissions.selfLockout)
+
+  // The other half of the shared rule: no write may leave `users` on a login
+  // several people hold.
+  if (!sharedMayHold(target.user.shared, next)) {
+    return fail(409, S.permissions.sharedUsers)
+  }
 
   // The same rule the Users hook applies, said in Croatian and before the write
   // so the reader is told which repair to make rather than shown a 500.
@@ -183,14 +211,20 @@ export async function handleSetShared(
   input: { shared?: unknown } | null | undefined,
   deps: SetSharedDeps,
 ): Promise<UsersResult> {
-  const rejected = rejectedRequest(deps.request)
-  if (rejected) return rejected
+  const refused = refuseCaller(deps.request, deps.caller)
+  if (refused) return refused
 
   const target = await loadOr404(targetId, deps.loadUser)
   if ('missing' in target) return target.missing
 
   if (typeof input?.shared !== 'boolean') return fail(400, S.shared.failed)
   if (target.user.id === deps.caller.id) return fail(409, S.shared.notSelf)
+
+  // Marking an account shared would otherwise be the back way into "a shared
+  // login holding `users`": set the permission first, flip the flag after.
+  if (!sharedMayHold(input.shared, target.user.permissions)) {
+    return fail(409, S.permissions.sharedUsers)
+  }
 
   try {
     await deps.setShared(target.user.id, input.shared)

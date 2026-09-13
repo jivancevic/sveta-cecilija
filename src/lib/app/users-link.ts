@@ -29,7 +29,7 @@ import type { AppRequestMeta } from './request-guard'
 import {
   fail,
   loadOr404,
-  rejectedRequest,
+  refuseCaller,
   type UsersCaller,
   type UsersResult,
   type UsersTarget,
@@ -44,7 +44,13 @@ export interface LinkUserDeps {
   loadMember: (memberId: string) => Promise<LinkSelfMember | null>
   /** Ids of every login whose `member` points here. Normally none. */
   userIdsByMember: (memberId: string) => Promise<string[]>
-  partnerExists: (partnerId: string) => Promise<boolean>
+  /**
+   * Is this Partner one a login may be pointed at: does it exist, and is it
+   * still active? The picker offers active rows only, so a request naming a
+   * deactivated one is a stale tab or a hand-written body, and letting it
+   * through would bind a POS login to a reseller that can no longer sell.
+   */
+  partnerLinkable: (partnerId: string) => Promise<'ok' | 'missing' | 'inactive'>
   linkMember: (userId: string, memberId: string | null) => Promise<void>
   linkPartner: (userId: string, partnerId: string | null) => Promise<void>
 }
@@ -70,14 +76,12 @@ export async function handleLinkUser(
   input: { partner?: unknown; member?: unknown } | null | undefined,
   deps: LinkUserDeps,
 ): Promise<UsersResult> {
-  const rejected = rejectedRequest(deps.request)
-  if (rejected) return rejected
+  const refused = refuseCaller(deps.request, deps.caller)
+  if (refused) return refused
 
   const found = await loadOr404(targetId, deps.loadUser)
   if ('missing' in found) return found.missing
   const user = found.user
-
-  if (user.id === deps.caller.id && deps.caller.shared) return fail(403, S.sharedSelf)
 
   const wantsPartner = input != null && 'partner' in input
   const wantsMember = input != null && 'member' in input
@@ -98,12 +102,15 @@ async function linkPartner(
   if (!parsed) return fail(400, S.link.missingTarget)
 
   if ('id' in parsed) {
+    let state: 'ok' | 'missing' | 'inactive'
     try {
-      if (!(await deps.partnerExists(parsed.id))) return fail(400, S.link.unknownPartner)
+      state = await deps.partnerLinkable(parsed.id)
     } catch (err) {
       console.error('[handleLinkUser] partner lookup failed:', err instanceof Error ? err.message : err)
       return fail(500, S.link.failed)
     }
+    if (state === 'missing') return fail(400, S.link.unknownPartner)
+    if (state === 'inactive') return fail(400, S.link.inactivePartner)
   }
 
   try {

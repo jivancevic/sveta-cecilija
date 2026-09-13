@@ -82,12 +82,12 @@ export default async function UsersPage({
 
                 <span className="app__user-chips">
                   {permissionChips(account.permissions).map((chip) => (
-                    <span key={chip.key} className="app__chip">
+                    <span key={chip.key} className="app__user-chip">
                       {chip.label}
                     </span>
                   ))}
                   {account.permissions.length === 0 && (
-                    <span className="app__chip app__chip--none">{S.noPermissions}</span>
+                    <span className="app__user-chip app__user-chip--none">{S.noPermissions}</span>
                   )}
                 </span>
 

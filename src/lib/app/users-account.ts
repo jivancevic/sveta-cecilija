@@ -18,6 +18,14 @@
 // A PHONE at a gate, so it drops the characters that get mistaken for each
 // other and stays short enough to dictate.
 //
+// **An address is necessary for the link, not sufficient.** The link opens a
+// Cecilija session (`POST /api/app/session`), so it only helps an account whose
+// permission set unlocks a screen — `mayOpenAppSession`, the shell's own rule.
+// An `editor`-only login has its address and no Cecilija, so it gets the
+// password instead and signs in at the Backoffice. The #510 review caught the
+// inverse of this: handing out a link the session handler then refused, on an
+// account whose password had deliberately been made unusable.
+//
 // Pure + DI like every other `/app` handler; the Payload calls are the route's.
 
 import { randomBytes } from 'node:crypto'
@@ -27,11 +35,13 @@ import { APP_STRINGS } from './strings'
 import { isUsableBaseUrl, signInLink } from './invite'
 import { RESET_EXPIRATION_MS } from './forgot'
 import type { AppRequestMeta } from './request-guard'
+import { mayOpenAppSession } from './token-login'
 import {
   fail,
   loadOr404,
   parsePermissionSet,
-  rejectedRequest,
+  refuseCaller,
+  sharedMayHold,
   type UsersCaller,
   type UsersResult,
   type UsersTarget,
@@ -132,6 +142,8 @@ export interface NewUserData {
 
 export interface CreateUserDeps {
   request: AppRequestMeta
+  /** Who is opening the account; a shared login may not (ADR-0022). */
+  caller: UsersCaller
   /** `NEXT_PUBLIC_BASE_URL`: the origin the sign-in link points at. */
   baseUrl: string
   usernameTaken: (username: string) => Promise<boolean>
@@ -166,8 +178,8 @@ export async function handleCreateUser(
     | undefined,
   deps: CreateUserDeps,
 ): Promise<UsersResult> {
-  const rejected = rejectedRequest(deps.request)
-  if (rejected) return rejected
+  const refused = refuseCaller(deps.request, deps.caller)
+  if (refused) return refused
 
   const username = normaliseUsername(input?.username)
   if (!username) {
@@ -182,14 +194,21 @@ export async function handleCreateUser(
   const permissions = parsePermissionSet(input?.permissions)
   if (!permissions) return fail(400, S.permissions.invalid)
 
+  const shared = input?.shared === true
+  if (!sharedMayHold(shared, permissions)) return fail(400, S.permissions.sharedUsers)
+
   if (emailRequiredFor({ permissions }) && !email) {
     return fail(400, S.permissions.emailRequired)
   }
 
+  // Whether this account gets the link or the password, decided once: an
+  // address is necessary and `mayOpenAppSession` is the rest of it.
+  const byLink = Boolean(email) && mayOpenAppSession({ id: '', permissions, shared })
+
   // A link that is not absolute is a link nobody can open. Checked before the
   // row exists, so a misconfigured deployment refuses instead of opening an
   // account nobody can reach (`isUsableBaseUrl`, #424).
-  if (email && !isUsableBaseUrl(deps.baseUrl)) {
+  if (byLink && !isUsableBaseUrl(deps.baseUrl)) {
     console.error('[handleCreateUser] NEXT_PUBLIC_BASE_URL is missing or relative')
     return fail(500, S.create.failed)
   }
@@ -206,7 +225,7 @@ export async function handleCreateUser(
   // The password the row is created with is NOT the one that gets handed over
   // when there is an address: the link is the way in then, so the account gets
   // one nobody holds rather than a short one nobody was told.
-  const password = email ? deps.unusablePassword() : deps.temporaryPassword()
+  const password = byLink ? deps.unusablePassword() : deps.temporaryPassword()
 
   let created: { id: string; username: string }
   try {
@@ -215,7 +234,7 @@ export async function handleCreateUser(
       ...(email ? { email } : {}),
       ...(name ? { name } : {}),
       permissions,
-      shared: input?.shared === true,
+      shared,
       password,
     })
   } catch (err) {
@@ -223,7 +242,7 @@ export async function handleCreateUser(
     return fail(500, S.create.failed)
   }
 
-  const handover: Handover = email
+  const handover: Handover = byLink
     ? await linkHandover(
         { username: created.username },
         deps.baseUrl,
@@ -263,25 +282,27 @@ export interface ResetPasswordDeps {
  * address gets a link and keeps its password, an address-less login gets a new
  * temporary password and loses its old one at once.
  *
- * The shared-account rule applies to the caller's OWN row only (ADR-0022):
- * rotating the `tehnika` password is exactly what a `users` holder is for, and
- * what the rule forbids is one of its holders doing it to themselves.
+ * Rotating the `tehnika` password is exactly what a `users` holder is for, so
+ * the shared rule here is about the CALLER rather than the target (ADR-0022,
+ * widened by the #510 review): a login several people hold administers no
+ * account, its own included, and `refuseCaller` says so before anything is
+ * read.
  */
 export async function handleResetPassword(
   targetId: string,
   deps: ResetPasswordDeps,
 ): Promise<UsersResult> {
-  const rejected = rejectedRequest(deps.request)
-  if (rejected) return rejected
+  const refused = refuseCaller(deps.request, deps.caller)
+  if (refused) return refused
 
   const found = await loadOr404(targetId, deps.loadUser)
   if ('missing' in found) return found.missing
   const user = found.user
 
-  if (user.id === deps.caller.id && deps.caller.shared) return fail(403, S.sharedSelf)
-
   const email = user.email?.trim() ?? ''
-  if (email) {
+  // The same fork the create makes, for the same reason: a link this account
+  // cannot use is worse than a password it can.
+  if (email && mayOpenAppSession({ id: user.id, permissions: user.permissions, shared: user.shared })) {
     if (!isUsableBaseUrl(deps.baseUrl)) {
       console.error('[handleResetPassword] NEXT_PUBLIC_BASE_URL is missing or relative')
       return fail(500, S.reset.failed)

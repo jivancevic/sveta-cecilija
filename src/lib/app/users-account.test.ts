@@ -36,6 +36,7 @@ function target(over: Partial<UsersTarget> = {}): UsersTarget {
 function createDeps(over: Partial<CreateUserDeps> = {}): CreateUserDeps {
   return {
     request: SAME_SITE,
+    caller: { id: '1', shared: false },
     baseUrl: 'https://moreska.eu',
     usernameTaken: async () => false,
     emailTaken: async () => false,
@@ -146,7 +147,7 @@ describe('POST /api/app/users', () => {
     })
   })
 
-  it('gives an account with an e-mail a sign-in link instead, and never a password', async () => {
+  it('gives an account with an e-mail and a Cecilija screen a sign-in link instead', async () => {
     const create = vi.fn(async () => ({ id: '43', username: 'ana' }))
     const res = await handleCreateUser(
       { username: 'ana', email: 'Ana@Moreska.eu', name: 'Ana Anić', permissions: ['tickets'] },
@@ -217,6 +218,43 @@ describe('POST /api/app/users', () => {
     expect(res.body).toEqual({ error: S.create.emailTaken })
   })
 
+  it('gives an `editor`-only login a password: the link would not open anything', async () => {
+    // The #510 review's bug, from the other side. `editor` unlocks no Cecilija
+    // screen, so `POST /api/app/session` refuses its link; handing one over
+    // while making its password unusable left the account unreachable.
+    const create = vi.fn(async () => ({ id: '44', username: 'urednik' }))
+    const res = await handleCreateUser(
+      { username: 'urednik', email: 'urednik@moreska.eu', permissions: ['editor'] },
+      createDeps({ create }),
+    )
+
+    expect(res.status).toBe(200)
+    expect(create).toHaveBeenCalledWith(expect.objectContaining({ password: 'Temp-1234-abcd' }))
+    expect(res.body).toMatchObject({ handover: { kind: 'password', password: 'Temp-1234-abcd' } })
+  })
+
+  it('refuses a shared caller before it creates anything', async () => {
+    const create = vi.fn()
+    const res = await handleCreateUser(
+      { username: 'ana', permissions: ['door'] },
+      createDeps({ create, caller: { id: '1', shared: true } }),
+    )
+    expect(res.status).toBe(403)
+    expect(res.body).toEqual({ error: S.sharedCaller })
+    expect(create).not.toHaveBeenCalled()
+  })
+
+  it('refuses opening a shared account that holds `users`', async () => {
+    const create = vi.fn()
+    const res = await handleCreateUser(
+      { username: 'zajednicki', email: 'z@moreska.eu', permissions: ['users'], shared: true },
+      createDeps({ create }),
+    )
+    expect(res.status).toBe(400)
+    expect(res.body).toEqual({ error: S.permissions.sharedUsers })
+    expect(create).not.toHaveBeenCalled()
+  })
+
   it('refuses a cross-site request before it creates anything', async () => {
     const create = vi.fn()
     const res = await handleCreateUser(
@@ -255,7 +293,13 @@ describe('POST /api/app/users/[id]/reset-password', () => {
       '7',
       resetDeps({
         setPassword,
-        loadUser: async () => target({ email: 'tatjana@moreska.eu', username: 'ttvigna' }),
+        loadUser: async () =>
+          target({
+            email: 'tatjana@moreska.eu',
+            username: 'ttvigna',
+            permissions: ['tickets'],
+            shared: false,
+          }),
       }),
     )
 
@@ -266,16 +310,37 @@ describe('POST /api/app/users/[id]/reset-password', () => {
     })
   })
 
-  it('refuses a shared login resetting itself', async () => {
+  it('refuses a shared caller, on any row', async () => {
+    const loadUser = vi.fn(async () => target())
+    const res = await handleResetPassword(
+      '7',
+      resetDeps({ caller: { id: '1', shared: true }, loadUser }),
+    )
+    expect(res.status).toBe(403)
+    expect(res.body).toEqual({ error: S.sharedCaller })
+    expect(loadUser).not.toHaveBeenCalled()
+  })
+
+  it('rotates the shared `tehnika` password, which is what a users holder is for', async () => {
+    const setPassword = vi.fn(async () => {})
+    const res = await handleResetPassword('7', resetDeps({ setPassword }))
+    expect(res.status).toBe(200)
+    expect(setPassword).toHaveBeenCalledWith('7', 'Temp-1234-abcd')
+  })
+
+  it('gives an addressed account with no Cecilija screen a password, not a link', async () => {
+    const setPassword = vi.fn(async () => {})
     const res = await handleResetPassword(
       '7',
       resetDeps({
-        caller: { id: '7', shared: true },
-        loadUser: async () => target({ id: '7', shared: true }),
+        setPassword,
+        loadUser: async () =>
+          target({ email: 'urednik@moreska.eu', permissions: ['editor'], shared: false }),
       }),
     )
-    expect(res.status).toBe(403)
-    expect(res.body).toEqual({ error: S.sharedSelf })
+    expect(res.status).toBe(200)
+    expect(res.body).toMatchObject({ handover: { kind: 'password' } })
+    expect(setPassword).toHaveBeenCalled()
   })
 
   it('404s an id that is nobody', async () => {
@@ -301,7 +366,8 @@ describe('POST /api/app/users/[id]/reset-password', () => {
       '7',
       resetDeps({
         baseUrl: '',
-        loadUser: async () => target({ email: 'tatjana@moreska.eu' }),
+        loadUser: async () =>
+          target({ email: 'tatjana@moreska.eu', permissions: ['tickets'], shared: false }),
       }),
     )
     expect(res.status).toBe(500)

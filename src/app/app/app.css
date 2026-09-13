@@ -5930,7 +5930,7 @@ a.app__statrow-main:focus-visible {
   color: var(--muted);
 }
 
-.app__chip {
+.app__user-chip {
   padding: 2px 7px;
   border: 1px solid var(--cardEdge);
   border-radius: var(--radius);
@@ -5941,7 +5941,7 @@ a.app__statrow-main:focus-visible {
 
 /* Nothing ticked: an account that reaches no screen at all, which is how a
    login is retired here (deleting stays Backoffice work). */
-.app__chip--none {
+.app__user-chip--none {
   border-style: dashed;
   color: var(--muted);
 }

@@ -3,6 +3,7 @@ import { requirePermission } from '@/lib/access/route-guard'
 import { appRequestMeta } from '@/lib/app/request-guard'
 import { handleCreateUser } from '@/lib/app/users-account'
 import { createCreateUserDeps } from '@/lib/app/users-data'
+import { callerOf } from '@/lib/app/users-caller'
 
 // POST /api/app/users — "Novi korisnik" (#510).
 //
@@ -27,9 +28,11 @@ export async function POST(req: Request) {
 
   const result = await handleCreateUser(
     body,
-    createCreateUserDeps(appRequestMeta(req, process.env.NEXT_PUBLIC_BASE_URL), {
-      user: gate.user,
-    }),
+    createCreateUserDeps(
+      appRequestMeta(req, process.env.NEXT_PUBLIC_BASE_URL),
+      callerOf(gate.user),
+      { user: gate.user },
+    ),
   )
 
   return NextResponse.json(result.body, { status: result.status })

@@ -80,7 +80,7 @@ const partnerById = vi.fn(async (_id: string | number) => ({
   name: 'Kaleta',
   active: true,
   commissionPercent: 10,
-}))
+}) as { id: string; name: string; active: boolean; commissionPercent: number } | null)
 
 vi.mock('@/lib/repo', () => ({
   getRepo: () => ({
@@ -192,6 +192,13 @@ describe.each(ROUTES)('%s', (_label, call) => {
     expect((await call()).status).toBe(200)
   })
 
+  // ADR-0022, widened by the #510 review: the shared `tehnika` password is on a
+  // wall, so a shared login administers no account even holding `users`.
+  it('403s a shared caller that holds `users`', async () => {
+    signIn(['users'], { shared: true })
+    expect((await call()).status).toBe(403)
+  })
+
   it('writes nothing when the gate refuses', async () => {
     signIn(['tickets'])
     await call()
@@ -251,6 +258,16 @@ describe('the rules are reached, not re-implemented in the route', () => {
     expect(body.handover.kind).toBe('link')
     expect(body.handover.link).toContain('/app/session?token=tok123')
     expect(setPassword).not.toHaveBeenCalled()
+  })
+
+  it('400s a link aimed at a deactivated partner', async () => {
+    signIn(['users'])
+    partnerById.mockResolvedValue({ id: '3', name: 'Kaleta', active: false, commissionPercent: 10 })
+    const res = await linkPost(request('/api/app/users/7/link', 'POST', { partner: '3' }), {
+      params,
+    })
+    expect(res.status).toBe(400)
+    expect(linkPartner).not.toHaveBeenCalled()
   })
 
   it('403s a cross-site request even from a `users` holder', async () => {

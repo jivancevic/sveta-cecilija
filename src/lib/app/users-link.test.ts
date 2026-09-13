@@ -36,7 +36,7 @@ function deps(over: Partial<LinkUserDeps> = {}): LinkUserDeps {
     loadUser: async () => target(),
     loadMember: async () => dancer(),
     userIdsByMember: async () => [],
-    partnerExists: async () => true,
+    partnerLinkable: async () => 'ok' as const,
     linkMember: vi.fn(async () => {}),
     linkPartner: vi.fn(async () => {}),
     ...over,
@@ -137,7 +137,7 @@ describe('POST /api/app/users/[id]/link', () => {
     const res = await handleLinkUser(
       '7',
       { partner: '99' },
-      deps({ partnerExists: async () => false }),
+      deps({ partnerLinkable: async () => 'missing' as const }),
     )
     expect(res.status).toBe(400)
     expect(res.body).toEqual({ error: S.link.unknownPartner })
@@ -148,14 +148,30 @@ describe('POST /api/app/users/[id]/link', () => {
     expect((await handleLinkUser('7', { partner: '3', member: '18' }, deps())).status).toBe(400)
   })
 
-  it('refuses a shared login linking itself', async () => {
+  it('refuses a deactivated partner the picker no longer offers', async () => {
+    const linkPartner = vi.fn(async () => {})
+    const res = await handleLinkUser(
+      '7',
+      { partner: '3' },
+      deps({ partnerLinkable: async () => 'inactive' as const, linkPartner }),
+    )
+    expect(res.status).toBe(400)
+    expect(res.body).toEqual({ error: S.link.inactivePartner })
+    expect(linkPartner).not.toHaveBeenCalled()
+  })
+
+  it('refuses a shared caller, whatever row it is aimed at', async () => {
+    const linkMember = vi.fn(async () => {})
+    const loadUser = vi.fn(async () => target())
     const res = await handleLinkUser(
       '7',
       { member: '18' },
-      deps({ caller: { id: '7', shared: true }, loadUser: async () => target({ id: '7', shared: true }) }),
+      deps({ caller: { id: '1', shared: true }, loadUser, linkMember }),
     )
     expect(res.status).toBe(403)
-    expect(res.body).toEqual({ error: S.sharedSelf })
+    expect(res.body).toEqual({ error: S.sharedCaller })
+    expect(loadUser).not.toHaveBeenCalled()
+    expect(linkMember).not.toHaveBeenCalled()
   })
 
   it('refuses a cross-site request before it writes', async () => {

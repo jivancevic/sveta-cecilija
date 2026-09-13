@@ -14,9 +14,13 @@
 //  3. a `shared` login (ADR-0022) may not be opened this way. A login several
 //     volunteers hold has no inbox of its own, so a link that signs its holder
 //     in is a link that signs anybody in;
-//  4. only an account that belongs in `/app` — `moreskant` or `moreska` —
-//     signs in here. A `tickets` or `door` account resets its password in
-//     `/admin`, and this route is not a second door into the backoffice.
+//  4. only an account that belongs in Cecilija signs in here, and "belongs" is
+//     the shell's own rule (#495): the permission set unlocks at least one
+//     screen. It named `moreskant` and `moreska` until #510, back when a link
+//     could only ever be a dancer's invitation and the backoffice was where
+//     staff set a password. Korisnici now mints this same link for a new
+//     `tickets`, `finance` or `users` login, so a hard-coded pair of words
+//     would have refused the account it had just opened.
 //
 // **The token is not spent on use**, deliberately, and that is the one decision
 // here worth arguing with. It lives its natural life instead (seven days from
@@ -29,7 +33,8 @@
 // end. The link is as sensitive as the SMS thread it sits in, for as long as it
 // lives, and that is the trade being made.
 
-import { hasAny, type PermissionUser } from '@/lib/access/permissions'
+import type { PermissionUser } from '@/lib/access/permissions'
+import { unlockedScreens } from './screens'
 import { APP_STRINGS } from './strings'
 import { rejectAppRequest, type AppRequestMeta } from './request-guard'
 
@@ -55,10 +60,28 @@ export interface TokenLoginDeps {
   openSession: (userId: string | number) => Promise<string>
 }
 
-/** Does this login belong in `/app` at all? */
+/**
+ * Does this login belong in Cecilija at all?
+ *
+ * The shell's rule, read off the one screen table: a set that unlocks nothing
+ * has nowhere to land, so the link says so rather than opening a session onto
+ * the "Nemate pristup" panel. `refunds`, `dev` and `editor` are the sets that
+ * fail it today — a refund is an action inside an order, `dev` is a diagnostics
+ * strip, and Objave and FAQ live in the Backoffice.
+ *
+ * **The two conditional permissions are read optimistically** (`hasMember`,
+ * `hasPartner` both true), because this handler holds a token and not a Member
+ * row: whether a dancer's Member is still active, or a reseller's Partner link
+ * still resolves, is the PAGE gate's question and it re-reads both with
+ * `overrideAccess` on every request (`decideAppAccess`). Signing in is not the
+ * access decision — `/api/app/login` checks no permission either, and the two
+ * doors have to agree or a password and a link would admit different people.
+ */
 export function mayOpenAppSession(user: TokenLoginUser | null | undefined): boolean {
   if (!user) return false
-  return hasAny(user as PermissionUser, ['moreskant', 'moreska'])
+  return (
+    unlockedScreens(user as PermissionUser, { hasMember: true, hasPartner: true }).length > 0
+  )
 }
 
 /**
