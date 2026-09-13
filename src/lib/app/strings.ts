@@ -533,6 +533,8 @@ export const APP_STRINGS = {
     hasLogin: 'ima prijavu',
     noLogin: 'bez prijave',
     retired: 'neaktivan',
+    /** The per-row disclosure the two invitation channels sit behind. */
+    invite: 'Pozivnica',
     /** The way back from a profile. */
     back: 'Članovi',
 

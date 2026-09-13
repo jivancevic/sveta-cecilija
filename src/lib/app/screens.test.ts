@@ -66,6 +66,7 @@ describe('the screen table', () => {
     expect(keys(live)).toEqual([
       'orders',
       'performances',
+      'members',
       'leaderboard',
       'scan',
       'sell',
@@ -110,8 +111,12 @@ describe('unlockedScreens', () => {
     expect(unlockedScreens(user('refunds', 'dev'), ctx())).toEqual([])
   })
 
-  it('gives a voditelj Izvedbe and Ljestvica without any Member link', () => {
-    expect(keys(unlockedScreens(user('moreska'), ctx()))).toEqual(['performances', 'leaderboard'])
+  it('gives a voditelj Izvedbe, Članovi and Ljestvica without any Member link', () => {
+    expect(keys(unlockedScreens(user('moreska'), ctx()))).toEqual([
+      'performances',
+      'members',
+      'leaderboard',
+    ])
   })
 
   it('gives a tickets holder Narudžbe, Izvedbe, Upiti and Gratis, and the rest as built', () => {
@@ -251,7 +256,6 @@ describe('activeScreenKey', () => {
 
   it('lights Više for the rows that live under it', () => {
     expect(activeScreenKey('/app/account')).toBe('more')
-    expect(activeScreenKey('/app/invitations')).toBe('more')
     expect(activeScreenKey('/app/calendar')).toBe('more')
     expect(activeScreenKey('/app/notifications')).toBe('more')
   })

@@ -47,6 +47,16 @@ describe('the Croatian → English renames', () => {
     expect(redirects.every((r) => r.permanent)).toBe(true)
   })
 
+  it('folds Pozivnice into Članovi from both of its old paths (#511)', () => {
+    // The screen was absorbed rather than renamed, so BOTH old addresses point
+    // at the new screen: the Croatian one skips the intermediate English path
+    // instead of 308ing to a 308.
+    const to = (source: string) =>
+      APP_ROUTE_RENAMES.find((r) => r.source === source && !r.has)?.destination
+    expect(to('/app/pozivnice')).toBe('/app/members')
+    expect(to('/app/invitations')).toBe('/app/members')
+  })
+
   it('renames only Croatian segments, and only under /app', () => {
     for (const { source, destination } of APP_ROUTE_RENAMES) {
       expect(source.startsWith('/app/')).toBe(true)
