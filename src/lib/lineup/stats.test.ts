@@ -96,6 +96,7 @@ describe('aggregateDancerStats', () => {
       dmc: 1,
       gulliver: 0,
       koncert: 1,
+      experience: 0,
       ostalo: 0,
     })
   })

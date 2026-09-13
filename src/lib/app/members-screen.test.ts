@@ -20,6 +20,7 @@ function member(over: Partial<MemberRosterRow> & { id: string }): MemberRosterRo
     roles: [],
     primaryRole: null,
     active: true,
+    yearRound: false,
     isMoreskant: true,
     ...over,
   }
@@ -150,6 +151,7 @@ describe('toMemberListInput', () => {
       roles: ['crni'],
       primaryRole: 'crni',
       active: true,
+      yearRound: false,
       isMoreskant: true,
     })
   })

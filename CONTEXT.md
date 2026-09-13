@@ -485,8 +485,20 @@ What a moreškant can dance: `crni` ⚫, `bili` 🔴 (the "white" army wears red
 The single dance role displayed on a moreškant's profile card (Cici: `crni_kralj`), chosen by the voditelj from the member's roles.
 
 ### Performance (in Moreškant)
-Every occasion the Moreška is danced, public or not. Extends the existing `Shows` record with a **kind** (`redovna | dmc | gulliver | koncert | ostalo`) and a **public** flag. Only public performances have a venue, capacity, sales, and appear on `/tickets`; non-public ones carry a free-text **location** ("Le Ponant, luka"). Each performance has an **army threshold** (default 8 crni / 8 bili) and an optional **voditelj note** visible to moreškanti.
+Every occasion the Moreška is danced, public or not. Extends the existing `Shows` record with a **kind** (`redovna | dmc | gulliver | koncert | experience | ostalo`) and a **public** flag. Only public performances have a venue, capacity, sales, and appear on `/tickets`; non-public ones carry a free-text **location** ("Le Ponant, luka"). Each performance has an **army threshold** (default 8 crni / 8 bili) and an optional **voditelj note** visible to moreškanti.
 _Avoid_: show (for non-public ones), gig, event.
+
+### Vanredna izvedba
+Any performance that is not a *redovna*: a ship group (DMC, Gulliver), a festival, a concert, a *Moreška Experience*, a charity evening. The word the notebook uses for every non-public evening ("vandredni nastup 28.07. 19:00"). Not a kind of its own: it is the complement of `redovna`, and the specific kind still says what it was.
+_Avoid_: extra show, private show (that is the sales-page name for a bespoke *redovna*-sized booking).
+
+### Moreška Experience
+The short form of the Moreška sold as a service on the public site (*Private Experiences*, "The Moreška Experience" / "Moreška iskustvo"): a talk on the dance's origins and regalia and excerpts of the sword fight, danced with fewer pairs (usually three crni, three bili and a bula) for a small or medium group, by appointment, in the society's own premises (*Prostor Sv. Cecilije*). A performance of kind `experience`: always non-public, never sold by ticket, counted in a dancer's season like any other confirmed lineup.
+_Avoid_: experience (lower-case, as a generic word for an evening), workshop, demo.
+
+### Cijelu godinu u Korčuli (year-round)
+A moreškant who lives in Korčula the whole year, not only over the summer. Marked "c" on the notebook's master lists. The flag matters in the pre-season and post-season (April to May, late September to October), when the students are away and only the year-round dancers can be cast, so a voditelj planning an *Experience* or a spring booking filters the roster by it. Independent of *active*: a year-round dancer can sit a season out, and a student is active all summer.
+_Avoid_: local, resident, permanent member.
 
 ### Attendance
 A moreškant's answer for one performance: **no answer** / **coming** / **not coming** — no answer being the *absence of a row*, never a third value. A multi-role dancer only says "coming"; the voditelj picks the army, and until they do the answer counts in the army of the dancer's **primary role** (`crni`/`crni_kralj`/`otmanović` → crni, `bili`/`bili kralj` → bili, `bula` → neither). A voditelj may answer on someone's behalf, at any time. A dancer's own answer is changeable until the performance starts.

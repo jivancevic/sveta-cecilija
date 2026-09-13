@@ -36,6 +36,7 @@ export function MemberProfileForm({ member }: { member: MemberRosterRow }) {
   const [mobile, setMobile] = useState(member.mobile ?? '')
   const [email, setEmail] = useState(member.email ?? '')
   const [active, setActive] = useState(member.active)
+  const [yearRound, setYearRound] = useState(member.yearRound)
   const [picked, setPicked] = useState<{ roles: string[]; primaryRole: string }>({
     roles: member.roles,
     primaryRole: member.primaryRole ?? '',
@@ -58,6 +59,7 @@ export function MemberProfileForm({ member }: { member: MemberRosterRow }) {
           roles: picked.roles,
           primaryRole: picked.primaryRole,
           active,
+          yearRound,
         }),
       })
       const body = (await res.json().catch(() => null)) as { error?: string } | null
@@ -139,6 +141,17 @@ export function MemberProfileForm({ member }: { member: MemberRosterRow }) {
         <span>{S.active}</span>
       </label>
       <p className="app__invite-hint">{S.activeHint}</p>
+
+      <label className="app__field app__field--check">
+        <input
+          type="checkbox"
+          checked={yearRound}
+          disabled={busy}
+          onChange={(e) => setYearRound(e.target.checked)}
+        />
+        <span>{S.yearRound}</span>
+      </label>
+      <p className="app__invite-hint">{S.yearRoundHint}</p>
 
       <button type="submit" className="app__button" disabled={busy}>
         {busy ? S.saving : S.save}

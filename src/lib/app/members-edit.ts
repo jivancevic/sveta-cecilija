@@ -69,8 +69,8 @@ function fail(status: number, error: string): MemberWriteResult {
   return { status, body: { error } }
 }
 
-/** The six keys a voditelj owns. Anything else in the body is a refusal. */
-const EDITABLE = ['nickname', 'mobile', 'email', 'roles', 'primaryRole', 'active'] as const
+/** The seven keys a voditelj owns. Anything else in the body is a refusal. */
+const EDITABLE = ['nickname', 'mobile', 'email', 'roles', 'primaryRole', 'active', 'yearRound'] as const
 
 /** The attribution half (ADR-0019). Named so the refusal can say which it was. */
 const LOCKED = ['name', 'note'] as const
@@ -138,6 +138,11 @@ function readPatch(body: unknown): { patch: Record<string, unknown> } | { error:
   if ('active' in input) {
     if (typeof input.active !== 'boolean') return { error: S.invalidBody, status: 400 }
     patch.active = input.active
+  }
+
+  if ('yearRound' in input) {
+    if (typeof input.yearRound !== 'boolean') return { error: S.invalidBody, status: 400 }
+    patch.yearRound = input.yearRound
   }
 
   return { patch }

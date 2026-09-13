@@ -72,6 +72,8 @@ export interface McpMoreskant {
   active: boolean
   roles: string[]
   primaryRole: string | null
+  /** Lives in Korčula all year, so can be cast in the pre- and post-season. */
+  yearRound: boolean
   /** Whether a login exists for this dancer; never the username or the email. */
   hasLogin: boolean
 }

@@ -32,6 +32,7 @@ export function toRosterRow(doc: Record<string, unknown>): MemberRosterRow {
     roles: Array.isArray(doc.roles) ? doc.roles.filter((r): r is string => typeof r === 'string') : [],
     primaryRole: typeof doc.primaryRole === 'string' ? doc.primaryRole : null,
     active: doc.active !== false,
+    yearRound: doc.yearRound === true,
     // Anything other than a literal true is "no": the safe direction, and the
     // same reading `isMoreskantRow` gives it (ADR-0024).
     isMoreskant: doc.isMoreskant === true,

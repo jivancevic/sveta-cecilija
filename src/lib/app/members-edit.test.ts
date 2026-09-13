@@ -28,6 +28,7 @@ const CICI: MemberRosterRow = {
   roles: ['crni', 'crni_kralj'],
   primaryRole: 'crni_kralj',
   active: true,
+  yearRound: false,
   isMoreskant: true,
 }
 
@@ -119,6 +120,16 @@ describe('handleMemberPatch', () => {
     const res = await handleMemberPatch('4', { active: false }, d)
     expect(res.status).toBe(200)
     expect(d.save).toHaveBeenCalledWith('4', { active: false })
+  })
+
+  it('lets a voditelj mark a dancer year-round, and refuses a non-boolean', async () => {
+    const d = deps()
+    const res = await handleMemberPatch('4', { yearRound: true }, d)
+    expect(res.status).toBe(200)
+    expect(d.save).toHaveBeenCalledWith('4', { yearRound: true })
+
+    const bad = await handleMemberPatch('4', { yearRound: 'da' }, deps())
+    expect(bad.status).toBe(400)
   })
 
   it('refuses a patch with nothing in it', async () => {

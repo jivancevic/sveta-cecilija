@@ -31,7 +31,7 @@ describe('public performance predicate', () => {
   })
 
   it('lists the five performance kinds', () => {
-    expect(PERFORMANCE_KINDS).toEqual(['redovna', 'dmc', 'gulliver', 'koncert', 'ostalo'])
+    expect(PERFORMANCE_KINDS).toEqual(['redovna', 'dmc', 'gulliver', 'koncert', 'experience', 'ostalo'])
   })
 })
 
