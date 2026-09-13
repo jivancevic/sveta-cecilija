@@ -514,6 +514,76 @@ export const APP_STRINGS = {
   },
 
   /**
+   * Članovi (#511): the voditelj's roster screen, and the profile behind a row.
+   *
+   * Everything here is aimed at a voditelj holding a phone at a rehearsal, so
+   * the list says one fact per dancer and every refusal names what to do rather
+   * than which rule was broken. The invitation words are NOT here: they are
+   * `inviteLink` and `inviteAll`, unchanged, because the same invitation is the
+   * same invitation wherever it is handed over from.
+   */
+  members: {
+    /** The list */
+    searchLabel: 'Traži moreškanta',
+    searchPlaceholder: 'Nadimak ili ime',
+    /**
+     * The three Croatian plural buckets, as every other count on `/app` spells
+     * them: `pluralize` picks between them (`roster-loaders.ts`), so 22 reads
+     * "22 moreškanta" and 12 reads "12 moreškanata" without this screen owning
+     * a rule of its own.
+     */
+    count: { one: 'moreškant', few: 'moreškanta', many: 'moreškanata' },
+    empty: 'Nema moreškanta po tom upitu.',
+    emptyAll: 'Još nema nijednog moreškanta na popisu.',
+    listTitle: 'Moreškanti',
+    hasLogin: 'ima prijavu',
+    noLogin: 'bez prijave',
+    retired: 'neaktivan',
+    /** The per-row disclosure the two invitation channels sit behind. */
+    invite: 'Pozivnica',
+    /** The way back from a profile. */
+    back: 'Članovi',
+
+    /** The profile */
+    profileIntro: 'Nadimak, mobitel i uloge mijenja voditelj. Ime i bilješku mijenja blagajna.',
+    nickname: 'Nadimak',
+    name: 'Ime i prezime',
+    mobile: 'Mobitel',
+    mobileHint: 'Na taj broj ide pozivnica SMS-om. Vidljiv je ostalim moreškantima.',
+    email: 'E-mail',
+    emailHint: 'Nije obavezan. Koristi se samo za pozivnicu i nikad se ne prikazuje drugima.',
+    roles: 'Plesne uloge',
+    primaryRole: 'Glavna uloga',
+    active: 'Aktivan moreškant',
+    activeHint:
+      'Neaktivan moreškant ostaje u povijesti i na dnu popisa, ali ispada iz postave i s popisa dolazaka.',
+    save: 'Spremi',
+    saving: 'Spremam...',
+    saved: 'Spremljeno.',
+    saveFailed: 'Nije spremljeno. Pokušaj ponovno.',
+
+    /** "Dodaj plesača" */
+    addTitle: 'Dodaj plesača',
+    addIntro:
+      'Za moreškanta koji nije na popisu. Upiši ime, nadimak i uloge; pozivnicu mu pošalji poslije s popisa.',
+    addOpen: 'Dodaj plesača',
+    addSubmit: 'Dodaj',
+    addCancel: 'Odustani',
+    adding: 'Dodajem...',
+    added: (who: string) => `${who} je na popisu.`,
+
+    /** Refusals, each of them also spoken by the route. */
+    rejected: 'Spremanje trenutno nije moguće. Pokušaj ponovno iz aplikacije.',
+    notFound: 'Taj moreškant ne postoji.',
+    nothingToSave: 'Nema promjena za spremiti.',
+    invalidBody: 'Podaci nisu ispravni.',
+    lockedField: 'Ime i bilješku mijenja blagajna, ne voditelj.',
+    badMobile: 'Mobitel nije u ispravnom obliku. Upiši ga kao 0912345678 ili +385912345678.',
+    badEmail: 'E-mail nije u ispravnom obliku.',
+    missingName: 'Upiši ime i prezime.',
+  },
+
+  /**
    * "Kopiraj pozivnicu" (#463): the invitation a voditelj sends themselves.
    *
    * Seventy-six moreškanti, one e-mail address between them, so the letter was
@@ -582,7 +652,7 @@ export const APP_STRINGS = {
     expired: 'Zahtjev je istekao. Odaberi svoje ime ponovno.',
     unexpected: 'Trenutno nije moguće. Pokušaj ponovno.',
 
-    /** The voditelj's half, on `/app/invitations`. */
+    /** The voditelj's half, on Članovi (`/app/members`, #511). */
     codeTitle: 'Kod za probu',
     codeIntro:
       'Pokaži ovaj QR ili kod na probi. Moreškant odabere svoje ime, ti potvrdiš i ulazi bez lozinke.',

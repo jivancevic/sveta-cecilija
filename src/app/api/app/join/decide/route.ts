@@ -7,11 +7,12 @@ import {
   claimJoinDecision,
   expireJoinClaim,
   findClaimById,
-  poolQuery,
   rejectJoinClaim,
   releaseJoinDecision,
 } from '@/lib/app/join-store'
-import { ensureJoinLogin, loadJoinMember, memberHasLogin } from '@/lib/app/join-data'
+import { loadJoinMember, memberHasLogin } from '@/lib/app/join-data'
+import { ensureJoinLogin } from '@/lib/app/invite-data'
+import { getRepo } from '@/lib/repo'
 
 // POST /api/app/join/decide — the voditelj's one tap (#463).
 //
@@ -35,7 +36,7 @@ export async function POST(req: Request) {
   if (gate.error) return gate.error
   const { payload, user } = gate
 
-  const query = poolQuery(payload)
+  const query = getRepo().db.query
   const body = await req.json().catch(() => null)
 
   const result = await handleJoinDecide(body, {
@@ -46,8 +47,8 @@ export async function POST(req: Request) {
     claimDecision: (claimId, deciderId) => claimJoinDecision(query, claimId, deciderId),
     releaseDecision: (claimId) => releaseJoinDecision(query, claimId),
     expireClaim: (claimId) => expireJoinClaim(query, claimId),
-    loadMember: (memberId) => loadJoinMember(payload, memberId),
-    memberHasLogin: (memberId) => memberHasLogin(payload, memberId),
+    loadMember: (memberId) => loadJoinMember(memberId),
+    memberHasLogin: (memberId) => memberHasLogin(memberId),
     ensureLogin: (member) => ensureJoinLogin(payload, member),
     approve: (claimId, userId, deciderId) => approveJoinClaim(query, claimId, userId, deciderId),
     reject: (claimId, deciderId) => rejectJoinClaim(query, claimId, deciderId),

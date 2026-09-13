@@ -5263,6 +5263,278 @@ a.app__statrow-main:focus-visible {
   font-variant-numeric: tabular-nums;
 }
 
+/* ═══════════════════════════════════════════════════════════
+   Članovi (#511) — the voditelj's roster screen
+   ═══════════════════════════════════════════════════════════
+
+   Phone first, and the phone case is a list of names being scanned for one
+   name. So a row is one line: what the dancer is called, with the real name and
+   the primary role small under it, and the two facts that matter to a voditelj
+   (is this person in yet, are they still dancing) as badges on the right. The
+   invitation lives under the row, behind a disclosure, because it is a write
+   and must not share a tap target with opening the profile.
+
+   The join code, the pending claims and the invitation actions reuse the #463
+   classes above unchanged: they moved screen, not appearance. */
+
+.app__members-search {
+  display: block;
+  margin: 0 0 10px;
+}
+
+.app__members-search-label {
+  display: block;
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.app__members-search input {
+  width: 100%;
+  padding: 12px;
+  font-size: 16px; /* 16px keeps iOS Safari from zooming on focus */
+  font-family: inherit;
+  color: var(--ink);
+  background: var(--frame);
+  border: 1px solid var(--cardEdge);
+  border-radius: var(--radius);
+}
+
+.app__members-search input:focus-visible {
+  outline: none;
+  border-color: var(--gold);
+}
+
+.app__members-count {
+  margin: 0 0 12px;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+
+.app__members-bulk {
+  margin: 0 0 14px;
+}
+
+.app__members-done {
+  margin: 0 0 12px;
+  font-size: 14px;
+  color: var(--goldText);
+}
+
+.app__members {
+  margin-top: 6px;
+}
+
+.app__member-row {
+  border-bottom: 1px solid var(--rule);
+}
+
+/* A retired dancer stays on the list, under everybody who still dances, and
+   reads as filed away rather than as an error. */
+.app__member-row--retired {
+  opacity: 0.65;
+}
+
+/* The tap target that OPENS the profile. It is the whole line except the
+   disclosure under it, so a thumb cannot miss it. */
+.app__member-open {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: var(--rowY) 0;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.app__member-name {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  font-size: 16px;
+}
+
+.app__member-name strong {
+  font-weight: 600;
+}
+
+.app__member-name small {
+  font-size: 13px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app__member-flags {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  color: var(--muted);
+}
+
+/* In, and not in. Gold for a login that exists, dashed for one that does not:
+   the same "visibly unfinished" reading `.app__badge--none` gives an evening
+   nobody has answered. */
+.app__badge--in {
+  border-color: var(--gold);
+  color: var(--goldText);
+}
+
+.app__badge--out {
+  border-style: dashed;
+}
+
+.app__member-invite {
+  padding: 0 0 10px;
+}
+
+.app__member-invite > summary {
+  cursor: pointer;
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 4px 0;
+}
+
+.app__member-invite > summary:hover,
+.app__member-invite > summary:focus-visible {
+  color: var(--goldText);
+}
+
+/* ── The profile, and Dodaj plesača ─────────────────────── */
+
+.app__member-form {
+  margin-top: 4px;
+}
+
+/* `name` is a fact, not a field: it reaches comp reporting and the promo-code
+   picker, so it belongs to the blagajna. Shown rather than hidden, because the
+   voditelj needs to see who this is. */
+.app__member-fact {
+  display: block;
+  margin: 0 0 16px;
+}
+
+.app__member-fact span {
+  display: block;
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+
+.app__member-fact strong {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.app__field small {
+  display: block;
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.app__field select {
+  width: 100%;
+  padding: 12px;
+  font-size: 16px; /* 16px keeps iOS Safari from zooming on focus */
+  font-family: inherit;
+  color: var(--ink);
+  background: var(--frame);
+  border: 1px solid var(--cardEdge);
+  border-radius: var(--radius);
+}
+
+.app__field--check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.app__field--check input {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  accent-color: var(--gold);
+}
+
+.app__field--check span {
+  margin: 0;
+  font-family: inherit;
+  font-size: 16px;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ink);
+}
+
+/* Six roles, two columns on a phone: a checkbox each, big enough for a thumb. */
+.app__roles {
+  margin: 0 0 16px;
+  padding: 0;
+  border: none;
+}
+
+.app__roles legend {
+  padding: 0;
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+
+.app__role {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  width: 50%;
+  padding: 8px 0;
+  font-size: 15px;
+  color: var(--ink);
+}
+
+.app__role input {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  accent-color: var(--gold);
+}
+
+/* The laptop: the form has room, so the fields stop being a single column of
+   full-width inputs and the roles spread across one line. */
+@media (min-width: 700px) {
+  .app__members-search input,
+  .app__member-form .app__field input,
+  .app__member-form .app__field select {
+    max-width: 420px;
+  }
+
+  .app__role {
+    width: auto;
+    margin-right: 24px;
+  }
+
+  .app__member-form .app__button {
+    width: auto;
+    min-width: 200px;
+  }
+}
+
 /* ─────────────────────────────────────────────────────────────
    Korisnici (#510): the accounts and what each may do.
 

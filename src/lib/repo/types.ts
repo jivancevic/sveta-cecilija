@@ -10,7 +10,8 @@
 // (section 6.2) names eleven repos; this file declares the ones the built
 // screens actually call — `auth` and `db` from Skener, `orders` and `shows`
 // grown by Narudžbe and Izvedbe, `partners` by Prodaja, `roster` by Izvedbe,
-// `inquiries` by Upiti, `comp` and `members` by Gratis, `users` by Korisnici.
+// `inquiries` by Upiti, `comp` and `members` by Gratis, the roster half of
+// `members` by Članovi, `users` by Korisnici.
 // A screen ticket adds its own, with the methods that screen actually calls, so
 // no member of this interface is ever speculative.
 //
@@ -30,7 +31,7 @@ import type { AuthRepo, SessionUser, WriteCtx } from './auth'
 import type { CompOrderRow, CompRepo, CompTicketRow } from './comp'
 import type { DbRepo } from './db'
 import type { InquiriesRepo, InquiryListQuery, InquiryListResult, InquiryRow } from './inquiries'
-import type { MemberOption, MembersRepo } from './members'
+import type { MemberOption, MemberRosterRow, MembersRepo, NewMoreskant } from './members'
 import type { OrdersRepo } from './orders'
 import type { RosterRepo, RosterViewer } from './roster'
 import type { PartnerRecord, PartnersRepo } from './partners'
@@ -63,7 +64,9 @@ export type {
   InquiryListResult,
   InquiryRow,
   MemberOption,
+  MemberRosterRow,
   MembersRepo,
+  NewMoreskant,
   OrdersRepo,
   PartnerRecord,
   PartnersRepo,

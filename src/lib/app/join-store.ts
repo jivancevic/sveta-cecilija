@@ -1,5 +1,5 @@
 import { createHash, randomBytes, randomInt } from 'crypto'
-import { poolQuery as poolQueryOf, type PoolQuery } from '@/lib/db/pool-query'
+import type { PoolQuery } from '@/lib/db/pool-query'
 import {
   JOIN_CODE_TTL_MS,
   makeJoinCode,
@@ -18,12 +18,11 @@ import {
 //
 // The pool is passed in as a one-method view rather than a Payload instance, so
 // every function here is callable from a route and from a probe script without
-// dragging the CMS along.
+// dragging the CMS along. Since #511 that view comes from `repo.db.query`
+// (ADR-0027's seam) rather than from a Payload instance the route happens to
+// hold; the SQL below did not move a line.
 
 export type JoinQuery = PoolQuery
-
-/** The pool Payload holds open, typed down to the one method we use. */
-export const poolQuery: (payload: unknown) => JoinQuery = poolQueryOf
 
 /**
  * A claim secret as the database holds it: SHA-256 hex, never the plaintext.

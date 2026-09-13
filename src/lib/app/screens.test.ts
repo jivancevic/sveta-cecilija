@@ -66,6 +66,7 @@ describe('the screen table', () => {
     expect(keys(live)).toEqual([
       'orders',
       'performances',
+      'members',
       'leaderboard',
       'scan',
       'sell',
@@ -112,8 +113,12 @@ describe('unlockedScreens', () => {
     expect(unlockedScreens(user('refunds', 'dev'), ctx())).toEqual([])
   })
 
-  it('gives a voditelj Izvedbe and Ljestvica without any Member link', () => {
-    expect(keys(unlockedScreens(user('moreska'), ctx()))).toEqual(['performances', 'leaderboard'])
+  it('gives a voditelj Izvedbe, Članovi and Ljestvica without any Member link', () => {
+    expect(keys(unlockedScreens(user('moreska'), ctx()))).toEqual([
+      'performances',
+      'members',
+      'leaderboard',
+    ])
   })
 
   it('gives a tickets holder every blagajna screen built so far', () => {
@@ -294,9 +299,19 @@ describe('activeScreenKey', () => {
     expect(activeScreenKey('/app/performances-archive')).toBeNull()
   })
 
+  it('lights Članovi on a dancer’s profile, not only on the list (#511)', () => {
+    expect(activeScreenKey('/app/members')).toBe('members')
+    expect(activeScreenKey('/app/members/4')).toBe('members')
+  })
+
+  it('lights nothing on the retired Pozivnice path, which now 308s away (#511)', () => {
+    // It was a Više row until Članovi absorbed it; a stale bookmark is a 308
+    // before any bar is rendered, so no tab should claim the path.
+    expect(activeScreenKey('/app/invitations')).toBeNull()
+  })
+
   it('lights Više for the rows that live under it', () => {
     expect(activeScreenKey('/app/account')).toBe('more')
-    expect(activeScreenKey('/app/invitations')).toBe('more')
     expect(activeScreenKey('/app/calendar')).toBe('more')
     expect(activeScreenKey('/app/notifications')).toBe('more')
   })

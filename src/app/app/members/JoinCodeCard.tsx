@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { APP_STRINGS } from '@/lib/app/strings'
 
-// The rehearsal code, on the voditelj's screen (#463).
+// The rehearsal code, on the voditelj's screen (#463; on Članovi since #511).
 //
 // The QR is rendered by the SERVER and handed down as a data URL, because it is
 // a picture of a fact the server owns; rotating simply asks for a new page.
