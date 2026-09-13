@@ -95,7 +95,12 @@
   overscroll-behavior: none;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
-  touch-action: pan-y;
+  /* `pan-y` alone took pinch-zoom away from the whole app, which is not the
+     gesture's to take: a volunteer reading a buyer's name off a phone in the
+     dark zooms in, and an accessibility setting that relies on zoom is not
+     optional. `pinch-zoom` keeps it; the pull still gets its `preventDefault`
+     on a one-finger vertical drag, which is all it ever needed. */
+  touch-action: pan-y pinch-zoom;
   background: var(--bg);
   color: var(--ink);
   font-family: var(--sans);
