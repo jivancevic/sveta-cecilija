@@ -3,6 +3,15 @@
 > Voice-of-customer analysis for issue #124. Mines the public TripAdvisor listing
 > [Moreska Sword Dancing, d1898279](https://www.tripadvisor.com/Attraction_Review-g1007309-d1898279-Reviews-Moreska_Sword_Dancing-Korcula_Town_Korcula_Island_Dubrovnik_Neretva_County_Dalma.html)
 > for recurring, fixable complaints behind the 0.7-star gap from a perfect score.
+>
+> **Outcome (2026-09-13, #219 closed).** The board accepted the three communications
+> fixes below and declined both operational ones. A `/grill-with-docs` session (#541)
+> then reshaped how they reach a guest, and it **overrode three things this report
+> assumes**: the evening is two named parts, not three; the digital programme is reached
+> by a plain link and never a second QR code; and it sits beside the spoken introduction
+> rather than letting it be shortened, because the pacing item was declined. Read #541's
+> decision comment before acting on the recommendations here. Implementation: #542, #543,
+> #544.
 
 ## Method & scope
 
