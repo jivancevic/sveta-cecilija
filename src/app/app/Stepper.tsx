@@ -17,11 +17,14 @@ export function Stepper({
   label,
   value,
   max,
+  disabled = false,
   onChange,
 }: {
   label: string
   value: number
   max: number
+  /** Both keys, while a sale is in flight: the counts are already committed. */
+  disabled?: boolean
   onChange: (next: number) => void
 }) {
   return (
@@ -31,7 +34,7 @@ export function Stepper({
         type="button"
         className="app__stepper-button"
         aria-label={`${label} -`}
-        disabled={value <= 0}
+        disabled={disabled || value <= 0}
         onClick={() => onChange(value - 1)}
       >
         -
@@ -41,7 +44,7 @@ export function Stepper({
         type="button"
         className="app__stepper-button"
         aria-label={`${label} +`}
-        disabled={value >= max}
+        disabled={disabled || value >= max}
         onClick={() => onChange(value + 1)}
       >
         +

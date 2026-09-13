@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { formatEur } from '@/lib/app/orders-view'
 import { APP_STRINGS } from '@/lib/app/strings'
 import {
   clampStatementMonth,
@@ -158,12 +159,12 @@ function Loaded({
     <>
       <dl className="app__statement-figures">
         <Figure label={APP_STRINGS.statement.tickets} value={String(summary.ticketsSold)} />
-        <Figure label={APP_STRINGS.statement.gross} value={eur(summary.grossCents)} />
+        <Figure label={APP_STRINGS.statement.gross} value={formatEur(summary.grossCents)} />
         <Figure
-          label={APP_STRINGS.statement.commission(summary.commissionPercent || commissionPercent)}
-          value={eur(summary.commissionCents)}
+          label={APP_STRINGS.statement.commission(summary.commissionPercent ?? commissionPercent)}
+          value={formatEur(summary.commissionCents)}
         />
-        <Figure label={APP_STRINGS.statement.owed} value={eur(summary.owedCents)} strong />
+        <Figure label={APP_STRINGS.statement.owed} value={formatEur(summary.owedCents)} strong />
         {summary.cancelledCount > 0 && (
           <Figure label={APP_STRINGS.statement.cancelled} value={String(summary.cancelledCount)} />
         )}
@@ -182,7 +183,7 @@ function Loaded({
               <span>
                 {line.showLabel} · {line.activeCount}
               </span>
-              <b>{eur(line.grossCents)}</b>
+              <b>{formatEur(line.grossCents)}</b>
             </li>
           ))}
         </ul>
@@ -203,5 +204,3 @@ function Figure({ label, value, strong = false }: { label: string; value: string
     </div>
   )
 }
-
-const eur = (cents: number) => `${(cents / 100).toFixed(2).replace('.', ',')} €`

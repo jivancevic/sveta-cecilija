@@ -1090,7 +1090,6 @@ export const APP_STRINGS = {
     noShows: 'Trenutno nema izvedbe za prodaju.',
     adults: 'Odrasli',
     children: 'Djeca',
-    pickCounts: 'Odaberi broj ulaznica.',
     issue: 'Izdaj ulaznice',
     issuing: 'Izdajem...',
     tooMany: 'Nema toliko slobodnih mjesta.',
@@ -1100,12 +1099,12 @@ export const APP_STRINGS = {
     doneTitle: 'Ulaznice su izdane',
     doneBody: (count: number, code: string) => `${count} ulaznica · ${code} · PDF se otvorio`,
     openPdf: 'Otvori PDF ponovno',
-    close: 'Zatvori',
     /** Recent orders, and the delete-then-undo cancel (ADR-0017). */
     recentTitle: 'Zadnje prodaje',
     recentNote: 'Prodaju možeš otkazati isti dan.',
     recentEmpty: 'Još nema prodaje.',
     earlier: 'Ranije',
+    /** The three hover labels of a sale row: without them it is three numbers. */
     sold: 'Prodano',
     performance: 'Izvedba',
     people: 'Osoba',
@@ -1131,7 +1130,7 @@ export const APP_STRINGS = {
     monthTitle: 'Ovaj mjesec',
     monthTickets: 'Prodanih ulaznica',
     monthOwed: 'Za uplatiti HGD-u',
-    monthCommission: 'Vaša provizija',
+    monthCommission: 'Tvoja provizija',
     monthNote: 'Računa se uživo, a mjesečni obračun je na ekranu Obračun.',
   },
 
@@ -1147,7 +1146,7 @@ export const APP_STRINGS = {
   statement: {
     seasonTitle: 'Sezona',
     seasonSold: (n: number) => `${n} prodanih ulaznica ove sezone`,
-    seasonEmpty: 'Ove sezone još niste prodali nijednu ulaznicu.',
+    seasonEmpty: 'Ove sezone još nema prodanih ulaznica.',
     adults: 'Odrasli',
     children: 'Djeca',
     monthlyTitle: 'Mjesečni obračun',
@@ -1159,7 +1158,7 @@ export const APP_STRINGS = {
     tickets: 'Prodanih ulaznica',
     cancelled: 'Otkazanih',
     gross: 'Ukupno naplaćeno',
-    commission: (percent: number) => `Vaša provizija (${percent}%)`,
+    commission: (percent: number) => `Tvoja provizija (${percent}%)`,
     owed: 'Za uplatiti HGD-u',
     perShow: 'Po izvedbama',
     empty: 'U tom mjesecu nema prodaje.',

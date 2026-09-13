@@ -3,6 +3,7 @@
 import { useCallback, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { saleTotalCents, stepperMax, type SellOption } from '@/lib/app/partner-screen'
+import { formatEur } from '@/lib/app/orders-view'
 import { APP_STRINGS } from '@/lib/app/strings'
 import { Stepper } from '../Stepper'
 import { DrainBanner } from '../DrainBanner'
@@ -49,11 +50,9 @@ export function SellForm({ shows }: { shows: SellOption[] }) {
     window.open(`/api/orders/${orderId}/tickets.pdf`, '_blank', 'noopener')
 
   async function submit() {
-    if (busy) return
-    if (total === 0) {
-      setError(APP_STRINGS.sell.pickCounts)
-      return
-    }
+    // The button is disabled until there is something to sell, so there is no
+    // "you picked nothing" message to write: the control says it instead.
+    if (busy || total === 0) return
     setBusy(true)
     setError(null)
     try {
@@ -138,19 +137,21 @@ export function SellForm({ shows }: { shows: SellOption[] }) {
               label={APP_STRINGS.sell.adults}
               value={adults}
               max={stepperMax(remaining, children)}
+              disabled={busy}
               onChange={setAdults}
             />
             <Stepper
               label={APP_STRINGS.sell.children}
               value={children}
               max={stepperMax(remaining, adults)}
+              disabled={busy}
               onChange={setChildren}
             />
           </div>
 
           <div className="app__sell-total">
             <span>{total}</span>
-            <b>{(saleTotalCents(adults, children) / 100).toFixed(2).replace('.', ',')} €</b>
+            <b>{formatEur(saleTotalCents(adults, children))}</b>
           </div>
 
           {error && <p className="app__error">{error}</p>}

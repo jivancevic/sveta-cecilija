@@ -1,4 +1,5 @@
 import { loadSellScreen } from '@/lib/app/sell-data'
+import { formatEur } from '@/lib/app/orders-view'
 import { APP_STRINGS } from '@/lib/app/strings'
 import { AppShell } from '../AppShell'
 import { PartnerNotice } from '../PartnerNotice'
@@ -27,8 +28,6 @@ import { SellForm } from './SellForm'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
-
-const eur = (cents: number) => `${(cents / 100).toFixed(2).replace('.', ',')} €`
 
 export default async function SellPage() {
   const { viewer, refusal } = await openScreen('sell')
@@ -61,11 +60,11 @@ export default async function SellPage() {
             <span>{APP_STRINGS.sell.monthTickets}</span>
           </div>
           <div className="app__tile2 app__tile2--money">
-            <b>{eur(screen.month.owedCents)}</b>
+            <b>{formatEur(screen.month.owedCents)}</b>
             <span>{APP_STRINGS.sell.monthOwed}</span>
           </div>
           <div className="app__tile2 app__tile2--money">
-            <b>{eur(screen.month.commissionCents)}</b>
+            <b>{formatEur(screen.month.commissionCents)}</b>
             <span>{APP_STRINGS.sell.monthCommission}</span>
           </div>
         </div>

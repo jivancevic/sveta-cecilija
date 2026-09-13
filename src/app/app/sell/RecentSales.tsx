@@ -1,9 +1,10 @@
 'use client'
 
-import { Fragment, useCallback, useState } from 'react'
+import { Fragment, useCallback, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { RecentSalePageRow } from '@/lib/partner/recent-sales-page'
 import { shortShowDay } from '@/lib/app/partner-screen'
+import { formatEur } from '@/lib/app/orders-view'
 import { APP_STRINGS, shortMonthLabel } from '@/lib/app/strings'
 import { DrainBanner } from '../DrainBanner'
 
@@ -34,8 +35,6 @@ export interface RecentPage {
 
 type View = RecentPage & { page: number; mode: 'collapsed' | 'pager' }
 type Undo = { orderId: string; ticketId?: string; label: string; ms: number }
-
-const eur = (cents: number) => `${(cents / 100).toFixed(2).replace('.', ',')} €`
 
 /** "17. srp 14:32" — when the sale was rung up, in Zagreb time. */
 function soldAt(iso: string): string {
@@ -74,7 +73,18 @@ export function RecentSales({ initial }: { initial: RecentPage }) {
     if (view.mode === 'collapsed') setView({ ...initial, page: 1, mode: 'collapsed' })
   }
 
-  const dismissUndo = useCallback(() => setUndo(null), [])
+  // A whole-order storno empties the order, and the server list only carries
+  // orders with an active ticket left — so refreshing while the undo is still
+  // on screen would pull the row out from under the offer. The refresh waits
+  // for the bar to drain (or is dropped when the undo actually happens).
+  const refreshWhenUndoEnds = useRef(false)
+  const dismissUndo = useCallback(() => {
+    setUndo(null)
+    if (refreshWhenUndoEnds.current) {
+      refreshWhenUndoEnds.current = false
+      router.refresh()
+    }
+  }, [router])
 
   const toggle = (orderId: string) =>
     setOpen((prev) => {
@@ -145,7 +155,10 @@ export function RecentSales({ initial }: { initial: RecentPage }) {
           ? { orderId: sale.orderId, ticketId, label: APP_STRINGS.sell.ticketCancelled(ref), ms: TICKET_UNDO_MS }
           : { orderId: sale.orderId, label: APP_STRINGS.sell.orderCancelled(sale.code), ms: ORDER_UNDO_MS },
       )
-      router.refresh()
+      // A single ticket leaves the order standing, so the other cards can be
+      // brought up to date at once; a whole order waits (see the ref above).
+      if (ticketId) router.refresh()
+      else refreshWhenUndoEnds.current = true
     } catch {
       setError(APP_STRINGS.sell.network)
     } finally {
@@ -157,6 +170,7 @@ export function RecentSales({ initial }: { initial: RecentPage }) {
     if (!undo) return
     const { orderId, ticketId } = undo
     setUndo(null)
+    refreshWhenUndoEnds.current = false
     setError(null)
     try {
       const res = await fetch('/api/partner/cancel/undo', {
@@ -211,11 +225,14 @@ export function RecentSales({ initial }: { initial: RecentPage }) {
             const head = (
               <>
                 <b>{sale.code}</b>
+                {/* Three numbers in a row need naming; on a laptop the title
+                    is the whole explanation, and it costs a phone nothing. */}
                 <span className="app__sale-meta">
-                  {soldAt(sale.createdAt)} · {shortShowDay(sale.showDate)} ·{' '}
-                  {sale.adultCount + sale.childCount}
+                  <span title={APP_STRINGS.sell.sold}>{soldAt(sale.createdAt)}</span> ·{' '}
+                  <span title={APP_STRINGS.sell.performance}>{shortShowDay(sale.showDate)}</span> ·{' '}
+                  <span title={APP_STRINGS.sell.people}>{sale.adultCount + sale.childCount}</span>
                 </span>
-                <span className="app__sale-money">{eur(sale.totalCents)}</span>
+                <span className="app__sale-money">{formatEur(sale.totalCents)}</span>
               </>
             )
             return (
@@ -255,7 +272,11 @@ export function RecentSales({ initial }: { initial: RecentPage }) {
                           disabled={active === 0 || busy === sale.orderId}
                           onClick={() => cancel(sale)}
                           title={APP_STRINGS.sell.cancelOrder}
-                          aria-label={APP_STRINGS.sell.cancelOrder}
+                          aria-label={
+                            busy === sale.orderId
+                              ? APP_STRINGS.sell.cancelling
+                              : APP_STRINGS.sell.cancelOrder
+                          }
                         >
                           <TrashIcon />
                         </button>
@@ -283,7 +304,11 @@ export function RecentSales({ initial }: { initial: RecentPage }) {
                                 disabled={busy === `${sale.orderId}:${t.id}`}
                                 onClick={() => cancel(sale, t.id)}
                                 title={APP_STRINGS.sell.cancelTicket}
-                                aria-label={APP_STRINGS.sell.cancelTicket}
+                                aria-label={
+                                  busy === `${sale.orderId}:${t.id}`
+                                    ? APP_STRINGS.sell.cancelling
+                                    : APP_STRINGS.sell.cancelTicket
+                                }
                               >
                                 <TrashIcon />
                               </button>
