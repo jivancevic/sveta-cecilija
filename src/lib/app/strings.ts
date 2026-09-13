@@ -388,13 +388,18 @@ export const APP_STRINGS = {
    * detail view and the answer route's refusal: a dancer who taps a locked
    * button and a dancer whose POST is refused are in the same situation, and
    * two wordings for it would only look like two different rules.
+   *
+   * Every reader of these is answering for a dancer, so they say "nastup"
+   * (#565): the hero's lock note on Moreška and the 403 the route sends back
+   * are the same sentence, and a person who reads "Izvedba je otkazana" one
+   * tab away is reading the blagajna's screen, where that IS the word.
    */
   answer: {
     coming: 'Dolazim',
     notComing: 'Ne dolazim',
     clear: 'Poništi',
-    locked: 'Izvedba je počela, odgovori se više ne mijenjaju.',
-    cancelled: 'Izvedba je otkazana.',
+    locked: 'Nastup je počeo, odgovori se više ne mijenjaju.',
+    cancelled: 'Nastup je otkazan.',
     failed: 'Odgovor nije spremljen. Pokušaj ponovno.',
     saving: 'Spremam...',
   },

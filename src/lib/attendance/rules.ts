@@ -199,10 +199,12 @@ export const ANSWER_ERRORS = {
 /**
  * THE answer rule (#422). Pure over (actor, member, performance, request).
  *
- * 403 means "you may not do this": someone else's answer, an evening that has
- * already started or been cancelled, or an army only a voditelj may set.
+ * 403 means "you may not do this": someone else's answer, or an evening that
+ * has already started or been cancelled.
  * 400 means "this makes no sense": an unknown status or army, an army the
- * member's roles do not include, a member who is not a live moreškant.
+ * member's roles do not include, a member who is not a live moreškant. Both
+ * only ever reach a VODITELJ now, because an army from a dancer is dropped
+ * before any of them is considered (#565).
  *
  * `existingArmy` is the army already stored for this pair, so an answer that
  * does not mention the army keeps the one the voditelj chose rather than

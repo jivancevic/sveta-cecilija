@@ -80,9 +80,10 @@ export default async function MoreskaPage() {
           </div>
         </div>
       ) : (
-        <p className="app__me-none">
-          {S.noMember} {ahead}.
-        </p>
+        // "N nastupa pred tobom" is a sentence about the reader's OWN season,
+        // and this branch is the reader who has none: a voditelj who does not
+        // dance reads the schedule, they are not down for any of it.
+        <p className="app__me-none">{S.noMember}</p>
       )}
 
       {hero && next ? (
