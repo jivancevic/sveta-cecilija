@@ -113,12 +113,13 @@ describe('unlockedScreens', () => {
     expect(keys(unlockedScreens(user('moreska'), ctx()))).toEqual(['performances', 'leaderboard'])
   })
 
-  it('gives a tickets holder Narudžbe and Upiti, and the rest as they are built', () => {
-    // Narudžbe landed with #501 and Upiti with #507. Gratis and Statistika are
-    // ticketed separately (#506, #508) and Izvedbe serves the blagajna only
-    // from #502, so `tickets` unlocks exactly these two screens today.
+  it('gives a tickets holder Narudžbe, Izvedbe and Upiti, and the rest as built', () => {
+    // Narudžbe landed with #501, the blagajna's half of Izvedbe with #502 and
+    // Upiti with #507. Gratis and Statistika are ticketed separately (#506,
+    // #508), so `tickets` unlocks exactly these three today, in rank order.
     expect(keys(unlockedScreens(user('tickets', 'refunds'), ctx()))).toEqual([
       'orders',
+      'performances',
       'inquiries',
     ])
   })

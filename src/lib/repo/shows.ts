@@ -22,6 +22,8 @@
 
 import type { ShowDetails } from '@/lib/scan-token'
 import type { NewPerformanceRow, NonPublicKind } from '@/lib/performance-input'
+import type { PerformanceKind } from '@/lib/show-performance'
+import type { Venue } from '@/lib/venues'
 
 /**
  * One performance as the voditelj's forms read it (#503).
@@ -43,6 +45,10 @@ export interface PerformanceRow {
   location: string | null
   /** Non-public rows: the ship or the organiser. */
   client: string | null
+  /** Public rows: the house, which is where the capacity is read from (#502). */
+  venue: Venue | null
+  /** Public rows: `onlineSalesPaused` — online checkout is off (#366, #502). */
+  paused: boolean
   thresholdCrni: number
   thresholdBili: number
 }
@@ -56,12 +62,30 @@ export interface PerformanceRow {
  * by accident.
  */
 export interface PerformancePatch {
-  /** A full ISO instant; Shows stores the day at noon UTC. */
+  /**
+   * A full ISO instant; Shows stores the day at noon UTC.
+   *
+   * Only ever written on a NON-public row. A public evening's date moves
+   * through `/api/shows/[id]/reschedule`, which mails every buyer and reissues
+   * every ticket (#379); this patch must never become a quiet second way.
+   */
   date?: string
   time?: string
-  kind?: NonPublicKind
+  /** Any of the five kinds since #502: a public row may be a koncert too. */
+  kind?: PerformanceKind
   location?: string
   client?: string | null
+  /** Public rows only (#502): the house, and so the capacity. */
+  venue?: Venue
+  /**
+   * Public rows only (#502): the online sales pause (#366).
+   *
+   * Deliberately on this closed list rather than reachable as "any field": it
+   * is the one switch on a public row that Cecilija may flip, and `status`
+   * beside it is the voditelj's booking cancel, never a public evening's
+   * (that is #497's route, which also refunds and mails).
+   */
+  onlineSalesPaused?: boolean
   status?: 'active' | 'cancelled'
   thresholdCrni?: number
   thresholdBili?: number
@@ -121,4 +145,4 @@ export interface ShowsRepo {
   updatePerformance(id: string | number, patch: PerformancePatch, actor?: unknown): Promise<void>
 }
 
-export type { NewPerformanceRow, NonPublicKind, ShowDetails }
+export type { NewPerformanceRow, NonPublicKind, PerformanceKind, ShowDetails, Venue }

@@ -81,9 +81,9 @@ export const APP_SCREENS: AppScreen[] = [
     route: '/app/performances',
     rank: 2,
     unlockedBy: ['tickets', 'moreska', 'moreskant'],
-    // The dancer's and the voditelj's half is live (#457); the blagajna's half
-    // is #502.
-    servesToday: ['moreska', 'moreskant'],
+    // All three halves are live: the dancer's and the voditelj's (#457, #503)
+    // and the blagajna's (#502). One screen, content by `can()`.
+    servesToday: ['tickets', 'moreska', 'moreskant'],
     groups: ['moreskant', 'box'],
   },
   {

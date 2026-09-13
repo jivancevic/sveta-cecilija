@@ -14,6 +14,7 @@ import { createAuthRepo } from './payload/auth'
 import { createDbRepo } from './payload/db'
 import { createInquiriesRepo } from './payload/inquiries'
 import { createOrdersRepo } from './payload/orders'
+import { createRosterRepo } from './payload/roster'
 import { createPartnersRepo } from './payload/partners'
 import { createShowsRepo } from './payload/shows'
 import type { Repo } from './types'
@@ -26,6 +27,7 @@ function build(): Repo {
     db: createDbRepo(),
     inquiries: createInquiriesRepo(),
     orders: createOrdersRepo(),
+    roster: createRosterRepo(),
     partners: createPartnersRepo(),
     shows: createShowsRepo(),
   }
