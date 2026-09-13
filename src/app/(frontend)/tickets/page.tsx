@@ -72,6 +72,7 @@ export default async function PerformancesRoute({
         t={dict.performancesPage}
         tSchedule={dict.schedule}
         tHelp={dict.help}
+        tEvening={dict.evening}
         shows={shows}
         locale={locale}
         initialDate={initialDate}

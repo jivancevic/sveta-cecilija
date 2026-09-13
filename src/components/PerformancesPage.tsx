@@ -8,11 +8,13 @@ import type { Dictionary } from '@/lib/i18n';
 import type { Locale } from '@/proxy';
 import { calculateOrderTotal } from '@/lib/pricing';
 import HelpBlock from '@/components/HelpBlock';
+import EveningBlock from '@/components/EveningBlock';
 
 interface Props {
   t: Dictionary['performancesPage'];
   tSchedule: Dictionary['schedule'];
   tHelp: Dictionary['help'];
+  tEvening: Dictionary['evening'];
   shows: Show[];
   locale: Locale;
   initialDate?: string;
@@ -30,7 +32,7 @@ function formatDate(isoDate: string, locale: Locale) {
   return { day, month, year, weekday };
 }
 
-export default function PerformancesPage({ t, tSchedule, tHelp, shows, locale, initialDate, images }: Props) {
+export default function PerformancesPage({ t, tSchedule, tHelp, tEvening, shows, locale, initialDate, images }: Props) {
   const initialMatch = initialDate
     ? shows.find((s) => s.date === initialDate && !s.onlineSalesPaused)
     : undefined;
@@ -84,10 +86,7 @@ export default function PerformancesPage({ t, tSchedule, tHelp, shows, locale, i
             </a>
           </div>
           <div className="perfs-venue__divider" />
-          <div className="perfs-venue__details">
-            <span className="perfs-venue__details-label">{t.venueDetailsLabel}</span>
-            <span className="perfs-venue__details-text">{t.venueDetails}</span>
-          </div>
+          <EveningBlock t={tEvening} />
         </div>
         <div className="perfs-venue__rain">
           <span className="perfs-venue__rain-label">{t.rainPlanLabel}</span>
