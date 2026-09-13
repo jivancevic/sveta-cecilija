@@ -63,3 +63,24 @@ export function notificationTimeLabel(iso: string, nowMs: number = Date.now()): 
   const month = MONTHS_GENITIVE[Number(then.date.slice(5, 7)) - 1] ?? ''
   return `${day}. ${month} u ${then.time}`
 }
+
+/**
+ * What the header bell's badge says, if anything (#496, #562).
+ *
+ * Two rules, and the second one is the audit's bug: the badge is the COUNT
+ * ("three things happened" is the reason to open it, where a dot would look the
+ * same whether one thing or twenty had happened), and there is NO badge on the
+ * inbox itself, where the rows are already in front of the reader and a number
+ * over the door they came through is noise.
+ *
+ * Above 99 the exact number stops being information.
+ *
+ * Pure, and handed the pathname rather than reading one, so the rule is tested
+ * without a router and is stated in exactly one place.
+ */
+export function notificationBadge(unread: number, pathname: string): string | null {
+  const path = (pathname.split('?')[0] ?? '').replace(/\/+$/, '')
+  if (path === '/app/notifications' || path.startsWith('/app/notifications/')) return null
+  if (unread <= 0) return null
+  return unread > 99 ? APP_STRINGS.notifications.badgeOverflow : String(unread)
+}

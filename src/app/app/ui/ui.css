@@ -1,0 +1,758 @@
+/* ─────────────────────────────────────────────────────────────
+   Cecilija's shared shapes (#562).
+
+   Every rule here names a token from `app.css` and no hex of its own, except
+   the two places a colour IS the meaning (the ink of a crni disc, the gold a
+   bili king's crown is drawn in). That is what lets the night skin land later
+   by flipping one attribute.
+
+   Loaded AFTER `app.css` by the route group's layout, so where a legacy
+   `app__*` rule and a `ui-*` rule meet on one element, the new system wins the
+   tie. Nothing here is scoped to a screen: a screen ticket composes these,
+   it does not restyle them.
+   ───────────────────────────────────────────────────────────── */
+
+/* ── Card, Hero ───────────────────────────────────────────── */
+.ui-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 18px;
+  border-radius: var(--rCard);
+  background: var(--card);
+  box-shadow: var(--shadowCard);
+  transition: background 0.3s var(--ease);
+}
+
+/* The one card on a screen that is the reason the screen was opened. It is
+   bigger, it sits deeper, and there is never a second one. */
+.ui-card--hero {
+  gap: 12px;
+  padding: 20px;
+  box-shadow: var(--shadowHero);
+}
+
+.ui-card__eyebrow,
+.ui-eyebrow {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* The date of the evening, read across a dark room: the day is the biggest
+   thing the app ever draws, and the month keeps it a date rather than a score. */
+.ui-hero__day {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  line-height: 0.9;
+}
+
+.ui-hero__day b {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 80px;
+  letter-spacing: -0.03em;
+}
+
+.ui-hero__day span {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 28px;
+}
+
+.ui-hero__meta {
+  color: var(--muted);
+  font-weight: 500;
+}
+
+/* ── Section heading ──────────────────────────────────────── */
+.ui-section {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 6px;
+}
+
+.ui-section h3 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.ui-small {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* ── Button ───────────────────────────────────────────────── */
+.ui-btn {
+  flex: 1;
+  height: 52px;
+  padding: 0 16px;
+  border-radius: var(--rCtl);
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  transition: transform 0.12s var(--ease), box-shadow 0.2s, background 0.2s, color 0.2s,
+    opacity 0.2s;
+}
+
+/* The press, which is the whole of the feedback the audit found missing
+   (pattern 6): 120ms down, nothing else. */
+.ui-btn:active {
+  transform: scale(0.97);
+}
+
+.ui-btn--primary {
+  background: var(--gold);
+  color: var(--onGold);
+  box-shadow: 0 8px 18px -8px var(--gold);
+}
+
+.ui-btn--ghost {
+  color: var(--ink);
+  box-shadow: inset 0 0 0 1.5px var(--ghostEdge);
+}
+
+/* An answer already given. It is wider than the button beside it because it is
+   a statement now, not a choice. */
+.ui-btn--done {
+  flex: 2;
+  background: var(--goldSoft);
+  color: var(--goldText);
+  box-shadow: none;
+}
+
+.ui-btn--link {
+  color: var(--muted);
+  font-weight: 500;
+  font-size: 15px;
+}
+
+/* Red, last, and never without a confirmation in front of it. */
+.ui-btn--destructive {
+  color: var(--red);
+  box-shadow: inset 0 0 0 1.5px var(--red);
+}
+
+.ui-btn--off {
+  opacity: 0.45;
+  box-shadow: none;
+}
+
+.ui-btn:disabled {
+  cursor: default;
+  opacity: 0.45;
+  box-shadow: none;
+}
+
+.ui-btn:disabled:active {
+  transform: none;
+}
+
+/* The confirmation: the button pops once and the tick draws itself. It fires
+   on the answer landing, never on the tap, so what you see is the server
+   agreeing with you. */
+.ui-btn--pop {
+  animation: ui-pop 0.45s var(--ease);
+}
+
+@keyframes ui-pop {
+  0% {
+    transform: scale(0.94);
+  }
+  55% {
+    transform: scale(1.04);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.ui-check {
+  stroke-dasharray: 24;
+  stroke-dashoffset: 0;
+}
+
+.ui-btn--pop .ui-check {
+  animation: ui-draw 0.5s var(--ease) 0.05s both;
+}
+
+@keyframes ui-draw {
+  from {
+    stroke-dashoffset: 24;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* ── Chip ─────────────────────────────────────────────────── */
+.ui-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 24px;
+  padding: 0 10px;
+  border-radius: var(--rPill);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  background: var(--sunk);
+  color: var(--muted);
+}
+
+.ui-chip--gold {
+  background: var(--goldSoft);
+  color: var(--goldText);
+}
+
+.ui-chip--warn {
+  background: var(--goldSoft);
+  color: var(--warn);
+}
+
+/* ── Note ─────────────────────────────────────────────────── */
+.ui-note {
+  display: flex;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: var(--rCtl);
+  background: var(--sunk);
+  font-size: 14px;
+}
+
+.ui-note__icon {
+  flex: none;
+  color: var(--goldText);
+  display: flex;
+}
+
+/* ── List and row ─────────────────────────────────────────── */
+.ui-list {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: var(--rCard);
+  background: var(--card);
+  box-shadow: var(--shadowCard);
+  transition: background 0.3s var(--ease);
+}
+
+.ui-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 72px;
+  padding: 10px 16px;
+  border-top: 1px solid var(--rule);
+  border-left: 0;
+  border-right: 0;
+  border-bottom: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+
+.ui-row:first-child {
+  border-top: 0;
+}
+
+.ui-row:active,
+a.ui-row:hover,
+button.ui-row:hover {
+  background: var(--sunk);
+}
+
+.ui-row__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.ui-row__body b {
+  display: block;
+  font-weight: 600;
+}
+
+.ui-row__body span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* ── DateDisc ─────────────────────────────────────────────── */
+.ui-date {
+  flex: none;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--rPill);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  background: var(--sunk);
+}
+
+.ui-date b {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 18px;
+}
+
+.ui-date span {
+  margin-top: 3px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* Gold is Redovna, the evening the society exists for. Everything else is a
+   sunk disc, so a season of gold dots reads as the season. */
+.ui-date--gold {
+  background: var(--gold);
+  color: var(--onGold);
+}
+
+.ui-date--gold span {
+  color: rgba(20, 16, 10, 0.7);
+}
+
+/* ── Tile ─────────────────────────────────────────────────── */
+.ui-tiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.ui-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 150px;
+  padding: 16px;
+  border: 0;
+  border-radius: var(--rCard);
+  background: var(--card);
+  box-shadow: var(--shadowCard);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  text-decoration: none;
+  transition: transform 0.12s var(--ease), background 0.3s var(--ease);
+}
+
+.ui-tile:active {
+  transform: scale(0.98);
+}
+
+/* ── Ring ─────────────────────────────────────────────────── */
+.ui-ring {
+  width: 72px;
+  height: 72px;
+  border-radius: var(--rPill);
+  display: grid;
+  place-items: center;
+  background: conic-gradient(var(--gold) 0 var(--deg, 0deg), var(--sunk) var(--deg, 0deg) 360deg);
+}
+
+.ui-ring__hole {
+  width: 56px;
+  height: 56px;
+  border-radius: var(--rPill);
+  background: var(--card);
+  display: grid;
+  place-items: center;
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 18px;
+  font-style: normal;
+}
+
+/* ── Podium ───────────────────────────────────────────────── */
+.ui-podium {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  height: 72px;
+}
+
+.ui-podium__step {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding-bottom: 4px;
+  border-radius: 8px 8px 4px 4px;
+  background: var(--sunk);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  transform-origin: bottom;
+  animation: ui-rise 0.6s var(--ease) both;
+}
+
+.ui-podium__step b {
+  font-family: var(--serif);
+  font-size: 16px;
+  color: var(--ink);
+}
+
+.ui-podium__step--1 {
+  height: 100%;
+  background: var(--goldSoft);
+  animation-delay: 0.1s;
+}
+
+.ui-podium__step--2 {
+  height: 78%;
+}
+
+.ui-podium__step--3 {
+  height: 60%;
+  animation-delay: 0.2s;
+}
+
+@keyframes ui-rise {
+  from {
+    transform: scaleY(0.2);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+/* ── ArmyBar ──────────────────────────────────────────────
+   Two armies, one bar, filling outwards from the middle: crni left in ink,
+   bili right in red. The gold ticks are the threshold, so "are we enough
+   tonight" is answered by a glance rather than by arithmetic. */
+.ui-army {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  padding: 12px;
+  border: 0;
+  border-radius: var(--rCtl);
+  background: var(--sunk);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  transition: transform 0.12s var(--ease);
+}
+
+button.ui-army:active {
+  transform: scale(0.985);
+}
+
+.ui-army__heads {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+
+.ui-army__side {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.ui-army__k {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.ui-army__v {
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 26px;
+  line-height: 1;
+  transition: color 0.3s;
+}
+
+.ui-army__v--low {
+  color: var(--warn);
+}
+
+.ui-army__split {
+  position: relative;
+  height: 12px;
+  border-radius: var(--rPill);
+  background: var(--track);
+  overflow: hidden;
+}
+
+.ui-army__split i {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  transition: width 0.6s var(--ease);
+}
+
+.ui-army__crni {
+  right: 50%;
+  background: var(--crni);
+  border-radius: var(--rPill) 0 0 var(--rPill);
+}
+
+.ui-army__bili {
+  left: 50%;
+  background: var(--red);
+  border-radius: 0 var(--rPill) var(--rPill) 0;
+}
+
+.ui-army__mid {
+  left: 50%;
+  width: 2px;
+  margin-left: -1px;
+  background: var(--bg);
+  z-index: 2;
+}
+
+.ui-army__tick {
+  top: 2px;
+  bottom: 2px;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--gold);
+  z-index: 3;
+}
+
+.ui-army__status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ok);
+}
+
+.ui-army__status--low {
+  color: var(--warn);
+}
+
+.ui-army__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: var(--rPill);
+  background: currentColor;
+}
+
+.ui-army__chev {
+  margin-left: auto;
+  display: flex;
+  color: var(--muted);
+}
+
+/* ── RoleMark ─────────────────────────────────────────────
+   The disc is the army a person dances for; the glyph is the title the
+   voditelj gave them FOR THIS EVENING, never a rank they carry around. */
+.ui-mark {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--rPill);
+  display: grid;
+  place-items: center;
+  color: var(--gold);
+  transition: box-shadow 0.2s;
+}
+
+.ui-mark--crni {
+  background: #1a140c;
+  color: var(--grey);
+  box-shadow: 0 0 0 1.5px var(--markEdge);
+}
+
+.ui-mark--bili {
+  background: var(--red);
+  color: #f1d27a;
+}
+
+.ui-mark--bula {
+  background: var(--gold);
+  color: #fff;
+}
+
+.ui-mark--none {
+  background: var(--sunk);
+}
+
+/* The bula of the night: a white ring inside the gold disc. One woman an
+   evening, and this is the whole of how the screen says which. */
+.ui-mark--titled.ui-mark--bula {
+  box-shadow: inset 0 0 0 3px #fff, inset 0 0 0 5px var(--gold);
+}
+
+.ui-mark svg {
+  width: 22px;
+  height: 22px;
+}
+
+.ui-mark--sm {
+  width: 28px;
+  height: 28px;
+}
+
+.ui-mark--sm svg {
+  width: 14px;
+  height: 14px;
+}
+
+.ui-mark--sm.ui-mark--titled.ui-mark--bula {
+  box-shadow: inset 0 0 0 2px #fff, inset 0 0 0 3.5px var(--gold);
+}
+
+/* ── Sheet ────────────────────────────────────────────────── */
+.ui-sheet__scrim {
+  position: fixed;
+  inset: 0;
+  background: rgba(26, 20, 12, 0.45);
+  z-index: 30;
+  animation: ui-fade 0.2s;
+}
+
+@keyframes ui-fade {
+  from {
+    opacity: 0;
+  }
+}
+
+.ui-sheet {
+  position: fixed;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  width: min(430px, 100%);
+  z-index: 31;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 20px calc(env(safe-area-inset-bottom, 0px) + 24px);
+  border-radius: 28px 28px 0 0;
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.2);
+  animation: ui-sheet-up 0.3s var(--ease);
+}
+
+@keyframes ui-sheet-up {
+  from {
+    transform: translate(-50%, 40px);
+    opacity: 0;
+  }
+}
+
+/* It is not draggable. The handle is there because a sheet without one does
+   not read as a sheet, and the scrim is the way out. */
+.ui-sheet__grab {
+  width: 40px;
+  height: 4px;
+  margin: 0 auto 4px;
+  border-radius: 2px;
+  background: var(--rule);
+}
+
+.ui-sheet h2 {
+  margin: 0;
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 24px;
+}
+
+.ui-sheet__opt {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 60px;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: var(--rCtl);
+  background: none;
+  box-shadow: inset 0 0 0 1.5px var(--ghostEdge);
+  color: inherit;
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 16px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ui-sheet__opt:active {
+  background: var(--sunk);
+}
+
+.ui-sheet__opt span {
+  display: block;
+  font-weight: 400;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.ui-sheet__opt--on {
+  box-shadow: inset 0 0 0 2px var(--gold);
+}
+
+/* ── Toast ────────────────────────────────────────────────
+   The only one. The shell's "Osvježeno · 21:05" renders this same component,
+   so there is one shape and one place to change it. */
+.ui-toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--tabH) + env(safe-area-inset-bottom, 0px) + 28px);
+  transform: translateX(-50%) translateY(10px);
+  padding: 10px 16px;
+  border-radius: var(--rPill);
+  background: var(--toast);
+  color: var(--onToast);
+  font-size: 14px;
+  font-weight: 500;
+  opacity: 0;
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 40;
+  transition: opacity 0.25s, transform 0.25s var(--ease);
+}
+
+.ui-toast--on {
+  opacity: 1;
+  transform: translateX(-50%);
+}
+
+/* One statement, once: motion is how this app confirms things, and a person
+   who has asked for less of it gets none of it rather than some. */
+@media (prefers-reduced-motion: reduce) {
+  .app *,
+  .app *::before,
+  .app *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

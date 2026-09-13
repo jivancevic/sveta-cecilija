@@ -5,6 +5,10 @@ import { APP_STRINGS } from '@/lib/app/strings'
 import { vapidPublicKey } from '@/lib/push/vapid'
 import { ServiceWorkerMigration } from './ServiceWorkerMigration'
 import './app.css'
+// The shared shapes (#562), AFTER the tokens and the screens that still carry
+// their own CSS, so where a legacy `app__*` rule and a `ui-*` rule meet on one
+// element the new system wins the tie.
+import './ui/ui.css'
 
 // Cecilija's own root layout (#421, ADR-0023).
 //

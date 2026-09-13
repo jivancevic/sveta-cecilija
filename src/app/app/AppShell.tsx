@@ -7,6 +7,8 @@ import type { AppViewer } from '@/lib/app/viewer'
 import type { DanceRole } from '@/lib/moreskant-profile'
 import { Sidebar, TabBar } from './AppNav'
 import { NotificationBell } from './NotificationBell'
+import { PullToRefresh } from './PullToRefresh'
+import { ScrollMemory } from './ScrollMemory'
 import { ShowDayStrip } from './ShowDayStrip'
 
 // The chrome every screen wears (#495): the sidebar, the header, the content
@@ -69,32 +71,40 @@ export function AppShell({
 
   return (
     <div className="app__frame">
+      {/* Renders nothing: it remembers where each list was, because the body
+          scrolls now and the browser only restores the document (#562). */}
+      <ScrollMemory />
+
       <Sidebar nav={viewer.nav} />
 
-      <div className="app__shell">
-        <header className="app__header">
-          <div className="app__header-title">
-            <h1>{heading}</h1>
-            {season != null && (
-              <p className="app__season">
-                {APP_STRINGS.list.season} {season}
-              </p>
-            )}
-          </div>
-          <div className="app__header-actions">
-            {actions}
-            <NotificationBell unread={viewer.unreadNotifications} />
-          </div>
-        </header>
+      {/* Everything that scrolls is inside the gesture (#562); the sidebar and
+          the bar are outside it, because neither of them moves. */}
+      <PullToRefresh>
+        <div className="app__shell">
+          <header className="app__header">
+            <div className="app__header-title">
+              <h1>{heading}</h1>
+              {season != null && (
+                <p className="app__season">
+                  {APP_STRINGS.list.season} {season}
+                </p>
+              )}
+            </div>
+            <div className="app__header-actions">
+              {actions}
+              <NotificationBell unread={viewer.unreadNotifications} />
+            </div>
+          </header>
 
-        {/* One line back to the scanner on the day of an izvedba (#472). Only
-            for a `door` holder, and never on Skener itself, where the ring
-            already says it with a number. */}
-        {screen !== 'scan' && can({ permissions: viewer.permissions }, 'door') && <ShowDayStrip />}
+          {/* One line back to the scanner on the day of an izvedba (#472). Only
+              for a `door` holder, and never on Skener itself, where the ring
+              already says it with a number. */}
+          {screen !== 'scan' && can({ permissions: viewer.permissions }, 'door') && <ShowDayStrip />}
 
-        {intro}
-        {children}
-      </div>
+          {intro}
+          {children}
+        </div>
+      </PullToRefresh>
 
       <TabBar nav={viewer.nav} />
     </div>

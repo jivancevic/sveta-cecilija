@@ -587,13 +587,8 @@ export default async function PerformanceDetailPage({
 
       {me && (
         <>
-          {/* The sticky bar covers the bottom of the scroll; without this the
-              last group of the longest panel would sit under it. It is inside
-              the same condition as the bar (#457 review): a viewer with no
-              Member row gets no bar, so they must not get its hole either, and
-              it is sized for the TALLEST variant (two buttons, the voditelj's
-              Poništi row and a lock note) rather than the shortest. */}
-          <div className="app__sticky-spacer" aria-hidden="true" />
+          {/* No spacer any more (#562): the bar is `position: sticky`, so it
+              takes its own room in the flow and nothing can end up under it. */}
           <div className="app__sticky">
             <AttendanceButtons
               performanceId={p.id}

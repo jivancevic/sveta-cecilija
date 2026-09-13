@@ -393,9 +393,12 @@ export function ScanStation({
       )}
 
       {/* The scanner. Mounted only while open, so the camera region is never a
-          hidden element html5-qrcode might attach to twice. */}
+          hidden element html5-qrcode might attach to twice.
+
+          `data-no-pull`: the camera covers the screen, so a finger dragged down
+          it is aiming at a ticket and not at a refresh (#562). */}
       {phase !== 'closed' && (
-        <div className="app__scan-overlay">
+        <div className="app__scan-overlay" data-no-pull>
           <div id={elementId} className="app__scan-video" />
 
           {phase === 'idle' && (

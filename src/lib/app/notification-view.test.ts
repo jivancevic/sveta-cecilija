@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { notificationTimeLabel } from './notification-view'
+import { notificationBadge, notificationTimeLabel } from './notification-view'
 
 // When a notification arrived, as the inbox says it (#496). Zagreb wall clock
 // throughout: the rows are read in Korčula, and a row filed at 00:30 CEST must
@@ -27,5 +27,30 @@ describe('notificationTimeLabel', () => {
 
   it('is empty for a timestamp it cannot read', () => {
     expect(notificationTimeLabel('not a date', NOW)).toBe('')
+  })
+})
+
+// The bell's badge (#562, folded in from the audit).
+describe('notificationBadge', () => {
+  it('is the count, so "three things happened" is the reason to open it', () => {
+    expect(notificationBadge(3, '/app/performances')).toBe('3')
+  })
+
+  it('says nothing when there is nothing to say', () => {
+    expect(notificationBadge(0, '/app/performances')).toBeNull()
+  })
+
+  it('stops being a number above ninety-nine', () => {
+    expect(notificationBadge(140, '/app/orders')).toBe('99+')
+  })
+
+  it('is absent on the inbox itself, where the rows are already in front of you', () => {
+    expect(notificationBadge(1, '/app/notifications')).toBeNull()
+    expect(notificationBadge(9, '/app/notifications/')).toBeNull()
+    expect(notificationBadge(9, '/app/notifications?x=1')).toBeNull()
+  })
+
+  it('does not mistake another screen for the inbox', () => {
+    expect(notificationBadge(2, '/app/notifications-archive')).toBe('2')
   })
 })
