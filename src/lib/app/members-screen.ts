@@ -30,6 +30,18 @@ export interface MemberRosterRow {
   roles: string[]
   primaryRole: string | null
   active: boolean
+  /**
+   * Is this row a dancer at all (ADR-0024)?
+   *
+   * `listMoreskanti()` only returns rows where it is true, so on the list it
+   * reads as a tautology. It is here for `byId()`, which is handed an arbitrary
+   * id: a Member that is only a comp-attribution name is not this screen's, and
+   * a profile write that did not check would quietly turn one into a dancer. It
+   * is also what lets `memberEligibility` (#462) judge these rows, so the
+   * invitation list and the join list keep one definition of "an active
+   * moreškant" rather than three.
+   */
+  isMoreskant: boolean
 }
 
 /** One line of the list. A projection, never a spread. */

@@ -188,7 +188,11 @@ export async function handleMemberPatch(
   if (Object.keys(read.patch).length === 0) return fail(400, S.nothingToSave)
 
   const member = await deps.loadMember(id)
-  if (!member) return fail(404, S.notFound)
+  // A Member that is only a comp-attribution name (ADR-0019) is not this
+  // screen's, and the same 404 an unknown id gets is the honest answer: as far
+  // as Članovi is concerned it does not exist. Without this check the forced
+  // `isMoreskant: true` below would quietly turn one into a dancer.
+  if (!member || !member.isMoreskant) return fail(404, S.notFound)
 
   const checked = validateMerged(member, read.patch)
   if ('error' in checked) return fail(400, checked.error)

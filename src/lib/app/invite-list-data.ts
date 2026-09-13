@@ -1,39 +1,24 @@
-import { getPayload } from 'payload'
-import config from '@payload-config'
-import { loadMemberIdsWithLogin, type UserLinkFinder } from '@/lib/access/member-logins'
-import { inviteCandidates, type InviteCandidate, type InviteRosterMember } from './invite-link'
+import { loadRoster } from './members-data'
+import { inviteCandidates, type InviteCandidate } from './invite-link'
 
-// The IO wiring behind `/app/invitations` (#463) — the `link-self-data.ts` shape:
-// the Payload calls and nothing else, so WHO is on the list stays in the pure,
-// unit-tested `invite-link.ts`.
+// The IO wiring behind the invitations list (#463), which Članovi absorbed
+// (#511) — the `inquiries-data.ts` shape: the seam call and nothing else, so
+// WHO is on the list stays in the pure, unit-tested `invite-link.ts`.
 //
-// Two queries, both `overrideAccess: true` and both already run elsewhere for
-// the same reasons: the roster read is society-wide because the caller has
-// cleared the `/app` access decision and holds `moreska`, and
-// `loadMemberIdsWithLogin` answers "does a login exist" and never "what is in
-// it" (it fills the Members list column with the same query).
+// It used to run two `payload.find`s of its own, which is the allow-list entry
+// #511 retired: the roster read and "does a login exist" are the same two
+// questions the Članovi list asks, so they are asked once, through
+// `repo.members`, and both callers read the same answer.
 //
 // The mobile rides along, which the self-link's list deliberately does not
-// carry: it is the number the SMS deep link dials, this screen belongs to a
+// carry: it is the number the SMS deep link dials, this list belongs to a
 // voditelj, and a mobile is the side of the PII boundary `/app` may cross
-// (ADR-0024). An e-mail still is not, and none is read here.
+// (ADR-0024). An e-mail still is not, and `inviteCandidates` does not project
+// one.
 
 export async function getInviteCandidates(): Promise<InviteCandidate[]> {
-  const payload = await getPayload({ config })
-
-  const [roster, withLogin] = await Promise.all([
-    payload.find({
-      collection: 'members',
-      where: { and: [{ isMoreskant: { equals: true } }, { active: { not_equals: false } }] },
-      // The society has tens of members, not thousands: one unpaginated page.
-      limit: 1000,
-      pagination: false,
-      depth: 0,
-      overrideAccess: true,
-    }),
-    loadMemberIdsWithLogin(payload as unknown as UserLinkFinder),
-  ])
-
-  const members = (roster.docs ?? []) as unknown as InviteRosterMember[]
-  return inviteCandidates(members, withLogin)
+  const { members, idsWithLogin } = await loadRoster()
+  // The roster read is society-wide; "an active moreškant" is one definition
+  // (`memberEligibility`, #462) and `inviteCandidates` applies it.
+  return inviteCandidates(members, idsWithLogin)
 }

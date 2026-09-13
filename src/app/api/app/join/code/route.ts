@@ -2,7 +2,8 @@ import { NextResponse } from 'next/server'
 import { requirePermission } from '@/lib/access/route-guard'
 import { appRequestMeta, rejectAppRequest } from '@/lib/app/request-guard'
 import { APP_STRINGS } from '@/lib/app/strings'
-import { poolQuery, rotateJoinCode } from '@/lib/app/join-store'
+import { rotateJoinCode } from '@/lib/app/join-store'
+import { getRepo } from '@/lib/repo'
 
 // POST /api/app/join/code — "Novi kod" on the voditelj's screen (#463).
 //
@@ -22,7 +23,7 @@ export const dynamic = 'force-dynamic'
 export async function POST(req: Request) {
   const gate = await requirePermission(req, 'moreska')
   if (gate.error) return gate.error
-  const { payload, user } = gate
+  const { user } = gate
 
   const rejection = rejectAppRequest(appRequestMeta(req, process.env.NEXT_PUBLIC_BASE_URL))
   if (rejection) {
@@ -33,7 +34,7 @@ export async function POST(req: Request) {
   }
 
   try {
-    const code = await rotateJoinCode(poolQuery(payload), user.id)
+    const code = await rotateJoinCode(getRepo().db.query, user.id)
     return NextResponse.json({
       ok: true,
       code: code.code,

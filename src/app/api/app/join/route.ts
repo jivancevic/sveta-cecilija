@@ -1,6 +1,4 @@
 import { NextResponse } from 'next/server'
-import { getPayload } from 'payload'
-import config from '@payload-config'
 import { appRequestMeta } from '@/lib/app/request-guard'
 import { handleJoinClaim, JOIN_CLAIM_TTL_MS } from '@/lib/app/join'
 import {
@@ -8,17 +6,18 @@ import {
   insertJoinClaim,
   makeJoinPairing,
   makeJoinSecret,
-  poolQuery,
 } from '@/lib/app/join-store'
 import { loadJoinMember, memberHasLogin } from '@/lib/app/join-data'
 import { joinClaimCookie } from '@/lib/app/join-cookie'
 import { joinRateLimiter } from '@/lib/rate-limit/join-rate-limit'
 import { clientIpFromHeaders } from '@/lib/rate-limit/claim-rate-limit'
+import { getRepo } from '@/lib/repo'
 
 // POST /api/app/join — a dancer taps their own name at a rehearsal (#463).
 //
 // Wiring only; the rules are in `src/lib/app/join.ts` and the SQL in
-// `join-store.ts`.
+// `join-store.ts`, which takes `repo.db.query` since #511 rather than reaching
+// into the Payload instance for a pool.
 //
 // **Unauthenticated and it writes a row**, which is the one shape this codebase
 // treats with suspicion (`/api/app/forgot` is the other). Three things stand in
@@ -35,8 +34,7 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 export async function POST(req: Request) {
-  const payload = await getPayload({ config })
-  const query = poolQuery(payload)
+  const query = getRepo().db.query
   const body = await req.json().catch(() => null)
 
   const result = await handleJoinClaim(body, {
@@ -44,8 +42,8 @@ export async function POST(req: Request) {
     now: () => Date.now(),
     allow: (code) => joinRateLimiter.allow(code, clientIpFromHeaders(req.headers)),
     loadCode: (code) => findJoinCode(query, code),
-    loadMember: (memberId) => loadJoinMember(payload, memberId),
-    memberHasLogin: (memberId) => memberHasLogin(payload, memberId),
+    loadMember: (memberId) => loadJoinMember(memberId),
+    memberHasLogin: (memberId) => memberHasLogin(memberId),
     makeSecret: makeJoinSecret,
     makePairing: makeJoinPairing,
     insertClaim: (row) => insertJoinClaim(query, row),

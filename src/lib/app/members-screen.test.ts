@@ -18,6 +18,7 @@ function member(over: Partial<MemberRosterRow> & { id: string }): MemberRosterRo
     roles: [],
     primaryRole: null,
     active: true,
+    isMoreskant: true,
     ...over,
   }
 }

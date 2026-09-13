@@ -1,7 +1,8 @@
 import crypto from 'crypto'
 import type { getPayload } from 'payload'
 import { issueAppResetToken, toInviteUser } from './account-data'
-import type { EnsureLoginDeps, InviteDeps, InviteMember } from './invite'
+import { ensureDancerLogin, type EnsureLoginDeps, type InviteDeps, type InviteMember } from './invite'
+import type { JoinLoginOutcome } from './join'
 import type { AppRequestMeta } from './request-guard'
 import { sendMoreskantEmail } from '@/lib/email/send-moreskant-email'
 
@@ -79,6 +80,28 @@ export function createLoginDeps(payload: PayloadClient): EnsureLoginDeps {
     // or the approval, and sets a password only if they ever want one. It
     // exists because Payload's local strategy requires one on create.
     randomPassword: () => crypto.randomBytes(32).toString('hex'),
+  }
+}
+
+/**
+ * Open (or find) the login a join claim ends in (#463).
+ *
+ * It lived in `join-data.ts` until #511 moved that module behind the seam: the
+ * login half of the invitation is the one part of it that is still Payload's
+ * own (`payload.create` on Users plus a reset token), so it belongs next to
+ * `createLoginDeps` rather than alone in a module that no longer imports
+ * Payload at all. It moves out of here with the rest of `repo.auth` (#475).
+ */
+export async function ensureJoinLogin(
+  payload: PayloadClient,
+  member: InviteMember,
+): Promise<JoinLoginOutcome> {
+  const outcome = await ensureDancerLogin(member, createLoginDeps(payload))
+  if (!outcome.ok) return outcome
+  return {
+    ok: true,
+    id: outcome.user.id,
+    username: typeof outcome.user.username === 'string' ? outcome.user.username : '',
   }
 }
 

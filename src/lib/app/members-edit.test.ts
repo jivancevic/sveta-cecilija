@@ -28,6 +28,7 @@ const CICI: MemberRosterRow = {
   roles: ['crni', 'crni_kralj'],
   primaryRole: 'crni_kralj',
   active: true,
+  isMoreskant: true,
 }
 
 function deps(over: Partial<MemberEditDeps> = {}): MemberEditDeps {
@@ -126,10 +127,17 @@ describe('handleMemberPatch', () => {
     expect(res.body).toEqual({ error: S.nothingToSave })
   })
 
-  it('404s an id that is not a moreškant row', async () => {
+  it('404s an id nothing is behind', async () => {
     const res = await handleMemberPatch('4', { nickname: 'X' }, deps({ loadMember: async () => null }))
     expect(res.status).toBe(404)
     expect(res.body).toEqual({ error: S.notFound })
+  })
+
+  it('404s a Member that is only a comp-attribution name, never converting one', async () => {
+    const d = deps({ loadMember: async () => ({ ...CICI, isMoreskant: false }) })
+    const res = await handleMemberPatch('4', { nickname: 'X' }, d)
+    expect(res.status).toBe(404)
+    expect(d.save).not.toHaveBeenCalled()
   })
 
   // ── The hook's own rules, mirrored before the write ────────────────────────

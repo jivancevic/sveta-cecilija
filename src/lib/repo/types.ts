@@ -28,6 +28,7 @@
 import type { AuthRepo, SessionUser, WriteCtx } from './auth'
 import type { DbRepo } from './db'
 import type { InquiriesRepo, InquiryListQuery, InquiryListResult, InquiryRow } from './inquiries'
+import type { MemberRosterRow, MembersRepo, NewMoreskant } from './members'
 import type { OrdersRepo } from './orders'
 import type { RosterRepo, RosterViewer } from './roster'
 import type { PartnerRecord, PartnersRepo } from './partners'
@@ -37,6 +38,7 @@ export interface Repo {
   auth: AuthRepo
   db: DbRepo
   inquiries: InquiriesRepo
+  members: MembersRepo
   orders: OrdersRepo
   roster: RosterRepo
   partners: PartnersRepo
@@ -50,6 +52,9 @@ export type {
   InquiryListQuery,
   InquiryListResult,
   InquiryRow,
+  MemberRosterRow,
+  MembersRepo,
+  NewMoreskant,
   OrdersRepo,
   PartnerRecord,
   PartnersRepo,
