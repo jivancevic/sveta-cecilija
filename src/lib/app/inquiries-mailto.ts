@@ -19,13 +19,24 @@ import { APP_STRINGS } from './strings'
 const S = APP_STRINGS.inquiries
 
 /**
- * How much of the message rides along in the URL.
+ * The real cap: how long the finished `mailto:` may be, **encoded**.
  *
  * A `mailto:` is passed through the browser, the OS and the mail client, and
- * the shortest link in that chain gives up somewhere around two kilobytes. The
- * cut is generous for the enquiries this form receives and short enough that
- * the compose window opens rather than silently doing nothing; the whole
- * message stays readable on the screen the button sits on.
+ * the shortest link in that chain gives up somewhere around two kilobytes. What
+ * travels is the percent-encoded href, not the message, and the two are not the
+ * same length: a Croatian sentence full of š, č and ž spends three characters
+ * per letter (`%C5%A1`), so a thousand characters of Croatian is several
+ * kilobytes of URL. Counting the message would have let exactly the enquiries
+ * this society receives silently fail to open a compose window.
+ */
+export const MAX_MAILTO_HREF = 1800
+
+/**
+ * The most of the message that is ever quoted, in **code points**.
+ *
+ * A ceiling under the real cap above, so an ASCII message is not quoted
+ * endlessly just because it encodes cheaply. `replyMailto` shortens below this
+ * whenever the encoded href would not fit.
  */
 export const MAX_QUOTED_MESSAGE = 1200
 
@@ -51,13 +62,20 @@ export function replySubject(enquiryType: EnquiryType): string {
  * survives most of the chain and then folds a quote into one paragraph in the
  * one client that does not. A blank line keeps its marker (`>`) rather than its
  * trailing space, which is how every mail client quotes one.
+ *
+ * `limit` counts **code points, never UTF-16 units**. `String.slice` cuts by
+ * unit, so a message ending in an emoji at the boundary would be left holding
+ * half a surrogate pair, and `encodeURIComponent` throws `URI malformed` on a
+ * lone surrogate: the detail page would have 500'd for that one enquiry, and
+ * the public form sets no maximum length on what a stranger may paste.
  */
 export function quoteMessage(message: string, limit: number = MAX_QUOTED_MESSAGE): string {
   const text = message.replace(/\r\n?/g, '\n').trim()
   if (text === '') return ''
 
-  const cut = text.length > limit
-  const body = cut ? text.slice(0, limit).trimEnd() : text
+  const points = Array.from(text)
+  const cut = points.length > limit
+  const body = cut ? points.slice(0, limit).join('').trimEnd() : text
   const lines = body.split('\n').map((line) => {
     const trimmed = line.trimEnd()
     return trimmed === '' ? '>' : `> ${trimmed}`
@@ -82,17 +100,41 @@ export interface ReplyTarget {
  *
  * The body opens with two blank lines so the cursor lands above the quote,
  * which is where a reply is written.
+ *
+ * The quote is shortened until the **encoded** href fits `MAX_MAILTO_HREF`,
+ * because that is the string the browser, the OS and the mail client actually
+ * carry. Croatian diacritics cost three characters each once encoded, so a
+ * message well under the code-point ceiling can still be an eight-kilobyte URL
+ * that opens nothing at all.
  */
 export function replyMailto(inquiry: ReplyTarget): string | null {
   const address = (inquiry.email ?? '').trim()
   if (!isPlausibleEmail(address)) return null
 
   const subject = replySubject(inquiry.enquiryType)
-  const quoted = quoteMessage(inquiry.message ?? '')
-  const body = quoted === '' ? '' : `\r\n\r\n${quoted}`
+  const message = inquiry.message ?? ''
 
-  const params = `subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
-  // The address is encoded too, minus the `@` that makes it one: a local part
-  // may legally carry a `+` or a `?`, and either would be read as URL syntax.
-  return `mailto:${encodeURIComponent(address).replace(/%40/g, '@')}?${params}`
+  const build = (limit: number): string => {
+    const quoted = quoteMessage(message, limit)
+    const body = quoted === '' ? '' : `\r\n\r\n${quoted}`
+    const params = `subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`
+    // The address is encoded too, minus the `@` that makes it one: a local part
+    // may legally carry a `+` or a `?`, and either would be read as URL syntax.
+    return `mailto:${encodeURIComponent(address).replace(/%40/g, '@')}?${params}`
+  }
+
+  const whole = build(MAX_QUOTED_MESSAGE)
+  if (whole.length <= MAX_MAILTO_HREF) return whole
+
+  // Binary search the longest quote that still fits: a dozen builds, and it
+  // lands on the same answer for every message rather than on whatever a fixed
+  // "characters per byte" guess would have assumed about the alphabet.
+  let fits = 0
+  let tooLong = MAX_QUOTED_MESSAGE
+  while (fits < tooLong) {
+    const mid = Math.ceil((fits + tooLong) / 2)
+    if (build(mid).length <= MAX_MAILTO_HREF) fits = mid
+    else tooLong = mid - 1
+  }
+  return build(fits)
 }
