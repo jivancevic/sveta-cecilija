@@ -475,8 +475,8 @@
   },
   "help": {
     "heading": "Need help?",
-    "body": "Write to info@moreska.eu and we reply within 24 hours.",
-    "orderHint": "Please include your order number so we can find your booking straight away.",
+    "body": "Write to {email} and we reply within 24 hours.",
+    "orderHint": "Please include your order number so we can find it straight away.",
     "email": "info@moreska.eu"
   }
 }

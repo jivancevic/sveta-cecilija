@@ -12,7 +12,9 @@ interface Props {
  * Both surfaces read the shared `help` namespace so the response time cannot drift.
  */
 export default function HelpBlock({ t, showOrderHint = false }: Props) {
-  const [beforeEmail, afterEmail] = t.body.split(t.email);
+  // Split on the {email} placeholder, the same convention the rest of the dictionary
+  // uses, so the address can be changed in one place without unlinking the copy.
+  const [beforeEmail, afterEmail] = t.body.split('{email}');
 
   return (
     <aside className="help-block">

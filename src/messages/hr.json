@@ -475,8 +475,8 @@
   },
   "help": {
     "heading": "Trebate pomoć?",
-    "body": "Pišite nam na info@moreska.eu i odgovaramo u roku od 24 sata.",
-    "orderHint": "Molimo navedite broj narudžbe kako bismo odmah pronašli vašu kupnju.",
+    "body": "Pišite nam na {email}, odgovaramo u roku od 24 sata.",
+    "orderHint": "Molimo navedite broj narudžbe kako bismo je odmah pronašli.",
     "email": "info@moreska.eu"
   }
 }
