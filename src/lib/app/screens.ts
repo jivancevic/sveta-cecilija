@@ -137,7 +137,7 @@ export const APP_SCREENS: AppScreen[] = [
     route: '/app/inquiries',
     rank: 7,
     unlockedBy: ['tickets'],
-    servesToday: [],
+    servesToday: ['tickets'],
     groups: ['box'],
   },
   {

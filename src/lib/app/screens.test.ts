@@ -70,6 +70,7 @@ describe('the screen table', () => {
       'scan',
       'sell',
       'statement',
+      'inquiries',
     ])
   })
 
@@ -112,14 +113,32 @@ describe('unlockedScreens', () => {
     expect(keys(unlockedScreens(user('moreska'), ctx()))).toEqual(['performances', 'leaderboard'])
   })
 
-  it('gives a tickets holder Narudžbe and Izvedbe, and the rest as they are built', () => {
-    // Narudžbe landed with #501 and the blagajna's half of Izvedbe with #502.
-    // Upiti, Gratis and Statistika are ticketed separately (#507, #506, #508),
-    // so `tickets` still unlocks exactly these two.
+  it('gives a tickets holder Narudžbe, Izvedbe and Upiti, and the rest as built', () => {
+    // Narudžbe landed with #501, the blagajna's half of Izvedbe with #502 and
+    // Upiti with #507. Gratis and Statistika are ticketed separately (#506,
+    // #508), so `tickets` unlocks exactly these three today, in rank order.
     expect(keys(unlockedScreens(user('tickets', 'refunds'), ctx()))).toEqual([
       'orders',
       'performances',
+      'inquiries',
     ])
+  })
+
+  it('keeps Upiti to the blagajna, whatever else an account holds', () => {
+    // The page gate is this table (`openScreen('inquiries')` asks it), so the
+    // refusal of the enquiry inbox for every non-`tickets` account is asserted
+    // here rather than in a rendered page.
+    const others: [ReturnType<typeof user>, ReturnType<typeof ctx>][] = [
+      [user('door'), ctx()],
+      [user('partner'), ctx({ hasPartner: true })],
+      [user('moreskant'), ctx({ hasMember: true })],
+      [user('moreska'), ctx()],
+      [user('season_stats', 'finance', 'refunds', 'dev'), ctx()],
+    ]
+    for (const [who, where] of others) {
+      expect(keys(unlockedScreens(who, where))).not.toContain('inquiries')
+    }
+    expect(keys(unlockedScreens(user('tickets'), ctx()))).toContain('inquiries')
   })
 
   it('never lets an unknown permission string unlock anything', () => {

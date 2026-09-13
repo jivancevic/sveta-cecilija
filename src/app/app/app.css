@@ -4598,3 +4598,285 @@ span.app__sale-head {
 .app__swatch--child {
   background: rgba(184, 136, 26, 0.4);
 }
+
+/* ─────────────────────────────────────────────────────────────
+   Upiti (#507): the enquiry inbox and one enquiry.
+
+   A mailbox rather than a table, and the phone is the case it is drawn for:
+   Tatjana reads these between other things, so a row is three lines and a
+   whole tap target, an unanswered one carries a gold edge she can find without
+   reading, and the message itself is the largest thing on the screen behind it.
+
+   Two badges and no third: *Novo* is the state, *Rezervacija* is the money.
+   The booking badge is the one filled shape on the screen, because lifting a
+   booking enquiry above a general one is the inbox's only opinion.
+
+   Tokens throughout, never a hex (#490): the badges borrow the gold and the
+   card edge the rest of the app already uses.
+   ───────────────────────────────────────────────────────────── */
+
+/* ── The state filter ───────────────────────────────────── */
+.app__inquiries-filter {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.app__inquiries-select {
+  display: block;
+  flex: 1 1 180px;
+  min-width: 0;
+  max-width: 260px;
+}
+
+.app__inquiries-select .app__select {
+  width: 100%;
+}
+
+.app__inquiries-clear {
+  color: var(--goldText);
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.app__inquiries-clear:hover {
+  text-decoration: underline;
+}
+
+.app__inquiries-count {
+  margin: 16px 0 2px;
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* ── One row of the inbox ───────────────────────────────── */
+.app__inquiry-row {
+  display: block;
+  /* The #490 row rhythm, which tightens on a laptop. */
+  padding: var(--rowY) 0;
+  border-top: 1px solid var(--rule);
+  color: inherit;
+  text-decoration: none;
+}
+
+.app__inquiries-list .app__inquiry-row:last-child {
+  border-bottom: 1px solid var(--rule);
+}
+
+.app__inquiry-row:hover {
+  background: rgba(184, 136, 26, 0.07);
+}
+
+/* Unanswered: a gold edge down the left, so the part of the list that still
+   wants something is findable without reading a single badge. The padding
+   compensates for the border so the two kinds of row still line up. */
+.app__inquiry-row--new {
+  border-left: 3px solid var(--gold);
+  padding-left: 10px;
+  margin-left: -13px;
+}
+
+.app__inquiry-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.app__inquiry-name {
+  font-size: 16px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.app__inquiry-when {
+  flex: 0 0 auto;
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.app__inquiry-badges {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.app__inquiry-type {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.app__inquiry-preview {
+  display: block;
+  margin-top: 3px;
+  font-size: 13px;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Novo: outlined in gold, the same weight as the row's own edge. */
+.app__badge--new {
+  border-color: var(--gold);
+  color: var(--goldText);
+}
+
+/* Rezervacija: the one filled badge in the app outside an answer button. An
+   enquiry that wants to BUY something is the reason this screen exists. */
+.app__badge--booking {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: var(--onGold);
+}
+
+/* ── The pager ──────────────────────────────────────────── */
+.app__inquiries-pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 20px;
+}
+
+.app__inquiries-page {
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* ── One enquiry ────────────────────────────────────────── */
+.app__inquiry-back {
+  display: inline-block;
+  margin: 12px 0 4px;
+  color: var(--goldText);
+  font-size: 13px;
+  text-decoration: none;
+}
+
+.app__inquiry-back:hover {
+  text-decoration: underline;
+}
+
+.app__inquiry-facts {
+  margin-top: 12px;
+  border-top: 1px solid var(--rule);
+}
+
+.app__inquiry-fact {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: var(--rowY) 0;
+  border-bottom: 1px solid var(--rule);
+}
+
+.app__inquiry-fact > span {
+  flex: 0 0 auto;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.app__inquiry-fact > b {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+  min-width: 0;
+  font-weight: 600;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.app__inquiry-address {
+  color: var(--goldText);
+  text-decoration: none;
+}
+
+.app__inquiry-address:hover {
+  text-decoration: underline;
+}
+
+/* The message: the largest thing on the screen, in a card of its own, with the
+   line breaks the enquirer typed. `pre-wrap` and not `pre`, so a long line
+   still wraps inside a phone rather than scrolling it sideways. */
+.app__inquiry-message {
+  margin-top: 20px;
+  padding: 14px 16px;
+  background: var(--card);
+  border: 1px solid var(--cardEdge);
+  border-radius: var(--radius);
+}
+
+.app__inquiry-message-head {
+  margin: 0 0 8px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.app__inquiry-message-body {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* ── The two actions ────────────────────────────────────── */
+.app__inquiry-actions {
+  margin-top: 20px;
+}
+
+.app__inquiry-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.app__inquiry-done {
+  margin: 0 0 10px;
+  font-size: 14px;
+  color: var(--goldText);
+}
+
+.app__inquiry-note {
+  margin: 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+/* The laptop: the filter and the facts have room, so the two actions sit side
+   by side instead of stacking under the thumb. */
+@media (min-width: 700px) {
+  .app__inquiry-buttons {
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .app__inquiry-buttons .app__button {
+    width: auto;
+    min-width: 180px;
+  }
+}

@@ -40,7 +40,7 @@ unlock are tabs, the rest live under Više, and Izvedbe jumps to the front for a
 | 4 | Skener (camera, code entry, door list) | `/app/scan` | `door` | **live** (#504): the camera and the four result states, Pusti ostatak grupe (n), Poništi propuštanje, Pronađi ulaznicu and the "ušlo X od Y" ring, all on one screen | `/admin/scan` 308s here and the Backoffice view is deleted; the ticket QR stays `/scan/[token]`, whose staff buttons point at `/app/scan` |
 | 5 | Prodaja | `/app/sell` | `partner` | **live** (#505): the izvedba picker with seats left, the two steppers, Izdaj ulaznice → the PDF, Zadnje prodaje with the delete-then-undo storno, and the live month card | the Backoffice partner dashboard stays until #512 |
 | 6 | Obračun | `/app/statement` | `partner` | **live** (#505): the season's per-izvedba bars, and a month/year picker that shows the statement on screen before offering its CSV | the Backoffice partner dashboard stays until #512 |
-| 7 | Upiti | `/app/inquiries` | `tickets` | `/admin/collections/contact-submissions` | none |
+| 7 | Upiti | `/app/inquiries`, `/app/inquiries/[id]` | `tickets` | **live** (#507): the inbox, ordered unanswered first with booking enquiries (`private-moreska`, `moreska-experience`) lifted above general ones, a `state=new\|handled` filter and a pager in the query string; the enquiry itself with the whole message, **Odgovori** as a `mailto:` carrying the subject and the quoted message (Tatjana sends from `info@` in Gmail, in-app sending is out of scope) and **Označi riješenim** in one tap, whose undo is the same button (`POST /api/app/inquiries/[id]/handled`, a switch rather than a toggle, so a retry is harmless) | the Backoffice keeps its list; the "Mark handled" edit-menu item there still writes the same column |
 | 8 | Gratis (comp tickets; promo codes stay in the Backoffice for v1) | `/app/comp` | `tickets` | comp menu item on an order | none |
 | 9 | Korisnici | `/app/users`, `/app/users/[id]` | `users` | `/admin/collections/users` | none |
 | 10 | Statistika (counts only) | `/app/stats?season=2026` | `tickets`, `season_stats`, `finance` | `/admin/stats`. **The single-show drill-down has already moved**: `/app/performances/[id]` carries the per-show numbers since #502, so `/admin/stats/[id]` has nothing left to show and its 308 lands with #508 | 308 from both |
@@ -1842,3 +1842,52 @@ so it adds no entry to the repo guard's allow-list. It grew the seam by four
 methods: `orders.listForStaff`, `orders.staffDetailById`, `orders.updateBuyer`
 and `shows.ticketedPerformances` (the performance filter's options, which are
 the ticketed performances only — a non-public one has no orders).
+
+## Upiti (#507)
+
+`/app/inquiries` and `/app/inquiries/[id]`, for a `tickets` holder: the enquiry
+inbox. Twenty-six enquiries had arrived through the two public forms before this
+screen existed and not one of them had ever been marked anything, because the
+only place to read one was a Payload list view nobody outside the developer
+opens.
+
+**It is a mailbox, so it is ordered like one.** Unanswered first, booking
+enquiries (`private-moreska`, `moreska-experience`) lifted above general ones
+within each state, newest first after that. The order lives in
+`src/lib/repo/payload/inquiries-sql.ts` and is SQL rather than Payload's `find`
+for one reason: both keys are *expressions*, not columns, and Payload's `sort`
+can only name columns. Ordering a page in memory after fetching it would
+reorder within the page and lie across pages, which is the bug a pager hides
+best. The write still goes through the local API, which is the seam's rule.
+
+**Which enquiries are bookings is not restated here.** `BOOKING_ENQUIRY_TYPES`
+in `src/lib/dashboard/inquiries.ts` has owned that since #239; the Backoffice
+badge, this screen's *Rezervacija* flag and the inbox's `ORDER BY` all read that
+one list.
+
+**The screen state is the URL**, as on Narudžbe: `?state=new|handled` and
+`?page=`, parsed defensively in `src/lib/app/inquiries-query.ts`, with `page=1`
+never written so a view has one address.
+
+**Two named actions** (#476: named actions only, no raw edit form):
+
+| Action | What it is | Notes |
+|---|---|---|
+| Odgovori | A `mailto:` anchor | Built on the server (`src/lib/app/inquiries-mailto.ts`): the enquirer's address, `Re: <the service, or "Vaš upit">` as the subject, and the message quoted with `> ` and CRLF under two blank lines so the cursor lands above it. Cecilija does **not** send mail and will not: Tatjana answers from `info@moreska.eu` in Gmail, where the thread and the sent copy belong. Everything is percent-encoded, because an unescaped `&` in a stranger's message would otherwise become a second `mailto:` parameter and `cc=` is one mail clients honour. The quote is shortened until the **encoded** href fits 1800 characters (`> [...]` marks the cut), because the encoded string is what the browser, the OS and the mail client actually carry: Croatian spends three characters per diacritic (`%C5%A1`), so capping the message instead would let exactly the enquiries this society receives open no compose window at all. The cut counts **code points**, never UTF-16 units — a `slice` landing inside a surrogate pair leaves a lone surrogate, `encodeURIComponent` answers that with `URI malformed`, and the page would 500 for one enquiry with an emoji in the wrong place. The whole message stays on the screen the button sits on. |
+| Označi riješenim | `POST /api/app/inquiries/[id]/handled` | `requirePermission(req, 'tickets')` plus the `/app` cross-site guard, rules pure in `src/lib/app/inquiries-handled.ts`. The body is `{ handled: boolean }` — a **switch, not a toggle**: it says what the row should be, so the undo is the same button the other way round, two phones agree, and a retry after a flaky connection cannot flip the row back. Already in the target state answers the same 200 without a write. |
+
+**Nothing on the screen edits the enquiry.** A stranger's name, address and
+message are a record of what they wrote; the Backoffice keeps the raw edit for
+the day a typo has to be repaired, and its "Mark handled" edit-menu item still
+writes the same `contact_submissions.status` column.
+
+**The count of unanswered enquiries is exposed, not yet placed.**
+`countNewInquiries()` (`src/lib/app/inquiries-data.ts` → `repo.inquiries.countNew`)
+is the one loader for it. The screens table carries no badge field and a screen
+ticket does not change its contract (#495), so whichever of the landing strip or
+a tab badge is decided (#471, #496) finds the number already behind the seam
+rather than writing a second query for it.
+
+The screen reaches the database only through `getRepo()` (ADR-0027 decision 5),
+so it adds no entry to the repo guard's allow-list. It grew the seam by one repo,
+`InquiriesRepo` (`list`, `byId`, `setHandled`, `countNew`).
