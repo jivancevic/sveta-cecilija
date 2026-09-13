@@ -66,7 +66,7 @@ For curious, school-age children, the Moreška is close to ideal: a real story, 
 - Plot (Bula captured, Black King/White King, seven battles, surrender, freeing) — `docs/sveta-cecilija.md` lines 52–72, 106; `docs/copywriting.md` lines 110–113.
 - Archaic Korčulan dialect — `docs/sveta-cecilija.md` line 52.
 - Real iron swords ~1kg, sparks, "bam bam bam", forceful clashing — `docs/sveta-cecilija.md` lines 78, 108–109.
-- Front-row safety; "arrive early for best seating"; ~1h runtime; 3-part structure — `docs/marketing.md` §3 experience findings (lines 64–78).
+- Front-row safety; "arrive early for best seating"; runtime "about an hour"; two-part structure — `docs/marketing.md` §3 experience findings, as settled in #541.
 - Boys learn in elementary school; troupe trains from age 12 (1944 troop aged 12–17) — `docs/sveta-cecilija.md` lines 120, 177, 185.
 - Showtime 21:00; prices €20 adult / €10 under-14; every 5th ticket free; Summer Cinema venue — `docs/copywriting.md` lines 33–35; CLAUDE.md ticketing rules.
 - Founded 1883 — `docs/sveta-cecilija.md` line 41.

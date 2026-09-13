@@ -71,11 +71,11 @@ Velocity amplifies whatever the current experience is, so close the cheap gaps b
   - **Story comprehension** — long multilingual narration is both too long and leaves non-speakers lost; the program/crib-sheet aid exists but isn't reliably handed out.
   - **Seating** — "arrive early for a good seat" is the single most-repeated tip → a constraint we don't communicate at point of sale.
   - **Front-row safety**, **venue hard to find**, and **"overpriced"** (which almost always rides along with "too long", so it's an expectations problem, not a pricing one).
-- **Cheap comms fixes that lift the star average (ship pre-season; feed the §2 listing copy too):**
-  1. Set expectations on `/tickets` + confirmation: runtime (~1h), 3-part structure (choir/orchestra → narration → combat), "arrive early for best seating".
-  2. Multilingual digital program behind a QR (reuse the `/scan` plumbing): plot + per-act guide + history, so the spoken intro can be shortened.
-  3. "How to find us + what to expect" block in the confirmation email (map, directions, start time, friendly front-row safety note).
-- **Operational (HGD show-ops, not dev):** tighten the opening, not the combat; surface that child tickets are €10 wherever value/family comes up.
+- **Cheap comms fixes that lift the star average (board-approved 2026-09-13 in #219; feed the §2 listing copy too):**
+  1. Set expectations on `/tickets` + confirmation: runtime stated as "about an hour", the **two** named parts (klapa sings, then moreška danced to the wind orchestra), "arrive early for best seating". The spoken introduction is named as a clause inside the moreška half, never as a third act, and no part carries a duration (#541). Ticket: #542.
+  2. Multilingual digital programme the guest reads before the show: cast + per-part guide + history. Reached by a **plain link** in the e-mail and the ticket PDF footer, **never a second QR code** — the ticket already carries a door-scan QR and a second one is a mis-scan in the entrance queue (#541). It sits beside the spoken introduction rather than shortening it, because the board declined the pacing item. Ticket: #544.
+  3. "How to find us + what to expect" block in the confirmation email: walking directions in prose from an old-town landmark with the map link underneath, start time, and a front-row note written thrill-first then care. Directions vary by venue, and the bad-weather venue-change mail carries them too (#541). Ticket: #543.
+- **Operational (HGD show-ops, not dev): both declined by the board on 2026-09-13 (#219).** Tightening the opening and surfacing the €10 child ticket were judged not to be real problems. Do not re-propose either as dev work; nothing in the comms fixes above may assume the opening gets shorter.
 
 ### 4. Google Ads — paid search (largest paid channel)
 
