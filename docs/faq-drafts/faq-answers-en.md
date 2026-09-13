@@ -174,7 +174,7 @@ The Moreška is performed in Korčula's old town at the open-air **Summer Cinema
 ### How long is a Moreška performance?
 *Q15, Koliko traje izvedba moreške?*
 
-A Moreška evening lasts **about one hour (roughly 60 minutes)** including the other sections' contributions. It has three parts: an opening of Dalmatian *klapa* singing and orchestra, the spoken dramatic prologue, and then the seven sword battles. *(The historic St. Theodore presentation could run up to two hours; the sword-dance portion itself is up to ~30 minutes.)* — *mkt §3 line 75; sc 181, 191*
+A Moreška evening lasts **about an hour**. It has two parts: the Dalmatian *klapa* sings, and then the Moreška is danced to the wind orchestra, opening with the spoken prologue that sets up the story before the seven sword battles. *(The historic St. Theodore presentation could run up to two hours; the sword-dance portion itself is up to ~30 minutes.)* — *mkt §3 line 75; sc 181, 191*
 
 ### Do you buy tickets for the Moreška?
 *Q35, Kupuju li se ulaznice za morešku?*

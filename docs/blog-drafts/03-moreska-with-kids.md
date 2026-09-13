@@ -42,7 +42,7 @@ You know your own child best, this is a thrilling live show, not a quiet museum 
 
 ## Timing: it's a late, ~1-hour evening
 
-Performances begin at **21:00**. The full evening, opening songs from the [klapa](/sections/klapa) and live [wind orchestra](/sections/wind-orchestra), the spoken drama, then the seven sword battles, runs roughly an hour. The combat is the climax, so the most exciting part comes toward the end.
+Performances begin at **21:00**. The full evening, songs from the [klapa](/sections/klapa) and then the Moreška danced to the live [wind orchestra](/sections/wind-orchestra), spoken prologue first and then the seven sword battles, runs about an hour. The combat is the climax, so the most exciting part comes toward the end.
 
 For families that means: a later night than usual, with the payoff arriving in the second half. If you have an early-to-bed little one, weigh that up. For most children the late start is part of the adventure, an open-air evening in a floodlit medieval town is a memory in itself.
 
