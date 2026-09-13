@@ -260,6 +260,45 @@ export function groupLedgerByPerformance(
   )
 }
 
+/** One promo code's season, as `getActiveTicketCountsByPromoCode` reports it. */
+export interface PromoCodeRow {
+  code: string
+  /** The member the code is attributed to (ADR-0018). Never a buyer. */
+  memberName: string
+  ticketsSold: number
+  revenueCents: number
+}
+
+export interface PromoRevenue {
+  /** Codes that actually sold, biggest earner first. */
+  rows: PromoCodeRow[]
+  ticketsSold: number
+  /** Revenue on promo orders. A SUBSET of collected revenue, never an addend. */
+  totalCents: number
+}
+
+/**
+ * The promo-code half of the money, which #500 gave to `finance` as a revenue
+ * column in a Backoffice panel and which has had no home since.
+ *
+ * A promo order is an ordinary online order (ADR-0018) and its money is already
+ * inside `collectedCents`; this is the "of which" line, never a third figure to
+ * add. Codes that have sold nothing are dropped: the Backoffice listed every
+ * code because that panel was also how a code's existence was checked, and this
+ * screen is about euros.
+ */
+export function promoRevenue(rows: readonly PromoCodeRow[]): PromoRevenue {
+  const used = rows
+    .filter((r) => r.ticketsSold > 0 || r.revenueCents !== 0)
+    .sort((a, b) => b.revenueCents - a.revenueCents || a.code.localeCompare(b.code, 'hr'))
+
+  return {
+    rows: used,
+    ticketsSold: used.reduce((sum, r) => sum + r.ticketsSold, 0),
+    totalCents: used.reduce((sum, r) => sum + r.revenueCents, 0),
+  }
+}
+
 /**
  * Which month the receivable panel is showing, from the query string.
  *

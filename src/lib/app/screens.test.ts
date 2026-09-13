@@ -71,7 +71,28 @@ describe('the screen table', () => {
       'sell',
       'statement',
       'inquiries',
+      'finance',
     ])
+  })
+
+  it('keeps Financije to a finance holder, and tickets alone does not open it', () => {
+    // The page gate IS this table (`openScreen('finance')` asks it), so the
+    // refusal of the money screen is asserted here rather than in a rendered
+    // page. `tickets` is the set that matters: the secretary sees every order
+    // and every seat, and since #500 that is not the same as seeing the money.
+    expect(keys(unlockedScreens(user('finance'), ctx()))).toContain('finance')
+    const others: [ReturnType<typeof user>, ReturnType<typeof ctx>][] = [
+      [user('tickets', 'refunds'), ctx()],
+      [user('door'), ctx()],
+      [user('partner'), ctx({ hasPartner: true })],
+      [user('moreskant'), ctx({ hasMember: true })],
+      [user('moreska'), ctx()],
+      [user('season_stats'), ctx()],
+      [user('users', 'dev'), ctx()],
+    ]
+    for (const [who, where] of others) {
+      expect(keys(unlockedScreens(who, where))).not.toContain('finance')
+    }
   })
 
   it('gives refunds and dev no screen of their own', () => {
@@ -161,10 +182,9 @@ describe('appNav', () => {
   })
 
   it('has no tabs and no landing screen for an account that unlocks nothing', () => {
-    // `finance` is the widest set that still unlocks nothing built: Financije
-    // (#509) and Statistika (#508) are both still empty columns, and `refunds`
-    // unlocks no screen by design (a refund is an action inside an order).
-    const nav = appNav(user('finance', 'refunds'), ctx())
+    // `refunds` and `dev` unlock no screen by design: a refund is an action
+    // inside an order, and `dev` is the diagnostics strip.
+    const nav = appNav(user('refunds', 'dev'), ctx())
     expect(nav.tabs).toEqual([])
     expect(nav.landing).toBeNull()
   })

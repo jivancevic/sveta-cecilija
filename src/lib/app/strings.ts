@@ -1190,6 +1190,74 @@ export const APP_STRINGS = {
   },
 
   /**
+   * Financije (#509): the society's money, for a `finance` holder and nobody
+   * else (#500).
+   *
+   * **Two iznosa, nikad zbrojena, i nikad riječ dobit.** Prikupljeni prihod is
+   * cash in hand; Potraživanje od partnera is money a reseller still holds.
+   * The society has no cost data, so a single bottom line would be a
+   * mislabelled gross (CONTEXT.md, glossary *Dashboard*). The copy keeps them
+   * in two separate cards with a sentence between them saying so, because two
+   * euro figures side by side invite a reader to add them.
+   *
+   * No buyer is named anywhere on this screen. "Povrati" is a count and an
+   * amount; whose order it was is a question for Narudžbe.
+   */
+  finance: {
+    season: 'Sezona',
+    collectedTitle: 'Prikupljeni prihod',
+    collectedNote:
+      'Naplaćeno online i na ulazu, umanjeno za povrate. Nije dobit: društvo ovdje ne vodi troškove.',
+    online: 'Online narudžbe',
+    offline: 'Na ulazu i staro',
+    refundsTitle: 'Povrati',
+    refundsCount: (n: number) => (n === 1 ? '1 narudžba' : `${n} narudžbi`),
+    refundsNote:
+      'Uključuje izgubljene prigovore na naplatu, jer i tada novac ode natrag.',
+    receivableTitle: 'Potraživanje od partnera',
+    receivableNote:
+      'Ovo društvo još nije naplatilo, pa se ne zbraja s prikupljenim prihodom.',
+    seasonReceivable: 'Ukupno za sezonu',
+    promoTitle: 'Promo kodovi',
+    promoNote: 'Dio prikupljenog prihoda, ne dodatni iznos.',
+    promoTickets: (n: number) => `${n} ulaznica`,
+    promoEmpty: 'Ove sezone nijedan promo kod nije iskorišten.',
+    monthTitle: 'Obračun po partnerima',
+    monthIntro: 'Odaberi mjesec, provjeri iznose i preuzmi obračun.',
+    month: 'Mjesec',
+    year: 'Godina',
+    show: 'Prikaži',
+    partner: 'Partner',
+    tickets: 'Ulaznica',
+    gross: 'Naplaćeno',
+    commission: 'Provizija',
+    owed: 'Za uplatu',
+    cancelled: (n: number) => `${n} otkazanih`,
+    download: 'Preuzmi obračun',
+    monthEmpty: 'U tom mjesecu nijedan partner nije prodao ulaznice.',
+    noPartners: 'Nema aktivnih partnera.',
+    /**
+     * The ledger (ADR-0025). Every line says what was charged and, where that
+     * is below face value, why — that label is the whole reason a €15 seat is
+     * explicable a year later.
+     */
+    ledgerTitle: 'Prodaja na ulazu',
+    ledgerNote: 'Svaka stavka po cijeni po kojoj je naplaćena. Negativna količina je ispravak.',
+    ledgerEmpty: 'Ove sezone nema zabilježene prodaje izvan sustava narudžbi.',
+    ledgerSubtotal: 'Ukupno',
+    ledgerSeats: (n: number) => `${n} mjesta`,
+    sources: {
+      door: 'Vrata',
+      legacy: 'Staro',
+    },
+    types: {
+      adult: 'Odrasli',
+      child: 'Djeca',
+    },
+    unitPrice: 'po',
+  },
+
+  /**
    * Narudžbe (#501): the blagajna's list of orders and the one order behind it.
    *
    * The screen Tatjana opens when a guest is standing in front of her, so the

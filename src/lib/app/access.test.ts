@@ -143,9 +143,9 @@ describe('decideAppAccess — everybody else', () => {
   it('lets in exactly the permissions whose screens are built (sweep)', () => {
     // Today's live table. Every screen ticket that flips a `servesToday` word
     // moves one of these to `true`, and this line is where that shows up:
-    // `door` joined when Skener landed (#504) and `tickets` when Narudžbe did
-    // (#501).
-    const live = ['moreska', 'moreskant', 'door', 'tickets']
+    // `door` joined when Skener landed (#504), `tickets` when Narudžbe did
+    // (#501) and `finance` when Financije did (#509).
+    const live = ['moreska', 'moreskant', 'door', 'tickets', 'finance']
     for (const p of PERMISSIONS) {
       const expected = live.includes(p)
       expect(decideAppAccess(user(p), dancer()).kind === 'ok', `permission ${p}`).toBe(expected)

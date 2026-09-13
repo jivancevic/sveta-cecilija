@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   groupLedgerByPerformance,
   partnerReceivable,
+  promoRevenue,
   resolveReceivableMonth,
   seasonMoney,
 } from './finance-view'
@@ -177,5 +178,25 @@ describe('resolveReceivableMonth', () => {
     // asked for survives when that month has happened.
     expect(resolveReceivableMonth(NOW, '2027', '3')).toEqual({ year: 2026, month: 3 })
     expect(resolveReceivableMonth(NOW, '1998', '4')).toEqual({ year: 2026, month: 4 })
+  })
+})
+
+describe('promoRevenue', () => {
+  it('lists only the codes that sold, biggest earner first', () => {
+    const out = promoRevenue([
+      { code: 'IVA', memberName: 'Iva Gamulin', ticketsSold: 4, revenueCents: 7000 },
+      { code: 'ZERO', memberName: 'Nitko', ticketsSold: 0, revenueCents: 0 },
+      { code: 'MARKO', memberName: 'Marko Šeparović', ticketsSold: 9, revenueCents: 15500 },
+    ])
+
+    expect(out.rows.map((r) => r.code)).toEqual(['MARKO', 'IVA'])
+    expect(out.totalCents).toBe(22500)
+    expect(out.ticketsSold).toBe(13)
+  })
+
+  it('is empty when no code has been used', () => {
+    const out = promoRevenue([{ code: 'ZERO', memberName: '', ticketsSold: 0, revenueCents: 0 }])
+    expect(out.rows).toEqual([])
+    expect(out.totalCents).toBe(0)
   })
 })

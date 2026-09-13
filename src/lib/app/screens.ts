@@ -174,7 +174,8 @@ export const APP_SCREENS: AppScreen[] = [
     route: '/app/finance',
     rank: 11,
     unlockedBy: ['finance'],
-    servesToday: [],
+    // Money answers to `finance` and to nothing else (#500, #509).
+    servesToday: ['finance'],
     groups: ['admin'],
   },
 ]
