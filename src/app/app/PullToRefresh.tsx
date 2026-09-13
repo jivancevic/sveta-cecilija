@@ -110,6 +110,7 @@ export function PullToRefresh({ children }: { children: React.ReactNode }) {
       block?.classList.remove('app__pull--settle')
       ring?.classList.remove('app__ptr--settle')
       block?.classList.add('app__pull--pulling')
+      arm()
     }
 
     function move(y: number, event: TouchEvent) {
@@ -143,6 +144,9 @@ export function PullToRefresh({ children }: { children: React.ReactNode }) {
     }
 
     function end() {
+      // The gesture is over however it ended: the expensive listeners go first,
+      // before any of the branches below can return early.
+      disarm()
       if (!block || !ring) return
       // Belt and braces: a touch that never became a pull (a tap, a gesture the
       // browser cancelled) must still take the hint off the wrapper.
@@ -176,18 +180,37 @@ export function PullToRefresh({ children }: { children: React.ReactNode }) {
       }, SPIN_MS)
     }
 
-    const onStart = (event: TouchEvent) => start(event.touches[0]?.clientY ?? 0, event.target)
-    const onMove = (event: TouchEvent) => move(event.touches[0]?.clientY ?? 0, event)
+    function onStart(event: TouchEvent) {
+      start(event.touches[0]?.clientY ?? 0, event.target)
+    }
 
-    scroller.addEventListener('touchstart', onStart, { passive: true })
-    scroller.addEventListener('touchmove', onMove, { passive: false })
-    scroller.addEventListener('touchend', end)
-    scroller.addEventListener('touchcancel', end)
-    return () => {
-      scroller.removeEventListener('touchstart', onStart)
+    function onMove(event: TouchEvent) {
+      move(event.touches[0]?.clientY ?? 0, event)
+    }
+
+    // `touchmove` has to be non-passive, because the pull's whole job is to
+    // call `preventDefault` on it — and a non-passive touchmove listener makes
+    // the browser wait for the main thread before it may scroll ANYTHING, for
+    // as long as it is registered. So it is registered only while a gesture is
+    // actually running: `touchstart` (passive, cheap) arms it, and `end`
+    // disarms it whichever way the gesture finished. Between touches the app
+    // scrolls with no listener in the way at all.
+    function arm() {
+      scroller.addEventListener('touchmove', onMove, { passive: false })
+      scroller.addEventListener('touchend', end)
+      scroller.addEventListener('touchcancel', end)
+    }
+
+    function disarm() {
       scroller.removeEventListener('touchmove', onMove)
       scroller.removeEventListener('touchend', end)
       scroller.removeEventListener('touchcancel', end)
+    }
+
+    scroller.addEventListener('touchstart', onStart, { passive: true })
+    return () => {
+      scroller.removeEventListener('touchstart', onStart)
+      disarm()
     }
   }, [router, showToast])
 
