@@ -54,9 +54,7 @@ export async function getDashboardMoney(query: PoolQuery): Promise<DashboardMone
   ])
 
   const orders: CollectedOrderRow[] = orderRes.rows.map((r) => ({
-    // Legacy rows predate the column and are online by definition (the same
-    // fold `sold-seats.ts` does), so a NULL reads as 'online'.
-    channel: ((r.channel as OrderChannel) ?? 'online') as OrderChannel,
+    channel: r.channel as OrderChannel,
     totalCents: Number(r.total) || 0,
     refundStatus: (r.refund_status as RefundStatus) ?? 'none',
   }))

@@ -1821,8 +1821,15 @@ export const APP_STRINGS = {
      * partner order stores `total` at face value the society has not collected
      * (ADR-0008) and a storno leaves that total standing. Partner seats must
      * not silently vanish from the evening's money, though, so they get this
-     * sentence instead: what they are WORTH at face value, named a receivable,
-     * never added to anything.
+     * sentence instead: what they are WORTH at face value, and the two things
+     * that are not true of that number.
+     *
+     * It deliberately does NOT say *potraživanje*. Financije's *Potraživanje od
+     * partnera* is `netCents` from `partner-reconciliation.ts`, which is face
+     * value MINUS the partner's commission; this is the gross before it. Using
+     * the same word for two different amounts would invite reading one off the
+     * other, so the sentence says "prije provizije" and leaves the receivable
+     * to the screen that computes it.
      *
      * The three words are the Croatian plural buckets, handed to `pluralize`
      * (`roster-loaders.ts`) by `sales-view.ts` the way every other count on
@@ -1831,7 +1838,7 @@ export const APP_STRINGS = {
     partnerFace: {
       ticket: { one: 'ulaznica', few: 'ulaznice', many: 'ulaznica' },
       line: (tickets: string, amount: string) =>
-        `Partneri: ${tickets}, nominalno ${amount} (potraživanje)`,
+        `Partneri: ${tickets}, nominalno ${amount} (prije provizije, nije u prihodu)`,
     },
     /** A non-public evening sells nothing, so there is nothing to show. */
     notPublic: 'Ova izvedba ne prodaje ulaznice, pa nema brojki o prodaji.',

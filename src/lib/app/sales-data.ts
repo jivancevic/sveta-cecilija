@@ -52,8 +52,8 @@ import { emptySales, onlineRevenueByShow, type PerformanceSales } from './sales-
  * evening in `onlineRevenueByShow`, where it is unit-tested. `orders` alone,
  * plus the one-to-one join to `shows`: never a join to `tickets`, which would
  * multiply each total by the party size. The partner half of the evening is not
- * lost, it is read separately by `partnerTicketsByShow` and shown as a
- * receivable.
+ * lost, it is read separately by `partnerTicketsByShow` and shown under Prihod
+ * at face value.
  */
 async function ticketRevenueByShow(query: PoolQuery): Promise<Map<string, number>> {
   const res = await query(
@@ -66,9 +66,7 @@ async function ticketRevenueByShow(query: PoolQuery): Promise<Map<string, number
   return onlineRevenueByShow(
     res.rows.map((row) => ({
       showId: String(row.show_id),
-      // Rows that predate the column are online by definition, the same fold
-      // `sold-seats.ts` does for the channel counts.
-      channel: ((row.channel as OrderChannel) ?? 'online') as OrderChannel,
+      channel: row.channel as OrderChannel,
       totalCents: Number(row.total) || 0,
       refundStatus: ((row.refund_status as RefundStatus) ?? 'none') as RefundStatus,
     })),
@@ -78,11 +76,12 @@ async function ticketRevenueByShow(query: PoolQuery): Promise<Map<string, number
 /**
  * Active PARTNER tickets per show, split adult/child (#538).
  *
- * The split, not the money: the €20/€10 arithmetic is
- * `partnerFaceValueCents`, so the one line that names these euros is a tested
- * pure function rather than a SQL expression. Same predicate as the channel
- * counts (`status='active'`, `channel='partner'`), so the seat count in the
- * note and the Partner number above it cannot disagree.
+ * The split, not the money: the €20/€10 arithmetic is `partnerFaceValueCents`,
+ * so the one line that names these euros is a tested pure function rather than
+ * a SQL expression. It is GROSS, before the partner's commission, which is why
+ * the sentence on screen never calls it a potraživanje. Same predicate as the
+ * channel counts (`status='active'`, `channel='partner'`), so the seat count in
+ * the note and the Partner number above it cannot disagree.
  */
 async function partnerTicketsByShow(query: PoolQuery): Promise<Map<string, PartnerSplit>> {
   const res = await query(

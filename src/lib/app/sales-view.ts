@@ -209,7 +209,7 @@ export function seatsRemaining(s: PerformanceSales): number {
  * refunds plus what the door and the old site took in cash.
  *
  * Partner face value is deliberately absent (#538) — see `ticketRevenueCents`
- * — and `partnerReceivableNote` is what keeps those seats visible.
+ * — and `partnerFaceNote` is what keeps those seats visible.
  */
 export function revenueCents(s: PerformanceSales): number {
   return s.ticketRevenueCents + s.offlineRevenueCents
@@ -221,7 +221,14 @@ export function partnerFaceValueCents(s: PerformanceSales): number {
 }
 
 /**
- * The one secondary line under Prihod: what the resellers hold for this evening.
+ * The one secondary line under Prihod: what the resellers sold for this evening.
+ *
+ * The amount is FACE VALUE, so the sentence says "prije provizije" and never
+ * the word *potraživanje*. Financije's *Potraživanje od partnera* is
+ * `netCents` from `partner-reconciliation.ts` — face value minus the partner's
+ * own commission — and it is scoped to a month or a season rather than to one
+ * evening. Naming both amounts the same thing would invite reading one off the
+ * other, and they are not equal.
  *
  * Null in two cases, and for two different reasons. With no partner seats there
  * is nothing to say, so the line is simply absent rather than a €0,00. Without
@@ -229,10 +236,9 @@ export function partnerFaceValueCents(s: PerformanceSales): number {
  * `finance` gate exactly as `performanceNumbers` applies it: the sentence never
  * reaches the payload, so no template can leak it by forgetting a condition.
  *
- * It is never summed into anything. That is the whole point: these euros are
- * already counted once, as the receivable on Financije.
+ * It is never summed into anything.
  */
-export function partnerReceivableNote(s: PerformanceSales, canFinance: boolean): string | null {
+export function partnerFaceNote(s: PerformanceSales, canFinance: boolean): string | null {
   const seats = s.partnerAdult + s.partnerChild
   if (!canFinance || seats === 0) return null
   return S.partnerFace.line(pluralize(seats, S.partnerFace.ticket), formatEur(partnerFaceValueCents(s)))

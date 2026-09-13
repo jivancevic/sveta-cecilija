@@ -6,7 +6,7 @@ import {
   ledgerErrorMessage,
   mayOpenPerformance,
   onlineRevenueByShow,
-  partnerReceivableNote,
+  partnerFaceNote,
   performanceNumbers,
   salesBadges,
   salesRowView,
@@ -147,29 +147,31 @@ describe('the money of one evening', () => {
 })
 
 // #538 — partner seats leave Prihod, but they do not leave the screen.
-describe('the partner receivable line', () => {
-  it('prices the partner seats of an evening at face value, as a receivable', () => {
-    // 10 adults at €20 and 2 children at €10, worked by hand: 220,00 €.
-    const note = partnerReceivableNote(sales({ partnerAdult: 10, partnerChild: 2 }), true)
-    expect(note).toBe('Partneri: 12 ulaznica, nominalno 220,00 € (potraživanje)')
+describe('the partner face-value line', () => {
+  it('prices the partner seats of an evening at face value, before commission', () => {
+    // 10 adults at €20 and 2 children at €10, worked by hand: 220,00 €. Face
+    // value, so NOT the same number as Financije's Potraživanje od partnera,
+    // which nets the partner's commission off exactly these seats.
+    const note = partnerFaceNote(sales({ partnerAdult: 10, partnerChild: 2 }), true)
+    expect(note).toBe('Partneri: 12 ulaznica, nominalno 220,00 € (prije provizije, nije u prihodu)')
   })
 
   it('says "ulaznica" for one seat, the Croatian singular', () => {
-    const note = partnerReceivableNote(sales({ partnerAdult: 1, partnerChild: 0 }), true)
-    expect(note).toBe('Partneri: 1 ulaznica, nominalno 20,00 € (potraživanje)')
+    const note = partnerFaceNote(sales({ partnerAdult: 1, partnerChild: 0 }), true)
+    expect(note).toBe('Partneri: 1 ulaznica, nominalno 20,00 € (prije provizije, nije u prihodu)')
   })
 
   it('says "ulaznice" for the few bucket', () => {
-    const note = partnerReceivableNote(sales({ partnerAdult: 3, partnerChild: 0 }), true)
-    expect(note).toBe('Partneri: 3 ulaznice, nominalno 60,00 € (potraživanje)')
+    const note = partnerFaceNote(sales({ partnerAdult: 3, partnerChild: 0 }), true)
+    expect(note).toBe('Partneri: 3 ulaznice, nominalno 60,00 € (prije provizije, nije u prihodu)')
   })
 
   it('is omitted when the evening sold no partner seats', () => {
-    expect(partnerReceivableNote(sales({ partnerAdult: 0, partnerChild: 0 }), true)).toBeNull()
+    expect(partnerFaceNote(sales({ partnerAdult: 0, partnerChild: 0 }), true)).toBeNull()
   })
 
   it('is money, so a viewer without `finance` never gets it', () => {
-    expect(partnerReceivableNote(sales({ partnerAdult: 10, partnerChild: 2 }), false)).toBeNull()
+    expect(partnerFaceNote(sales({ partnerAdult: 10, partnerChild: 2 }), false)).toBeNull()
   })
 })
 
