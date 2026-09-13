@@ -218,8 +218,10 @@ export async function AdminDashboardView() {
 
       {/* Persistent season summary band — visible without scrolling. The two
           money figures come from getDashboardMoney (#237): revenue collected
-          (online net of refunds + in-person cash) and partner receivable,
-          computed apart and never summed. */}
+          (`channel='online'` net of refunds + the offline ledger's cash) and
+          partner receivable, computed apart and never summed. The channel
+          clause is why they can be read side by side without printing the same
+          euros twice (#538). */}
       <SeasonBand
         lang={lang}
         season={season}

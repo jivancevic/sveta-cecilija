@@ -22,7 +22,8 @@ export function SeasonBand({
   lang: AdminLang
   season: SeasonCapacity
   /** Cash collected (cents), or null when the viewer has no `finance`
-   *  permission — the money tiles are then simply absent (#500). */
+   *  permission — the money tiles are then simply absent (#500). Online orders
+   *  net of refunds plus the offline ledger, never partner face value (#538). */
   revenueCents?: number | null
   partnerReceivableCents?: number
   /** Season comp (goodwill) seats issued (#322, ADR-0019). A COUNT only —
