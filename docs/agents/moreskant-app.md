@@ -30,13 +30,16 @@ Rank was the bar order from #472 (the first four screens a person unlocked were
 tabs, Izvedbe jumping to the front for a `moreskant` holder). **Since #563 the
 bar is three screens chosen per account** — see "The tabs belong to the
 account" below — and rank is what orders Više, the sidebar inside a workspace,
-and the generic order's top-up.
+and the generic order's top-up. **Since #565 the dance has a screen of its
+own**, Moreška, and it is what a dancer's generic bar opens with; Izvedbe is the
+blagajna's and the voditelj's, and a `moreskant` does not unlock it at all.
 
 | Rank | Screen (label) | Route | Unlocked by | Today | Old path |
 |---|---|---|---|---|---|
 | | landing | `/app` | any screen | **307 to the person's first tab** (#495) | done |
 | 1 | Narudžbe | `/app/orders`, `/app/orders/[id]` | `tickets` | **live** (#501): the list with search (name, e-mail or code), a performance filter, a state filter (`active\|refunded\|partner\|comp`) and a pager, all in the query string; the detail with the order's facts, its tickets and four named actions — Povrat (`refunds` only, and only on a paid, unrefunded order), Pošalji ulaznice ponovno, Otvori PDF, Uredi kupca | none, the Backoffice keeps its list |
-| 2 | Izvedbe (one screen, content by `can()`) | `/app/performances`, `/app/performances/[id]` | `tickets`, `moreska`, `moreskant` | **live for all three** (#495): the dancer's agenda and answers, the voditelj's Dodaj / Uredi / Otkaži / Pragovi (#503), and the blagajna's sold-of-capacity, channel split, per-show numbers and six named actions (#502), which is where the old `/admin/stats/[id]` drill-down now lives. Since #538 the per-show *Prihod* is online money net of refunds plus the evening's ledger, with the partner seats named under it at face value, before commission | 308 from `/app/izvedba/[id]`; push messages now carry the new path |
+| 1.5 | Moreška (the dancer's register screen) | `/app/moreska` | `moreskant`, `moreska` | **live** (#565): the 44px RoleMark with the name and "N nastupa pred tobom"; the hero of the next nastup (the day at 80px, weekday · time · Redovna, the voditelj's note, Dolazim / Ne dolazim, and after an answer "Dolaziš · Crni" or "Ne dolaziš" with Promijeni); the ArmyBar under it, which taps through to Stanje; then the season by month, a gold DateDisc for every Redovna and one chip per row. **A non-regular evening reads "Vanredna" and never names its client or its kind**, there is no seat count or revenue anywhere on it (Q29) and no Dodaj (Q31). What it says is `src/lib/app/moreska-screen.ts`, pure and tested without a database | new; nothing 308s here |
+| 2 | Izvedbe (one screen, content by `can()`) | `/app/performances`, `/app/performances/[id]` | `tickets`, `moreska` (`moreskant` reads the LIST on Moreška since #565, but still opens the DETAIL here) | **live** (#495): the dancer's agenda and answers, the voditelj's Dodaj / Uredi / Otkaži / Pragovi (#503), and the blagajna's sold-of-capacity, channel split, per-show numbers and six named actions (#502), which is where the old `/admin/stats/[id]` drill-down now lives. Since #538 the per-show *Prihod* is online money net of refunds plus the evening's ledger, with the partner seats named under it at face value, before commission | 308 from `/app/izvedba/[id]`; push messages now carry the new path |
 | 2.5 | Članovi (dancer profiles, invitations, join code; absorbs Pozivnice, added by #476) | `/app/members`, `/app/members/[id]` | `moreska` | **live** (#511): the rehearsal join code and its pending claims at the top, Dodaj plesača beside them, then the roster — a diacritic-insensitive search, active moreškanti first and retired ones under them, one row per dancer carrying the nickname, the real name, the primary role, whether a login exists, and the two invitation channels behind a disclosure (`POST /api/app/invite/link` for the SMS link, `POST /api/app/invite` for the letter), plus "Pošalji pozivnice svima"; the profile at `/app/members/[id]` writes nadimak, mobitel, e-mail, plesne uloge, glavna uloga and aktivan through `PATCH /api/app/members/[id]`, and Dodaj plesača through `POST /api/app/members` | `/app/invitations` and `/app/pozivnice` both 308 here; the Backoffice Members list stays for the attribution half |
 | 3 | Ljestvica (own season + roster ranking; voditelj sees the full table) | `/app/leaderboard?season=2026&part=mine\|all` | `moreskant`, `moreska` | **live** (#495): both panels on one screen, the voditelj's *Ljestvica* panel is the old scoreboard | 308 from `/app/moje` and `/app/statistika` |
 | 4 | Skener (camera, code entry, door list) | `/app/scan` | `door` | **live** (#504): the camera and the four result states, Pusti ostatak grupe (n), Poništi propuštanje, Pronađi ulaznicu and the "ušlo X od Y" ring, all on one screen | `/admin/scan` 308s here and the Backoffice view is deleted; the ticket QR stays `/scan/[token]`, whose staff buttons point at `/app/scan` |
@@ -77,6 +80,31 @@ Public pages, no session:
 | ~~`/app/set-password`~~ | the signed-in password form folded into `/app/account` (#495); only `POST /api/app/set-password` keeps the name | 308 | |
 
 Every other 308 follows the #481 rule: one release, dropped after the season.
+
+### Two registers, one evening (#565)
+
+The same performance carries a different Croatian word depending on **who is
+reading**, never on which screen or URL they are on (CONTEXT.md, decided
+2026-09-13):
+
+- **selling register, "izvedba"** — the public site, tickets and e-mails,
+  Narudžbe, Izvedbe, Statistika, Financije, Skener, Prodaja and Obračun.
+- **dancer register, "nastup"** — Moreška, attendance, the lineup, the roster's
+  push messages (every one of `PUSH_MESSAGES`) and Ljestvica with the dancer's
+  own season.
+
+A person who holds both sets reads both words for the same evening and that is
+correct: the Moreška tab says "nastup", the Izvedbe tab says "izvedba". English
+stays "performance" in both; the split exists only in Croatian. The copy lives
+in `APP_STRINGS.moreska` and `APP_STRINGS.home` respectively, and the header of
+`src/lib/app/strings.ts` restates the rule for whoever adds the next string.
+
+**Stanje is still `/app/performances/[id]`** until #566 builds it a screen of
+its own, so that one page answers to BOTH tabs: `openScreen` takes a list of
+screen keys and the detail passes `['performances', 'moreska']`. That is what
+keeps a push notification's deep link working for a dancer, who no longer
+unlocks the Izvedbe list itself, and the detail's back link points at whichever
+of the two the reader actually holds.
 
 ### The access rule
 
@@ -132,8 +160,9 @@ Početna once T3/#564 lands), neither of which is ever stored. `MAX_TABS` is 3.
   `finance` → Financije · Statistika; `tickets` → Narudžbe · Izvedbe · Upiti;
   `moreska` → Moreška · Članovi · Izvedbe. A set holding several merges dancer
   → box → other, duplicates collapse, the first three win, and a bar shorter
-  than three is topped up in rank order. (Until T4/#565 builds the Moreška
-  screen, "Moreška" reads as Izvedbe — one constant in `screens.ts`.)
+  than three is topped up in rank order. Since #565 "Moreška" in those rows is
+  the Moreška screen itself, which is why the dancer's row has no Izvedbe in it
+  and the voditelj's does.
 - **Storage.** `Users.tabs` is a `json` column, field-locked to `users` for
   read, update and create like `permissions`. Deliberately not a
   `select hasMany` enum child table: the vocabulary is the screen table, which
@@ -321,16 +350,24 @@ is the whole rule set:
 
 | Caller | May answer for | When | The army |
 |---|---|---|---|
-| `moreskant` | their own Member only | before the start, not cancelled | never theirs to set |
+| `moreskant` | their own Member only | before the start, not cancelled | never theirs to set, and an army they send is **ignored** (#565) |
 | `moreska` (voditelj) | any active moreškant | any time, cancelled or long past | theirs alone |
 
 - 403 means "you may not do this" (someone else's answer, an evening that has
-  started or been cancelled, an army only a voditelj may set); 400 means "this
-  makes no sense" (unknown status or army, an army the member's roles do not
-  cover, a member who is not a live moreškant).
+  started or been cancelled); 400 means "this makes no sense" (unknown status or
+  army, an army the member's roles do not cover, a member who is not a live
+  moreškant).
 - On create the army defaults from the **primary role**: `crni` / `crni_kralj` /
   `otmanovic` → crni, `bili` / `bili_kralj` → bili, `bula` → null. On update it
   keeps whatever the voditelj chose.
+- **An army in a dancer's body is dropped, not refused** (#565). It used to be a
+  403 ("Voditelj određuje vojsku"), which was a sentence nobody could act on:
+  Moreška answers with one tap and offers no army control at all, so an army
+  arriving from a dancer is a stale client rather than an attempt at anything.
+  Ignoring it means the two rules above decide alone, and a dancer who holds
+  BOTH `crni` and `bili` lands in their primary role's army with one tap — while
+  a re-answer on a row the voditelj has already moved still keeps the voditelj's
+  army, because that is the "on update" clause, not the request.
 - `moreskantMayAnswer()` is the single sentence behind both the lock the route
   enforces and the disabled buttons a dancer sees, so the two cannot drift.
 
@@ -347,7 +384,7 @@ rather than counting locally.
 ### The one writer
 
 `POST /api/app/attendance` (`{ performanceId, memberId, status: coming |
-not_coming | clear, army? }`), guarded by
+not_coming | clear, army? }` — `army` is read only from a voditelj), guarded by
 `requirePermission(req, ['moreskant', 'moreska'])`. The local API runs
 `overrideAccess: true`, so the collection access does not gate it — the rules
 do. The army move posts through the same route; there is no second writer.
