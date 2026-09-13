@@ -42,7 +42,7 @@ describe('decideAppAccess — the voditelj', () => {
   it('lets a `moreska` holder in with no Member link (a non-dancing voditelj)', () => {
     const access = decideAppAccess(user('moreska'), null)
     expect(access.kind).toBe('ok')
-    expect(screenKeys(access)).toEqual(['performances', 'leaderboard'])
+    expect(screenKeys(access)).toEqual(['performances', 'members', 'leaderboard'])
     expect(access.kind === 'ok' && access.self).toBeNull()
   })
 

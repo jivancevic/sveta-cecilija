@@ -58,10 +58,6 @@ export const ALLOW_LIST: Record<string, string> = {
     'Reset-token route: payload.forgotPassword with a per-call expiration. Retired with repo.auth (#475, seam research 2.3).',
   'src/app/api/app/session/route.ts':
     'Invitation-link sign-in (#463): payload.resetPassword mints the session the token stands for. Retired with repo.auth (#475, seam research 2.4).',
-  'src/app/api/app/join/route.ts':
-    'Rehearsal-QR claim (#463): public write route that reads the join code store and the voditelj list off the pool. Retired when the Članovi screen (#503) moves the join-claim store onto repo.db.',
-  'src/app/api/app/join/status/route.ts':
-    'Rehearsal-QR poll (#463): same store as the claim route above, same owner (#503).',
   'src/app/api/app/authorize/route.ts':
     'MCP consent screen (#438): authenticates the caller itself before there is a session to guard, and writes the oauth_codes store. Retired with repo.auth (#475, seam research 2.8).',
 
@@ -69,21 +65,13 @@ export const ALLOW_LIST: Record<string, string> = {
   'src/lib/app/viewer.ts':
     'The session resolution every /app page opens with: payload.auth plus the re-read of the account and its Member. Retired with repo.auth (#475, seam research 2.5) — it is the same swap as the sign-in routes above, not a screen’s.',
   'src/lib/app/session-data.ts':
-    'The invitation link that IS the authentication (#463): payload.resetPassword mints the session the token stands for. Retired with repo.auth (#475, seam research 2.4).',
+    'The invitation link that IS the authentication (#463): payload.resetPassword mints the session the token stands for. Its `openAppSession` half already sits behind repo.auth.openSession (#511); the reset-token reader beside it is retired with the rest of repo.auth (#475, seam research 2.4).',
   'src/lib/app/session-guard.ts':
     'The inbox routes’ session guard (#496): payload.auth composed with decideAppAccess, because a notification is addressed to an ACCOUNT rather than to a permission. Retired with repo.auth (#475) — it asks the same "who is asking" question as viewer.ts and swaps with it.',
   'src/lib/app/notifications-data.ts':
     'The inbox store loader (#496): a raw-table read that takes poolQuery off the Payload instance the request already has. Retired when repo.db replaces that, alongside the rest of repo.auth’s app-session work (#475).',
   'src/lib/app/invite-data.ts':
-    'Issues a dancer login (creates the Users row and mints the reset token, #424/#463). Half of it is repo.users and half is repo.auth, so it lands with Članovi (#511), which owns the invitation, once repo.auth exists.',
-
-  // ── Screens that shipped before the seam, each with its rebuild ticket ───
-  'src/lib/app/invite-list-data.ts':
-    'The invitations list (#463), which folds into Članovi. Retired by #511.',
-  'src/lib/app/join-data.ts':
-    'The rehearsal join code and its claims (#463), which fold into Članovi. Retired by #511, the same ticket as the two join routes above.',
-  'src/lib/app/link-self-data.ts':
-    'The self-link list on /app/account (#462). No screen ticket owns that page, so it moves with the Members repo that #511 is the first to need.',
+    'Issues a dancer login (creates the Users row and mints the reset token, #424/#463), and since #511 also holds ensureJoinLogin, the same job for an approved rehearsal claim. Članovi moved every LIST it used to share behind repo.members; what is left is the account half, which is repo.users plus repo.auth and waits for both (#475).',
 
   // ── Finished screens with no ticket left: phase B ────────────────────────
   'src/lib/app/my-season-data.ts':
