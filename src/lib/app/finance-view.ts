@@ -29,7 +29,11 @@ import {
   type ReconTicketRow,
   type TicketType,
 } from '@/lib/partner/partner-reconciliation'
-import { revenueCollectedCents, type RefundStatus } from '@/lib/dashboard/revenue'
+import {
+  revenueCollectedCents,
+  type CollectedOrderRow,
+  type RefundStatus,
+} from '@/lib/dashboard/revenue'
 import {
   sumOfflineLines,
   type OfflineSaleLine,
@@ -45,15 +49,16 @@ import {
 } from './statement-view'
 import type { Venue } from '@/lib/venues'
 
-/** One order of the season, reduced to the three things money cares about. */
-export interface FinanceOrderRow {
-  /** `orders.channel`: only `online` money is ever collected by the society. */
-  channel: OrderChannel
-  totalCents: number
-  refundStatus: RefundStatus
-}
+/**
+ * One order of the season, reduced to the three things money cares about.
+ *
+ * It IS `CollectedOrderRow` since #538: the channel rule moved into
+ * `revenueCollectedCents`, so the row this screen reads and the row the shared
+ * money function counts are one type rather than two that have to agree.
+ */
+export type FinanceOrderRow = CollectedOrderRow
 
-export type OrderChannel = 'online' | 'partner' | 'comp'
+export type { OrderChannel } from '@/lib/dashboard/revenue'
 
 /**
  * The season in euros: what came in, and what went back out.
