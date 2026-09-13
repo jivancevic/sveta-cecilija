@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { APP_STRINGS } from '@/lib/app/strings'
 import type { Army } from '@/lib/attendance/rules'
 
-// "Prebaci u Bili" — the voditelj's army move (#423, #419 story 12).
+// "Prebaci u bile" — the voditelj's army move (#423, #419 story 12).
 //
 // Only rendered for a dancer who holds BOTH armies and is coming; the route
 // refuses the move anyway if the roles do not cover the target, so the control
@@ -51,12 +51,10 @@ export function ArmyMoveButton({
     }
   }
 
-  const label = target === 'crni' ? APP_STRINGS.detail.crni : APP_STRINGS.detail.bili
-
   return (
     <>
       <button type="button" className="app__move" disabled={saving} onClick={move}>
-        {APP_STRINGS.detail.moveTo(label)}
+        {APP_STRINGS.detail.moveTo(target)}
       </button>
       {error && <span className="app__answer-error">{error}</span>}
     </>

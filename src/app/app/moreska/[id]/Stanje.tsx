@@ -9,7 +9,7 @@ import { assignTitle, type DanceTitle } from '@/lib/lineup/titles'
 import { LINEUP_ROLE_LABELS } from '@/lib/moreskant-profile'
 import type { StanjeColumn, StanjePerson, StanjeView } from '@/lib/app/stanje-screen'
 import { ALL_TITLES } from '@/lib/app/stanje-screen'
-import { ArmyBar, Button, Card, Note, RoleMark, Section, Sheet, SheetOption } from '../../ui'
+import { ArmyBar, Button, Card, Chip, Note, RoleMark, Section, Sheet, SheetOption } from '../../ui'
 
 // Stanje's one client island (#566): the two columns, the sheets, the voditelj's
 // bar.
@@ -321,7 +321,14 @@ function ArmyColumn({
   )
 }
 
-/** A mark and a nickname: a button for a voditelj, a plain line for a dancer. */
+/**
+ * A mark and a nickname: a button for a voditelj, a plain line for a dancer.
+ *
+ * The "bez odgovora" chip is the one thing a name can say about itself here: it
+ * stands in this column because the POSTAVA says so, not because they answered
+ * (#581 review). The column's own count leaves them out, so without the chip
+ * the names would silently outnumber the head.
+ */
 function Name({
   person,
   onPick,
@@ -332,7 +339,10 @@ function Name({
   const inside = (
     <>
       <RoleMark army={person.army} title={person.title} small />
-      <span className="app__name-text">{person.nickname}</span>
+      <span className="app__name-body">
+        <span className="app__name-text">{person.nickname}</span>
+        {person.noAnswer && <Chip tone="plain">{S.noAnswerChip}</Chip>}
+      </span>
     </>
   )
   if (!onPick) return <span className="app__name">{inside}</span>
@@ -420,9 +430,7 @@ function PersonSheet({
           disabled={busy != null}
           onClick={() => onMove(person.memberId, person.moveTo!)}
         >
-          {S.moveTo(
-            person.moveTo === 'crni' ? APP_STRINGS.ui.armyCrni : APP_STRINGS.ui.armyBili,
-          )}
+          {APP_STRINGS.detail.moveTo(person.moveTo)}
         </SheetOption>
       )}
 

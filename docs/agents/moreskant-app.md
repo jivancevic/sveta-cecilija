@@ -1568,9 +1568,18 @@ column immediately, before any postava is saved.
   (`buildLineupFromAttendance`) FLATTENED to plain army roles, with the stored
   titles laid on top. The flattening is the point — the suggestion carries the
   dancer's primary role, so a crni kralj by trade would otherwise arrive already
-  crowned. A stored title is dropped when its holder stops coming or is moved to
-  the other army; a stored `voditelj` line is always kept; at most one bula is
-  in the list.
+  crowned. A stored title is dropped when its holder says "ne dolazim" or is
+  moved to the other army; a stored `voditelj` line is always kept; at most one
+  bula is in the list.
+- **A stored row for somebody who has not answered AT ALL is kept whole**, role
+  and title (#581 review), and it stands in its column with a quiet "bez
+  odgovora" chip. `set_lineup` and the Backoffice editor both dictate a postava
+  for an evening nobody was asked about (story 62), and a screen that derived
+  the list from answers alone would delete that work on the first title tap and
+  leave an evening whose four titles sit on nobody, so it could never be
+  confirmed. "No answer" is the ABSENCE of a row, which is exactly what tells it
+  apart from a withdrawal. The column's own "N od prag" still counts ANSWERS,
+  because the ArmyBar above it does.
 - `checkTitles` — **a confirmed postava carries all four, once each.**
 
 **The four-title rule is the CONFIRM's and nothing else's.** It lives in
@@ -1598,6 +1607,14 @@ shows the alarm before it sends it, and the preview is `PUSH_MESSAGES.alarm`
 itself, so it cannot promise a sentence the phones will not get. Nothing on the
 screen is optimistic: every landed write calls `router.refresh()` and the server
 counts again.
+
+**Stanje writes answers and titles, and preserves what it did not derive.** A
+save from this screen is the answers plus the titles plus every stored row it
+kept, never a list rebuilt from scratch. What it still cannot record is an
+unusual role (a bula danced by a crni, story 29) or the `voditelj` line, so
+**the old `LineupEditor` on the Izvedbe detail stays** until something here can:
+it is the tweezers for a row Stanje has no control for, and #512 must not take
+it away before then.
 
 **A dancer reads the same screen with no action bar and no sheets on the
 names.** The routes refuse them anyway (`requirePermission(req, 'moreska')`), so

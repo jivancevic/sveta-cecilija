@@ -412,8 +412,9 @@ export const APP_STRINGS = {
     /** The person sheet's two halves. */
     answerFor: 'Odgovor',
     titleFor: 'Titula',
-    moveTo: (army: string) => `Prebaci u ${army}`,
     clear: 'Poništi odgovor',
+    /** The chip on a postava row nobody has answered for (#581 review). */
+    noAnswerChip: 'bez odgovora',
     /** The voditelj's two buttons. */
     call: 'Pozovi',
     callTitle: 'Pozovi moreškante',
@@ -598,7 +599,16 @@ export const APP_STRINGS = {
     noAnswer: 'Bez odgovora',
     call: 'Nazovi',
     move: 'Prebaci',
-    moveTo: (army: string) => `Prebaci u ${army}`,
+    /**
+     * "Prebaci u bile" (#581 review).
+     *
+     * The armies are common nouns and the phrase wants the ACCUSATIVE PLURAL,
+     * so neither "Bili" (the heading's nominative) nor a capital survives here:
+     * the word is not at the start of a sentence. It takes the army ITSELF
+     * rather than a label, so the two surfaces that offer the move, Stanje's
+     * person sheet and the old `ArmyMoveButton`, cannot decline it two ways.
+     */
+    moveTo: (army: 'crni' | 'bili') => (army === 'crni' ? 'Prebaci u crne' : 'Prebaci u bile'),
     missing: 'Ta izvedba ne postoji.',
     /** What the segmented control IS, for a screen reader announcing the tablist. */
     segmentsLabel: 'Dijelovi izvedbe',

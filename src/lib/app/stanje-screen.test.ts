@@ -182,6 +182,64 @@ describe('stanjeView titles', () => {
     expect(out.titlesGiven).toBe(2)
   })
 
+  it('counts a stored title of a member with no answer', () => {
+    // GRGO is on the roster with no attendance row at all: the postava was
+    // dictated (MCP, or the Backoffice editor) before anybody answered. His
+    // title counts, or an evening entered from the paper list could never reach
+    // four and could never be confirmed from this screen.
+    const d = detail()
+    const out = stanjeView({
+      ...d,
+      lineup: {
+        ...d.lineup,
+        entries: [
+          { memberId: '5', nickname: 'Grgo', role: 'bili_kralj' },
+          { memberId: '4', nickname: 'Mare', role: 'bula' },
+        ],
+      },
+    })
+    expect(out.lineup).toContainEqual({ memberId: '5', role: 'bili_kralj' })
+    expect(out.titlesGiven).toBe(2)
+  })
+
+  it('stands a dictated row in its column, with the chip that says why', () => {
+    const d = detail()
+    const out = stanjeView({
+      ...d,
+      lineup: {
+        ...d.lineup,
+        entries: [{ memberId: '5', nickname: 'Grgo', role: 'bili_kralj' }],
+      },
+    })
+    const bili = out.columns[1]!
+    // The head still counts ANSWERS: the ArmyBar above it says the same number.
+    expect(bili.head).toBe('1 od 2')
+    expect(bili.people.map((p) => p.nickname)).toEqual(['Bepo', 'Grgo'])
+    expect(bili.people[1]).toMatchObject({
+      title: 'bili_kralj',
+      answer: null,
+      noAnswer: true,
+      titles: ['bili_kralj'],
+    })
+    // And he is still on the "Bez odgovora" list, because he still has not
+    // answered: a postava row is not an answer.
+    expect(out.noAnswer.map((p) => p.nickname)).toEqual(['Grgo'])
+  })
+
+  it('drops a stored row for somebody who said no, chip or no chip', () => {
+    const d = detail()
+    const out = stanjeView({
+      ...d,
+      count: { ...d.count, notComing: [person('5', 'Grgo')], noAnswer: [] },
+      lineup: {
+        ...d.lineup,
+        entries: [{ memberId: '5', nickname: 'Grgo', role: 'bili_kralj' }],
+      },
+    })
+    expect(out.lineup.some((entry) => entry.memberId === '5')).toBe(false)
+    expect(out.columns[1]!.people.map((p) => p.nickname)).toEqual(['Bepo'])
+  })
+
   it('hands the whole postava over as the list a title write replaces', () => {
     const out = stanjeView(detail())
     expect(out.lineup).toEqual([
@@ -249,12 +307,15 @@ describe('effectiveLineup', () => {
     // from answers that keep arriving would change a list nobody may change.
     const d = detail()
     expect(
-      effectiveLineup({
-        ...d.lineup,
-        confirmed: true,
-        canEdit: false,
-        entries: [{ memberId: '1', nickname: 'Ćići', role: 'crni_kralj' }],
-      }),
+      effectiveLineup(
+        {
+          ...d.lineup,
+          confirmed: true,
+          canEdit: false,
+          entries: [{ memberId: '1', nickname: 'Ćići', role: 'crni_kralj' }],
+        },
+        ['1', '2', '3', '4'],
+      ),
     ).toEqual([{ memberId: '1', role: 'crni_kralj' }])
   })
 })

@@ -85,61 +85,107 @@ describe('assignTitle', () => {
 
 describe('lineupWithTitles', () => {
   const coming = [entry('1', 'crni'), entry('2', 'bili'), entry('3', 'bula')]
+  /** Everybody in `coming` answered; nobody else did, unless a test says so. */
+  const answered = ['1', '2', '3']
 
   it('flattens a profile crown out of the suggestion', () => {
     // `buildLineupFromAttendance` hands a crni kralj by trade his primary role;
     // a title comes from the evening and never from the profile (Q65), so the
     // suggestion is reduced to the army and only a STORED title survives.
     expect(
-      lineupWithTitles({ coming: [entry('1', 'crni_kralj'), entry('2', 'bili_kralj')], stored: [] }),
+      lineupWithTitles({
+        coming: [entry('1', 'crni_kralj'), entry('2', 'bili_kralj')],
+        stored: [],
+        answered,
+      }),
     ).toEqual([entry('1', 'crni'), entry('2', 'bili')])
   })
 
   it('puts a stored title on top of the answers', () => {
-    expect(lineupWithTitles({ coming, stored: [entry('1', 'crni_kralj')] })).toEqual([
+    expect(lineupWithTitles({ coming, stored: [entry('1', 'crni_kralj')], answered })).toEqual([
       entry('1', 'crni_kralj'),
       entry('2', 'bili'),
       entry('3', 'bula'),
     ])
   })
 
-  it('drops a title whose holder has since said "ne dolazim"', () => {
-    // Not a crown on an empty place: the answers are the live truth of who is
-    // dancing, and a stored title is only ever a decoration on one of them.
-    expect(lineupWithTitles({ coming, stored: [entry('7', 'bili_kralj')] })).toEqual(coming)
+  it('drops a stored row for a member who said no', () => {
+    // Not a crown on an empty place: a withdrawal takes the dancer out of the
+    // postava, and the title with them.
+    expect(
+      lineupWithTitles({
+        coming,
+        stored: [entry('7', 'bili_kralj')],
+        answered: [...answered, '7'],
+      }),
+    ).toEqual(coming)
+  })
+
+  it('keeps a stored row for a member with no answer', () => {
+    // The MCP tool and the Backoffice editor both dictate a postava for an
+    // evening nobody has answered for (story 62). Deriving the list from the
+    // answers alone would delete it on the first title tap.
+    expect(
+      lineupWithTitles({ coming, stored: [entry('7', 'bili_kralj')], answered }),
+    ).toEqual([...coming, entry('7', 'bili_kralj')])
+  })
+
+  it('keeps a whole dictated postava when nobody has answered at all', () => {
+    const dictated = [
+      entry('1', 'crni_kralj'),
+      entry('2', 'otmanovic'),
+      entry('3', 'bili_kralj'),
+      entry('4', 'bula'),
+      entry('5', 'crni'),
+    ]
+    expect(lineupWithTitles({ coming: [], stored: dictated, answered: [] })).toEqual(dictated)
   })
 
   it('drops a title the voditelj has moved out from under', () => {
     // He was the crni kralj; he has been moved across to the bili. A crown that
     // belongs to the other army does not travel with the dancer.
     const moved = [entry('1', 'bili'), entry('2', 'bili')]
-    expect(lineupWithTitles({ coming: moved, stored: [entry('1', 'crni_kralj')] })).toEqual(moved)
+    expect(
+      lineupWithTitles({ coming: moved, stored: [entry('1', 'crni_kralj')], answered }),
+    ).toEqual(moved)
   })
 
   it('keeps only one bula in the postava, the stored one', () => {
     // Two bule answered; only one dances it. The stored title decides which.
     const two = [entry('3', 'bula'), entry('4', 'bula')]
-    expect(lineupWithTitles({ coming: two, stored: [entry('4', 'bula')] })).toEqual([
-      entry('4', 'bula'),
-    ])
+    expect(
+      lineupWithTitles({ coming: two, stored: [entry('4', 'bula')], answered: ['3', '4'] }),
+    ).toEqual([entry('4', 'bula')])
   })
 
   it('picks the first bula when none is stored, which is the ordinary evening', () => {
     const two = [entry('3', 'bula'), entry('4', 'bula')]
-    expect(lineupWithTitles({ coming: two, stored: [] })).toEqual([entry('3', 'bula')])
+    expect(lineupWithTitles({ coming: two, stored: [], answered: ['3', '4'] })).toEqual([
+      entry('3', 'bula'),
+    ])
+  })
+
+  it('leaves the bula with the stored one when she has not answered either way', () => {
+    expect(
+      lineupWithTitles({
+        coming: [entry('3', 'bula')],
+        stored: [entry('4', 'bula')],
+        answered: ['3'],
+      }),
+    ).toEqual([entry('4', 'bula')])
   })
 
   it('keeps the voditelj line, whatever the answers say', () => {
     // Nobody derives "ran the evening without dancing" from an attendance
     // answer, so Stanje must not be the screen that quietly deletes it.
-    expect(lineupWithTitles({ coming, stored: [entry('9', 'voditelj')] })).toEqual([
+    expect(lineupWithTitles({ coming, stored: [entry('9', 'voditelj')], answered })).toEqual([
       ...coming,
       entry('9', 'voditelj'),
     ])
   })
 
   it('keeps the voditelj line even for somebody who answered', () => {
-    expect(lineupWithTitles({ coming, stored: [entry('2', 'voditelj')] })).toEqual([
+    expect(lineupWithTitles({ coming, stored: [entry('2', 'voditelj')], answered })).toEqual([
       entry('1', 'crni'),
       entry('2', 'voditelj'),
       entry('3', 'bula'),

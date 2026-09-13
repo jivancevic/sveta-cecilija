@@ -6692,13 +6692,30 @@ a.app__statrow-main:focus-visible {
   background: var(--sunk);
 }
 
-.app__name-text {
+/* The name and, under it, the chip a dictated row wears. A column, so the chip
+   never squeezes the nickname on a 390px screen. */
+.app__name-body {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
   min-width: 0;
+}
+
+.app__name-text {
+  max-width: 100%;
   overflow: hidden;
   font-size: 15px;
   font-weight: 500;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* A postava row with no answer under it sits a little taller, so the chip has
+   its own line rather than pushing the mark off centre. */
+.app__name:has(.ui-chip) {
+  align-items: center;
+  min-height: 50px;
 }
 
 /* An empty place in the line. Dashed on purpose and one of the only dashed
@@ -6770,7 +6787,14 @@ a.app__statrow-main:focus-visible {
    short evening (six dancers, no places to fill) that place is halfway up the
    screen, where the bar would lie across the columns. The column reaches at
    least to the bottom of the viewport and `margin-top: auto` puts the bar at
-   the end of it, so the bar has nothing to be pulled up over. */
+   the end of it, so the bar has nothing to be pulled up over.
+
+   The 190px is everything above this column, measured once rather than tokenised
+   because none of it is a token: the header (~56px, title plus its margin), the
+   back link (~30px), the date line (~26px), the place line (~20px) and the air
+   between them and the ArmyBar (~58px). Being off by a few pixels costs a few
+   pixels of scroll on a short evening and nothing else, which is why it is a
+   number and not a measurement in JavaScript. */
 .app__stanje {
   display: flex;
   flex-direction: column;

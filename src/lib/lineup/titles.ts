@@ -20,10 +20,12 @@
 //      staying in it as a "plain bula", which is not a thing.
 //   3. **What the postava IS before anybody saves it.** The plain rows are the
 //      attendance answers (`buildLineupFromAttendance`), FLATTENED to the plain
-//      role of their army; the stored rows carry the titles. `lineupWithTitles`
-//      is the overlay, and it is what Stanje writes whenever a title moves, so
-//      the saved postava always matches the answers on screen rather than the
-//      answers as they were an hour ago.
+//      role of their army; the stored rows carry the titles, and a stored row
+//      for somebody who was never asked is kept whole. `lineupWithTitles` is
+//      the overlay, and it is what Stanje writes whenever a title moves, so the
+//      saved postava always matches the answers on screen rather than the
+//      answers as they were an hour ago, and never deletes a list somebody
+//      dictated before the answers came in.
 //   4. **A confirmed postava carries all four, once each** (CONTEXT.md, decided
 //      2026-09-13). `checkTitles` is that rule, refused with a Croatian
 //      sentence naming what is missing or doubled. An UNCONFIRMED write never
@@ -150,15 +152,24 @@ export function assignTitle(
  *   name here;
  * - a stored title for somebody who has since said "ne dolazim" is DROPPED, so
  *   a crown never sits on an empty place;
+ * - **a stored row for somebody who has not answered AT ALL is kept as it
+ *   is**, role and title (#581 review). A postava can arrive without a single
+ *   attendance answer under it: the MCP `set_lineup` tool records the paper
+ *   list of an evening nobody was asked about (story 62), and so does the
+ *   Backoffice editor. Deriving the list from answers alone would delete that
+ *   work on the first title tap and leave an evening that can never be
+ *   confirmed, because all four titles would be sitting on nobody. "No answer"
+ *   is the ABSENCE of a row (glossary: *Attendance*), which is exactly what
+ *   tells it apart from the "ne dolazim" above;
  * - a stored title whose army no longer matches the dancer's army tonight is
  *   dropped too, because a voditelj who moves a crni kralj across to the bili
  *   has moved a dancer, not a crown;
  * - **at most one bula is in the postava.** Her role is her title, so two bule
- *   who both answered "dolazim" would be two holders of one title and the
- *   evening could not be confirmed at all. The stored one wins; with none
- *   stored, the first one in the roster order does, which is the ordinary
- *   evening where exactly one bula came. The other stands in the Bule card
- *   without being in the postava, and one tap moves the title across;
+ *   would be two holders of one title and the evening could not be confirmed at
+ *   all. The stored one wins as long as she has not said no; with none stored,
+ *   the first coming one does, which is the ordinary evening where exactly one
+ *   bula came. The other stands in the Bule card without being in the postava,
+ *   and one tap moves the title across;
  * - a stored `voditelj` line is KEPT whatever the answers say: the member who
  *   runs the evening without dancing has no attendance answer to derive it
  *   from, and Stanje must not be the screen that quietly deletes it.
@@ -166,16 +177,30 @@ export function assignTitle(
 export function lineupWithTitles(input: {
   coming: readonly LineupEntry[]
   stored: readonly LineupEntry[]
+  /**
+   * Every member with an attendance row of ANY kind, coming or not.
+   *
+   * It is the difference between "said no" and "was never asked", and the two
+   * have opposite answers here: a stored row is dropped for the first and kept
+   * for the second. Passing the coming ids alone would quietly delete every
+   * postava entered before anybody answered.
+   */
+  answered: readonly string[]
 }): LineupEntry[] {
   const titleOf = new Map<string, DanceTitle>()
   for (const entry of input.stored) {
     if (isDanceTitle(entry.role)) titleOf.set(entry.memberId, entry.role)
   }
+  const comingIds = new Set(input.coming.map((entry) => entry.memberId))
+  const answered = new Set(input.answered)
+  /** A stored row survives unless its member answered something other than yes. */
+  const survives = (memberId: string) => comingIds.has(memberId) || !answered.has(memberId)
+
   const storedBula = input.stored.find((entry) => entry.role === 'bula')?.memberId ?? null
-  const bule = input.coming.filter((entry) => armyOfLineupRole(entry.role) === 'bula')
+  const comingBule = input.coming.filter((entry) => armyOfLineupRole(entry.role) === 'bula')
   const theBula =
-    (storedBula && bule.some((entry) => entry.memberId === storedBula) ? storedBula : null) ??
-    bule[0]?.memberId ??
+    (storedBula && survives(storedBula) ? storedBula : null) ??
+    comingBule[0]?.memberId ??
     null
 
   const out: LineupEntry[] = []
@@ -191,6 +216,16 @@ export function lineupWithTitles(input: {
     const plain: LineupEntry = army ? { ...entry, role: PLAIN_OF_ARMY[army] } : { ...entry }
     const title = titleOf.get(entry.memberId)
     out.push(title && TITLE_ARMY[title] === army ? { ...entry, role: title } : plain)
+  }
+
+  // The rows nobody answered for, verbatim: a dictated postava is a record, not
+  // a suggestion, so neither the role nor the title is re-derived here.
+  for (const entry of input.stored) {
+    if (entry.role === 'voditelj') continue
+    if (comingIds.has(entry.memberId) || answered.has(entry.memberId)) continue
+    if (entry.role === 'bula' && entry.memberId !== theBula) continue
+    if (out.some((row) => row.memberId === entry.memberId)) continue
+    out.push({ ...entry })
   }
 
   const seen = new Set(out.map((entry) => entry.memberId))

@@ -7,11 +7,14 @@
 //
 // Three rules here are worth more than the shaping they look like:
 //
-//   1. **A column is the army, not the postava.** Who stands in crni is decided
-//      by `countArmies` over the attendance answers, which is the single home
-//      of the counting rule; the lineup only decides whether a crown sits on a
-//      name. That is why a dancer who is moved across armies moves column
-//      immediately, before anybody saves a postava.
+//   1. **A column's NUMBER is the army; its names may also come from the
+//      postava.** The count is `countArmies` over the attendance answers, the
+//      single home of the counting rule, so a dancer moved across armies moves
+//      column immediately and the head never disagrees with the ArmyBar. Under
+//      those names stand the postava rows nobody answered for (#581 review) —
+//      a list dictated through the MCP tool or the Backoffice editor — each
+//      with a "bez odgovora" chip, because a postava entered before anybody was
+//      asked is a record Stanje must show and must not delete.
 //   2. **A place is a place.** A column short of its threshold shows the empty
 //      places as "mjesto 8", because the two columns are a picture of the two
 //      lines on the pier and a line has places in it. Never a dash and never a
@@ -26,6 +29,7 @@
 
 import {
   DANCE_TITLES,
+  armyOfLineupRole,
   isDanceTitle,
   lineupWithTitles,
   titlesForArmy,
@@ -61,6 +65,14 @@ export interface StanjePerson {
   moveTo: Army | null
   /** What they answered, so a sheet opens on the state it is changing. */
   answer: 'coming' | 'not_coming' | null
+  /**
+   * They stand in this column because the POSTAVA says so and not because they
+   * answered (#581 review): a dictated list, from the MCP tool or the
+   * Backoffice editor, for an evening nobody has answered for yet. The column's
+   * own count never includes them, so the chip is what tells the voditelj why
+   * the names are more than the number.
+   */
+  noAnswer: boolean
 }
 
 /** One army's column. */
@@ -128,11 +140,18 @@ export interface StanjeView {
  * The postava this screen is looking at.
  *
  * While the voditelj may still edit it, that is the answers with the stored
- * titles overlaid ({@link lineupWithTitles}); once it is confirmed, or for a
+ * rows overlaid ({@link lineupWithTitles}); once it is confirmed, or for a
  * dancer, it is exactly what is stored, which the loader has already emptied
  * for a dancer looking at a draft (story 34).
+ *
+ * `answered` is every member with an attendance row of any kind, which is the
+ * difference between "said no" and "was never asked": the first drops a stored
+ * row, the second keeps it whole.
  */
-export function effectiveLineup(lineup: LineupView): LineupEntry[] {
+export function effectiveLineup(
+  lineup: LineupView,
+  answered: readonly string[],
+): LineupEntry[] {
   const stored: LineupEntry[] = lineup.entries.map((row) => ({
     memberId: row.memberId,
     role: row.role,
@@ -142,7 +161,7 @@ export function effectiveLineup(lineup: LineupView): LineupEntry[] {
     memberId: row.memberId,
     role: row.role,
   }))
-  return lineupWithTitles({ coming, stored })
+  return lineupWithTitles({ coming, stored, answered })
 }
 
 function titleMap(entries: readonly LineupEntry[]): Map<string, DanceTitle> {
@@ -154,40 +173,53 @@ function titleMap(entries: readonly LineupEntry[]): Map<string, DanceTitle> {
 }
 
 function toPerson(
-  person: RosterPerson,
+  person: { memberId: string; nickname: string },
   input: {
     army: TitleArmy | null
     answer: 'coming' | 'not_coming' | null
+    /** They have a row in the postava, so a title can sit on them. */
+    inLineup: boolean
+    /** Draw the "bez odgovora" chip: a postava row with no answer under it. */
+    noAnswer?: boolean
     titles: Map<string, DanceTitle>
     moveTargets: Record<string, Army[]>
   },
 ): StanjePerson {
   const army = input.army
-  // Only a dancer who is COMING has a place in the postava, so only they can
-  // wear a title: a crown on somebody who said "ne dolazim" would be a promise
-  // the evening cannot keep.
   const coming = input.answer === 'coming'
   const other: Army | null = army === 'crni' ? 'bili' : army === 'bili' ? 'crni' : null
   return {
     memberId: person.memberId,
     nickname: person.nickname,
     army,
-    title: coming ? (input.titles.get(person.memberId) ?? null) : null,
-    titles: coming && army ? titlesForArmy(army) : [],
+    // A title sits on a postava ROW, so somebody who said "ne dolazim" never
+    // wears one (the overlay has already dropped it) and somebody who was never
+    // asked keeps the one the dictated list gave them.
+    title: input.inLineup ? (input.titles.get(person.memberId) ?? null) : null,
+    titles: (coming || input.inLineup) && army ? titlesForArmy(army) : [],
     // A bula is in neither army and is never moved between them; everyone else
-    // may be moved only if their profile covers the other side (story 12).
+    // may be moved only if their profile covers the other side (story 12). The
+    // move posts a "dolazim", so it is offered only to somebody who is coming.
     moveTo:
       coming && other && (input.moveTargets[person.memberId] ?? []).includes(other) ? other : null,
     answer: input.answer,
+    noAnswer: input.noAnswer === true,
   }
 }
 
 function column(
   army: Army,
   tally: { count: number; threshold: number; below: boolean; members: RosterPerson[] },
+  /** Postava rows in this column whose member never answered (#581 review). */
+  unanswered: StanjePerson[],
   shared: { titles: Map<string, DanceTitle>; moveTargets: Record<string, Army[]> },
+  /** Who has a row in the postava, so a title can sit on them. */
+  inLineup: Set<string>,
 ): StanjeColumn {
   const slots: string[] = []
+  // The head counts ANSWERS and nothing else: the ArmyBar above it is about who
+  // said they are coming, and the two must never disagree. A dictated row shows
+  // under the names with its own chip instead of moving the number.
   for (let n = tally.count + 1; n <= tally.threshold; n += 1) slots.push(S.slot(n))
   return {
     army,
@@ -196,9 +228,17 @@ function column(
     threshold: tally.threshold,
     below: tally.below,
     head: S.ofThreshold(tally.count, tally.threshold),
-    people: tally.members.map((person) =>
-      toPerson(person, { army, answer: 'coming', ...shared }),
-    ),
+    people: [
+      ...tally.members.map((person) =>
+        toPerson(person, {
+          army,
+          answer: 'coming',
+          inLineup: inLineup.has(person.memberId),
+          ...shared,
+        }),
+      ),
+      ...unanswered,
+    ],
     slots,
   }
 }
@@ -206,9 +246,43 @@ function column(
 /** Everything Stanje draws, from one loaded evening. */
 export function stanjeView(detail: PerformanceDetail): StanjeView {
   const p = detail.performance
-  const lineup = effectiveLineup(detail.lineup)
+  const count = detail.count
+
+  // Every member with an attendance row of any kind. "No answer" is the ABSENCE
+  // of a row (glossary: *Attendance*), so this list is what tells a postava row
+  // somebody withdrew from apart from one nobody was ever asked about.
+  const answered = [
+    ...count.crni.members,
+    ...count.bili.members,
+    ...count.bula,
+    ...count.notComing,
+  ].map((person) => person.memberId)
+  const answeredSet = new Set(answered)
+
+  const lineup = effectiveLineup(detail.lineup, answered)
   const titles = titleMap(lineup)
+  const inLineup = new Set(lineup.map((entry) => entry.memberId))
   const shared = { titles, moveTargets: detail.moveTargets }
+
+  // A nickname for a postava row whose member answered nothing: the lineup rows
+  // carry one, and the no-answer roster carries one for everybody still active.
+  const names = new Map<string, string>()
+  for (const person of count.noAnswer) names.set(person.memberId, person.nickname)
+  for (const row of detail.lineup.entries) names.set(row.memberId, row.nickname)
+
+  /** Postava rows nobody answered for, by the column their stored role puts them in. */
+  const dictated = (army: TitleArmy) =>
+    lineup
+      .filter(
+        (entry) => !answeredSet.has(entry.memberId) && armyOfLineupRole(entry.role) === army,
+      )
+      .map((entry) =>
+        toPerson(
+          { memberId: entry.memberId, nickname: names.get(entry.memberId) ?? `#${entry.memberId}` },
+          { army, answer: null, inLineup: true, noAnswer: true, ...shared },
+        ),
+      )
+      .sort((a, b) => a.nickname.localeCompare(b.nickname, 'hr'))
 
   return {
     id: p.id,
@@ -218,30 +292,40 @@ export function stanjeView(detail: PerformanceDetail): StanjeView {
     cancelled: p.cancelled,
     confirmed: detail.lineup.confirmed,
     armies: {
-      crni: detail.count.crni.count,
-      bili: detail.count.bili.count,
-      threshold: { crni: detail.count.crni.threshold, bili: detail.count.bili.threshold },
+      crni: count.crni.count,
+      bili: count.bili.count,
+      threshold: { crni: count.crni.threshold, bili: count.bili.threshold },
     },
     columns: [
-      column('crni', detail.count.crni, shared),
-      column('bili', detail.count.bili, shared),
+      column('crni', count.crni, dictated('crni'), shared, inLineup),
+      column('bili', count.bili, dictated('bili'), shared, inLineup),
     ],
-    bule: detail.count.bula.map((person) =>
-      toPerson(person, { army: 'bula', answer: 'coming', ...shared }),
+    bule: [
+      ...count.bula.map((person) =>
+        toPerson(person, { army: 'bula', answer: 'coming', inLineup: inLineup.has(person.memberId), ...shared }),
+      ),
+      ...dictated('bula'),
+    ],
+    notComing: count.notComing.map((person) =>
+      toPerson(person, { army: null, answer: 'not_coming', inLineup: false, ...shared }),
     ),
-    notComing: detail.count.notComing.map((person) =>
-      toPerson(person, { army: null, answer: 'not_coming', ...shared }),
-    ),
-    noAnswer: detail.count.noAnswer.map((person) =>
-      toPerson(person, { army: null, answer: null, ...shared }),
+    // Still every member with no answer, postava row or not: the list answers
+    // "who has not said anything", which a dictated row does not change.
+    noAnswer: count.noAnswer.map((person) =>
+      toPerson(person, {
+        army: null,
+        answer: null,
+        inLineup: inLineup.has(person.memberId),
+        ...shared,
+      }),
     ),
     callMessage: {
       title: PUSH_MESSAGES.alarm.title,
       body: PUSH_MESSAGES.alarm.body({
         date: p.date,
         time: p.time,
-        bili: detail.count.bili.count,
-        crni: detail.count.crni.count,
+        bili: count.bili.count,
+        crni: count.crni.count,
       }),
     },
     titlesGiven: titlesGiven(countTitles(lineup.map((entry) => entry.role))),
