@@ -11,8 +11,10 @@
 // the rare integration test that has to stand behind a route handler.
 
 import { createAuthRepo } from './payload/auth'
+import { createCompRepo } from './payload/comp'
 import { createDbRepo } from './payload/db'
 import { createInquiriesRepo } from './payload/inquiries'
+import { createMembersRepo } from './payload/members'
 import { createOrdersRepo } from './payload/orders'
 import { createRosterRepo } from './payload/roster'
 import { createPartnersRepo } from './payload/partners'
@@ -25,8 +27,10 @@ let cached: Repo | null = null
 function build(): Repo {
   return {
     auth: createAuthRepo(),
+    comp: createCompRepo(),
     db: createDbRepo(),
     inquiries: createInquiriesRepo(),
+    members: createMembersRepo(),
     orders: createOrdersRepo(),
     roster: createRosterRepo(),
     partners: createPartnersRepo(),

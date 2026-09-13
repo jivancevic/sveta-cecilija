@@ -14,5 +14,6 @@ export async function getStatsScreen(
   requested: unknown,
   options: LoadStatsOptions,
 ): Promise<StatsScreen> {
-  return loadStatsSeason(getRepo().stats, requested, options)
+  const repo = getRepo()
+  return loadStatsSeason({ stats: repo.stats, comp: repo.comp }, requested, options)
 }

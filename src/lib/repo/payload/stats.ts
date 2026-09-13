@@ -1,9 +1,9 @@
 // The Payload-backed `StatsRepo` (#508, #475).
 //
-// Wiring, never arithmetic. Four of the six methods delegate to a loader that
-// already existed and is already tested — the grouped ticket query, the ledger
-// totals, the scanned counts — and the two that carry SQL of their own are the
-// comps-per-member report with a season on it and nothing else.
+// Wiring, never arithmetic: every one of the five methods delegates to a loader
+// that already existed and is already tested — the grouped ticket query, the
+// ledger totals, the scanned counts, and Payload's own find for the two shows
+// reads. There is no SQL in this file at all.
 //
 // The two shows reads go through the LOCAL API rather than raw SQL, so the
 // public-performance predicate is the shared `PUBLIC_PERFORMANCE_WHERE` and not
@@ -13,8 +13,8 @@
 // `openScreen('stats')`.
 
 import { toIsoDate } from '@/lib/to-iso-date'
-import { PUBLIC_PERFORMANCE_WHERE, publicPerformanceSql } from '@/lib/show-performance'
-import type { CompMemberSeasonRow, SeasonShowFacts } from '@/lib/app/stats-screen'
+import { PUBLIC_PERFORMANCE_WHERE } from '@/lib/show-performance'
+import type { SeasonShowFacts } from '@/lib/app/stats-screen'
 import {
   getSeasonOfflineTypesByShow,
   getSeasonTicketRowsByShow,
@@ -81,50 +81,6 @@ export function createStatsRepo(load: () => Promise<PayloadClient> = payloadClie
     async scannedByShow(): Promise<Map<string, number>> {
       const payload = await load()
       return getScannedTicketCountsByShow(poolOf(payload))
-    },
-
-    async compsByMemberForSeason(season): Promise<CompMemberSeasonRow[]> {
-      const payload = await load()
-      const { from, to } = seasonBounds(season)
-      // `getCompCountsByMember` (tickets/sold-seats.ts) with the evening's date
-      // added to its WHERE. The inner group-by-order is what keeps the count
-      // honest: counting tickets straight off a join to orders would multiply a
-      // party by the number of rows it fans out to.
-      const res = await poolOf(payload)(
-        `SELECT
-           oc.member_id AS member_id,
-           m.name AS member_name,
-           SUM(oc.adult_tickets)::int AS adult_tickets,
-           SUM(oc.child_tickets)::int AS child_tickets,
-           SUM(oc.total_tickets)::int AS total_tickets
-         FROM (
-           SELECT o.id AS order_id,
-                  o.member_id AS member_id,
-                  COUNT(t.id) FILTER (WHERE t.status = 'active' AND t.type = 'adult') AS adult_tickets,
-                  COUNT(t.id) FILTER (WHERE t.status = 'active' AND t.type = 'child') AS child_tickets,
-                  COUNT(t.id) FILTER (WHERE t.status = 'active') AS total_tickets
-           FROM orders o
-           JOIN shows s ON s.id = o.show_id
-           LEFT JOIN tickets t ON t.order_id = o.id
-           WHERE o.channel = 'comp'
-             AND o.member_id IS NOT NULL
-             AND ${publicPerformanceSql('s')}
-             AND s.date >= $1 AND s.date < $2
-           GROUP BY o.id
-         ) oc
-         LEFT JOIN members m ON m.id = oc.member_id
-         GROUP BY oc.member_id, m.name`,
-        [from, to],
-      )
-      return res.rows
-        .map((row) => ({
-          memberId: String(row.member_id),
-          memberName: row.member_name == null ? '' : String(row.member_name),
-          adult: Number(row.adult_tickets) || 0,
-          child: Number(row.child_tickets) || 0,
-          total: Number(row.total_tickets) || 0,
-        }))
-        .sort((a, b) => b.total - a.total || a.memberName.localeCompare(b.memberName))
     },
 
     async firstSeason(): Promise<number | null> {

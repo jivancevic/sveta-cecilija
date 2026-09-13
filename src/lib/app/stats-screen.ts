@@ -38,6 +38,7 @@ import { fillPercent, seasonCapacity } from '@/lib/dashboard/capacity'
 import { channelMix, type ChannelMix } from '@/lib/dashboard/channel-mix'
 import type { DashboardShow } from '@/lib/dashboard/partition'
 import { seasonTrajectory, type SeasonTrajectory } from '@/lib/dashboard/trajectory'
+import type { CompMemberTally } from './comp-screen'
 import type { SeasonOfflineTypes, SeasonTicketRow } from '@/lib/member/season'
 import type { ShowChannelCounts } from '@/lib/tickets/sold-seats'
 import { remainingSeats } from '@/lib/tickets/seat-availability'
@@ -56,15 +57,6 @@ export interface SeasonShowFacts {
   time: string
   venue: Venue
   cancelled: boolean
-}
-
-/** One line of the "gratis po članu" table (ADR-0019). */
-export interface CompMemberSeasonRow {
-  memberId: string
-  memberName: string
-  adult: number
-  child: number
-  total: number
 }
 
 /**
@@ -130,7 +122,13 @@ export interface StatsScreenInput {
   /** Ledger seats per show, door and legacy summed, with their types. */
   offline: Map<string, SeasonOfflineTypes>
   scanned: Map<string, number>
-  comps: CompMemberSeasonRow[]
+  /**
+   * "Gratis po članu", already tallied by Gratis's own `tallyCompsByMember`
+   * (#506). Statistika prints that table rather than counting comps a second
+   * way: two tallies of the same seats is how two screens come to disagree
+   * about how many a member received.
+   */
+  comps: CompMemberTally[]
   /** The viewer unlocks Izvedbe, so a row may be a link into it. */
   canOpenPerformances: boolean
   /** The viewer holds `tickets`, so the per-member comp table is theirs. */
@@ -146,7 +144,7 @@ export interface StatsScreen {
   trajectory: SeasonTrajectory
   mix: ChannelMix
   /** Null, never an empty list, when the viewer may not read it. */
-  comps: CompMemberSeasonRow[] | null
+  comps: CompMemberTally[] | null
 }
 
 const NO_TICKETS: Omit<SeasonTicketRow, 'showId'> = {

@@ -15,7 +15,9 @@
 
 import { resolveSeason, seasonOptions } from '@/lib/lineup/stats'
 import { seasonYear } from '@/lib/member/season'
+import type { CompRepo } from '@/lib/repo/comp'
 import type { StatsRepo } from '@/lib/repo/stats'
+import { tallyCompsByMember } from './comp-screen'
 import { buildStatsScreen, type StatsScreen } from './stats-screen'
 
 export interface StatsScreenAccess {
@@ -29,14 +31,26 @@ export interface LoadStatsOptions extends StatsScreenAccess {
   now?: () => Date
 }
 
+/**
+ * The two repositories Statistika reads.
+ *
+ * `comp` is Gratis's (#506), borrowed rather than duplicated: the "gratis po
+ * članu" table on this screen IS the one on Gratis, down to the tally, so the
+ * two can never report a different number for the same member.
+ */
+export interface StatsRepos {
+  stats: StatsRepo
+  comp: CompRepo
+}
+
 /** One season of Statistika, resolved from the raw `?season=` value. */
 export async function loadStatsSeason(
-  repo: StatsRepo,
+  repo: StatsRepos,
   requested: unknown,
   options: LoadStatsOptions,
 ): Promise<StatsScreen> {
   const current = seasonYear(options.now?.() ?? new Date())
-  const firstSeason = await repo.firstSeason()
+  const firstSeason = await repo.stats.firstSeason()
   const seasons = seasonOptions(firstSeason, current)
   const season = resolveSeason(requested, current, seasons)
 
@@ -46,13 +60,13 @@ export async function loadStatsSeason(
   // bucketing a year inside SQL would evaluate in the session timezone, and the
   // pure layer only looks up the shows it asked for anyway.
   const [shows, tickets, offline, scanned, comps] = await Promise.all([
-    repo.publicPerformances(season),
-    repo.ticketsByShow(),
-    repo.offlineByShow(),
-    repo.scannedByShow(),
+    repo.stats.publicPerformances(season),
+    repo.stats.ticketsByShow(),
+    repo.stats.offlineByShow(),
+    repo.stats.scannedByShow(),
     // Not asked for at all when the viewer may not read it: a name that never
     // reaches the server's payload cannot reach a template either.
-    options.canSeeComps ? repo.compsByMemberForSeason(season) : Promise.resolve([]),
+    options.canSeeComps ? repo.comp.ticketsInSeason(season) : Promise.resolve([]),
   ])
 
   return buildStatsScreen({
@@ -62,7 +76,7 @@ export async function loadStatsSeason(
     tickets,
     offline,
     scanned,
-    comps,
+    comps: tallyCompsByMember(comps),
     canOpenPerformances: options.canOpenPerformances,
     canSeeComps: options.canSeeComps,
   })

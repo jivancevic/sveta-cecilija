@@ -71,6 +71,7 @@ describe('the screen table', () => {
       'sell',
       'statement',
       'inquiries',
+      'comp',
       'stats',
     ])
   })
@@ -114,14 +115,15 @@ describe('unlockedScreens', () => {
     expect(keys(unlockedScreens(user('moreska'), ctx()))).toEqual(['performances', 'leaderboard'])
   })
 
-  it('gives a tickets holder Narudžbe, Izvedbe, Upiti and Statistika, and the rest as built', () => {
+  it('gives a tickets holder every blagajna screen built so far', () => {
     // Narudžbe landed with #501, the blagajna's half of Izvedbe with #502,
-    // Upiti with #507 and Statistika with #508. Gratis is ticketed separately
-    // (#506), so `tickets` unlocks exactly these four today, in rank order.
+    // Upiti with #507, Gratis with #506 and Statistika with #508 — which is
+    // every screen `tickets` unlocks, so this list stops growing here.
     expect(keys(unlockedScreens(user('tickets', 'refunds'), ctx()))).toEqual([
       'orders',
       'performances',
       'inquiries',
+      'comp',
       'stats',
     ])
   })

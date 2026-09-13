@@ -1,7 +1,8 @@
 import Link from 'next/link'
 import { can } from '@/lib/access/permissions'
 import { getStatsScreen } from '@/lib/app/stats-screen-data'
-import type { CompMemberSeasonRow, StatsRow, StatsScreen } from '@/lib/app/stats-screen'
+import type { StatsRow, StatsScreen } from '@/lib/app/stats-screen'
+import type { CompMemberTally } from '@/lib/app/comp-screen'
 import { shortShowDay } from '@/lib/app/partner-screen'
 import { APP_STRINGS } from '@/lib/app/strings'
 import { TRAJECTORY_CHANNELS, type TrajectoryBar } from '@/lib/dashboard/trajectory'
@@ -293,8 +294,14 @@ function ChannelMix({ mix }: { mix: ChannelMix }) {
   )
 }
 
-/** Goodwill seats per member (ADR-0019). `tickets` only: it names people. */
-function CompsByMember({ rows }: { rows: CompMemberSeasonRow[] }) {
+/**
+ * Goodwill seats per member (ADR-0019). `tickets` only: it names people.
+ *
+ * The rows are Gratis's own tally (#506) — the same function, the same season,
+ * the same numbers. Its `voided` column is deliberately left off here: a voided
+ * comp is something to act on, and acting on it is Gratis's screen.
+ */
+function CompsByMember({ rows }: { rows: CompMemberTally[] }) {
   return (
     <section className="app__comptable">
       <h2 className="app__month-head">
@@ -319,9 +326,9 @@ function CompsByMember({ rows }: { rows: CompMemberSeasonRow[] }) {
               {rows.map((row) => (
                 <tr key={row.memberId}>
                   <th scope="row">{row.memberName || '-'}</th>
-                  <td>{row.adult}</td>
-                  <td>{row.child}</td>
-                  <td>{row.total}</td>
+                  <td>{row.adults}</td>
+                  <td>{row.children}</td>
+                  <td>{row.issued}</td>
                 </tr>
               ))}
             </tbody>

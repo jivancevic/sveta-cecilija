@@ -163,9 +163,11 @@ describe('the two charts', () => {
 })
 
 describe('gratis po članu', () => {
+  // Gratis's own tally shape (#506): Statistika prints that table rather than
+  // counting the same comps a second way.
   const comps = [
-    { memberId: '3', memberName: 'Brane', adult: 4, child: 2, total: 6 },
-    { memberId: '7', memberName: 'Cici', adult: 2, child: 0, total: 2 },
+    { memberId: '3', memberName: 'Brane', adults: 4, children: 2, issued: 6, voided: 1 },
+    { memberId: '7', memberName: 'Cici', adults: 2, children: 0, issued: 2, voided: 0 },
   ]
 
   it('is the table for a tickets holder', () => {
