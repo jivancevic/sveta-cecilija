@@ -127,6 +127,14 @@ colours, so everything inside it follows without knowing where it is. Skener
 adds four tokens of its own (`--ok`, `--seen`, `--void`, `--bad`): the four
 answers a scanned ticket gives are a role the paper palette never had.
 
+**The redesign (#560, decided 2026-09-13) replaces this look screen by screen.**
+The design decision record for `/app` is the plan artifact
+(https://claude.ai/code/artifact/b63a989f-e765-4b02-bb43-2be86bca735c):
+decisions Q1-Q67, the system contract (tokens light and dark, type scale,
+spacing, components, motion) and the tickets T0-T13. A screen ticket reads the
+contract there, never a paragraph here; the paragraph above describes what
+ships until that screen's ticket lands, and goes when #560 closes.
+
 ### The frame
 
 One responsive layout (ADR-0027), in `AppShell`: the laptop gets the grouped
