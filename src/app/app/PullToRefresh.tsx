@@ -97,8 +97,17 @@ export function PullToRefresh({ children }: { children: React.ReactNode }) {
       // Upwards, or the list has scrolled under the finger: this is a scroll,
       // not a pull, and the gesture hands it back rather than fighting it.
       if (delta <= 0 || scroller.scrollTop > 0) {
-        if (delta <= 0) origin = y
-        else origin = null
+        if (delta <= 0) {
+          origin = y
+        } else {
+          // The list moved under the finger: this is a scroll. Hand it back,
+          // put anything already moved back where it was, and drop
+          // `will-change` with it — `end()` has nothing to do after this, so
+          // this is the only place that can.
+          origin = null
+          rest()
+          block.classList.remove('app__pull--pulling')
+        }
         return
       }
       if (event.cancelable) event.preventDefault()
@@ -113,7 +122,13 @@ export function PullToRefresh({ children }: { children: React.ReactNode }) {
     }
 
     function end() {
-      if (origin === null || !block || !ring) return
+      if (!block || !ring) return
+      // Belt and braces: a touch that never became a pull (a tap, a gesture the
+      // browser cancelled) must still take the hint off the wrapper.
+      if (origin === null) {
+        block.classList.remove('app__pull--pulling')
+        return
+      }
       const armed = delta >= ARM
       origin = null
       block.classList.add('app__pull--settle')
