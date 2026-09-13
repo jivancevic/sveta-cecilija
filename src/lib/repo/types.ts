@@ -31,6 +31,7 @@ import type { OrdersRepo } from './orders'
 import type { RosterRepo, RosterViewer } from './roster'
 import type { PartnerRecord, PartnersRepo } from './partners'
 import type { PerformancePatch, PerformanceRow, ShowsRepo } from './shows'
+import type { CompMemberSeasonRow, SeasonShowFacts, StatsRepo } from './stats'
 
 export interface Repo {
   auth: AuthRepo
@@ -39,10 +40,12 @@ export interface Repo {
   roster: RosterRepo
   partners: PartnersRepo
   shows: ShowsRepo
+  stats: StatsRepo
 }
 
 export type {
   AuthRepo,
+  CompMemberSeasonRow,
   DbRepo,
   OrdersRepo,
   PartnerRecord,
@@ -51,6 +54,8 @@ export type {
   PerformanceRow,
   RosterRepo,
   RosterViewer,
+  SeasonShowFacts,
   SessionUser,
   ShowsRepo,
+  StatsRepo,
 }

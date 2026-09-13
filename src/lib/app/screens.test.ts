@@ -70,6 +70,7 @@ describe('the screen table', () => {
       'scan',
       'sell',
       'statement',
+      'stats',
     ])
   })
 
@@ -112,14 +113,25 @@ describe('unlockedScreens', () => {
     expect(keys(unlockedScreens(user('moreska'), ctx()))).toEqual(['performances', 'leaderboard'])
   })
 
-  it('gives a tickets holder Narudžbe and Izvedbe, and the rest as they are built', () => {
-    // Narudžbe landed with #501 and the blagajna's half of Izvedbe with #502.
-    // Upiti, Gratis and Statistika are ticketed separately (#507, #506, #508),
-    // so `tickets` still unlocks exactly these two.
+  it('gives a tickets holder Narudžbe, Izvedbe and Statistika, and the rest as they are built', () => {
+    // Narudžbe landed with #501, the blagajna's half of Izvedbe with #502 and
+    // Statistika with #508. Upiti and Gratis are ticketed separately (#507,
+    // #506), so `tickets` still unlocks exactly these three.
     expect(keys(unlockedScreens(user('tickets', 'refunds'), ctx()))).toEqual([
       'orders',
       'performances',
+      'stats',
     ])
+  })
+
+  it('gives the shared member login Statistika and NOTHING else', () => {
+    // `season_stats` is the whole permission set of the society's shared
+    // `member` account (ADR-0022). One screen, no orders, no buyers, no money.
+    expect(keys(unlockedScreens(user('season_stats'), ctx()))).toEqual(['stats'])
+  })
+
+  it('gives a finance holder Statistika until Financije is built (#509)', () => {
+    expect(keys(unlockedScreens(user('finance'), ctx()))).toEqual(['stats'])
   })
 
   it('never lets an unknown permission string unlock anything', () => {
@@ -142,12 +154,25 @@ describe('appNav', () => {
   })
 
   it('has no tabs and no landing screen for an account that unlocks nothing', () => {
-    // `finance` is the widest set that still unlocks nothing built: Financije
-    // (#509) and Statistika (#508) are both still empty columns, and `refunds`
-    // unlocks no screen by design (a refund is an action inside an order).
-    const nav = appNav(user('finance', 'refunds'), ctx())
+    // `users` is the widest set that still unlocks nothing built: Korisnici
+    // (#510) is an empty column, and `refunds` unlocks no screen by design (a
+    // refund is an action inside an order).
+    const nav = appNav(user('users', 'refunds'), ctx())
     expect(nav.tabs).toEqual([])
     expect(nav.landing).toBeNull()
+  })
+
+  it('lands the shared member login on Statistika, its only screen', () => {
+    // The `season_stats` bundle (ADR-0022) is one tab plus Više, and the
+    // laptop's sidebar shows it under Uprava. Nothing else is reachable, which
+    // is the whole point of a login the society shares.
+    const nav = appNav(user('season_stats'), ctx())
+    expect(nav.tabs.map((t) => t.key)).toEqual(['stats', 'more'])
+    expect(nav.overflow).toEqual([])
+    expect(nav.landing).toBe('/app/stats')
+    expect(nav.groups.map((g) => [g.group, g.screens.map((s) => s.key)])).toEqual([
+      ['admin', ['stats']],
+    ])
   })
 
   it('caps the bar at four screens and pushes the rest into Više', () => {

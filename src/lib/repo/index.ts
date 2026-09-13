@@ -16,6 +16,7 @@ import { createOrdersRepo } from './payload/orders'
 import { createRosterRepo } from './payload/roster'
 import { createPartnersRepo } from './payload/partners'
 import { createShowsRepo } from './payload/shows'
+import { createStatsRepo } from './payload/stats'
 import type { Repo } from './types'
 
 let cached: Repo | null = null
@@ -28,6 +29,7 @@ function build(): Repo {
     roster: createRosterRepo(),
     partners: createPartnersRepo(),
     shows: createShowsRepo(),
+    stats: createStatsRepo(),
   }
 }
 
