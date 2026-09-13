@@ -3,9 +3,11 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { APP_STRINGS, KIND_LABELS } from '@/lib/app/strings'
-import { MAX_PLACE_LENGTH, NON_PUBLIC_KINDS, type NonPublicKind } from '@/lib/performance-input'
+import { MAX_PLACE_LENGTH, NON_PUBLIC_KINDS, VENUES, type NonPublicKind } from '@/lib/performance-input'
+import { PERFORMANCE_KINDS, type PerformanceKind } from '@/lib/show-performance'
+import { VENUE_LABEL, type Venue } from '@/lib/venues'
 
-// Dodaj / Uredi / Otkaži an izvedba, from a phone (#503).
+// Dodaj / Uredi / Otkaži an izvedba, from a phone (#503, #502).
 //
 // Branimir enters next month's cruise call standing on the pier, so the form is
 // five fields and a button, each one a control a thumb can hit: a native date
@@ -17,11 +19,13 @@ import { MAX_PLACE_LENGTH, NON_PUBLIC_KINDS, type NonPublicKind } from '@/lib/pe
 // the detail header re-renders from the row that was just written. A form that
 // showed its own idea of the evening would be a second schedule.
 //
-// The kind list comes from `NON_PUBLIC_KINDS`, so `redovna` is not offered
-// anywhere: a public show sells tickets and is born in the Backoffice. The
-// route refuses it too.
+// Since #502 the same form serves the blagajna, and the shape of an evening is
+// what changes with the tick box: a PUBLIC izvedba has a house (and so a
+// capacity) and may be a Redovna; a booking has a free-text place and a
+// client and may never be one. Which half a person is offered comes from their
+// permissions, and the route re-checks it against the body.
 
-/** The five fields both forms share. */
+/** The five fields of a booking (#503). */
 export interface PerformanceFormValues {
   kind: NonPublicKind
   date: string
@@ -30,12 +34,27 @@ export interface PerformanceFormValues {
   client: string
 }
 
+/** The four fields of a public evening (#502). */
+export interface PublicFormValues {
+  kind: PerformanceKind
+  date: string
+  time: string
+  venue: Venue
+}
+
 const EMPTY: PerformanceFormValues = {
   kind: 'dmc',
   date: '',
   time: '',
   location: '',
   client: '',
+}
+
+const EMPTY_PUBLIC: PublicFormValues = {
+  kind: 'redovna',
+  date: '',
+  time: '',
+  venue: 'ljetno-kino',
 }
 
 function Fields({
@@ -131,11 +150,111 @@ function Fields({
   )
 }
 
-/** POST the five fields, and hand back the server's sentence when it refuses. */
+/**
+ * The public evening's fields: when, where, and what kind of night it is.
+ *
+ * The date is here on a CREATE and absent from the editor below, which is the
+ * whole difference between the two: a new evening needs a day, and moving an
+ * existing one mails every buyer, so that is its own action (#379).
+ */
+function PublicFields({
+  idPrefix,
+  values,
+  onChange,
+  disabled,
+  withDate,
+  venueLocked,
+}: {
+  idPrefix: string
+  values: PublicFormValues
+  onChange: (next: PublicFormValues) => void
+  disabled: boolean
+  withDate: boolean
+  /**
+   * Seats have been sold, so the house is not a field any more (#502 review).
+   * The select goes read-only and says which action moves it, because the route
+   * refuses the change with the same sentence and a control that looks editable
+   * until the save is a control that lies.
+   */
+  venueLocked?: boolean
+}) {
+  const set = <K extends keyof PublicFormValues>(key: K, value: PublicFormValues[K]) =>
+    onChange({ ...values, [key]: value })
+
+  return (
+    <div className="app__perf-fields">
+      <label className="app__perf-field" htmlFor={`${idPrefix}-kind`}>
+        <span>{APP_STRINGS.performance.kind}</span>
+        <select
+          id={`${idPrefix}-kind`}
+          className="app__select"
+          value={values.kind}
+          disabled={disabled}
+          onChange={(e) => set('kind', e.target.value as PerformanceKind)}
+        >
+          {PERFORMANCE_KINDS.map((kind) => (
+            <option key={kind} value={kind}>
+              {KIND_LABELS[kind]}
+            </option>
+          ))}
+        </select>
+      </label>
+
+      <div className="app__perf-when">
+        {withDate && (
+          <label className="app__perf-field" htmlFor={`${idPrefix}-date`}>
+            <span>{APP_STRINGS.performance.date}</span>
+            <input
+              id={`${idPrefix}-date`}
+              className="app__input"
+              type="date"
+              value={values.date}
+              disabled={disabled}
+              onChange={(e) => set('date', e.target.value)}
+            />
+          </label>
+        )}
+        <label className="app__perf-field" htmlFor={`${idPrefix}-time`}>
+          <span>{APP_STRINGS.performance.time}</span>
+          <input
+            id={`${idPrefix}-time`}
+            className="app__input"
+            type="time"
+            value={values.time}
+            disabled={disabled}
+            onChange={(e) => set('time', e.target.value)}
+          />
+        </label>
+      </div>
+
+      <label className="app__perf-field" htmlFor={`${idPrefix}-venue`}>
+        <span>{APP_STRINGS.performance.venue}</span>
+        <select
+          id={`${idPrefix}-venue`}
+          className="app__select"
+          value={values.venue}
+          disabled={disabled || venueLocked === true}
+          onChange={(e) => set('venue', e.target.value as Venue)}
+        >
+          {VENUES.map((venue) => (
+            <option key={venue} value={venue}>
+              {VENUE_LABEL.hr[venue]}
+            </option>
+          ))}
+        </select>
+        {venueLocked && (
+          <i className="app__perf-locked">{APP_STRINGS.performance.venueLocked}</i>
+        )}
+      </label>
+    </div>
+  )
+}
+
+/** POST the fields, and hand back the server's sentence when it refuses. */
 async function submit(
   url: string,
   method: 'POST' | 'PATCH',
-  values: PerformanceFormValues,
+  values: Record<string, unknown>,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   try {
     const res = await fetch(url, {
@@ -154,26 +273,44 @@ async function submit(
 }
 
 /**
- * "Dodaj izvedbu" on the Izvedbe list.
+ * "Dodaj izvedbu" on the Izvedbe list, for whichever halves the reader holds.
  *
  * Closed until it is asked for: the screen a voditelj opens twenty times a week
  * is the agenda, and a form permanently sitting above it would push the next
  * evening off the first screenful.
+ *
+ * The tick box appears only for somebody who may write BOTH kinds (#502) — the
+ * secretary. For everyone else there is one form and no choice to make, which
+ * is right: a voditelj offered a greyed-out "javna izvedba" would read it as
+ * something they had done wrong.
  */
-export function AddPerformance() {
+export function AddPerformance({
+  canPublic,
+  canBooking,
+}: {
+  /** Holds `tickets`: may add a public evening, which sells seats. */
+  canPublic: boolean
+  /** Holds `moreska`: may add a booking, which sells none. */
+  canBooking: boolean
+}) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
+  const [isPublic, setIsPublic] = useState(canPublic)
   const [values, setValues] = useState<PerformanceFormValues>(EMPTY)
+  const [publicValues, setPublicValues] = useState<PublicFormValues>(EMPTY_PUBLIC)
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+
+  if (!canPublic && !canBooking) return null
 
   async function save() {
     if (busy) return
     setBusy(true)
     setMessage(null)
     setError(null)
-    const result = await submit('/api/app/performances', 'POST', values)
+    const body = isPublic ? { ...publicValues, isPublic: true } : { ...values, isPublic: false }
+    const result = await submit('/api/app/performances', 'POST', body)
     setBusy(false)
     if (!result.ok) {
       setError(result.error)
@@ -181,6 +318,7 @@ export function AddPerformance() {
     }
     setMessage(APP_STRINGS.performance.added)
     setValues(EMPTY)
+    setPublicValues(EMPTY_PUBLIC)
     setOpen(false)
     // The new evening belongs in the agenda above, in its month; the server
     // renders that, so ask it again rather than splicing a row in here.
@@ -208,7 +346,32 @@ export function AddPerformance() {
   return (
     <section className="app__perf-add app__perf-add--open">
       <h2 className="app__perf-head">{APP_STRINGS.performance.addTitle}</h2>
-      <Fields idPrefix="add" values={values} onChange={setValues} disabled={busy} />
+
+      {canPublic && canBooking && (
+        <label className="app__perf-switch" htmlFor="add-is-public">
+          <input
+            id="add-is-public"
+            type="checkbox"
+            checked={isPublic}
+            disabled={busy}
+            onChange={(e) => setIsPublic(e.target.checked)}
+          />
+          <span>{APP_STRINGS.performance.isPublic}</span>
+        </label>
+      )}
+
+      {isPublic ? (
+        <PublicFields
+          idPrefix="add-public"
+          values={publicValues}
+          onChange={setPublicValues}
+          disabled={busy}
+          withDate
+        />
+      ) : (
+        <Fields idPrefix="add" values={values} onChange={setValues} disabled={busy} />
+      )}
+
       <div className="app__perf-actions">
         <button type="button" className="app__button" disabled={busy} onClick={save}>
           {busy ? APP_STRINGS.performance.adding : APP_STRINGS.performance.add}
@@ -225,6 +388,100 @@ export function AddPerformance() {
           {APP_STRINGS.performance.close}
         </button>
       </div>
+      {error && <p className="app__answer-error">{error}</p>}
+    </section>
+  )
+}
+
+/**
+ * "Uredi izvedbu" on a PUBLIC evening (#502): the hour, the house and the kind.
+ *
+ * Three fields and not four. The date is missing on purpose and its absence is
+ * the design: moving a public evening mails every buyer and reissues every
+ * ticket, so it is "Pomakni datum" next door, with a preview and a test send,
+ * rather than a field a thumb can nudge while fixing a typo in the start time.
+ */
+export function PublicPerformanceEditor({
+  performanceId,
+  initial,
+  venueLocked,
+}: {
+  performanceId: string
+  initial: PublicFormValues
+  /** Active tickets exist: the house moves through "Preseli u zimsko" instead. */
+  venueLocked: boolean
+}) {
+  const router = useRouter()
+  const [open, setOpen] = useState(false)
+  const [values, setValues] = useState<PublicFormValues>(initial)
+  const [busy, setBusy] = useState(false)
+  const [message, setMessage] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+
+  async function save() {
+    if (busy) return
+    setBusy(true)
+    setMessage(null)
+    setError(null)
+    const result = await submit(`/api/app/performances/${performanceId}`, 'PATCH', {
+      time: values.time,
+      kind: values.kind,
+      venue: values.venue,
+    })
+    setBusy(false)
+    if (!result.ok) {
+      setError(result.error)
+      return
+    }
+    setMessage(APP_STRINGS.performance.saved)
+    setOpen(false)
+    router.refresh()
+  }
+
+  return (
+    <section className="app__perf-edit">
+      {open ? (
+        <>
+          <h3 className="app__perf-head">{APP_STRINGS.performance.editTitle}</h3>
+          <PublicFields
+            idPrefix="edit-public"
+            values={values}
+            onChange={setValues}
+            disabled={busy}
+            withDate={false}
+            venueLocked={venueLocked}
+          />
+          <div className="app__perf-actions">
+            <button type="button" className="app__button" disabled={busy} onClick={save}>
+              {busy ? APP_STRINGS.performance.saving : APP_STRINGS.performance.save}
+            </button>
+            <button
+              type="button"
+              className="app__button app__button--quiet"
+              disabled={busy}
+              onClick={() => {
+                setValues(initial)
+                setOpen(false)
+                setError(null)
+              }}
+            >
+              {APP_STRINGS.performance.close}
+            </button>
+          </div>
+        </>
+      ) : (
+        <button
+          type="button"
+          className="app__lead-row"
+          onClick={() => {
+            setMessage(null)
+            setOpen(true)
+          }}
+        >
+          {APP_STRINGS.performance.edit} ›
+        </button>
+      )}
+      {message && <p className="app__alarm-result">{message}</p>}
       {error && <p className="app__answer-error">{error}</p>}
     </section>
   )
@@ -262,7 +519,7 @@ export function PerformanceEditor({
     setBusy(true)
     setMessage(null)
     setError(null)
-    const result = await submit(`/api/app/performances/${performanceId}`, 'PATCH', values)
+    const result = await submit(`/api/app/performances/${performanceId}`, 'PATCH', { ...values })
     setBusy(false)
     if (!result.ok) {
       setError(result.error)

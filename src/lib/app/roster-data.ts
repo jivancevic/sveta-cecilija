@@ -1,27 +1,16 @@
-import { getPayload } from 'payload'
-import config from '@payload-config'
-import { loadSeasonPerformances, type SeasonPerformances } from './roster-loaders'
+import { getRepo } from '@/lib/repo'
+import type { SeasonPerformances } from './roster-loaders'
 
-// The IO wiring behind `/app`'s season list (#421) — the `stats-data.ts` shape:
-// this file holds the Payload call and nothing else, so every rule about WHICH
-// performances a dancer sees and how they are split stays in the pure,
-// unit-tested `roster-loaders.ts`.
+// The season list behind `/app/performances` (#421), now one line (#502).
 //
-// The local API runs with `overrideAccess: true`, so the collection access on
-// Shows does not scope this read. That is deliberate: roster visibility is
-// society-wide, and the caller has already established through the `/app`
-// access decision that the viewer is a moreškant or a voditelj.
+// The Payload calls moved into the seam (`src/lib/repo/payload/roster.ts`) when
+// Izvedbe was rebuilt for the blagajna; the rules about WHICH performances a
+// dancer sees and how they are split never moved and never should — they are in
+// the pure, unit-tested `roster-loaders.ts`. What is left here is the name the
+// three pages already call.
 
 export async function getSeasonPerformances(
   viewer: { memberId?: string | null; voditelj?: boolean } = {},
 ): Promise<SeasonPerformances> {
-  const payload = await getPayload({ config })
-  return loadSeasonPerformances({
-    find: (args) =>
-      payload.find(args as Parameters<typeof payload.find>[0]) as Promise<{
-        docs: Record<string, unknown>[]
-      }>,
-    memberId: viewer.memberId ?? null,
-    voditelj: viewer.voditelj === true,
-  })
+  return getRepo().roster.seasonPerformances(viewer)
 }

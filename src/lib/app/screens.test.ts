@@ -112,11 +112,14 @@ describe('unlockedScreens', () => {
     expect(keys(unlockedScreens(user('moreska'), ctx()))).toEqual(['performances', 'leaderboard'])
   })
 
-  it('gives a tickets holder Narudžbe, and the rest as they are built', () => {
-    // Narudžbe landed with #501. Upiti, Gratis and Statistika are ticketed
-    // separately (#507, #506, #508) and Izvedbe serves the blagajna only from
-    // #502, so `tickets` still unlocks exactly one screen.
-    expect(keys(unlockedScreens(user('tickets', 'refunds'), ctx()))).toEqual(['orders'])
+  it('gives a tickets holder Narudžbe and Izvedbe, and the rest as they are built', () => {
+    // Narudžbe landed with #501 and the blagajna's half of Izvedbe with #502.
+    // Upiti, Gratis and Statistika are ticketed separately (#507, #506, #508),
+    // so `tickets` still unlocks exactly these two.
+    expect(keys(unlockedScreens(user('tickets', 'refunds'), ctx()))).toEqual([
+      'orders',
+      'performances',
+    ])
   })
 
   it('never lets an unknown permission string unlock anything', () => {

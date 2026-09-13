@@ -1,6 +1,15 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import { can } from '@/lib/access/permissions'
 import { getPerformanceDetail } from '@/lib/app/detail-data'
+import { loadPerformanceSales } from '@/lib/app/sales-data'
+import {
+  mayOpenPerformance,
+  performanceNumbers,
+  salesBadges,
+  showsRosterHalf,
+  ticketedSeats,
+} from '@/lib/app/sales-view'
 import {
   compUnavailableReason,
   formatConfirmedAt,
@@ -28,9 +37,10 @@ import { AttendanceButtons } from '../../AttendanceButtons'
 import { CompTickets } from '../../CompTickets'
 import { ArmyMoveButton } from '../../ArmyMoveButton'
 import { NoteEditor } from '../../NoteEditor'
-import { PerformanceEditor } from '../../PerformanceForm'
+import { PerformanceEditor, PublicPerformanceEditor } from '../../PerformanceForm'
 import { ThresholdEditor } from '../../ThresholdEditor'
 import { DetailSegments } from './DetailSegments'
+import { PerformanceActions } from './PerformanceActions'
 
 // `/app/performances/[id]` — one evening, in three segments (#423, #457, ADR-0024).
 //
@@ -341,10 +351,28 @@ export default async function PerformanceDetailPage({
 
   const me = viewer.me
   const voditelj = viewer.voditelj
+  const blagajna = can({ permissions: viewer.permissions }, 'tickets')
   const detail = await getPerformanceDetail(id, { memberId: me?.id ?? null, voditelj })
   if (!detail) notFound()
 
   const p = detail.performance
+
+  // The blagajna's half (#502): this is where the old `/admin/stats/[id]`
+  // drill-down lands. Only for a public evening, because a booking sells
+  // nothing, and only for a `tickets` holder, because the numbers are seats and
+  // money rather than a headcount.
+  const sales = blagajna && p.isPublic ? await loadPerformanceSales(p.id) : null
+  // Whether the roster half belongs on this screen at all. A blagajna account
+  // that neither leads nor dances would otherwise read three segments about a
+  // postava it has no part in, two of them empty (#476: one screen, content by
+  // `can()`). The list applies the same rule to decide which evenings it shows.
+  const roster = showsRosterHalf(voditelj, me != null)
+
+  // A blagajna account that neither leads nor dances is not shown a booking in
+  // the list, so it must not reach one by typing an id either (#502 review):
+  // this page prints the client and the voditelj's note, which are roster facts
+  // about an evening that sells nothing.
+  if (!mayOpenPerformance({ roster, isPublic: p.isPublic })) notFound()
   const segment: DetailSegment = parseSegment(typeof dio === 'string' ? dio : undefined)
   const place = performancePlace(p)
   // A public evening is named by its kind; a booking is named by who booked it,
@@ -396,6 +424,16 @@ export default async function PerformanceDetailPage({
         {detail.lineup.confirmed && (
           <span className="app__chip app__chip--lineup">{APP_STRINGS.home.lineupConfirmed}</span>
         )}
+        {/* Paused, moved, rescheduled: facts about the SALE, so they only ever
+            reach a `tickets` holder, and `Otkazano` is already a chip above. */}
+        {sales &&
+          salesBadges(sales)
+            .filter((b) => b.key !== 'cancelled')
+            .map((b) => (
+              <span className={`app__chip app__flag--${b.key}`} key={b.key}>
+                {b.label}
+              </span>
+            ))}
       </div>
 
       {p.voditeljNote && (
@@ -409,6 +447,51 @@ export default async function PerformanceDetailPage({
 
   return (
     <AppShell viewer={viewer} screen="performances" title={title} intro={intro}>
+      {/* Prodaja, first, for a `tickets` holder (#502): the numbers this
+          evening is judged by, then Uredi, then the named actions. Above the
+          roster segments rather than inside them, because it belongs to the
+          evening as a whole and because it is the reason the blagajna opened
+          the page at all. */}
+      {sales && (
+        <section className="app__sales">
+          <h2 className="app__sales-head">{APP_STRINGS.sales.title}</h2>
+          <dl className="app__sales-numbers">
+            {performanceNumbers(sales, can({ permissions: viewer.permissions }, 'finance')).map(
+              (line) => (
+                <div className="app__sales-number" key={line.label}>
+                  <dt>{line.label}</dt>
+                  <dd>{line.value}</dd>
+                </div>
+              ),
+            )}
+          </dl>
+          {!p.cancelled && (
+            <PublicPerformanceEditor
+              performanceId={p.id}
+              venueLocked={ticketedSeats(sales) > 0}
+              initial={{
+                kind: p.kind,
+                date: p.date,
+                time: p.time,
+                venue: p.venue ?? 'ljetno-kino',
+              }}
+            />
+          )}
+          <PerformanceActions
+            performanceId={p.id}
+            paused={sales.paused}
+            cancelled={sales.cancelled}
+            atLjetno={sales.venue === 'ljetno-kino' && !sales.moved}
+            canRefund={can({ permissions: viewer.permissions }, 'refunds')}
+          />
+        </section>
+      )}
+
+      {blagajna && !p.isPublic && (
+        <p className="app__lead-note">{APP_STRINGS.sales.notPublic}</p>
+      )}
+
+      {roster && (
       <DetailSegments
         initial={segment}
         counts={counts}
@@ -449,9 +532,14 @@ export default async function PerformanceDetailPage({
               {/* Uredi and Otkaži, for a booking only (#503). A public evening
                   gets the sentence instead of the controls: moving or
                   cancelling one reaches ticket holders, and that is the
-                  blagajna's action (#497), not a harder version of this one. */}
+                  blagajna's action (#497), not a harder version of this one.
+                  Unless the reader IS the blagajna (#502), in which case the
+                  controls are in the Prodaja card above and the sentence would
+                  point them at themselves. */}
               {p.isPublic ? (
-                <p className="app__lead-note">{APP_STRINGS.performance.publicRow}</p>
+                blagajna ? null : (
+                  <p className="app__lead-note">{APP_STRINGS.performance.publicRow}</p>
+                )
               ) : (
                 <PerformanceEditor
                   performanceId={p.id}
@@ -486,6 +574,7 @@ export default async function PerformanceDetailPage({
             : null
         }
       />
+      )}
 
       {me && (
         <>
