@@ -246,10 +246,15 @@ export const APP_STRINGS = {
         few: 'neodgovorena upita',
         many: 'neodgovorenih upita',
       },
+      /**
+       * "javnih" on purpose: the Izvedbe screen lists every performance of the
+       * season, public and private (#502), and this figure is the public half
+       * — the one the schedule sells. Naming it is cheaper than a second load.
+       */
       performances: {
-        one: 'izvedba do kraja sezone',
-        few: 'izvedbe do kraja sezone',
-        many: 'izvedbi do kraja sezone',
+        one: 'javna izvedba do kraja sezone',
+        few: 'javne izvedbe do kraja sezone',
+        many: 'javnih izvedbi do kraja sezone',
       },
       members: {
         one: 'aktivan moreškant',
@@ -271,7 +276,7 @@ export const APP_STRINGS = {
       stats: (when: string, capacity: number) => `karata za ${when}, od ${capacity}`,
       finance: 'prikupljeno ove sezone',
       /** A screen whose one number would be money, or would repeat another card. */
-      statement: 'Mjesečni obračun i CSV po partneru.',
+      statement: 'Mjesečni obračun i CSV za preuzimanje.',
       compPlain: 'Podijeli gratis ulaznice članovima.',
     },
     /** The chip on Članovi when somebody is waiting to be let in (#463). */

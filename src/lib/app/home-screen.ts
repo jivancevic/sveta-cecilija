@@ -120,10 +120,23 @@ export function firstNameOf(input: {
   return full.split(/\s+/)[0] ?? null
 }
 
-/** "Dobra večer, Josip." — or null for an account with no name of its own. */
-export function greetingLine(input: { nowMs: number; firstName: string | null }): string | null {
-  if (!input.firstName) return null
-  return S.greeting(S[dayPart(zagrebHour(input.nowMs))], input.firstName)
+/**
+ * "Dobra večer, Josip." — the time of day, and the reader's name when there is
+ * one to use.
+ *
+ * A SHARED login gets nothing at all (ADR-0022): `tehnika` is a phone on a wall
+ * by the gate and `member` is the society, and a greeting is addressed to a
+ * person. A named account with no `name` filled in still gets the time of day,
+ * which is true of everybody, rather than a blank where a sentence should be.
+ */
+export function greetingLine(input: {
+  nowMs: number
+  firstName: string | null
+  shared?: boolean
+}): string | null {
+  if (input.shared) return null
+  const part = S[dayPart(zagrebHour(input.nowMs))]
+  return input.firstName ? S.greeting(part, input.firstName) : `${part}.`
 }
 
 // ── The sentence about the next evening ────────────────────────────────────

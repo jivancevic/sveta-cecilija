@@ -72,6 +72,25 @@ describe('homeCardKeys', () => {
     expect(homeCardKeys(nav).length).toBe(MAX_HOME_CARDS)
   })
 
+  it('gives the two shared logins the one screen each of them holds', () => {
+    // `tehnika` is the door's phone (ADR-0022) and `member` the society's
+    // season. Their passwords are on a wall and in a WhatsApp group, so this is
+    // where their card set is asserted rather than in a browser.
+    expect(homeCardKeys(appNav(user('door'), ctx()))).toEqual(['scan', 'notifications'])
+    expect(homeCardKeys(appNav(user('season_stats'), ctx()))).toEqual([
+      'stats',
+      'notifications',
+    ])
+  })
+
+  it('gives a finance holder the euros card and the counts card', () => {
+    expect(homeCardKeys(appNav(user('finance'), ctx()))).toEqual([
+      'finance',
+      'stats',
+      'notifications',
+    ])
+  })
+
   it('is only Obavijesti for an account with no bar at all', () => {
     expect(homeCardKeys({ tabs: [], overflow: [], landing: null, groups: [] } as AppNav)).toEqual([
       'notifications',
@@ -109,7 +128,15 @@ describe('the greeting', () => {
     // #510), and the username is a room rather than a person.
     expect(firstNameOf({})).toBeNull()
     expect(firstNameOf({ memberName: '', accountName: '   ' })).toBeNull()
-    expect(greetingLine({ nowMs: EVENING, firstName: null })).toBeNull()
+  })
+
+  it('says nothing at all to a shared login, and the hour to a nameless one', () => {
+    // A greeting is addressed to a person: `tehnika` is a phone by the gate.
+    expect(greetingLine({ nowMs: EVENING, firstName: null, shared: true })).toBeNull()
+    expect(greetingLine({ nowMs: EVENING, firstName: 'Josip', shared: true })).toBeNull()
+    // A named account whose `name` nobody filled in still gets the time of day,
+    // which is true of everybody, rather than a blank where a sentence goes.
+    expect(greetingLine({ nowMs: EVENING, firstName: null })).toBe('Dobra večer.')
   })
 
   it('greets without a vocative', () => {
@@ -178,7 +205,7 @@ describe('the figure cards', () => {
     expect(inquiriesCard(1).caption).toBe('neodgovoren upit')
     expect(inquiriesCard(3).caption).toBe('neodgovorena upita')
     expect(inquiriesCard(11).caption).toBe('neodgovorenih upita')
-    expect(performancesCard(0).caption).toBe('izvedbi do kraja sezone')
+    expect(performancesCard(0).caption).toBe('javnih izvedbi do kraja sezone')
     expect(usersCard(21).caption).toBe('račun')
   })
 
@@ -251,7 +278,7 @@ describe('the ring and the podium', () => {
     expect(card.caption).toBe(APP_STRINGS.landing.noShow)
   })
 
-  it('shows the top three and where the reader stands', () => {
+  it('shows the top three and where the reader stands, in the dancer’s register', () => {
     const top = [
       { nickname: 'Brko', performances: 14 },
       { nickname: 'Cici', performances: 13 },
@@ -261,23 +288,23 @@ describe('the ring and the podium', () => {
     const card = leaderboardCard({
       top,
       me: { rank: 4, performances: 11 },
-      countWords: APP_STRINGS.home.count,
+      countWords: APP_STRINGS.moreska.count,
     })
     expect(card.entries).toEqual([
       { label: 'Brko', value: 14 },
       { label: 'Cici', value: 13 },
       { label: 'Baro', value: 12 },
     ])
-    expect(card.caption).toBe('ti si 4. s 11 izvedbi')
+    expect(card.caption).toBe('ti si 4. s 11 nastupa')
   })
 
   it('names the leader for a reader who is not on the board', () => {
     const card = leaderboardCard({
       top: [{ nickname: 'Brko', performances: 14 }],
       me: null,
-      countWords: APP_STRINGS.home.count,
+      countWords: APP_STRINGS.moreska.count,
     })
-    expect(card.caption).toBe('vodi Brko s 14 izvedbi')
+    expect(card.caption).toBe('vodi Brko s 14 nastupa')
   })
 
   it('says the season has not started rather than inventing a leader', () => {

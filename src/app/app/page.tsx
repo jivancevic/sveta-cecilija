@@ -76,7 +76,7 @@ export default async function AppHomePage() {
   return (
     <AppShell viewer={viewer} screen="home" brand>
       {(home.greeting || home.sentence) && (
-        <p className="app__greet">
+        <p className="app__home-greet">
           {home.greeting && <b>{home.greeting}</b>}
           {home.sentence && <span>{home.sentence}</span>}
         </p>
@@ -169,10 +169,25 @@ function renderTile(card: HomeCard) {
       eyebrow={card.eyebrow}
       caption={card.caption}
     >
-      {card.figure != null && <b className="app__figure">{card.figure}</b>}
+      {card.figure != null && (
+        <b className={`app__home-figure${figureSize(card.figure)}`}>{card.figure}</b>
+      )}
       {card.chip && <Chip tone={card.chip.tone}>{card.chip.label}</Chip>}
     </Tile>
   )
+}
+
+/**
+ * How big a figure may be drawn.
+ *
+ * Two digits is the usual case and gets the full 44px. Financije's figure is a
+ * formatted amount ("7.350,00 €") and a tile is half a phone wide, so the type
+ * steps down by length: a number that wrapped or ran off its card would be
+ * worse than a smaller one.
+ */
+function figureSize(figure: string): string {
+  if (figure.length <= 3) return ''
+  return figure.length <= 6 ? ' app__home-figure--md' : ' app__home-figure--sm'
 }
 
 /**
@@ -197,7 +212,7 @@ function Inbox({ card }: { card: Extract<HomeCard, { kind: 'inbox' }> }) {
         href={card.href}
         aria-label={card.action}
         lead={
-          <span className="app__ico" aria-hidden="true">
+          <span className="app__home-ico" aria-hidden="true">
             <Bell size={22} strokeWidth={1.75} />
           </span>
         }

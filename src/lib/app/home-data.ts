@@ -242,7 +242,10 @@ export async function loadHomeScreen(viewer: AppViewer): Promise<HomeScreen> {
           leaderboardCard({
             top: (built?.rows ?? []).slice(0, 3),
             me: built?.me ?? null,
-            countWords: APP_STRINGS.home.count,
+            // Ljestvica answers to `moreskant` and `moreska` and to nobody
+            // else, so its count is in the dancer's register: "1. s 11
+            // nastupa", never "izvedbi" (CONTEXT.md, two registers).
+            countWords: APP_STRINGS.moreska.count,
           }),
         )
         break
@@ -268,6 +271,7 @@ export async function loadHomeScreen(viewer: AppViewer): Promise<HomeScreen> {
     moreska,
     greeting: greetingLine({
       nowMs,
+      shared: viewer.shared,
       firstName: firstNameOf({
         memberName: viewer.me?.name ?? null,
         accountName: viewer.accountName,
