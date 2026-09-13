@@ -3,6 +3,7 @@ import {
   Document,
   Font,
   Image,
+  Link,
   Page,
   StyleSheet,
   Text,
@@ -11,7 +12,7 @@ import {
 } from '@react-pdf/renderer'
 import type { Venue } from '../venues'
 import { ADULT_PRICE_EUR, CHILD_PRICE_EUR } from '../pricing'
-import { scanUrl } from '../site-url'
+import { programmeUrl, scanUrl } from '../site-url'
 
 const FONT_DIR = path.join(process.cwd(), 'assets', 'fonts', 'email')
 const LOGO_PATH = path.join(process.cwd(), 'assets', 'images', 'cecilija-logo.png')
@@ -67,6 +68,7 @@ const COPY = {
     complimentary: 'Complimentary',
     scanAtDoor: 'Scan this code at the door',
     perPerson: 'One ticket per person. This QR admits one person.',
+    programme: 'The story, in your language:',
     claimPrompt: 'Get a digital ticket and show updates. Scan this code and add your email.',
   },
   hr: {
@@ -83,6 +85,7 @@ const COPY = {
     complimentary: 'Gratis',
     scanAtDoor: 'Skenirajte ovaj kod na ulazu',
     perPerson: 'Jedna ulaznica po osobi. Ovaj QR pušta jednu osobu.',
+    programme: 'Priča i program:',
     claimPrompt:
       'Želite digitalnu ulaznicu i obavijesti o izvedbi? Skenirajte kod i upišite svoj email.',
   },
@@ -271,6 +274,13 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     color: MUTED,
   },
+  footerLink: {
+    fontFamily: 'IBMPlexMono',
+    fontSize: 7,
+    letterSpacing: 1,
+    color: GOLD,
+    textDecoration: 'none',
+  },
   // Partner-slip claim invitation: a compact gold-tinted band between the body
   // and the footer. Kept short so the fixed 50%-height block never overflows.
   claimNote: {
@@ -327,6 +337,7 @@ export async function renderTicketsPdf(
   const c = COPY[input.locale]
   const venueLabel = VENUE_LABEL[input.locale][input.show.venue]
   const dateLabel = formatDate(input.show.date, input.locale)
+  const programmeLink = programmeUrl()
 
   // One QR per ticket, rendered in issuance order. The scan URL must point at
   // the deployment that issued the slip (staging vs prod) — a hardcoded
@@ -409,7 +420,12 @@ export async function renderTicketsPdf(
 
       <View style={styles.footer}>
         <Text style={styles.footerText}>{c.perPerson}</Text>
-        <Text style={styles.footerText}>moreska.eu</Text>
+        {/* The digital programme rides the footer line as a tappable link and
+            never as a second QR: a second code next to "scan this at the door"
+            is the wrong code scanned in a queue (#544, decided in #541). */}
+        <Link src={programmeLink} style={styles.footerLink}>
+          {c.programme} {programmeLink.replace(/^https?:\/\//, '')}
+        </Link>
       </View>
     </View>
   )

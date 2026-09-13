@@ -396,6 +396,88 @@
       "body3": "Beyond the music itself, the choir plays an important social role: it brings people together, nurtures friendships, and passes a love of shared singing on to younger generations, creating a space where tradition stays alive yet always open to new voices and new interpretations."
     }
   },
+  "programmePage": {
+    "metaTitle": "Moreška Programme: the Story, the Cast and the Seven Kolapi",
+    "metaDescription": "What you are watching tonight: who the two kings and the Bula are, what happens in each part of the evening, and the seven kolapi of the Moreška sword dance.",
+    "eyebrow": "Programme",
+    "headline": "Moreška",
+    "lead": "Two kings, one captive maiden, and seven battles to decide her fate.",
+    "castHeading": "Who is who",
+    "cast": [
+      {
+        "name": "Bula",
+        "line": "The captive maiden, betrothed to the White King."
+      },
+      {
+        "name": "Osman",
+        "line": "The White King. He wears red."
+      },
+      {
+        "name": "Moro",
+        "line": "The Black King, who has taken the Bula by force. He wears black."
+      },
+      {
+        "name": "Otmanović",
+        "line": "The Black King's father."
+      },
+      {
+        "name": "White army",
+        "line": "Osman's men, in red."
+      },
+      {
+        "name": "Black army",
+        "line": "Moro's men, in black."
+      }
+    ],
+    "eveningHeading": "The evening",
+    "parts": [
+      {
+        "title": "Klapa",
+        "line": "Dalmatian harmony singing, voices only."
+      },
+      {
+        "title": "Moreška with the wind orchestra",
+        "line": "The story is told first, then the Sfida, the challenge, then the seven kolapi, until the Black King surrenders."
+      }
+    ],
+    "frontRow": "The front rows are the place for the sparks and the sound of iron. With small children, sit a few rows back.",
+    "storyHeading": "The story",
+    "kolapiHeading": "The seven kolapi",
+    "kolapiIntro": "Every dancer holds two iron swords: the right hand strikes, the left parries. The figures follow a fixed order and each one is faster than the last.",
+    "kolapi": [
+      {
+        "name": "Rugier",
+        "line": "Named after the Sicilian Ruggero dance."
+      },
+      {
+        "name": "Moreška",
+        "line": "The oldest figure: circling and synchronised clashes."
+      },
+      {
+        "name": "Finta",
+        "line": "Feints and deceptive strikes."
+      },
+      {
+        "name": "Moro in dentro",
+        "line": "The Black soldiers move inward."
+      },
+      {
+        "name": "Križ",
+        "line": "The swords form crosses."
+      },
+      {
+        "name": "Rugier de fuorivia",
+        "line": "The Rugier turned outward, in wider circles."
+      },
+      {
+        "name": "Final figure",
+        "line": "At full speed, until the Black army is surrounded and the Black King gives up his sword."
+      }
+    ],
+    "historyHeading": "A short history",
+    "historyBody": "Of all the sword dances that once spanned the Mediterranean, only the Moreška of Korčula has survived intact. The first record in the town dates from 1666. The dialogue is spoken in the 17th-century Korčulan dialect, and the wind orchestra plays the score Krsto Odak wrote in 1937, used at every performance since 1947.",
+    "ticketsLink": "Tickets for another evening"
+  },
   "checkoutPage": {
     "pageHeading": "Complete your booking",
     "pageBack": "← BACK TO PERFORMANCES",
