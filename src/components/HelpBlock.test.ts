@@ -20,8 +20,10 @@ describe('help copy', () => {
     });
   }
 
-  it('both locales point at the same address', () => {
-    expect(hr.help.email).toBe(en.help.email);
+  it(`names the mailbox the board chose`, () => {
     expect(en.help.email).toBe('info@moreska.eu');
   });
 });
+
+// The cross-locale half of this (that both files name the same address) lives in
+// `src/lib/message-parity.test.ts`, where CLAUDE.md puts every locale-pair assertion.

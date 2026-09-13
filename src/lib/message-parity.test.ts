@@ -46,6 +46,13 @@ describe('message files', () => {
     expect(hrShape.filter((entry) => !inEn.has(entry)), 'missing from en.json').toEqual([]);
   });
 
+  it('name the same support mailbox in both locales', () => {
+    // #383 decided support is one address. Two files drifting to two addresses
+    // would send half the buyers somewhere nobody reads, and the shape check
+    // above cannot see it, because both sides would still be strings.
+    expect(hr.help.email).toBe(en.help.email);
+  });
+
   it('leave no string empty in either locale', () => {
     const blanks = (shapes: string[], source: Json, locale: string) =>
       shapes

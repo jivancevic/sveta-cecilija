@@ -35,6 +35,7 @@
 - **`.gitignore` blocks every `.env*` except `.env.example`** (the committed template).
 - **Don't relax the security baseline** — `next.config.ts` security headers + `payload.config.ts` fail-fast on missing `PAYLOAD_SECRET`. That baseline is what lets `/scan/[token]` be safely public.
 - **An agent may merge its own PR once every check is green, and never a moment before** (granted 2026-09-12, replacing the rule that reserved the merge click for a human). Since 2026-09-12 a push to `main` deploys straight to production ([ADR-0026](docs/adr/0026-production-auto-deploy-from-main.md)), so with the human checkpoint gone CI is the only gate left in front of a system taking real card payments: wait for all six checks to report, read them, then `gh pr merge`. A pending check is not a passing one. **Never force-merge past a failing check and never use the admin bypass** — Coolify deploys on the push webhook, not on CI success, so a bypass reaches production directly. Nothing at the GitHub level enforces any of this (a solo maintainer cannot approve their own PR, and an agent authenticates with the same token), so it is a rule, not a lock.
+- **Customer support is email only, and no buyer-facing surface carries a phone number** (#383, decided by the uprava 2026-09-13). One address, `info@moreska.eu`, answered within 24 hours; nobody is on duty and there is no helpline. The registry number is the president's private mobile, so putting it back in the footer, in the Organization JSON-LD's `telephone`, or on any page a buyer reads is a bug, not a courtesy (#548 removed exactly that). The **impressum is the one exception and must keep it**: ZZP art. 46(1) point 2 lists a telephone number among the pre-contractual details a trader owes a consumer in a distance contract, and unlike the email address it carries no "ako postoji" qualifier. The "Need help?" block that states this to buyers lives on three surfaces and nowhere else; its seams and its copy are in `docs/agents/features.md`.
 - **Never gate a deploy on a health check that fails when the database blips.** `/api/health` is liveness, never readiness: it answers 200 whenever the server is up and reports `dbOk` in the body without letting it change the status code. A failed `bootstrap-db.mjs` is already caught, because the container's `CMD` means `server.js` never starts. Rationale in `src/lib/health/health.ts`.
 
 ---
@@ -53,7 +54,7 @@ Use these when filling out third-party platform business/verification forms (Met
 | OIB (tax ID) | `52537805408` |
 | MB (registry no.) | `03688194` |
 | Registered address | `Knežev prolaz 1, 20260 Korčula, Croatia` |
-| Phone | `+385 92 1532305` |
+| Phone | `+385 92 1532305` (the president's **private mobile** — fine on a registry form, never on a buyer-facing surface; see the hard rule below) |
 | Legal form | Membership organisation (`Djelatnosti ostalih članskih organizacija`) |
 | Date of establishment | 1991 (current Croatian legal entity; the society itself dates to 1883 — use 1991 for any "company founded" registry field) |
 | Authorised representative | Velebit Veršić (President) |
