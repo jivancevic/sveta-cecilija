@@ -165,7 +165,9 @@ export const APP_SCREENS: AppScreen[] = [
     route: '/app/stats',
     rank: 10,
     unlockedBy: ['tickets', 'season_stats', 'finance'],
-    servesToday: [],
+    // All three read the season in counts (#508). `season_stats` unlocks this
+    // and nothing else, which is the whole of the shared `member` login.
+    servesToday: ['tickets', 'season_stats', 'finance'],
     groups: ['admin', 'box', 'moreskant'],
   },
   {
