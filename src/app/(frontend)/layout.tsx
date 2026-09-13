@@ -28,7 +28,6 @@ const organizationJsonLd = {
   logo: `${SITE_URL}/cecilija-logo.webp`,
   slogan: TAGLINE,
   email: 'info@moreska.eu',
-  telephone: '+385 92 1532305',
   taxID: '52537805408',
   address: {
     '@type': 'PostalAddress',
