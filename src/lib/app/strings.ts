@@ -7,8 +7,21 @@
 // with a message.
 //
 // Copy rules (CONTEXT.md): "moreška" lowercase in Croatian, a dancer is a
-// "moreškant" and never a "moreškar", the event noun is "izvedba" (never
-// "nastup" or "predstava"), and no em-dashes in anything a person reads.
+// "moreškant" and never a "moreškar", the event noun is never "predstava", and
+// no em-dashes in anything a person reads.
+//
+// **Two registers for one evening** (CONTEXT.md, decided 2026-09-13, applied in
+// #565). The border is the AUDIENCE, never the screen or the URL:
+//
+//   selling register, "izvedba"  everything a buyer, a partner, the blagajna,
+//                                the door or a statistics reader sees.
+//   dancer register, "nastup"    everything a moreškant or a voditelj reads AS
+//                                A DANCER: Moreška, attendance, the lineup, the
+//                                roster's push messages and the Ljestvica.
+//
+// So `home.*` (Izvedbe) says "izvedba" and `moreska.*` says "nastup" about the
+// same evening, and a person who holds both sets reads both words. Before you
+// add a string here, ask who reads it.
 
 import type { Permission } from '@/lib/access/permissions'
 import type { EnquiryType } from '@/lib/contact/enquiry-type'
@@ -121,6 +134,8 @@ export const APP_STRINGS = {
    */
   screens: {
     orders: 'Narudžbe',
+    /** The dancer's own screen (#565). The dance, and the tab named after it. */
+    moreska: 'Moreška',
     performances: 'Izvedbe',
     members: 'Članovi',
     leaderboard: 'Ljestvica',
@@ -193,6 +208,56 @@ export const APP_STRINGS = {
     eosLink: 'Pogledaj svoju sezonu',
   },
 
+  /**
+   * Moreška, the dancer's own screen (#565).
+   *
+   * Every noun here is in the DANCER's register: a moreškant reads "nastup",
+   * never "izvedba" (CONTEXT.md, two registers, decided 2026-09-13). The same
+   * evening is an "izvedba" one tab away on Izvedbe, whose audience is the
+   * blagajna, and a person who holds both sets reads both words for the same
+   * evening. That is the rule working, not a drift.
+   *
+   * A non-regular evening reads "Vanredna" and nothing else (Q30): never the
+   * client, never the kind name. A dancer turns up for the evening; which
+   * agency booked it is the voditelj's business and lives on Izvedbe.
+   */
+  moreska: {
+    next: 'Sljedeći nastup',
+    /** "9 nastupa pred tobom": what is still ahead of the reader this season. */
+    ahead: { one: 'nastup pred tobom', few: 'nastupa pred tobom', many: 'nastupa pred tobom' },
+    /** The quiet count beside a month heading. */
+    count: { one: 'nastup', few: 'nastupa', many: 'nastupa' },
+    /** The only two words a row's title may say. */
+    regular: 'Redovna',
+    extra: 'Vanredna',
+    cancelled: 'otkazano',
+    /** The chip on a row: the reader's own answer, or its absence. */
+    chipNone: 'bez odgovora',
+    chipYes: 'dolaziš',
+    chipNo: 'ne dolaziš',
+    /**
+     * The hero once an answer has landed (Q30). The army is a fact of THE
+     * ANSWER, not of the profile: a voditelj may move a dancer for one evening
+     * and the hero has to say which army that evening.
+     */
+    coming: 'Dolaziš',
+    comingIn: (army: string) => `Dolaziš · ${army}`,
+    notComing: 'Ne dolaziš',
+    change: 'Promijeni',
+    past: (count: number) => `Prošli nastupi (${count})`,
+    /** Two ways to have no next nastup, and they are not the same news. */
+    eosTitle: 'Sezona je završila',
+    eosBody: (date: string) => `Zadnji nastup bio je ${date}.`,
+    eosNothingTitle: 'Sezona još nije počela',
+    eosNothing: 'Ove sezone još nije bilo nastupa.',
+    /**
+     * A voditelj who does not dance (#419, story 15) opens this screen to read
+     * the roster, not to answer for themselves. The line says so once, quietly,
+     * so it does not read as something they are late on.
+     */
+    noMember: 'Nemaš povezan profil moreškanta, pa ovdje nema tvog odgovora.',
+  },
+
   /** The "Moje" tab: one dancer's own season (#457). */
   mySeason: {
     title: 'Moje',
@@ -203,18 +268,18 @@ export const APP_STRINGS = {
     },
     season: 'Sezona',
     mine: 'u postavi',
-    /** Pluralised by the count on the tile: "1 izvedba u sezoni", "22 izvedbi u sezoni". */
-    total: { one: 'izvedba u sezoni', few: 'izvedbe u sezoni', many: 'izvedbi u sezoni' },
+    /** Pluralised by the count on the tile: "1 nastup u sezoni", "22 nastupa u sezoni". */
+    total: { one: 'nastup u sezoni', few: 'nastupa u sezoni', many: 'nastupa u sezoni' },
     crni: 'Crna vojska',
     bili: 'Bila vojska',
     byMonth: 'Po mjesecu',
-    chartLabel: 'Izvedbe po mjesecu',
-    legend: 'Zlatno: u potvrđenoj postavi. Sivo: sve potvrđene izvedbe sezone.',
+    chartLabel: 'Nastupi po mjesecu',
+    legend: 'Zlatno: u potvrđenoj postavi. Sivo: svi potvrđeni nastupi sezone.',
     roles: 'Uloge',
     times: (count: number) => `${count}×`,
     emptyTitle: 'Još nisi plesao ove sezone',
     emptyBody: 'Prva potvrđena postava pojavit će se ovdje.',
-    emptyLink: 'Odgovori na sljedeću izvedbu',
+    emptyLink: 'Odgovori na sljedeći nastup',
     /**
      * A voditelj without a Member row is not a dancer who has not danced yet
      * (#457 review): the season below is the SOCIETY's, so the line says what
@@ -222,8 +287,8 @@ export const APP_STRINGS = {
      */
     noMember: 'Nemaš povezan profil moreškanta.',
     noMemberBody: 'Ispod su brojke cijele sezone.',
-    seasonTotal: 'potvrđenih izvedbi',
-    seasonMonths: 'mjeseci s izvedbom',
+    seasonTotal: 'potvrđenih nastupa',
+    seasonMonths: 'mjeseci s nastupom',
   },
 
   /**
@@ -231,7 +296,7 @@ export const APP_STRINGS = {
    * *Ljestvica*).
    *
    * Every counted noun here is handed to `pluralize` rather than written with a
-   * fixed ending: "1 izvedbi do 2. mjesta" would be the kind of sentence that
+   * fixed ending: "1 nastupa do 2. mjesta" would be the kind of sentence that
    * tells a dancer the app was written by somebody who does not speak to them.
    */
   board: {
@@ -247,9 +312,9 @@ export const APP_STRINGS = {
     /** The caption under a podium tile, so the rank reads as a place and not as a second count. */
     place: (rank: number) => `${rank}. mjesto`,
     confirmedCount: {
-      one: 'potvrđena izvedba',
-      few: 'potvrđene izvedbe',
-      many: 'potvrđenih izvedbi',
+      one: 'potvrđen nastup',
+      few: 'potvrđena nastupa',
+      many: 'potvrđenih nastupa',
     },
     footer: (confirmed: string) =>
       `Broji se samo potvrđena postava. ${confirmed} u sezoni.`,
@@ -1043,20 +1108,26 @@ export const APP_STRINGS = {
     failed: 'Postava nije spremljena. Pokušaj ponovno.',
   },
 
-  /** The season scoreboard (#437, glossary: *Dancer statistics*). */
+  /**
+   * The season scoreboard (#437, glossary: *Dancer statistics*).
+   *
+   * Read on Ljestvica by a moreškant about themselves, so it counts "nastupi"
+   * (#565): the season screen that counts "izvedbe" is Statistika, whose reader
+   * is the blagajna.
+   */
   stats: {
     title: 'Statistika',
     season: 'Sezona',
     dancer: 'Moreškant',
-    performances: 'Izvedbi',
+    performances: 'Nastupa',
     crniKralj: 'Crni kralj',
     biliKralj: 'Bili kralj',
     otmanovic: 'Otmanović',
     bula: 'Bula',
-    byKind: 'Po vrsti izvedbe',
+    byKind: 'Po vrsti nastupa',
     empty: 'U ovoj sezoni još nema potvrđenih postava.',
     noRoster: 'Nema aktivnih moreškanata.',
-    hint: 'Broje se samo potvrđene postave. Dodirni redak za razradu po vrsti izvedbe.',
+    hint: 'Broje se samo potvrđene postave. Dodirni redak za razradu po vrsti nastupa.',
   },
 
   /**
@@ -2282,7 +2353,7 @@ export const PUSH_MESSAGES = {
   reminder: {
     title: 'Javi dolazak',
     body: (input: { date: string; time: string }) =>
-      `Izvedba je ${formatPerformanceDate(input.date)} u ${input.time}. Još nisi javio dolaziš li.`,
+      `Nastup je ${formatPerformanceDate(input.date)} u ${input.time}. Još nisi javio dolaziš li.`,
   },
 
   /**
@@ -2297,12 +2368,12 @@ export const PUSH_MESSAGES = {
    * "do not come" rather than "come differently".
    */
   change: {
-    title: 'Promjena izvedbe',
-    cancelledTitle: 'Izvedba je otkazana',
+    title: 'Promjena nastupa',
+    cancelledTitle: 'Nastup je otkazan',
     cancelledBody: (input: { date: string; time: string }) =>
-      `Izvedba ${formatPerformanceDate(input.date)} u ${input.time} je otkazana.`,
+      `Nastup ${formatPerformanceDate(input.date)} u ${input.time} je otkazan.`,
     body: (input: { date: string; time: string; fields: readonly string[] }) =>
-      `Izvedba ${formatPerformanceDate(input.date)} u ${input.time}. Promijenjeno: ${input.fields.join(', ')}.`,
+      `Nastup ${formatPerformanceDate(input.date)} u ${input.time}. Promijenjeno: ${input.fields.join(', ')}.`,
     fields: {
       date: 'datum',
       time: 'vrijeme',
@@ -2311,12 +2382,12 @@ export const PUSH_MESSAGES = {
       note: 'poruka voditelja',
     },
     /** The way back: the row was cancelled and is not any more. */
-    uncancelled: 'izvedba više nije otkazana',
+    uncancelled: 'nastup više nije otkazan',
   },
 
   /** Type (4): a performance that did not exist a minute ago (story 17). */
   created: {
-    title: 'Nova izvedba',
+    title: 'Novi nastup',
     body: (input: { date: string; time: string; kind: string; place: string }) =>
       `${input.kind}, ${formatPerformanceDate(input.date)} u ${input.time}${
         input.place ? `, ${input.place}` : ''
@@ -2327,14 +2398,14 @@ export const PUSH_MESSAGES = {
    * A whole season entered at once (#441 review).
    *
    * The bulk-create tool writes twenty-two Redovna shows in a loop; twenty-two
-   * separate "nova izvedba" pushes would be a phone buzzing for a minute about
+   * separate "novi nastup" pushes would be a phone buzzing for a minute about
    * a schedule nobody has to answer this instant. One sentence, and the tap
    * lands on the list rather than on any one evening.
    */
   createdBulk: {
-    title: 'Nove izvedbe',
+    title: 'Novi nastupi',
     body: (input: { count: number; firstDate: string }) =>
-      `U raspored je dodano ${input.count} ${input.count === 1 ? 'nova izvedba' : 'novih izvedbi'}, prva ${formatPerformanceDate(input.firstDate)}.`,
+      `U raspored je dodano ${input.count} ${input.count === 1 ? 'novi nastup' : 'novih nastupa'}, prvi ${formatPerformanceDate(input.firstDate)}.`,
   },
 
   /** Type (5), to the voditelji only: a "dolazim" withdrawn (story 18). */
@@ -2342,7 +2413,7 @@ export const PUSH_MESSAGES = {
     title: 'Netko je odustao',
     someone: 'Moreškant',
     body: (input: { who: string; date: string; time: string }) =>
-      `${input.who} više ne dolazi na izvedbu ${formatPerformanceDate(input.date)} u ${input.time}.`,
+      `${input.who} više ne dolazi na nastup ${formatPerformanceDate(input.date)} u ${input.time}.`,
   },
 } as const
 
@@ -2461,6 +2532,25 @@ export function shortWeekday(date: string): string {
 export function dayOfMonth(date: string): string {
   const d = atNoon(date)
   return d ? String(d.getUTCDate()) : ''
+}
+
+/**
+ * "rujna" — the month beside the hero's 80px day number (#565).
+ *
+ * Genitive, because "14 rujna" is how the date is spoken: the big number and
+ * this word are one date split over two type sizes, not a number and a label.
+ */
+export function monthGenitiveOf(date: string): string {
+  const d = atNoon(date)
+  return d ? (MONTHS_GENITIVE[d.getUTCMonth()] ?? '') : ''
+}
+
+/** "Ponedjeljak" — the weekday that opens the hero's meta line (#565). */
+export function weekdayLabel(date: string): string {
+  const d = atNoon(date)
+  if (!d) return ''
+  const name = WEEKDAYS[d.getUTCDay()] ?? ''
+  return name.charAt(0).toUpperCase() + name.slice(1)
 }
 
 /** "Rujan" from a 1-12 month number; the heading of a month section. */

@@ -42,7 +42,7 @@ describe('decideAppAccess — the voditelj', () => {
   it('lets a `moreska` holder in with no Member link (a non-dancing voditelj)', () => {
     const access = decideAppAccess(user('moreska'), null)
     expect(access.kind).toBe('ok')
-    expect(screenKeys(access)).toEqual(['performances', 'members', 'leaderboard'])
+    expect(screenKeys(access)).toEqual(['moreska', 'performances', 'members', 'leaderboard'])
     expect(access.kind === 'ok' && access.self).toBeNull()
   })
 
@@ -75,7 +75,7 @@ describe('decideAppAccess — the moreškant', () => {
     const access = decideAppAccess(user('moreskant'), me)
     expect(access.kind).toBe('ok')
     expect(access.kind === 'ok' && access.self).toBe(me)
-    expect(screenKeys(access)).toEqual(['performances', 'leaderboard'])
+    expect(screenKeys(access)).toEqual(['moreska', 'leaderboard'])
   })
 
   it.each([
@@ -98,7 +98,7 @@ describe('decideAppAccess — the door', () => {
 
   it('adds Skener to what a dancer who also works the gate already had', () => {
     const access = decideAppAccess(user('moreskant', 'door'), dancer())
-    expect(screenKeys(access)).toEqual(['performances', 'leaderboard', 'scan'])
+    expect(screenKeys(access)).toEqual(['moreska', 'leaderboard', 'scan'])
   })
 })
 

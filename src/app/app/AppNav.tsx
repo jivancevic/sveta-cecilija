@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   Bell,
+  CalendarDays,
   ChartColumn,
   Ellipsis,
   FileText,
@@ -35,9 +36,11 @@ import { activeScreenKey, activeTabKey, type AppNav as Nav, type AppScreenKey } 
 // lighting up in turn: the movement is what tells you that you went left.
 //
 // Icons are Lucide at stroke 1.75 (1.9 on the tab you are on), with ONE
-// exception drawn by hand: the crossed swords of Izvedbe. The moreška is a
-// sword dance, no icon set ships the right pair of blades, and an emoji in a
-// navigation bar is not a decision this app makes.
+// exception drawn by hand: the crossed swords. The moreška is a sword dance, no
+// icon set ships the right pair of blades, and an emoji in a navigation bar is
+// not a decision this app makes. Since #565 the blades belong to **Moreška**,
+// the dancer's screen, and Izvedbe wears a calendar: the swords are the dance,
+// and Izvedbe is now a schedule the blagajna reads.
 
 const STROKE = 1.75
 const STROKE_ON = 1.9
@@ -70,7 +73,8 @@ function Swords({ strokeWidth }: { strokeWidth: number }) {
 type IconFor = (props: { size: number; strokeWidth: number }) => React.ReactNode
 
 const ICONS: Record<AppScreenKey, IconFor> = {
-  performances: (p) => <Swords strokeWidth={p.strokeWidth} />,
+  moreska: (p) => <Swords strokeWidth={p.strokeWidth} />,
+  performances: (p) => <CalendarDays {...p} aria-hidden="true" />,
   orders: (p) => <Receipt {...p} aria-hidden="true" />,
   members: (p) => <Users {...p} aria-hidden="true" />,
   leaderboard: (p) => <Trophy {...p} aria-hidden="true" />,
