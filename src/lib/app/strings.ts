@@ -103,7 +103,12 @@ export const APP_STRINGS = {
     sell: 'Prodaja',
     statement: 'Obračun',
     inquiries: 'Upiti',
-    comp: 'Gratis i kodovi',
+    /**
+     * "Gratis", not the route map's "Gratis i kodovi" (#506): promo codes are
+     * not on the screen and never were (#476), so the second half of that name
+     * promised something the page does not have.
+     */
+    comp: 'Gratis',
     /** The tab bar has a fifth of a phone for it. */
     compShort: 'Gratis',
     users: 'Korisnici',
@@ -1700,7 +1705,22 @@ export const APP_STRINGS = {
     emailHint: 'Nije obavezno. Ako je upišeš, ulaznice idu na nju.',
     issue: 'Izdaj gratis',
     issuing: 'Izdajem...',
-    tooMany: 'Nema toliko slobodnih mjesta.',
+    /**
+     * One sentence per refusal `/api/comp/issue` can answer with.
+     *
+     * The route's own `error` field is developer English ("This show has
+     * already taken place"), so it must never reach the screen; its `code` is
+     * what this maps. Each of these has a different repair — pick another
+     * evening, pick fewer seats, pick a member — and a single "pokušaj
+     * ponovno" would hide which one, on a screen whose whole job is a form
+     * somebody has just filled in.
+     */
+    tooMany: 'Nema toliko slobodnih mjesta. Smanji broj ulaznica ili odaberi drugu izvedbu.',
+    showPast: 'Ta je izvedba već prošla. Odaberi nadolazeću.',
+    showCancelled: 'Ta je izvedba otkazana, pa se za nju ne izdaju ulaznice.',
+    showNotPublic: 'Za tu se izvedbu ne prodaju ulaznice, pa nema ni gratisa.',
+    showGone: 'Ta izvedba više ne postoji. Osvježi stranicu.',
+    memberGone: 'Taj član više ne postoji. Odaberi drugoga ili ga dodaj ponovno.',
     failed: 'Gratis nije izdan. Pokušaj ponovno.',
     network: 'Veza je pukla. Pokušaj ponovno.',
     /** The confirmation, and the three honest outcomes of the e-mail. */

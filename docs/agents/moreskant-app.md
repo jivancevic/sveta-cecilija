@@ -1930,7 +1930,9 @@ undo endpoint, so a bar that drains would offer a way back that does not exist.
 The sheet names what stops working and says the void cannot be taken back; a
 ticket that has already been scanned says so above the button. A voided comp
 stays on the list, struck through — a row that vanished would read as a comp
-that was never issued.
+that was never issued. **Poništi reaches the eight newest comps and no further:**
+an older one is voided in the Backoffice until a search over comps lands, which
+is the same v1 line Narudžbe draws around its own history.
 
 **Poništi is storno, never povrat.** No money ever moved through a comp
 (`total = 0` by construction), so the word that means "the money went back"
@@ -1945,6 +1947,15 @@ and neither adult nor child — is pure and tested (`tallyCompsByMember` in
 `src/lib/app/comp-screen.ts`); the query under it is a plain "every comp ticket
 of this season". The season is the performance's calendar year, the project's
 one definition of a season, and `?season=` resolves exactly as Ljestvica's does.
+**It counts a dancer's self-issued comps too** (`compIssuedBy='self'`, #434):
+those are `channel='comp'` orders attributed to that dancer's own Member, and
+the table answers "how many comps did this member receive", which is exactly
+what they are.
+
+**The screen is called "Gratis", not the route map's "Gratis i kodovi"**
+(`APP_STRINGS.screens.comp`): the second half of that name promised a thing the
+page does not have. The table in `screens.ts` is untouched — a label is a
+string, not a route.
 
 **Promo codes are not here** and that is the #476 decision, not an omission:
 none has ever been created, and the Backoffice's PromoCodes view stays the only

@@ -21,13 +21,20 @@ export interface MemberOption {
  * Half the roster is spelled with Š, Ć, Ž or Đ and nobody reaches for those
  * on a phone keyboard while a guest is waiting, so "zuvela" has to find
  * "Žuvela". NFD splits a letter from its accent and the combining marks are
- * then dropped, which handles every Croatian diacritic without a table.
+ * then dropped, which handles every Croatian diacritic except one.
+ *
+ * **Đ is the exception and needs its own line.** Unlike Č, Ć, Š and Ž it is not
+ * a base letter plus a combining mark but a letter of its own (U+0110 / U+0111,
+ * D with stroke), so NFD leaves it exactly as it was. Everyone types it as "d",
+ * so the fold says so — otherwise Đuro is the one name on the roster the search
+ * cannot find.
  */
 function fold(value: string): string {
   return value
     .normalize('NFD')
     .replace(/\p{Diacritic}/gu, '')
     .toLowerCase()
+    .replace(/đ/g, 'd')
 }
 
 /**
@@ -74,6 +81,22 @@ export function holderName({
 }): string {
   if (edited) return typed
   return member?.name ?? ''
+}
+
+/**
+ * The name that actually goes on the slip, as the POST carries it.
+ *
+ * The field's hint says "Prazno znači ime člana", so an emptied field has to
+ * SEND the member's name rather than null: `/api/comp/issue` stores what it is
+ * given, so null would print a nameless slip and make the hint a lie. Null is
+ * left for the one case where there is genuinely no name — no member picked and
+ * nothing typed — which the submit button already refuses anyway.
+ */
+export function printedHolder(typed: string, member: MemberOption | null): string | null {
+  const own = typed.trim()
+  if (own !== '') return own
+  const fallback = (member?.name ?? '').trim()
+  return fallback === '' ? null : fallback
 }
 
 /** What the form may do, given what is on it. */

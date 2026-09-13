@@ -1,11 +1,18 @@
 import { describe, expect, it } from 'vitest'
 import { screenByKey, unlockedScreens } from './screens'
-import { compIssueView, holderName, matchMembers, tallyCompsByMember } from './comp-screen'
+import {
+  compIssueView,
+  holderName,
+  matchMembers,
+  printedHolder,
+  tallyCompsByMember,
+} from './comp-screen'
 
 const members = [
   { id: '1', name: 'Ante Marić' },
   { id: '2', name: 'Marija Anić' },
   { id: '3', name: 'Šime Žuvela' },
+  { id: '4', name: 'Đuro Đikić' },
 ]
 
 // The gate: the screen table is what `openScreen('comp')` reads, so "who may
@@ -49,6 +56,15 @@ describe('matchMembers', () => {
 
   it('matches on a surname as well as a first name', () => {
     expect(matchMembers(members, 'maric').map((m) => m.id)).toEqual(['1'])
+  })
+
+  it('finds a Đ typed as d, which NFD alone does not fold', () => {
+    // Đ / đ is a letter in its own right rather than D plus a mark, so
+    // stripping combining marks leaves it standing. On a phone keyboard it is
+    // typed as "d", so the fold has to say so.
+    expect(matchMembers(members, 'duro').map((m) => m.id)).toEqual(['4'])
+    expect(matchMembers(members, 'dikic').map((m) => m.id)).toEqual(['4'])
+    expect(matchMembers(members, 'Đuro').map((m) => m.id)).toEqual(['4'])
   })
 })
 
@@ -112,6 +128,26 @@ describe('holderName', () => {
 
   it('is empty while no member is picked', () => {
     expect(holderName({ member: null, typed: '', edited: false })).toBe('')
+  })
+})
+
+describe('printedHolder', () => {
+  const member = { id: '1', name: 'Ante Marić' }
+
+  it('prints what was typed', () => {
+    expect(printedHolder('  Ivana Bosnić ', member)).toBe('Ivana Bosnić')
+  })
+
+  it('falls back to the member, which is what the hint promises', () => {
+    // The field says "Prazno znači ime člana", so an emptied field must SEND
+    // the member's name. Sending null instead would print a nameless slip and
+    // make the hint a lie.
+    expect(printedHolder('   ', member)).toBe('Ante Marić')
+  })
+
+  it('is null only when there is no name to print at all', () => {
+    expect(printedHolder('', null)).toBeNull()
+    expect(printedHolder('', { id: '2', name: '  ' })).toBeNull()
   })
 })
 

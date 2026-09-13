@@ -6,6 +6,7 @@ import {
   compIssueView,
   holderName,
   matchMembers,
+  printedHolder,
   type MemberOption,
 } from '@/lib/app/comp-screen'
 import type { SellOption } from '@/lib/app/partner-screen'
@@ -43,6 +44,39 @@ interface CompDone {
   ticketCount: number
   emailStatus: 'sent' | 'skipped' | 'failed'
   emailTo: string | null
+}
+
+/**
+ * The route's refusal, in Croatian.
+ *
+ * `/api/comp/issue` predates Cecilija and serves the Backoffice too, so its
+ * `error` field is developer English and must never reach a phone; its `code`
+ * is the contract (`CompIssueErrorCode` in `lib/comp/create-comp-issue.ts`).
+ * Each of these has a different repair — another evening, fewer seats, another
+ * member — and one generic sentence would hide which.
+ *
+ * `INVALID_QUANTITY` is deliberately absent: the steppers cannot produce one,
+ * so it falls to the generic sentence along with anything unforeseen.
+ */
+function refusal(status: number, code: string | undefined): string {
+  switch (code) {
+    case 'OVERSELL':
+      return S.tooMany
+    case 'SHOW_PAST':
+      return S.showPast
+    case 'SHOW_INACTIVE':
+      return S.showCancelled
+    case 'SHOW_NOT_PUBLIC':
+      return S.showNotPublic
+    case 'SHOW_NOT_FOUND':
+      return S.showGone
+    case 'MEMBER_REQUIRED':
+      return S.memberGone
+    default:
+      // A 409 with no code is still an oversell: that status has exactly one
+      // meaning on this route.
+      return status === 409 ? S.tooMany : S.failed
+  }
 }
 
 export function CompIssueForm({
@@ -126,7 +160,9 @@ export function CompIssueForm({
           memberId,
           adults,
           children,
-          buyerName: holder.trim() || null,
+          // "Prazno znači ime člana" is the hint under the field, so an empty
+          // one sends the member's name rather than null (`printedHolder`).
+          buyerName: printedHolder(holder, member),
           email: email.trim() || null,
         }),
       })
@@ -138,7 +174,9 @@ export function CompIssueForm({
         emailTo?: string | null
       }
       if (!res.ok || !body.orderId) {
-        setError(res.status === 409 ? S.tooMany : S.failed)
+        // `code` on a failure is the error code, never the order code: the
+        // route answers with one or the other, never both.
+        setError(refusal(res.status, res.ok ? undefined : body.code))
         return
       }
       openPdf(body.orderId)
