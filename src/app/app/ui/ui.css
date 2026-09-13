@@ -660,6 +660,30 @@ button.ui-army:active {
   color: var(--ink);
   box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.2);
   animation: ui-sheet-up 0.3s var(--ease);
+  /* A sheet is short by design and a landscape phone is 599 px tall (#563):
+     the panel never grows past the viewport, the middle scrolls, and the
+     handle, the title and the buttons stay where the thumb left them. */
+  max-height: calc(100dvh - 16px - env(safe-area-inset-top, 0px));
+  overflow: hidden;
+}
+
+.ui-sheet__body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  /* Without this a flex child refuses to shrink below its content and the
+     scroll never appears — the sheet grows off the top of the screen instead. */
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.ui-sheet__foot {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: none;
 }
 
 @keyframes ui-sheet-up {

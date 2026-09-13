@@ -329,7 +329,31 @@ export function UserActions({
       {/* The one sheet on this screen that is a CHOICE rather than a
           confirmation, so it is T1's bottom sheet (#562) and not the inline
           panel the five confirmations use. */}
-      <UiSheet open={sheet === 'tabs'} title={S.tabs.title} onClose={close}>
+      <UiSheet
+        open={sheet === 'tabs'}
+        title={S.tabs.title}
+        onClose={close}
+        // The answer stays put while the options scroll: five screens and a
+        // paragraph are taller than a landscape phone (#563).
+        footer={
+          <>
+            {/* The reader's own row says why there is nothing to confirm, and
+                the refusal sits with the button it removed. */}
+            {self && <p className="app__sheet-warn">{S.tabs.notSelf}</p>}
+            {error && <p className="app__error">{error}</p>}
+            <div className="app__sheet-buttons">
+              {!self && tabOptions.length > 0 && (
+                <Button variant="primary" disabled={busy} onClick={() => void saveTabs()}>
+                  {busy ? S.actions.working : S.tabs.save}
+                </Button>
+              )}
+              <Button variant="link" disabled={busy} onClick={close}>
+                {S.actions.cancel}
+              </Button>
+            </div>
+          </>
+        }
+      >
         <p className="app__sheet-body">{S.tabs.body}</p>
 
         {tabOptions.length === 0 ? (
@@ -375,21 +399,6 @@ export function UserActions({
           </>
         )}
 
-        {/* Q52: a bar is somebody else's decision about this account, so the
-            reader's own row says so before the 409 does. */}
-        {self && <p className="app__sheet-warn">{S.tabs.notSelf}</p>}
-        {error && <p className="app__error">{error}</p>}
-
-        <div className="app__sheet-buttons">
-          {!self && tabOptions.length > 0 && (
-            <Button variant="primary" disabled={busy} onClick={() => void saveTabs()}>
-              {busy ? S.actions.working : S.tabs.save}
-            </Button>
-          )}
-          <Button variant="link" disabled={busy} onClick={close}>
-            {S.actions.cancel}
-          </Button>
-        </div>
       </UiSheet>
 
       {sheet === 'shared' && (
