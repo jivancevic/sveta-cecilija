@@ -8,39 +8,143 @@
    No Tailwind, no `globals.css` import.
    ───────────────────────────────────────────────────────────── */
 
+/* ── The system contract (#562) ─────────────────────────────
+   The tokens are the design; the names are the roles. Never hard-code a hex
+   for something a token already names, because a theme re-points the token and
+   a hex does not follow.
+
+   Light is the default and the only skin this ticket switches on. The dark
+   values ship right below it under `.app[data-theme="dark"]` so the switch in
+   Više · Profil is a one-attribute change and nothing else (T8). There is
+   deliberately NO `prefers-color-scheme` here: the phone in the street decides
+   nothing about a stage-lit tool on its own.
+
+   Scale, stated once so nobody re-measures it:
+     type    11 eyebrow · 13 small · 15 body · 16 button · 22 wordmark ·
+             26 name · 34 screen title · 80 hero day
+     space   4 8 12 16 20 24 · card 18 (hero 20) · gap 12 · screen edge 20
+     touch   44 target · 52 button · 72 list row
+   ───────────────────────────────────────────────────────── */
 .app {
-  /* The palette decided in #490: one light skin for everyone, and exactly two
-     night islands (the "next performance" hero and, when it lands, Skener).
-     Values are the contract, the names are the roles — never hard-code a hex
-     for something a token already names, because an island re-points the token
-     and a hex does not follow. */
   --bg: #f5f2ec; /* paper: the page ground, same as the public site */
-  --frame: #ede9e0; /* the frame: the laptop sidebar and the phone tab bar */
   --card: #ffffff; /* cards, inputs, tables */
-  --cardEdge: rgba(184, 136, 26, 0.38); /* a card's own edge */
-  --rule: rgba(26, 20, 12, 0.1); /* the line between two rows of a list */
-  --sunk: #e9e4d9; /* a surface BELOW the page: a track, a code box, an off button */
+  --sunk: #ede9e0; /* a surface BELOW the page: a track, a code box, an off button */
   --ink: #1a140c; /* text */
   --muted: #6b6259; /* secondary text, 5.3:1 on paper */
-  --gold: #b8881a; /* the brand gold: a button, a rule, the focus ring */
+  --gold: #b8881a; /* the brand gold: a button, a ring, the focus outline */
   --goldText: #8f6a10; /* gold that carries text or an icon, 4.8:1 on white */
+  --goldSoft: rgba(184, 136, 26, 0.12); /* gold as a surface, never as text */
   --onGold: #14100a; /* text ON gold */
-  --red: #8b0000;
+  --red: #8b0000; /* the bili army, a destructive action */
   --warn: #a8321f; /* an army below its threshold, a form error */
-  --radius: 0px; /* moreška = blades (globals.css) */
+  --ok: #8f6a10; /* "enough of us tonight" — gold, not green: one brand */
+  --grey: #d9d4cc; /* the glyph on a crni disc */
+  --crni: #1a140c; /* the crni army's fill */
+  --track: #ffffff; /* the ground a bar fills over */
+  --rule: rgba(26, 20, 12, 0.08); /* the line between two rows of a list */
+  --ghostEdge: rgba(26, 20, 12, 0.16); /* the inset edge of a ghost control */
+  --barBg: rgba(255, 255, 255, 0.92); /* the tab bar and any floating bar */
+  --markEdge: transparent; /* a crni disc needs no edge on paper */
+  --thumb: #1a140c; /* the pill behind the active tab */
+
+  --shadowCard: 0 2px 4px rgba(26, 20, 12, 0.05), 0 18px 36px -14px rgba(26, 20, 12, 0.26);
+  --shadowHero: 0 2px 4px rgba(26, 20, 12, 0.05), 0 22px 44px -18px rgba(26, 20, 12, 0.32);
+  --shadowBar: 0 10px 30px -10px rgba(26, 20, 12, 0.35);
+
+  --rCard: 22px;
+  --rCtl: 16px;
+  --rPill: 999px;
+
+  /* Labrada carries titles and numbers ONLY. Everything a thumb reads at 13 or
+     15 px is the platform's own face, which is what makes the screen read as an
+     app rather than as a printed page (audit, pattern 3). */
+  --serif: var(--font-bodoni), Labrada, 'Iowan Old Style', Georgia, serif;
+  --sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', system-ui, sans-serif;
+
   /* The bottom bar's own height; the safe area is added wherever it matters. */
   --tabH: 64px;
-  /* Row rhythm: a breakpoint, not a toggle (#490). Laptop tightens below. */
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+
+  /* ── Compatibility, and how it goes away ──────────────────
+     The four names below were the old contract and are still spelled ~120
+     times across the screens this ticket does not rebuild. They are ALIASES
+     now, so every one of those rules follows the new system without being
+     rewritten, and each screen ticket deletes its own spellings. When the last
+     one is gone, so are these four lines.
+
+     The two font variables are the same trick pointed the other way: they are
+     declared by `next/font` on <html>, and re-declaring them on `.app` (the
+     <body>) shadows them for the whole app. That is what moves body copy off
+     Labrada in one place instead of in every rule that names it. */
+  --frame: var(--sunk);
+  --cardEdge: var(--rule);
+  --radius: var(--rCtl);
   --rowY: 11px;
+  --font-inter: var(--sans);
+  --font-ibm-plex-mono: var(--sans);
 
   margin: 0;
-  min-height: 100dvh;
+  /* The document never scrolls: `.app` is its own scroll container, so the tab
+     bar cannot rubber-band away from the bottom of the screen and a sheet
+     cannot be dragged off the top of it. `html` is pinned in the rule below. */
+  height: 100dvh;
+  overflow-y: auto;
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  touch-action: pan-y;
   background: var(--bg);
   color: var(--ink);
-  font-family: var(--font-inter), system-ui, sans-serif;
-  font-size: 16px;
-  line-height: 1.5;
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.45;
   -webkit-text-size-adjust: 100%;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  color-scheme: light;
+  transition: background 0.3s var(--ease), color 0.3s var(--ease);
+}
+
+.app::-webkit-scrollbar {
+  display: none;
+}
+
+/* This sheet is loaded by `/app` and by nothing else (its route group owns its
+   own <html>), so naming the bare element here is safe. */
+html:has(> .app) {
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
+  background: #e6e1d7;
+}
+
+/* The night skin (#562). Same tokens, other values, and NOTHING else in this
+   file knows which one is on. Default is light; the switch lands in T8. */
+.app[data-theme='dark'] {
+  --bg: #17120c;
+  --card: #231c14;
+  --sunk: #100c08;
+  --ink: #f5f2ec;
+  --muted: #a89e91;
+  --gold: #d9ab3c;
+  --goldText: #e3b94e;
+  --goldSoft: rgba(217, 171, 60, 0.14);
+  --red: #b3262f;
+  --warn: #e07a5f;
+  --ok: #e3b94e;
+  --grey: #cfc8bd;
+  --crni: #050403;
+  --track: #3b322a;
+  --rule: rgba(245, 242, 236, 0.08);
+  --ghostEdge: rgba(245, 242, 236, 0.18);
+  --barBg: rgba(29, 23, 16, 0.92);
+  --markEdge: rgba(217, 212, 204, 0.4);
+  --thumb: rgba(217, 171, 60, 0.16);
+  --shadowCard: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 14px 30px -12px rgba(0, 0, 0, 0.7);
+  --shadowHero: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 22px 44px -18px rgba(0, 0, 0, 0.8);
+  --shadowBar: 0 10px 30px -10px rgba(0, 0, 0, 0.8);
+  color-scheme: dark;
 }
 
 .app *,
@@ -74,7 +178,26 @@
 .app__shell {
   max-width: 640px;
   margin: 0 auto;
-  padding: env(safe-area-inset-top) 16px calc(var(--tabH) + env(safe-area-inset-bottom) + 24px);
+  /* The bar FLOATS 10px above the safe area now (#562), so the content clears
+     one bar, one home indicator and a thumb's worth of air. */
+  padding: env(safe-area-inset-top) 20px calc(var(--tabH) + env(safe-area-inset-bottom) + 40px);
+}
+
+/* The block the pull-to-refresh gesture moves (#562). It is a plain wrapper in
+   the layout — no transform and, above all, no standing `will-change`, which
+   would make it the containing block of every `position: fixed` descendant
+   (the scanner overlay, a sheet) for the whole life of the screen. The class
+   that lifts it is added for the length of the gesture and taken off again. */
+.app__pull {
+  min-width: 0;
+}
+
+.app__pull--pulling {
+  will-change: transform;
+}
+
+.app__pull--settle {
+  transition: transform 0.45s var(--spring);
 }
 
 /* ── Header ─────────────────────────────────────────────── */
@@ -84,7 +207,6 @@
   justify-content: space-between;
   gap: 16px;
   padding: 18px 0 14px;
-  border-bottom: 1px solid var(--cardEdge);
 }
 
 /* The screen's name, left, on every screen (#473). Not the product's: the app
@@ -97,11 +219,11 @@
 
 .app__header-title h1 {
   margin: 0;
-  font-family: var(--font-bodoni), Georgia, serif;
-  font-size: 24px;
+  font-family: var(--serif);
+  font-size: 34px;
   font-weight: 600;
-  letter-spacing: 0.01em;
-  line-height: 1.15;
+  letter-spacing: -0.01em;
+  line-height: 1.1;
 }
 
 /* The bell's slot (#496). Empty until the inbox lands, and an empty flex box
@@ -172,51 +294,81 @@
   font-weight: 600;
 }
 
-/* ── The bottom bar (#457) ──────────────────────────────── */
+/* ── The bottom bar: a floating pill (#562) ─────────────────
+   Fixed to the VIEWPORT, not to the end of the page, and the viewport never
+   scrolls (see `.app` above), so the bar is the one thing on the screen that
+   cannot be pulled away from the thumb. Between one and five entries, computed
+   from the permission set (#495) and handed in as `--n`. */
 .app__tabbar {
   position: fixed;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
+  width: min(430px, 100%);
+  padding: 0 12px;
   z-index: 20;
-  /* Flex, not three columns: the bar holds between one and five entries now,
-     computed from the permission set (#495), and a grid would have to be told
-     how many. */
-  display: flex;
-  height: calc(var(--tabH) + env(safe-area-inset-bottom));
-  padding-bottom: env(safe-area-inset-bottom);
-  background: var(--frame);
-  border-top: 1px solid var(--cardEdge);
+  /* The strip either side of the pill belongs to the screen under it. */
+  pointer-events: none;
+}
+
+.app__tabbar-pill {
+  pointer-events: auto;
+  position: relative;
+  height: var(--tabH);
+  padding: 6px;
+  display: grid;
+  grid-template-columns: repeat(var(--n, 5), minmax(0, 1fr));
+  border-radius: var(--rPill);
+  background: var(--barBg);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: var(--shadowBar);
+}
+
+/* The pill behind the tab you are on. One element that slides rather than five
+   that light up: the movement is what says "you went left". */
+.app__tabbar-thumb {
+  position: absolute;
+  top: 6px;
+  bottom: 6px;
+  left: 6px;
+  width: calc((100% - 12px) / var(--n, 5));
+  border-radius: var(--rPill);
+  background: var(--thumb);
+  transform: translateX(calc(var(--i, 0) * 100%));
+  transition: transform 0.35s var(--ease);
 }
 
 .app__tabbar-item {
-  flex: 1 1 0;
+  position: relative;
+  z-index: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 3px;
+  border-radius: var(--rPill);
   color: var(--muted);
   text-decoration: none;
-  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
   font-size: 11px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  transition: color 0.25s;
 }
 
 .app__tabbar-item svg {
-  width: 24px;
-  height: 24px;
-  stroke: currentColor;
-  fill: none;
-  stroke-width: 1.6;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+  transition: transform 0.25s var(--ease);
 }
 
 .app__tabbar-item--on {
-  color: var(--goldText);
+  color: var(--gold);
+  font-weight: 600;
+}
+
+.app__tabbar-item--on svg {
+  transform: translateY(-1px);
 }
 
 /* Five labels have to fit a phone: the label shrinks before it wraps, and the
@@ -229,8 +381,90 @@
   padding-inline: 2px;
 }
 
-.app__tabbar-item--on svg {
-  stroke-width: 2;
+/* ── Pull to refresh (#562) ─────────────────────────────────
+   A gold ring that fills with the pull, spins while the server answers and
+   settles on a spring. It arms only at the very top of the scroll and only
+   downwards, so it can never steal a scroll from a list. The whole thing is
+   off under `prefers-reduced-motion` — the component does not even listen. */
+.app__ptr {
+  position: fixed;
+  left: 50%;
+  top: calc(env(safe-area-inset-top, 0px) + 6px);
+  width: 40px;
+  height: 40px;
+  margin-left: -20px;
+  border-radius: var(--rPill);
+  background: var(--card);
+  box-shadow: var(--shadowCard);
+  display: grid;
+  place-items: center;
+  opacity: 0;
+  transform: translateY(-48px) scale(0.6);
+  z-index: 25;
+  pointer-events: none;
+}
+
+.app__ptr--settle {
+  transition: transform 0.45s var(--spring), opacity 0.3s;
+}
+
+.app__ptr svg {
+  width: 22px;
+  height: 22px;
+  transform: rotate(-90deg);
+}
+
+.app__ptr circle {
+  fill: none;
+  stroke: var(--gold);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-dasharray: 56.5;
+  stroke-dashoffset: 56.5;
+}
+
+/* Armed: let go now and it refreshes. A halo, not a colour change, because the
+   ring itself is already the progress. */
+.app__ptr--armed {
+  box-shadow: var(--shadowCard), 0 0 0 4px var(--goldSoft);
+}
+
+.app__ptr--spin svg {
+  animation: app-ptr-spin 0.8s linear infinite;
+}
+
+.app__ptr--spin circle {
+  stroke-dashoffset: 40;
+}
+
+@keyframes app-ptr-spin {
+  to {
+    transform: rotate(270deg);
+  }
+}
+
+/* ── Toast (#562): one line, above the bar, gone in 1.6s ─── */
+.app__toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--tabH) + env(safe-area-inset-bottom, 0px) + 28px);
+  transform: translateX(-50%) translateY(10px);
+  background: #1a140c;
+  color: #f5f2ec;
+  padding: 10px 16px;
+  border-radius: var(--rPill);
+  font-size: 14px;
+  font-weight: 500;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s, transform 0.25s var(--ease);
+  z-index: 40;
+  white-space: nowrap;
+}
+
+.app__toast--on {
+  opacity: 1;
+  transform: translateX(-50%);
 }
 
 /* ── Hero: the next evening (#457) ──────────────────────── */
@@ -494,10 +728,11 @@
   color: var(--ink);
 }
 
-/* Nobody has answered yet: dashed, so an unanswered row is visibly unfinished
-   rather than quietly the same shape as an answered one. */
+/* Nobody has answered yet. The dashed edge that used to say so is retired
+   (#562, audit pattern 1): a broken line reads as "nothing here yet" in every
+   UI language, and half of Cecilija was wearing it. */
 .app__badge--none {
-  border-style: dashed;
+  border-style: solid;
 }
 
 .app__badge--lineup {
@@ -657,7 +892,7 @@
   position: relative;
   margin: 20px 0 0;
   padding: 12px 40px 12px 14px;
-  border: 1px dashed var(--cardEdge);
+  border: 1px solid var(--rule);
   border-radius: var(--radius);
   font-size: 13px;
   color: var(--muted);
@@ -825,7 +1060,7 @@
 }
 
 .app__answer--clear {
-  border-style: dashed;
+  border-style: solid;
 }
 
 .app__answer-note {
@@ -971,7 +1206,7 @@
   min-height: 36px;
   padding: 6px 10px;
   background: none;
-  border: 1px dashed var(--cardEdge);
+  border: 1px solid var(--rule);
   border-radius: var(--radius);
   color: var(--muted);
   font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
@@ -1587,9 +1822,9 @@
   color: var(--ink);
 }
 
-/* Unanswered reads as unfinished, the same dashed border the list badge uses. */
+/* Unanswered, in the same shape the list badge uses (#562: solid, not dashed). */
 .app__chip--none {
-  border-style: dashed;
+  border-style: solid;
 }
 
 .app__chip--cancelled {
@@ -1708,7 +1943,7 @@
 .app__empty-state {
   margin-top: 18px;
   padding: 28px 16px;
-  border: 1px dashed var(--cardEdge);
+  border: 1px solid var(--rule);
   border-radius: var(--radius);
   font-size: 14px;
   color: var(--muted);
@@ -1812,21 +2047,27 @@
   border-top: 1px solid var(--rule);
 }
 
-/* ── The answer, always under the thumb (#457) ───────────── */
-.app__sticky {
-  position: fixed;
-  left: 0;
-  right: 0;
-  bottom: calc(var(--tabH) + env(safe-area-inset-bottom));
-  z-index: 15;
-  padding: 10px 16px;
-  background: linear-gradient(to top, var(--bg) 70%, transparent);
-}
+/* ── The answer, always under the thumb (#457, #562) ──────────
+   `sticky`, not `fixed` (#562, audit bug): a fixed bar is measured against the
+   VIEWPORT, so on the laptop it ran the full width of the window and lay
+   across the sidebar, and on the phone it floated free of the column it
+   belongs to. Sticky keeps it inside the content column at every width, and it
+   takes its own space in the flow, so the spacer that used to hold the hole
+   open is gone with it.
 
-.app__sticky .app__answers {
-  /* The shell is 640px wide with 16px of padding either side: match its content box. */
-  max-width: 608px;
-  margin: 0 auto;
+   The answer control itself moves into the hero when Izvedbe is rebuilt (Q33);
+   this ticket only stops it covering the navigation. */
+.app__sticky {
+  position: sticky;
+  bottom: calc(var(--tabH) + env(safe-area-inset-bottom, 0px) + 22px);
+  z-index: 15;
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: var(--rCard);
+  background: var(--barBg);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow: var(--shadowBar);
 }
 
 .app__sticky .app__answer-row {
@@ -1862,19 +2103,6 @@
 .app__sticky .app__answer-error {
   margin-top: 6px;
   text-align: center;
-}
-
-/* Bar + gradient: what the last row of a panel has to clear.
-
-   Sized for the TALLEST variant (#457 review), not the common one: the bar is
-   two 48px buttons, and for a voditelj it also carries the full-width Poništi
-   row, plus a lock note on an evening that has begun. 86px cleared only the
-   plain dancer's bar and left the voditelj's last group under it. Too much air
-   at the bottom of a scroll costs nothing; too little hides a name. The spacer
-   is rendered only when the bar is (see the page), so a viewer with no Member
-   row gets neither. */
-.app__sticky-spacer {
-  height: 130px;
 }
 
 /* ── Dobrodošlica, the three-step walkthrough (#457) ─────── */
@@ -2616,11 +2844,13 @@ a.app__ob-link {
   display: none;
 }
 
+/* The wordmark lives here and on the sign-in screen, and nowhere else (Q26):
+   the phone's screens do their job, they do not introduce the product. */
 .app__sidebar-brand {
   margin: 0 0 18px;
   padding: 0 10px;
-  font-family: var(--font-bodoni), Georgia, serif;
-  font-size: 21px;
+  font-family: var(--serif);
+  font-size: 22px;
   font-weight: 600;
   color: var(--ink);
 }
@@ -2649,31 +2879,23 @@ a.app__ob-link {
   display: flex;
   align-items: center;
   gap: 10px;
+  margin-bottom: 2px;
   padding: 9px 10px;
+  border-radius: var(--rCtl);
   color: var(--ink);
   text-decoration: none;
   font-size: 15px;
-  border-left: 2px solid transparent;
-}
-
-.app__sidebar-item svg {
-  width: 20px;
-  height: 20px;
-  stroke: currentColor;
-  fill: none;
-  stroke-width: 1.6;
-  stroke-linecap: round;
-  stroke-linejoin: round;
+  transition: background 0.15s, color 0.15s;
 }
 
 .app__sidebar-item:hover {
-  background: rgba(184, 136, 26, 0.1);
+  background: var(--sunk);
 }
 
-.app__sidebar-item--on {
+.app__sidebar-item--on,
+.app__sidebar-item--on:hover {
   color: var(--goldText);
-  border-left-color: var(--gold);
-  background: rgba(184, 136, 26, 0.14);
+  background: var(--goldSoft);
   font-weight: 600;
 }
 
@@ -2702,6 +2924,18 @@ a.app__ob-link {
   /* The island's own warning red. Paper's `#a8321f` is 2.6:1 on #131313, and
      the one thing the chip exists for is an army that is short tonight. */
   --warn: #f0b9b9;
+  /* The tokens #562 added, so a component that lands on an island follows it
+     rather than wearing paper's shadows and edges over a black card. */
+  --goldSoft: rgba(217, 165, 38, 0.16);
+  --ghostEdge: rgba(245, 242, 236, 0.22);
+  --barBg: rgba(19, 19, 19, 0.92);
+  --track: #1f1f1f;
+  --ok: #d9a526;
+  --grey: #cfc8bd;
+  --markEdge: rgba(217, 212, 204, 0.4);
+  --shadowCard: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 14px 30px -12px rgba(0, 0, 0, 0.7);
+  --shadowHero: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 22px 44px -18px rgba(0, 0, 0, 0.8);
+  --shadowBar: 0 10px 30px -10px rgba(0, 0, 0, 0.8);
   background: #131313;
   color: var(--ink);
   border-color: #d9a526;
@@ -2869,8 +3103,8 @@ a.app__ob-link {
     align-self: start;
     height: 100dvh;
     overflow-y: auto;
-    padding: 20px 8px 16px;
-    background: var(--frame);
+    padding: 20px 12px 16px;
+    background: var(--bg);
     border-right: 1px solid var(--rule);
   }
 
@@ -2887,8 +3121,22 @@ a.app__ob-link {
     padding: 0 32px 56px;
   }
 
-  .app__header-title h1 {
-    font-size: 27px;
+  /* The two laptop layouts (Q51), stated here so no screen invents its own.
+     A screen opts in when its own ticket rebuilds it; nothing reads them yet.
+
+       `app__col`   one column, 760px, for a list or a form.
+       `app__cols`  a detail: what happened on the left, what you can do on
+                    the right. It collapses to one column below this width by
+                    simply not existing there. */
+  .app__col {
+    max-width: 760px;
+  }
+
+  .app__cols {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+    gap: 20px;
+    align-items: start;
   }
 }
 
@@ -5656,7 +5904,7 @@ a.app__statrow-main:focus-visible {
   color: var(--muted);
 }
 
-/* In, and not in. Gold for a login that exists, dashed for one that does not:
+/* In, and not in. Gold for a login that exists, muted for one that does not:
    the same "visibly unfinished" reading `.app__badge--none` gives an evening
    nobody has answered. */
 .app__badge--in {
@@ -5665,7 +5913,7 @@ a.app__statrow-main:focus-visible {
 }
 
 .app__badge--out {
-  border-style: dashed;
+  border-style: solid;
 }
 
 .app__member-invite {
@@ -5904,10 +6152,10 @@ a.app__statrow-main:focus-visible {
   gap: 6px;
 }
 
-/* A login several people hold (ADR-0022). Dashed, the same way an unanswered
-   row is: it is a shape with somebody missing from it. */
+/* A login several people hold (ADR-0022): a shape with somebody missing from
+   it, told by the muted edge rather than by a broken line (#562). */
 .app__badge--shared {
-  border-style: dashed;
+  border-style: solid;
   border-color: var(--gold);
   color: var(--goldText);
 }
@@ -5953,7 +6201,7 @@ a.app__statrow-main:focus-visible {
 /* Nothing ticked: an account that reaches no screen at all, which is how a
    login is retired here (deleting stays Backoffice work). */
 .app__user-chip--none {
-  border-style: dashed;
+  border-style: solid;
   color: var(--muted);
 }
 

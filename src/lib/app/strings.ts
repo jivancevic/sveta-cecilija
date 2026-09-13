@@ -31,6 +31,30 @@ export const APP_STRINGS = {
     navLabel: 'Glavni izbornik',
   },
 
+  /**
+   * The words the shared shapes say for themselves (#562).
+   *
+   * A component under `src/app/app/ui/` renders these; a screen passes it
+   * numbers and never copy. Two of them are the answer to "are we enough
+   * tonight", which is the one sentence the whole ArmyBar exists to say.
+   */
+  ui: {
+    /** The pull-to-refresh confirmation. `time` is already "21:05". */
+    refreshed: (time: string) => `Osvježeno · ${time}`,
+    /** What the gesture IS, for a reader who cannot see the ring fill. */
+    refreshing: 'Osvježavam',
+    armyCrni: 'Crni',
+    armyBili: 'Bili',
+    enough: 'Ima nas dovoljno',
+    /** "fale još 2 crna" / "fali još 1 bili": Croatian counts, not a plural. */
+    shortCrni: (n: number) =>
+      n === 1 ? 'fali još 1 crni' : `fale još ${n} ${n < 5 ? 'crna' : 'crnih'}`,
+    shortBili: (n: number) =>
+      n === 1 ? 'fali još 1 bili' : `fale još ${n} ${n < 5 ? 'bila' : 'bilih'}`,
+    /** The sheet's way out, for a screen reader; the scrim is the visible one. */
+    sheetClose: 'Zatvori',
+  },
+
   login: {
     title: 'Prijava',
     intro: 'Prijavi se e-mailom ili korisničkim imenom.',
