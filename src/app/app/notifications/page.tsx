@@ -8,7 +8,7 @@ import { NotificationList } from './NotificationList'
 
 // `/app/notifications` — the Sandučić obavijesti (#473, #496).
 //
-// `openScreen()` with NO screen key, like `/app/account` and `/app/invitations`:
+// `openScreen()` with NO screen key, like `/app/account`:
 // this is a Više row rather than a tab, so it has no entry in the permission →
 // screen table and the gate only asks the first two questions (is there a
 // session, is this account in Cecilija at all). `UNDER_MORE` in `screens.ts`

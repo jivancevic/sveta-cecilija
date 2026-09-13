@@ -646,7 +646,7 @@ export const APP_STRINGS = {
     expired: 'Zahtjev je istekao. Odaberi svoje ime ponovno.',
     unexpected: 'Trenutno nije moguće. Pokušaj ponovno.',
 
-    /** The voditelj's half, on `/app/invitations`. */
+    /** The voditelj's half, on Članovi (`/app/members`, #511). */
     codeTitle: 'Kod za probu',
     codeIntro:
       'Pokaži ovaj QR ili kod na probi. Moreškant odabere svoje ime, ti potvrdiš i ulazi bez lozinke.',
