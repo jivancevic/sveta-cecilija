@@ -30,6 +30,25 @@ export async function loadOrdersList(query: OrdersQuery): Promise<OrdersListData
   return { ...page, performances }
 }
 
+/**
+ * How many orders match a filter, without carrying a page of them back.
+ *
+ * Početna's Narudžbe card is one number (#564), and the list's own `total` is
+ * already that number — so the count is `listForStaff` asked for the smallest
+ * page there is, rather than a second query that could one day disagree with
+ * the list about what an order is. `showId` null counts every order.
+ */
+export async function countOrders(showId: string | null): Promise<number> {
+  const { total } = await getRepo().orders.listForStaff({
+    q: '',
+    showId,
+    state: null,
+    page: 1,
+    perPage: 1,
+  })
+  return total
+}
+
 /** One order with its tickets, or null when the id is not one. */
 export async function loadOrderDetail(id: string): Promise<OrderDetailRow | null> {
   return getRepo().orders.staffDetailById(id)

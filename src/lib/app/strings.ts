@@ -133,6 +133,8 @@ export const APP_STRINGS = {
    * page title read. One spelling per screen, in one place.
    */
   screens: {
+    /** The landing screen (#564). The first tab, and the only one with a logo. */
+    home: 'Početna',
     orders: 'Narudžbe',
     /** The dancer's own screen (#565). The dance, and the tab named after it. */
     moreska: 'Moreška',
@@ -170,6 +172,121 @@ export const APP_STRINGS = {
 
   list: {
     season: 'Sezona',
+  },
+
+  /**
+   * Početna (#564), the landing screen `/app` became when it stopped
+   * redirecting.
+   *
+   * Two sentences and then cards. The greeting names the reader and nothing
+   * else: no vocative ("Dobra večer, Josip." and never "Josipe"), because the
+   * roster is full of names whose vocative nobody agrees on and a form a person
+   * would not use for themselves reads as a machine trying to be familiar. An
+   * account with no name to use (a shared login, ADR-0022) gets no greeting at
+   * all rather than a greeting addressed to nobody.
+   *
+   * The second sentence is in the reader's own register (CONTEXT.md, two
+   * registers): a moreškant and a voditelj read "nastup", everybody else reads
+   * "izvedba" about the same evening.
+   *
+   * Every card names its screen and offers ONE way in, spelled out here rather
+   * than composed from the screen's label: "Otvori Upite" is the accusative of
+   * "Upiti", and a template that glued the nominative on would say "Otvori
+   * Upiti" on four of the twelve screens.
+   */
+  landing: {
+    /** The wordmark beside the logo. Cecilija is named once, and this is it. */
+    brand: 'Cecilija',
+    morning: 'Dobro jutro',
+    afternoon: 'Dobar dan',
+    evening: 'Dobra večer',
+    greeting: (part: string, name: string) => `${part}, ${name}.`,
+    /** The one sentence about the next evening, in the two registers. */
+    next: {
+      nastup: {
+        today: 'Danas je nastup.',
+        tomorrow: 'Sutra je nastup.',
+        onDay: (weekday: string) => `Nastup je u ${weekday}.`,
+        onDate: (date: string) => `Sljedeći nastup je ${date}.`,
+      },
+      izvedba: {
+        today: 'Danas je izvedba.',
+        tomorrow: 'Sutra je izvedba.',
+        onDay: (weekday: string) => `Izvedba je u ${weekday}.`,
+        onDate: (date: string) => `Sljedeća izvedba je ${date}.`,
+      },
+    },
+    /** The one way into each screen, in the case the verb asks for. */
+    open: {
+      moreska: 'Otvori Morešku',
+      orders: 'Otvori Narudžbe',
+      performances: 'Otvori Izvedbe',
+      members: 'Otvori Članove',
+      leaderboard: 'Otvori Ljestvicu',
+      scan: 'Otvori Skener',
+      sell: 'Otvori Prodaju',
+      statement: 'Otvori Obračun',
+      inquiries: 'Otvori Upite',
+      comp: 'Otvori Gratis',
+      users: 'Otvori Korisnike',
+      stats: 'Otvori Statistiku',
+      finance: 'Otvori Financije',
+      notifications: 'Otvori obavijesti',
+    },
+    /** What each card's figure means. The number itself sits above it. */
+    captions: {
+      orders: {
+        one: 'narudžba za sljedeću izvedbu',
+        few: 'narudžbe za sljedeću izvedbu',
+        many: 'narudžbi za sljedeću izvedbu',
+      },
+      ordersAll: { one: 'narudžba ukupno', few: 'narudžbe ukupno', many: 'narudžbi ukupno' },
+      inquiries: {
+        one: 'neodgovoren upit',
+        few: 'neodgovorena upita',
+        many: 'neodgovorenih upita',
+      },
+      performances: {
+        one: 'izvedba do kraja sezone',
+        few: 'izvedbe do kraja sezone',
+        many: 'izvedbi do kraja sezone',
+      },
+      members: {
+        one: 'aktivan moreškant',
+        few: 'aktivna moreškanta',
+        many: 'aktivnih moreškanata',
+      },
+      users: { one: 'račun', few: 'računa', many: 'računa' },
+      comp: {
+        one: 'gratis ulaznica ove sezone',
+        few: 'gratis ulaznice ove sezone',
+        many: 'gratis ulaznica ove sezone',
+      },
+      sell: { one: 'prodana karta', few: 'prodane karte', many: 'prodanih karata' },
+      /** "24 prodane karte, Rujan 2026" — the noun, then the month it is about. */
+      sellMonth: (noun: string, month: string) => `${noun}, ${month}`,
+      /** "od 260 ušlo" — the door's one number, beside how many were sold. */
+      scan: (sold: number) => `ušlo, od ${sold} prodanih`,
+      /** "karata za sutra, od 350" — the ring's caption, as the prototype has it. */
+      stats: (when: string, capacity: number) => `karata za ${when}, od ${capacity}`,
+      finance: 'prikupljeno ove sezone',
+      /** A screen whose one number would be money, or would repeat another card. */
+      statement: 'Mjesečni obračun i CSV po partneru.',
+      compPlain: 'Podijeli gratis ulaznice članovima.',
+    },
+    /** The chip on Članovi when somebody is waiting to be let in (#463). */
+    pending: (count: number) => `${count} čeka odobrenje`,
+    /** The Ljestvica caption: the reader's own place, or who is leading. */
+    myPlace: (rank: number, count: string) => `ti si ${rank}. s ${count}`,
+    leading: (nickname: string, count: string) => `vodi ${nickname} s ${count}`,
+    /** The Statistika ring and the Skener card when there is no evening left. */
+    noShow: 'Nema izvedbe u rasporedu.',
+    noSeason: 'Sezona još nije počela.',
+    /** The Obavijesti card. */
+    notifications: 'Obavijesti',
+    notificationsEmpty: 'Nema obavijesti.',
+    notificationsNew: (count: number) =>
+      `${count} ${count % 100 >= 11 && count % 100 <= 14 ? 'novih' : count % 10 === 1 ? 'nova' : count % 10 >= 2 && count % 10 <= 4 ? 'nove' : 'novih'}`,
   },
 
   /**
@@ -2480,6 +2597,29 @@ const WEEKDAYS = [
   'subota',
 ] as const
 
+/**
+ * The weekdays as they read AFTER "u": "u petak", "u subotu", "u srijedu".
+ *
+ * Croatian puts the day in the accusative there, and three of the seven change
+ * their ending, so Početna's "Nastup je u srijedu." cannot be built by gluing
+ * the nominative onto a preposition (#564).
+ */
+const WEEKDAYS_AFTER_U = [
+  'nedjelju',
+  'ponedjeljak',
+  'utorak',
+  'srijedu',
+  'četvrtak',
+  'petak',
+  'subotu',
+] as const
+
+/** "srijedu" — the weekday of a YYYY-MM-DD date, as it reads after "u". */
+export function weekdayAfterU(date: string): string {
+  const d = new Date(`${date}T12:00:00.000Z`)
+  return Number.isNaN(d.getTime()) ? '' : WEEKDAYS_AFTER_U[d.getUTCDay()]
+}
+
 /** The genitive months, as a Croatian date reads them ("5. kolovoza"). */
 export const MONTHS_GENITIVE = [
   'siječnja',
@@ -2548,6 +2688,12 @@ export function dayOfMonth(date: string): string {
 export function monthGenitiveOf(date: string): string {
   const d = atNoon(date)
   return d ? (MONTHS_GENITIVE[d.getUTCMonth()] ?? '') : ''
+}
+
+/** "17. rujna" — a date inside a sentence, with no weekday in front of it. */
+export function dayAndMonth(date: string): string {
+  const d = atNoon(date)
+  return d ? `${d.getUTCDate()}. ${monthGenitiveOf(date)}` : ''
 }
 
 /** "Ponedjeljak" — the weekday that opens the hero's meta line (#565). */

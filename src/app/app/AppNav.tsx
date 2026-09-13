@@ -9,6 +9,7 @@ import {
   Ellipsis,
   FileText,
   Gift,
+  House,
   Inbox,
   Receipt,
   ScanLine,
@@ -73,6 +74,7 @@ function Swords({ strokeWidth }: { strokeWidth: number }) {
 type IconFor = (props: { size: number; strokeWidth: number }) => React.ReactNode
 
 const ICONS: Record<AppScreenKey, IconFor> = {
+  home: (p) => <House {...p} aria-hidden="true" />,
   moreska: (p) => <Swords strokeWidth={p.strokeWidth} />,
   performances: (p) => <CalendarDays {...p} aria-hidden="true" />,
   orders: (p) => <Receipt {...p} aria-hidden="true" />,
@@ -98,7 +100,7 @@ function Icon({ k, on, size = 24 }: { k: AppScreenKey; on?: boolean; size?: numb
   return <>{ICONS[k]({ size, strokeWidth: on ? STROKE_ON : STROKE })}</>
 }
 
-/** The bottom bar: the three screens this account carries, then Više (#563). */
+/** Početna first, the three chosen screens, Više last (#563, #564). */
 export function TabBar({ nav }: { nav: Nav }) {
   // `activeTabKey`, not `activeScreenKey`: a screen the bar does not carry is
   // one the reader reached through Više, so Više is the tab that lights. With
@@ -145,6 +147,20 @@ export function Sidebar({ nav }: { nav: Nav }) {
   return (
     <nav className="app__sidebar" aria-label={APP_STRINGS.header.navLabel}>
       <p className="app__sidebar-brand">{APP_STRINGS.name}</p>
+
+      {/* Početna sits above every workspace, the way it sits left of every tab
+          (#564). Outside the groups because it belongs to no permission: it is
+          the front door of an account rather than a screen of a job. */}
+      <div className="app__sidebar-group">
+        <Link
+          href="/app"
+          className={`app__sidebar-item${active === 'home' ? ' app__sidebar-item--on' : ''}`}
+          aria-current={active === 'home' ? 'page' : undefined}
+        >
+          <Icon k="home" on={active === 'home'} size={20} />
+          {APP_STRINGS.screens.home}
+        </Link>
+      </div>
 
       {nav.groups.map((group) => (
         <div className="app__sidebar-group" key={group.group}>
