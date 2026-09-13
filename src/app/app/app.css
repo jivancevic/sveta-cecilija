@@ -3927,3 +3927,379 @@ a.app__ob-link {
   background: var(--warn);
   color: var(--card);
 }
+
+/* ── Prodaja and Obračun: the partner screens (#505) ───────────────────────
+   A port of the Backoffice partner dashboard, so the vocabulary is the shell's
+   already: `app__stepper*` for the counts, `app__tile2` for the month card,
+   `app__month-head` for every section heading. What is new here is the sale
+   row, the drain banner both screens share, and the season bars.
+
+   Money is `tabular-nums` everywhere it appears: a column of euros that shifts
+   under its own digits is a column nobody can compare down. */
+.app__sell,
+.app__partner-sales,
+.app__partner-month,
+.app__partner-season,
+.app__statement {
+  margin: 26px 0 0;
+}
+
+.app__partner-note {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.app__partner-name {
+  margin: 4px 0 8px;
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.app__select--wide {
+  display: block;
+  width: 100%;
+}
+
+/* The party and its price, between the steppers and the button. */
+.app__sell-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 14px 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.app__sell-total span {
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.app__sell-total b {
+  font-family: var(--font-bodoni), Georgia, serif;
+  font-size: 26px;
+  font-weight: 600;
+}
+
+/* ── The drain banner: a sale confirmed, or a cancel still undoable ──────── */
+.app__drain {
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  background: var(--card);
+}
+
+.app__drain--good {
+  border-color: var(--gold);
+}
+
+.app__drain-track {
+  height: 3px;
+  margin-top: 10px;
+  background: var(--sunk);
+  overflow: hidden;
+}
+
+.app__drain-fill {
+  display: block;
+  height: 100%;
+  background: var(--gold);
+}
+
+.app__sell-done {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+  font-size: 14px;
+}
+
+.app__sell-done b {
+  font-weight: 600;
+}
+
+.app__sell-done span {
+  color: var(--muted);
+}
+
+.app__sell-done .app__button--link {
+  margin-left: auto;
+  padding: 4px 10px;
+  font-size: 12px;
+}
+
+/* ── Zadnje prodaje ─────────────────────────────────────────────────────── */
+.app__sale-list,
+.app__ticket-list,
+.app__statbars,
+.app__statement-shows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.app__sale {
+  padding-block: var(--rowY);
+  border-bottom: 1px solid var(--rule);
+}
+
+.app__sale-divider {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--rule);
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.app__sale-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.app__sale-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+  flex: 1 1 auto;
+  min-width: 0;
+  padding: 0;
+  background: none;
+  border: none;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+span.app__sale-head {
+  cursor: default;
+}
+
+.app__sale-head b {
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 14px;
+  letter-spacing: 0.06em;
+}
+
+.app__sale-meta {
+  font-size: 13px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.app__sale-money {
+  margin-left: auto;
+  font-size: 14px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.app__sale-actions {
+  display: flex;
+  gap: 6px;
+  flex: 0 0 auto;
+}
+
+.app__icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  font: inherit;
+  font-size: 17px;
+  color: var(--muted);
+  background: var(--card);
+  border: 1px solid var(--rule);
+  border-radius: var(--radius);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.app__icon-button--warn {
+  color: var(--warn);
+  border-color: var(--warn);
+}
+
+.app__icon-button[disabled] {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.app__ticket-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 8px;
+}
+
+.app__ticket-ref {
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.app__ticket-ref--off {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+.app__pager {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.app__pager-page {
+  min-width: 24px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.app__pager .app__button--quiet {
+  margin-left: auto;
+}
+
+/* The month card's two euro tiles read as money, not as a headline count. */
+.app__tile2--money b {
+  font-size: 22px;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Obračun: the month's figures, its izvedbe and the season bars ───────── */
+.app__statement-picker {
+  display: flex;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.app__statement-picker > div {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.app__statement-figures {
+  margin: 16px 0 0;
+}
+
+.app__figure {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding-block: var(--rowY);
+  border-bottom: 1px solid var(--rule);
+}
+
+.app__figure dt {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.app__figure dd {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.app__figure--strong dd {
+  font-family: var(--font-bodoni), Georgia, serif;
+  font-size: 24px;
+  color: var(--goldText);
+}
+
+.app__statement-show {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding-block: 8px;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+
+.app__statement-show--head {
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.app__statement-shows {
+  margin-top: 16px;
+}
+
+.app__statement-csv {
+  margin-top: 16px;
+}
+
+.app__statbars {
+  margin-top: 10px;
+}
+
+.app__statbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-block: 5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.app__statbar-date {
+  flex: 0 0 76px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.app__statbar-track {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 12px;
+  background: var(--sunk);
+  overflow: hidden;
+}
+
+.app__statbar-adults {
+  display: block;
+  height: 100%;
+  background: var(--gold);
+}
+
+.app__statbar-children {
+  display: block;
+  height: 100%;
+  background: rgba(184, 136, 26, 0.4);
+}
+
+.app__statbar-total {
+  flex: 0 0 24px;
+  text-align: right;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.app__swatch--adult {
+  background: var(--gold);
+}
+
+.app__swatch--child {
+  background: rgba(184, 136, 26, 0.4);
+}

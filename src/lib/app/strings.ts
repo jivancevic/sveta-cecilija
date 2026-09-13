@@ -1067,6 +1067,105 @@ export const APP_STRINGS = {
   },
 
   /**
+   * Prodaja, the reseller's sell screen (#505, ported from the Backoffice
+   * partner dashboard).
+   *
+   * The audience is an agency clerk at a desk in Korčula, so the words are the
+   * ones on the counter: an "izvedba" is picked, "ulaznice" are issued, and a
+   * mistake is "otkazano" even though the mechanism is a storno (ADR-0017: the
+   * user-facing verb is otkazati).
+   */
+  sell: {
+    /** The two fail-safe screens: a login with no usable Partner (#476). */
+    unlinkedTitle: 'Prijava još nije povezana s partnerom',
+    unlinkedBody:
+      'Javi se HGD-u Sveta Cecilija da dovrši postavljanje, pa će prodaja proraditi.',
+    inactiveTitle: 'Partner je trenutno neaktivan',
+    inactiveBody: 'Ovaj partnerski račun više ne prodaje ulaznice. Javi se HGD-u Sveta Cecilija.',
+    /** The form. */
+    formTitle: 'Nova prodaja',
+    show: 'Izvedba',
+    seatsLeft: (n: number) => `još ${n}`,
+    soldOut: 'rasprodano',
+    noShows: 'Trenutno nema izvedbe za prodaju.',
+    adults: 'Odrasli',
+    children: 'Djeca',
+    issue: 'Izdaj ulaznice',
+    issuing: 'Izdajem...',
+    tooMany: 'Nema toliko slobodnih mjesta.',
+    failed: 'Prodaja nije uspjela. Pokušaj ponovno.',
+    network: 'Veza je pukla. Pokušaj ponovno.',
+    /** The success banner: the PDF opens by itself, this says so. */
+    doneTitle: 'Ulaznice su izdane',
+    doneBody: (count: number, code: string) => `${count} ulaznica · ${code} · PDF se otvorio`,
+    openPdf: 'Otvori PDF ponovno',
+    /** Recent orders, and the delete-then-undo cancel (ADR-0017). */
+    recentTitle: 'Zadnje prodaje',
+    recentNote: 'Prodaju možeš otkazati isti dan.',
+    recentEmpty: 'Još nema prodaje.',
+    earlier: 'Ranije',
+    /** The three hover labels of a sale row: without them it is three numbers. */
+    sold: 'Prodano',
+    performance: 'Izvedba',
+    people: 'Osoba',
+    downloadTickets: 'Preuzmi ulaznice',
+    cancelOrder: 'Otkaži prodaju',
+    cancelTicket: 'Otkaži ulaznicu',
+    cancelling: 'Otkazujem...',
+    cancelFailed: 'Otkazivanje nije uspjelo. Pokušaj ponovno.',
+    orderCancelled: (code: string) => `Prodaja ${code} je otkazana`,
+    ticketCancelled: (ref: string) => `Ulaznica ${ref} je otkazana`,
+    undo: 'Poništi',
+    undoFailed: 'Poništavanje nije uspjelo.',
+    undoSeatTaken: 'Mjesto je u međuvremenu prodano, pa se otkazivanje ne može poništiti.',
+    statusCancelled: 'otkazano',
+    typeAdult: 'odrasli',
+    typeChild: 'dijete',
+    showMore: 'Prikaži više',
+    showLess: 'Prikaži manje',
+    loading: 'Učitavam...',
+    prevPage: 'Prethodna stranica',
+    nextPage: 'Sljedeća stranica',
+    /** This month's standing, the same three figures as the month-end statement. */
+    monthTitle: 'Ovaj mjesec',
+    monthTickets: 'Prodanih ulaznica',
+    monthOwed: 'Za uplatiti HGD-u',
+    monthCommission: 'Tvoja provizija',
+    monthNote: 'Računa se uživo, a mjesečni obračun je na ekranu Obračun.',
+  },
+
+  /**
+   * Obračun, the reseller's statement screen (#505).
+   *
+   * Two questions a partner asks between invoices: how the season is going
+   * (every izvedba as a bar, theirs in gold), and what one month came to. The
+   * month's figures are shown on screen BEFORE the CSV link, because the
+   * person reading this is usually holding a phone, where a CSV is not a
+   * document one can read.
+   */
+  statement: {
+    seasonTitle: 'Sezona',
+    seasonSold: (n: number) => `${n} prodanih ulaznica ove sezone`,
+    seasonEmpty: 'Ove sezone još nema prodanih ulaznica.',
+    adults: 'Odrasli',
+    children: 'Djeca',
+    monthlyTitle: 'Mjesečni obračun',
+    monthlyIntro: 'Odaberi mjesec i provjeri iznose prije uplate.',
+    month: 'Mjesec',
+    year: 'Godina',
+    loading: 'Učitavam...',
+    failed: 'Obračun se nije učitao. Pokušaj ponovno.',
+    tickets: 'Prodanih ulaznica',
+    cancelled: 'Otkazanih',
+    gross: 'Ukupno naplaćeno',
+    commission: (percent: number) => `Tvoja provizija (${percent}%)`,
+    owed: 'Za uplatiti HGD-u',
+    perShow: 'Po izvedbama',
+    empty: 'U tom mjesecu nema prodaje.',
+    download: 'Preuzmi CSV',
+  },
+
+  /**
    * Narudžbe (#501): the blagajna's list of orders and the one order behind it.
    *
    * The screen Tatjana opens when a guest is standing in front of her, so the

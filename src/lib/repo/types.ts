@@ -26,12 +26,14 @@
 import type { AuthRepo, SessionUser, WriteCtx } from './auth'
 import type { DbRepo } from './db'
 import type { OrdersRepo } from './orders'
+import type { PartnerRecord, PartnersRepo } from './partners'
 import type { PerformancePatch, PerformanceRow, ShowsRepo } from './shows'
 
 export interface Repo {
   auth: AuthRepo
   db: DbRepo
   orders: OrdersRepo
+  partners: PartnersRepo
   shows: ShowsRepo
 }
 
@@ -39,6 +41,8 @@ export type {
   AuthRepo,
   DbRepo,
   OrdersRepo,
+  PartnerRecord,
+  PartnersRepo,
   PerformancePatch,
   PerformanceRow,
   SessionUser,

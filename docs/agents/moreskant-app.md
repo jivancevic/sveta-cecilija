@@ -38,8 +38,8 @@ unlock are tabs, the rest live under Više, and Izvedbe jumps to the front for a
 | 2.5 | Članovi (dancer profiles, invitations, join code; absorbs Pozivnice, added by #476) | `/app/members` | `moreska` | `/admin/collections/members`, `/app/invitations` | `/app/pozivnice` already 308s to `/app/invitations` (#495); **#511 repoints that 308 at `/app/members`** and folds the screen in |
 | 3 | Ljestvica (own season + roster ranking; voditelj sees the full table) | `/app/leaderboard?season=2026&part=mine\|all` | `moreskant`, `moreska` | **live** (#495): both panels on one screen, the voditelj's *Ljestvica* panel is the old scoreboard | 308 from `/app/moje` and `/app/statistika` |
 | 4 | Skener (camera, code entry, door list) | `/app/scan` | `door` | **live** (#504): the camera and the four result states, Pusti ostatak grupe (n), Poništi propuštanje, Pronađi ulaznicu and the "ušlo X od Y" ring, all on one screen | `/admin/scan` 308s here and the Backoffice view is deleted; the ticket QR stays `/scan/[token]`, whose staff buttons point at `/app/scan` |
-| 5 | Prodaja | `/app/sell` | `partner` | partner view in `/admin` | none |
-| 6 | Obračun | `/app/statement` | `partner` | partner view in `/admin` | none |
+| 5 | Prodaja | `/app/sell` | `partner` | **live** (#505): the izvedba picker with seats left, the two steppers, Izdaj ulaznice → the PDF, Zadnje prodaje with the delete-then-undo storno, and the live month card | the Backoffice partner dashboard stays until #512 |
+| 6 | Obračun | `/app/statement` | `partner` | **live** (#505): the season's per-izvedba bars, and a month/year picker that shows the statement on screen before offering its CSV | the Backoffice partner dashboard stays until #512 |
 | 7 | Upiti | `/app/inquiries` | `tickets` | `/admin/collections/contact-submissions` | none |
 | 8 | Gratis (comp tickets; promo codes stay in the Backoffice for v1) | `/app/comp` | `tickets` | comp menu item on an order | none |
 | 9 | Korisnici | `/app/users`, `/app/users/[id]` | `users` | `/admin/collections/users` | none |
