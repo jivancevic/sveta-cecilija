@@ -64,7 +64,9 @@ export default async function MoreskaPage() {
 
   const next = pickNextPerformance(season.upcoming)
   const ahead = aheadLabel(season.upcoming)
-  const identity = identityOf(me, ahead)
+  // The crown on the reader's own mark is the NEXT nastup's title, from its
+  // confirmed postava and from nowhere else (#566, glossary: *Title*).
+  const identity = identityOf(me, ahead, next?.myTitle ?? null)
   const months = monthSections(groupByMonth(season.upcoming), { showAnswer: me != null })
   const hero = next ? heroView(next) : null
   const lastPast = season.past[0] ?? null

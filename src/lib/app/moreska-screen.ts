@@ -16,11 +16,13 @@
 //      free-text `location` IS printed, so a booking whose ship was typed into
 //      the place rather than into `client` shows it here and nothing in code
 //      can tell the difference.
-//   2. **The mark on a name is the ARMY of their primary role, and never a
-//      title.** A title belongs to one performance's lineup rather than to a
-//      person (glossary: *Title*, Q65), so a crni kralj wears a plain ink disc
-//      here and the line beside it says "Crni kralj" as the profile fact it is.
-//      The crown arrives with #566, from the evening's confirmed lineup.
+//   2. **The mark on a name is the ARMY of their primary role; the crown on it
+//      is THIS EVENING's title.** A title belongs to one performance's lineup
+//      rather than to a person (glossary: *Title*, Q65), so the disc comes from
+//      the profile and the glyph comes from the next nastup's CONFIRMED postava
+//      (#566) — a crni kralj by trade wears a plain ink disc on an evening he
+//      was not given the title, while the line beside it still says "Crni
+//      kralj", which is the profile fact it is.
 //
 // No IO, no clock, no Payload: the page hands over the rows the seam loaded and
 // gets back what to draw. `moreska-screen.test.ts` is where the rules are
@@ -92,8 +94,7 @@ export function nastupRow(
   const place = performancePlace(performance)
   return {
     id: performance.id,
-    // Stanje is the performance detail until #566 gives it a route of its own.
-    href: `/app/performances/${performance.id}`,
+    href: `/app/moreska/${performance.id}`,
     day: dayOfMonth(performance.date),
     weekday: shortWeekday(performance.date),
     gold: performance.kind === 'redovna',
@@ -144,19 +145,17 @@ export interface Identity {
   /** The disc: the army of the primary role. */
   army: MarkArmy | null
   /**
-   * The glyph, and it is ALWAYS null here (#565 review).
+   * The glyph: the title the reader wears in the NEXT nastup's CONFIRMED
+   * postava, and nothing else (#566).
    *
-   * A title belongs to one performance's lineup, never to a person (glossary:
-   * *Title*, Q65): until the voditelj hands the four out, everyone who said
-   * "dolazim" is a plain crni, bili or bula, and the profile's primary role
-   * decides only which army their answer counts in. So a dancer whose primary
-   * role is `crni_kralj` wears the ink disc here with no crown on it, and the
-   * line beside the mark says "Crni kralj", which is the profile fact this
-   * block is for.
-   *
-   * The field stays on the shape because #566 fills it: Stanje threads the
-   * title from the next nastup's CONFIRMED lineup into `RoleMark.title`, which
-   * is what that prop has meant since T1 ("the title for THIS evening").
+   * Never the profile (glossary: *Title*, Q65). Until the voditelj hands the
+   * four out on Stanje, everyone who said "dolazim" is a plain crni, bili or
+   * bula, and the primary role decides only which army their answer counts in
+   * — so a dancer whose primary role is `crni_kralj` wears the ink disc with no
+   * crown until he is given the title for that evening, and the line beside the
+   * mark still says "Crni kralj", which is the profile fact this block is for.
+   * An UNCONFIRMED postava yields nothing either: a crown a voditelj is still
+   * moving around is not news a dancer may read (story 34).
    */
   title: DanceTitle | null
 }
@@ -166,13 +165,16 @@ export interface Identity {
  * voditelj who does not dance, #419 story 15).
  *
  * The army comes from the primary role and a bula, who is in neither army, gets
- * the gold disc that IS the bula's mark. Nothing here reads an attendance row
- * or a lineup: this block describes the person, and both the army tonight's
- * answer counted in and the title they wear tonight belong to the evening.
+ * the gold disc that IS the bula's mark. The title is the caller's, read off
+ * the next nastup's confirmed postava: nothing here reads a row of its own, and
+ * the army tonight's answer counted in still belongs to the evening rather than
+ * to this block.
  */
 export function identityOf(
   me: AppMember | null | undefined,
   ahead: string,
+  /** The title of the NEXT nastup's confirmed postava, when the reader has one. */
+  title: DanceTitle | null = null,
 ): Identity | null {
   if (!me) return null
   const primary = isDanceRole(me.primaryRole) ? me.primaryRole : null
@@ -182,8 +184,8 @@ export function identityOf(
     name: me.name?.trim() || me.nickname?.trim() || '',
     line: [role, ahead].filter(Boolean).join(' · '),
     army,
-    // Never from the profile. #566 will pass the evening's own title here.
-    title: null,
+    // Never from the profile: the evening's own title, or none.
+    title,
   }
 }
 
@@ -216,7 +218,7 @@ export function heroView(performance: RosterPerformance): HeroView {
       .filter(Boolean)
       .join(' · '),
     note: performance.voditeljNote,
-    href: `/app/performances/${performance.id}`,
+    href: `/app/moreska/${performance.id}`,
     armies: performance.chip
       ? {
           crni: performance.chip.crni.count,

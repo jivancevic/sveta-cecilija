@@ -18,13 +18,12 @@ import { DeniedPage, deniedFor } from './DeniedPage'
 // page's gate and its tab can never drift apart. Pages with no screen of their
 // own (Više's rows, the walkthrough) pass nothing and get the first two answers.
 //
-// A page may name MORE THAN ONE screen, and exactly one does: the performance
-// detail at `/app/performances/[id]`, which is the evening BOTH Izvedbe and
-// Moreška open (#565). It is still a gate on the table rather than a hole in
-// it — either screen admits, neither being unlocked refuses — and it is what
-// keeps a push notification's deep link working for a dancer who, since #565,
-// no longer unlocks the Izvedbe list itself. Until #566 gives Stanje a route of
-// its own, one page answers to two tabs.
+// A page may name MORE THAN ONE screen, and none does today. The performance
+// detail did between #565 and #566, because one page was both the blagajna's
+// evening and the dancer's Stanje; #566 gave Stanje a route of its own
+// (`/app/moreska/[id]`) and the detail went back to `openScreen('performances')`.
+// The list form stays, because a gate on the TABLE is the point: a screen two
+// permissions reach through two tabs is a shape this app will have again.
 
 export interface AppGate {
   viewer: AppViewer

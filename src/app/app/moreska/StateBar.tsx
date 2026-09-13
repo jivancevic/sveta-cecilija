@@ -11,8 +11,9 @@ import { ArmyBar } from '../ui'
 // bar already draws its own pressed state and its own chevron, and a link
 // around a button is two focus stops for one target.
 //
-// Stanje is the performance detail until #566 builds it a screen of its own,
-// which is why the destination is a prop rather than a path spelled here.
+// The destination is a prop rather than a path spelled here: which evening the
+// bar opens is a fact about the hero above it, and `moreska-screen.ts` is where
+// this screen's hrefs are decided and tested (`/app/moreska/[id]` since #566).
 
 export function StateBar({
   crni,

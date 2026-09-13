@@ -31,6 +31,7 @@ const performance = (over: Partial<RosterPerformance> = {}): RosterPerformance =
   thresholdBili: 8,
   myAnswer: null,
   myArmy: null,
+  myTitle: null,
   lineupConfirmed: false,
   canAnswer: true,
   chip: null,
@@ -96,7 +97,7 @@ describe('nastupRow', () => {
   })
 
   it('links into Stanje, which is the performance detail until #566', () => {
-    expect(nastupRow(performance(), { showAnswer: true }).href).toBe('/app/performances/10')
+    expect(nastupRow(performance(), { showAnswer: true }).href).toBe('/app/moreska/10')
   })
 })
 
@@ -213,7 +214,7 @@ describe('heroView', () => {
       day: '14',
       month: 'rujna',
       meta: 'Ponedjeljak · 21:00 · Redovna',
-      href: '/app/performances/10',
+      href: '/app/moreska/10',
       armies: null,
     })
   })

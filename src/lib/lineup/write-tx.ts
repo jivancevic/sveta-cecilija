@@ -24,6 +24,7 @@
 // way to test a race without a race.
 
 import type { LineupEntry } from './rules'
+import { checkTitles, type TitleCounts } from './titles'
 
 /** What a write decided. `confirmed` is the 409; `missing` the 400. */
 export type LineupWriteOutcome =
@@ -37,6 +38,15 @@ export interface LockedLineupState {
   confirmedAt: string | null
   /** How many rows the postava holds right now. */
   entryCount: number
+  /**
+   * How many dancers wear each of the four titles right now (#566).
+   *
+   * Read under the SAME lock as the flag, because "exactly one crni kralj" is a
+   * statement about the moment of the confirmation and nothing else: a Spremi
+   * landing between a count and a confirm would otherwise lock an evening whose
+   * titles were checked against a list that is no longer there.
+   */
+  titles: TitleCounts
 }
 
 /**
@@ -105,10 +115,15 @@ export async function replaceLineupInTransaction<Tx>(
   }
 }
 
-/** What a confirm decided. `empty` is a 400: an empty postava confirms nothing. */
+/**
+ * What a confirm decided. `empty` is a 400: an empty postava confirms nothing,
+ * and `titles` is the other 400, which carries its own sentence because the
+ * only useful thing to say about it is WHICH title is missing or doubled.
+ */
 export type LineupConfirmOutcome =
   | { ok: true; confirmed: boolean; confirmedAt: string | null }
   | { ok: false; reason: 'missing' | 'empty' }
+  | { ok: false; reason: 'titles'; message: string }
 
 /**
  * The confirmation RULE, pure over the locked state.
@@ -124,6 +139,13 @@ export type LineupConfirmOutcome =
  *   postava became final; a second tap on a button that is already pressed is
  *   not a second decision. Unlocking clears it, so the timestamp never outlives
  *   the confirmation it records.
+ * - **All four titles, once each** (#566, glossary: *Title*). A confirmed
+ *   postava is the evening as it was danced, and an evening has one crni kralj,
+ *   one otmanović, one bili kralj and one bula. The rule applies HERE and
+ *   nowhere else on the way in: an unconfirmed replace, the MCP `set_lineup`
+ *   included, has to stay writable while the voditelj is halfway through.
+ *   Unlocking is never refused for it either, or an evening confirmed before
+ *   this rule existed could not be opened to be repaired.
  */
 export function decideConfirmation(input: {
   /** What the caller asked for. */
@@ -136,6 +158,10 @@ export function decideConfirmation(input: {
   }
   if (input.state.entryCount === 0) {
     return { ok: false, reason: 'empty' }
+  }
+  const titles = checkTitles(input.state.titles)
+  if (!titles.ok) {
+    return { ok: false, reason: 'titles', message: titles.message }
   }
   return {
     ok: true,

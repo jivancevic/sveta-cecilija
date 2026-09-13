@@ -150,9 +150,9 @@ export async function handleLineupReplace(
  * `confirmed` must be a real boolean: an absent or string value is a caller bug
  * and a 400, never a silent "false" that would unlock an evening nobody asked
  * to unlock. Everything else — the timestamp, the empty-postava refusal, the
- * idempotent re-confirm — is decided under the row lock in `write-tx.ts`,
- * because each of them is a decision about the state at the moment of the
- * write.
+ * four-title rule (#566) and the idempotent re-confirm — is decided under the
+ * row lock in `write-tx.ts`, because each of them is a decision about the state
+ * at the moment of the write.
  */
 export async function handleLineupConfirm(
   body: ConfirmBody | null | undefined,
@@ -173,9 +173,14 @@ export async function handleLineupConfirm(
       status: 400,
       body: {
         error:
-          outcome.reason === 'empty'
-            ? APP_STRINGS.lineup.confirmEmpty
-            : APP_STRINGS.lineup.missing,
+          // The title refusal carries its own sentence, because the only
+          // useful thing to say is WHICH of the four is missing or doubled
+          // (#566). The other two are one fixed line each.
+          outcome.reason === 'titles'
+            ? `${outcome.message} ${APP_STRINGS.lineup.confirmTitles}`
+            : outcome.reason === 'empty'
+              ? APP_STRINGS.lineup.confirmEmpty
+              : APP_STRINGS.lineup.missing,
       },
     }
   }
