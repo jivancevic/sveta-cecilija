@@ -1,15 +1,17 @@
-// The Payload-backed `MembersRepo` (#511, #475).
+// The Payload-backed `MembersRepo` (#506, #511, #475).
 //
 // `active` defaults to true in the collection, so only an explicit `false`
 // retires a member — the same reading `createPartnersRepo` gives the Partners
-// flag, and the reason nothing here tests `active === true`.
+// flag, and the reason `listActive`'s `where` asks for `not_equals: false`
+// rather than `equals: true`: a row written before the column existed has a
+// null there and is still a member.
 //
-// Both writes run through the local API rather than `payload.db`, which is the
+// Every write runs through the local API rather than `payload.db`, which is the
 // seam's rule and load-bearing here: the Members `beforeValidate` hook is the
 // only writer that can see the other rows, so it is the only place nickname
 // uniqueness can be decided. Its refusal arrives as a Payload `APIError` whose
 // message is already the Croatian sentence a voditelj should read, so the two
-// writers unwrap it rather than swallowing it.
+// roster writers unwrap it rather than swallowing it.
 
 import { loadMemberIdsWithLogin, type UserLinkFinder } from '@/lib/access/member-logins'
 import type { MemberRosterRow } from '@/lib/app/members-screen'
@@ -69,6 +71,35 @@ export function createMembersRepo(
   }
 
   return {
+    // ── The attribution half: Gratis (#506) ────────────────────────────────
+    async listActive() {
+      const payload = await load()
+      const res = await payload.find({
+        collection: 'members',
+        where: { active: { not_equals: false } },
+        sort: 'name',
+        limit: MAX_MEMBERS,
+        depth: 0,
+        overrideAccess: true,
+      })
+      return res.docs.map((doc) => ({
+        id: String(doc.id),
+        name: (doc.name as string) ?? '',
+      }))
+    },
+
+    async create(name, ctx) {
+      const payload = await load()
+      const doc = await payload.create({
+        collection: 'members',
+        // Name only, by design: see the note on `MembersRepo.create`.
+        data: { name, active: true },
+        user: ctx.user as Parameters<PayloadClient['create']>[0]['user'],
+      })
+      return { id: String(doc.id), name: (doc.name as string) ?? name }
+    },
+
+    // ── The roster half: Članovi (#511) ────────────────────────────────────
     async listMoreskanti() {
       const payload = await load()
       const res = await payload.find({

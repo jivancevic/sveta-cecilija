@@ -1,33 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requirePermission } from '@/lib/access/route-guard'
+import { getRepo } from '@/lib/repo'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 // GET  /api/comp/members — active members for the comp-issue picker.
-// POST /api/comp/members — create a member inline ("+ Add member") without
-// leaving the issue form (ADR-0019, #318). `tickets` only: the local API runs
-// overrideAccess, so the permission is re-checked in-handler (CLAUDE.md hard rule).
+// POST /api/comp/members — create a member inline ("+ Add member" / "Dodaj
+// člana") without leaving the issue form (ADR-0019, #318). `tickets` only: the
+// local API runs overrideAccess, so the permission is re-checked in-handler
+// (CLAUDE.md hard rule).
+//
+// Both halves go through the repository seam since #506 (`repo.members`), which
+// is what Gratis at `/app/comp` uses to render the picker on the server; the
+// Backoffice comp form still calls this route for the same two things, so there
+// is one list and one create behind both surfaces. The create is name-only by
+// the shape of the seam method: a `tickets` holder may add a member but may not
+// write the moreškant fields, and a field the method cannot carry is a field
+// this route cannot leak.
 export async function GET(req: NextRequest) {
   const gate = await requirePermission(req, 'tickets')
   if (gate.error) return gate.error
-  const { payload } = gate
 
-  const res = await payload.find({
-    collection: 'members',
-    where: { active: { equals: true } },
-    sort: 'name',
-    limit: 1000,
-    depth: 0,
-  })
-  const members = res.docs.map((d) => ({ id: String(d.id), name: (d.name as string) ?? '' }))
+  const members = await getRepo().members.listActive()
   return NextResponse.json({ members })
 }
 
 export async function POST(req: NextRequest) {
   const gate = await requirePermission(req, 'tickets')
   if (gate.error) return gate.error
-  const { payload } = gate
 
   let body: { name?: unknown }
   try {
@@ -40,9 +41,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Name is required' }, { status: 400 })
   }
 
-  const doc = await payload.create({
-    collection: 'members',
-    data: { name, active: true },
-  })
-  return NextResponse.json({ member: { id: String(doc.id), name: (doc.name as string) ?? name } })
+  const member = await getRepo().members.create(name, { user: gate.user })
+  return NextResponse.json({ member })
 }

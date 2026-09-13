@@ -9,7 +9,9 @@
 // **It grows one screen at a time, never as a sweep.** The research document
 // (section 6.2) names eleven repos; this file declares the ones the built
 // screens actually call — `auth` and `db` from Skener, `orders` and `shows`
-// grown by Narudžbe and Izvedbe, `partners` by Prodaja, `roster` by Izvedbe.
+// grown by Narudžbe and Izvedbe, `partners` by Prodaja, `roster` by Izvedbe,
+// `inquiries` by Upiti, `comp` and `members` by Gratis, the roster half of
+// `members` by Članovi.
 // A screen ticket adds its own, with the methods that screen actually calls, so
 // no member of this interface is ever speculative.
 //
@@ -26,9 +28,10 @@
 //      instead of reaching into `payload.db`; the statements do not move.
 
 import type { AuthRepo, SessionUser, WriteCtx } from './auth'
+import type { CompOrderRow, CompRepo, CompTicketRow } from './comp'
 import type { DbRepo } from './db'
 import type { InquiriesRepo, InquiryListQuery, InquiryListResult, InquiryRow } from './inquiries'
-import type { MemberRosterRow, MembersRepo, NewMoreskant } from './members'
+import type { MemberOption, MemberRosterRow, MembersRepo, NewMoreskant } from './members'
 import type { OrdersRepo } from './orders'
 import type { RosterRepo, RosterViewer } from './roster'
 import type { PartnerRecord, PartnersRepo } from './partners'
@@ -36,6 +39,7 @@ import type { PerformancePatch, PerformanceRow, ShowsRepo } from './shows'
 
 export interface Repo {
   auth: AuthRepo
+  comp: CompRepo
   db: DbRepo
   inquiries: InquiriesRepo
   members: MembersRepo
@@ -47,11 +51,15 @@ export interface Repo {
 
 export type {
   AuthRepo,
+  CompOrderRow,
+  CompRepo,
+  CompTicketRow,
   DbRepo,
   InquiriesRepo,
   InquiryListQuery,
   InquiryListResult,
   InquiryRow,
+  MemberOption,
   MemberRosterRow,
   MembersRepo,
   NewMoreskant,
@@ -64,4 +72,5 @@ export type {
   RosterViewer,
   SessionUser,
   ShowsRepo,
+  WriteCtx,
 }
