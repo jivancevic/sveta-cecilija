@@ -51,8 +51,12 @@
   --toast: #1a140c; /* the one surface that inverts the page it sits on */
   --onToast: #f5f2ec;
 
-  --shadowCard: 0 2px 4px rgba(26, 20, 12, 0.05), 0 18px 36px -14px rgba(26, 20, 12, 0.26);
-  --shadowHero: 0 2px 4px rgba(26, 20, 12, 0.05), 0 22px 44px -18px rgba(26, 20, 12, 0.32);
+  /* The blur radii are deliberately short (#592): these two shadows stack down
+     a long list, and a wide blur is the most expensive thing a phone repaints
+     while scrolling. Offsets and alphas are the ones the design was signed off
+     with; only the blur moved. */
+  --shadowCard: 0 2px 4px rgba(26, 20, 12, 0.05), 0 18px 24px -14px rgba(26, 20, 12, 0.26);
+  --shadowHero: 0 2px 4px rgba(26, 20, 12, 0.05), 0 22px 32px -18px rgba(26, 20, 12, 0.32);
   --shadowBar: 0 10px 30px -10px rgba(26, 20, 12, 0.35);
 
   --rCard: 22px;
@@ -155,12 +159,21 @@ html:has(> .app) {
    on its own root and gets this very block, one level down, instead of a
    second palette spelled beside itself. That is also all an "island" is now —
    #490's `.app__night` was this idea before the tokens had a theme to belong
-   to, and it is gone. */
+   to, and it is gone.
+
+   **The values are palette A** (#592), one step lighter than the night this
+   app shipped with. Josip read the two side by side on his phone and the old
+   ground was so close to the card that a card had nowhere to sit: raising the
+   paper (`--bg`, `--card`, `--sunk`, `--track`) by one step is what gives a
+   shadow something to fall on. Gold, ink and every accent are untouched — the
+   change is the paper, not the brand. `--barBg` drops to 0.72 alpha in the
+   same breath, because the bar is a blur now (see the tab bar below) and a
+   nearly opaque fill would have nothing to show through it. */
 .app[data-theme='dark'],
 .app [data-theme='dark'] {
-  --bg: #17120c;
-  --card: #231c14;
-  --sunk: #100c08;
+  --bg: #1f1913;
+  --card: #2c2419;
+  --sunk: #17120c;
   --ink: #f5f2ec;
   --muted: #a89e91;
   --gold: #d9ab3c;
@@ -173,17 +186,17 @@ html:has(> .app) {
   --ok: #e3b94e;
   --grey: #cfc8bd;
   --crni: #050403;
-  --track: #3b322a;
+  --track: #43392f;
   --rule: rgba(245, 242, 236, 0.08);
   --ghostEdge: rgba(245, 242, 236, 0.18);
-  --barBg: rgba(29, 23, 16, 0.92);
+  --barBg: rgba(35, 28, 20, 0.72);
   --markEdge: rgba(217, 212, 204, 0.4);
   --thumb: rgba(217, 171, 60, 0.16);
   /* Night's toast cannot be ink on ink: it lifts off the page instead. */
   --toast: #3b322a;
   --onToast: #f5f2ec;
-  --shadowCard: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 14px 30px -12px rgba(0, 0, 0, 0.7);
-  --shadowHero: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 22px 44px -18px rgba(0, 0, 0, 0.8);
+  --shadowCard: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 14px 24px -12px rgba(0, 0, 0, 0.7);
+  --shadowHero: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 22px 32px -18px rgba(0, 0, 0, 0.8);
   --shadowBar: 0 10px 30px -10px rgba(0, 0, 0, 0.8);
   color-scheme: dark;
 }
