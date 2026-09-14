@@ -44,7 +44,7 @@ import type { RosterPerson } from '@/lib/attendance/army-count'
 import type { Army } from '@/lib/attendance/rules'
 import { performancePlace } from './performance-place'
 import { APP_STRINGS, PUSH_MESSAGES, formatPerformanceDateLong } from './strings'
-import { kindWord } from './performance-kind'
+import { kindTone, kindWord, type KindTone } from './performance-kind'
 
 const S = APP_STRINGS.stanje
 
@@ -102,6 +102,12 @@ export interface StanjeView {
    * words rather than two, because an Experience is its own thing.
    */
   head: string
+  /** The same date WITHOUT the kind: "Subota, 19. rujna" (#592). */
+  headDate: string
+  /** "Redovna", "Vanredna" or "Experience", for the chip beside it. */
+  kind: string
+  /** Which of the three categories it is, so the chip can wear its tone. */
+  tone: KindTone
   /** "21:00 · Ljetno kino". */
   meta: string
   note: string | null
@@ -288,6 +294,9 @@ export function stanjeView(detail: PerformanceDetail): StanjeView {
   return {
     id: p.id,
     head: [formatPerformanceDateLong(p.date), kindWord(p.kind)].filter(Boolean).join(' · '),
+    headDate: formatPerformanceDateLong(p.date),
+    kind: kindWord(p.kind),
+    tone: kindTone(p.kind),
     meta: [p.time, performancePlace(p)].filter(Boolean).join(' · '),
     note: p.voditeljNote,
     cancelled: p.cancelled,

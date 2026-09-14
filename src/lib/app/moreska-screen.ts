@@ -232,6 +232,16 @@ export interface HeroView {
   month: string
   /** "Ponedjeljak · 21:00 · Redovna" */
   meta: string
+  /**
+   * The same line WITHOUT the kind: "Ponedjeljak · 21:00" (#592).
+   *
+   * The hero draws the kind as a chip beside it rather than as the third item
+   * of a grey sentence, so it needs the two halves apart. `meta` stays as the
+   * whole sentence for anything that wants one string.
+   */
+  metaLead: string
+  /** "Redovna", "Vanredna" or "Experience", for that chip. Null on a split day. */
+  kind: string | null
   /** Which of the three categories the evening is, for the skin (#591). */
   tone: KindTone
   note: string | null
@@ -290,6 +300,12 @@ export function heroView(pick: HeroPick): HeroView {
       : [weekdayLabel(performance.date), performance.time, kindWord(performance.kind)]
           .filter(Boolean)
           .join(' · '),
+    // A split day's halves carry their own kind, each with its own chip, so the
+    // shared line above them names neither.
+    metaLead: split
+      ? weekdayLabel(performance.date)
+      : [weekdayLabel(performance.date), performance.time].filter(Boolean).join(' · '),
+    kind: split ? null : kindWord(performance.kind),
     tone: kindTone(performance.kind),
     note: performance.voditeljNote,
     href: `/app/moreska/${performance.id}`,

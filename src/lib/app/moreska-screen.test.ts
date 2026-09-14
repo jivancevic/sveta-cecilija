@@ -207,6 +207,10 @@ describe('heroView', () => {
       day: '14',
       month: 'rujna',
       meta: 'Ponedjeljak · 21:00 · Redovna',
+      // The hero draws the kind as a chip, so it needs the two halves apart
+      // (#592). `meta` stays the whole sentence for anything that wants one.
+      metaLead: 'Ponedjeljak · 21:00',
+      kind: 'Redovna',
       href: '/app/moreska/10',
       tone: 'regular',
       armies: null,
@@ -271,6 +275,9 @@ describe('heroView', () => {
       // The date stays shared and big; the times live in the halves.
       expect(out.day).toBe('14')
       expect(out.meta).toBe('Ponedjeljak')
+      // No chip on the shared line either: each half names its own kind (#592).
+      expect(out.metaLead).toBe('Ponedjeljak')
+      expect(out.kind).toBeNull()
     })
 
     it('gives each half its own time, word, place and answer', () => {

@@ -386,14 +386,17 @@ export const APP_STRINGS = {
     chipYes: 'dolaziš',
     chipNo: 'ne dolaziš',
     /**
-     * The hero once an answer has landed (Q30). The army is a fact of THE
-     * ANSWER, not of the profile: a voditelj may move a dancer for one evening
-     * and the hero has to say which army that evening.
+     * The hero once an answer has landed, in the third person, for a sentence
+     * ABOUT the answer rather than for the buttons.
+     *
+     * The pair itself never says these (#592): it always reads "Dolazim" / "Ne
+     * dolazim" (`APP_STRINGS.answer`), and it never names the army. The army is
+     * the server's decision, a voditelj can change it for one evening, and a
+     * button whose label moves under the thumb is not a button. `comingIn` and
+     * *Promijeni* went with the collapsed single button that printed them.
      */
     coming: 'Dolaziš',
-    comingIn: (army: string) => `Dolaziš · ${army}`,
     notComing: 'Ne dolaziš',
-    change: 'Promijeni',
     past: (count: number) => `Prošli nastupi (${count})`,
     /** Two ways to have no next nastup, and they are not the same news. */
     eosTitle: 'Sezona je završila',

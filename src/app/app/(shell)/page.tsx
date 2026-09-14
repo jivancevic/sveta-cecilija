@@ -12,6 +12,7 @@ import { deniedFor } from '../DeniedPage'
 import { Answer } from './moreska/Answer'
 import { StateBar } from './moreska/StateBar'
 import { HeroHalves } from '../HeroHalves'
+import { HeroMeta } from '../HeroMeta'
 
 // `/app` — Početna, the front door (#564, decisions Q16, Q26, Q59, Q61).
 //
@@ -91,7 +92,13 @@ export default async function AppHomePage() {
           eyebrow={home.moreska.hero.eyebrow}
           day={home.moreska.hero.day}
           month={home.moreska.hero.month}
-          meta={home.moreska.hero.meta}
+          meta={
+            <HeroMeta
+              lead={home.moreska.hero.metaLead}
+              kind={home.moreska.hero.kind}
+              tone={home.moreska.hero.tone}
+            />
+          }
         >
           {home.moreska.hero.halves ? (
             <HeroHalves
@@ -106,7 +113,6 @@ export default async function AppHomePage() {
                   performanceId={home.moreska.performanceId}
                   memberId={home.moreska.memberId}
                   current={home.moreska.answer}
-                  currentArmy={home.moreska.army}
                   disabled={!home.moreska.canAnswer}
                   lockNote={home.moreska.canAnswer ? null : APP_STRINGS.answer.locked}
                 />

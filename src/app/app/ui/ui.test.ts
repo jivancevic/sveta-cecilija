@@ -9,6 +9,7 @@ import { Card } from './Card'
 import { Chip } from './Chip'
 import { DateDisc } from './DateDisc'
 import { FilterChips } from './FilterChips'
+import { KindChip } from './KindChip'
 import { Seasons } from './Seasons'
 import { Hero } from './Hero'
 import { List, ListRow } from './ListRow'
@@ -131,6 +132,15 @@ describe('RoleMark', () => {
     expect(king).not.toContain('IM')
   })
 
+  // The crown without a base was the whole of the distinction between the two
+  // crni titles, and nobody can name it at 32px. The letter is the name (#592).
+  it('puts an O in the Otmanović crown and leaves the kralj’s alone', () => {
+    const otman = render(h(RoleMark, { army: 'crni', title: 'otmanovic' }))
+    expect(otman).toContain('>O</text>')
+    const king = render(h(RoleMark, { army: 'crni', title: 'crni_kralj' }))
+    expect(king).not.toContain('<text')
+  })
+
   it('rings the bula of the night and no other bula', () => {
     expect(render(h(RoleMark, { army: 'bula', title: 'bula' }))).toContain('ui-mark--titled')
     expect(render(h(RoleMark, { army: 'bula' }))).not.toContain('ui-mark--titled')
@@ -163,6 +173,12 @@ describe('the rest of the shapes render', () => {
     expect(render(h(DateDisc, { day: 14, tone: 'experience' }))).toContain('ui-date--experience')
     expect(render(h(DateDisc, { day: 14, tone: 'regular' }))).toContain('ui-date--gold')
     expect(render(h(DateDisc, { day: 14, tone: 'extra' }))).not.toContain('ui-date--')
+    // The same three tones as a pill, for a hero that has no disc (#592).
+    expect(render(h(KindChip, { tone: 'experience' }, 'Experience'))).toContain(
+      'ui-kindchip--experience',
+    )
+    expect(render(h(KindChip, { tone: 'regular' }, 'Redovna'))).toContain('ui-kindchip--regular')
+    expect(render(h(KindChip, { tone: 'extra' }, 'Vanredna'))).toContain('ui-kindchip--extra')
     expect(render(h(Note, {}, 'Skup u 20:15'))).toContain('ui-note')
     expect(render(h(List, {}, h(ListRow, { title: 'Redovna', meta: '21:00' })))).toContain('ui-row')
     expect(render(h(Tiles, { children: h(Tile, { eyebrow: 'Ljestvica' }) }))).toContain('ui-tile')

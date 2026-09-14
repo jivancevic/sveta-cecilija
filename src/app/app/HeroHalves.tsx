@@ -2,6 +2,7 @@ import Link from 'next/link'
 import type { HeroHalf } from '@/lib/app/moreska-screen'
 import { APP_STRINGS } from '@/lib/app/strings'
 import { Answer } from './(shell)/moreska/Answer'
+import { KindChip } from './ui'
 
 // A day with TWO nastupa in it, inside the one hero (#591).
 //
@@ -21,7 +22,7 @@ import { Answer } from './(shell)/moreska/Answer'
 // headcount is still here, as the one quiet line "crni 7 · bili 5", and the
 // whole evening is one tap away at Stanje.
 //
-// Markup and CSS are a first pass (#591 is the logic half); #592 dresses it.
+// Dressed by #592: the kind is a chip and the answer is the animated pair.
 
 export function HeroHalves({
   halves,
@@ -41,7 +42,12 @@ export function HeroHalves({
           <div className="app__hero-half" key={half.id}>
             <Link className="app__hero-half-head" href={half.href}>
               <b>{half.time}</b>
-              <span>{[half.title, half.place].filter(Boolean).join(' · ')}</span>
+              {/* The kind is a chip here too (#592), in the same tone its disc
+                  wears in the season list, with the house beside it as text. */}
+              <span>
+                <KindChip tone={half.tone}>{half.title}</KindChip>
+                {half.place && <em>{half.place}</em>}
+              </span>
             </Link>
 
             {memberId && (
@@ -50,7 +56,6 @@ export function HeroHalves({
                 performanceId={half.id}
                 memberId={memberId}
                 current={half.answer}
-                currentArmy={half.army}
                 disabled={!half.canAnswer}
                 lockNote={half.canAnswer ? null : APP_STRINGS.answer.locked}
               />

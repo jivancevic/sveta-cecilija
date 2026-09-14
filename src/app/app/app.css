@@ -37,6 +37,13 @@
   --onGold: #14100a; /* text ON gold */
   --copper: #b5642a; /* the Moreška Experience, the third kind (#591) */
   --onCopper: #ffffff; /* text ON copper */
+  /* "Dolazim" (#592). The one green in an otherwise gold app, and it earns its
+     place: gold already means "the society's evening", so a gold Dolazim was
+     saying the same thing twice while the answer itself said nothing. Olive
+     rather than grass, as accepted on the prototype — it sits next to the
+     brand instead of shouting over it. */
+  --yes: #4f7a2f;
+  --onYes: #ffffff; /* text and glyph ON the green */
   --red: #8b0000; /* the bili army, a destructive action */
   --warn: #a8321f; /* an army below its threshold, a form error */
   --ok: #8f6a10; /* "enough of us tonight" — gold, not green: one brand */
@@ -51,8 +58,12 @@
   --toast: #1a140c; /* the one surface that inverts the page it sits on */
   --onToast: #f5f2ec;
 
-  --shadowCard: 0 2px 4px rgba(26, 20, 12, 0.05), 0 18px 36px -14px rgba(26, 20, 12, 0.26);
-  --shadowHero: 0 2px 4px rgba(26, 20, 12, 0.05), 0 22px 44px -18px rgba(26, 20, 12, 0.32);
+  /* The blur radii are deliberately short (#592): these two shadows stack down
+     a long list, and a wide blur is the most expensive thing a phone repaints
+     while scrolling. Offsets and alphas are the ones the design was signed off
+     with; only the blur moved. */
+  --shadowCard: 0 2px 4px rgba(26, 20, 12, 0.05), 0 18px 24px -14px rgba(26, 20, 12, 0.26);
+  --shadowHero: 0 2px 4px rgba(26, 20, 12, 0.05), 0 22px 32px -18px rgba(26, 20, 12, 0.32);
   --shadowBar: 0 10px 30px -10px rgba(26, 20, 12, 0.35);
 
   --rCard: 22px;
@@ -155,35 +166,48 @@ html:has(> .app) {
    on its own root and gets this very block, one level down, instead of a
    second palette spelled beside itself. That is also all an "island" is now —
    #490's `.app__night` was this idea before the tokens had a theme to belong
-   to, and it is gone. */
+   to, and it is gone.
+
+   **The values are palette A** (#592), one step lighter than the night this
+   app shipped with. Josip read the two side by side on his phone and the old
+   ground was so close to the card that a card had nowhere to sit: raising the
+   paper (`--bg`, `--card`, `--sunk`, `--track`) by one step is what gives a
+   shadow something to fall on. Gold, ink and every accent are untouched — the
+   change is the paper, not the brand. `--barBg` drops to 0.72 alpha in the
+   same breath, because the bar is a blur now (see the tab bar below) and a
+   nearly opaque fill would have nothing to show through it. */
 .app[data-theme='dark'],
 .app [data-theme='dark'] {
-  --bg: #17120c;
-  --card: #231c14;
-  --sunk: #100c08;
+  --bg: #1f1913;
+  --card: #2c2419;
+  --sunk: #17120c;
   --ink: #f5f2ec;
   --muted: #a89e91;
   --gold: #d9ab3c;
   --goldText: #e3b94e;
   --goldSoft: rgba(217, 171, 60, 0.14);
   --copper: #d27a3c;
-  --onCopper: #1a1209;
+  /* White on copper on both skins (#592): the glyph on an Experience disc is a
+     weekday at 10px, and ink on copper at night is not a reading. */
+  --onCopper: #ffffff;
+  --yes: #6fae4a;
+  --onYes: #14100a;
   --red: #b3262f;
   --warn: #e07a5f;
   --ok: #e3b94e;
   --grey: #cfc8bd;
   --crni: #050403;
-  --track: #3b322a;
+  --track: #43392f;
   --rule: rgba(245, 242, 236, 0.08);
   --ghostEdge: rgba(245, 242, 236, 0.18);
-  --barBg: rgba(29, 23, 16, 0.92);
+  --barBg: rgba(35, 28, 20, 0.72);
   --markEdge: rgba(217, 212, 204, 0.4);
   --thumb: rgba(217, 171, 60, 0.16);
   /* Night's toast cannot be ink on ink: it lifts off the page instead. */
   --toast: #3b322a;
   --onToast: #f5f2ec;
-  --shadowCard: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 14px 30px -12px rgba(0, 0, 0, 0.7);
-  --shadowHero: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 22px 44px -18px rgba(0, 0, 0, 0.8);
+  --shadowCard: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 14px 24px -12px rgba(0, 0, 0, 0.7);
+  --shadowHero: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 22px 32px -18px rgba(0, 0, 0, 0.8);
   --shadowBar: 0 10px 30px -10px rgba(0, 0, 0, 0.8);
   color-scheme: dark;
 }
@@ -219,9 +243,12 @@ html:has(> .app) {
 .app__shell {
   max-width: 640px;
   margin: 0 auto;
-  /* The bar FLOATS 10px above the safe area now (#562), so the content clears
-     one bar, one home indicator and a thumb's worth of air. */
-  padding: env(safe-area-inset-top) 20px calc(var(--tabH) + env(safe-area-inset-bottom) + 40px);
+  /* The bar is a blurred zone now (#592), not a pill with a band of empty page
+     under it: the last card scrolls UNDER the bar and is read through it, so
+     the shell only has to clear the bar itself, the home indicator and enough
+     air that nothing important ends exactly at the pill's edge. 40px of that
+     air was the hole Josip found under the last row. */
+  padding: env(safe-area-inset-top) 20px calc(var(--tabH) + env(safe-area-inset-bottom) + 12px);
 }
 
 /* ── Between two screens (#593) ────────────────────────────
@@ -555,19 +582,26 @@ html:has(> .app) {
    from the permission set (#495) and handed in as `--n`. */
 .app__tabbar {
   position: fixed;
-  left: 50%;
-  transform: translateX(-50%);
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
-  width: min(430px, 100%);
-  padding: 0 12px;
+  /* Full width, and NO `transform` (#592). A transformed ancestor is a
+     containing block, and in WebKit that kills `backdrop-filter` in every
+     descendant — which is the whole of the bar now. The pill is centred by
+     `margin: 0 auto` on itself instead, which needs no transform at all. */
+  left: 0;
+  right: 0;
+  bottom: 0;
   z-index: 20;
-  /* The strip either side of the pill belongs to the screen under it. */
+  /* The zone spans the screen, so the strip either side of the pill — and the
+     blur layers, which cover the bottom of the page — must let a finger
+     through to the list underneath. Only the pill takes taps. */
   pointer-events: none;
 }
 
 .app__tabbar-pill {
   pointer-events: auto;
   position: relative;
+  /* Centred without a transform: see the zone above. */
+  width: min(430px, 100%);
+  margin: 0 auto calc(8px + env(safe-area-inset-bottom, 0px));
   height: var(--tabH);
   padding: 6px;
   display: grid;
@@ -577,6 +611,66 @@ html:has(> .app) {
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   box-shadow: var(--shadowBar);
+}
+
+/* ── The three layers under the bar (#592) ─────────────────
+   The "Revolut" bar: content scrolls to the very bottom edge of the screen and
+   is blurred out from under the pill rather than stopping 40px short of it.
+
+   Three presentational layers, bottom of the page upwards, each masked so it
+   fades out at its own top edge. A single blur with a hard edge reads as a
+   pane of glass laid on the page; three of them stacked, each shorter and
+   blurrier than the last, read as the page itself going out of focus.
+
+     --fade  no blur at all, just the page colour coming up to 85% at the very
+             bottom, so text that is still legible through the blur does not
+             compete with the labels
+     --mid   a light blur over the taller band
+     --low   a heavy blur over the short band right behind the pill
+
+   `color-mix` gets an rgba fallback line before it for the same reason every
+   `-webkit-` prefix here exists: an older iOS that does not parse the
+   function keeps the flat fill rather than losing the layer entirely. The
+   fallback is the light paper, which is the default skin; a browser new
+   enough to have a theme switch is new enough for `color-mix`. */
+.app__tabbar-blur {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+
+.app__tabbar-blur--fade {
+  height: 116px;
+  background: linear-gradient(
+    to top,
+    rgba(245, 242, 236, 0.85) 0%,
+    rgba(245, 242, 236, 0.55) 46%,
+    rgba(245, 242, 236, 0) 100%
+  );
+  background: linear-gradient(
+    to top,
+    color-mix(in srgb, var(--bg) 85%, transparent) 0%,
+    color-mix(in srgb, var(--bg) 55%, transparent) 46%,
+    rgba(0, 0, 0, 0) 100%
+  );
+}
+
+.app__tabbar-blur--mid {
+  height: 132px;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  -webkit-mask-image: linear-gradient(to top, #000 0%, #000 42%, rgba(0, 0, 0, 0) 100%);
+  mask-image: linear-gradient(to top, #000 0%, #000 42%, rgba(0, 0, 0, 0) 100%);
+}
+
+.app__tabbar-blur--low {
+  height: 84px;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  -webkit-mask-image: linear-gradient(to top, #000 0%, #000 34%, rgba(0, 0, 0, 0) 100%);
+  mask-image: linear-gradient(to top, #000 0%, #000 34%, rgba(0, 0, 0, 0) 100%);
 }
 
 /* The pill behind the tab you are on. One element that slides rather than five
@@ -1306,6 +1400,337 @@ html:has(> .app) {
   margin: 8px 0 0;
   font-size: 13px;
   color: var(--warn);
+}
+
+/* ── Dolazim / Ne dolazim: the pair (#592) ──────────────────
+   Ported from the prototype's accepted variant A. The shape is two buttons
+   that are ALWAYS both on screen: the chosen one filled, the other outlined at
+   .55, and one tap switches. `AnswerPair.tsx` says why, and every number below
+   is the prototype's.
+
+   `isolation: isolate` on the button is what lets the radial fill sit at
+   `z-index: -1` — behind the label and the glyph, in front of the button's own
+   background — without falling behind the card. `overflow: hidden` is what
+   keeps the fill inside the corners, and is also why the sparks are appended
+   to the PAIR instead of to the button. */
+.app__ans {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.app__ansbtn {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  height: 52px;
+  border-radius: var(--rCtl);
+  background: transparent;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: opacity 0.28s var(--ease), transform 0.28s var(--ease), border-color 0.2s;
+}
+
+.app__ansbtn--yes {
+  border: 1.5px solid var(--yes);
+  color: var(--ink);
+}
+
+.app__ansbtn--no {
+  border: 1px solid var(--ghostEdge);
+  color: var(--muted);
+}
+
+.app__ansbtn:focus-visible {
+  outline: 2.5px solid var(--gold);
+  outline-offset: 2px;
+}
+
+.app__ansbtn--yes:focus-visible {
+  outline-color: var(--yes);
+}
+
+/* An evening that has started, or a save in flight. The pair stays readable:
+   what it says is still the answer that stands. */
+.app__ansbtn[disabled] {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* The fill. A circle far larger than the button, scaled from 0 at the point
+   the tap named, so the colour arrives as a wave rather than as a swap. */
+.app__ans-fill {
+  position: absolute;
+  left: var(--x, 50%);
+  top: var(--y, 50%);
+  width: 460px;
+  height: 460px;
+  margin: -230px 0 0 -230px;
+  border-radius: 50%;
+  transform: scale(0);
+  transition: transform 0.38s cubic-bezier(0.22, 0.9, 0.3, 1);
+  z-index: -1;
+}
+
+.app__ansbtn--yes .app__ans-fill {
+  background: var(--yes);
+}
+
+.app__ansbtn--no .app__ans-fill {
+  background: var(--sunk);
+}
+
+.app__ans-lbl {
+  transition: color 0.18s var(--ease) 0.12s;
+}
+
+.app__ans-mk {
+  width: 20px;
+  height: 20px;
+  flex: none;
+  transition: color 0.18s var(--ease) 0.12s;
+}
+
+/* At rest the swords stand drawn in the green, a shade under full strength, so
+   the outlined button already carries the picture the fill will complete. */
+.app__ansbtn--yes .app__ans-mk {
+  color: var(--yes);
+  opacity: 0.8;
+}
+
+.app__ans-mk circle {
+  opacity: 0.55;
+}
+
+.app__ans-draw {
+  stroke-dasharray: 34;
+  stroke-dashoffset: 34;
+}
+
+.app__ans-s1,
+.app__ans-s2 {
+  stroke-dasharray: 30;
+  stroke-dashoffset: 0;
+}
+
+/* ── Answered: coming ─────────────────────────────────────── */
+.app__ans[data-state='yes'] .app__ansbtn--yes .app__ans-fill {
+  transform: scale(1);
+}
+
+.app__ans[data-state='yes'] .app__ansbtn--yes {
+  color: var(--onYes);
+}
+
+.app__ans[data-state='yes'] .app__ansbtn--yes .app__ans-mk {
+  color: var(--onYes);
+  opacity: 1;
+}
+
+/* The two blades are drawn again from opposite corners and meet in the middle,
+   which is where the green comes out of (`AnswerPair.tsx` puts the fill's
+   origin there). The hilts arrive last, at 70% of the blades' own time. */
+.app__ans[data-state='yes'] .app__ans-s1 {
+  animation: app-ans-draw 0.26s ease-out;
+}
+
+.app__ans[data-state='yes'] .app__ans-s2 {
+  animation: app-ans-draw 0.26s ease-out 0.06s both;
+}
+
+.app__ans[data-state='yes'] .app__ans-hilt {
+  animation: app-ans-hilt 0.4s ease-out;
+}
+
+.app__ans[data-state='yes'] .app__ansbtn--no {
+  opacity: 0.55;
+  transform: scale(0.98);
+}
+
+@keyframes app-ans-draw {
+  from {
+    stroke-dashoffset: 30;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes app-ans-hilt {
+  0%,
+  70% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* ── Answered: not coming ─────────────────────────────────── */
+.app__ans[data-state='no'] .app__ansbtn--no .app__ans-fill {
+  transform: scale(1);
+}
+
+.app__ans[data-state='no'] .app__ansbtn--no {
+  color: var(--ink);
+  border-color: var(--muted);
+}
+
+.app__ans[data-state='no'] .app__ansbtn--no .app__ans-mk circle {
+  opacity: 0;
+}
+
+.app__ans[data-state='no'] .app__ansbtn--no .app__ans-draw {
+  stroke-dashoffset: 0;
+  transition: stroke-dashoffset 0.3s ease 0.12s;
+}
+
+.app__ans[data-state='no'] .app__ansbtn--yes {
+  opacity: 0.55;
+  transform: scale(0.98);
+}
+
+/* ── The spring ───────────────────────────────────────────── */
+.app__ansbtn--pop {
+  animation: app-ans-spring 0.42s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes app-ans-spring {
+  0% {
+    transform: scale(0.96);
+  }
+  45% {
+    transform: scale(1.04);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* ── The small variant: a hero half, a row ────────────────── */
+.app__ans--sm {
+  gap: 6px;
+}
+
+.app__ans--sm .app__ansbtn {
+  height: 36px;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  border-radius: 12px;
+}
+
+.app__ans--sm .app__ans-mk {
+  width: 14px;
+  height: 14px;
+}
+
+.app__ans--sm .app__ans-fill {
+  width: 280px;
+  height: 280px;
+  margin: -140px 0 0 -140px;
+}
+
+.app__ans--sm .app__ansbtn--pop {
+  animation: app-ans-spring-sm 0.32s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes app-ans-spring-sm {
+  0% {
+    transform: scale(0.97);
+  }
+  45% {
+    transform: scale(1.03);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+/* ── The clash: sparks and the ring ────────────────────────
+   Both live in the PAIR, outside the button that clips its own fill, and both
+   are removed by the component that made them. Hero only: a 36px row is not a
+   surface anything should be thrown off. */
+.app__ans-spark {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--gold);
+  pointer-events: none;
+  z-index: 5;
+  animation: app-ans-spark 0.52s ease-out forwards;
+}
+
+.app__ans-spark--yes {
+  background: var(--yes);
+}
+
+@keyframes app-ans-spark {
+  0% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(0.4);
+    opacity: 0;
+  }
+}
+
+.app__ans-flash {
+  position: absolute;
+  width: 26px;
+  height: 26px;
+  margin: -13px 0 0 -13px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  pointer-events: none;
+  z-index: 6;
+  animation: app-ans-flash 0.3s ease-out forwards;
+}
+
+@keyframes app-ans-flash {
+  0% {
+    transform: scale(0);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+
+/* An instant colour swap, which is the honest still version of all of it. The
+   component does not even build a spark under this setting. */
+@media (prefers-reduced-motion: reduce) {
+  .app__ansbtn,
+  .app__ans-fill,
+  .app__ans-lbl,
+  .app__ans-mk,
+  .app__ans-draw {
+    transition-duration: 0.01ms !important;
+  }
+
+  .app__ansbtn--pop,
+  .app__ans-s1,
+  .app__ans-s2,
+  .app__ans-hilt {
+    animation: none !important;
+  }
+
+  .app__ans-spark,
+  .app__ans-flash {
+    display: none !important;
+  }
 }
 
 /* ── Headcount chips + performance detail (#423) ─────────── */
@@ -3418,8 +3843,11 @@ a.app__ob-link {
      ground: the shell's 20px is given back as a negative margin and taken
      again as padding. Without the ground, a ghost button inside it would be
      the island's light ink on the app's paper page and invisible. */
-  margin: 16px -20px calc(var(--tabH) * -1 - 40px);
-  padding: 16px 20px calc(var(--tabH) + 40px);
+  /* The bottom half cancels the shell's own bottom padding exactly (#592
+     shortened it to `tabH + safe + 12`), so the island reaches the foot of the
+     page and the blurred bar sits on it rather than on a band of paper. */
+  margin: 16px -20px calc(var(--tabH) * -1 - env(safe-area-inset-bottom, 0px) - 12px);
+  padding: 16px 20px calc(var(--tabH) + env(safe-area-inset-bottom, 0px) + 12px);
   min-height: 60vh;
   background: var(--bg);
   color: var(--ink);
@@ -3847,10 +4275,23 @@ a.app__ob-link {
 }
 
 .app__hero-half-head span {
-  display: block;
-  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
   font-size: 13px;
   color: var(--muted);
+}
+
+/* The house, beside the kind chip. An <em> only because the chip took the
+   <span>: it carries no emphasis and no italic. */
+.app__hero-half-head em {
+  font-style: normal;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .app__hero-half-armies {
@@ -6124,6 +6565,13 @@ a.app__statrow-main:focus-visible {
 }
 
 .app__stanje-when {
+  /* The date, and the kind as a chip beside it (#592). A flex row so the pill
+     sits on the line's centre rather than on its baseline, and wraps under the
+     date on a narrow phone rather than squeezing it. */
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
   margin: 10px 0 0;
   font-family: var(--serif);
   font-weight: 600;

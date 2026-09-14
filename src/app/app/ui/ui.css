@@ -2,9 +2,10 @@
    Cecilija's shared shapes (#562).
 
    Every rule here names a token from `app.css` and no hex of its own, except
-   the two places a colour IS the meaning (the ink of a crni disc, the gold a
-   bili king's crown is drawn in). That is what lets the night skin land later
-   by flipping one attribute.
+   the one place a colour IS the meaning (the gold a bili king's crown is drawn
+   in). That is what lets the night skin land by flipping one attribute — and
+   the crni disc, which held a hex until #592, is what it costs when a rule does
+   not: at night that hex sat a shade off the page ground.
 
    Loaded AFTER `app.css` by the route group's layout, so where a legacy
    `app__*` rule and a `ui-*` rule meet on one element, the new system wins the
@@ -64,6 +65,14 @@
 }
 
 .ui-hero__meta {
+  /* A chip sits in this line since #592, so it is a flex row rather than a
+     sentence: `align-items: center` is what keeps a 22px pill from riding the
+     text's baseline, and the wrap is what keeps it on the card on a small
+     phone. */
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
   color: var(--muted);
   font-weight: 500;
 }
@@ -447,6 +456,41 @@ button.ui-row:hover {
 .ui-date--experience span {
   color: var(--onCopper);
   opacity: 0.75;
+}
+
+/* ── KindChip (#592) ───────────────────────────────────────
+   The disc's three tones, for the one place a hero has no disc: the kind word
+   in the hero's meta line and on a hero half. A pill rather than the third
+   item of a grey sentence, because the kind is the only one of the three facts
+   on that line that changes the shape of the evening. */
+.ui-kindchip {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 9px;
+  border-radius: var(--rPill);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.ui-kindchip--regular {
+  background: var(--gold);
+  color: var(--onGold);
+}
+
+/* Ink on paper, paper on ink: the Vanredna chip inverts the page it sits on,
+   which is exactly what the `extra` disc does. */
+.ui-kindchip--extra {
+  background: var(--ink);
+  color: var(--bg);
+}
+
+.ui-kindchip--experience {
+  background: var(--copper);
+  color: var(--onCopper);
 }
 
 /* ── Tile ─────────────────────────────────────────────────── */
@@ -880,8 +924,13 @@ button.ui-army:active {
   transition: box-shadow 0.2s;
 }
 
+/* The crni disc reads the TOKEN, not a hex (#592). It was hard-coded #1a140c
+   as "the ink a crni is", which is right on paper and a bug at night: the night
+   skin's `--crni` is #050403 for exactly this reason, and the hex sat a shade
+   off the page ground, so the disc had no body of its own and an empty one read
+   as a ring around nothing. */
 .ui-mark--crni {
-  background: #1a140c;
+  background: var(--crni);
   color: var(--grey);
   box-shadow: 0 0 0 1.5px var(--markEdge);
 }

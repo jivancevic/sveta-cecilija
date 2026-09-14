@@ -22,6 +22,13 @@ import { PrefetchTabs } from './PrefetchTabs'
 // from the thumb. One dark pill slides between the tabs rather than five icons
 // lighting up in turn: the movement is what tells you that you went left.
 //
+// **Since #592 the pill sits in a full-width zone** with three blur layers
+// under it, so a list scrolls to the bottom edge of the screen and goes out of
+// focus there. The zone must never carry a `transform`: in WebKit a
+// transformed ancestor is what a `backdrop-filter` descendant resolves
+// against, and the blur silently does nothing. The pill centres itself with a
+// margin instead.
+//
 // The drawings themselves are `ui/ScreenIcon.tsx` since #569: Više lists the
 // overflow as rows and wants the same picture the tab has, and one map is what
 // makes those the same screen to a reader.
@@ -50,6 +57,18 @@ export function TabBar({ nav }: { nav: Nav }) {
       {/* Renders nothing: it warms every tab in the bar on mount, so the next
           tap paints from the router cache instead of waiting on the server. */}
       <PrefetchTabs routes={nav.tabs.map((screen) => screen.route)} />
+
+      {/* Three presentational layers under the pill (#592): the page colour
+          coming up at the very bottom, a light blur over a tall band and a
+          heavy one over a short band behind the pill. Together they are what
+          lets a list scroll to the bottom EDGE of the screen and go out of
+          focus there, instead of stopping 40px short of the bar and leaving a
+          hole under the last card. They are drawn, never touched: the zone
+          they live in takes no pointer events. */}
+      <span className="app__tabbar-blur app__tabbar-blur--fade" aria-hidden="true" />
+      <span className="app__tabbar-blur app__tabbar-blur--mid" aria-hidden="true" />
+      <span className="app__tabbar-blur app__tabbar-blur--low" aria-hidden="true" />
+
       <div
         className="app__tabbar-pill"
         style={{ ['--n' as string]: nav.tabs.length, ['--i' as string]: Math.max(index, 0) }}

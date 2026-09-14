@@ -1,6 +1,6 @@
 // Cecilija's shared shapes (#562).
 //
-// Twenty-two components and one stylesheet (`ui.css`, loaded by the route
+// Twenty-three components and one stylesheet (`ui.css`, loaded by the route
 // group's layout). Fifteen landed with T1; Ljestvica (#568) brought the
 // segmented control it needed and the count that runs up on first paint,
 // Profil (#569) the switch, Narudžbe (#570) the row of filter chips Upiti
@@ -15,6 +15,9 @@
 // beside itself — that is exactly how the app ended up with five kinds of
 // button and no rule about which was primary (audit, pattern 2).
 //
+// `KindChip` is #592's: the hero had no disc to carry the kind's tone on, and
+// the word was the third item of a grey sentence.
+//
 // `PullToRefresh` renders `Toast` — imported from its own file rather than
 // through this barrel, because a client island should not pull fifteen shapes
 // into its bundle to use one. Everything else lands as the screen tickets
@@ -27,10 +30,11 @@ export { Button, type ButtonProps, type ButtonVariant } from './Button'
 export { Card, type CardProps } from './Card'
 export { Chip, type ChipProps, type ChipTone } from './Chip'
 export { CountUp, type CountUpProps } from './CountUp'
-export { DateDisc, type DateDiscProps } from './DateDisc'
+export { DateDisc, type DateDiscProps, type DateDiscTone } from './DateDisc'
 export { Explain, type ExplainProps } from './Explain'
 export { FilterChips, type FilterChipItem, type FilterChipsProps } from './FilterChips'
 export { Hero, type HeroProps } from './Hero'
+export { KindChip, type KindChipProps, type KindChipTone } from './KindChip'
 export { List, ListRow, type ListRowProps } from './ListRow'
 export { Note, type NoteProps } from './Note'
 export { Podium, type PodiumEntry, type PodiumProps } from './Podium'
