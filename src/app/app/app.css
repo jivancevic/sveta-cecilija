@@ -7101,6 +7101,31 @@ a.app__statrow-main:focus-visible {
   margin-top: 12px;
 }
 
+/* Odustali (#609): the one roster list on Stanje that is open rather than
+   behind a chevron, because it is the list a voditelj is looking for. Each
+   name carries the hour under it, so a row is two lines and cannot use the
+   single-line `.app__name` layout unchanged. */
+.app__withdrawn {
+  margin-top: 12px;
+}
+
+.app__withdrawn-name {
+  align-items: center;
+}
+
+.app__withdrawn-body {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 1px;
+  text-align: left;
+}
+
+.app__withdrawn-when {
+  font-size: 12px;
+  color: var(--muted);
+}
+
 .app__stanje-empty {
   margin: 0;
   font-size: 13px;

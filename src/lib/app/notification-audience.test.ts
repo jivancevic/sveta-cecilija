@@ -23,8 +23,10 @@ describe('audienceFor', () => {
     }
   })
 
-  it('sends a withdrawn "dolazim" to the voditelji', () => {
-    expect(audienceFor('withdrawal')).toMatchObject({ group: 'voditelji', pushes: true })
+  it('maps no kind to the voditelji since the withdrawal push was retired (#609)', () => {
+    for (const kind of APP_NOTIFICATION_KINDS) {
+      expect(audienceFor(kind).group).not.toBe('voditelji')
+    }
   })
 
   it('files the two staff kinds without ringing anything', () => {
@@ -87,7 +89,7 @@ describe('resolveNotificationAudience', () => {
   })
 
   it('is two empty lists when nobody qualifies', () => {
-    expect(resolveNotificationAudience('withdrawal', { primary: [], doorOnly: ['31'] })).toEqual({
+    expect(resolveNotificationAudience('alarm', { primary: [], doorOnly: ['31'] })).toEqual({
       push: [],
       inbox: [],
     })

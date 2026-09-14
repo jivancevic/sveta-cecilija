@@ -4,7 +4,6 @@
 //
 //   - `notifyPerformanceSaved` is what the Shows `afterChange` hook calls, for a
 //     create (type 4) and for an update (type 3) alike;
-//   - `notifyWithdrawal` is what the attendance answer route calls (type 5).
 //
 // Everything here is DI'd over the deps `createPushDeps` already builds
 // (`push-data.ts`), so the whole behaviour — who was picked, what was sent, and
@@ -29,7 +28,6 @@ import {
 import { changeRecipientMembers, toUserIds, type NotifiablePerformance } from './recipients'
 import type { ScheduledNotificationType } from './schedule'
 import type { PushMessage, SendPushResult } from './send'
-import { buildWithdrawalMessage, isWithdrawal, type WithdrawalInput } from './withdrawal'
 
 const NOTHING: SendPushResult = { recipients: 0, devices: 0, delivered: 0, dead: 0, failed: 0 }
 
@@ -50,6 +48,13 @@ export interface NotifyDeps {
   /** Member id → user id, for the dancers that own a login. */
   loadUserIdsByMember: (memberIds: readonly string[]) => Promise<Map<string, string>>
   /** Every user holding `moreska`. Their devices are found by the sender. */
+  /**
+   * Every account holding `moreska`. No notification kind uses it since the
+   * withdrawal push was retired (#609): odustajanje is written under the
+   * evening, in Odustali on Stanje, and rings nobody. Kept because it is the
+   * loader any future voditelj-only notice would want, and because dropping it
+   * would take the `voditelji` audience group with it.
+   */
   loadVoditeljUserIds: () => Promise<string[]>
   send: (userIds: readonly string[], message: PushMessage) => Promise<SendPushResult>
   /** Hand back a scheduled claim, so the cron can take it again. */
@@ -240,32 +245,3 @@ export async function notifyBulkCreated(
 /** A season announcement can wait out a night in a tunnel; a week is plenty. */
 export const BULK_TTL_SECONDS = 7 * 24 * 60 * 60
 
-/**
- * A withdrawn "dolazim" → the voditelji (type 5).
- *
- * The rule is `isWithdrawal`, pure and tested on its own; this half only finds
- * the voditelji and posts. There is no claim and no throttle: two dancers
- * dropping out are two calls a voditelj has to make.
- */
-export async function notifyWithdrawal(
-  input: {
-    performance: NotifiablePerformance
-    who: { memberId: string; nickname: string | null }
-  } & WithdrawalInput,
-  deps: Pick<NotifyDeps, 'loadVoditeljUserIds' | 'send'>,
-): Promise<SendPushResult> {
-  try {
-    if (!isWithdrawal(input)) return NOTHING
-    const userIds = await deps.loadVoditeljUserIds()
-    if (userIds.length === 0) return NOTHING
-    return await deps.send(
-      userIds,
-      buildWithdrawalMessage(input.performance, input.who, input.nowMs),
-    )
-  } catch (err) {
-    // An answer is saved by the time we get here. Losing the notification is
-    // bad; losing the answer would be worse.
-    console.error('[push] withdrawal notification failed', err)
-    return NOTHING
-  }
-}

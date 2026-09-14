@@ -37,14 +37,19 @@ export const APP_NOTIFICATION_KINDS = [
   'reminder',
   'performance_created',
   'performance_changed',
-  'withdrawal',
   'inquiry',
   'dispute',
 ] as const
 
 export type AppNotificationKind = (typeof APP_NOTIFICATION_KINDS)[number]
 
-/** The three ways an audience is resolved. */
+/**
+ * The three ways an audience is resolved.
+ *
+ * `voditelji` has no kind mapped to it since the withdrawal push was retired
+ * (#609). It stays in the union because it is a way an audience CAN be
+ * resolved, not a list of what is switched on today.
+ */
 export type NotificationAudienceGroup = 'roster' | 'voditelji' | 'staff'
 
 export interface AudienceRule {
@@ -66,7 +71,6 @@ const RULES: Record<AppNotificationKind, AudienceRule> = {
   reminder: { group: 'roster', pushes: true, doorInbox: false },
   performance_created: { group: 'roster', pushes: true, doorInbox: true },
   performance_changed: { group: 'roster', pushes: true, doorInbox: true },
-  withdrawal: { group: 'voditelji', pushes: true, doorInbox: false },
   inquiry: { group: 'staff', pushes: false, doorInbox: false },
   dispute: { group: 'staff', pushes: false, doorInbox: false },
 }

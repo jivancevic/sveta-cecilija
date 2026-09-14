@@ -440,6 +440,15 @@ export const APP_STRINGS = {
     bule: 'Bule',
     noAnswer: 'Bez odgovora',
     notComing: 'Ne dolaze',
+    /**
+     * Odustali (#609; glossary: *Odustajanje*). The word is deliberately NOT
+     * "Otkazali": in this app *otkazati* is what happens to an izvedba, with
+     * refunds behind it, and the two must never share a verb.
+     */
+    withdrawn: 'Odustali',
+    /** Under a name on that list: "odustao u 19:40" / "voditelj upisao u 19:40". */
+    withdrewSelf: (time: string) => `odustao u ${time}`,
+    withdrewByVoditelj: (time: string) => `voditelj upisao u ${time}`,
     nobody: 'Nema nikoga.',
     lineupConfirmed: 'Postava potvrđena',
     cancelled: 'Otkazano',
@@ -3010,13 +3019,6 @@ export const PUSH_MESSAGES = {
       `U raspored je dodano ${input.count} ${input.count === 1 ? 'novi nastup' : 'novih nastupa'}, prvi ${formatPerformanceDate(input.firstDate)}.`,
   },
 
-  /** Type (5), to the voditelji only: a "dolazim" withdrawn (story 18). */
-  withdrawal: {
-    title: 'Netko je odustao',
-    someone: 'Moreškant',
-    body: (input: { who: string; date: string; time: string }) =>
-      `${input.who} više ne dolazi na nastup ${formatPerformanceDate(input.date)} u ${input.time}.`,
-  },
 } as const
 
 /**
@@ -3134,6 +3136,24 @@ export function formatPerformanceDate(date: string): string {
 function atNoon(date: string): Date | null {
   const d = new Date(`${date}T12:00:00.000Z`)
   return Number.isNaN(d.getTime()) ? null : d
+}
+
+/**
+ * "19:40" — the hour a stored instant happened, in Zagreb (#609).
+ *
+ * Odustali is read against ONE evening, whose date the screen already carries,
+ * so the time of day is the whole of the useful fact. Zagreb explicitly rather
+ * than the server's zone: the row is stamped in UTC and the voditelj reading it
+ * is standing on the pier.
+ */
+export function timeOfDay(iso: string): string {
+  const ms = Date.parse(iso)
+  if (Number.isNaN(ms)) return ''
+  return new Intl.DateTimeFormat('hr-HR', {
+    timeZone: 'Europe/Zagreb',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date(ms))
 }
 
 /**
