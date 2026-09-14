@@ -84,13 +84,17 @@ export function InstallNudge() {
 
       {failed && <p className="app__install-nudge-failed">{S.failed}</p>}
 
+      {/* Ghost and not primary, deliberately (Button's own rule: one primary per
+          screen, and it is the thing you came to do). Nobody opens Početna to
+          install an app — the evening above this card is the job, and a gold
+          button here would out-shout it. */}
       <div className="ui-btns">
         {!webview && canPrompt ? (
-          <Button variant="primary" onClick={run} disabled={busy}>
+          <Button variant="ghost" onClick={run} disabled={busy}>
             {busy ? S.acting : S.action}
           </Button>
         ) : (
-          <Link className="ui-btn ui-btn--primary" href="/app/install">
+          <Link className="ui-btn ui-btn--ghost" href="/app/install">
             {S.nudgeGuide}
           </Link>
         )}
