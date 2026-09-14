@@ -6,7 +6,7 @@ import { Bell, ChevronRight, Plus } from 'lucide-react'
 import { APP_STRINGS } from '@/lib/app/strings'
 import { MAX_THRESHOLD } from '@/lib/app/performance-form'
 import { memberSearchKey } from '@/lib/app/members-screen'
-import { assignTitle, type DanceTitle } from '@/lib/lineup/titles'
+import { armyOfLineupRole, assignTitle, type DanceTitle } from '@/lib/lineup/titles'
 import type { LineupEntry } from '@/lib/lineup/rules'
 import { DANCE_ROLE_LABELS, LINEUP_ROLE_LABELS, type DanceRole } from '@/lib/moreskant-profile'
 import type {
@@ -154,8 +154,14 @@ export function Stanje({
     if (ok) setPerson(null)
   }
 
-  /** The postava with one row replaced, and never the same member twice. */
-  function lineupWith(memberId: string | null): LineupEntry[] {
+  /**
+   * The postava with ONE voditelj on it, or with none.
+   *
+   * Every other row is left exactly as it stands: this write is about the line
+   * that is not a dance, and a member who was also in a column keeps that row
+   * until the answer that put it there changes.
+   */
+  function lineupWithVoditelj(memberId: string | null): LineupEntry[] {
     const kept = view.lineup.filter(
       (entry) => entry.role !== 'voditelj' && entry.memberId !== memberId,
     )
@@ -174,9 +180,9 @@ export function Stanje({
   async function addTo(key: PickerKey, memberId: string) {
     const ok =
       key === 'voditelj'
-        ? await send('add', '/api/app/lineup', {
+        ? await send('voditelj', '/api/app/lineup', {
             performanceId: view.id,
-            entries: lineupWith(memberId),
+            entries: lineupWithVoditelj(memberId),
           })
         : await send('add', '/api/app/attendance', {
             performanceId: view.id,
@@ -191,9 +197,9 @@ export function Stanje({
   }
 
   async function clearVoditelj() {
-    const ok = await send('add', '/api/app/lineup', {
+    const ok = await send('voditelj', '/api/app/lineup', {
       performanceId: view.id,
-      entries: lineupWith(null),
+      entries: lineupWithVoditelj(null),
     })
     if (ok) setAdding(null)
   }
@@ -392,20 +398,20 @@ export function Stanje({
         }
       />
 
-      {view.experience && adding === 'voditelj' && view.voditelji.length > 0 && (
-        <Sheet open title={S.addVoditelj} onClose={() => setAdding(null)}>
-          <SheetOption disabled={busy.what != null} onClick={() => void clearVoditelj()}>
-            {S.noVoditelj}
-          </SheetOption>
-        </Sheet>
-      )}
-
-      {adding !== null && !(adding === 'voditelj' && view.voditelji.length > 0) && (
+      {adding !== null && (
         <PickSheet
           picker={view.pickers[adding]}
           busy={busy.what}
           onClose={() => setAdding(null)}
           onPick={(memberId) => void addTo(adding, memberId)}
+          // "Somebody else ran it" and "nobody did" are the same sheet, so
+          // replacing a voditelj is one tap rather than clear-then-pick.
+          onClear={
+            adding === 'voditelj' && view.voditelji.length > 0
+              ? () => void clearVoditelj()
+              : null
+          }
+          clearLabel={S.noVoditelj}
         />
       )}
 
@@ -633,7 +639,8 @@ function PeopleSheet({
   omitRole,
   onClose,
   onPick,
-  footerNote,
+  onClear,
+  clearLabel,
   busy,
 }: {
   open: boolean
@@ -642,7 +649,9 @@ function PeopleSheet({
   omitRole: DanceRole | null
   onClose: () => void
   onPick: ((person: StanjePerson) => void) | null
-  footerNote?: React.ReactNode
+  /** Takes the list back to nobody. Only the voditelj's has one. */
+  onClear?: (() => void) | null
+  clearLabel?: string
   busy?: string | null
 }) {
   const [query, setQuery] = useState('')
@@ -676,7 +685,7 @@ function PeopleSheet({
 
   return (
     <Sheet open title={title} onClose={close}>
-      {people.length > 6 && (
+      {people.length > 0 && (
         <label className="app__members-search">
           <span className="app__sr-only">{S.search}</span>
           <input
@@ -698,7 +707,7 @@ function PeopleSheet({
             { key: '', label: S.allRoles },
             ...filters.map((r) => ({
               key: r,
-              label: <RoleMark army={armyOfRole(r)} role={r} small label={DANCE_ROLE_LABELS[r]} />,
+              label: <RoleMark army={armyOfLineupRole(r)} role={r} small label={DANCE_ROLE_LABELS[r]} />,
             })),
           ]}
           active={role}
@@ -708,8 +717,19 @@ function PeopleSheet({
       )}
 
       <div className="app__stanje-sheet-list">
+        {onClear && (
+          <SheetOption disabled={busy != null} onClick={onClear}>
+            {clearLabel}
+          </SheetOption>
+        )}
         {rows.map((person) => {
-          const others = person.roles.filter((r) => r !== omitRole)
+          // Minus TWO roles, not one: the one every row in this list holds by
+          // definition, and the person's own primary role, which is already the
+          // disc on the left. Without the second filter Dado wears a crni disc
+          // as his lead and a crni disc again beside his name.
+          const others = person.roles.filter(
+            (r) => r !== omitRole && r !== person.primaryRole,
+          )
           // The nickname is a bare text node on purpose: `.ui-sheet__opt span`
           // styles every span inside an option as its quiet second line, so a
           // wrapper here would render the name at 13px in grey.
@@ -721,7 +741,7 @@ function PeopleSheet({
                   {others.map((r) => (
                     <RoleMark
                       key={r}
-                      army={armyOfRole(r)}
+                      army={armyOfLineupRole(r)}
                       role={r}
                       small
                       label={DANCE_ROLE_LABELS[r]}
@@ -732,7 +752,7 @@ function PeopleSheet({
             </>
           )
           const lead = person.primaryRole ? (
-            <RoleMark army={person.army ?? armyOfRole(person.primaryRole)} role={person.primaryRole} small />
+            <RoleMark army={person.army ?? armyOfLineupRole(person.primaryRole)} role={person.primaryRole} small />
           ) : (
             <RoleMark army={person.army} title={person.title} small />
           )
@@ -763,8 +783,6 @@ function PeopleSheet({
           <p className="app__stanje-empty">{people.length === 0 ? S.nobodyToAdd : S.nobody}</p>
         )}
       </div>
-
-      {footerNote}
     </Sheet>
   )
 }
@@ -775,11 +793,15 @@ function PickSheet({
   busy,
   onClose,
   onPick,
+  onClear,
+  clearLabel,
 }: {
   picker: StanjePicker
   busy: string | null
   onClose: () => void
   onPick: (memberId: string) => void
+  onClear: (() => void) | null
+  clearLabel: string
 }) {
   return (
     <PeopleSheet
@@ -790,14 +812,10 @@ function PickSheet({
       busy={busy}
       onClose={onClose}
       onPick={(person) => onPick(person.memberId)}
+      onClear={onClear}
+      clearLabel={clearLabel}
     />
   )
-}
-
-/** The army a dance role's disc wears; a bula is her own colour. */
-function armyOfRole(role: DanceRole): 'crni' | 'bili' | 'bula' {
-  if (role === 'bula') return 'bula'
-  return role === 'bili' || role === 'bili_kralj' ? 'bili' : 'crni'
 }
 
 /**

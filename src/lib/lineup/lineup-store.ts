@@ -24,7 +24,7 @@
 
 import { sql } from '@payloadcms/db-postgres'
 import { relationIdForWrite } from '@/lib/payload-relation'
-import { isPerformanceKind, type PerformanceKind } from '@/lib/show-performance'
+import { performanceKindOf } from '@/lib/show-performance'
 import { isDanceTitle, type TitleCounts } from './titles'
 import type { LineupTxStore, LockedLineupState } from './write-tx'
 import type { LineupEntry } from './rules'
@@ -132,16 +132,10 @@ export function createLineupStore(
         if (row.role === 'voditelj') voditelji += n
       }
 
-      // An unreadable kind falls back to `ostalo`, which is the strictest of the
-      // two rules (the four titles): a row whose kind nobody can parse must not
-      // become the one evening that confirms without them.
-      const rawKind = locked[0].kind
-      const kind: PerformanceKind = isPerformanceKind(rawKind) ? rawKind : 'ostalo'
-
       return {
         confirmed: locked[0].lineup_confirmed === true,
         confirmedAt: isoOf(locked[0].lineup_confirmed_at),
-        kind,
+        kind: performanceKindOf(locked[0].kind),
         entryCount,
         voditelji,
         titles,

@@ -28,7 +28,7 @@ import { compareLineupRows, type LineupEntry } from '@/lib/lineup/rules'
 import { roleWarnings } from '@/lib/lineup/rules'
 import type { LineupWriteOutcome } from '@/lib/lineup/write-tx'
 import { lineupRequirements } from '@/lib/lineup/titles'
-import { isPerformanceKind, type PerformanceKind } from '@/lib/show-performance'
+import { performanceKindOf } from '@/lib/show-performance'
 import {
   LINEUP_ROLES,
   LINEUP_ROLE_LABELS,
@@ -355,9 +355,7 @@ export async function setLineup(
     return fail('Postava je potvrđena. Otključaj je u aplikaciji pa pokušaj ponovno.')
   }
 
-  const kind: PerformanceKind = isPerformanceKind(performance.kind)
-    ? performance.kind
-    : 'ostalo'
+  const kind = performanceKindOf(performance.kind)
 
   const roster = await store.loadRoster()
   // A key that two active dancers share resolves to NOBODY rather than to

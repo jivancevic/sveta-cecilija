@@ -172,7 +172,6 @@ export type PickerKey = TitleArmy | 'voditelj'
  * morning, and the person who records it is the voditelj moreškanata.
  */
 export interface StanjePicker {
-  key: PickerKey
   /** "Dodaj u crne": the row that opens it and the sheet's own title. */
   title: string
   /**
@@ -383,6 +382,21 @@ export function stanjeView(detail: PerformanceDetail): StanjeView {
   const titles = titleMap(lineup)
   const inLineup = new Set(lineup.map((entry) => entry.memberId))
 
+  /**
+   * Who runs this evening rather than dancing it (#620 review).
+   *
+   * They are taken OUT of the two columns and the Bule card, and out of the
+   * numbers over them, whatever they answered: a voditelj who taps Dolazim on
+   * Moreška has said he will be there, not that he is dancing. Without this he
+   * stood in the crni column and on his own card at once, was counted in both,
+   * and then vanished from the column the moment Potvrdi turned the count into
+   * the postava — the numbers jumped on a button that was supposed to settle
+   * them.
+   */
+  const leading = new Set(
+    lineup.filter((entry) => entry.role === 'voditelj').map((entry) => entry.memberId),
+  )
+
   /** What each member answered, so any list can open a sheet on the right state. */
   const answerOf = new Map<string, 'coming' | 'not_coming'>()
   for (const person of [...count.crni.members, ...count.bili.members, ...count.bula]) {
@@ -459,6 +473,15 @@ export function stanjeView(detail: PerformanceDetail): StanjeView {
       .filter((entry) => !answeredSet.has(entry.memberId) && armyOfLineupRole(entry.role) === army)
       .map((entry) => personOf(entry.memberId, army, { chip: true }))
 
+  /** The answered members of one column, minus whoever is running the evening. */
+  const answeredIn = (army: TitleArmy): RosterPerson[] =>
+    (army === 'crni'
+      ? count.crni.members
+      : army === 'bili'
+        ? count.bili.members
+        : count.bula
+    ).filter((person) => !leading.has(person.memberId))
+
   /**
    * Who stands in one column, and it is TWO different questions (#620).
    *
@@ -472,30 +495,20 @@ export function stanjeView(detail: PerformanceDetail): StanjeView {
           .filter((entry) => armyOfLineupRole(entry.role) === army)
           .map((entry) => personOf(entry.memberId, army))
       : [
-          ...(army === 'crni'
-            ? count.crni.members
-            : army === 'bili'
-              ? count.bili.members
-              : count.bula
-          ).map((person: RosterPerson) => personOf(person.memberId, army)),
+          ...answeredIn(army).map((person) => personOf(person.memberId, army)),
           ...dictated(army),
         ]
     return people.sort(byTitleThenName(army))
   }
 
-  const bule = peopleOf('bula')
-
-  function column(
-    army: Army,
-    tally: { count: number; threshold: number; below: boolean },
-  ): StanjeColumn {
+  function column(army: Army, tally: { threshold: number }): StanjeColumn {
     const people = peopleOf(army)
     // Before the postava is confirmed the number is the ANSWERS and nothing
     // else, so the head and the ArmyBar can never disagree; a dictated row
     // stands under the names with its own chip instead of moving it. Once it is
     // confirmed the number IS the postava, which is what makes the chip
     // unnecessary and the head equal to the names above it (#620).
-    const total = confirmed ? people.length : tally.count
+    const total = confirmed ? people.length : answeredIn(army).length
     const threshold = tally.threshold
     const slots: string[] = []
     // Empty places are what a column is still SHORT of, which is a sentence
@@ -510,7 +523,7 @@ export function stanjeView(detail: PerformanceDetail): StanjeView {
       count: total,
       threshold,
       // Nothing is missing from an evening that has been danced.
-      below: !past && (confirmed ? total < threshold : tally.below),
+      below: !past && total < threshold,
       head: past ? String(total) : S.ofThreshold(total, threshold),
       people,
       slots,
@@ -519,6 +532,7 @@ export function stanjeView(detail: PerformanceDetail): StanjeView {
   }
 
   const columns = [column('crni', count.crni), column('bili', count.bili)]
+  const bule = peopleOf('bula')
 
   const voditelji = experience
     ? lineup
@@ -537,7 +551,6 @@ export function stanjeView(detail: PerformanceDetail): StanjeView {
    * anybody at all.
    */
   function picker(
-    key: PickerKey,
     title: string,
     already: readonly StanjePerson[],
     omitRole: DanceRole | null,
@@ -555,23 +568,23 @@ export function stanjeView(detail: PerformanceDetail): StanjeView {
           Number(a.answer === 'not_coming') - Number(b.answer === 'not_coming') ||
           a.nickname.localeCompare(b.nickname, 'hr'),
       )
-    return { key, title, people, omitRole }
+    return { title, people, omitRole }
   }
 
   const inArmy = (army: Army) => (profile: { roles: DanceRole[] }) =>
     profile.roles.some((role) => ARMY_OF_ROLE[role] === army)
 
   const pickers: Record<PickerKey, StanjePicker> = {
-    crni: picker('crni', S.addTo.crni, columns[0].people, 'crni', inArmy('crni')),
-    bili: picker('bili', S.addTo.bili, columns[1].people, 'bili', inArmy('bili')),
+    crni: picker(S.addTo.crni, columns[0].people, 'crni', inArmy('crni')),
+    bili: picker(S.addTo.bili, columns[1].people, 'bili', inArmy('bili')),
     // A bula is not a third value of the attendance army (glossary: *Army
     // count*), so she is picked by her PROFILE: every bula on the roster dances
     // the bula and nothing else, which is what makes the primary role the whole
     // of the rule here.
-    bula: picker('bula', S.addTo.bula, bule, 'bula', (profile) => profile.primaryRole === 'bula'),
+    bula: picker(S.addTo.bula, bule, 'bula', (profile) => profile.primaryRole === 'bula'),
     // Nothing on a profile says who may run an Experience, so nothing filters
     // this list. Who may WRITE it is the permission, and that is the route's.
-    voditelj: picker('voditelj', S.addVoditelj, voditelji, null, () => true),
+    voditelj: picker(S.addVoditelj, voditelji, null, () => true),
   }
 
   const given = titlesGiven(countTitles(lineup.map((entry) => entry.role)))

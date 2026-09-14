@@ -177,6 +177,13 @@ export function aggregateDancerStats(input: {
     if (counted.has(key)) continue
     counted.add(key)
 
+    // Running an evening counts on the EXPERIENCE and nowhere else (#620).
+    // The lineup route refuses a `voditelj` line on every other kind, so this
+    // only ever fires on a row entered before that rule existed — and the
+    // Moreška list staying purely danced roles is the decision, not a
+    // consequence of what the route happens to allow today.
+    if (row.role === 'voditelj' && kind !== 'experience') continue
+
     stats.performances += 1
     stats.byKind[kind] += 1
     // Every lineup role, the plain ones and the voditelj included (#607, #620).

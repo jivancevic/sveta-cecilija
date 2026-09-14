@@ -32,8 +32,9 @@
 //      carries all four, once each. A **Moreška Experience** is three pairs in
 //      the society's own premises: it has no kings and no bula to hand out, and
 //      what it does have is the member who RUNS it. So the Experience requires
-//      exactly one `voditelj` line and no titles at all, and every other kind
-//      requires the four titles and no voditelj. `lineupRequirements` is that
+//      exactly one `voditelj` line and asks nothing at all about titles, while
+//      every other kind requires the four titles and cannot hold a voditelj
+//      line (the route refuses one on the way in). `lineupRequirements` is that
 //      split, in one place, and `checkLineup` applies it. An UNCONFIRMED write
 //      never asks: the MCP tool and a half-filled evening both have to be
 //      writable.
@@ -332,9 +333,11 @@ const VODITELJ_MISSING = 'Postava nema voditelja.'
 
 function voditeljDoubled(n: number): string {
   const word: Record<number, string> = { 2: 'Dva', 3: 'Tri', 4: 'Četiri' }
+  // Croatian counts in three buckets and the noun moves with the numeral: two
+  // to four take the paucal ("člana"), five and up the genitive plural
+  // ("članova"), and the verb follows the noun.
   const who = word[n] ?? String(n)
-  const verb = n >= 5 ? 'vodi' : 'vode'
-  return `${who} člana ${verb} ovaj Experience.`
+  return n >= 5 ? `${who} članova vodi ovaj Experience.` : `${who} člana vode ovaj Experience.`
 }
 
 /**

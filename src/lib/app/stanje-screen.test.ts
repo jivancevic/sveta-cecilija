@@ -146,11 +146,21 @@ describe('stanjeView columns', () => {
 
   it('draws no places once an army is at or over its threshold', () => {
     const d = detail()
+    // The members and the count must agree, the way `countArmies` always makes
+    // them: since #620 the column derives its number from the people it is
+    // about to draw, so the names and the head cannot disagree even when a
+    // voditelj is lifted out of them.
     const out = stanjeView({
       ...d,
       count: {
         ...d.count,
-        crni: { count: 4, threshold: 3, below: false, nicknames: [], members: [CICI, DADO] },
+        crni: {
+          count: 4,
+          threshold: 3,
+          below: false,
+          nicknames: [],
+          members: [CICI, DADO, BEPO, GRGO],
+        },
       },
     })
     expect(out.columns[0]!.slots).toEqual([])
@@ -528,6 +538,26 @@ describe('stanjeView and the voditelj of an Experience (#620)', () => {
     expect(out.voditelji.map((p) => p.nickname)).toEqual(['Dado'])
     expect(out.requirements).toEqual({ titles: false, voditelj: true })
     expect(out.canConfirm).toBe(true)
+  })
+
+  // #620 review — he stood in the crni column AND on his own card, was counted
+  // in both, and then vanished from the column the moment Potvrdi turned the
+  // count into the postava. The numbers jumped on the button that settles them.
+  it('takes the voditelj out of the columns he answered into, and out of the count', () => {
+    const d = withRoster()
+    const out = stanjeView({
+      ...d,
+      performance: { ...d.performance, kind: 'experience' },
+      lineup: {
+        ...d.lineup,
+        entries: [{ memberId: '1', nickname: 'Ćići', role: 'voditelj' }],
+      },
+    })
+    // Ćići answered dolazim and stands among the crni in the fixture.
+    expect(out.voditelji.map((p) => p.nickname)).toEqual(['Ćići'])
+    expect(out.columns[0]!.people.map((p) => p.nickname)).toEqual(['Dado'])
+    expect(out.columns[0]!.count).toBe(1)
+    expect(out.armies.crni).toBe(1)
   })
 
   it('refuses to confirm an Experience nobody ran', () => {

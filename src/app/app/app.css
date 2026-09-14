@@ -65,6 +65,11 @@
   --ghostEdge: rgba(26, 20, 12, 0.16); /* the inset edge of a ghost control */
   --barBg: rgba(255, 255, 255, 0.92); /* the tab bar and any floating bar */
   --markEdge: transparent; /* a crni disc needs no edge on paper */
+  /* The voditelj's disc (#620): dark in BOTH skins, and deliberately neither
+     `--crni` (which would say crni) nor `--sunk` (which is light beige on
+     paper, so the gold ring and the gold glyph on it would sit at 3:1). A
+     warm near-black of its own, because the mark belongs to no vojska. */
+  --markLead: #262019;
   --thumb: #1a140c; /* the pill behind the active tab */
   --toast: #1a140c; /* the one surface that inverts the page it sits on */
   --onToast: #f5f2ec;
@@ -253,6 +258,7 @@ html:has(> .app) {
   --ghostEdge: rgba(245, 242, 236, 0.18);
   --barBg: rgba(35, 28, 20, 0.72);
   --markEdge: rgba(217, 212, 204, 0.4);
+  --markLead: #17120c;
   --thumb: rgba(217, 171, 60, 0.16);
   /* Night's toast cannot be ink on ink: it lifts off the page instead. */
   --toast: #3b322a;
@@ -7795,6 +7801,20 @@ a.app__statrow-main:focus-visible {
   gap: 12px;
 }
 
+/* The controls inside the hero card sit ABOVE its cover link (#620; the link
+   itself and the card's own `position` are in `ui.css`). A positioned element
+   paints over its static siblings, so each of these says so for itself and
+   everything else on the card falls through to the link underneath. They are
+   named here rather than in the kit because they are this screen's shapes. */
+.ui-card--hero .app__ans,
+.ui-card--hero .app__answer-note,
+.ui-card--hero .app__answer-error,
+.ui-card--hero .app__hero-half-head,
+.ui-card--hero .app__hero-more {
+  position: relative;
+  z-index: 1;
+}
+
 /* An empty place is the way to FILL it (#620): the same 44px row, and the only
    thing that says it is a control is that it answers a press. Drawn for a
    voditelj only — for a dancer it stays the plain span it always was, because a
@@ -7835,17 +7855,12 @@ a.app__statrow-main:focus-visible {
 }
 
 /* The other roles a candidate can dance, as small discs beside their name
-   (#620). The explicit `display` and `gap` are not decoration: `.ui-sheet__opt
-   span` styles every span inside a sheet option as that option's quiet second
-   line, and this one is a row of marks. */
-.ui-sheet__opt .app__role-discs,
-.app__stanje-sheet-name .app__role-discs {
+   (#620). */
+.app__role-discs {
   display: inline-flex;
   align-items: center;
   gap: 4px;
   margin-left: 8px;
-  font-size: inherit;
-  color: inherit;
 }
 
 /* The role filter, as a row of discs rather than a row of words (#620): six

@@ -25,8 +25,6 @@
   transition: background 0.3s var(--ease);
 }
 
-/* The one card on a screen that is the reason the screen was opened. It is
-   bigger, it sits deeper, and there is never a second one. */
 /* The hero's cover link (#620): the whole card is the way to the Moreška tab,
    and the controls inside it are lifted over the cover rather than taken out of
    it. A positioned element paints above its static siblings, so the three that
@@ -39,16 +37,16 @@
   z-index: 0;
 }
 
-.ui-card--hero .ui-army,
-.ui-card--hero .app__ans,
-.ui-card--hero .app__answer-note,
-.ui-card--hero .app__answer-error,
-.ui-card--hero .app__hero-half-head,
-.ui-card--hero .app__hero-more {
+/* The kit lifts what the kit owns; the screen lifts its own (`app.css`, the
+   `.app__ans` / `.app__hero-*` rule). A `ui-*` sheet that listed screen classes
+   would have to be edited every time a screen put a new control in a hero. */
+.ui-card--hero .ui-army {
   position: relative;
   z-index: 1;
 }
 
+/* The one card on a screen that is the reason the screen was opened. It is
+   bigger, it sits deeper, and there is never a second one. */
 .ui-card--hero {
   /* The containing block for the cover link above (#620). */
   position: relative;
@@ -1146,14 +1144,15 @@ button.ui-army:active {
   background: var(--sunk);
 }
 
-/* The voditelj of a Moreška Experience (#620): the sunk ground with a gold ring
-   around it. He is in NEITHER army, so the disc borrows neither ink nor red —
-   the ring is the society's own colour and this is the one mark on the app that
-   is not a vojska. The ring is drawn OUTSIDE (a plain `box-shadow`, like the
-   crni disc's edge) rather than inset, so the microphone inside it keeps its
-   full 22px and the E in its head stays readable at 28. */
+/* The voditelj of a Moreška Experience (#620): a dark disc with a gold ring
+   around it. He is in NEITHER army, so it borrows neither the crni's ink nor
+   the bili's red — `--markLead` is its own near-black, dark in both skins, and
+   the ring is the society's own colour. This is the one mark on the app that is
+   not a vojska. The ring is drawn OUTSIDE (a plain `box-shadow`, like the crni
+   disc's edge) rather than inset, so the microphone inside it keeps its full
+   22px and the E in its head stays readable at 28. */
 .ui-mark--voditelj {
-  background: var(--sunk);
+  background: var(--markLead);
   color: var(--gold);
   box-shadow: 0 0 0 1.5px var(--gold);
 }
@@ -1305,7 +1304,14 @@ button.ui-army:active {
   background: var(--sunk);
 }
 
-.ui-sheet__opt span {
+/* The option's quiet second line, and ONLY that. It used to be
+   `.ui-sheet__opt span`, which at (0,1,1) also beat `.ui-mark` (0,1,0) and every
+   `.ui-mark--*` after it: a lead disc inside a sheet was being drawn
+   `display: block` in `--muted`, so the crown lost its centring and its colour.
+   The note is the one span the component itself puts inside the body div, so
+   the child combinator names it exactly (#620 review; `frontend-css.md`, the
+   specificity pitfall). */
+.ui-sheet__opt > div > span {
   display: block;
   font-weight: 400;
   font-size: 13px;

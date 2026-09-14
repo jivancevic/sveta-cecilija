@@ -19,6 +19,7 @@ import type { NonPublicKind } from '@/lib/performance-input'
 import { Card, Chip, Ring } from '../../../ui'
 import { AppShell } from '../../../AppShell'
 import { openScreen } from '../../../gate'
+import { lineupRequirements } from '@/lib/lineup/titles'
 import { LineupEditor } from '../../../LineupEditor'
 import { CompTickets } from '../../../CompTickets'
 import { NoteEditor } from '../../../NoteEditor'
@@ -240,7 +241,8 @@ export default async function PerformanceDetailPage({
               roster={detail.lineup.roster}
               confirmed={detail.lineup.confirmed}
               confirmedAt={detail.lineup.confirmedAt}
-              experience={p.kind === 'experience'}
+              // The split is `lineupRequirements`' and nothing re-types it.
+              experience={lineupRequirements(p.kind).voditelj}
             />
           </Card>
         </>

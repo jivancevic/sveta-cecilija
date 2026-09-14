@@ -59,6 +59,20 @@ export function isPerformanceKind(value: unknown): value is PerformanceKind {
 }
 
 /**
+ * A raw `shows.kind` narrowed, falling back to `ostalo`.
+ *
+ * `ostalo` rather than a throw, and it is the STRICTEST fallback rather than a
+ * neutral one: the confirmation rule splits on this value (#620), and a row
+ * whose kind nobody can parse must land on the side that asks for all four
+ * titles rather than on the one that would confirm without them. Every caller
+ * that reads the column outside Payload uses this, so the fallback is decided
+ * once.
+ */
+export function performanceKindOf(value: unknown): PerformanceKind {
+  return isPerformanceKind(value) ? value : 'ostalo'
+}
+
+/**
  * THE public-performance predicate, Payload `Where` form.
  *
  * Every buyer-, partner-, door- or ticket-statistics-facing query on `shows`
