@@ -4,7 +4,6 @@ import type { AttendanceMember } from '@/lib/attendance/rules'
 import {
   notifyBulkCreated,
   notifyPerformanceSaved,
-  notifyWithdrawal,
   type NotifyDeps,
 } from './notify'
 import type { PushMessage, SendPushResult } from './send'
@@ -48,7 +47,6 @@ function deps(overrides: Partial<NotifyDeps> = {}) {
       new Map(
         ids.filter((id) => id !== '3').map((id) => [String(id), `u${id}`]),
       ),
-    loadVoditeljUserIds: async () => ['u9'],
     send: async (userIds, message) => {
       sent.push({ userIds: [...userIds], message })
       return SENT
@@ -202,74 +200,3 @@ describe('notifyBulkCreated', () => {
   })
 })
 
-describe('notifyWithdrawal', () => {
-  const performance = { id: '7', date: '2026-08-05', time: '21:00' }
-  // Two hours before the 21:00 Zagreb start.
-  const nowMs = Date.UTC(2026, 7, 5, 17, 0)
-  const startMs = Date.UTC(2026, 7, 5, 19, 0)
-
-  function withdrawal(overrides: Record<string, unknown> = {}) {
-    return {
-      performance,
-      who: { memberId: '1', nickname: 'Cici', name: 'Ivan Ivić' },
-      previousStatus: 'coming' as const,
-      nextStatus: 'not_coming' as const,
-      ownAnswer: true,
-      startMs,
-      nowMs,
-      ...overrides,
-    }
-  }
-
-  it('tells the voditelji who dropped out', async () => {
-    const { deps: d, sent } = deps()
-    await notifyWithdrawal(withdrawal(), d)
-    expect(sent).toHaveLength(1)
-    expect(sent[0]!.userIds).toEqual(['u9'])
-    expect(`${sent[0]!.message.title} ${sent[0]!.message.body}`).toBe(
-      'Netko je odustao Cici više ne dolazi na nastup srijeda, 5. kolovoza u 21:00.',
-    )
-  })
-
-  it('counts a cleared answer as a withdrawal', async () => {
-    const { deps: d, sent } = deps()
-    await notifyWithdrawal(withdrawal({ nextStatus: null }), d)
-    expect(sent).toHaveLength(1)
-  })
-
-  it('stays quiet when a voditelj changed somebody else’s answer', async () => {
-    const { deps: d, sent } = deps()
-    await notifyWithdrawal(withdrawal({ ownAnswer: false }), d)
-    expect(sent).toEqual([])
-  })
-
-  it('stays quiet more than a day before the performance', async () => {
-    const { deps: d, sent } = deps()
-    await notifyWithdrawal(withdrawal({ nowMs: startMs - 30 * 60 * 60 * 1000 }), d)
-    expect(sent).toEqual([])
-  })
-
-  it('stays quiet once the performance has begun', async () => {
-    const { deps: d, sent } = deps()
-    await notifyWithdrawal(withdrawal({ nowMs: startMs + 1000 }), d)
-    expect(sent).toEqual([])
-  })
-
-  it('stays quiet for someone who was never coming', async () => {
-    const { deps: d, sent } = deps()
-    await notifyWithdrawal(withdrawal({ previousStatus: null }), d)
-    await notifyWithdrawal(withdrawal({ previousStatus: 'not_coming' }), d)
-    expect(sent).toEqual([])
-  })
-
-  it('never lets a broken sender fail an answer that is already saved', async () => {
-    const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
-    const { deps: d } = deps({
-      send: async () => {
-        throw new Error('push service down')
-      },
-    })
-    await expect(notifyWithdrawal(withdrawal(), d)).resolves.toMatchObject({ delivered: 0 })
-    spy.mockRestore()
-  })
-})

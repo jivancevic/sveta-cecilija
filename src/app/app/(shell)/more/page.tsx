@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { Bell, ChevronRight, KeyRound, LayoutGrid, Sparkles, Smartphone, UserRound } from 'lucide-react'
 import { armyOfPrimaryRole } from '@/lib/app/leaderboard-rank'
 import { initialsOf } from '@/lib/app/members-screen'
+import { isDanceRole } from '@/lib/moreskant-profile'
 import { APP_STRINGS } from '@/lib/app/strings'
 import { permissionChips } from '@/lib/app/users-view'
 import { APP_VERSION, versionLine } from '@/lib/app/version'
@@ -87,17 +88,22 @@ export default async function MorePage() {
   // tablet on the wall is called out loud.
   const name = viewer.accountName ?? me?.name ?? me?.nickname ?? viewer.username ?? APP_STRINGS.name
 
-  // The mark is the army of the reader's PRIMARY role and carries no title:
-  // a title belongs to an evening, not to a person (glossary: *Title*), and
-  // there is no evening on this screen.
+  // This is a PROFILE context, and #612 settled what a mark means in one: the
+  // disc is the army of the reader's PRIMARY role and the glyph is that role
+  // (`RoleMark`'s header states the rule). There is no evening on this screen,
+  // so there is no title on it either — a titula belongs to a lineup and never
+  // to a person (glossary: *Title*) — but the role a dancer IS does belong
+  // here, and a crni kralj reading his own screen should see his crown.
   //
-  // **So it carries their initials instead** (#592). Without them the disc is a
-  // blank colour swatch, which is exactly the hole #573 added `initials` to
-  // fill on Članovi and which nobody wired here: on the night skin a crni disc
-  // is a shade off the page, so an EMPTY one reads as a ring around nothing and
-  // Josip's own mark looked broken. The letters are the person's the way the
-  // crown would have been the evening's.
+  // **A role with no glyph carries their initials instead** (#592). A plain
+  // crni or bili disc is a blank colour swatch, which is exactly the hole #573
+  // added `initials` to fill on Članovi and which nobody wired here: on the
+  // night skin a crni disc is a shade off the page, so an EMPTY one reads as a
+  // ring around nothing and Josip's own mark looked broken. The glyph wins
+  // where there is one, which is `RoleMark`'s own rule and not a choice made
+  // twice.
   const army = me ? armyOfPrimaryRole(me.primaryRole) : null
+  const role = me && isDanceRole(me.primaryRole) ? me.primaryRole : null
   const initials = me ? initialsOf(me.name ?? me.nickname ?? name) : null
 
   // A dancer is named by what they dance; everybody else by what they may do.
@@ -111,7 +117,12 @@ export default async function MorePage() {
   return (
     <AppShell viewer={viewer} screen="more">
       <div className="app__me">
-        {me && <RoleMark army={army} title={null} initials={initials} />}
+        {me &&
+          (role ? (
+            <RoleMark army={army} role={role} initials={initials} />
+          ) : (
+            <RoleMark army={army} initials={initials} />
+          ))}
         <div className="app__me-body">
           <h2>{name}</h2>
           {me && <p>{identityLine(me)}</p>}

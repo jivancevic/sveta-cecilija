@@ -48,6 +48,7 @@ function detail(over: Partial<PerformanceDetail> = {}): PerformanceDetail {
       bili: { count: 1, threshold: 2, below: true, nicknames: [], members: [BEPO] },
       bula: [MARE],
       notComing: [],
+    withdrawn: [],
       noAnswer: [GRGO],
     },
     voditelj: true,

@@ -96,7 +96,7 @@ function MonthChart({ months }: { months: MySeasonMonth[] }) {
 /** The disc for one dance role: the army in colour, the title as a glyph. */
 function Role({ role, small = false }: { role: keyof typeof MARK_OF_ROLE; small?: boolean }) {
   const spec = MARK_OF_ROLE[role]
-  return <RoleMark army={spec.army} title={spec.title} small={small} />
+  return <RoleMark army={spec.army} role={spec.role} small={small} />
 }
 
 /** What a list of this kind was worth to this dancer: a ring, a place, a split. */

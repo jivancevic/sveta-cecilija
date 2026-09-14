@@ -3,12 +3,10 @@ import { requirePermission } from '@/lib/access/route-guard'
 import { appRequestMeta } from '@/lib/app/request-guard'
 import { resolveOwnMemberId, type MemberLinkReader } from '@/lib/access/attendance-access'
 import { relationIdForWrite as relId } from '@/lib/payload-relation'
+import { toIsoInstant } from '@/lib/to-iso-date'
 import { handleAttendanceAnswer, type ExistingAnswer } from '@/lib/attendance/answer'
 import type { Army, AttendanceMember, AttendancePerformance } from '@/lib/attendance/rules'
 import { showStartMs } from '@/lib/show-time'
-import { notifyWithdrawal } from '@/lib/push/notify'
-import { createPushDeps, type PushPayload } from '@/lib/push/push-data'
-import type { PushMessage } from '@/lib/push/send'
 
 // POST /api/app/attendance — the ONE writer of an attendance row (#422).
 //
@@ -49,9 +47,6 @@ export async function POST(req: Request) {
   )
 
   const body = await req.json().catch(() => null)
-
-  let cached: ReturnType<typeof createPushDeps> | null = null
-  const pushDeps = () => (cached ??= createPushDeps(payload as unknown as PushPayload))
 
   const result = await handleAttendanceAnswer(body, {
     request: appRequestMeta(req, process.env.NEXT_PUBLIC_BASE_URL),
@@ -122,6 +117,11 @@ export async function POST(req: Request) {
               row.status === 'coming' || row.status === 'not_coming'
                 ? (row.status as 'coming' | 'not_coming')
                 : null,
+            stamps: {
+              confirmedAt: toIsoInstant(row.confirmedAt),
+              withdrewAt: toIsoInstant(row.withdrewAt),
+              withdrewOwn: typeof row.withdrewOwn === 'boolean' ? row.withdrewOwn : null,
+            },
           }
         : null
     },
@@ -153,39 +153,6 @@ export async function POST(req: Request) {
         overrideAccess: true,
       }),
 
-    // Type (5): a "dolazim" the dancer themselves withdrew within a day of the
-    // start reaches the voditelji (#436). The RULE is `isWithdrawal`, applied
-    // inside `notifyWithdrawal`; this only supplies the facts and the deps, so
-    // the route has no opinion about when a phone should ring.
-    onAnswered: async (event) => {
-      // Built LAZILY, behind the rule: `notifyWithdrawal` only reaches for
-      // these when the answer really was a withdrawal, so an ordinary
-      // "dolazim" costs no pool lookup and no VAPID warning.
-      const push = {
-        loadVoditeljUserIds: () => pushDeps().loadVoditeljUserIds(),
-        send: (userIds: readonly string[], message: PushMessage) =>
-          pushDeps().send(userIds, message),
-      }
-      // DETACHED (#441 review): the dancer's answer must not wait for the
-      // voditelji's phones. `notifyWithdrawal` never rejects, and the catch is
-      // belt to those braces.
-      void notifyWithdrawal(
-        {
-          performance: {
-            id: event.performance.id,
-            date: event.performance.date ?? '',
-            time: event.performance.time ?? '',
-          },
-          who: { memberId: event.memberId, nickname: event.member?.nickname ?? null },
-          previousStatus: event.previousStatus,
-          nextStatus: event.nextStatus,
-          ownAnswer: event.ownAnswer,
-          startMs: event.performance.startMs,
-          nowMs: event.nowMs,
-        },
-        push,
-      ).catch((err) => console.error('[push] withdrawal notification failed', err))
-    },
   })
 
   return NextResponse.json(result.body, { status: result.status })

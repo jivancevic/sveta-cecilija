@@ -6,9 +6,10 @@ import {
   heroView,
   identityOf,
   monthSections,
-  nastupRow,
+  type NastupRow,
 } from '@/lib/app/moreska-screen'
 import { APP_STRINGS, formatPerformanceDate } from '@/lib/app/strings'
+import { zagrebToday } from '@/lib/app/home-screen'
 import { Card, Chip, DateDisc, Hero, List, ListRow, Note, RoleMark, Section } from '../../ui'
 import { AppShell } from '../../AppShell'
 import { openScreen } from '../../gate'
@@ -16,6 +17,7 @@ import { Answer } from './Answer'
 import { StateBar } from './StateBar'
 import { HeroHalves } from '../../HeroHalves'
 import { HeroMeta } from '../../HeroMeta'
+import { HeroEyebrow } from '../../HeroEyebrow'
 
 // `/app/moreska` — Moreška, the dancer's register screen (#565).
 //
@@ -64,23 +66,70 @@ export default async function MoreskaPage() {
     armyCounts: true,
   })
 
+  // ONE clock for the whole screen, and it is the LOADER's (`season.nowMs`, the
+  // instant the upcoming/past split was taken). Two reasons, and both are
+  // rules rather than taste: a server component may not read the wall clock
+  // during render, and the honest reference point for "danas" is the same one
+  // that decided which side of the split this evening fell on. A second
+  // `Date.now()` here could put the hero's DANAS and the row's countdown on
+  // opposite sides of midnight.
+  const today = zagrebToday(season.nowMs)
+
   const pick = pickHeroPerformances(season.upcoming)
   const next = pick?.first ?? null
   const ahead = aheadLabel(season.upcoming)
-  // The crown on the reader's own mark is the NEXT nastup's title, from its
-  // confirmed postava and from nowhere else (#566, glossary: *Title*).
-  const identity = identityOf(me, ahead, next?.myTitle ?? null)
-  const months = monthSections(groupByMonth(season.upcoming), { showAnswer: me != null })
-  const hero = pick ? heroView(pick) : null
+  // The identity block is a PROFILE (#612): the big disc is the reader's own
+  // primary role, the small ones are the rest of what they dance, and the
+  // evening's title is drawn where a person is shown IN an evening — the hero
+  // below, and Stanje (glossary: *Title*, unchanged).
+  const identity = identityOf(me, ahead)
+  const months = monthSections(groupByMonth(season.upcoming), {
+    showAnswer: me != null,
+    today,
+  })
+  // The past is already most recent first (`splitBySeason`), so grouping it
+  // reuses the upcoming list's own function and comes out newest month first
+  // with the newest evening at the top of each: a second, descending grouper
+  // would be a second place for "which month is this row in" to be decided.
+  const pastMonths = monthSections(groupByMonth(season.past), { showAnswer: false })
+  const hero = pick ? heroView(pick, { today }) : null
   const lastPast = season.past[0] ?? null
 
   return (
     <AppShell viewer={viewer} screen="moreska" season={season.year}>
       {identity ? (
         <div className="app__me">
-          <RoleMark army={identity.army} title={identity.title} />
+          {/* PROFILE context (#612): `role`, never `title`. The type makes the
+              two mutually exclusive, which is what stops an evening's crown
+              from ever reaching a person's own block by accident. */}
+          {identity.primaryRole ? (
+            <RoleMark army={identity.army} role={identity.primaryRole} />
+          ) : (
+            <RoleMark army={identity.army} />
+          )}
           <div className="app__me-body">
-            <h2>{identity.name}</h2>
+            {/* The name and the other roles share a line: the discs belong to
+                the name, not to the season sentence under it. */}
+            <div className="app__me-name">
+              <h2>{identity.name}</h2>
+              {identity.others.length > 0 && (
+                <span className="app__me-roles">
+                  {/* Every one of them, wrapping rather than truncating: this
+                      is the reader's own profile and a "+2" would hide the
+                      half they opened it to check. The label is on the disc
+                      because the disc is otherwise pure colour. */}
+                  {identity.others.map((other) => (
+                    <RoleMark
+                      key={other.role}
+                      army={other.army}
+                      role={other.role}
+                      small
+                      label={other.label}
+                    />
+                  ))}
+                </span>
+              )}
+            </div>
             <p>{identity.line}</p>
           </div>
         </div>
@@ -93,7 +142,8 @@ export default async function MoreskaPage() {
 
       {hero && next ? (
         <Hero
-          eyebrow={hero.eyebrow}
+          eyebrow={<HeroEyebrow text={hero.eyebrow} today={hero.todayLabel} />}
+          className={hero.todayLabel ? 'app__hero--today' : undefined}
           {...(hero.halves
             ? // A split day says the date once, in the eyebrow: the big serif
               // date and the weekday line belong to the single hero (#592).
@@ -148,7 +198,7 @@ export default async function MoreskaPage() {
 
       {months.map((month) => (
         <section className="app__month-group" key={month.key}>
-          <Section title={month.label} aside={month.aside} />
+          <Section className="app__month-head" title={month.label} aside={month.aside} />
           <List>
             {month.rows.map((row) => (
               <ListRow
@@ -156,7 +206,7 @@ export default async function MoreskaPage() {
                 href={row.href}
                 className={row.cancelled ? 'app__row--cancelled' : undefined}
                 lead={<DateDisc day={row.day} weekday={row.weekday} tone={row.tone} />}
-                title={row.title}
+                title={<RowTitle row={row} />}
                 meta={row.meta}
                 trail={row.chip && <Chip tone={row.chip.tone}>{row.chip.label}</Chip>}
               />
@@ -167,34 +217,67 @@ export default async function MoreskaPage() {
 
       {/* The season behind you. A disclosure rather than a section, because
           this screen looks forward and the past is something a dancer goes
-          looking for; their own tally of it lives on Ljestvica. */}
+          looking for; their own tally of it lives on Ljestvica.
+
+          Inside it, the same month groups the upcoming half has (#612). A flat
+          list of twenty-two evenings was readable in July and stopped being so
+          in September: a dancer looking back for "that Thursday in kolovoz"
+          was counting rows. Descending, because the past is read backwards —
+          which costs nothing, since `season.past` already arrives newest
+          first and `groupByMonth` keeps the order it is given. */}
       {season.past.length > 0 && (
         <details className="app__past">
           <summary>{S.past(season.past.length)}</summary>
-          <List>
-            {season.past.map((p) => {
-              // The past row carries the postava chip instead of an answer
-              // chip: what a dancer looks back for is whether they were in it.
-              const row = nastupRow(p, { showAnswer: false })
-              return (
-                <ListRow
-                  key={row.id}
-                  href={row.href}
-                  className={row.cancelled ? 'app__row--cancelled' : undefined}
-                  lead={<DateDisc day={row.day} weekday={row.weekday} tone={row.tone} />}
-                  title={row.title}
-                  meta={row.meta}
-                  trail={
-                    p.lineupConfirmed ? (
-                      <Chip tone="gold">{APP_STRINGS.home.lineupConfirmed}</Chip>
-                    ) : null
-                  }
-                />
-              )
-            })}
-          </List>
+          {pastMonths.map((month) => (
+            <section className="app__month-group" key={month.key}>
+              <Section className="app__month-head" title={month.label} aside={month.aside} />
+              <List>
+                {month.rows.map((row) => (
+                  <ListRow
+                    key={row.id}
+                    href={row.href}
+                    className={row.cancelled ? 'app__row--cancelled' : undefined}
+                    lead={<DateDisc day={row.day} weekday={row.weekday} tone={row.tone} />}
+                    title={row.title}
+                    meta={row.meta}
+                    // POPIS, not "Postava potvrđena" (#612). The old gold chip
+                    // named a step in the voditelj's workflow on a screen a
+                    // dancer reads backwards; what the dancer wants to know is
+                    // that there IS a list, and that the row opens it. Green
+                    // and outlined so it is an aside about a finished evening
+                    // rather than a state anybody can still change.
+                    trail={
+                      row.lineupConfirmed ? <Chip tone="green">{S.lineupList}</Chip> : null
+                    }
+                  />
+                ))}
+              </List>
+            </section>
+          ))}
         </details>
       )}
     </AppShell>
+  )
+}
+
+/**
+ * A row's first line: the evening's category, and how close it is (#612).
+ *
+ * The countdown is a chip rather than a third item in the grey meta line under
+ * it, because "za 2 dana" is not of the same kind as "21:00 · Ljetno kino":
+ * those are facts about the evening, this is a fact about now. Outlined and
+ * lowercase so it reads as an aside — a filled pill here would compete with
+ * the reader's own answer chip at the other end of the row.
+ *
+ * The UPCOMING list only: `nastupRow` returns null for `soon` whenever it was
+ * given no day to count from, and the past list gives it none.
+ */
+function RowTitle({ row }: { row: NastupRow }) {
+  if (!row.soon) return <>{row.title}</>
+  return (
+    <span className="app__row-title">
+      {row.title}
+      <Chip tone="outline">{row.soon}</Chip>
+    </span>
   )
 }

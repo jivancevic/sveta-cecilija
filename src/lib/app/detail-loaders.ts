@@ -20,6 +20,7 @@
 // calls and nothing else.
 
 import { countArmies, type ArmyCount, type AttendanceRow } from '@/lib/attendance/army-count'
+import { toIsoInstant } from '@/lib/to-iso-date'
 import {
   allowedArmies,
   defaultArmyOf,
@@ -214,6 +215,8 @@ export function toAttendanceRow(doc: Record<string, unknown>): AttendanceRow | n
     memberId,
     status: doc.status as AttendanceStatus,
     army: doc.army === 'crni' || doc.army === 'bili' ? (doc.army as Army) : null,
+    withdrewAt: toIsoInstant(doc.withdrewAt),
+    withdrewOwn: typeof doc.withdrewOwn === 'boolean' ? doc.withdrewOwn : null,
   }
 }
 

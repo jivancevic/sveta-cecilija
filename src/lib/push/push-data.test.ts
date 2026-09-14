@@ -80,7 +80,7 @@ describe('createSender', () => {
 
   it('writes nothing and asks nothing for an empty audience', async () => {
     const { query, calls } = fakeQuery()
-    await createSender(query)([], message('withdrawal'))
+    await createSender(query)([], message('alarm'))
     expect(inserts(calls)).toEqual([])
   })
 })

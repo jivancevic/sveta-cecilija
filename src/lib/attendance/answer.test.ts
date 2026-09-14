@@ -173,6 +173,10 @@ describe('handleAttendanceAnswer — the upsert', () => {
       army: 'crni',
       answeredBy: 'u9',
       answeredAt: NOW.toISOString(),
+      // The odustajanje stamps (#612): a first "dolazim" starts the promise.
+      confirmedAt: NOW.toISOString(),
+      withdrewAt: null,
+      withdrewOwn: null,
     })
     expect(d.update).not.toHaveBeenCalled()
   })
@@ -186,8 +190,36 @@ describe('handleAttendanceAnswer — the upsert', () => {
       army: 'bili',
       answeredBy: 'u9',
       answeredAt: NOW.toISOString(),
+      // Nothing was promised (the fixture row carries no `confirmedAt`), so
+      // "ne dolazim" is not an odustajanje.
+      confirmedAt: null,
+      withdrewAt: null,
+      withdrewOwn: null,
     })
     expect(d.create).not.toHaveBeenCalled()
+  })
+
+  it('stamps an odustajanje when a standing "dolazim" is taken back', async () => {
+    // The end-to-end of #612: the rule is `stampWithdrawal`'s, but the handler
+    // is what reads the row as it stands and hands the stamps to the writer.
+    const stood = new Date(NOW.getTime() - 60 * 60 * 1000).toISOString()
+    const d = deps({
+      findExisting: async () => ({
+        id: 55,
+        army: 'crni',
+        status: 'coming',
+        stamps: { confirmedAt: stood, withdrewAt: null, withdrewOwn: null },
+      }),
+    })
+    await handleAttendanceAnswer(body({ status: 'not_coming' }), d)
+    expect(d.update).toHaveBeenCalledWith(
+      55,
+      expect.objectContaining({
+        confirmedAt: stood,
+        withdrewAt: NOW.toISOString(),
+        withdrewOwn: true,
+      }),
+    )
   })
 
   it('records the voditelj as the author when they answer on behalf', async () => {
@@ -231,6 +263,9 @@ describe('handleAttendanceAnswer — the create race', () => {
       army: 'crni',
       answeredBy: 'u9',
       answeredAt: NOW.toISOString(),
+      confirmedAt: NOW.toISOString(),
+      withdrewAt: null,
+      withdrewOwn: null,
     })
   })
 

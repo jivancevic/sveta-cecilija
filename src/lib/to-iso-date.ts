@@ -15,3 +15,21 @@ export function toIsoDate(value: unknown): string {
   const d = new Date(s)
   return Number.isNaN(d.getTime()) ? '' : d.toISOString().slice(0, 10)
 }
+
+/**
+ * Normalise a DB `timestamptz` to a full ISO instant, or null.
+ *
+ * The sibling of `toIsoDate` for the case where the TIME matters. A Payload
+ * date field reads back as a `Date` or as an ISO string depending on the
+ * adapter and on whether the row came through the local API or a raw query, so
+ * every caller that wants an instant has to handle both. Odustali needs the
+ * hour (`src/lib/attendance/withdrawal-stamp.ts`), which is what pulled this
+ * out of the three places that had each written it again.
+ */
+export function toIsoInstant(value: unknown): string | null {
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value.toISOString()
+  }
+  if (typeof value === 'string' && value.trim() !== '') return value
+  return null
+}

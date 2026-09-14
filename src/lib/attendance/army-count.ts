@@ -26,6 +26,26 @@ export interface AttendanceRow {
   memberId: string
   status: 'coming' | 'not_coming'
   army: Army | null
+  /** ISO of the odustajanje, when this row carries one (#612). */
+  withdrewAt?: string | null
+  /** True when the dancer withdrew, false when a voditelj wrote it down. */
+  withdrewOwn?: boolean | null
+}
+
+/**
+ * Somebody who said dolazim and took it back (#612; glossary: *Odustajanje*).
+ *
+ * A SUBSET of `notComing`, never a replacement for it: every other reader of
+ * this count asks "is this person coming tonight", and for that question an
+ * odustajanje is simply a no. Only Stanje separates the two, because only a
+ * voditelj cares about the difference between a place that was never filled and
+ * one that emptied out.
+ */
+export interface WithdrawnPerson extends RosterPerson {
+  /** ISO. Stanje shows the time of day; the date is the evening's own. */
+  withdrewAt: string
+  /** False means a voditelj recorded it: the dancer phoned rather than vanished. */
+  withdrewOwn: boolean | null
 }
 
 /** A person in one of the lists the app renders. Mobiles yes, emails never. */
@@ -49,8 +69,14 @@ export interface ArmyCount {
   bili: ArmyTally
   /** Coming, but in neither army (a bula). */
   bula: RosterPerson[]
-  /** Answered "ne dolazim". */
+  /** Answered "ne dolazim". Includes everyone in `withdrawn`. */
   notComing: RosterPerson[]
+  /**
+   * The subset of `notComing` who had said dolazim first and let it stand
+   * (#612). Newest first: a voditelj reading the night before wants the one
+   * that just happened at the top, not the one from last Tuesday.
+   */
+  withdrawn: WithdrawnPerson[]
   /** Active moreškanti with no row at all. */
   noAnswer: RosterPerson[]
 }
@@ -105,6 +131,7 @@ export function countArmies(
   const bili: RosterPerson[] = []
   const bula: RosterPerson[] = []
   const notComing: RosterPerson[] = []
+  const withdrawn: WithdrawnPerson[] = []
   const answered = new Set<string>()
 
   for (const row of rows) {
@@ -112,7 +139,11 @@ export function countArmies(
     if (!member) continue
     answered.add(String(row.memberId))
     if (row.status === 'not_coming') {
-      notComing.push(person(member))
+      const who = person(member)
+      notComing.push(who)
+      if (row.withdrewAt) {
+        withdrawn.push({ ...who, withdrewAt: row.withdrewAt, withdrewOwn: row.withdrewOwn ?? null })
+      }
       continue
     }
     // A row saved before the army column existed, or a hand-edited NULL: fall
@@ -133,6 +164,7 @@ export function countArmies(
     bili: tally(bili, thresholds.bili),
     bula: [...bula].sort(byNickname),
     notComing: [...notComing].sort(byNickname),
+    withdrawn: [...withdrawn].sort((a, b) => b.withdrewAt.localeCompare(a.withdrewAt)),
     noAnswer,
   }
 }

@@ -5,10 +5,9 @@
 // accident of which loader a sender happened to call. It is a table now:
 //
 //   - the **group** whose accounts the notification is addressed to. The three
-//     groups are resolved three different ways and the words matter: dancers
-//     through their `Users.member` link (a Member without a login is simply not
-//     in the list, which is where a guest drops out), voditelji by holding
-//     `moreska`, staff by holding `tickets`. The permission vocabulary itself
+//     groups are resolved differently and the words matter: dancers through
+//     their `Users.member` link (a Member without a login is simply not in the
+//     list, which is where a guest drops out), staff by holding `tickets`. The permission vocabulary itself
 //     stays `src/lib/access/permissions.ts`'s — the strings below are VALUES of
 //     that enum, never a second copy of it;
 //   - whether the kind **pushes** at all. The two staff kinds do not: an
@@ -37,15 +36,22 @@ export const APP_NOTIFICATION_KINDS = [
   'reminder',
   'performance_created',
   'performance_changed',
-  'withdrawal',
   'inquiry',
   'dispute',
 ] as const
 
 export type AppNotificationKind = (typeof APP_NOTIFICATION_KINDS)[number]
 
-/** The three ways an audience is resolved. */
-export type NotificationAudienceGroup = 'roster' | 'voditelji' | 'staff'
+/**
+ * The two ways an audience is resolved.
+ *
+ * There were three until #612 retired the withdrawal push, which was the only
+ * kind addressed to the `voditelji`. The group went with it, loader and all:
+ * an audience nothing is addressed to is not a way of resolving one, it is a
+ * branch that cannot be reached and cannot be wrong in any way a test would
+ * catch. A future voditelj-only notice adds it back in one line.
+ */
+export type NotificationAudienceGroup = 'roster' | 'staff'
 
 export interface AudienceRule {
   group: NotificationAudienceGroup
@@ -66,7 +72,6 @@ const RULES: Record<AppNotificationKind, AudienceRule> = {
   reminder: { group: 'roster', pushes: true, doorInbox: false },
   performance_created: { group: 'roster', pushes: true, doorInbox: true },
   performance_changed: { group: 'roster', pushes: true, doorInbox: true },
-  withdrawal: { group: 'voditelji', pushes: true, doorInbox: false },
   inquiry: { group: 'staff', pushes: false, doorInbox: false },
   dispute: { group: 'staff', pushes: false, doorInbox: false },
 }

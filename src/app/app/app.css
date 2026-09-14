@@ -318,17 +318,24 @@ html:has(> .app) {
      about what is above it — which is what lets the same `Card` be a screen's
      third block and a sheet's only one.
    • It is a FLOOR, not a fixed distance. The specificity is one class, and it
-     sits at the top of this sheet, so any block that wants more air than 12px
-     says so on itself further down (`.app__month-group` keeps its 22px, the
-     past disclosure its 30px) and wins the cascade; and because the shell is a
-     plain block, a neighbour's bottom margin collapses with this top one rather
-     than adding to it. A screen that was already spaced is left exactly as it
-     was, and a screen that was not gets 12px.
+     sits at the top of this sheet, so any block that wants more air than the
+     floor says so on itself further down (`.app__month-group` keeps its 22px,
+     the past disclosure its 30px) and wins the cascade; and because the shell
+     is a plain block, a neighbour's bottom margin collapses with this top one
+     rather than adding to it. A screen that was already spaced is left exactly
+     as it was, and a screen that was not gets the floor.
+
+   **The floor is 16px since #612**, up from the 12px it shipped at. 12 was the
+   design system's gap token and it was the right number for two things INSIDE
+   one card; between two whole widgets on Početna it still read as one block
+   with seams in it. 16 is the next step of the same scale, so nothing else in
+   the sheet has to move, and the tiles moved with it (`.ui-tiles`) so the
+   vertical and horizontal rhythm of that screen stay one number.
 
    The header is never a second child, so it is untouched, and the greeting sets
    its own margins right below and keeps them. */
 .app__shell > * + * {
-  margin-top: 12px;
+  margin-top: 16px;
 }
 
 /* ── Between two screens (#593) ────────────────────────────
@@ -535,9 +542,15 @@ html:has(> .app) {
   letter-spacing: 0.01em;
 }
 
-/* The greeting: the reader's name in the serif, the evening's news under it. */
+/* The greeting: the reader's name in the serif, the evening's news under it.
+
+   It sets its own margins rather than taking the shell's floor, and since #612
+   the top one is real: "Dobar dan, Josip." at 34px sat directly under the logo
+   row, so the wordmark and the greeting read as one two-line heading instead of
+   as the chrome and then the welcome. 14px is what separates them without
+   pushing the first card off a short phone. */
 .app__home-greet {
-  margin: 0 0 4px;
+  margin: 14px 0 6px;
 }
 
 .app__home-greet b {
@@ -2484,6 +2497,23 @@ html:has(> .app) {
   flex-wrap: wrap;
   gap: 6px;
   margin: -10px 0 18px;
+}
+
+/* A row's first line when something sits beside the title: the kind word and
+   the "za 3 dana" chip on Moreška (#612).
+
+   It exists mostly to win a specificity argument. `:where(.ui-row__body) span`
+   paints every span in a row body muted at 13px, which is right for the second
+   line and wrong for a wrapper around the first; at 0,1,0 this rule hands the
+   text back the size and colour it inherits, and the chip inside keeps its own
+   because `.ui-chip` weighs the same. */
+.app__row-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  color: inherit;
+  font-size: inherit;
 }
 
 /* The 44px slot in front of a row, so four lists line their titles up whatever
@@ -4638,12 +4668,30 @@ a.app__ob-link {
   min-width: 0;
 }
 
-/* The rule between the two evenings. `margin-left: -1px` pulls the border back
-   onto the gap's centre line so the two halves stay equal. */
+/* The rule between the two evenings, and it is drawn IN THE GAP (#612).
+
+   It used to be a `border-left` plus 14px of `padding-left` on the second half,
+   which looked right and was not: padding comes out of the track, so the second
+   evening's content box was 14px narrower than the first's and its answer
+   buttons wrapped one word sooner. Two halves of a split day are two equal
+   questions, and a grid that says `1fr 1fr` has to mean it.
+
+   So the line is a pseudo-element sitting on the gap's centre (-7px of a 14px
+   gap), outside both content boxes, and neither half carries any padding at
+   all. It hangs off `+ .app__hero-half`, so a hero with ONE performance draws
+   no line and inherits no stray spacing — the selector never matches. */
 .app__hero-half + .app__hero-half {
-  border-left: 1px solid var(--rule);
-  padding-left: 14px;
-  margin-left: -1px;
+  position: relative;
+}
+
+.app__hero-half + .app__hero-half::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -7px;
+  width: 1px;
+  background: var(--rule);
 }
 
 .app__hero-half-head {
@@ -4692,6 +4740,93 @@ a.app__ob-link {
 .app__hero-half-armies b {
   color: var(--ink);
   font-weight: 600;
+}
+
+/* ── The hero, when the evening is TONIGHT (#612) ───────────
+   Three things say it, and they are deliberately of three different kinds,
+   because each one fails for a different reader:
+
+     the WORD    "DANAS" in the eyebrow. Survives everything: no colour, no
+                 motion, no shape. It is the one that carries the meaning, which
+                 is why `heroView()` decides it on the server and hands it over
+                 as text rather than as a class this sheet could invent.
+     the EDGE    a 1.5px gold border and a soft gold halo. Read from across a
+                 room, before any word is.
+     the SWEEP   one pass of light over the card, on mount. It says "this is
+                 new" once and then is never seen again.
+
+   **The sweep is ONE SHOT and never a loop.** A card that pulses forever is a
+   card a dancer learns to stop seeing, and it is also a phone repainting a
+   blurred, shadowed 300px card at 60fps for as long as the screen is open.
+
+   `overflow: hidden` is what keeps the sweep inside the rounded corners, and
+   the card has nothing that overhangs its own edge, so it costs nothing else. */
+/* Written as a compound with `.ui-card--hero` for one reason only: `ui.css`
+   loads AFTER this sheet, so a single-class rule here loses the tie on
+   `box-shadow` to the hero's own. This is the sanctioned shape of that
+   exception, not a screen restyling a `ui-*` component: the card keeps every
+   rule it has and gains an edge. */
+.ui-card--hero.app__hero--today {
+  position: relative;
+  overflow: hidden;
+  border: 1.5px solid var(--gold);
+  box-shadow: var(--shadowHero), 0 0 0 4px var(--goldSoft);
+}
+
+/* The eyebrow becomes a row so DANAS can sit at the far end of it. It is a
+   span INSIDE the eyebrow rather than a rule on `.ui-card__eyebrow`, because a
+   screen does not restyle a `ui-*` shape (T1's rule) and every other eyebrow in
+   the app is one line of text that wants no flex box around it. */
+.app__hero-eyebrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+/* Gold that CARRIES TEXT is `--goldText`, never `--gold` (the token sheet says
+   so): this word is 11px and has to hold 4.5:1 on a white card. */
+.app__hero-today {
+  flex: 0 0 auto;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--goldText);
+}
+
+.app__hero--today::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    105deg,
+    transparent 38%,
+    var(--goldSoft) 50%,
+    transparent 62%
+  );
+  /* `both` so the from-state holds before the first frame and the to-state
+     after the last: the sweep ends parked off the right edge and stays there,
+     rather than snapping back over the card. */
+  animation: app-hero-sweep 1.1s var(--ease) 0.25s 1 both;
+}
+
+@keyframes app-hero-sweep {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+/* Motion off: the sweep is gone entirely rather than slowed. The border and
+   the word are untouched, which is the whole reason they are not decoration —
+   a reader who never sees a single frame of the animation still reads "DANAS"
+   on a gold-edged card. */
+@media (prefers-reduced-motion: reduce) {
+  .app__hero--today::after {
+    display: none;
+  }
 }
 
 /* The third evening and beyond, as a way into the agenda rather than a third
@@ -6956,6 +7091,26 @@ a.app__statrow-main:focus-visible {
   min-width: 0;
 }
 
+/* The name and the reader's OTHER dance roles, on one line (#612).
+   `flex-wrap` rather than a scroller or a "+N": five roles is the most anybody
+   holds, they are 28px each, and a dancer's own profile is the last place to
+   hide half of what they do. A second line is a fine outcome; a hidden role is
+   not. */
+.app__me-name {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+
+.app__me-roles {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
 .app__me-body h2 {
   margin: 0;
   font-family: var(--serif);
@@ -6983,6 +7138,38 @@ a.app__statrow-main:focus-visible {
   flex-direction: column;
   gap: 10px;
   margin-top: 22px;
+}
+
+/* The month heading stays on screen while its own rows scroll past (#612).
+
+   A season is twenty-two evenings and the list is read with a thumb: without
+   this, a dancer three rows into kolovoz has no way to tell which month they
+   are in except by scrolling back. It is a `sticky` on the heading and not a
+   fixed bar, so exactly one month is ever named and it is always the one being
+   read.
+
+   Three details that are all load-bearing:
+
+   • `top` carries the safe-area inset, so on an installed iPhone — whose web
+     view starts at y=0 under the Dynamic Island (`viewport-fit=cover`) — the
+     pinned heading parks under the clock instead of behind it.
+   • The background is the PAGE, not the card: the heading floats over rows
+     that are scrolling under it, and a transparent one would print the month
+     over a nickname.
+   • The negative side margins plus matching padding let that background reach
+     the full width of the shell's content column, so nothing shows through at
+     the ends of the line.
+
+   Both halves of the list get it, the past disclosure included: they are the
+   same list read in two directions, and a heading that pinned in one and not
+   in the other would read as a bug. */
+.app__month-head {
+  position: sticky;
+  top: env(safe-area-inset-top);
+  z-index: 2;
+  margin: 0 -20px;
+  padding: 8px 20px;
+  background: var(--bg);
 }
 
 /* The card that stands where the hero would: the season is over, or it has
@@ -7177,6 +7364,31 @@ a.app__statrow-main:focus-visible {
 
 .app__bule {
   margin-top: 12px;
+}
+
+/* Odustali (#612): the one roster list on Stanje that is open rather than
+   behind a chevron, because it is the list a voditelj is looking for. Each
+   name carries the hour under it, so a row is two lines and cannot use the
+   single-line `.app__name` layout unchanged. */
+.app__withdrawn {
+  margin-top: 12px;
+}
+
+.app__withdrawn-name {
+  align-items: center;
+}
+
+.app__withdrawn-body {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 1px;
+  text-align: left;
+}
+
+.app__withdrawn-when {
+  font-size: 12px;
+  color: var(--muted);
 }
 
 .app__stanje-empty {

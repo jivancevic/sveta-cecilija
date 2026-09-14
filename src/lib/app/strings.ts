@@ -334,7 +334,6 @@ export const APP_STRINGS = {
     armyBili: 'Bila vojska',
     cancelled: 'otkazano',
     past: (count: number) => `Prošle izvedbe (${count})`,
-    lineupConfirmed: 'Postava potvrđena',
     /**
      * Two ways to have no next evening, and they are not the same news: the
      * season is over, or it has not started. The title is picked on whether
@@ -365,6 +364,17 @@ export const APP_STRINGS = {
     /** Two nastupa on one day share one header, so the word is plural (#591). */
     nextTwo: 'Sljedeći nastupi',
     /**
+     * The label in the hero's eyebrow when the evening is TONIGHT (#612).
+     *
+     * Uppercase because it sits in the eyebrow row, which is the one place in
+     * Cecilija where the uppercase micro-label survives, and one word because
+     * it has to be readable at the far edge of a card a dancer is glancing at.
+     * It carries the news on its own: the gold edge and the sweep around it are
+     * both decoration a reader may never see (reduced motion, a colour-blind
+     * eye), and this word is what is left when they are gone.
+     */
+    todayBadge: 'DANAS',
+    /**
      * The one line of numbers a half carries: the two armies, no thresholds.
      *
      * The words only. The counts are drawn beside them by the component, which
@@ -387,6 +397,27 @@ export const APP_STRINGS = {
     extra: 'Vanredna',
     experienceWord: 'Experience',
     cancelled: 'otkazano',
+    /**
+     * How close a nastup is, beside the kind word in the season list (#612).
+     *
+     * Only inside a week: past seven days "za 12 dana" stops being a distance a
+     * dancer feels and becomes a number they have to convert back into a date,
+     * which the row already prints. The wording is deliberately the one said
+     * out loud, which is why 1 is "sutra" and not "za 1 dan" — and why
+     * `soonInDays` never has to spell the singular: 2 through 7 all take "dana".
+     */
+    soonToday: 'danas',
+    soonTomorrow: 'sutra',
+    soonInDays: (days: number) => `za ${days} dana`,
+    /**
+     * The chip on a PAST row (#612): there is a list of who danced that
+     * evening, and the reader can open the row to see whether they are on it.
+     *
+     * It replaced "Postava potvrđena", which was a gold chip saying a thing
+     * about the voditelj's workflow on a screen a dancer reads backwards. The
+     * word is short and green because it is an aside, not news.
+     */
+    lineupList: 'POPIS',
     /** The chip on a row: the reader's own answer, or its absence. */
     chipNone: 'bez odgovora',
     chipYes: 'dolaziš',
@@ -440,6 +471,21 @@ export const APP_STRINGS = {
     bule: 'Bule',
     noAnswer: 'Bez odgovora',
     notComing: 'Ne dolaze',
+    /**
+     * Odustali (#612; glossary: *Odustajanje*). The word is deliberately NOT
+     * "Otkazali": in this app *otkazati* is what happens to an izvedba, with
+     * refunds behind it, and the two must never share a verb.
+     */
+    withdrawn: 'Odustali',
+    /**
+     * Under a name on that list. THREE wordings, not two: `withdrewOwn` is
+     * null on a row stamped before it existed, and a screen that read null as
+     * "the dancer did it" would assert something nobody knows. The neutral one
+     * says only what the row actually holds.
+     */
+    withdrewSelf: (time: string) => `odustao u ${time}`,
+    withdrewByVoditelj: (time: string) => `voditelj upisao u ${time}`,
+    withdrewUnknown: (time: string) => `povukao se u ${time}`,
     nobody: 'Nema nikoga.',
     lineupConfirmed: 'Postava potvrđena',
     cancelled: 'Otkazano',
@@ -3010,13 +3056,6 @@ export const PUSH_MESSAGES = {
       `U raspored je dodano ${input.count} ${input.count === 1 ? 'novi nastup' : 'novih nastupa'}, prvi ${formatPerformanceDate(input.firstDate)}.`,
   },
 
-  /** Type (5), to the voditelji only: a "dolazim" withdrawn (story 18). */
-  withdrawal: {
-    title: 'Netko je odustao',
-    someone: 'Moreškant',
-    body: (input: { who: string; date: string; time: string }) =>
-      `${input.who} više ne dolazi na nastup ${formatPerformanceDate(input.date)} u ${input.time}.`,
-  },
 } as const
 
 /**
@@ -3134,6 +3173,24 @@ export function formatPerformanceDate(date: string): string {
 function atNoon(date: string): Date | null {
   const d = new Date(`${date}T12:00:00.000Z`)
   return Number.isNaN(d.getTime()) ? null : d
+}
+
+/**
+ * "19:40" — the hour a stored instant happened, in Zagreb (#612).
+ *
+ * Odustali is read against ONE evening, whose date the screen already carries,
+ * so the time of day is the whole of the useful fact. Zagreb explicitly rather
+ * than the server's zone: the row is stamped in UTC and the voditelj reading it
+ * is standing on the pier.
+ */
+export function timeOfDay(iso: string): string {
+  const ms = Date.parse(iso)
+  if (Number.isNaN(ms)) return ''
+  return new Intl.DateTimeFormat('hr-HR', {
+    timeZone: 'Europe/Zagreb',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(new Date(ms))
 }
 
 /**

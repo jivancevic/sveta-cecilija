@@ -177,6 +177,21 @@ export function Stanje({
         )}
       </Card>
 
+      {/* Odustali, ABOVE Bez odgovora and open rather than behind a chevron
+          (#612). These are the places the voditelj thought were filled, so the
+          screen states them; "nobody has said anything yet" can wait behind a
+          tap the way it always has. */}
+      {view.withdrawn.length > 0 && (
+        <Card className="app__withdrawn">
+          <Section title={S.withdrawn} aside={String(view.withdrawn.length)} />
+          <div className="app__stanje-names">
+            {view.withdrawn.map((p) => (
+              <WithdrawnName key={p.memberId} person={p} onPick={tap} />
+            ))}
+          </div>
+        </Card>
+      )}
+
       <div className="app__stanje-rows">
         <RosterRow
           label={S.noAnswer}
@@ -348,6 +363,51 @@ function Name({
   if (!onPick) return <span className="app__name">{inside}</span>
   return (
     <button type="button" className="app__name app__name--tap" onClick={() => onPick(person)}>
+      {inside}
+    </button>
+  )
+}
+
+/**
+ * One name on Odustali, with the hour under it (#612).
+ *
+ * The line says WHO recorded it as much as when: "odustao u 19:40" is a dancer
+ * who went quiet, "voditelj upisao u 19:40" is one who phoned somebody. The
+ * disc is blank here on purpose — a title belongs to a postava row, and
+ * somebody who is not coming has already been taken off it.
+ */
+function WithdrawnName({
+  person,
+  onPick,
+}: {
+  person: StanjePerson
+  onPick: ((person: StanjePerson) => void) | null
+}) {
+  const when = person.withdrewAt ?? ''
+  const inside = (
+    <>
+      <RoleMark army={person.army} title={person.title} small />
+      <span className="app__withdrawn-body">
+        <b>{person.nickname}</b>
+        <span className="app__withdrawn-when">
+          {person.withdrewOwn === true
+            ? S.withdrewSelf(when)
+            : person.withdrewOwn === false
+              ? S.withdrewByVoditelj(when)
+              : S.withdrewUnknown(when)}
+        </span>
+      </span>
+    </>
+  )
+
+  if (!onPick) return <span className="app__name app__withdrawn-name">{inside}</span>
+
+  return (
+    <button
+      type="button"
+      className="app__name app__name--tap app__withdrawn-name"
+      onClick={() => onPick(person)}
+    >
       {inside}
     </button>
   )

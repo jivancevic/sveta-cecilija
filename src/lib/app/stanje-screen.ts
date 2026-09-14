@@ -5,7 +5,7 @@
 // only screen where the two halves of an evening are in front of a voditelj at
 // once — the answers on the left and the right, the titles on top of them.
 //
-// Three rules here are worth more than the shaping they look like:
+// Four rules here are worth more than the shaping they look like:
 //
 //   1. **A column's NUMBER is the army; its names may also come from the
 //      postava.** The count is `countArmies` over the attendance answers, the
@@ -23,6 +23,12 @@
 //      never from the profile (glossary: *Title*), so a crni kralj by trade
 //      wears a plain disc here until the voditelj gives him the title, and the
 //      moment somebody else gets it his own disc goes plain again.
+//   4. **Odustali is not a second copy of Ne dolaze.** A dancer who promised
+//      and took it back is lifted OUT of "Ne dolaze" into its own list above
+//      Bez odgovora (#612; glossary: *Odustajanje*), because the two are
+//      operationally different: one is a place that was never filled, the other
+//      a place that emptied after somebody counted on it. The two lists are
+//      disjoint, so nobody is read twice.
 //
 // No IO, no clock, no Payload: the page hands over what the seam loaded and
 // gets back what to draw.
@@ -43,7 +49,7 @@ import type { LineupView, PerformanceDetail } from './detail-loaders'
 import type { RosterPerson } from '@/lib/attendance/army-count'
 import type { Army } from '@/lib/attendance/rules'
 import { performancePlace } from './performance-place'
-import { APP_STRINGS, PUSH_MESSAGES, formatPerformanceDateLong } from './strings'
+import { APP_STRINGS, PUSH_MESSAGES, formatPerformanceDateLong, timeOfDay } from './strings'
 import { kindTone, kindWord, type KindTone } from './performance-kind'
 
 const S = APP_STRINGS.stanje
@@ -73,6 +79,18 @@ export interface StanjePerson {
    * the names are more than the number.
    */
   noAnswer: boolean
+  /**
+   * When they took a standing dolazim back, as a time of day ("19:40"), and
+   * null for everybody else (#612). The date is the evening's own, so the hour
+   * is the whole of what a voditelj reads.
+   */
+  withdrewAt: string | null
+  /**
+   * False when a voditelj wrote the odustajanje down instead of the dancer:
+   * the person phoned, which is a different evening from one who went quiet.
+   * Null wherever `withdrewAt` is.
+   */
+  withdrewOwn: boolean | null
 }
 
 /** One army's column. */
@@ -118,6 +136,16 @@ export interface StanjeView {
   /** Crni first, bili second: the order they stand in on the pier. */
   columns: StanjeColumn[]
   bule: StanjePerson[]
+  /**
+   * Said dolazim, let it stand, then took it back (#612; glossary:
+   * *Odustajanje*). Newest first, and ABOVE Bez odgovora on the screen, because
+   * these are the places a voditelj thought were filled.
+   *
+   * Disjoint from `notComing` by construction: a name appears in exactly one of
+   * the two lists, so the two counts add up to everyone who is not coming.
+   */
+  withdrawn: StanjePerson[]
+  /** Answered ne dolazim without ever having promised otherwise. */
   notComing: StanjePerson[]
   noAnswer: StanjePerson[]
   /**
@@ -190,6 +218,8 @@ function toPerson(
     noAnswer?: boolean
     titles: Map<string, DanceTitle>
     moveTargets: Record<string, Army[]>
+    /** The odustajanje, for the one list that has it (#612). */
+    withdrew?: { at: string; own: boolean | null }
   },
 ): StanjePerson {
   const army = input.army
@@ -211,6 +241,8 @@ function toPerson(
       coming && other && (input.moveTargets[person.memberId] ?? []).includes(other) ? other : null,
     answer: input.answer,
     noAnswer: input.noAnswer === true,
+    withdrewAt: input.withdrew ? timeOfDay(input.withdrew.at) : null,
+    withdrewOwn: input.withdrew ? input.withdrew.own : null,
   }
 }
 
@@ -266,6 +298,8 @@ export function stanjeView(detail: PerformanceDetail): StanjeView {
   ].map((person) => person.memberId)
   const answeredSet = new Set(answered)
 
+  const withdrewIds = new Set(count.withdrawn.map((person) => person.memberId))
+
   const lineup = effectiveLineup(detail.lineup, answered)
   const titles = titleMap(lineup)
   const inLineup = new Set(lineup.map((entry) => entry.memberId))
@@ -316,9 +350,23 @@ export function stanjeView(detail: PerformanceDetail): StanjeView {
       ),
       ...dictated('bula'),
     ],
-    notComing: count.notComing.map((person) =>
-      toPerson(person, { army: null, answer: 'not_coming', inLineup: false, ...shared }),
+    // The two halves of "not coming", and they are disjoint: a name that
+    // appears in `withdrawn` is taken out of `notComing` rather than repeated,
+    // so the voditelj reads each person once and the counts still add up.
+    withdrawn: count.withdrawn.map((person) =>
+      toPerson(person, {
+        army: null,
+        answer: 'not_coming',
+        inLineup: false,
+        withdrew: { at: person.withdrewAt, own: person.withdrewOwn },
+        ...shared,
+      }),
     ),
+    notComing: count.notComing
+      .filter((person) => !withdrewIds.has(person.memberId))
+      .map((person) =>
+        toPerson(person, { army: null, answer: 'not_coming', inLineup: false, ...shared }),
+      ),
     // Still every member with no answer, postava row or not: the list answers
     // "who has not said anything", which a dictated row does not change.
     noAnswer: count.noAnswer.map((person) =>

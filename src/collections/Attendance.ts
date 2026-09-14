@@ -117,5 +117,47 @@ export const Attendance: CollectionConfig = {
       label: { en: 'Answered at', hr: 'Vrijeme odgovora' },
       admin: { date: { pickerAppearance: 'dayAndTime' } },
     },
+    // The odustajanje stamps (#612). Written ONLY by the answer route, through
+    // `stampWithdrawal` — a voditelj fixing a row here by hand changes the
+    // answer without restamping it, which is the right way round: the stamps
+    // record what the DANCER did, and an administrative correction is not that.
+    {
+      name: 'confirmedAt',
+      type: 'date',
+      label: { en: 'Said coming at', hr: 'Vrijeme potvrde dolaska' },
+      admin: {
+        readOnly: true,
+        date: { pickerAppearance: 'dayAndTime' },
+        description: {
+          en: 'When this row most recently became "coming". The ten-minute grace window is measured from here.',
+          hr: 'Kad je ovaj redak zadnji put postao "dolazim". Od ovog trenutka se mjeri deset minuta počeka.',
+        },
+      },
+    },
+    {
+      name: 'withdrewAt',
+      type: 'date',
+      label: { en: 'Withdrew at', hr: 'Vrijeme odustajanja' },
+      admin: {
+        readOnly: true,
+        date: { pickerAppearance: 'dayAndTime' },
+        description: {
+          en: 'Set when a standing "coming" was taken back. Empty for a fast correction and for anyone who never said they were coming.',
+          hr: 'Postavlja se kad je potvrđen dolazak povučen. Prazno za brzi ispravak i za svakoga tko nikad nije rekao da dolazi.',
+        },
+      },
+    },
+    {
+      name: 'withdrewOwn',
+      type: 'checkbox',
+      label: { en: 'Withdrew themselves', hr: 'Sam odustao' },
+      admin: {
+        readOnly: true,
+        description: {
+          en: 'True when the dancer withdrew, false when a voditelj recorded it for them.',
+          hr: 'Označeno kad je moreškant sam odustao, prazno kad je voditelj to zabilježio umjesto njega.',
+        },
+      },
+    },
   ],
 }

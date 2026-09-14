@@ -236,7 +236,16 @@ export interface RingCard extends CardBase {
 export interface PodiumCard extends CardBase {
   kind: 'podium'
   key: 'leaderboard'
-  entries: { label: string; value: number }[]
+  /**
+   * The top three, in finishing order.
+   *
+   * `me` is the reader's own step (#612). The tile's three bars were three
+   * anonymous blocks: a dancer who IS on the podium had to read three nicknames
+   * to find out, on a card whose whole job is to be read in a glance. The flag
+   * is decided here, off the ranked rows, rather than by comparing nicknames in
+   * a component — two moreškanti can share one.
+   */
+  entries: { label: string; value: number; me: boolean }[]
   caption: string
 }
 
@@ -477,13 +486,13 @@ export function statsCard(
  * a rank for somebody who is not on the board.
  */
 export function leaderboardCard(input: {
-  top: { nickname: string; performances: number }[]
+  top: { nickname: string; performances: number; me?: boolean }[]
   me: { rank: number; performances: number } | null
   countWords: { one: string; few: string; many: string }
 }): PodiumCard {
   const entries = input.top
     .slice(0, 3)
-    .map((row) => ({ label: row.nickname, value: row.performances }))
+    .map((row) => ({ label: row.nickname, value: row.performances, me: row.me === true }))
   const leader = input.top[0]
   const counted = (n: number) => `${n} ${input.countWords[pluralForm(n)]}`
 
