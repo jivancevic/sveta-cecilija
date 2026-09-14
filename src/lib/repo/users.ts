@@ -72,6 +72,16 @@ export interface UsersRepo {
   setName(id: string, name: string | null, ctx: WriteCtx): Promise<void>
 
   /**
+   * The address this login signs back in through, or null to take it off (#621).
+   *
+   * An auth field, not a contact detail: it is what a sign-in link and a
+   * forgotten password are addressed to. The collection's e-mail policy hook
+   * runs on this write, so an address removed from a named-person account is
+   * refused twice over — in Croatian by the route, in English by the hook.
+   */
+  setEmail(id: string, email: string | null, ctx: WriteCtx): Promise<void>
+
+  /**
    * The three screens this account opens on, in order (#563).
    *
    * Replaced whole, like the permission set, and for the same reason: a bar is

@@ -3,10 +3,12 @@ import { PERMISSIONS, type Permission } from '@/lib/access/permissions'
 import { APP_STRINGS } from './strings'
 import {
   handleSetShared,
+  handleUpdateEmail,
   handleUpdateName,
   handleUpdatePermissions,
   parsePermissionSet,
   permissionDiff,
+  type SetEmailDeps,
   type SetNameDeps,
   type UpdatePermissionsDeps,
   type UsersTarget,
@@ -288,6 +290,176 @@ describe('POST /api/app/users/[id]/shared', () => {
   it('wants a boolean, not a guess', async () => {
     const res = await handleSetShared('7', { shared: 'da' }, { ...deps(), setShared: async () => {} })
     expect(res.status).toBe(400)
+  })
+})
+
+describe('PATCH /api/app/users/[id]/email', () => {
+  function emailDeps(over: Partial<SetEmailDeps> = {}): SetEmailDeps {
+    return {
+      request: SAME_SITE,
+      caller: { id: '1', shared: false },
+      loadUser: async () => target(),
+      emailTaken: vi.fn(async () => false),
+      setEmail: vi.fn(async () => {}),
+      ...over,
+    }
+  }
+
+  it('writes a new address, trimmed and lowercased', async () => {
+    const setEmail = vi.fn(async () => {})
+    const res = await handleUpdateEmail('7', { email: '  Tatjana.Vigna@Moreska.EU ' }, emailDeps({ setEmail }))
+
+    expect(res.status).toBe(200)
+    expect(setEmail).toHaveBeenCalledWith('7', 'tatjana.vigna@moreska.eu')
+    expect(res.body.message).toBe(S.email.saved)
+  })
+
+  it('puts an address on a login that had none', async () => {
+    const setEmail = vi.fn(async () => {})
+    const res = await handleUpdateEmail(
+      '7',
+      { email: 'tehnika@moreska.eu' },
+      emailDeps({ loadUser: async () => target({ permissions: ['door'], email: null }), setEmail }),
+    )
+
+    expect(res.status).toBe(200)
+    expect(setEmail).toHaveBeenCalledWith('7', 'tehnika@moreska.eu')
+  })
+
+  it('refuses something that is not an address', async () => {
+    const setEmail = vi.fn(async () => {})
+    const res = await handleUpdateEmail('7', { email: 'tatjana(at)moreska' }, emailDeps({ setEmail }))
+
+    expect(res.status).toBe(400)
+    expect(res.body).toEqual({ error: S.create.badEmail })
+    expect(setEmail).not.toHaveBeenCalled()
+  })
+
+  it('refuses an address that already belongs to somebody else', async () => {
+    const setEmail = vi.fn(async () => {})
+    const res = await handleUpdateEmail(
+      '7',
+      { email: 'josip@moreska.eu' },
+      emailDeps({ emailTaken: async () => true, setEmail }),
+    )
+
+    expect(res.status).toBe(409)
+    expect(res.body).toEqual({ error: S.create.emailTaken })
+    expect(setEmail).not.toHaveBeenCalled()
+  })
+
+  it('does not ask whether the row’s OWN address is taken', async () => {
+    // Re-saving the same address must never collide with itself, so the
+    // unchanged branch answers before the lookup is made at all.
+    const emailTaken = vi.fn(async () => true)
+    const setEmail = vi.fn(async () => {})
+    const res = await handleUpdateEmail(
+      '7',
+      { email: 'TATJANA@moreska.eu' },
+      emailDeps({ loadUser: async () => target({ email: 'tatjana@moreska.eu' }), emailTaken, setEmail }),
+    )
+
+    expect(res.status).toBe(200)
+    expect(res.body.message).toBe(S.email.unchanged)
+    expect(emailTaken).not.toHaveBeenCalled()
+    expect(setEmail).not.toHaveBeenCalled()
+  })
+
+  it('clears the address on a login that does not need one', async () => {
+    const setEmail = vi.fn(async () => {})
+    const res = await handleUpdateEmail(
+      '7',
+      { email: '  ' },
+      emailDeps({
+        loadUser: async () => target({ permissions: ['door'], email: 'tehnika@moreska.eu' }),
+        setEmail,
+      }),
+    )
+
+    expect(res.status).toBe(200)
+    expect(setEmail).toHaveBeenCalledWith('7', null)
+    expect(res.body.message).toBe(S.email.cleared)
+  })
+
+  it('refuses to clear the address a named-person set depends on', async () => {
+    // The same rule the Users beforeValidate hook applies, said in Croatian and
+    // before the write, naming Dozvole as the repair.
+    const setEmail = vi.fn(async () => {})
+    const res = await handleUpdateEmail(
+      '7',
+      { email: '' },
+      emailDeps({ loadUser: async () => target({ permissions: ['tickets'] }), setEmail }),
+    )
+
+    expect(res.status).toBe(400)
+    expect(res.body).toEqual({ error: S.email.required })
+    expect(setEmail).not.toHaveBeenCalled()
+  })
+
+  it('refuses a value that is not a string', async () => {
+    const setEmail = vi.fn(async () => {})
+    const res = await handleUpdateEmail('7', { email: ['a@b.hr'] }, emailDeps({ setEmail }))
+
+    expect(res.status).toBe(400)
+    expect(setEmail).not.toHaveBeenCalled()
+  })
+
+  it('refuses a shared caller and a cross-site request', async () => {
+    const setEmail = vi.fn(async () => {})
+    const shared = await handleUpdateEmail(
+      '7',
+      { email: 'a@b.hr' },
+      emailDeps({ caller: { id: '1', shared: true }, setEmail }),
+    )
+    const cross = await handleUpdateEmail(
+      '7',
+      { email: 'a@b.hr' },
+      emailDeps({ request: { ...SAME_SITE, secFetchSite: 'cross-site' }, setEmail }),
+    )
+
+    expect([shared.status, cross.status]).toEqual([403, 403])
+    expect(setEmail).not.toHaveBeenCalled()
+  })
+
+  it('404s on an id that is nobody', async () => {
+    const res = await handleUpdateEmail(
+      '999',
+      { email: 'a@b.hr' },
+      emailDeps({ loadUser: async () => null }),
+    )
+    expect(res.status).toBe(404)
+  })
+
+  it('answers 500 when the write fails, without claiming it landed', async () => {
+    const res = await handleUpdateEmail(
+      '7',
+      { email: 'nova@moreska.eu' },
+      emailDeps({
+        setEmail: async () => {
+          throw new Error('db down')
+        },
+      }),
+    )
+
+    expect(res.status).toBe(500)
+    expect(res.body).toEqual({ error: S.email.failed })
+  })
+
+  it('answers 500 rather than writing when the taken lookup fails', async () => {
+    const setEmail = vi.fn(async () => {})
+    const res = await handleUpdateEmail(
+      '7',
+      { email: 'nova@moreska.eu' },
+      emailDeps({
+        emailTaken: async () => {
+          throw new Error('db down')
+        },
+        setEmail,
+      }),
+    )
+
+    expect(res.status).toBe(500)
+    expect(setEmail).not.toHaveBeenCalled()
   })
 })
 

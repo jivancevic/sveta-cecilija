@@ -39,6 +39,7 @@ import { mayOpenAppSession } from './token-login'
 import {
   fail,
   loadOr404,
+  normaliseEmail,
   normaliseName,
   parsePermissionSet,
   refuseCaller,
@@ -118,12 +119,11 @@ export function normaliseUsername(raw: unknown): string | null {
   return /^[a-z0-9][a-z0-9._-]{1,31}$/.test(value) ? value : null
 }
 
-/** An address, as a login carries it, or null when it is not one. */
-export function normaliseEmail(raw: unknown): string | null {
-  if (typeof raw !== 'string') return null
-  const value = raw.trim().toLowerCase()
-  return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(value) ? value : null
-}
+// `normaliseEmail` moved to `users-admin.ts` with #621, where the PATCH that
+// edits an existing address lives. The create still calls it; it is imported
+// rather than re-declared so the two doors into the column agree on what an
+// address is, and it sits in `users-admin` rather than here because this file
+// already imports from that one and the other direction would be a cycle.
 
 /** How this person gets in the first time. `none` is a repair, not a success. */
 export type Handover =

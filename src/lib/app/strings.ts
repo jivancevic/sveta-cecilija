@@ -2433,6 +2433,7 @@ export const APP_STRINGS = {
       create: 'Novi korisnik',
       permissions: 'Dozvole',
       name: 'Ime',
+      email: 'E-mail',
       resetPassword: 'Resetiraj lozinku',
       linkPartner: 'Poveži partnera',
       linkMember: 'Poveži člana',
@@ -2458,12 +2459,39 @@ export const APP_STRINGS = {
       /** The lockout guard: the only refusal aimed at the reader themselves. */
       selfLockout:
         'Ne možeš sebi oduzeti dozvolu Korisnici. Neka to napravi drugi korisnik s tom dozvolom.',
+      // Since #621 the repair is one button away on this same screen, so the
+      // sentence names it instead of sending the reader to the Backoffice.
       emailRequired:
-        'Za taj skup dozvola račun mora imati e-mail. Upiši adresu u Backofficeu pa probaj ponovno.',
+        'Za taj skup dozvola račun mora imati e-mail. Prvo mu upiši adresu u E-mailu pa probaj ponovno.',
       invalid: 'Nepoznata dozvola.',
       /** The other half of the rule above: nobody grants `users` to a shared login. */
       sharedUsers:
         'Zajednički račun ne može imati dozvolu Korisnici. Prvo makni oznaku zajedničkog računa.',
+    },
+
+    /**
+     * The eighth action (#621): the address on the login.
+     *
+     * The copy leads with what the address DOES rather than what it is, because
+     * the mistake it prevents is thinking this is a contact detail: it is how
+     * the person gets back in. The two refusals name their repair — Dozvole for
+     * the set that requires an address, the other account for a taken one.
+     */
+    email: {
+      title: 'E-mail',
+      body: 'Adresa na koju ide link za prijavu i zaboravljenu lozinku. Dok je račun ima, "Resetiraj lozinku" šalje link; bez nje daje privremenu lozinku koju pročitaš s ekrana.',
+      label: 'E-mail',
+      placeholder: 'npr. tatjana@moreska.eu',
+      /** Said once, in the sheet: nobody gets a letter about this. */
+      note: 'Cecilija ne javlja osobi da joj je adresa promijenjena. Reci joj sam.',
+      save: 'Spremi',
+      saved: 'E-mail je spremljen.',
+      cleared: 'E-mail je maknut.',
+      unchanged: 'Ništa nije promijenjeno.',
+      failed: 'Spremanje e-maila nije uspjelo. Pokušaj ponovno.',
+      /** Clearing an address a named-person set depends on. */
+      required:
+        'Ovaj račun ima dozvole imenovane osobe, pa mora imati e-mail. Prvo mu makni te dozvole u Dozvolama.',
     },
 
     /**
