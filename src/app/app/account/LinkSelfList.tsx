@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { APP_STRINGS, ROLE_LABELS } from '@/lib/app/strings'
 import type { LinkSelfCandidate } from '@/lib/app/link-self'
 import type { DanceRole } from '@/lib/moreskant-profile'
+import { List, Note } from '../ui'
 
 // The one tap of "Poveži svoj račun s članom" (#462).
 //
@@ -74,26 +75,26 @@ export function LinkSelfList({ candidates }: { candidates: LinkSelfCandidate[] }
 
   return (
     <>
-      {error && <p className="app__answer-error">{error}</p>}
-      <div className="app__pick">
+      {error && <Note>{error}</Note>}
+      <List>
         {candidates.map((c) => (
           <button
             key={c.id}
             type="button"
-            className="app__more-row app__pick-row"
+            className="ui-row"
             disabled={busyId !== null}
             onClick={() => link(c.id)}
           >
-            <span className="app__pick-name">
-              <strong>{c.nickname || c.name}</strong>
-              <small>{subtitle(c)}</small>
+            <span className="ui-row__body">
+              <b>{c.nickname || c.name}</b>
+              <span>{subtitle(c)}</span>
             </span>
-            <span aria-hidden="true">
+            <span className="ui-small" aria-hidden="true">
               {busyId === c.id ? APP_STRINGS.linkSelf.linking : '›'}
             </span>
           </button>
         ))}
-      </div>
+      </List>
     </>
   )
 }

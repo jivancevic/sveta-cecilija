@@ -157,7 +157,13 @@ export const APP_STRINGS = {
     stats: 'Statistika',
     finance: 'Financije',
     more: 'Više',
-    account: 'Moj račun',
+    /**
+     * "Profil", not the old "Moj račun" (#569, Q20): the row in Više and the
+     * screen it opens have to be called the same thing, and the screen is about
+     * the person (their nadimak, their skin, their phone's notifications)
+     * rather than about an account in a system.
+     */
+    account: 'Profil',
     notifications: 'Obavijesti',
   },
 
@@ -570,6 +576,28 @@ export const APP_STRINGS = {
     roles: 'Uloge',
     mobile: 'Mobitel',
     missing: 'nije upisano',
+    /**
+     * The four rows of the person's own card (#569, Q20), in the order they are
+     * needed: who am I, what happened, how do I get in, who do I ask.
+     */
+    accountRow: 'Profil',
+    security: 'Sigurnost',
+    support: 'Podrška',
+    /** A login several people hold, said on the header rather than implied. */
+    shared: 'Dijeljeni račun',
+    /** The two groups under the person: their screens, then the app itself. */
+    screensTitle: 'Ekrani',
+    appTitle: 'Aplikacija',
+    /** The install guide as a row; the guide's own title names the platform. */
+    install: 'Instalacija',
+    /**
+     * The foot of the screen: which build is this, and who to blame for it.
+     *
+     * The credit is deliberately in English and deliberately tiny: it is a
+     * signature, not a sentence anybody reads, and it says the same thing on
+     * every build.
+     */
+    createdBy: 'Created by: Josip Ivančević',
     /* The raw Payload UI is the **Backoffice** and never "administracija"
        (ADR-0027): Cecilija is what everyone else works in, and only a `dev`
        holder is offered this row at all. */
@@ -1285,6 +1313,55 @@ export const APP_STRINGS = {
     /** The `/app` POST routes answer with this when the guard refuses. */
     rejected: 'Obavijesti trenutno nije moguće promijeniti.',
     badRequest: 'Podaci o uređaju nisu potpuni.',
+    /**
+     * Profil's switch (#569, Q49).
+     *
+     * It says "na ovom uređaju" because that is the truth of it: a subscription
+     * belongs to one browser on one phone, so a dancer with a phone and a
+     * laptop turns it on twice and a shared `tehnika` tablet answers only for
+     * itself.
+     */
+    switchLabel: 'Obavijesti na ovom uređaju',
+    switchOn: 'Javit ćemo ti kad fali ljudi i kad treba javiti dolazak.',
+    switchOff: 'Telefon je tih. Uključi i javit ćemo ti kad fali ljudi.',
+    /** The three reasons this phone cannot be switched on at all. */
+    needsInstall:
+      'Da bi iPhone zvonio, prvo dodaj Cecilija na početni zaslon. Upute su u Instalaciji.',
+    inapp:
+      'Otvorio si aplikaciju unutar druge aplikacije, pa obavijesti nisu moguće. Otvori je u Safariju ili Chromeu.',
+    unsupported: 'Ovaj preglednik ne podržava obavijesti.',
+  },
+
+  /**
+   * Which skin Cecilija wears, on this phone (#569, Q21).
+   *
+   * Three words rather than a single on/off, because "Kao sustav" is the
+   * default and the other two are a deliberate override: a foyer is lit and a
+   * backstage corridor is not, and a phone's own setting knows neither.
+   */
+  theme: {
+    title: 'Izgled',
+    /** The radiogroup's accessible name; the three words are its options. */
+    label: 'Izgled aplikacije',
+    light: 'Svijetla',
+    dark: 'Tamna',
+    system: 'Kao sustav',
+    note: 'Vrijedi samo na ovom uređaju.',
+  },
+
+  /**
+   * Podrška (#569, Q20): the one sentence, and the one address.
+   *
+   * E-mail only, and never a phone number: the number on the registry is the
+   * president's private mobile (CLAUDE.md, #383, #548). Cecilija is a staff
+   * tool rather than a buyer-facing surface, but the rule is about the number,
+   * not about the audience, so the sheet says what the buyer's block says.
+   */
+  support: {
+    title: 'Podrška',
+    body: 'Ako nešto ne radi ili ti treba pomoć oko aplikacije, piši nam. Javljamo se u roku od 24 sata.',
+    email: 'info@moreska.eu',
+    action: 'Pošalji e-poštu',
   },
 
   /** The voditelj's "Pošalji alarm" control on `/app/performances/[id]` (#431). */
@@ -2503,6 +2580,12 @@ export const APP_STRINGS = {
    */
   notifications: {
     title: 'Obavijesti',
+    /**
+     * The heading over the list (#569). The header already says "Obavijesti",
+     * so the section says what the thing IS — the glossary's *Sandučić
+     * obavijesti* — and carries "Označi sve pročitanim" on its right.
+     */
+    section: 'Sandučić',
     /** The bell's accessible name, with the count read out loud. */
     bell: (unread: number) => (unread > 0 ? `Obavijesti, ${unread} nepročitanih` : 'Obavijesti'),
     /** Above 99 the exact number stops being information on a badge. */

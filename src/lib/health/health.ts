@@ -45,6 +45,24 @@ export function shortCommit(raw: string | null | undefined): string | null {
   return trimmed === '' ? null : trimmed.slice(0, 7)
 }
 
+/**
+ * The deployed revision, read from the environment in ONE place (#569).
+ *
+ * `GET /api/health` is no longer the only reader: the foot of Više prints
+ * "Cecilija · <version> (<commit>)" so that a voditelj on a phone can tell a
+ * developer which build they are looking at. Two `process.env.SOURCE_COMMIT`
+ * reads would be two answers to that question the day Coolify's variable is
+ * renamed, so both callers come through here and `version.test.ts` asserts they
+ * agree.
+ *
+ * Idempotent: feeding the short sha back through `shortCommit` returns it
+ * unchanged, which is why the route may pass this straight into
+ * `buildHealthReport`.
+ */
+export function deployedCommit(env: NodeJS.ProcessEnv = process.env): string | null {
+  return shortCommit(env.SOURCE_COMMIT)
+}
+
 export async function buildHealthReport(deps: HealthDeps): Promise<HealthReport> {
   return {
     ok: true,

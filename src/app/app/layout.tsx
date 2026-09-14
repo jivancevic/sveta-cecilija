@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next'
 import { bodoni, ibmPlexMono, inter } from '@/app/(frontend)/fonts'
 import { INSTALL_PROMPT_CAPTURE } from '@/lib/app/platform'
 import { APP_STRINGS } from '@/lib/app/strings'
+import { THEME_BOOT_SCRIPT } from '@/lib/app/theme'
 import { vapidPublicKey } from '@/lib/push/vapid'
 import { ScrollMemory } from './ScrollMemory'
 import { ServiceWorkerMigration } from './ServiceWorkerMigration'
@@ -43,12 +44,25 @@ export default function MoreskantAppLayout({ children }: { children: React.React
     <html lang="hr" className={`${bodoni.variable} ${inter.variable} ${ibmPlexMono.variable}`}>
       <body className="app" suppressHydrationWarning>
         {/*
+          The skin, before the first paint (#569). The choice lives in this
+          device's localStorage, so the server cannot render it and a React
+          effect would run after hydration — which on a slow phone is a white
+          flash and then a dark screen. This writes `data-theme` on the body it
+          is already inside, and the tokens do the rest.
+
+          It is the reason `<body>` keeps `suppressHydrationWarning`: the
+          attribute is there before React looks, and React must not take it off
+          again. The rules it applies are `lib/app/theme.ts`, shared with the
+          switch on Profil, so boot and switch cannot disagree.
+        */}
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOT_SCRIPT }} />
+        {/*
           Chromium fires `beforeinstallprompt` once, shortly after load, and
           never replays it. A React effect that has not hydrated yet misses it
           and the one-tap install button then never appears on the one platform
           that has one, so the listener is installed inline, ahead of hydration
           (#455). It only parks the event on `window`; every decision about it
-          lives in `InstallHint`.
+          lives in `use-install.ts` and the install guide that reads it.
         */}
         <script dangerouslySetInnerHTML={{ __html: INSTALL_PROMPT_CAPTURE }} />
         <ServiceWorkerMigration vapidPublicKey={vapidPublicKey()} />

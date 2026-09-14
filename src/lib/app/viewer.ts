@@ -55,6 +55,15 @@ export interface AppViewer {
    */
   accountName: string | null
   /**
+   * The login's own name (ADR-0011), for the one header that has nothing else.
+   *
+   * Više names the reader (#569), and a shared account has no person to name:
+   * `tehnika` is a room and `member` is the society. The username is what those
+   * two are called out loud at a rehearsal, so it stands in for the name there
+   * and nowhere else. A named person's login never shows it.
+   */
+  username: string | null
+  /**
    * A login several people hold (ADR-0022's only marker of one).
    *
    * Početna greets a person and a shared login is not one, so `tehnika` and
@@ -79,6 +88,7 @@ const DENIED: AppViewer = {
   memberLinkId: null,
   me: null,
   accountName: null,
+  username: null,
   shared: false,
   nav: { tabs: [], overflow: [], landing: null, groups: [] },
   permissions: [],
@@ -123,6 +133,7 @@ export async function resolveAppAccessFor(
   access: AppAccess
   memberLinkId: string | null
   accountName: string | null
+  username: string | null
   shared: boolean
 }> {
   // Re-read both links and the Member row itself: see the header note.
@@ -135,6 +146,7 @@ export async function resolveAppAccessFor(
   // sign-in.
   let tabs: unknown = null
   let accountName: string | null = null
+  let username: string | null = null
   let shared = false
   try {
     const account = await payload.findByID({
@@ -150,6 +162,8 @@ export async function resolveAppAccessFor(
     partnerId = partner == null ? null : String(partner)
     tabs = row?.tabs ?? null
     accountName = typeof row?.name === 'string' && row.name.trim() !== '' ? row.name.trim() : null
+    username =
+      typeof row?.username === 'string' && row.username.trim() !== '' ? row.username.trim() : null
     shared = row?.shared === true
     if (memberId != null) {
       memberDoc = (await payload.findByID({
@@ -169,6 +183,7 @@ export async function resolveAppAccessFor(
     access: decideAppAccess(user, toAppMember(memberDoc), { partnerId, tabs }),
     memberLinkId,
     accountName,
+    username,
     shared,
   }
 }
@@ -178,7 +193,7 @@ export async function resolveAppViewer(): Promise<AppViewer> {
   const { user } = await payload.auth({ headers: await headers() })
   if (!user) return DENIED
 
-  const { access, memberLinkId, accountName, shared } = await resolveAppAccessFor(
+  const { access, memberLinkId, accountName, username, shared } = await resolveAppAccessFor(
     payload as unknown as ViewerPayload,
     user,
   )
@@ -190,6 +205,7 @@ export async function resolveAppViewer(): Promise<AppViewer> {
     memberLinkId,
     me: access.kind === 'ok' ? access.self : null,
     accountName,
+    username,
     shared,
     nav: access.kind === 'ok' ? access.nav : DENIED.nav,
     permissions: permissionsOf(user as { permissions?: unknown }),

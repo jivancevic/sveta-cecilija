@@ -16,8 +16,10 @@ import { Podium } from './Podium'
 import { Ring } from './Ring'
 import { RoleMark } from './RoleMark'
 import { Section } from './Section'
+import { ScreenIcon } from './ScreenIcon'
 import { Segmented } from './Segmented'
 import { Sheet, SheetOption } from './Sheet'
+import { Switch } from './Switch'
 import { Tile, Tiles } from './Tile'
 import { Toast } from './Toast'
 
@@ -165,6 +167,50 @@ describe('the rest of the shapes render', () => {
     )
     expect(seg).toContain('ui-seg__item--on')
     expect(seg).toContain('aria-selected="true"')
+  })
+
+  it('the same control is a radiogroup when it chooses a setting, not a view', () => {
+    // Profil's Izgled (#569): three words and no panel behind them. A
+    // `role="tab"` with an `aria-controls` pointing at nothing is a lie a
+    // screen reader repeats out loud.
+    const seg = render(
+      h(Segmented, {
+        items: [
+          { key: 'light', label: 'Svijetla' },
+          { key: 'dark', label: 'Tamna' },
+        ],
+        value: 'dark',
+        onSelect: () => {},
+        mode: 'options' as const,
+        label: 'Izgled aplikacije',
+      }),
+    )
+    expect(seg).toContain('role="radiogroup"')
+    expect(seg).toContain('aria-checked="true"')
+    expect(seg).not.toContain('aria-controls')
+  })
+
+  it('a switch carries its state where a screen reader can hear it', () => {
+    const on = render(
+      h(Switch, { checked: true, onChange: () => {}, label: 'Obavijesti', note: 'na ovom uređaju' }),
+    )
+    expect(on).toContain('role="switch"')
+    expect(on).toContain('aria-checked="true"')
+    expect(on).toContain('ui-switch__thumb')
+
+    const off = render(h(Switch, { checked: false, onChange: () => {}, label: 'Obavijesti' }))
+    expect(off).toContain('aria-checked="false"')
+  })
+
+  it('a screen icon is the same drawing in the bar and in a Vise row', () => {
+    // One map, since #569: a reader who finds Statistika in Više and later gets
+    // it as a tab has to recognise it as the same screen.
+    const tab = render(h(ScreenIcon, { screen: 'stats' as const, on: true }))
+    const row = render(h(ScreenIcon, { screen: 'stats' as const, size: 22 }))
+    expect(tab).toContain('<svg')
+    expect(row).toContain('<svg')
+    // The blades are Cecilija's own drawing and belong to the dance (#565).
+    expect(render(h(ScreenIcon, { screen: 'moreska' as const }))).toContain('M14.5 17.5')
   })
 
   it('a large podium carries a mark, a place and the reader own step', () => {

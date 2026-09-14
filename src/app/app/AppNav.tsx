@@ -2,25 +2,10 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import {
-  Bell,
-  CalendarDays,
-  ChartColumn,
-  Ellipsis,
-  FileText,
-  Gift,
-  House,
-  Inbox,
-  Receipt,
-  ScanLine,
-  Store,
-  Trophy,
-  UserCog,
-  Users,
-  Wallet,
-} from 'lucide-react'
+import { Bell } from 'lucide-react'
 import { APP_STRINGS } from '@/lib/app/strings'
 import { activeScreenKey, activeTabKey, type AppNav as Nav, type AppScreenKey } from '@/lib/app/screens'
+import { ICON_STROKE, ScreenIcon } from './ui/ScreenIcon'
 
 // The two faces of one navigation (#472, #495, #562): the phone's floating
 // pill bar and the laptop's grouped sidebar, both built from the same `AppNav`
@@ -36,68 +21,17 @@ import { activeScreenKey, activeTabKey, type AppNav as Nav, type AppScreenKey } 
 // from the thumb. One dark pill slides between the tabs rather than five icons
 // lighting up in turn: the movement is what tells you that you went left.
 //
-// Icons are Lucide at stroke 1.75 (1.9 on the tab you are on), with ONE
-// exception drawn by hand: the crossed swords. The moreška is a sword dance, no
-// icon set ships the right pair of blades, and an emoji in a navigation bar is
-// not a decision this app makes. Since #565 the blades belong to **Moreška**,
-// the dancer's screen, and Izvedbe wears a calendar: the swords are the dance,
-// and Izvedbe is now a schedule the blagajna reads.
-
-const STROKE = 1.75
-const STROKE_ON = 1.9
-
-/** The blades: the one drawing in Cecilija that is Cecilija's own. */
-function Swords({ strokeWidth }: { strokeWidth: number }) {
-  return (
-    <svg
-      width={24}
-      height={24}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth={strokeWidth}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M14.5 17.5 3 6V3h3l11.5 11.5" />
-      <path d="M13 19l6-6" />
-      <path d="M16 16l4 4" />
-      <path d="M19 21l2-2" />
-      <path d="M14.5 6.5 18 3h3v3l-3.5 3.5" />
-      <path d="M5 14l4 4" />
-      <path d="M7 17l-4 4" />
-    </svg>
-  )
-}
-
-type IconFor = (props: { size: number; strokeWidth: number }) => React.ReactNode
-
-const ICONS: Record<AppScreenKey, IconFor> = {
-  home: (p) => <House {...p} aria-hidden="true" />,
-  moreska: (p) => <Swords strokeWidth={p.strokeWidth} />,
-  performances: (p) => <CalendarDays {...p} aria-hidden="true" />,
-  orders: (p) => <Receipt {...p} aria-hidden="true" />,
-  members: (p) => <Users {...p} aria-hidden="true" />,
-  leaderboard: (p) => <Trophy {...p} aria-hidden="true" />,
-  scan: (p) => <ScanLine {...p} aria-hidden="true" />,
-  sell: (p) => <Store {...p} aria-hidden="true" />,
-  statement: (p) => <FileText {...p} aria-hidden="true" />,
-  inquiries: (p) => <Inbox {...p} aria-hidden="true" />,
-  comp: (p) => <Gift {...p} aria-hidden="true" />,
-  users: (p) => <UserCog {...p} aria-hidden="true" />,
-  stats: (p) => <ChartColumn {...p} aria-hidden="true" />,
-  finance: (p) => <Wallet {...p} aria-hidden="true" />,
-  more: (p) => <Ellipsis {...p} aria-hidden="true" />,
-}
+// The drawings themselves are `ui/ScreenIcon.tsx` since #569: Više lists the
+// overflow as rows and wants the same picture the tab has, and one map is what
+// makes those the same screen to a reader.
 
 /** The bell, drawn from the same set so the header and the bar agree. */
 export function BellIcon({ size = 22 }: { size?: number }) {
-  return <Bell size={size} strokeWidth={STROKE} aria-hidden="true" />
+  return <Bell size={size} strokeWidth={ICON_STROKE} aria-hidden="true" />
 }
 
 function Icon({ k, on, size = 24 }: { k: AppScreenKey; on?: boolean; size?: number }) {
-  return <>{ICONS[k]({ size, strokeWidth: on ? STROKE_ON : STROKE })}</>
+  return <ScreenIcon screen={k} on={on} size={size} />
 }
 
 /** Početna first, the three chosen screens, Više last (#563, #564). */
