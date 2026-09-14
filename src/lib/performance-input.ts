@@ -16,6 +16,7 @@
 // answer in a chat window are the same person.
 
 import {
+  DEFAULT_THRESHOLD,
   PERFORMANCE_KINDS,
   PerformanceValidationError,
   validateAndNormalisePerformance,
@@ -187,8 +188,15 @@ export interface NewPerformanceRow {
  * Runs the collection's own invariants one more time, so the two validators can
  * never disagree about a row that reached the database: this one is about the
  * words a person typed, that one about the shape the table needs.
+ *
+ * The two PRAGOVI are written explicitly since #620, off `DEFAULT_THRESHOLD`:
+ * an Experience needs three a side and every other kind eight, and leaving the
+ * collection's single `defaultValue: 8` to answer meant every Experience was
+ * created five dancers short of itself. The voditelj still moves them in the
+ * Pozovi sheet; this is only where the row starts.
  */
 export function newPerformanceRow(fields: NonPublicPerformanceFields): NewPerformanceRow {
+  const threshold = DEFAULT_THRESHOLD[fields.kind]
   const data: Record<string, unknown> = {
     // Shows are stored at NOON UTC so the UTC calendar day is the intended day
     // whatever the server's offset (db-bootstrap.md, `toIsoDate`).
@@ -202,6 +210,8 @@ export function newPerformanceRow(fields: NonPublicPerformanceFields): NewPerfor
     status: 'active',
     onlineSold: 0,
     inPersonSold: 0,
+    thresholdCrni: threshold.crni,
+    thresholdBili: threshold.bili,
   }
   return { dateStr: fields.dateStr, data: validateAndNormalisePerformance(data) }
 }

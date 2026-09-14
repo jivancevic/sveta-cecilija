@@ -27,6 +27,8 @@ import { normaliseNickname } from '@/lib/app/username'
 import { compareLineupRows, type LineupEntry } from '@/lib/lineup/rules'
 import { roleWarnings } from '@/lib/lineup/rules'
 import type { LineupWriteOutcome } from '@/lib/lineup/write-tx'
+import { lineupRequirements } from '@/lib/lineup/titles'
+import { performanceKindOf } from '@/lib/show-performance'
 import {
   LINEUP_ROLES,
   LINEUP_ROLE_LABELS,
@@ -353,6 +355,8 @@ export async function setLineup(
     return fail('Postava je potvrđena. Otključaj je u aplikaciji pa pokušaj ponovno.')
   }
 
+  const kind = performanceKindOf(performance.kind)
+
   const roster = await store.loadRoster()
   // A key that two active dancers share resolves to NOBODY rather than to
   // whichever of them the roster happened to list last (#445 review). The
@@ -380,6 +384,14 @@ export async function setLineup(
       return fail(
         `Nepoznata plesna uloga "${String(item.role)}". Dopuštene su: ${LINEUP_ROLES.join(', ')}.`,
       )
+    }
+    // A `voditelj` line belongs to a Moreška Experience and to nothing else
+    // (#620), and the same refusal is the app route's. A whole-call failure
+    // rather than a dropped row, for the reason every other refusal here is
+    // one: a photograph of a paper list that Claude read wrong must come back
+    // as a question, never as a postava missing a line nobody noticed.
+    if (item.role === 'voditelj' && !lineupRequirements(kind).voditelj) {
+      return fail('Voditelja ima samo Moreška Experience.')
     }
 
     const member = byKey.get(nicknameMatchKey(nickname))

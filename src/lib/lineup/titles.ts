@@ -26,10 +26,18 @@
 //      saved postava always matches the answers on screen rather than the
 //      answers as they were an hour ago, and never deletes a list somebody
 //      dictated before the answers came in.
-//   4. **A confirmed postava carries all four, once each** (CONTEXT.md, decided
-//      2026-09-13). `checkTitles` is that rule, refused with a Croatian
-//      sentence naming what is missing or doubled. An UNCONFIRMED write never
-//      asks: the MCP tool and a half-filled evening both have to be writable.
+//   4. **What a confirmed postava must carry depends on the KIND of evening**
+//      (CONTEXT.md, decided 2026-09-13, split by kind in #620). A moreška is
+//      danced by the whole ansambl and has four named parts, so a confirmed one
+//      carries all four, once each. A **Moreška Experience** is three pairs in
+//      the society's own premises: it has no kings and no bula to hand out, and
+//      what it does have is the member who RUNS it. So the Experience requires
+//      exactly one `voditelj` line and asks nothing at all about titles, while
+//      every other kind requires the four titles and cannot hold a voditelj
+//      line (the route refuses one on the way in). `lineupRequirements` is that
+//      split, in one place, and `checkLineup` applies it. An UNCONFIRMED write
+//      never asks: the MCP tool and a half-filled evening both have to be
+//      writable.
 //
 // No IO, no Payload, no dates.
 
@@ -38,6 +46,7 @@ import {
   type DanceRole,
   type LineupRole,
 } from '@/lib/moreskant-profile'
+import type { PerformanceKind } from '@/lib/show-performance'
 import type { LineupEntry } from './rules'
 
 /** The four named parts of an evening, in the order they are read in. */
@@ -294,4 +303,79 @@ export function checkTitles(counts: TitleCounts): TitleCheck {
     else if (n > 1) problems.push(doubled(title, n))
   }
   return problems.length === 0 ? { ok: true } : { ok: false, message: problems.join(' ') }
+}
+
+/** What a confirmed postava of one KIND of evening must carry (#620). */
+export interface LineupRequirements {
+  /** All four titles, once each. Every kind except the Experience. */
+  titles: boolean
+  /** Exactly one `voditelj` line. The Experience and nothing else. */
+  voditelj: boolean
+}
+
+/**
+ * The split, stated once (#620).
+ *
+ * It is deliberately an exclusive OR rather than two independent flags with a
+ * shared true: an ordinary moreška has no voditelj line AT ALL (the lineup
+ * route refuses one), and an Experience has no kings to crown. Reading the two
+ * off one function is what keeps the screen's disabled button, the route's 400
+ * and the Izvedbe editor's dropdown saying the same thing about the same
+ * evening.
+ */
+export function lineupRequirements(kind: PerformanceKind): LineupRequirements {
+  const experience = kind === 'experience'
+  return { titles: !experience, voditelj: experience }
+}
+
+/** Croatian for the voditelj line, in the same voice the four titles use. */
+const VODITELJ_MISSING = 'Postava nema voditelja.'
+
+function voditeljDoubled(n: number): string {
+  const word: Record<number, string> = { 2: 'Dva', 3: 'Tri', 4: 'Četiri' }
+  // Croatian counts in three buckets and the noun moves with the numeral: two
+  // to four take the paucal ("člana"), five and up the genitive plural
+  // ("članova"), and the verb follows the noun.
+  const who = word[n] ?? String(n)
+  return n >= 5 ? `${who} članova vodi ovaj Experience.` : `${who} člana vode ovaj Experience.`
+}
+
+/**
+ * Which requirement a postava failed, so the caller can say WHY in its own
+ * words: the sentence naming the problem is here, the sentence explaining the
+ * rule is the route's (`APP_STRINGS.lineup`), and the two are joined there.
+ */
+export type LineupCheck =
+  | { ok: true }
+  | { ok: false; needed: 'titles' | 'voditelj'; message: string }
+
+/**
+ * The whole confirmation rule for one evening, kind and all (#620).
+ *
+ * `checkTitles` stays exactly what it was and is still the four-title rule on
+ * its own, because it is the only thing the screen's tally has ever needed. This
+ * is the rule the CONFIRM applies, and it asks `lineupRequirements` first: an
+ * Experience is never told it is missing a bila kralj, and a redovna is never
+ * told to name a voditelj it cannot even have.
+ */
+export function checkLineup(input: {
+  kind: PerformanceKind
+  titles: TitleCounts
+  /** How many `voditelj` rows the postava holds right now. */
+  voditelji: number
+}): LineupCheck {
+  const need = lineupRequirements(input.kind)
+  if (need.titles) {
+    const titles = checkTitles(input.titles)
+    return titles.ok ? { ok: true } : { ok: false, needed: 'titles', message: titles.message }
+  }
+  if (need.voditelj) {
+    if (input.voditelji === 0) {
+      return { ok: false, needed: 'voditelj', message: VODITELJ_MISSING }
+    }
+    if (input.voditelji > 1) {
+      return { ok: false, needed: 'voditelj', message: voditeljDoubled(input.voditelji) }
+    }
+  }
+  return { ok: true }
 }

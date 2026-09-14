@@ -23,8 +23,9 @@
 // fake that flips the flag between the pre-check and the locked read — the only
 // way to test a race without a race.
 
+import type { PerformanceKind } from '@/lib/show-performance'
 import type { LineupEntry } from './rules'
-import { checkTitles, type TitleCounts } from './titles'
+import { checkLineup, type TitleCounts } from './titles'
 
 /** What a write decided. `confirmed` is the 409; `missing` the 400. */
 export type LineupWriteOutcome =
@@ -36,8 +37,26 @@ export interface LockedLineupState {
   confirmed: boolean
   /** ISO, or null when the evening has never been confirmed. */
   confirmedAt: string | null
+  /**
+   * What KIND of evening this is (#620).
+   *
+   * Read under the lock with everything else, because what a confirmed postava
+   * must carry depends on it: an Experience needs a voditelj and no titles,
+   * every other kind needs the four titles. A kind read outside the lock would
+   * be a second opinion about the row being written.
+   */
+  kind: PerformanceKind
   /** How many rows the postava holds right now. */
   entryCount: number
+  /**
+   * How many `voditelj` rows the postava holds right now (#620).
+   *
+   * The other half of the kind split, counted off the same grouped query the
+   * titles come from: on an Experience this is the number the confirmation
+   * rule asks for, and on every other kind the lineup route has already refused
+   * the row, so it is zero by construction.
+   */
+  voditelji: number
   /**
    * How many dancers wear each of the four titles right now (#566).
    *
@@ -123,7 +142,13 @@ export async function replaceLineupInTransaction<Tx>(
 export type LineupConfirmOutcome =
   | { ok: true; confirmed: boolean; confirmedAt: string | null }
   | { ok: false; reason: 'missing' | 'empty' }
-  | { ok: false; reason: 'titles'; message: string }
+  /**
+   * The postava does not carry what this kind of evening needs (#620): either
+   * the four titles or the one voditelj. Two reasons rather than one, because
+   * the sentence explaining the RULE differs and a Croatian explanation about
+   * four titles under a complaint about a missing voditelj is worse than none.
+   */
+  | { ok: false; reason: 'titles' | 'voditelj'; message: string }
 
 /**
  * The confirmation RULE, pure over the locked state.
@@ -139,13 +164,15 @@ export type LineupConfirmOutcome =
  *   postava became final; a second tap on a button that is already pressed is
  *   not a second decision. Unlocking clears it, so the timestamp never outlives
  *   the confirmation it records.
- * - **All four titles, once each** (#566, glossary: *Title*). A confirmed
- *   postava is the evening as it was danced, and an evening has one crni kralj,
- *   one otmanović, one bili kralj and one bula. The rule applies HERE and
- *   nowhere else on the way in: an unconfirmed replace, the MCP `set_lineup`
- *   included, has to stay writable while the voditelj is halfway through.
- *   Unlocking is never refused for it either, or an evening confirmed before
- *   this rule existed could not be opened to be repaired.
+ * - **What the postava must CARRY depends on the kind** (#566, split by kind in
+ *   #620; glossary: *Title*, *Voditelj (u postavi)*). A confirmed postava is the
+ *   evening as it was danced: a moreška has one crni kralj, one otmanović, one
+ *   bili kralj and one bula, and a Moreška Experience has the one member who
+ *   ran it. `checkLineup` owns that split; this function only asks it. The rule
+ *   applies HERE and nowhere else on the way in: an unconfirmed replace, the MCP
+ *   `set_lineup` included, has to stay writable while the voditelj is halfway
+ *   through. Unlocking is never refused for it either, or an evening confirmed
+ *   before this rule existed could not be opened to be repaired.
  */
 export function decideConfirmation(input: {
   /** What the caller asked for. */
@@ -159,9 +186,13 @@ export function decideConfirmation(input: {
   if (input.state.entryCount === 0) {
     return { ok: false, reason: 'empty' }
   }
-  const titles = checkTitles(input.state.titles)
-  if (!titles.ok) {
-    return { ok: false, reason: 'titles', message: titles.message }
+  const rule = checkLineup({
+    kind: input.state.kind,
+    titles: input.state.titles,
+    voditelji: input.state.voditelji,
+  })
+  if (!rule.ok) {
+    return { ok: false, reason: rule.needed, message: rule.message }
   }
   return {
     ok: true,

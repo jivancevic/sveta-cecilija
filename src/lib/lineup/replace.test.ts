@@ -40,7 +40,7 @@ function deps(over: Partial<Parameters<typeof handleLineupReplace>[1]> = {}) {
     all: {
       request: sameSite,
       loadPerformance: async (id: string): Promise<LineupPerformance | null> =>
-        id === '10' ? { id: '10', confirmed: false } : null,
+        id === '10' ? { id: '10', confirmed: false, kind: 'redovna' as const } : null,
       loadRoster: async () => roster,
       replaceEntries,
       ...over,
@@ -83,7 +83,7 @@ describe('handleLineupReplace', () => {
   // Story 31: Potvrdi is the promise that the list cannot change by accident.
   it('refuses a confirmed lineup with 409 and writes nothing', async () => {
     const { all, replaceEntries } = deps({
-      loadPerformance: async () => ({ id: '10', confirmed: true }),
+      loadPerformance: async () => ({ id: '10', confirmed: true, kind: 'redovna' as const }),
     })
     const result = await handleLineupReplace(
       { performanceId: '10', entries: [{ memberId: '1', role: 'crni' }] },
@@ -145,7 +145,7 @@ describe('handleLineupReplace', () => {
   // the same 409 and the same sentence a plain refusal gives.
   it('409s when the LOCKED re-check finds the lineup confirmed after the pre-check passed', async () => {
     const { all } = deps({
-      loadPerformance: async () => ({ id: '10', confirmed: false }),
+      loadPerformance: async () => ({ id: '10', confirmed: false, kind: 'redovna' as const }),
       replaceEntries: vi.fn().mockResolvedValue({ written: false, reason: 'confirmed' }),
     })
     const result = await handleLineupReplace(
@@ -226,5 +226,32 @@ describe('handleLineupConfirm', () => {
     const result = await handleLineupConfirm({ performanceId: '10', confirmed: true }, all)
     expect(result.status).toBe(403)
     expect(setConfirmed).not.toHaveBeenCalled()
+  })
+})
+
+
+// #620 — a `voditelj` line belongs to a Moreška Experience and to nothing else.
+describe('handleLineupReplace and the voditelj line (#620)', () => {
+  it('refuses a voditelj row on an ordinary moreška, and writes nothing', async () => {
+    const { all, replaceEntries } = deps()
+    const result = await handleLineupReplace(
+      { performanceId: '10', entries: [{ memberId: '1', role: 'voditelj' }] },
+      all,
+    )
+    expect(result.status).toBe(400)
+    expect(result.body).toEqual({ error: 'Voditelja ima samo Moreška Experience.' })
+    expect(replaceEntries).not.toHaveBeenCalled()
+  })
+
+  it('writes the same row on an Experience', async () => {
+    const { all, replaceEntries } = deps({
+      loadPerformance: async () => ({ id: '10', confirmed: false, kind: 'experience' as const }),
+    })
+    const result = await handleLineupReplace(
+      { performanceId: '10', entries: [{ memberId: '1', role: 'voditelj' }] },
+      all,
+    )
+    expect(result.status).toBe(200)
+    expect(replaceEntries).toHaveBeenCalledWith('10', [{ memberId: '1', role: 'voditelj' }])
   })
 })

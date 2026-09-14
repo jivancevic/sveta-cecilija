@@ -85,7 +85,9 @@ const NONE: TitleCounts = { crni_kralj: 0, otmanovic: 0, bili_kralj: 0, bula: 0 
 const draft: LockedLineupState = {
   confirmed: false,
   confirmedAt: null,
+  kind: 'redovna',
   entryCount: 0,
+  voditelji: 0,
   titles: NONE,
 }
 
@@ -154,7 +156,7 @@ describe('decideConfirmation', () => {
     expect(
       decideConfirmation({
         confirmed: true,
-        state: { confirmed: false, confirmedAt: null, entryCount: 3, titles: ALL },
+        state: { confirmed: false, confirmedAt: null, kind: 'redovna', entryCount: 3, voditelji: 0, titles: ALL },
         nowIso,
       }),
     ).toEqual({ ok: true, confirmed: true, confirmedAt: nowIso })
@@ -168,7 +170,9 @@ describe('decideConfirmation', () => {
         state: {
           confirmed: true,
           confirmedAt: '2026-08-05T19:00:00.000Z',
+          kind: 'redovna',
           entryCount: 3,
+          voditelji: 0,
           titles: ALL,
         },
         nowIso,
@@ -180,7 +184,7 @@ describe('decideConfirmation', () => {
     expect(
       decideConfirmation({
         confirmed: true,
-        state: { confirmed: true, confirmedAt: null, entryCount: 1, titles: ALL },
+        state: { confirmed: true, confirmedAt: null, kind: 'redovna', entryCount: 1, voditelji: 0, titles: ALL },
         nowIso,
       }),
     ).toEqual({ ok: true, confirmed: true, confirmedAt: nowIso })
@@ -190,7 +194,7 @@ describe('decideConfirmation', () => {
     expect(
       decideConfirmation({
         confirmed: true,
-        state: { confirmed: false, confirmedAt: null, entryCount: 0, titles: ALL },
+        state: { confirmed: false, confirmedAt: null, kind: 'redovna', entryCount: 0, voditelji: 0, titles: ALL },
         nowIso,
       }),
     ).toEqual({ ok: false, reason: 'empty' })
@@ -205,7 +209,9 @@ describe('decideConfirmation', () => {
       state: {
         confirmed: false,
         confirmedAt: null,
+        kind: 'redovna',
         entryCount: 12,
+        voditelji: 0,
         titles: { crni_kralj: 1, otmanovic: 1, bili_kralj: 0, bula: 1 },
       },
       nowIso,
@@ -219,7 +225,9 @@ describe('decideConfirmation', () => {
       state: {
         confirmed: false,
         confirmedAt: null,
+        kind: 'redovna',
         entryCount: 12,
+        voditelji: 0,
         titles: { crni_kralj: 1, otmanovic: 2, bili_kralj: 1, bula: 1 },
       },
       nowIso,
@@ -237,7 +245,9 @@ describe('decideConfirmation', () => {
       state: {
         confirmed: false,
         confirmedAt: null,
+        kind: 'redovna',
         entryCount: 12,
+        voditelji: 0,
         titles: { crni_kralj: 0, otmanovic: 1, bili_kralj: 0, bula: 1 },
       },
       nowIso,
@@ -253,19 +263,27 @@ describe('decideConfirmation', () => {
     expect(
       decideConfirmation({
         confirmed: true,
-        state: { confirmed: false, confirmedAt: null, entryCount: 12, titles: ALL },
+        state: { confirmed: false, confirmedAt: null, kind: 'redovna', entryCount: 12, voditelji: 0, titles: ALL },
         nowIso,
       }),
     ).toEqual({ ok: true, confirmed: true, confirmedAt: nowIso })
   })
 
   it('unlocks whatever the state is, and clears the stamp', () => {
-    for (const state of [
-      { confirmed: true, confirmedAt: '2026-01-01T00:00:00.000Z', entryCount: 4, titles: ALL },
+    const states: LockedLineupState[] = [
+      {
+        confirmed: true,
+        confirmedAt: '2026-01-01T00:00:00.000Z',
+        kind: 'redovna',
+        entryCount: 4,
+        voditelji: 0,
+        titles: ALL,
+      },
       // Unlocking is never refused for a missing title: an evening confirmed
       // before the rule existed has to be openable to be repaired (#566).
-      { confirmed: false, confirmedAt: null, entryCount: 0, titles: NONE },
-    ]) {
+      { confirmed: false, confirmedAt: null, kind: 'redovna', entryCount: 0, voditelji: 0, titles: NONE },
+    ]
+    for (const state of states) {
       expect(decideConfirmation({ confirmed: false, state, nowIso })).toEqual({
         ok: true,
         confirmed: false,
@@ -280,7 +298,9 @@ describe('setLineupConfirmationInTransaction', () => {
     const { store, rec } = fakeStore({
       confirmed: false,
       confirmedAt: null,
+      kind: 'redovna',
       entryCount: 2,
+      voditelji: 0,
       titles: ALL,
     })
     const outcome = await setLineupConfirmationInTransaction(
@@ -312,5 +332,66 @@ describe('setLineupConfirmationInTransaction', () => {
       reason: 'missing',
     })
     expect(rec.log).toEqual(['begin', 'lock:tx-1', 'rollback:tx-1'])
+  })
+})
+
+
+// #620 — what a confirmed postava must carry depends on the KIND of evening.
+describe('decideConfirmation by kind (#620)', () => {
+  const nowIso = '2026-09-19T21:00:00.000Z'
+  const state = (over: Partial<LockedLineupState>): LockedLineupState => ({
+    confirmed: false,
+    confirmedAt: null,
+    kind: 'redovna',
+    entryCount: 6,
+    voditelji: 0,
+    titles: ALL,
+    ...over,
+  })
+
+  it('confirms an Experience that names its voditelj, with no titles at all', () => {
+    expect(
+      decideConfirmation({
+        confirmed: true,
+        state: state({ kind: 'experience', titles: NONE, voditelji: 1 }),
+        nowIso,
+      }),
+    ).toEqual({ ok: true, confirmed: true, confirmedAt: nowIso })
+  })
+
+  it('refuses an Experience nobody ran, however many crowns are on it', () => {
+    expect(
+      decideConfirmation({
+        confirmed: true,
+        state: state({ kind: 'experience', titles: ALL, voditelji: 0 }),
+        nowIso,
+      }),
+    ).toMatchObject({ ok: false, reason: 'voditelj' })
+  })
+
+  it('never asks a moreška for a voditelj it cannot have', () => {
+    expect(
+      decideConfirmation({ confirmed: true, state: state({ voditelji: 0 }), nowIso }),
+    ).toEqual({ ok: true, confirmed: true, confirmedAt: nowIso })
+  })
+
+  it('still refuses a moreška that is a title short', () => {
+    expect(
+      decideConfirmation({
+        confirmed: true,
+        state: state({ titles: { ...ALL, bula: 0 } }),
+        nowIso,
+      }),
+    ).toMatchObject({ ok: false, reason: 'titles' })
+  })
+
+  it('unlocks an Experience with no voditelj, so it can be repaired', () => {
+    expect(
+      decideConfirmation({
+        confirmed: false,
+        state: state({ kind: 'experience', confirmed: true, voditelji: 0 }),
+        nowIso,
+      }),
+    ).toEqual({ ok: true, confirmed: false, confirmedAt: null })
   })
 })

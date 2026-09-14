@@ -90,6 +90,12 @@ export default async function AppHomePage() {
           second hero on a screen (T1), which is why every other card is a tile. */}
       {home.moreska && (
         <Hero
+          // The card itself opens the Moreška TAB, not this evening's Stanje
+          // (#620): a dancer tapping the widget wants their own register, and
+          // the evening is already one tap away on the bar under it and on the
+          // head of each half on a split day.
+          href="/app/moreska"
+          hrefLabel={APP_STRINGS.landing.open.moreska}
           eyebrow={
             <HeroEyebrow
               text={home.moreska.hero.eyebrow}

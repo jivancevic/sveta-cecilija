@@ -1,47 +1,76 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { ChevronRight } from 'lucide-react'
+import { Bell, ChevronRight, Plus } from 'lucide-react'
 import { APP_STRINGS } from '@/lib/app/strings'
 import { MAX_THRESHOLD } from '@/lib/app/performance-form'
-import { assignTitle, type DanceTitle } from '@/lib/lineup/titles'
-import { LINEUP_ROLE_LABELS } from '@/lib/moreskant-profile'
-import type { StanjeColumn, StanjePerson, StanjeView } from '@/lib/app/stanje-screen'
-import { ALL_TITLES } from '@/lib/app/stanje-screen'
-import { ArmyBar, Button, Card, Chip, Note, RoleMark, Section, Sheet, SheetOption } from '../../../ui'
+import { memberSearchKey } from '@/lib/app/members-screen'
+import { armyOfLineupRole, assignTitle, type DanceTitle } from '@/lib/lineup/titles'
+import type { LineupEntry } from '@/lib/lineup/rules'
+import { DANCE_ROLE_LABELS, LINEUP_ROLE_LABELS, type DanceRole } from '@/lib/moreskant-profile'
+import type {
+  PickerKey,
+  StanjeColumn,
+  StanjePerson,
+  StanjePicker,
+  StanjeView,
+} from '@/lib/app/stanje-screen'
+import { rolesPresent } from '@/lib/app/stanje-screen'
+import {
+  ArmyBar,
+  Button,
+  Card,
+  Chip,
+  FilterChips,
+  Note,
+  RoleMark,
+  Section,
+  Sheet,
+  SheetOption,
+} from '../../../ui'
 
-// Stanje's one client island (#566): the two columns, the sheets, the voditelj's
-// bar.
+// Stanje's one client island (#566, rebuilt by #620): the two columns, the
+// cards, the sheets and the voditelj's two buttons.
 //
 // Everything it draws is decided on the server (`lib/app/stanje-screen.ts`);
 // what lives here is the taps, and there are exactly six writes behind them,
 // every one of them through a route that already existed:
 //
-//   answer / move   POST /api/app/attendance      (the one writer of a row)
-//   title           POST /api/app/lineup          (an UNCONFIRMED replace)
-//   confirm         POST /api/app/lineup, then    /api/app/lineup/confirm
-//   thresholds      POST /api/app/performances/[id]/thresholds
-//   alarm           POST /api/app/alarm
+//   answer / move / add   POST /api/app/attendance   (the one writer of a row)
+//   title / voditelj      POST /api/app/lineup       (an UNCONFIRMED replace)
+//   confirm               POST /api/app/lineup, then /api/app/lineup/confirm
+//   thresholds            POST /api/app/performances/[id]/thresholds
+//   alarm                 POST /api/app/alarm
+//
+// **Adding somebody to a column is an ANSWER, whatever time it is** (#620).
+// The gesture reads differently either side of the nastup — before it the
+// voditelj is filling a place, after it they are writing down who turned up —
+// but the write is the same one, because until a postava is confirmed it IS the
+// answers with the titles laid over them (`lineupWithTitles`). One write serves
+// both readings, and the voditelj never has to know which table they are in.
+// Only two things are not an answer and go to the lineup instead: a title, and
+// the Experience's voditelj, who never danced and so never answered.
 //
 // **Nothing here is optimistic.** Every landed write calls `router.refresh()`
-// and the server counts again: the columns, the ArmyBar and the title tally are
-// three views of the same numbers, and a browser that guessed one of them would
-// be the only place they could disagree. The trade the answer buttons on
-// Moreška make (a two-state toggle, guessed right nearly always) does not apply
-// to a screen where one tap moves a crown off somebody else's name.
+// and the server counts again: the columns, the ArmyBar and the pickers are
+// views of the same numbers, and a browser that guessed one of them would be
+// the only place they could disagree. The trade the answer buttons on Moreška
+// make (a two-state toggle, guessed right nearly always) does not apply to a
+// screen where one tap moves a crown off somebody else's name.
 //
 // **Potvrdi writes the postava before it confirms it.** The titles are stored
 // the moment they are given, but the plain rows under them are derived from the
 // answers, and answers keep arriving: saving the list as it stands on screen
 // and confirming that is the only way the confirmed postava is the evening the
-// voditelj was looking at. The four-title rule is re-checked on the server
-// under the row lock anyway, so the disabled button is a courtesy and the 400
-// is the rule.
+// voditelj was looking at. The rule for THIS kind of evening is re-checked on
+// the server under the row lock anyway, so the disabled button is a courtesy
+// and the 400 is the rule.
 //
-// A dancer reads the same screen with no bar and no sheets on the names: the
-// routes refuse them all anyway (`requirePermission(req, 'moreska')`), so the
-// missing controls are honesty about what this account can do, never the lock.
+// A dancer reads the same screen with no buttons and no sheets on the names:
+// the routes refuse them all anyway (`requirePermission(req, 'moreska')`), so
+// the missing controls are honesty about what this account can do, never the
+// lock.
 
 const S = APP_STRINGS.stanje
 
@@ -64,6 +93,7 @@ export function Stanje({
   const [busy, setBusy] = useState<Busy>({ what: null, error: null })
   const [person, setPerson] = useState<StanjePerson | null>(null)
   const [list, setList] = useState<'noAnswer' | 'notComing' | null>(null)
+  const [adding, setAdding] = useState<PickerKey | null>(null)
   const [calling, setCalling] = useState(false)
   const [, startTransition] = useTransition()
 
@@ -124,6 +154,56 @@ export function Stanje({
     if (ok) setPerson(null)
   }
 
+  /**
+   * The postava with ONE voditelj on it, or with none.
+   *
+   * Every other row is left exactly as it stands: this write is about the line
+   * that is not a dance, and a member who was also in a column keeps that row
+   * until the answer that put it there changes.
+   */
+  function lineupWithVoditelj(memberId: string | null): LineupEntry[] {
+    const kept = view.lineup.filter(
+      (entry) => entry.role !== 'voditelj' && entry.memberId !== memberId,
+    )
+    return memberId ? [...kept, { memberId, role: 'voditelj' as const }] : kept
+  }
+
+  /**
+   * Add somebody to one of the four lists (#620).
+   *
+   * Three of them are an ANSWER: the person is coming, in that column, and the
+   * postava follows from it until it is confirmed. The fourth is the
+   * Experience's voditelj, who did not dance and has no answer to give, so his
+   * line goes straight to the postava — and replaces whoever was there, because
+   * an Experience has one.
+   */
+  async function addTo(key: PickerKey, memberId: string) {
+    const ok =
+      key === 'voditelj'
+        ? await send('voditelj', '/api/app/lineup', {
+            performanceId: view.id,
+            entries: lineupWithVoditelj(memberId),
+          })
+        : await send('add', '/api/app/attendance', {
+            performanceId: view.id,
+            memberId,
+            status: 'coming',
+            // A bula is in NEITHER army (glossary: *Army count*), so no army is
+            // sent and the answer rules fall back to her profile, which is what
+            // puts her in the Bule card rather than in a column.
+            ...(key === 'bula' ? {} : { army: key }),
+          })
+    if (ok) setAdding(null)
+  }
+
+  async function clearVoditelj() {
+    const ok = await send('voditelj', '/api/app/lineup', {
+      performanceId: view.id,
+      entries: lineupWithVoditelj(null),
+    })
+    if (ok) setAdding(null)
+  }
+
   async function confirmLineup() {
     // The list first, the flag second: see the note at the top of the file.
     const saved = await send('confirm', '/api/app/lineup', {
@@ -146,6 +226,8 @@ export function Stanje({
   // the sheet stops offering then is the TITLES: a confirmed postava changes
   // only after Otključaj, which is what the replace route's 409 says too.
   const tap = voditelj ? setPerson : null
+  /** Adding is the voditelj's, and never on a confirmed postava (#620). */
+  const add = voditelj && !view.confirmed ? setAdding : null
 
   return (
     <div className="app__stanje">
@@ -153,12 +235,18 @@ export function Stanje({
         crni={view.armies.crni}
         bili={view.armies.bili}
         threshold={view.armies.threshold}
+        past={view.past}
         className="app__stanje-bar"
       />
 
       <div className="app__armies">
         {view.columns.map((col) => (
-          <ArmyColumn key={col.army} column={col} onPick={tap} />
+          <ArmyColumn
+            key={col.army}
+            column={col}
+            onPick={tap}
+            onAdd={add ? () => add(col.army) : null}
+          />
         ))}
       </div>
 
@@ -166,16 +254,88 @@ export function Stanje({
           has a card rather than a third column (glossary: *Army count*). */}
       <Card className="app__bule">
         <Section title={S.bule} aside={String(view.bule.length)} />
-        {view.bule.length === 0 ? (
+        {view.bule.length === 0 && !add ? (
           <p className="app__stanje-empty">{S.nobody}</p>
         ) : (
           <div className="app__stanje-names">
             {view.bule.map((p) => (
               <Name key={p.memberId} person={p} onPick={tap} />
             ))}
+            {add && <AddRow label={S.addTo.bula} onClick={() => add('bula')} />}
           </div>
         )}
       </Card>
+
+      {/* The Experience's voditelj, and ONLY the Experience's (#620; glossary:
+          *Voditelj (u postavi)*). An ordinary moreška has no such line, so the
+          card is absent rather than empty: a card saying "nobody runs this" on
+          an evening that has nobody to run it is a question with no answer. */}
+      {view.experience && (
+        <Card className="app__voditelji">
+          <Section title={S.voditelj} />
+          {view.voditelji.length === 0 && !add ? (
+            <p className="app__stanje-empty">{S.noVoditelj}</p>
+          ) : (
+            <div className="app__stanje-names">
+              {view.voditelji.map((p) => (
+                <VoditeljName
+                  key={p.memberId}
+                  person={p}
+                  onPick={add ? () => add('voditelj') : null}
+                />
+              ))}
+              {add && view.voditelji.length === 0 && (
+                <AddRow label={S.addVoditelj} onClick={() => add('voditelj')} />
+              )}
+            </div>
+          )}
+        </Card>
+      )}
+
+      {/* Pozovi and Potvrdi, in the flow and under the Bule (#620).
+          They used to be a sticky bar at `z-index: 15`, which sat UNDER the tab
+          bar's blur zone at 20: the bottom of the block was read through a
+          blur, which is the "prekriveno je izbornom trakom" on Josip's screen.
+          In the flow the shell's own bottom padding clears the bar, and the two
+          buttons stand where the screen ends rather than following the thumb up
+          the page. */}
+      {voditelj && (
+        <div className="app__stanje-actions">
+          <div className="ui-btns">
+            <Button variant="ghost" onClick={() => setCalling(true)}>
+              <Bell size={17} strokeWidth={1.75} aria-hidden="true" />
+              {S.call}
+            </Button>
+            {view.confirmed ? (
+              <Button
+                variant="ghost"
+                disabled={busy.what === 'confirm'}
+                onClick={() => void unlockLineup()}
+              >
+                {busy.what === 'confirm' ? S.unlocking : S.unlock}
+              </Button>
+            ) : (
+              <Button
+                variant="primary"
+                check
+                disabled={busy.what === 'confirm' || !view.canConfirm}
+                onClick={() => void confirmLineup()}
+              >
+                {busy.what === 'confirm' ? S.confirming : S.confirm}
+              </Button>
+            )}
+          </div>
+          {/* The reason, where the refusal would be: the route says the same
+              thing in its own words, so a disabled button is never a mystery.
+              Which sentence depends on the kind, exactly as the rule does. */}
+          {!view.confirmed && !view.canConfirm && (
+            <p className="app__stanje-why">
+              {view.requirements.voditelj ? S.needVoditelj : S.needTitles}
+            </p>
+          )}
+          {view.confirmed && <p className="app__stanje-why">{S.confirmedNote}</p>}
+        </div>
+      )}
 
       {/* Odustali, ABOVE Bez odgovora and open rather than behind a chevron
           (#612). These are the places the voditelj thought were filled, so the
@@ -209,43 +369,6 @@ export function Stanje({
 
       {busy.error && <p className="app__answer-error">{busy.error}</p>}
 
-      {voditelj && (
-        <div className="app__stanje-actions">
-          <p className="app__stanje-tally">
-            {S.titles(view.titlesGiven, ALL_TITLES)}
-          </p>
-          <div className="ui-btns">
-            <Button variant="ghost" onClick={() => setCalling(true)}>
-              {S.call}
-            </Button>
-            {view.confirmed ? (
-              <Button
-                variant="ghost"
-                disabled={busy.what === 'confirm'}
-                onClick={() => void unlockLineup()}
-              >
-                {busy.what === 'confirm' ? S.unlocking : S.unlock}
-              </Button>
-            ) : (
-              <Button
-                variant="primary"
-                check
-                disabled={busy.what === 'confirm' || view.titlesGiven < ALL_TITLES}
-                onClick={() => void confirmLineup()}
-              >
-                {busy.what === 'confirm' ? S.confirming : S.confirm}
-              </Button>
-            )}
-          </div>
-          {/* The reason, where the refusal would be: the route says the same
-              thing in its own words, so a disabled button is never a mystery. */}
-          {!view.confirmed && view.titlesGiven < ALL_TITLES && (
-            <p className="app__stanje-why">{S.needTitles}</p>
-          )}
-          {view.confirmed && <p className="app__stanje-why">{S.confirmedNote}</p>}
-        </div>
-      )}
-
       <PersonSheet
         person={person}
         locked={view.confirmed}
@@ -256,36 +379,41 @@ export function Stanje({
         onTitle={giveTitle}
       />
 
-      <Sheet
+      {/* Bez odgovora and Ne dolaze: the same search and the same role discs the
+          pickers carry (#620), because a voditelj looking for one name in
+          twenty-two has the same problem whichever list it is in. */}
+      <PeopleSheet
         open={list !== null}
         title={list === 'notComing' ? S.notComing : S.noAnswer}
+        people={list === 'notComing' ? view.notComing : view.noAnswer}
+        omitRole={null}
         onClose={() => setList(null)}
-      >
-        <div className="app__stanje-sheet-list">
-          {(list === 'notComing' ? view.notComing : view.noAnswer).map((p) =>
-            tap ? (
-              <SheetOption
-                key={p.memberId}
-                lead={<RoleMark army={p.army} title={p.title} small />}
-                onClick={() => {
-                  setList(null)
-                  setPerson(p)
-                }}
-              >
-                {p.nickname}
-              </SheetOption>
-            ) : (
-              <div className="app__stanje-sheet-name" key={p.memberId}>
-                <RoleMark army={p.army} title={p.title} small />
-                {p.nickname}
-              </div>
-            ),
-          )}
-          {(list === 'notComing' ? view.notComing : view.noAnswer).length === 0 && (
-            <p className="app__stanje-empty">{S.nobody}</p>
-          )}
-        </div>
-      </Sheet>
+        onPick={
+          tap
+            ? (p) => {
+                setList(null)
+                setPerson(p)
+              }
+            : null
+        }
+      />
+
+      {adding !== null && (
+        <PickSheet
+          picker={view.pickers[adding]}
+          busy={busy.what}
+          onClose={() => setAdding(null)}
+          onPick={(memberId) => void addTo(adding, memberId)}
+          // "Somebody else ran it" and "nobody did" are the same sheet, so
+          // replacing a voditelj is one tap rather than clear-then-pick.
+          onClear={
+            adding === 'voditelj' && view.voditelji.length > 0
+              ? () => void clearVoditelj()
+              : null
+          }
+          clearLabel={S.noVoditelj}
+        />
+      )}
 
       {voditelj && (
         <CallSheet
@@ -306,13 +434,15 @@ export function Stanje({
   )
 }
 
-/** One army: its head, its names and the places it is still short. */
+/** One army: its head, its names, and the way to put somebody in it. */
 function ArmyColumn({
   column,
   onPick,
+  onAdd,
 }: {
   column: StanjeColumn
   onPick: ((person: StanjePerson) => void) | null
+  onAdd: (() => void) | null
 }) {
   return (
     <Card className={`app__army app__army--${column.army}`}>
@@ -326,13 +456,35 @@ function ArmyColumn({
         {column.people.map((person) => (
           <Name key={person.memberId} person={person} onPick={onPick} />
         ))}
-        {column.slots.map((slot) => (
-          <span className="app__slot" key={slot}>
-            {slot}
-          </span>
-        ))}
+        {/* An empty place IS the way to fill it (#620). For a dancer it stays
+            what it always was: a picture of how many are still missing. */}
+        {column.slots.map((slot) =>
+          onAdd ? (
+            <button type="button" className="app__slot app__slot--tap" key={slot} onClick={onAdd}>
+              {slot}
+            </button>
+          ) : (
+            <span className="app__slot" key={slot}>
+              {slot}
+            </span>
+          ),
+        )}
+        {/* A past evening has no places left to fill, so one row takes over
+            from the eight (#620). Never drawn for a dancer: they have nothing
+            to add. */}
+        {column.addRow && onAdd && <AddRow label={column.addRow} onClick={onAdd} />}
       </div>
     </Card>
+  )
+}
+
+/** "+ Dodaj u crne": the one row that ends a list a voditelj may still fill. */
+function AddRow({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button type="button" className="app__add-row" onClick={onClick}>
+      <Plus size={16} strokeWidth={2} aria-hidden="true" />
+      {label}
+    </button>
   )
 }
 
@@ -342,7 +494,9 @@ function ArmyColumn({
  * The "bez odgovora" chip is the one thing a name can say about itself here: it
  * stands in this column because the POSTAVA says so, not because they answered
  * (#581 review). The column's own count leaves them out, so without the chip
- * the names would silently outnumber the head.
+ * the names would silently outnumber the head — and the moment the postava is
+ * CONFIRMED the count becomes the postava, the names stop outnumbering
+ * anything, and `stanjeView` stops setting the flag at all (#620).
  */
 function Name({
   person,
@@ -363,6 +517,37 @@ function Name({
   if (!onPick) return <span className="app__name">{inside}</span>
   return (
     <button type="button" className="app__name app__name--tap" onClick={() => onPick(person)}>
+      {inside}
+    </button>
+  )
+}
+
+/**
+ * The member who runs a Moreška Experience (#620).
+ *
+ * The disc is his ROLE and not a title: he holds none, and the mark's profile
+ * side is what draws the microphone. Tapping the name reopens the picker, which
+ * is where "somebody else ran it" and "nobody did" both live — one sheet rather
+ * than an inline remove button nobody would find twice.
+ */
+function VoditeljName({
+  person,
+  onPick,
+}: {
+  person: StanjePerson
+  onPick: (() => void) | null
+}) {
+  const inside = (
+    <>
+      <RoleMark army={null} role="voditelj" small label={LINEUP_ROLE_LABELS.voditelj} />
+      <span className="app__name-body">
+        <span className="app__name-text">{person.nickname}</span>
+      </span>
+    </>
+  )
+  if (!onPick) return <span className="app__name">{inside}</span>
+  return (
+    <button type="button" className="app__name app__name--tap" onClick={onPick}>
       {inside}
     </button>
   )
@@ -430,6 +615,206 @@ function RosterRow({
       </span>
       <ChevronRight size={18} strokeWidth={1.75} aria-hidden="true" />
     </button>
+  )
+}
+
+/**
+ * A list of people in a sheet, narrowed by a search box and a row of role discs
+ * (#620).
+ *
+ * Both halves filter IN THE BROWSER, on the keystroke: the whole roster is
+ * twenty-two names and it is already on the page, so a round trip to narrow it
+ * would be slower than the thumb.
+ *
+ * The chips are DISCS rather than words, and only the roles anybody in front of
+ * you holds: a row of six words wraps to three lines inside a sheet, and a chip
+ * for a role nobody here can dance is a control that can only empty the list.
+ * `omitRole` is the role every row holds by definition — nobody carries a
+ * "Crni" disc inside "Dodaj u crne".
+ */
+function PeopleSheet({
+  open,
+  title,
+  people,
+  omitRole,
+  onClose,
+  onPick,
+  onClear,
+  clearLabel,
+  busy,
+}: {
+  open: boolean
+  title: string
+  people: readonly StanjePerson[]
+  omitRole: DanceRole | null
+  onClose: () => void
+  onPick: ((person: StanjePerson) => void) | null
+  /** Takes the list back to nobody. Only the voditelj's has one. */
+  onClear?: (() => void) | null
+  clearLabel?: string
+  busy?: string | null
+}) {
+  const [query, setQuery] = useState('')
+  const [role, setRole] = useState<DanceRole | ''>('')
+
+  const filters = useMemo(() => rolesPresent(people), [people])
+  const rows = useMemo(() => {
+    const needle = memberSearchKey(query)
+    return people.filter(
+      (person) =>
+        (needle === '' || memberSearchKey(person.nickname).includes(needle)) &&
+        (role === '' || person.roles.includes(role)),
+    )
+  }, [people, query, role])
+
+  // A sheet that closes has to forget what was typed in it: reopening onto
+  // somebody else's search is the bug every filter-in-a-modal has.
+  function close() {
+    setQuery('')
+    setRole('')
+    onClose()
+  }
+
+  if (!open) {
+    return (
+      <Sheet open={false} onClose={close}>
+        {null}
+      </Sheet>
+    )
+  }
+
+  return (
+    <Sheet open title={title} onClose={close}>
+      {people.length > 0 && (
+        <label className="app__members-search">
+          <span className="app__sr-only">{S.search}</span>
+          <input
+            type="search"
+            className="app__input"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder={S.search}
+            autoComplete="off"
+            enterKeyHint="search"
+          />
+        </label>
+      )}
+
+      {filters.length > 1 && (
+        <FilterChips
+          className="app__role-filters"
+          items={[
+            { key: '', label: S.allRoles },
+            ...filters.map((r) => ({
+              key: r,
+              label: <RoleMark army={armyOfLineupRole(r)} role={r} small label={DANCE_ROLE_LABELS[r]} />,
+            })),
+          ]}
+          active={role}
+          label={S.allRoles}
+          onSelect={(key) => setRole(key as DanceRole | '')}
+        />
+      )}
+
+      <div className="app__stanje-sheet-list">
+        {onClear && (
+          <SheetOption disabled={busy != null} onClick={onClear}>
+            {clearLabel}
+          </SheetOption>
+        )}
+        {rows.map((person) => {
+          // Minus TWO roles, not one: the one every row in this list holds by
+          // definition, and the person's own primary role, which is already the
+          // disc on the left. Without the second filter Dado wears a crni disc
+          // as his lead and a crni disc again beside his name.
+          const others = person.roles.filter(
+            (r) => r !== omitRole && r !== person.primaryRole,
+          )
+          // The nickname is a bare text node on purpose: `.ui-sheet__opt span`
+          // styles every span inside an option as its quiet second line, so a
+          // wrapper here would render the name at 13px in grey.
+          const inside = (
+            <>
+              {person.nickname}
+              {others.length > 0 && (
+                <span className="app__role-discs">
+                  {others.map((r) => (
+                    <RoleMark
+                      key={r}
+                      army={armyOfLineupRole(r)}
+                      role={r}
+                      small
+                      label={DANCE_ROLE_LABELS[r]}
+                    />
+                  ))}
+                </span>
+              )}
+            </>
+          )
+          const lead = person.primaryRole ? (
+            <RoleMark army={person.army ?? armyOfLineupRole(person.primaryRole)} role={person.primaryRole} small />
+          ) : (
+            <RoleMark army={person.army} title={person.title} small />
+          )
+          if (!onPick) {
+            return (
+              <div className="app__stanje-sheet-name" key={person.memberId}>
+                {lead}
+                {inside}
+              </div>
+            )
+          }
+          return (
+            <SheetOption
+              key={person.memberId}
+              lead={lead}
+              disabled={busy != null}
+              // Somebody who already said no is greyed rather than hidden: a
+              // voditelj adding them is a correction and always deliberate.
+              className={person.answer === 'not_coming' ? 'ui-sheet__opt--muted' : undefined}
+              note={person.answer === 'not_coming' ? S.notComingChip : undefined}
+              onClick={() => onPick(person)}
+            >
+              {inside}
+            </SheetOption>
+          )
+        })}
+        {rows.length === 0 && (
+          <p className="app__stanje-empty">{people.length === 0 ? S.nobodyToAdd : S.nobody}</p>
+        )}
+      </div>
+    </Sheet>
+  )
+}
+
+/** One picker, which is a `PeopleSheet` whose taps write. */
+function PickSheet({
+  picker,
+  busy,
+  onClose,
+  onPick,
+  onClear,
+  clearLabel,
+}: {
+  picker: StanjePicker
+  busy: string | null
+  onClose: () => void
+  onPick: (memberId: string) => void
+  onClear: (() => void) | null
+  clearLabel: string
+}) {
+  return (
+    <PeopleSheet
+      open
+      title={picker.title}
+      people={picker.people}
+      omitRole={picker.omitRole}
+      busy={busy}
+      onClose={onClose}
+      onPick={(person) => onPick(person.memberId)}
+      onClear={onClear}
+      clearLabel={clearLabel}
+    />
   )
 }
 

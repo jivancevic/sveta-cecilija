@@ -54,6 +54,15 @@ export interface LineupPerson {
   nickname: string
   /** The roles their profile lists, so the select can mark the unusual ones. */
   roles: DanceRole[]
+  /**
+   * Their PRIMARY role, or null when the profile names none (#620).
+   *
+   * Stanje's pickers draw a disc beside every candidate, and a disc is the army
+   * of the primary role (CONTEXT.md *Znak*). Without it every row in "Dodaj u
+   * crne" would be a blank swatch, which is the one thing a list of twenty
+   * nicknames cannot afford.
+   */
+  primaryRole: DanceRole | null
 }
 
 /**
@@ -290,6 +299,7 @@ export function buildLineupView(input: {
           memberId: String(m.id),
           nickname: label.get(String(m.id)) ?? String(m.id),
           roles: (m.roles ?? []).filter(isDanceRole),
+          primaryRole: isDanceRole(m.primaryRole) ? m.primaryRole : null,
         }))
       : [],
     visible,

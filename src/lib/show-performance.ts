@@ -22,6 +22,57 @@ export const PERFORMANCE_KINDS = ['redovna', 'dmc', 'gulliver', 'koncert', 'expe
 export type PerformanceKind = (typeof PERFORMANCE_KINDS)[number]
 
 /**
+ * How many dancers a NEW evening of this kind is expected to need (#620).
+ *
+ * The voditelj sets the real pragovi for an evening in the Pozovi sheet; this
+ * is only what a row is created with, and until now it was one number for every
+ * kind. A Moreška Experience is danced by **three pairs** in the society's own
+ * premises (CONTEXT.md), so eight was wrong on every Experience ever created and
+ * the bar said "fale još 5 crnih" about a morning that was full.
+ *
+ * A per-kind table rather than a special case, so the seventh kind is a line
+ * here rather than an `if` somewhere else. Both writers of a new non-public row
+ * read it through `newPerformanceRow`: the voditelj's form and the MCP
+ * `create_performances` tool.
+ */
+export const DEFAULT_THRESHOLD: Record<PerformanceKind, { crni: number; bili: number }> = {
+  redovna: { crni: 8, bili: 8 },
+  dmc: { crni: 8, bili: 8 },
+  gulliver: { crni: 8, bili: 8 },
+  koncert: { crni: 8, bili: 8 },
+  experience: { crni: 3, bili: 3 },
+  ostalo: { crni: 8, bili: 8 },
+}
+
+const KNOWN_KINDS = new Set<string>(PERFORMANCE_KINDS)
+
+/**
+ * Narrows an arbitrary value to a known kind.
+ *
+ * Wanted the moment a kind is read RAW rather than through Payload (#620: the
+ * lineup row lock reads `shows.kind` in SQL, because what a confirmed postava
+ * must carry depends on it). A caller that cannot narrow has to invent a
+ * fallback, which is a decision and belongs at the call site, not here.
+ */
+export function isPerformanceKind(value: unknown): value is PerformanceKind {
+  return typeof value === 'string' && KNOWN_KINDS.has(value)
+}
+
+/**
+ * A raw `shows.kind` narrowed, falling back to `ostalo`.
+ *
+ * `ostalo` rather than a throw, and it is the STRICTEST fallback rather than a
+ * neutral one: the confirmation rule splits on this value (#620), and a row
+ * whose kind nobody can parse must land on the side that asks for all four
+ * titles rather than on the one that would confirm without them. Every caller
+ * that reads the column outside Payload uses this, so the fallback is decided
+ * once.
+ */
+export function performanceKindOf(value: unknown): PerformanceKind {
+  return isPerformanceKind(value) ? value : 'ostalo'
+}
+
+/**
  * THE public-performance predicate, Payload `Where` form.
  *
  * Every buyer-, partner-, door- or ticket-statistics-facing query on `shows`

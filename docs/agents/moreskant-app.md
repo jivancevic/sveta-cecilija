@@ -1773,16 +1773,74 @@ column immediately, before any postava is saved.
   apart from an odustajanje. The column's own "N od prag" still counts ANSWERS,
   because the ArmyBar above it does.
 - `checkTitles` — **a confirmed postava carries all four, once each.**
+- `lineupRequirements` / `checkLineup` (#620) — **and whether it has to carry
+  them at all depends on the KIND.**
 
-**The four-title rule is the CONFIRM's and nothing else's.** It lives in
+**What a confirmed postava must carry is split by kind** (#620). One function,
+`lineupRequirements(kind)`, and everything else asks it:
+
+| kind | needs | refuses |
+|---|---|---|
+| `experience` | exactly one `voditelj` line | nothing about titles |
+| everything else | all four titles, once each | a `voditelj` line outright (400) |
+
+A Moreška Experience is three pairs in the society's own premises: it has no
+kings and no bula to hand out, and what it does have is the member who RUNS it
+(CONTEXT.md → *Voditelj (u postavi)*). So an Experience confirms on its voditelj
+and nothing else, and every other kind of evening cannot even hold the line —
+both writers refuse it, the app route (`handleLineupReplace`) and the MCP
+`set_lineup`, and the Izvedbe `LineupEditor` stops offering the role there.
+On Stanje it is a **Voditelj card** under the Bule, drawn only on an Experience.
+
+**The rule is the CONFIRM's and nothing else's.** It lives in
 `decideConfirmation` (`lineup/write-tx.ts`), under the same shows row lock as
-the empty-postava rule, over title counts the locked read takes with one grouped
-`count(*) ... GROUP BY role`. Confirming without them is a 400 naming what is
+the empty-postava rule, over counts the locked read takes with one grouped
+`count(*) ... GROUP BY role` — plus `shows.kind`, read `FOR UPDATE` with the
+flag for the same reason. Confirming without them is a 400 naming what is
 missing or doubled ("Postava nema bilog kralja.", "Dva plesača nose titulu
-Otmanović."). Unlocking is never refused for it, or an evening confirmed before
-the rule existed could not be opened to be repaired. An UNCONFIRMED write still
+Otmanović.", "Postava nema voditelja."), followed by the rule for THAT kind of
+evening. Unlocking is never refused for it, or an evening confirmed before the
+rule existed could not be opened to be repaired. An UNCONFIRMED write still
 passes untouched, which is what keeps the MCP `set_lineup` tool working (story
 62) and what lets a voditelj fill the columns in over an afternoon.
+
+**A voditelj puts people INTO a list from this screen** (#620). The gesture is
+the empty place before the nastup and a single "+ Dodaj u crne / u bile / bulu"
+row after it (a past evening has no places left to fill); neither is offered on
+a confirmed postava, where Otključaj is the way back in. Three of the four
+pickers write an **answer** (`POST /api/app/attendance`, `status: 'coming'` plus
+the army, and no army at all for a bula, whose profile puts her in neither):
+until a postava is confirmed it IS the answers with the titles laid over them,
+so one write serves both readings and the voditelj never learns which table they
+are in. Only the Experience's voditelj goes straight to the lineup, because he
+did not dance and so has no answer to give — and his write REPLACES whoever was
+there, since an Experience has one.
+
+Every picker, and the Bez odgovora sheet with them, carries a
+diacritic-insensitive search (`memberSearchKey`, #424's normaliser) and a row of
+role filters drawn as **discs rather than words**, offering only the roles
+somebody in that list actually holds. Each row shows the other roles that person
+can dance as small discs, minus the one they hold by definition in that list
+(nobody carries a "Crni" disc inside "Dodaj u crne"). Whoever answered "ne
+dolazim" sinks to the bottom, dimmed and labelled, rather than disappearing: a
+voditelj adding them is correcting a record and always means it.
+
+**What the counts COUNT changes twice** (#620, CONTEXT.md → *Army count*):
+
+- once the postava is **confirmed**, the bar, both column heads and the Bule
+  card count the POSTAVA rather than the answers, the names and the number agree
+  at last, and the "bez odgovora" chip is dropped because it has nothing left to
+  explain;
+- once the nastup has **started** (`startMs <= nowMs`, the same fact that
+  already decides `canAlarm`, and never "confirmed"), the bar reads "8 crnih · 7
+  bilih" instead of a shortfall, the heads drop their "od 8" and no army is
+  called short. Nothing is missing from an evening that has been danced.
+
+**Pozovi and Potvrdi postavu sit in the flow, under the Bule** (#620), with a
+Lucide bell beside Pozovi. They were a sticky bar at `z-index: 15` until Josip
+photographed the bottom of it being read through the tab bar: that zone is at
+`z-index: 20` and up to 132px tall, so a lifted element below it is blurred out
+by it and no `bottom` value clears something that follows the scroll.
 
 **Potvrdi writes the postava and then confirms it**, in two calls. The titles
 are stored the moment they are given, but the plain rows under them are derived

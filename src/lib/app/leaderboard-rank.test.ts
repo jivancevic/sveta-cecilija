@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { PERFORMANCE_KINDS, type PerformanceKind } from '@/lib/show-performance'
 import { type DancerStats } from '@/lib/lineup/stats'
-import { DANCE_ROLES, type DanceRole } from '@/lib/moreskant-profile'
+import { LINEUP_ROLES, type LineupRole } from '@/lib/moreskant-profile'
 import { pluralize } from './roster-loaders'
 import { APP_STRINGS } from './strings'
 import {
@@ -26,7 +26,7 @@ import {
 } from './leaderboard-rank'
 
 const noRoles = () =>
-  Object.fromEntries(DANCE_ROLES.map((r) => [r, 0])) as Record<DanceRole, number>
+  Object.fromEntries(LINEUP_ROLES.map((r) => [r, 0])) as Record<LineupRole, number>
 
 /**
  * A scoreboard row with its counts spread over the kinds the caller names, and
@@ -39,7 +39,7 @@ function dancer(
   memberId: string,
   nickname: string,
   byKind: Partial<Record<PerformanceKind, number>>,
-  roles: Partial<Record<PerformanceKind, Partial<Record<DanceRole, number>>>> = {},
+  roles: Partial<Record<PerformanceKind, Partial<Record<LineupRole, number>>>> = {},
 ): DancerStats {
   const kinds = Object.fromEntries(PERFORMANCE_KINDS.map((k) => [k, 0])) as Record<
     PerformanceKind,
@@ -51,12 +51,12 @@ function dancer(
 
   const rolesByKind = Object.fromEntries(
     PERFORMANCE_KINDS.map((k) => [k, noRoles()]),
-  ) as Record<PerformanceKind, Record<DanceRole, number>>
+  ) as Record<PerformanceKind, Record<LineupRole, number>>
   const total = noRoles()
   for (const [kind, byRole] of Object.entries(roles)) {
     for (const [role, count] of Object.entries(byRole ?? {})) {
-      rolesByKind[kind as PerformanceKind][role as DanceRole] = count ?? 0
-      total[role as DanceRole] += count ?? 0
+      rolesByKind[kind as PerformanceKind][role as LineupRole] = count ?? 0
+      total[role as LineupRole] += count ?? 0
     }
   }
 

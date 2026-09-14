@@ -1,4 +1,4 @@
-import type { DanceRole } from '@/lib/moreskant-profile'
+import type { LineupRole } from '@/lib/moreskant-profile'
 
 // Who someone dances as (#562).
 //
@@ -29,18 +29,36 @@ import type { DanceRole } from '@/lib/moreskant-profile'
 // pins `title: null` in the row type itself, so the rule is enforced by tsc and
 // not by memory).
 //
-// Four glyphs, four drawings, and both contexts draw the same four:
+// Five glyphs, five drawings, and both contexts draw the same five:
 //   crni kralj    a grey crown WITH its base, on ink
 //   otmanović     the same crown WITHOUT the base and with an O in it, on ink
 //   bili kralj    a gold crown on red
 //   bula          a gold disc; the bula OF THE NIGHT gets the white ring
+//   voditelj      a microphone with an E in its head, on a gold-ringed dark disc
 //
 // The crowns are drawn here rather than taken from Lucide: a crown with and
 // without a base is the whole distinction between the two crni titles, and no
-// icon set ships that pair.
+// icon set ships that pair. The microphone is drawn here for the same reason,
+// and then drawn WRONG on purpose (#620): its head is wider than a real
+// microphone's so that a serif E fits inside it. The voditelj belongs to the
+// Moreška Experience and to nothing else (CONTEXT.md, *Voditelj (u postavi)*),
+// and at 28px a bare microphone reads as a microphone rather than as a role —
+// the letter is what names it, exactly as the O names the otmanović. He is in
+// NEITHER army, so the disc is the sunk ground with a gold ring rather than ink
+// or red: the ring is the society's colour and the only mark on this app that
+// is not a vojska.
 
 export type Army = 'crni' | 'bili' | 'bula'
 export type DanceTitle = 'crni_kralj' | 'otmanovic' | 'bili_kralj' | 'bula'
+
+/**
+ * What this disc can DRAW: the four titles plus the voditelj.
+ *
+ * Deliberately wider than `DanceTitle`, because the voditelj is not a title: it
+ * is a lineup line for somebody who did not dance, so it can never be handed
+ * out by the title sheet and can never be one of the four an evening needs.
+ */
+export type MarkGlyph = DanceTitle | 'voditelj'
 
 /**
  * Which glyph a PROFILE's primary role draws.
@@ -51,13 +69,14 @@ export type DanceTitle = 'crni_kralj' | 'otmanovic' | 'bili_kralj' | 'bula'
  * plain ink one. The two kings and the otmanović are the only roles whose
  * profile fact has a drawing of its own.
  */
-const GLYPH_OF_ROLE: Record<DanceRole, DanceTitle | null> = {
+const GLYPH_OF_ROLE: Record<LineupRole, MarkGlyph | null> = {
   crni: null,
   bili: null,
   crni_kralj: 'crni_kralj',
   otmanovic: 'otmanovic',
   bili_kralj: 'bili_kralj',
   bula: null,
+  voditelj: 'voditelj',
 }
 
 interface RoleMarkBase {
@@ -96,14 +115,64 @@ interface NastupMark extends RoleMarkBase {
   role?: never
 }
 
-/** A person shown as THEMSELVES: the glyph is their dance role, or none. */
+/**
+ * A person shown as THEMSELVES: the glyph is their role, or none.
+ *
+ * `LineupRole` rather than `DanceRole` since #620, for the one value that is
+ * not a dance role: the voditelj of a Moreška Experience. He is still the
+ * PROFILE side of the union even though nobody's profile carries the role,
+ * because the question the disc answers about him is "what is this person on
+ * this evening's list" and not "which of the four titles does he hold" — and
+ * the title side must stay exactly four values, or `checkTitles` would have a
+ * fifth thing to count.
+ */
 interface ProfileMark extends RoleMarkBase {
   /** The role this disc stands for; on the big disc, the reader's primary one. */
-  role: DanceRole
+  role: LineupRole
   title?: never
 }
 
 export type RoleMarkProps = NastupMark | ProfileMark
+
+/**
+ * The voditelj's microphone, with the E of Experience inside its head (#620).
+ *
+ * The head is a 10x12.5 rounded rectangle rather than the 6-wide capsule a
+ * microphone actually has: a serif E at 8.4px needs the room, and a glyph
+ * nobody can name is a decoration. Same device as the O in the otmanović's
+ * crown, same face (`--serif`) and the same `stroke="none"`, because everything
+ * else in these drawings is a stroked line and a stroked letter fills its own
+ * counters at this size.
+ */
+function Microphone() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <rect x="7" y="2" width="10" height="12.5" rx="5" />
+      <text
+        x="12"
+        y="11.9"
+        textAnchor="middle"
+        fontSize="8.4"
+        fontWeight="700"
+        stroke="none"
+        fill="currentColor"
+        style={{ fontFamily: 'var(--serif)' }}
+      >
+        E
+      </text>
+      <path d="M4.5 12a7.5 7.5 0 0 0 15 0" />
+      <path d="M12 19.5v2.2" />
+    </svg>
+  )
+}
 
 function Crown({ base }: { base: boolean }) {
   return (
@@ -157,7 +226,7 @@ export function RoleMark(props: RoleMarkProps) {
   // this line treats the answer the same way. `props.role` is checked rather
   // than `props.title` because the profile branch is the narrower one — a
   // nastup mark may legitimately pass neither.
-  const drawn: DanceTitle | null =
+  const drawn: MarkGlyph | null =
     props.role !== undefined ? GLYPH_OF_ROLE[props.role] : (props.title ?? null)
 
   const classes = [
@@ -168,6 +237,8 @@ export function RoleMark(props: RoleMarkProps) {
     // reads `drawn` rather than `props.role`: a bula by trade maps to no glyph
     // above, so she never picks the ring up from her profile.
     drawn === 'bula' ? 'ui-mark--titled' : '',
+    // The gold ring, and the only mark on this app that belongs to no vojska.
+    drawn === 'voditelj' ? 'ui-mark--voditelj' : '',
     className ?? '',
   ]
     .filter(Boolean)
@@ -178,6 +249,8 @@ export function RoleMark(props: RoleMarkProps) {
       <Crown base />
     ) : drawn === 'otmanovic' ? (
       <Crown base={false} />
+    ) : drawn === 'voditelj' ? (
+      <Microphone />
     ) : null
 
   const shown = initials?.trim() ?? ''

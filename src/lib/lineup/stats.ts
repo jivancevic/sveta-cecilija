@@ -19,7 +19,7 @@
 // counts what it is handed and never re-derives a boundary.
 
 import { PERFORMANCE_KINDS, type PerformanceKind } from '@/lib/show-performance'
-import { DANCE_ROLES, isDanceRole, type DanceRole } from '@/lib/moreskant-profile'
+import { LINEUP_ROLES, isLineupRole, type LineupRole } from '@/lib/moreskant-profile'
 import type { AttendanceMember } from '@/lib/attendance/rules'
 
 /**
@@ -46,7 +46,7 @@ export interface StatsPerformance {
 export interface StatsLineupRow {
   performanceId: string
   memberId: string
-  role: DanceRole
+  role: LineupRole
 }
 
 /** One line of the table. */
@@ -62,10 +62,17 @@ export interface DancerStats {
    * titles meant a row could say "21 nastupa" and nothing else about twenty-one
    * evenings: a plain crni or bili contributed to the total and to no tally, so
    * Ljestvica could not say whether those were nights in the ranks or nights
-   * wearing a crown. `voditelj` stays out, here as everywhere - running an
-   * evening is not dancing it (CONTEXT.md -> *Voditelj (u postavi)*).
+   * wearing a crown.
+   *
+   * **And `voditelj` since #620**, which reverses what this comment used to
+   * say. Running a Moreška Experience is not dancing it, and that is still
+   * true - but the Experience list on Ljestvica is a count of the Experiences
+   * a member was PART of, and the one member who is there every time was the
+   * only one it did not count. He can only ever appear on an `experience` row
+   * (the lineup route refuses the line anywhere else), so the Moreška list is
+   * untouched by this and the two lists still measure what they always did.
    */
-  roles: Record<DanceRole, number>
+  roles: Record<LineupRole, number>
   /** The split behind the tap: performances per kind, zeros included. */
   byKind: Record<PerformanceKind, number>
   /**
@@ -81,7 +88,7 @@ export interface DancerStats {
    * therefore add one row's tallies up and get the count printed beside them,
    * which is what makes the breakdown checkable instead of decorative.
    */
-  rolesByKind: Record<PerformanceKind, Record<DanceRole, number>>
+  rolesByKind: Record<PerformanceKind, Record<LineupRole, number>>
 }
 
 /**
@@ -101,15 +108,15 @@ function emptyKinds(): Record<PerformanceKind, number> {
  * same reason the kind vocabulary is `show-performance.ts`'s: a seventh dance
  * role added there has to appear in this tally on the same day.
  */
-function emptyRoles(): Record<DanceRole, number> {
-  return Object.fromEntries(DANCE_ROLES.map((r) => [r, 0])) as Record<DanceRole, number>
+function emptyRoles(): Record<LineupRole, number> {
+  return Object.fromEntries(LINEUP_ROLES.map((r) => [r, 0])) as Record<LineupRole, number>
 }
 
 /** One `emptyRoles()` per kind, zeros included, so no caller has to guard. */
-function emptyRolesByKind(): Record<PerformanceKind, Record<DanceRole, number>> {
+function emptyRolesByKind(): Record<PerformanceKind, Record<LineupRole, number>> {
   return Object.fromEntries(PERFORMANCE_KINDS.map((k) => [k, emptyRoles()])) as Record<
     PerformanceKind,
-    Record<DanceRole, number>
+    Record<LineupRole, number>
   >
 }
 
@@ -170,11 +177,19 @@ export function aggregateDancerStats(input: {
     if (counted.has(key)) continue
     counted.add(key)
 
+    // Running an evening counts on the EXPERIENCE and nowhere else (#620).
+    // The lineup route refuses a `voditelj` line on every other kind, so this
+    // only ever fires on a row entered before that rule existed — and the
+    // Moreška list staying purely danced roles is the decision, not a
+    // consequence of what the route happens to allow today.
+    if (row.role === 'voditelj' && kind !== 'experience') continue
+
     stats.performances += 1
     stats.byKind[kind] += 1
-    // Every dance role, the plain ones included (#607). `isDanceRole` is still
-    // the filter, and it is what keeps the `voditelj` line out.
-    if (isDanceRole(row.role)) {
+    // Every lineup role, the plain ones and the voditelj included (#607, #620).
+    // `isLineupRole` is the filter; a role outside the vocabulary counts towards
+    // the evening and towards no tally, which is what it always did.
+    if (isLineupRole(row.role)) {
       stats.roles[row.role] += 1
       stats.rolesByKind[kind][row.role] += 1
     }

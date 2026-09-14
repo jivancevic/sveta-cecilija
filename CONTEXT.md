@@ -507,6 +507,8 @@ _Avoid_: extra show, private show (that is the sales-page name for a bespoke *re
 ### Moreška Experience
 The short form of the Moreška sold as a service on the public site (*Private Experiences*, "The Moreška Experience" / "Moreška iskustvo"): a talk on the dance's origins and regalia and excerpts of the sword fight, danced with fewer pairs (usually three crni, three bili and a bula) for a small or medium group, by appointment, in the society's own premises (*Prostor Sv. Cecilije*). A performance of kind `experience`: always non-public, never sold by ticket, counted in a dancer's season like any other confirmed lineup.
 
+Three pairs is not a description, it is the **default threshold**: a new Experience starts at three a side and every other kind at eight (#620). And it is the one kind of evening that has a *Voditelj (u postavi)* and does **not** have the four *titles*: a confirmed Experience names who ran it and hands out no crowns, while a confirmed evening of any other kind carries all four titles and cannot hold a voditelj line at all.
+
 It is the **third category** an evening is read as, beside *redovna* and *vanredna*, and wherever the app prints an evening's kind to a dancer the word is exactly **"Experience"** (the hero, the *Stanje* head, the rows of the season). It carries a colour of its own, copper, the way a redovna carries gold. Its own half of *Ljestvica* is the same distinction.
 _Avoid_: experience (lower-case, as a generic word for an evening), workshop, demo; calling one a *vanredna izvedba*.
 
@@ -528,6 +530,8 @@ _Avoid_: otkazali, cancelled, no-show (a no-show never said anything), flake.
 
 ### Army count
 Headcount of "coming" per army, compared to the threshold. `crni_kralj` and `otmanovic` count as crni, `bili_kralj` as bili, `bula` counts in neither. "3 bilih, 7 crnih" always states the *current* headcount, never the shortfall.
+
+**On *Stanje* the count changes what it counts once the postava is confirmed** (#620): before that it is the answers, and a postava row nobody answered for stands under the names carrying a *bez odgovora* chip that explains why the names outnumber the number; after it the bar, the two column heads and the Bule card count the **postava**, the names and the number agree, and the chip has nothing left to say. Independently of that, a nastup that has **started** stops reporting a shortfall at all: the bar reads "8 crnih · 7 bilih" and the heads drop their "od 8", because "fale još 2 crna" is an instruction and an evening that has been danced cannot be acted on.
 
 ### Pozivnica (invitation)
 The only way a moreškant gets a login. A voditelj presses "Pošalji pozivnicu" on the Member; the account is created with exactly the `moreskant` permission and the Member link, and the dancer gets a Croatian email with a link to choose a password, **valid for seven days**. Pressing again sends a fresh link to the same login, never a second one. An invitation may land only on a login whose permissions stay inside `moreskant` and `door` (#520); aimed at any other staff account it refuses, because sending it would move that account's e-mail and mail its reset link wherever the presser chose. A dancer who forgets their password asks for one themselves from the login page and gets the same page behind a **one-hour** link. Since #463 the usual channel is a LINK rather than a letter: "Kopiraj pozivnicu" mints a seven-day sign-in link a voditelj hands over by SMS, because most of the roster has no e-mail address. Since #511 both channels live on the dancer's own row on *Članovi* rather than on a screen of their own.
@@ -558,14 +562,23 @@ The disc beside a moreškant's name. It means **one of two things and never both
 The distinction is the whole reason a *Title* is not allowed on a profile: "Josip can dance the crni kralj" and "Josip **is** the crni kralj on Monday" are different facts, and one disc that meant both would erase the difference the postava exists to record.
 
 **Ljestvica is an explicit exception**, and it covers the season profile a row opens as well: a disc standing for a PERSON there is the army with their initials and never a glyph, because a season's counts have no evening to take a title from and the top three already wear a cup carrying their rank. A disc standing for a ROLE on those screens — a filter chip, a "crni kralj, four times" tally — is the profile meaning and does carry the role's glyph, which is why it is passed as a role and not as a title.
-_Avoid_: badge, avatar, crown (the crown is one of the four glyphs, not the thing itself).
+There are **five glyphs**, not four: the three crowns, the bula's ring, and since #620 the *Voditelj (u postavi)*'s microphone. The fifth is the only one drawn on no army at all.
+_Avoid_: badge, avatar, crown (the crown is one of the five glyphs, not the thing itself).
 
 ### Voditelj (u postavi)
-The member who ran a performance without dancing it, written into its lineup with the role `voditelj`. Every Moreška Experience has one (in 2026, Brane on all of them). It is a lineup role, not a dance role: a profile never lists it, it warns about nothing, and it counts for nothing in *Dancer statistics* or a dancer's own season, because running an evening is not dancing it. Distinct from the *Voditelj* permission holder, although in practice the same people.
+The member who ran a performance without dancing it, written into its lineup with the role `voditelj`. It is a lineup role and not a dance role: a profile never lists it and it warns about nothing, and nothing on a profile says who may hold it — any active moreškant may, and only a `moreska` holder writes it down.
+
+**Only a *Moreška Experience* has one** (#620). Every Experience does (in 2026, Brane on all of them), a confirmed one is refused without it, and on every other kind of evening the lineup route refuses the line outright — so the Voditelj card on *Stanje* and the role in the Izvedbe editor are both absent there rather than empty.
+
+It **counts on the Experience list of *Ljestvica*** and nowhere else (#620): running an Experience is not dancing it, but the Experience list counts the Experiences a member was part of, and the one member who is there every time was the only one it left out. It appears in *Moja sezona* the same way, inside the Experience section. The Moreška list stays danced roles only, which it is by construction: a `voditelj` row can exist on no other kind.
+
+His *Znak* is the one mark on the app that belongs to **neither army**: the sunk ground with a gold ring, carrying a microphone whose head is drawn wide enough to hold a serif **E** for Experience, the same device as the O inside the otmanović's crown.
+
+Distinct from the *Voditelj* permission holder, although in practice the same people.
 _Avoid_: leader, host, coach.
 
 ### Dancer statistics
-Per season (calendar year, as in ADR-0022): confirmed performances per moreškant, and how many times each danced **every one of the six dance roles**, the plain `crni` and `bili` included (#607). A dancer's role counts therefore add up to the performances beside them, which is what makes a breakdown checkable rather than decorative; the four *titles* stay a named subset of it, because "which titles were given" is a different question from "what did this dancer wear". The `voditelj` line counts for nothing, here as everywhere. Past seasons selectable. Confirmed lineups of past performances are visible to every moreškant, and so is every moreškant's breakdown.
+Per season (calendar year, as in ADR-0022): confirmed performances per moreškant, and how many times each danced **every one of the six dance roles**, the plain `crni` and `bili` included (#607). A dancer's role counts therefore add up to the performances beside them, which is what makes a breakdown checkable rather than decorative; the four *titles* stay a named subset of it, because "which titles were given" is a different question from "what did this dancer wear". Since #620 the `voditelj` line counts too, which it can only ever do on an `experience` row: see *Voditelj (u postavi)*. Past seasons selectable. Confirmed lineups of past performances are visible to every moreškant, and so is every moreškant's breakdown.
 
 ### Ljestvica (leaderboard)
 The dancer's own tab in Cecilija (decided in [Cecilija: route map](https://github.com/jivancevic/sveta-cecilija/issues/473)): a moreškant's own season on one side and the season's moreškanti ranked by confirmed performances on the other, the same count as *Dancer statistics*, shown in full with nicknames. The season is **two lists** ranked apart, Moreška and Experience. Every active moreškant is on it, equal counts share a rank and the next one skips. The count is a lineup fact, never an attendance answer, so saying "coming" moves nobody.

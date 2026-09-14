@@ -65,6 +65,11 @@
   --ghostEdge: rgba(26, 20, 12, 0.16); /* the inset edge of a ghost control */
   --barBg: rgba(255, 255, 255, 0.92); /* the tab bar and any floating bar */
   --markEdge: transparent; /* a crni disc needs no edge on paper */
+  /* The voditelj's disc (#620): dark in BOTH skins, and deliberately neither
+     `--crni` (which would say crni) nor `--sunk` (which is light beige on
+     paper, so the gold ring and the gold glyph on it would sit at 3:1). A
+     warm near-black of its own, because the mark belongs to no vojska. */
+  --markLead: #262019;
   --thumb: #1a140c; /* the pill behind the active tab */
   --toast: #1a140c; /* the one surface that inverts the page it sits on */
   --onToast: #f5f2ec;
@@ -253,6 +258,7 @@ html:has(> .app) {
   --ghostEdge: rgba(245, 242, 236, 0.18);
   --barBg: rgba(35, 28, 20, 0.72);
   --markEdge: rgba(217, 212, 204, 0.4);
+  --markLead: #17120c;
   --thumb: rgba(217, 171, 60, 0.16);
   /* Night's toast cannot be ink on ink: it lifts off the page instead. */
   --toast: #3b322a;
@@ -7755,32 +7761,17 @@ a.app__statrow-main:focus-visible {
 .app__stanje {
   display: flex;
   flex-direction: column;
-  min-height: calc(100dvh - var(--tabH) - 190px);
 }
 
-/* The voditelj's bar: sticky, so it takes its own room in the flow and clears
-   the tab bar, exactly as the answer bar on the old detail does (#562). */
+/* Pozovi and Potvrdi, in the flow and under the Bule (#620).
+   They were a sticky bar at `z-index: 15` until Josip photographed the bottom
+   of it being read through the tab bar's blur zone, which sits at 20 and is up
+   to 132px tall: a lifted element BELOW that zone is blurred out by it, and no
+   amount of `bottom` clears something that follows the scroll. In the flow the
+   shell's own bottom padding clears the bar, and the two buttons stand at a
+   place on the screen rather than following the thumb up the page. */
 .app__stanje-actions {
-  margin-top: auto;
-  position: sticky;
-  bottom: calc(var(--tabH) + env(safe-area-inset-bottom, 0px) + 22px);
-  z-index: 15;
-  padding: 12px;
-  border-radius: var(--rCard);
-  background: var(--barBg);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  box-shadow: var(--shadowBar);
-}
-
-.app__stanje-tally {
-  margin: 0 0 8px;
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  text-align: center;
-  color: var(--muted);
+  padding: 2px 0 4px;
 }
 
 .app__stanje-why {
@@ -7810,12 +7801,83 @@ a.app__statrow-main:focus-visible {
   gap: 12px;
 }
 
-@media (min-width: 1024px) {
-  /* No bar to clear on the laptop (`--tabH: 0`), and the column is narrower
-     than the window, so the actions sit at the foot of the content. */
-  .app__stanje-actions {
-    bottom: 22px;
-  }
+/* The controls inside the hero card sit ABOVE its cover link (#620; the link
+   itself and the card's own `position` are in `ui.css`). A positioned element
+   paints over its static siblings, so each of these says so for itself and
+   everything else on the card falls through to the link underneath. They are
+   named here rather than in the kit because they are this screen's shapes. */
+.ui-card--hero .app__ans,
+.ui-card--hero .app__answer-note,
+.ui-card--hero .app__answer-error,
+.ui-card--hero .app__hero-half-head,
+.ui-card--hero .app__hero-more {
+  position: relative;
+  z-index: 1;
+}
+
+/* An empty place is the way to FILL it (#620): the same 44px row, and the only
+   thing that says it is a control is that it answers a press. Drawn for a
+   voditelj only — for a dancer it stays the plain span it always was, because a
+   dancer has nobody to add. */
+.app__slot--tap {
+  cursor: pointer;
+  transition: box-shadow 0.2s, color 0.2s;
+}
+
+.app__slot--tap:active {
+  transform: scale(0.98);
+}
+
+/* "+ Dodaj u crne": the one row that ends a list a voditelj may still fill.
+   A dashed edge rather than a filled button, so it reads as the empty place it
+   replaces rather than as a second primary action on the screen. */
+.app__add-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--rCtl);
+  background: none;
+  box-shadow: inset 0 0 0 1.5px var(--ghostEdge);
+  color: var(--muted);
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.app__add-row:active {
+  transform: scale(0.98);
+}
+
+/* The other roles a candidate can dance, as small discs beside their name
+   (#620). */
+.app__role-discs {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 8px;
+}
+
+/* The role filter, as a row of discs rather than a row of words (#620): six
+   Croatian role names wrap to three lines inside a sheet, and the disc is the
+   app's own way of saying "crni kralj" in 28px. */
+.app__role-filters {
+  margin: 2px 0 6px;
+}
+
+.app__role-filters .ui-filter {
+  padding: 4px 8px;
+}
+
+/* The Experience's voditelj (#620). A card rather than a column: he is in
+   neither army and counts towards no threshold, exactly like the bula. */
+.app__voditelji .app__stanje-names {
+  gap: 4px;
 }
 
 /* ─────────────────────────────────────────────────────────

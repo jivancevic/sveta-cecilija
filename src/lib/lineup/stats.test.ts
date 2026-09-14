@@ -54,6 +54,7 @@ describe('aggregateDancerStats', () => {
       otmanovic: 0,
       bili_kralj: 0,
       bula: 1,
+      voditelj: 0,
     })
     const dado = rows.find((r) => r.nickname === 'Dado')!
     expect(dado.roles).toEqual({
@@ -63,6 +64,7 @@ describe('aggregateDancerStats', () => {
       otmanovic: 1,
       bili_kralj: 1,
       bula: 0,
+      voditelj: 0,
     })
   })
 
@@ -92,6 +94,7 @@ describe('aggregateDancerStats', () => {
       otmanovic: 0,
       bili_kralj: 0,
       bula: 1,
+      voditelj: 0,
     })
     expect(cici.rolesByKind.redovna).toEqual({
       crni: 0,
@@ -100,6 +103,7 @@ describe('aggregateDancerStats', () => {
       otmanovic: 0,
       bili_kralj: 0,
       bula: 0,
+      voditelj: 0,
     })
     expect(cici.rolesByKind.experience).toEqual({
       crni: 0,
@@ -108,6 +112,7 @@ describe('aggregateDancerStats', () => {
       otmanovic: 0,
       bili_kralj: 0,
       bula: 1,
+      voditelj: 0,
     })
     // Every kind is a key, zeros included, so no caller has to guard.
     expect(cici.rolesByKind.dmc).toEqual({
@@ -117,6 +122,7 @@ describe('aggregateDancerStats', () => {
       otmanovic: 0,
       bili_kralj: 0,
       bula: 0,
+      voditelj: 0,
     })
   })
 
@@ -138,6 +144,7 @@ describe('aggregateDancerStats', () => {
       otmanovic: 0,
       bili_kralj: 0,
       bula: 0,
+      voditelj: 0,
     })
     expect(dado.rolesByKind.redovna).toEqual({
       crni: 0,
@@ -146,6 +153,7 @@ describe('aggregateDancerStats', () => {
       otmanovic: 0,
       bili_kralj: 0,
       bula: 0,
+      voditelj: 0,
     })
   })
 
@@ -174,6 +182,7 @@ describe('aggregateDancerStats', () => {
       otmanovic: 0,
       bili_kralj: 0,
       bula: 0,
+      voditelj: 0,
     })
   })
 
@@ -267,6 +276,7 @@ describe('aggregateDancerStats', () => {
       otmanovic: 0,
       bili_kralj: 0,
       bula: 0,
+      voditelj: 0,
     })
     expect(grgo.byKind.redovna).toBe(0)
   })
@@ -306,6 +316,35 @@ describe('aggregateDancerStats', () => {
       roster,
     })
     expect(tied.map((r) => r.nickname)).toEqual(['Cici', 'Dado', 'Grgo'])
+  })
+})
+
+// #620 — running an evening counts on the EXPERIENCE and nowhere else. A
+// `voditelj` line cannot be written on any other kind any more, but one entered
+// before that rule existed must not turn into a nastup on the Moreška list.
+describe('aggregateDancerStats and the voditelj line (#620)', () => {
+  const roster = [{ id: '1', nickname: 'Brane', roles: ['crni'], primaryRole: 'crni' }]
+
+  it('counts a voditelj line on a Moreška Experience', () => {
+    const [row] = aggregateDancerStats({
+      performances: [{ id: 'p1', kind: 'experience', confirmed: true }],
+      lineups: [{ performanceId: 'p1', memberId: '1', role: 'voditelj' }],
+      roster,
+    })
+    expect(row!.performances).toBe(1)
+    expect(row!.byKind.experience).toBe(1)
+    expect(row!.rolesByKind.experience.voditelj).toBe(1)
+  })
+
+  it('counts it for nothing on any other kind', () => {
+    const [row] = aggregateDancerStats({
+      performances: [{ id: 'p1', kind: 'redovna', confirmed: true }],
+      lineups: [{ performanceId: 'p1', memberId: '1', role: 'voditelj' }],
+      roster,
+    })
+    expect(row!.performances).toBe(0)
+    expect(row!.byKind.redovna).toBe(0)
+    expect(row!.roles.voditelj).toBe(0)
   })
 })
 
