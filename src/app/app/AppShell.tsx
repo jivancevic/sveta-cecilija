@@ -1,4 +1,6 @@
 import Image from 'next/image'
+import Link from 'next/link'
+import { ChevronLeft } from 'lucide-react'
 import type { AppMember } from '@/lib/app/access'
 import type { AppScreenKey } from '@/lib/app/screens'
 import { screenByKey } from '@/lib/app/screens'
@@ -63,6 +65,7 @@ export function AppShell({
   title,
   brand = false,
   season,
+  back,
   actions,
   intro,
   children,
@@ -80,6 +83,15 @@ export function AppShell({
   brand?: boolean
   /** The season label under the title; omitted where it means nothing. */
   season?: number | null
+  /**
+   * The way back, for a screen that is always reached from another one (#614).
+   *
+   * In the HEADER, left of the title, where iOS puts it and where a thumb goes
+   * looking. It used to be a full row under the title on the two screens that
+   * have one — the full list and a dancer's profile — which spent a whole row
+   * of a phone on a link, on screens where every row is a person.
+   */
+  back?: { href: string; label: string }
   /** Extra controls left of the bell. The bell itself is always there (#496). */
   actions?: React.ReactNode
   /** A block between the header and the content (the performance detail's). */
@@ -106,12 +118,19 @@ export function AppShell({
           </div>
         ) : (
           <div className="app__header-title">
-            <h1>{heading}</h1>
-            {season != null && (
-              <p className="app__season">
-                {APP_STRINGS.list.season} {season}
-              </p>
+            {back && (
+              <Link className="app__header-back" href={back.href} aria-label={back.label}>
+                <ChevronLeft size={22} strokeWidth={2} aria-hidden="true" />
+              </Link>
             )}
+            <div className="app__header-heading">
+              <h1>{heading}</h1>
+              {season != null && (
+                <p className="app__season">
+                  {APP_STRINGS.list.season} {season}
+                </p>
+              )}
+            </div>
           </div>
         )}
         <div className="app__header-actions">

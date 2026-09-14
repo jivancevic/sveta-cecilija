@@ -491,6 +491,34 @@ html:has(> .app) {
    they are. */
 .app__header-title {
   min-width: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+/* The title and its season, so the back arrow can sit beside the pair rather
+   than above them (#614). */
+.app__header-heading {
+  min-width: 0;
+}
+
+/* The way back, where iOS puts it: top left, in the header, as an arrow (#614).
+   A 44px target around a 22px glyph, pulled left by its own padding so the
+   title stays where it has always been on a screen that has no back link. */
+.app__header-back {
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  margin: 0 -6px 0 -12px;
+  align-self: center;
+  color: var(--ink);
+  border-radius: var(--rPill);
+}
+
+.app__header-back:active {
+  background: var(--sunk);
 }
 
 .app__header-title h1 {
@@ -3309,6 +3337,15 @@ a.app__ob-link {
   font-family: var(--serif);
   font-size: 20px;
   line-height: 1;
+  /* A FIXED BOX rather than tabular figures (#614, finding 05). The column
+     visibly jittered between 21 and 9 while scrolling; `tabular-nums` is the
+     usual fix and this app cannot use it, because Labrada's tabular figures
+     are a third wider than its proportional ones and "18" comes out with a
+     hole in the middle (#611). A minimum width does the same job from the
+     other side: two digits always occupy two digits' worth of row, whatever
+     the glyphs are, and the numbers stay right-aligned against it. */
+  min-width: 2.1ch;
+  text-align: right;
 }
 
 /* The reader's own row: a gold wash and a gold count, the same gold the podium
@@ -3388,11 +3425,18 @@ a.app__ob-link {
    turned every row into a second row, and the nickname stopped being the thing
    the eye lands on. The discs shrink to 18px and the counts drop to the muted
    tone — the breakdown is there to be checked, not to be read first. */
+/* ONE COLUMN PER ROLE, always the same six, in the same order (#614, finding
+   09). Until now the block was only the roles a dancer actually wore, packed
+   left, so a dancer with four started their red count where a dancer with one
+   started their black one and the column could be read one row at a time and
+   no other way. A grid fixes the slots: an unworn role leaves its cell empty,
+   and reading down a column is how a reader finds who else dances bili. */
 .app__lb-tallies {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
   align-items: center;
-  gap: 3px 9px;
+  gap: 3px 2px;
+  max-width: 230px;
   margin-top: 4px;
 }
 
@@ -3400,6 +3444,14 @@ a.app__ob-link {
   display: inline-flex;
   align-items: center;
   gap: 3px;
+  min-height: 18px;
+}
+
+/* The profile's split is a handful of roles, not a table of rows to line up:
+   there it stays packed, because there is nothing above or below it to align
+   with. */
+.app__pf-split .app__lb-tally {
+  min-height: 0;
 }
 
 .app__lb-tally .ui-mark--sm {
@@ -3503,9 +3555,221 @@ a.app__ob-link {
   color: var(--muted);
 }
 
-/* The podium's place, in the metal its cup is drawn in (#611). The cup no
-   longer carries a numeral, so this line is where the number lives — which is
-   also where it is actually legible. */
+/* ── #614: the race, the card, the clock ──────────────────────────────────
+   Everything in this block exists because of one thing the phone showed: the
+   screen reported on a season instead of speaking to the person holding it. */
+
+/* The bar behind a row, as long as that dancer's count against the leader's
+   (Q2). No new data — `--share` comes off the same number printed at the end
+   of the row. 21, 20, 19, 18, 17, 17, 17 is the tightest race a season can
+   have and it read exactly like 21, 12, 8, 4.
+
+   Very quiet on purpose: it is a shape the eye picks up while reading the
+   nicknames, not a chart. The row's own children are lifted over it rather
+   than the bar being pushed behind them, because a negative z-index would put
+   it behind the list's card background and it would vanish. */
+.app__lb-race {
+  position: relative;
+  overflow: hidden;
+}
+
+.app__lb-race::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: calc(var(--share, 0) * 100%);
+  background: var(--gold);
+  /* Very low on purpose. At `--goldSoft` the bar and the bare end of the row
+     read as two blocks with a hard edge between them, and the row stopped
+     being a row; at this weight the eye picks up the SHAPE of the column
+     while still reading the nicknames as the content. */
+  opacity: 0.07;
+  pointer-events: none;
+}
+
+.app__lb-race > * {
+  position: relative;
+}
+
+/* The reader's own row keeps its wash ON TOP of its bar: the two golds stack,
+   which is what makes their own row the one that reads first. */
+.app__lb-race.app__lb-row--me::before {
+  opacity: 0.16;
+}
+
+/* ── The reader's own card (Q1) ────────────────────────────────────────────
+   This replaced a grey sentence. The rank is the biggest figure on the screen
+   after the podium's counts, because "where am I" is why the screen is open. */
+.ui-card.app__lb-you {
+  gap: 12px;
+  box-shadow: var(--shadowCard), inset 0 0 0 1px var(--goldSoft);
+}
+
+.app__lb-you-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.app__lb-you-rank {
+  flex: none;
+  font-family: var(--serif);
+  font-size: 44px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--goldText);
+  font-variant-numeric: tabular-nums;
+}
+
+.app__lb-you-rank sup {
+  font-size: 19px;
+  top: -0.75em;
+}
+
+.app__lb-you-txt {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.app__lb-you-txt b {
+  font-size: 16px;
+  font-weight: 650;
+  color: var(--ink);
+}
+
+/* On the card the arrow stacks over its own words: "▲2" alone does not say
+   since when, and the phrase beside it would push the card's one sentence onto
+   a third line. */
+.app__lb-you-top .app__lb-move {
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0;
+  margin: 0;
+  max-width: 84px;
+  text-align: right;
+  white-space: normal;
+}
+
+.app__lb-you-top .app__lb-move i {
+  font-size: 11px;
+  line-height: 1.25;
+}
+
+/* How far along the reader is towards the next place. A track rather than a
+   number, because "još 1" and "još 6" look the same in a sentence. */
+.app__lb-you-track {
+  height: 7px;
+  border-radius: var(--rPill);
+  background: var(--sunk);
+  overflow: hidden;
+}
+
+.app__lb-you-track i {
+  display: block;
+  height: 100%;
+  border-radius: var(--rPill);
+  background: var(--gold);
+}
+
+.app__lb-you-goal {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.app__lb-you-goal b {
+  font-weight: 650;
+  color: var(--goldText);
+}
+
+/* Q5. The quietest line on the card: it is news, not a scoreline. */
+.app__lb-you-rival {
+  margin: -4px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* ── What the next nastup is worth (Q4) ───────────────────────────────────
+   The sentence and the answer in one card, because the whole point is that the
+   reader can act on it without leaving the screen. */
+.ui-card.app__lb-next {
+  gap: 10px;
+}
+
+.app__lb-next-line {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+/* ── The season's clock (Q3) ──────────────────────────────────────────────
+   Under the heading of the list it counts. One line, and without it a rank is
+   a verdict rather than something left to play for. */
+.app__lb-clock {
+  margin: -6px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* ── A list too small to rank (finding 02) ────────────────────────────────
+   No podium, no places: who leads, and the reason there is no ranking. */
+.app__lb-leaders {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 14px 16px;
+  border-radius: var(--rCard);
+  background: var(--sunk);
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.app__lb-leaders b {
+  font-size: 15px;
+  font-weight: 650;
+  color: var(--ink);
+}
+
+/* ── The two groups of chips (finding 04) ─────────────────────────────────
+   The strip is cut at the right edge of a phone and has to LOOK cut: without
+   the fade the fifth chip ended mid-word and the screen read as broken, and
+   the last two chips were effectively invisible. The fade is on the WRAPPER,
+   so it stays put while the strip inside it scrolls. */
+.app__lb-strip {
+  position: relative;
+}
+
+.app__lb-strip::after {
+  content: '';
+  position: absolute;
+  inset: 0 0 6px auto;
+  width: 28px;
+  background: linear-gradient(90deg, transparent, var(--bg));
+  pointer-events: none;
+}
+
+/* The two groups count DIFFERENT things (Q2): left of the rule a chip picks
+   people and counts their whole season, right of it a chip counts how many
+   times a title was given. Seven identical buttons said they were seven of the
+   same thing. */
+.app__lb-strip-div {
+  flex: 0 0 auto;
+  align-self: stretch;
+  width: 1px;
+  margin: 4px 3px;
+  background: var(--rule);
+}
+
+/* The podium's place, in the metal its blades are drawn in (#611, kept by the
+   #614 review). The mark carries no numeral, so this line is where the number
+   lives — and on a tied podium it is the only thing that says which place a
+   step is, because two golds and a bronze draw no silver between them. */
 .app__lb-podium-place {
   font-family: var(--serif);
   font-weight: 700;
@@ -3525,13 +3789,11 @@ a.app__ob-link {
 
 .app__lb-all {
   align-self: flex-start;
+  gap: 6px;
 }
 
-.app__lb-back {
-  align-self: flex-start;
-  gap: 4px;
-  margin-bottom: 4px;
-  padding-left: 0;
+.app__lb-chev {
+  color: var(--muted);
 }
 
 .app__lb-footer {
@@ -3602,16 +3864,40 @@ a.app__ob-link {
 }
 
 /* What they are able to dance: discs with no numbers on them, because this is
-   the profile's answer and not the season's. */
+   the profile's answer and not the season's. Each one NAMED since #614 — five
+   bare circles told nobody who has not memorised the armies anything, and
+   colour was carrying the whole meaning on its own. It also has air around it
+   now: it used to sit wedged between the name above and the sentence below. */
 .app__pf-can {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  /* Air of its own (#614): it used to sit wedged between the name above and
+     the card below with nothing between them, so three unrelated things read
+     as one block. */
+  margin: 4px 0 8px;
+}
+
+.app__pf-can-roles {
+  display: flex;
   flex-wrap: wrap;
   gap: 6px;
 }
 
+.app__pf-can-role {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px 3px 4px;
+  border-radius: var(--rPill);
+  background: var(--sunk);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
 .app__pf-can-label {
-  margin-right: 2px;
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.12em;
@@ -3624,24 +3910,52 @@ a.app__ob-link {
   color: var(--muted);
 }
 
-/* Two rings side by side, always both: a missing Experience card would read as
-   a screen that failed rather than as a season with none in it. */
+/* TWO UNEQUAL THINGS, DRAWN UNEQUALLY (#614, finding 11). Moreška has two
+   dozen evenings in a season and the Experience has two; as two identical
+   rings side by side they claimed to be equally important, and the empty
+   second one was a dead circle that said nothing and invited nothing. The main
+   list keeps its ring and the other becomes a line under it. Both are still
+   always drawn: a missing card reads as a screen that failed to load. */
 .app__pf-rings {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  display: flex;
+  flex-direction: column;
   gap: 10px;
-  align-items: stretch;
 }
 
 .ui-card.app__pf-ring {
+  flex-direction: row;
   align-items: center;
+  gap: 16px;
+  padding: 16px;
+}
+
+/* Beside the ring rather than under it: the ring is the figure and this is
+   what the figure means. */
+.app__pf-ring-side {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* The second list, as a line (#614). A label, a count, and the split. */
+.ui-card.app__pf-side {
+  gap: 6px;
+  padding: 14px 16px;
+}
+
+.app__pf-side-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
   gap: 10px;
-  padding: 16px 12px;
-  text-align: center;
-  /* The two cards are a pair and must agree on height whatever their splits
-     wrap to, or the screen reads as two unrelated cards that happen to be
-     adjacent. */
-  height: 100%;
+}
+
+.app__pf-side-count {
+  font-family: var(--serif);
+  font-size: 20px;
+  font-weight: 700;
 }
 
 .app__pf-ring-label {
@@ -3680,35 +3994,32 @@ a.app__ob-link {
 .app__pf-split {
   display: flex;
   flex-wrap: wrap;
-  justify-content: center;
   gap: 3px 9px;
-  margin-top: auto;
 }
 
-/* The record: a label and a figure on one line, not a tile. It is one number
-   about the past and does not compete with the rings above it. */
-.ui-card.app__pf-record {
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 13px 16px;
-}
-
-.app__pf-record span {
+/* The record as a LINE, not a card (#614, finding 10). Every block on this
+   screen used to be a full-width surface of the same weight — the sentence,
+   two rings, the record, its footnote — and when everything is lifted nothing
+   is. A card is now reserved for the two things a season is measured in. */
+.app__pf-record {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 4px 8px;
+  margin: 0;
   font-size: 13px;
   color: var(--muted);
 }
 
 .app__pf-record b {
   font-family: var(--serif);
-  font-size: 20px;
+  font-size: 17px;
   font-weight: 700;
+  color: var(--ink);
 }
 
-.app__pf-record-now {
-  margin: 0;
-  font-size: 13px;
+.app__pf-record i {
+  font-style: normal;
   color: var(--goldText);
 }
 
@@ -3720,10 +4031,11 @@ a.app__ob-link {
 }
 
 @media (max-width: 360px) {
-  /* Two rings do not fit a small phone side by side once the split under them
-     wraps to two lines; they stack rather than shrink the numerals. */
-  .app__pf-rings {
-    grid-template-columns: minmax(0, 1fr);
+  /* The ring and the text beside it stop fitting on the narrowest phone once
+     the split wraps, so they stack rather than shrink the numeral. */
+  .ui-card.app__pf-ring {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }
 

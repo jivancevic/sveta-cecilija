@@ -19,7 +19,7 @@ import { Podium } from './Podium'
 import { Ring } from './Ring'
 import { RoleMark } from './RoleMark'
 import { Section } from './Section'
-import { ScreenIcon } from './ScreenIcon'
+import { SWORDS_PATHS, ScreenIcon } from './ScreenIcon'
 import { Segmented } from './Segmented'
 import { Sheet, SheetOption } from './Sheet'
 import { Switch } from './Switch'
@@ -185,32 +185,42 @@ describe('RoleMark', () => {
 })
 
 describe('Trophy', () => {
-  it('draws one cup per place, each in its own metal', () => {
+  it('draws one mark per place, each in its own metal', () => {
     expect(render(h(Trophy, { place: 1 }))).toContain('ui-trophy--1')
     expect(render(h(Trophy, { place: 2 }))).toContain('ui-trophy--2')
     expect(render(h(Trophy, { place: 3 }))).toContain('ui-trophy--3')
   })
 
-  it('draws one flat silhouette and no numeral inside it (#611)', () => {
-    // A digit in a 26px bowl was unreadable and made the cup read as clip art.
-    // The place is printed beside the cup, in the same metal; the cup itself
-    // only has to say "a medal" and does that with one path.
+  it('draws no numeral inside the mark (#611)', () => {
+    // A digit in a 26px shape was unreadable and made the mark read as clip
+    // art. The place is printed beside it, in the same metal; the mark itself
+    // only has to say "the top three".
     const bronze = render(h(Trophy, { place: 3 }))
     expect(bronze).not.toContain('>3<')
     expect(bronze).not.toContain('<text')
-    expect((bronze.match(/<path/g) ?? []).length).toBe(1)
+  })
+
+  it('is the society own blades, the same geometry the tab bar wears (#614)', () => {
+    // Not a stock sports cup on a 143-year-old sword dance: the mark at the top
+    // of the board is the one drawing in this app that is this app's own, and
+    // it must stay the SAME drawing as the nav's — two hand-kept copies of a
+    // sword is how the two quietly drift apart.
+    const gold = render(h(Trophy, { place: 1 }))
+    for (const d of [...SWORDS_PATHS.blades, ...SWORDS_PATHS.hilts]) {
+      expect(gold).toContain(d)
+    }
   })
 
   it('still names its place for a reader who cannot see the metal', () => {
     expect(render(h(Trophy, { place: 2 }))).toContain('2. mjesto')
   })
 
-  it('draws nothing below third: a trophy for everybody is a bullet point', () => {
+  it('draws nothing below third: a mark for everybody is a bullet point', () => {
     expect(render(h(Trophy, { place: 4 }))).toBe('')
     expect(render(h(Trophy, { place: 0 }))).toBe('')
   })
 
-  it('has a small size for a cup that stands in a list row', () => {
+  it('has a small size for a mark that stands in a list row', () => {
     expect(render(h(Trophy, { place: 1, small: true }))).toContain('ui-trophy--sm')
     expect(render(h(Trophy, { place: 1 }))).not.toContain('ui-trophy--sm')
   })
@@ -279,6 +289,69 @@ describe('the rest of the shapes render', () => {
         }),
       ),
     ).not.toContain('ui-mark')
+  })
+
+  it('gives equal ranks equal steps, and keeps them in finishing order (#614)', () => {
+    // Ranks 1, 1, 3 are ordinary on this board, and the staircase used to put
+    // the second of two dancers who both read "1. mjesto" on a lower step —
+    // the geometry asserting an order the ranking denies, on the loudest part
+    // of the screen. Two firsts now share the top step's class, and the three
+    // steps come out left to right in the order they finished.
+    const tied = render(
+      h(Podium, {
+        large: true,
+        entries: [
+          { id: 'a', label: 'Šain', value: 2, place: 1 },
+          { id: 'b', label: 'Risto', value: 2, place: 1 },
+          { id: 'c', label: 'Cico', value: 1, place: 3 },
+        ],
+      }),
+    )
+    expect((tied.match(/ui-podium__step--1/g) ?? []).length).toBe(2)
+    expect(tied).not.toContain('ui-podium__step--2')
+    expect(tied.indexOf('Šain')).toBeLessThan(tied.indexOf('Risto'))
+
+    // An outright winner over two seconds keeps their step: only a podium
+    // where NOBODY stands higher is flattened (#614 review).
+    const oneAndTwoSeconds = render(
+      h(Podium, {
+        large: true,
+        entries: [
+          { id: 'a', label: 'Brane', value: 21, place: 1 },
+          { id: 'b', label: 'Markan', value: 20, place: 2 },
+          { id: 'c', label: 'Ratko', value: 20, place: 2 },
+        ],
+      }),
+    )
+    expect(oneAndTwoSeconds).not.toContain('ui-podium--level')
+    expect((oneAndTwoSeconds.match(/ui-podium__step--2/g) ?? []).length).toBe(2)
+    expect(oneAndTwoSeconds.indexOf('Brane')).toBeLessThan(oneAndTwoSeconds.indexOf('Markan'))
+
+    // Three on the same count: nobody stands higher, so nobody stands on air.
+    const allLevel = render(
+      h(Podium, {
+        large: true,
+        entries: [
+          { id: 'a', label: 'Bepo', value: 17, place: 1 },
+          { id: 'b', label: 'Bruno', value: 17, place: 1 },
+          { id: 'c', label: 'Grgo', value: 17, place: 1 },
+        ],
+      }),
+    )
+    expect(allLevel).toContain('ui-podium--level')
+
+    // Three different ranks still stand as a staircase, second on the left.
+    const staircase = render(
+      h(Podium, {
+        large: true,
+        entries: [
+          { id: 'a', label: 'Brane', value: 21, place: 1 },
+          { id: 'b', label: 'Markan', value: 20, place: 2 },
+          { id: 'c', label: 'Ratko', value: 19, place: 3 },
+        ],
+      }),
+    )
+    expect(staircase.indexOf('Markan')).toBeLessThan(staircase.indexOf('Brane'))
   })
 
   it('renders the count at its final value on the server, so nothing reflows', () => {

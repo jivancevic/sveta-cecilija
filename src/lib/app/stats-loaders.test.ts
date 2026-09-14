@@ -138,3 +138,37 @@ describe('loadSeasonStats', () => {
     expect((await loadSeasonStats(undefined, all)).seasons).toEqual([2026])
   })
 })
+
+/* ── The season's clock (#614, Q3) ─────────────────────────────────────── */
+
+describe('what the season has left', () => {
+  // NOW is 2026-08-05 in Zagreb: two evenings ahead, one of them an Experience,
+  // one cancelled evening ahead that no longer exists, and one behind.
+  const ahead = [
+    { id: 20, date: '2026-07-01T12:00:00.000Z', kind: 'redovna', lineupConfirmed: true },
+    { id: 21, date: '2026-08-05T12:00:00.000Z', kind: 'redovna', lineupConfirmed: false },
+    { id: 22, date: '2026-08-19T12:00:00.000Z', kind: 'redovna', lineupConfirmed: false },
+    { id: 23, date: '2026-09-01T12:00:00.000Z', kind: 'experience', lineupConfirmed: false },
+    { id: 24, date: '2026-09-09T12:00:00.000Z', kind: 'redovna', status: 'cancelled' },
+  ]
+
+  it('counts the evenings still to come, today included, by kind', async () => {
+    const { all } = deps({ loadPerformances: async () => ahead })
+    const result = await loadSeasonStats('2026', all)
+    expect(result.remainingByKind.redovna).toBe(2)
+    expect(result.remainingByKind.experience).toBe(1)
+  })
+
+  it('never counts a cancelled evening, which did not happen and will not', async () => {
+    const { all } = deps({ loadPerformances: async () => ahead })
+    const result = await loadSeasonStats('2026', all)
+    const total = Object.values(result.remainingByKind).reduce((a, b) => a + b, 0)
+    expect(total).toBe(3)
+  })
+
+  it('leaves a past season with nothing left to come', async () => {
+    const { all } = deps()
+    const result = await loadSeasonStats('2025', all)
+    expect(Object.values(result.remainingByKind).every((n) => n === 0)).toBe(true)
+  })
+})

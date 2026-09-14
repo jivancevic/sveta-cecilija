@@ -12,6 +12,7 @@
 import { PROFILE_LISTS } from './dancer-season'
 import {
   kindsOf,
+  listIsRanked,
   rankDancers,
   roleTallies,
   type LeaderboardKind,
@@ -28,6 +29,16 @@ export interface ProfileRingData {
   total: number
   tallies: { role: keyof typeof MARK_OF_ROLE; count: number }[]
   animate: boolean
+  /**
+   * Whether this list is ranked at all this season (#614).
+   *
+   * A season whose best Experience score is 2 hands out "3. mjesto od 70" for a
+   * single morning, which is a true sentence and a false message — and it is
+   * the same place, drawn the same way, as a season of twenty-one moreške on
+   * the card beside it. Under the floor the profile prints the COUNT and no
+   * place at all.
+   */
+  ranked: boolean
 }
 
 /**
@@ -55,13 +66,16 @@ export function profileRings(input: {
     })
     const row = ranked.find((r) => r.memberId === String(input.memberId)) ?? null
     const source = input.stats.rows.find((r) => String(r.memberId) === String(input.memberId))
+    const isRanked = listIsRanked(kind, ranked)
 
     return {
       kind,
       count: row?.performances ?? 0,
       of,
-      // A dancer with nothing of this kind holds no place among those who have.
-      rank: row && row.performances > 0 ? row.rank : null,
+      // A dancer with nothing of this kind holds no place among those who have,
+      // and neither does anybody on a list too small to be ranked at all.
+      rank: isRanked && row && row.performances > 0 ? row.rank : null,
+      ranked: isRanked,
       total: ranked.length,
       tallies: source ? roleTallies(source, kind) : [],
       animate: input.mine,

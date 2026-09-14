@@ -6,17 +6,23 @@ import { pluralize } from './roster-loaders'
 import { APP_STRINGS } from './strings'
 import {
   BOARD_FILTERS,
+  RANKED_MIN_TOP,
   TOP_ROWS,
   armyOfPrimaryRole,
   boardView,
   filterCountsTitle,
   kindsOf,
+  leaders,
+  listIsRanked,
   myStanding,
   parseBoardFilter,
   parseLeaderboardKind,
+  projectedRank,
   rankDancers,
   rankMovement,
+  rivalNews,
   roleTallies,
+  seasonKings,
 } from './leaderboard-rank'
 
 const noRoles = () =>
@@ -142,14 +148,14 @@ describe('rankDancers', () => {
     expect(rows[0].performances).toBe(11)
   })
 
-  it('keeps a moreškant who danced nothing on the list', () => {
+  it('keeps a moreškant who danced nothing on the list, at no place (#614)', () => {
     const rows = rankDancers({
       rows: [dancer('1', 'Ante', { redovna: 3 }), dancer('2', 'Bepo', {})],
       kind: 'moreska',
     })
     expect(rows.map((r) => [r.nickname, r.performances, r.rank])).toEqual([
       ['Ante', 3, 1],
-      ['Bepo', 0, 2],
+      ['Bepo', 0, null],
     ])
   })
 
@@ -212,7 +218,7 @@ describe('myStanding', () => {
     // Ranks 1, 1, 3: five more nastupa tie the two at the top, and a tie shares
     // their rank. "Još 5 do 2. mjesta" would name a place nobody holds.
     const me = myStanding(rankDancers({ rows, kind: 'moreska', myMemberId: '3' }))
-    expect(me).toEqual({ rank: 3, performances: 7, total: 3, toNextPlace: 5, nextPlace: 1 })
+    expect(me).toMatchObject({ rank: 3, performances: 7, total: 3, toNextPlace: 5, nextPlace: 1 })
   })
 
   it('has no gap to close at the top', () => {
@@ -442,5 +448,196 @@ describe('rankMovement', () => {
 
   it('says nothing for a reader who is on neither ranking', () => {
     expect(rankMovement(board(undefined), board(undefined))).toBeNull()
+  })
+})
+
+/* ── #614: what the phone showed, and the gamification on top ──────────── */
+
+describe('a count of zero has no rank', () => {
+  const rows = [
+    dancer('1', 'Ante', { redovna: 4 }),
+    dancer('2', 'Bepo', { redovna: 0 }),
+    dancer('3', 'Cico', { redovna: 0 }),
+  ]
+
+  it('gives a dancer who danced nothing a null rank, which is "no place"', () => {
+    const ranked = rankDancers({ rows, kind: 'moreska' })
+    expect(ranked.map((r) => [r.nickname, r.rank])).toEqual([
+      ['Ante', 1],
+      ['Bepo', null],
+      ['Cico', null],
+    ])
+  })
+
+  it('keeps them on the list, because every active moreškant is a row', () => {
+    expect(rankDancers({ rows, kind: 'moreska' })).toHaveLength(3)
+  })
+
+  it('has no standing sentence to print for them', () => {
+    expect(myStanding(rankDancers({ rows, kind: 'moreska', myMemberId: '2' }))).toBeNull()
+  })
+})
+
+describe('the race share', () => {
+  it('measures a row against the leader, for the bar behind it', () => {
+    const ranked = rankDancers({
+      rows: [
+        dancer('1', 'Ante', { redovna: 20 }),
+        dancer('2', 'Bepo', { redovna: 10 }),
+        dancer('3', 'Cico', { redovna: 0 }),
+      ],
+      kind: 'moreska',
+    })
+    expect(ranked.map((r) => r.share)).toEqual([1, 0.5, 0])
+  })
+
+  it('is zero for everybody on a list nobody has danced', () => {
+    const ranked = rankDancers({ rows: [dancer('1', 'Ante', {})], kind: 'moreska' })
+    expect(ranked[0].share).toBe(0)
+  })
+})
+
+describe('listIsRanked', () => {
+  const experience = (top: number) =>
+    rankDancers({
+      rows: [dancer('1', 'Ante', { experience: top }), dancer('2', 'Bepo', { experience: 1 })],
+      kind: 'experience',
+    })
+
+  it('always ranks the Moreška list, however small the season is', () => {
+    const one = rankDancers({ rows: [dancer('1', 'A', { redovna: 1 })], kind: 'moreska' })
+    expect(listIsRanked('moreska', one)).toBe(true)
+  })
+
+  it('refuses to rank an Experience list whose leader is under the floor', () => {
+    expect(listIsRanked('experience', experience(RANKED_MIN_TOP - 1))).toBe(false)
+  })
+
+  it('ranks it once the leader reaches the floor', () => {
+    expect(listIsRanked('experience', experience(RANKED_MIN_TOP))).toBe(true)
+  })
+})
+
+describe('leaders', () => {
+  it('names everybody on the top count, so a tie is stated rather than broken', () => {
+    const ranked = rankDancers({
+      rows: [
+        dancer('1', 'Šain', { experience: 2 }),
+        dancer('2', 'Risto', { experience: 2 }),
+        dancer('3', 'Cico', { experience: 1 }),
+      ],
+      kind: 'experience',
+    })
+    expect(leaders(ranked)).toEqual({ count: 2, nicknames: ['Risto', 'Šain'] })
+  })
+
+  it('has nobody to name when nobody has danced', () => {
+    const none = rankDancers({ rows: [dancer('1', 'Ante', {})], kind: 'experience' })
+    expect(leaders(none)).toBeNull()
+  })
+})
+
+describe('myStanding, the reader in the field', () => {
+  const rows = [
+    dancer('1', 'Ante', { redovna: 12 }),
+    dancer('2', 'Bepo', { redovna: 9 }),
+    dancer('3', 'Cico', { redovna: 7 }),
+    dancer('4', 'Dujo', { redovna: 2 }),
+  ]
+  const standing = (id: string) =>
+    myStanding(rankDancers({ rows, kind: 'moreska', myMemberId: id }))
+
+  it('says what share of the roster the reader is ahead of', () => {
+    // Cico is ahead of one of the three others.
+    expect(standing('3')?.betterThan).toBe(33)
+  })
+
+  it('prints no percentage for the reader nobody is behind', () => {
+    expect(standing('4')?.betterThan).toBeNull()
+  })
+
+  it('names the dancer immediately in front, for the line under the card', () => {
+    expect(standing('3')?.ahead).toEqual({ nickname: 'Bepo', performances: 9 })
+  })
+
+  it('has nobody in front of the leader', () => {
+    expect(standing('1')?.ahead).toBeNull()
+  })
+})
+
+describe('projectedRank', () => {
+  const ranked = (myId: string) =>
+    rankDancers({
+      rows: [
+        dancer('1', 'Ante', { redovna: 12 }),
+        dancer('2', 'Bepo', { redovna: 9 }),
+        dancer('3', 'Cico', { redovna: 8 }),
+        dancer('4', 'Dujo', { redovna: 8 }),
+      ],
+      kind: 'moreska',
+      myMemberId: myId,
+    })
+
+  it('is the place one more nastup would reach', () => {
+    // Dujo is 3rd on 8; nine ties Bepo, and a tie shares the rank.
+    expect(projectedRank(ranked('4'))).toBe(2)
+  })
+
+  it('names the same place for the dancer tied with them', () => {
+    expect(projectedRank(ranked('3'))).toBe(2)
+  })
+
+  it('is null for a reader with no row on the list', () => {
+    expect(projectedRank(rankDancers({ rows: [], kind: 'moreska' }))).toBeNull()
+  })
+})
+
+describe('rivalNews', () => {
+  const season = (mine: number, rival: number) =>
+    rankDancers({
+      rows: [dancer('1', 'Ja', { redovna: mine }), dancer('2', 'Cici', { redovna: rival })],
+      kind: 'moreska',
+      myMemberId: '1',
+    })
+
+  it('names the dancer the reader went past', () => {
+    expect(rivalNews(season(8, 7), season(7, 7))).toEqual({ kind: 'passed', nickname: 'Cici' })
+  })
+
+  it('names the dancer who went past the reader, in the same plain words', () => {
+    expect(rivalNews(season(7, 8), season(7, 7))).toEqual({ kind: 'overtaken', nickname: 'Cici' })
+  })
+
+  it('says nothing when the two stayed where they were', () => {
+    expect(rivalNews(season(8, 7), season(8, 7))).toBeNull()
+  })
+
+  it('says nothing to a reader who is on neither ranking', () => {
+    expect(rivalNews(season(8, 7), rankDancers({ rows: [], kind: 'moreska' }))).toBeNull()
+  })
+})
+
+describe('seasonKings', () => {
+  const rows = [
+    dancer('1', 'Markan', { redovna: 12 }, { redovna: { crni_kralj: 11, crni: 1 } }),
+    dancer('2', 'Brane', { redovna: 12 }, { redovna: { crni_kralj: 1, bili_kralj: 4, bili: 7 } }),
+    dancer('3', 'Cici', { redovna: 9 }, { redovna: { otmanovic: 9 } }),
+  ]
+
+  it('names the holder of each title and how many evenings they wore it', () => {
+    expect(seasonKings({ rows, kind: 'moreska' })).toEqual([
+      { role: 'crni_kralj', nicknames: ['Markan'], count: 11 },
+      { role: 'bili_kralj', nicknames: ['Brane'], count: 4 },
+      { role: 'otmanovic', nicknames: ['Cici'], count: 9 },
+    ])
+  })
+
+  it('drops a title nobody wore this season rather than printing a zero', () => {
+    const only = [dancer('1', 'Markan', { redovna: 3 }, { redovna: { crni_kralj: 3 } })]
+    expect(seasonKings({ rows: only, kind: 'moreska' }).map((k) => k.role)).toEqual(['crni_kralj'])
+  })
+
+  it('counts the Experience list on its own, where no crown was given', () => {
+    expect(seasonKings({ rows, kind: 'experience' })).toEqual([])
   })
 })

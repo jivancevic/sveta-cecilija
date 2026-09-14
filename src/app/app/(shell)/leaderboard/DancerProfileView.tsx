@@ -1,10 +1,11 @@
 import Link from 'next/link'
 import { pluralize } from '@/lib/app/roster-loaders'
 import { APP_STRINGS, KIND_LABELS, ROLE_LABELS, dayAndMonth, weekdayLabel } from '@/lib/app/strings'
-import { MARK_OF_ROLE, type MyStanding } from '@/lib/app/leaderboard-rank'
+import { MARK_OF_ROLE, type MyStanding, type RivalNews } from '@/lib/app/leaderboard-rank'
 import type { DancerProfile } from '@/lib/app/dancer-season-data'
 import type { MySeasonMonth } from '@/lib/app/my-season-loaders'
 import { Card, CountUp, List, ListRow, Ring, RoleMark, Section } from '../../ui'
+import { StandingCard } from './StandingCard'
 
 // One moreškant's season, and Moja sezona, which is this same screen with the
 // reader in it (#608).
@@ -110,12 +111,35 @@ export interface ProfileRing {
   tallies: { role: keyof typeof MARK_OF_ROLE; count: number }[]
   /** Count up on first paint: the reader's own numbers, never somebody else's. */
   animate: boolean
+  /** Whether this list is ranked at all this season (#614). */
+  ranked: boolean
 }
 
+/** The roles a dancer wore in one list's evenings, as discs with counts. */
+function Split({ tallies }: { tallies: ProfileRing['tallies'] }) {
+  if (tallies.length === 0) return null
+  return (
+    <span className="app__pf-split">
+      {tallies.map(({ role, count }) => (
+        <span key={role} className="app__lb-tally">
+          <Role role={role} small />
+          <b>{count}</b>
+        </span>
+      ))}
+    </span>
+  )
+}
+
+/**
+ * The season's main list: one ring, the size of the fact it carries (#614).
+ *
+ * Moreška has two dozen evenings in a season and the Experience has two, and
+ * until now they were two rings of identical size side by side, which said they
+ * were equally important. This one keeps the ring; the other one lost it.
+ */
 function RingCard({ ring }: { ring: ProfileRing }) {
   return (
     <Card className="app__pf-ring">
-      <span className="app__pf-ring-label">{B.lists[ring.kind]}</span>
       <Ring
         value={ring.count}
         max={Math.max(1, ring.of)}
@@ -127,19 +151,39 @@ function RingCard({ ring }: { ring: ProfileRing }) {
           </span>
         }
       />
-      <span className="app__pf-place">
-        {ring.rank === null ? S.placeNone : S.place(ring.rank, ring.total)}
-      </span>
-      {ring.tallies.length > 0 && (
-        <span className="app__pf-split">
-          {ring.tallies.map(({ role, count }) => (
-            <span key={role} className="app__lb-tally">
-              <Role role={role} small />
-              <b>{count}</b>
-            </span>
-          ))}
+      <div className="app__pf-ring-side">
+        <span className="app__pf-ring-label">{B.lists[ring.kind]}</span>
+        <span className="app__pf-place">
+          {ring.rank === null ? S.placeNone : S.place(ring.rank, ring.total)}
         </span>
+        <Split tallies={ring.tallies} />
+      </div>
+    </Card>
+  )
+}
+
+/**
+ * The season's second list, as a line rather than a ring (#614, finding 11).
+ *
+ * A ring reading "0 od 2" is a dead circle: it says nothing, invites nothing
+ * and takes the same space as the twenty-four-evening one above it. A count
+ * says the same thing in a line, and an empty one says "još nijedan" — which is
+ * a sentence rather than an empty shape. No place while the list is unranked,
+ * because a third place among people who danced once is not a result.
+ */
+function CountCard({ ring }: { ring: ProfileRing }) {
+  return (
+    <Card className="app__pf-side">
+      <div className="app__pf-side-top">
+        <span className="app__pf-ring-label">{B.lists[ring.kind]}</span>
+        <b className="app__pf-side-count">
+          {ring.count === 0 ? S.sideNone : `${ring.count} ${S.ringOf(ring.of)}`}
+        </b>
+      </div>
+      {ring.rank !== null && (
+        <span className="app__pf-place">{S.place(ring.rank, ring.total)}</span>
       )}
+      <Split tallies={ring.tallies} />
     </Card>
   )
 }
@@ -150,19 +194,24 @@ export function DancerProfileView({
   mine,
   standing,
   movement,
+  rival,
 }: {
   profile: DancerProfile
   /** Both lists, always both, so a zero Experience reads as zero and not as absent. */
   rings: ProfileRing[]
   /** The reader is looking at themselves. */
   mine: boolean
-  /** The standing sentence; only ever passed for the reader's own profile. */
+  /** The standing card; only ever passed for the reader's own profile. */
   standing: MyStanding | null
   /** Places moved on the last confirmed evening; the reader's own only. */
   movement: number | null
+  /** Who they went past on it, or who went past them; the reader's own only. */
+  rival?: RivalNews | null
 }) {
   const { identity, season, evenings, record } = profile
-  const counted = (n: number) => pluralize(n, APP_STRINGS.moreska.count)
+  // The main list is the one the screen is built around; the other is a line.
+  const main = rings.find((r) => r.kind === 'moreska') ?? rings[0]
+  const side = rings.filter((r) => r !== main)
 
   return (
     <>
@@ -174,50 +223,54 @@ export function DancerProfileView({
         </div>
       </div>
 
+      {/* The roles, each NAMED beside its disc (#614, finding 14). Five bare
+          circles told nobody who has not memorised which colour is which army
+          anything at all, and colour was carrying the whole meaning on its own.
+          The block also has air around it now: it was wedged between the name
+          above and the sentence below. */}
       <div className="app__pf-can">
         <span className="app__pf-can-label">{S.canDance}</span>
         {identity.roles.length === 0 ? (
           <span className="app__pf-can-none">{S.canDanceNone}</span>
         ) : (
-          identity.roles.map((role) => <Role key={role} role={role} small />)
+          <span className="app__pf-can-roles">
+            {identity.roles.map((role) => (
+              <span key={role} className="app__pf-can-role">
+                <Role role={role} small />
+                {ROLE_LABELS[role]}
+              </span>
+            ))}
+          </span>
         )}
       </div>
 
       {/* The one block that is the reader's alone. Another dancer's profile has
-          no empty slot where it would be: the rings simply start here. */}
+          no empty slot where it would be: the rings simply start here. Since
+          #614 it is the same card the board draws, so Moja sezona and Ljestvica
+          cannot describe one standing two different ways. */}
       {mine && standing && (
-        <p className="app__lb-standing">
-          {B.standing(standing.rank, pluralize(standing.performances, B.withCount))}{' '}
-          <span>
-            {standing.toNextPlace === null || standing.nextPlace === null
-              ? B.leading
-              : B.toNextPlace(counted(standing.toNextPlace), standing.nextPlace)}
-          </span>
-          {movement != null && (
-            <span className="app__lb-move" data-dir={movement > 0 ? 'up' : 'down'}>
-              <b aria-hidden="true">{B.movement(movement)}</b>
-              <span className="app__sr-only">{B.movementLabel(movement)}</span>
-              <i aria-hidden="true">{B.movementSince}</i>
-            </span>
-          )}
-        </p>
+        <StandingCard standing={standing} movement={movement} rival={rival} />
       )}
 
       <div className="app__pf-rings">
-        {rings.map((ring) => (
-          <RingCard key={ring.kind} ring={ring} />
+        {main && <RingCard ring={main} />}
+        {side.map((ring) => (
+          <CountCard key={ring.kind} ring={ring} />
         ))}
       </div>
 
-      <Card className="app__pf-record">
+      {/* The record as a LINE, not a card (#614, finding 10). Everything on
+          this screen used to be a full-width surface of the same weight — the
+          sentence, two rings, the record, its footnote — and when everything is
+          lifted nothing is. The cards are now the two things a season is
+          measured in; the record is a fact under them. */}
+      <p className="app__pf-record">
         <span>{S.record}</span>
-        <b>
-          {record ? S.recordValue(record.count, record.season) : S.recordNone}
-        </b>
-      </Card>
-      {record?.isCurrent && (
-        <p className="app__pf-record-now">{mine ? S.recordCurrent : S.recordCurrentOther}</p>
-      )}
+        <b>{record ? S.recordValue(record.count, record.season) : S.recordNone}</b>
+        {record?.isCurrent && (
+          <i>{mine ? S.recordCurrent : S.recordCurrentOther}</i>
+        )}
+      </p>
 
       <Section title={S.evenings} aside={pluralize(evenings.length, S.eveningsCount)} />
       {evenings.length === 0 ? (

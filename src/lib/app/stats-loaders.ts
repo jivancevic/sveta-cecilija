@@ -18,6 +18,7 @@
 
 import { seasonYear } from '@/lib/member/season'
 import { toIsoDate } from '@/lib/to-iso-date'
+import { zagrebDayOf } from '@/lib/zagreb-time'
 import { PERFORMANCE_KINDS, type PerformanceKind } from '@/lib/show-performance'
 import { toAttendanceMember } from '@/lib/attendance/rules'
 import { relationIdString } from '@/lib/payload-relation'
@@ -47,6 +48,24 @@ export interface SeasonStats {
    * puna sezona of Experiences even if they danced no Redovna.
    */
   confirmedByKind: Record<PerformanceKind, number>
+  /**
+   * How many evenings of each kind the season has still to come (#614, Q3).
+   *
+   * The season had no clock. A rank with no deadline is a verdict — there is
+   * nothing a dancer can do about being thirteenth, because nothing says
+   * whether the season is over. "Ostalo još 9 moreški" turns the same number
+   * into a thing to play for, which is what every league in every app on the
+   * phone does with a countdown.
+   *
+   * By CALENDAR DAY in Europe/Zagreb rather than by start instant: the evening
+   * that starts at 21:00 tonight is still ahead of a dancer reading this at
+   * noon, and an evening drops off this count when its day is over.
+   *
+   * Every count is zero for a season that is not the current one: a past season
+   * has nothing left to come, and a clock on it would be a countdown to a date
+   * that has passed.
+   */
+  remainingByKind: Record<PerformanceKind, number>
   /**
    * `memberId` → the dancer's primary role, for the mark beside their name
    * (#568). The ARMY is a profile fact and may be read from a profile; a
@@ -184,6 +203,23 @@ export async function loadSeasonStats(
     confirmedByKind[kind as PerformanceKind] += 1
   }
 
+  // What the season has left (#614, Q3). Off the raw docs, because the fact is
+  // the DATE and `StatsPerformance` deliberately carries only what the counting
+  // needs. Cancelled evenings are already out: `performanceDocs` dropped them.
+  const remainingByKind = Object.fromEntries(PERFORMANCE_KINDS.map((k) => [k, 0])) as Record<
+    PerformanceKind,
+    number
+  >
+  if (season === current) {
+    const today = zagrebDayOf(now)
+    for (const doc of performanceDocs) {
+      if (toIsoDate(doc.date) < today) continue
+      const raw = (doc.kind as string) ?? 'redovna'
+      const kind = (PERFORMANCE_KINDS as readonly string[]).includes(raw) ? raw : 'ostalo'
+      remainingByKind[kind as PerformanceKind] += 1
+    }
+  }
+
   // The one profile fact the board reads. Never the mobile or the e-mail: this
   // payload is rendered to every moreškant on the roster, and the PII boundary
   // (ADR-0024) is what keeps it a leaderboard rather than a directory.
@@ -216,6 +252,7 @@ export async function loadSeasonStats(
     rowsBeforeLast,
     confirmedPerformances: confirmedIds.length,
     confirmedByKind,
+    remainingByKind,
     primaryRoles,
     initials,
   }
