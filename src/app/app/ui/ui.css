@@ -78,12 +78,17 @@
 }
 
 /* ── Section heading ──────────────────────────────────────── */
+/* No margin of its own since #592. It carried 6px, which is half of the 12px
+   the shell now puts between two blocks (`.app__shell > * + *` in `app.css`) —
+   and because this sheet loads after that one, those 6px would have won the tie
+   and left every screen whose blocks are Sections spaced tighter than every
+   screen whose blocks are cards. A heading nested inside a group is separated
+   by that group's own `gap`. */
 .ui-section {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: 12px;
-  margin-top: 6px;
 }
 
 .ui-section h3 {

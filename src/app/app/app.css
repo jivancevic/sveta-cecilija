@@ -258,6 +258,35 @@ html:has(> .app) {
   padding: env(safe-area-inset-top) 20px calc(var(--tabH) + env(safe-area-inset-bottom) + 12px);
 }
 
+/* ── The rhythm of a screen (#592) ─────────────────────────
+   Every card, tile row and section in Cecilija is a direct child of the shell,
+   and until this rule the only thing between two of them was a shadow. That
+   worked while the shadows were heavy; palette A and the thinner lift they came
+   with left the hero, the tiles and the inbox looking welded into one block
+   ("widgeti su zgusnuti, nema razmaka među njima").
+
+   So the gap is a real one, and it is stated ONCE, here, for every screen:
+   nothing composes its own margin into a card, a tile or a list.
+
+   Two properties of the way it is written matter:
+
+   • It is the shell's rule, not the card's, so a component still knows nothing
+     about what is above it — which is what lets the same `Card` be a screen's
+     third block and a sheet's only one.
+   • It is a FLOOR, not a fixed distance. The specificity is one class, and it
+     sits at the top of this sheet, so any block that wants more air than 12px
+     says so on itself further down (`.app__month-group` keeps its 22px, the
+     past disclosure its 30px) and wins the cascade; and because the shell is a
+     plain block, a neighbour's bottom margin collapses with this top one rather
+     than adding to it. A screen that was already spaced is left exactly as it
+     was, and a screen that was not gets 12px.
+
+   The header is never a second child, so it is untouched, and the greeting sets
+   its own margins right below and keeps them. */
+.app__shell > * + * {
+  margin-top: 12px;
+}
+
 /* ── Between two screens (#593) ────────────────────────────
    The chrome is in the layout now, so a tab tap changes only this block — and
    a block that simply swaps reads as a jump cut. 200 ms and 24 px is the
@@ -1521,9 +1550,15 @@ html:has(> .app) {
   stroke-dashoffset: 34;
 }
 
+/* The dash the two blades are drawn with. 39 is the LONGER blade's own length
+   (`SWORDS_BLADE_LENGTH` in `ui/ScreenIcon.tsx`, measured at 38.5), so both
+   paths are one unbroken dash: a dasharray shorter than the path it is on puts
+   a gap in the middle of a sword. The shorter blade therefore completes its
+   stroke partway through the same animation, which is the two of them meeting
+   rather than finishing together. */
 .app__ans-s1,
 .app__ans-s2 {
-  stroke-dasharray: 30;
+  stroke-dasharray: 39;
   stroke-dashoffset: 0;
 }
 
@@ -1563,7 +1598,7 @@ html:has(> .app) {
 
 @keyframes app-ans-draw {
   from {
-    stroke-dashoffset: 30;
+    stroke-dashoffset: 39;
   }
   to {
     stroke-dashoffset: 0;

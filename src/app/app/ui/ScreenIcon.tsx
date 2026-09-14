@@ -38,6 +38,36 @@ import type { AppScreenKey } from '@/lib/app/screens'
 export const ICON_STROKE = 1.75
 export const ICON_STROKE_ON = 1.9
 
+/**
+ * The geometry of the crossed swords, on a 24×24 viewBox.
+ *
+ * Exported because a second place draws them: the Dolazim button
+ * (`AnswerPair.tsx`) answers the question with the picture of the Moreška tab,
+ * and it animates the two halves apart — the blades redraw, the hilts fade in
+ * behind them. A copy of these paths over there was how the button came to
+ * carry a different pair of swords than the bar it sits under (#592), so the
+ * data lives here and both drawings read it.
+ *
+ * `blades` are the two long diagonal strokes, one per sword, and they are the
+ * only two paths any caller animates; `hilts` is the guard, the grip and the
+ * pommel of each.
+ */
+export const SWORDS_PATHS = {
+  blades: ['M14.5 17.5 3 6V3h3l11.5 11.5', 'M14.5 6.5 18 3h3v3l-3.5 3.5'],
+  hilts: ['M13 19l6-6', 'M16 16l4 4', 'M19 21l2-2', 'M5 14l4 4', 'M7 17l-4 4'],
+} as const
+
+/**
+ * The longest blade's path length, rounded up (the geometry above measures
+ * 38.5 units; `getTotalLength()` in the browser agrees).
+ *
+ * `app.css` draws both blades with this one `stroke-dasharray`, which is why it
+ * is the LONGEST and not an average: a dash shorter than the path leaves a gap
+ * in the middle of the sword. The short blade finishes its stroke earlier in
+ * the same animation, which is the two of them meeting.
+ */
+export const SWORDS_BLADE_LENGTH = 39
+
 /** The blades: the one drawing in Cecilija that is Cecilija's own. */
 export function Swords({ strokeWidth = ICON_STROKE }: { strokeWidth?: number }) {
   return (
@@ -52,13 +82,12 @@ export function Swords({ strokeWidth = ICON_STROKE }: { strokeWidth?: number }) 
       strokeLinejoin="round"
       aria-hidden="true"
     >
-      <path d="M14.5 17.5 3 6V3h3l11.5 11.5" />
-      <path d="M13 19l6-6" />
-      <path d="M16 16l4 4" />
-      <path d="M19 21l2-2" />
-      <path d="M14.5 6.5 18 3h3v3l-3.5 3.5" />
-      <path d="M5 14l4 4" />
-      <path d="M7 17l-4 4" />
+      {SWORDS_PATHS.blades.map((d) => (
+        <path key={d} d={d} />
+      ))}
+      {SWORDS_PATHS.hilts.map((d) => (
+        <path key={d} d={d} />
+      ))}
     </svg>
   )
 }
