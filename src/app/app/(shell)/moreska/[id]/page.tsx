@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import { getPerformanceDetail } from '@/lib/app/detail-data'
 import { stanjeView } from '@/lib/app/stanje-screen'
 import { APP_STRINGS } from '@/lib/app/strings'
-import { Chip, Note } from '../../../ui'
+import { Chip, KindChip, Note } from '../../../ui'
 import { AppShell } from '../../../AppShell'
 import { openScreen } from '../../../gate'
 import { Stanje } from './Stanje'
@@ -47,7 +47,12 @@ export default async function StanjePage({ params }: { params: Promise<{ id: str
       <Link className="app__back" href="/app/moreska">
         ‹ {S.back}
       </Link>
-      <p className="app__stanje-when">{view.head}</p>
+      <p className="app__stanje-when">
+        <span>{view.headDate}</span>
+        {/* The kind as a chip since #592, in the tone its disc wears on Moreška
+            below: one colour language across the two screens. */}
+        <KindChip tone={view.tone}>{view.kind}</KindChip>
+      </p>
       {view.meta && <p className="app__stanje-where">{view.meta}</p>}
       {(view.cancelled || view.confirmed) && (
         <div className="app__chips">

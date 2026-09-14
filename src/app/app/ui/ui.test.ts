@@ -9,6 +9,7 @@ import { Card } from './Card'
 import { Chip } from './Chip'
 import { DateDisc } from './DateDisc'
 import { FilterChips } from './FilterChips'
+import { KindChip } from './KindChip'
 import { Seasons } from './Seasons'
 import { Hero } from './Hero'
 import { List, ListRow } from './ListRow'
@@ -163,6 +164,12 @@ describe('the rest of the shapes render', () => {
     expect(render(h(DateDisc, { day: 14, tone: 'experience' }))).toContain('ui-date--experience')
     expect(render(h(DateDisc, { day: 14, tone: 'regular' }))).toContain('ui-date--gold')
     expect(render(h(DateDisc, { day: 14, tone: 'extra' }))).not.toContain('ui-date--')
+    // The same three tones as a pill, for a hero that has no disc (#592).
+    expect(render(h(KindChip, { tone: 'experience' }, 'Experience'))).toContain(
+      'ui-kindchip--experience',
+    )
+    expect(render(h(KindChip, { tone: 'regular' }, 'Redovna'))).toContain('ui-kindchip--regular')
+    expect(render(h(KindChip, { tone: 'extra' }, 'Vanredna'))).toContain('ui-kindchip--extra')
     expect(render(h(Note, {}, 'Skup u 20:15'))).toContain('ui-note')
     expect(render(h(List, {}, h(ListRow, { title: 'Redovna', meta: '21:00' })))).toContain('ui-row')
     expect(render(h(Tiles, { children: h(Tile, { eyebrow: 'Ljestvica' }) }))).toContain('ui-tile')

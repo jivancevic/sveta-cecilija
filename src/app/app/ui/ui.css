@@ -64,6 +64,14 @@
 }
 
 .ui-hero__meta {
+  /* A chip sits in this line since #592, so it is a flex row rather than a
+     sentence: `align-items: center` is what keeps a 22px pill from riding the
+     text's baseline, and the wrap is what keeps it on the card on a small
+     phone. */
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 7px;
   color: var(--muted);
   font-weight: 500;
 }
@@ -447,6 +455,41 @@ button.ui-row:hover {
 .ui-date--experience span {
   color: var(--onCopper);
   opacity: 0.75;
+}
+
+/* ── KindChip (#592) ───────────────────────────────────────
+   The disc's three tones, for the one place a hero has no disc: the kind word
+   in the hero's meta line and on a hero half. A pill rather than the third
+   item of a grey sentence, because the kind is the only one of the three facts
+   on that line that changes the shape of the evening. */
+.ui-kindchip {
+  display: inline-flex;
+  align-items: center;
+  height: 22px;
+  padding: 0 9px;
+  border-radius: var(--rPill);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.ui-kindchip--regular {
+  background: var(--gold);
+  color: var(--onGold);
+}
+
+/* Ink on paper, paper on ink: the Vanredna chip inverts the page it sits on,
+   which is exactly what the `extra` disc does. */
+.ui-kindchip--extra {
+  background: var(--ink);
+  color: var(--bg);
+}
+
+.ui-kindchip--experience {
+  background: var(--copper);
+  color: var(--onCopper);
 }
 
 /* ── Tile ─────────────────────────────────────────────────── */

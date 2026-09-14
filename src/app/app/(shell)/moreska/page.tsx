@@ -15,6 +15,7 @@ import { openScreen } from '../../gate'
 import { Answer } from './Answer'
 import { StateBar } from './StateBar'
 import { HeroHalves } from '../../HeroHalves'
+import { HeroMeta } from '../../HeroMeta'
 
 // `/app/moreska` — Moreška, the dancer's register screen (#565).
 //
@@ -91,7 +92,12 @@ export default async function MoreskaPage() {
       )}
 
       {hero && next ? (
-        <Hero eyebrow={hero.eyebrow} day={hero.day} month={hero.month} meta={hero.meta}>
+        <Hero
+          eyebrow={hero.eyebrow}
+          day={hero.day}
+          month={hero.month}
+          meta={<HeroMeta lead={hero.metaLead} kind={hero.kind} tone={hero.tone} />}
+        >
           {hero.note && <Note>{hero.note}</Note>}
 
           {hero.halves ? (

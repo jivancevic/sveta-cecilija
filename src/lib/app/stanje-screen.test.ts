@@ -121,6 +121,11 @@ describe('stanjeView header', () => {
       },
     })
     expect(out.head).toBe('Subota, 19. rujna · Experience')
+    // The screen draws those two apart since #592: the date, then the kind as a
+    // chip in the tone its disc wears on Moreška.
+    expect(out.headDate).toBe('Subota, 19. rujna')
+    expect(out.kind).toBe('Experience')
+    expect(out.tone).toBe('experience')
   })
 })
 

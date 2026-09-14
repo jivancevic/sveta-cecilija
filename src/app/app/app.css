@@ -4275,10 +4275,23 @@ a.app__ob-link {
 }
 
 .app__hero-half-head span {
-  display: block;
-  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
   font-size: 13px;
   color: var(--muted);
+}
+
+/* The house, beside the kind chip. An <em> only because the chip took the
+   <span>: it carries no emphasis and no italic. */
+.app__hero-half-head em {
+  font-style: normal;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .app__hero-half-armies {
@@ -6552,6 +6565,13 @@ a.app__statrow-main:focus-visible {
 }
 
 .app__stanje-when {
+  /* The date, and the kind as a chip beside it (#592). A flex row so the pill
+     sits on the line's centre rather than on its baseline, and wraps under the
+     date on a narrow phone rather than squeezing it. */
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
   margin: 10px 0 0;
   font-family: var(--serif);
   font-weight: 600;
