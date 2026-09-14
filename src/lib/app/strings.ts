@@ -498,9 +498,6 @@ export const APP_STRINGS = {
      * person's season. **No streaks here or anywhere**, which is a decision
      * rather than an omission (glossary: *Ljestvica*).
      */
-    milestones: 'Prekretnice',
-    milestoneReached: (count: number) => `${count} nastupa: dosegnuto`,
-    milestoneAhead: (count: number) => `${count} nastupa: još nije`,
     /** The season's nastupi split by what kind of evening they were. */
     byKind: 'Po vrsti nastupa',
     emptyTitle: 'Još nisi plesao ove sezone',
@@ -530,9 +527,6 @@ export const APP_STRINGS = {
     outOf: (total: number) => `od ${total}`,
     leading: 'Vodiš ljestvicu.',
     toNextPlace: (count: string, place: number) => `Još ${count} do ${place}. mjesta.`,
-    nextMilestone: (count: string) => `Sljedeća prekretnica: ${count}`,
-    /** The chip on the row of a dancer who danced the whole season. */
-    fullSeason: 'puna sezona',
     /** The chip that says which row is the reader's own. */
     you: 'ti',
     /** The caption under a podium tile, so the rank reads as a place and not as a second count. */
@@ -575,6 +569,38 @@ export const APP_STRINGS = {
     pinned: (rank: number) => `ti · ${rank}.`,
     /** A row's rank, in the column in front of the mark. */
     rank: (rank: number) => `${rank}.`,
+
+    /* ── The seven chips (#607, decision Q2) ──────────────────────────────
+       Two groups under one control, and the labels do not try to hide it: the
+       line under the heading says which number the list is showing, because
+       "18" meaning "evenings danced" and "18" meaning "crowns worn" look
+       identical in a column. */
+    filters: {
+      svi: 'Svi',
+      crni: 'Crni',
+      bili: 'Bili',
+      bula: 'Bula',
+      crni_kralj: 'Crni kralj',
+      bili_kralj: 'Bili kralj',
+      otmanovic: 'Otmanović',
+    },
+    /** What the number in the row means, under the heading, for each group. */
+    countsEvenings: 'Broj je ukupan broj nastupa u sezoni.',
+    countsTitle: 'Broj je koliko je puta uloga podijeljena.',
+    /** Nobody wore this title in this season's evenings of this kind. */
+    emptyFilter: 'Nitko ove sezone nije igrao ovu ulogu.',
+
+    /* ── Rank movement (#607) ─────────────────────────────────────────────
+       A drop is printed exactly like a rise. Somebody passed the reader
+       because the reader was not there, and saying so plainly is the opposite
+       of a reproach. */
+    /** "▲2" / "▼1" — the glyph is the direction, the number is the distance. */
+    movement: (places: number) => `${places > 0 ? '▲' : '▼'}${Math.abs(places)}`,
+    movementLabel: (places: number) =>
+      places > 0
+        ? `Popeo si se ${places} mjesta nakon zadnje moreške.`
+        : `Pao si ${Math.abs(places)} mjesta nakon zadnje moreške.`,
+    movementSince: 'nakon zadnje moreške',
     /** An Experience list in a season that has had none. */
     emptyExperience: 'Ove sezone još nema potvrđene postave za Moreška Experience.',
 

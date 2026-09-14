@@ -19,10 +19,18 @@
 // counts what it is handed and never re-derives a boundary.
 
 import { PERFORMANCE_KINDS, type PerformanceKind } from '@/lib/show-performance'
-import { isDanceRole, type DanceRole } from '@/lib/moreskant-profile'
+import { DANCE_ROLES, isDanceRole, type DanceRole } from '@/lib/moreskant-profile'
 import type { AttendanceMember } from '@/lib/attendance/rules'
 
-/** The four roles the scoreboard counts separately (glossary). */
+/**
+ * The four TITLES (CONTEXT.md -> *Title*): the named parts a voditelj hands
+ * out, exactly one of each per confirmed lineup.
+ *
+ * Still its own vocabulary after #607, and still only four, because "which
+ * titles were given" is a different question from "what did this dancer wear".
+ * The tally below counts all six dance roles; this is the subset that answers
+ * the first question, and it is what the full list's title filters rank by.
+ */
 export const STAT_ROLES = ['crni_kralj', 'bili_kralj', 'otmanovic', 'bula'] as const
 export type StatRole = (typeof STAT_ROLES)[number]
 
@@ -47,8 +55,17 @@ export interface DancerStats {
   nickname: string
   /** Confirmed performances this dancer appears in. */
   performances: number
-  /** The season's titles, over EVERY kind of evening. Unchanged since #437. */
-  roles: Record<StatRole, number>
+  /**
+   * The season's roles, over EVERY kind of evening.
+   *
+   * **All six dance roles since #607**, not the four titles. Counting only the
+   * titles meant a row could say "21 nastupa" and nothing else about twenty-one
+   * evenings: a plain crni or bili contributed to the total and to no tally, so
+   * Ljestvica could not say whether those were nights in the ranks or nights
+   * wearing a crown. `voditelj` stays out, here as everywhere - running an
+   * evening is not dancing it (CONTEXT.md -> *Voditelj (u postavi)*).
+   */
+  roles: Record<DanceRole, number>
   /** The split behind the tap: performances per kind, zeros included. */
   byKind: Record<PerformanceKind, number>
   /**
@@ -60,11 +77,11 @@ export interface DancerStats {
    * the Experiences it was counting, and two numbers that do not add up are
    * worse than one number that is not there.
    *
-   * Only the four titles. A plain crni or bili is an army, not a titula
-   * (CONTEXT.md → *Title*), and neither is the `voditelj` line, which never
-   * reaches this module at all.
+   * All six dance roles since #607, for the reason `roles` gives. A reader can
+   * therefore add one row's tallies up and get the count printed beside them,
+   * which is what makes the breakdown checkable instead of decorative.
    */
-  rolesByKind: Record<PerformanceKind, Record<StatRole, number>>
+  rolesByKind: Record<PerformanceKind, Record<DanceRole, number>>
 }
 
 /**
@@ -79,15 +96,20 @@ function emptyKinds(): Record<PerformanceKind, number> {
   >
 }
 
-function emptyRoles(): Record<StatRole, number> {
-  return { crni_kralj: 0, bili_kralj: 0, otmanovic: 0, bula: 0 }
+/**
+ * The role vocabulary is `moreskant-profile.ts`'s, never re-typed here, for the
+ * same reason the kind vocabulary is `show-performance.ts`'s: a seventh dance
+ * role added there has to appear in this tally on the same day.
+ */
+function emptyRoles(): Record<DanceRole, number> {
+  return Object.fromEntries(DANCE_ROLES.map((r) => [r, 0])) as Record<DanceRole, number>
 }
 
 /** One `emptyRoles()` per kind, zeros included, so no caller has to guard. */
-function emptyRolesByKind(): Record<PerformanceKind, Record<StatRole, number>> {
+function emptyRolesByKind(): Record<PerformanceKind, Record<DanceRole, number>> {
   return Object.fromEntries(PERFORMANCE_KINDS.map((k) => [k, emptyRoles()])) as Record<
     PerformanceKind,
-    Record<StatRole, number>
+    Record<DanceRole, number>
   >
 }
 
@@ -150,9 +172,11 @@ export function aggregateDancerStats(input: {
 
     stats.performances += 1
     stats.byKind[kind] += 1
-    if (isDanceRole(row.role) && (STAT_ROLES as readonly string[]).includes(row.role)) {
-      stats.roles[row.role as StatRole] += 1
-      stats.rolesByKind[kind][row.role as StatRole] += 1
+    // Every dance role, the plain ones included (#607). `isDanceRole` is still
+    // the filter, and it is what keeps the `voditelj` line out.
+    if (isDanceRole(row.role)) {
+      stats.roles[row.role] += 1
+      stats.rolesByKind[kind][row.role] += 1
     }
   }
 

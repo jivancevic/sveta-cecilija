@@ -48,6 +48,17 @@
   --warn: #a8321f; /* an army below its threshold, a form error */
   --ok: #8f6a10; /* "enough of us tonight" — gold, not green: one brand */
   --grey: #d9d4cc; /* the glyph on a crni disc */
+  /* The three cups of Ljestvica (#607). Metals rather than the brand gold for
+     two of them: a silver and a bronze mixed out of `--gold` would be the same
+     hue at three lightnesses, which is a gradient and not three medals. The
+     first is close to the brand on purpose — the winner's cup should belong to
+     this app and not to a generic scoreboard. */
+  --tr1: #c9992f;
+  --tr1Deep: #8a6413;
+  --tr2: #a8a49b;
+  --tr2Deep: #6f6b63;
+  --tr3: #b0713c;
+  --tr3Deep: #784a24;
   --crni: #1a140c; /* the crni army's fill */
   --track: #ffffff; /* the ground a bar fills over */
   --rule: rgba(26, 20, 12, 0.08); /* the line between two rows of a list */
@@ -228,6 +239,14 @@ html:has(> .app) {
   --warn: #e07a5f;
   --ok: #e3b94e;
   --grey: #cfc8bd;
+  /* Night lifts all three: a cup sits on `--card`, not on paper, and the paper
+     values go muddy against it. */
+  --tr1: #e5b84b;
+  --tr1Deep: #a9822a;
+  --tr2: #cfcabf;
+  --tr2Deep: #8e8a80;
+  --tr3: #c98a4e;
+  --tr3Deep: #8a5c31;
   --crni: #050403;
   --track: #43392f;
   --rule: rgba(245, 242, 236, 0.08);
@@ -3280,19 +3299,80 @@ a.app__ob-link {
   margin-top: -2px;
 }
 
-/* A row's meta can carry three facts on the full list: puna sezona, the split
-   of evenings the count is made of, and the titles worn in them. One line each,
-   in that order, because the first is about the dancer and the other two are
-   about the count. */
-.app__lb-meta-line {
-  display: block;
+/* ── The full list's chips and tallies (#607) ──────────────
+   Seven chips in a strip that scrolls sideways rather than wrapping to three
+   rows: the list under it is the screen, and a filter that pushes it off the
+   fold costs more than the scroll does. Inside the shell's gutter rather than
+   bled to the screen edges — the gutter is 20px on a phone and 32px on a
+   laptop, and a bleed would have to re-state both. */
+.app__lb-filters {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  scrollbar-width: none;
 }
 
-/* The titles, quieter than the split above them: the split is what the count
-   is made of and this is colour. */
-.app__lb-titles {
-  margin-top: 2px;
-  opacity: 0.75;
+.app__lb-filters::-webkit-scrollbar {
+  display: none;
+}
+
+.app__lb-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+  padding: 5px 12px 5px 6px;
+  border: 1px solid transparent;
+  border-radius: var(--rPill);
+  background: var(--sunk);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+/* "Svi" has no disc, so it needs the padding the disc was holding. */
+.app__lb-chip:first-child {
+  padding-left: 14px;
+}
+
+.app__lb-chip[aria-current] {
+  background: var(--goldSoft);
+  border-color: var(--gold);
+  color: var(--goldText);
+}
+
+/* Which number the column is showing. Sits under the heading because it
+   changes with the chip, and a caption that moves has to be next to what moves
+   it. */
+.app__lb-hint {
+  margin: -4px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* The roles a dancer wore, under the nickname. They sum to the count at the end
+   of the row, which is what makes them checkable rather than decorative. */
+.app__lb-tallies {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  margin-top: 5px;
+}
+
+.app__lb-tally {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.app__lb-tally b {
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
 }
 
 /* ── The season picker ─────────────────────────────────────
@@ -3308,6 +3388,37 @@ a.app__ob-link {
 
 .app__lb-standing span {
   color: var(--goldText);
+}
+
+/* "▲2 nakon zadnje moreške" (#607). Up is the one green in this app, which it
+   already earns on "Dolazim"; a DROP is the muted tone and never the warn red,
+   because being passed while you were at work is not an error state. */
+.app__lb-move {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 4px;
+  margin-left: 6px;
+  white-space: nowrap;
+}
+
+.app__lb-move b {
+  font-size: 13px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.app__lb-move[data-dir='up'] b {
+  color: var(--yes);
+}
+
+.app__lb-move[data-dir='down'] b {
+  color: var(--muted);
+}
+
+.app__lb-move i {
+  font-style: normal;
+  font-size: 13px;
+  color: var(--muted);
 }
 
 .app__lb-all {
@@ -3361,41 +3472,6 @@ a.app__ob-link {
   margin: 4px 0 0;
   color: var(--muted);
 }
-
-/* The four prekretnice, as discs. A reached one is gold; one still ahead is
-   the sunk tone, never a warning colour: it is not something the reader is
-   late on. */
-.app__lb-marks {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.app__lb-mark {
-  display: grid;
-  place-items: center;
-  width: 38px;
-  height: 38px;
-  border-radius: var(--rPill);
-  background: var(--sunk);
-  color: var(--muted);
-  font-size: 14px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-}
-
-.app__lb-mark--on {
-  background: var(--gold);
-  color: var(--onGold);
-}
-
-.app__lb-next {
-  margin: 12px 0 0;
-  font-size: 14px;
-  color: var(--goldText);
-}
-
 
 /* ── Poveži svoj račun s članom (#462) ──────────────────── */
 /* The rows ARE .app__more-row: one tap, a chevron, a hairline under it. Only

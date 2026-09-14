@@ -1,16 +1,21 @@
 import Link from 'next/link'
-import { MILESTONES } from '@/lib/app/leaderboard-loaders'
 import type { MySeason as MySeasonData, MySeasonMonth } from '@/lib/app/my-season-loaders'
-import { pluralForm, pluralize } from '@/lib/app/roster-loaders'
+import { pluralForm } from '@/lib/app/roster-loaders'
 import { APP_STRINGS, KIND_LABELS, ROLE_LABELS } from '@/lib/app/strings'
 import { DANCE_ROLES } from '@/lib/moreskant-profile'
 import { PERFORMANCE_KINDS, type PerformanceKind } from '@/lib/show-performance'
-import { Card, Chip, CountUp, List, ListRow, Section } from '../../ui'
+import { Card, CountUp, List, ListRow, Section } from '../../ui'
 
 // "Moja sezona", the second panel of Ljestvica (#457, reskinned in #568).
 //
-// One dancer's own year: what they danced, which prekretnice it passed, what
-// kind of evenings they were, which roles, and the shape of it month by month.
+// One dancer's own year: what they danced, what kind of evenings they were,
+// which roles, and the shape of it month by month.
+//
+// **The prekretnice are gone** (#607). Five, ten, fifteen and twenty were four
+// numbers that meant nothing beyond themselves — a ladder the app invented and
+// then congratulated people for climbing — and "puna sezona" went with them
+// rather than standing alone as the one surviving badge. Badges come back when
+// the uprava has decided what is worth one.
 // Everything on it is a LINEUP fact, never an attendance answer: saying
 // "dolazim" moves no number here, the way it moves none on the board next to it
 // (glossary: *Dancer statistics*).
@@ -97,25 +102,14 @@ function Figure({ value, label, up = false }: { value: number; label: string; up
   )
 }
 
-export interface MySeasonMilestones {
-  /** The milestones already reached, a subset of MILESTONES. */
-  reached: number[]
-  /** The next one, or null when all four are behind the reader. */
-  next: number | null
-  /** Danced every confirmed evening of the season. */
-  fullSeason: boolean
-}
-
 export function MySeason({
   mine,
   hasMember,
-  milestones,
   byKind,
 }: {
   mine: MySeasonData
   /** The reader's account is linked to a Member: there is a dancer to count. */
   hasMember: boolean
-  milestones: MySeasonMilestones | null
   /** The reader's own season split by kind of evening; null without a Member. */
   byKind: Record<PerformanceKind, number> | null
 }) {
@@ -161,36 +155,6 @@ export function MySeason({
         <Figure value={mine.armyCrni} label={S.crni} />
         <Figure value={mine.armyBili} label={S.bili} />
       </Card>
-
-      {milestones && (
-        <section className="app__lb-group">
-          <Section title={S.milestones} />
-          <Card className="app__lb-milestones">
-            <div className="app__lb-marks">
-              {MILESTONES.map((m) => {
-                const done = milestones.reached.includes(m)
-                return (
-                  <span
-                    key={m}
-                    className={`app__lb-mark${done ? ' app__lb-mark--on' : ''}`}
-                    title={done ? S.milestoneReached(m) : S.milestoneAhead(m)}
-                  >
-                    {m}
-                  </span>
-                )
-              })}
-              {milestones.fullSeason && <Chip tone="gold">{APP_STRINGS.board.fullSeason}</Chip>}
-            </div>
-            {milestones.next !== null && (
-              <p className="app__lb-next">
-                {APP_STRINGS.board.nextMilestone(
-                  pluralize(milestones.next, APP_STRINGS.moreska.count),
-                )}
-              </p>
-            )}
-          </Card>
-        </section>
-      )}
 
       {kinds.length > 0 && byKind && (
         <section className="app__lb-group">

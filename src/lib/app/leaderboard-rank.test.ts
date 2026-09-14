@@ -1,23 +1,39 @@
 import { describe, expect, it } from 'vitest'
 import { PERFORMANCE_KINDS, type PerformanceKind } from '@/lib/show-performance'
-import { STAT_ROLES, type DancerStats, type StatRole } from '@/lib/lineup/stats'
+import { type DancerStats } from '@/lib/lineup/stats'
+import { DANCE_ROLES, type DanceRole } from '@/lib/moreskant-profile'
 import { pluralize } from './roster-loaders'
 import { APP_STRINGS } from './strings'
 import {
+  BOARD_FILTERS,
   TOP_ROWS,
   armyOfPrimaryRole,
   boardView,
+  filterCountsTitle,
   kindsOf,
   myStanding,
+  parseBoardFilter,
   parseLeaderboardKind,
   rankDancers,
+  rankMovement,
+  roleTallies,
 } from './leaderboard-rank'
 
-/** A scoreboard row with its counts spread over the kinds the caller names. */
+const noRoles = () =>
+  Object.fromEntries(DANCE_ROLES.map((r) => [r, 0])) as Record<DanceRole, number>
+
+/**
+ * A scoreboard row with its counts spread over the kinds the caller names, and
+ * optionally over the roles within one of them.
+ *
+ * `roles` is keyed by kind so a fixture can say "twelve Redovne, three of them
+ * as crni kralj" — which is the shape every #607 rule reasons about.
+ */
 function dancer(
   memberId: string,
   nickname: string,
   byKind: Partial<Record<PerformanceKind, number>>,
+  roles: Partial<Record<PerformanceKind, Partial<Record<DanceRole, number>>>> = {},
 ): DancerStats {
   const kinds = Object.fromEntries(PERFORMANCE_KINDS.map((k) => [k, 0])) as Record<
     PerformanceKind,
@@ -26,17 +42,24 @@ function dancer(
   for (const [kind, count] of Object.entries(byKind)) {
     kinds[kind as PerformanceKind] = count ?? 0
   }
+
+  const rolesByKind = Object.fromEntries(
+    PERFORMANCE_KINDS.map((k) => [k, noRoles()]),
+  ) as Record<PerformanceKind, Record<DanceRole, number>>
+  const total = noRoles()
+  for (const [kind, byRole] of Object.entries(roles)) {
+    for (const [role, count] of Object.entries(byRole ?? {})) {
+      rolesByKind[kind as PerformanceKind][role as DanceRole] = count ?? 0
+      total[role as DanceRole] += count ?? 0
+    }
+  }
+
   return {
     memberId,
     nickname,
     performances: Object.values(kinds).reduce((a, b) => a + b, 0),
-    roles: Object.fromEntries(STAT_ROLES.map((r) => [r, 0])) as Record<StatRole, number>,
-    rolesByKind: Object.fromEntries(
-      PERFORMANCE_KINDS.map((k) => [
-        k,
-        Object.fromEntries(STAT_ROLES.map((r) => [r, 0])) as Record<StatRole, number>,
-      ]),
-    ) as Record<PerformanceKind, Record<StatRole, number>>,
+    roles: total,
+    rolesByKind,
     byKind: kinds,
   }
 }
@@ -251,5 +274,173 @@ describe('boardView', () => {
     const view = boardView(rankDancers({ rows: tied, kind: 'moreska' }))
     expect(view.podium.length + view.rows.length).toBe(TOP_ROWS)
     expect(view.podium.every((r) => r.rank === 1)).toBe(true)
+  })
+})
+
+/* ── The seven chips (#607, decision Q2) ────────────────────────────────────
+   The cast is the one the decision was made on: Cici's primary role is crni and
+   he fills in as bili when that army is short, which is the case that decides
+   why an army chip counts his WHOLE season rather than the nights he wore
+   black. */
+
+const MARKAN = dancer('1', 'Markan', { redovna: 20 }, {
+  redovna: { crni: 9, crni_kralj: 8, otmanovic: 3 },
+})
+const CICI = dancer('2', 'Cici', { redovna: 18 }, {
+  redovna: { crni: 12, crni_kralj: 3, bili: 3 },
+})
+const JADRO = dancer('3', 'Jadro', { redovna: 17 }, {
+  redovna: { bili: 11, bili_kralj: 6 },
+})
+const MARE = dancer('4', 'Mare', { redovna: 11 }, { redovna: { bula: 11 } })
+/** An active moreškant who has danced nothing this season. */
+const IVO = dancer('5', 'Ivo', {})
+
+const CAST = [MARKAN, CICI, JADRO, MARE, IVO]
+const PRIMARY = { '1': 'crni', '2': 'crni', '3': 'bili', '4': 'bula', '5': 'crni' }
+
+const board = (filter: Parameters<typeof parseBoardFilter>[0] | undefined, extra = {}) =>
+  rankDancers({
+    rows: CAST,
+    kind: 'moreska',
+    filter: parseBoardFilter(filter),
+    primaryRoles: PRIMARY,
+    confirmed: 21,
+    ...extra,
+  })
+
+describe('parseBoardFilter', () => {
+  it('opens on everybody by default, and for a chip that no longer exists', () => {
+    expect(parseBoardFilter(undefined)).toBe('svi')
+    expect(parseBoardFilter('kapetan')).toBe('svi')
+  })
+
+  it('takes every chip the screen draws', () => {
+    for (const filter of BOARD_FILTERS) expect(parseBoardFilter(filter)).toBe(filter)
+  })
+})
+
+describe('filterCountsTitle', () => {
+  it('is the three chips that count a title being given', () => {
+    expect(BOARD_FILTERS.filter(filterCountsTitle)).toEqual([
+      'crni_kralj',
+      'bili_kralj',
+      'otmanovic',
+    ])
+  })
+
+  it('leaves the bula with the armies, because her two readings are one number', () => {
+    // A bula who is not in the postava has no lineup row at all, so "evenings
+    // danced" and "evenings as bula" cannot disagree (CONTEXT.md → Title).
+    expect(filterCountsTitle('bula')).toBe(false)
+  })
+})
+
+describe('rankDancers, the army chips', () => {
+  it('counts a crni’s WHOLE season, the nights he filled in as bili included', () => {
+    const crni = board('crni')
+    const cici = crni.find((r) => r.nickname === 'Cici')!
+    expect(cici.performances).toBe(18)
+    expect(cici.rank).toBe(2)
+  })
+
+  it('never lists him under the other army, however often he filled in', () => {
+    expect(board('bili').map((r) => r.nickname)).toEqual(['Jadro'])
+  })
+
+  it('drops a dancer who has danced nothing, because only SVI keeps the zeros', () => {
+    expect(board('svi').map((r) => r.nickname)).toContain('Ivo')
+    expect(board('crni').map((r) => r.nickname)).not.toContain('Ivo')
+  })
+})
+
+describe('rankDancers, the title chips', () => {
+  it('ranks by how many times the title was given, not by evenings danced', () => {
+    expect(board('crni_kralj').map((r) => [r.rank, r.nickname, r.performances])).toEqual([
+      [1, 'Markan', 8],
+      [2, 'Cici', 3],
+    ])
+  })
+
+  it('restarts the rank at 1 rather than carrying the season’s places over', () => {
+    // Jadro is third on the season and first among bili kraljevi.
+    expect(board('bili_kralj')[0]).toMatchObject({ rank: 1, nickname: 'Jadro' })
+  })
+
+  it('leaves out everybody who never wore it', () => {
+    expect(board('otmanovic').map((r) => r.nickname)).toEqual(['Markan'])
+  })
+
+  it('never calls a season of crowns a puna sezona', () => {
+    const all = rankDancers({
+      rows: [dancer('9', 'Kralj', { redovna: 3 }, { redovna: { crni_kralj: 3 } })],
+      kind: 'moreska',
+      filter: 'crni_kralj',
+      confirmed: 3,
+    })
+    expect(all[0].fullSeason).toBe(false)
+  })
+
+  it('counts the bula the same either way, which is why she is not a title chip', () => {
+    expect(board('bula')[0].performances).toBe(11)
+  })
+})
+
+describe('rankDancers, the disc', () => {
+  it('carries the dancer’s initials, and never a crown', () => {
+    const rows = board(undefined, { initials: { '2': 'NŠ' } })
+    const cici = rows.find((r) => r.nickname === 'Cici')!
+    expect(cici.initials).toBe('NŠ')
+    expect(cici.title).toBeNull()
+  })
+
+  it('leaves the initials empty when the roster has no name to take them from', () => {
+    expect(board(undefined)[0].initials).toBe('')
+  })
+})
+
+describe('roleTallies', () => {
+  it('adds up to the count printed beside them', () => {
+    const tallies = roleTallies(CICI, 'moreska')
+    expect(tallies.reduce((sum, t) => sum + t.count, 0)).toBe(CICI.performances)
+  })
+
+  it('drops the roles nobody wore, and groups the armies', () => {
+    expect(roleTallies(CICI, 'moreska')).toEqual([
+      { role: 'crni', count: 12 },
+      { role: 'crni_kralj', count: 3 },
+      { role: 'bili', count: 3 },
+    ])
+  })
+
+  it('counts only the list’s own kinds', () => {
+    const split = dancer('7', 'Duje', { redovna: 2, experience: 4 }, {
+      redovna: { crni: 2 },
+      experience: { crni: 1, crni_kralj: 3 },
+    })
+    expect(roleTallies(split, 'experience')).toEqual([
+      { role: 'crni', count: 1 },
+      { role: 'crni_kralj', count: 3 },
+    ])
+  })
+})
+
+describe('rankMovement', () => {
+  const me = (rank: number) => [{ ...board(undefined)[0], rank, me: true }]
+
+  it('is positive when the reader climbed', () => {
+    expect(rankMovement(me(3), me(5))).toBe(2)
+  })
+
+  it('reports a drop exactly like a rise', () => {
+    expect(rankMovement(me(6), me(4))).toBe(-2)
+  })
+
+  it('says nothing when nothing moved, because a zero is not news', () => {
+    expect(rankMovement(me(4), me(4))).toBeNull()
+  })
+
+  it('says nothing for a reader who is on neither ranking', () => {
+    expect(rankMovement(board(undefined), board(undefined))).toBeNull()
   })
 })
