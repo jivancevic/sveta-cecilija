@@ -143,6 +143,10 @@ export async function getPartnerReconciliation(
   const rows: ReconTicketRow[] = res.rows.map((r) => ({
     showId: String(r.show_id),
     showLabel: showLabel(r.show_date, r.show_venue),
+    // The label is a display string and also the sort key; the document needs
+    // the date and the venue apart so it can print them in Croatian (#599).
+    showDate: toIsoShowDate(r.show_date),
+    showVenue: String(r.show_venue ?? ''),
     type: r.type as TicketType,
     status: r.status as 'active' | 'cancelled',
     cancelReason: (r.cancel_reason ?? null) as 'storno' | 'refund' | null,

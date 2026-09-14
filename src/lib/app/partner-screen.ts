@@ -24,6 +24,16 @@ export interface PartnerRecord {
   active: boolean
   /** Percent of gross the partner keeps (ADR-0008); 10 unless set otherwise. */
   commissionPercent: number
+  /**
+   * The invoicing identity (#599). Present on the record because the Obračun
+   * carries all three: the accountant raises the račun from the OIB and the
+   * address, and `email` is where the statement is sent. None is required — a
+   * partner can be set up before anyone has asked them for any of it, and the
+   * document simply drops the line it has nothing for.
+   */
+  oib?: string | null
+  billingAddress?: string | null
+  email?: string | null
 }
 
 /**

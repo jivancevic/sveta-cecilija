@@ -43,6 +43,17 @@ export const Partners: CollectionConfig = {
       type: 'textarea',
       admin: { description: 'Billing address for the monthly invoice' },
     },
+    // Where the monthly obračun is SENT (#599). Deliberately not the linked
+    // login's address: that account belongs to whoever stands at the reseller's
+    // counter, while the statement goes to the agency's accounting mailbox.
+    // Optional, because a partner can be set up before anyone has asked them
+    // for it; Obračun falls back to the linked login's address as a prefill and
+    // says which one it used.
+    {
+      name: 'email',
+      type: 'email',
+      admin: { description: 'Where the monthly obračun (statement) is emailed' },
+    },
     {
       name: 'commissionPercent',
       type: 'number',

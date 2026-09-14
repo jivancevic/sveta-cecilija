@@ -201,8 +201,14 @@ function Split({ label, value }: { label: string; value: string }) {
 
 /**
  * One partner's month: what it sold, what it keeps and what it owes, with the
- * CSV of the same month behind the link. The figures and the file come from
- * one query (`/api/partner/reconciliation`), so they cannot disagree.
+ * DOCUMENT of the same month behind the link.
+ *
+ * The link changed with #599 and the reason is the whole ticket: it used to
+ * hand over a raw CSV, so the secretary's copy of a month and the partner's
+ * copy were two different artifacts and "usporediti je li sve okej" had nothing
+ * to compare. It now opens Obračun at that partner and that month, which is the
+ * one screen both of them read and the one place the PDF is sent from. The
+ * figures here and there come off the same load, so they cannot disagree.
  */
 function PartnerRow({
   row,
@@ -212,8 +218,8 @@ function PartnerRow({
   month: { year: number; month: number }
 }) {
   const href =
-    `/api/partner/reconciliation?partnerId=${encodeURIComponent(row.partnerId)}` +
-    `&year=${month.year}&month=${month.month}&format=csv`
+    `/app/statement?partnerId=${encodeURIComponent(row.partnerId)}` +
+    `&year=${month.year}&month=${month.month}`
 
   return (
     <li className="app__fin-partner">
@@ -237,8 +243,7 @@ function PartnerRow({
         <Split label={S.owed} value={formatEur(row.netCents)} />
       </dl>
       {row.cancelledCount > 0 && <p className="app__fin-count">{S.cancelled(row.cancelledCount)}</p>}
-      {/* The statement itself, unchanged since #509: the same route, the same
-          month, the same file the accountant already knows. */}
+      {/* The statement itself, on the screen that sends it (#599). */}
       <a className="ui-btn ui-btn--ghost app__fin-csv" href={href}>
         {S.download}
       </a>

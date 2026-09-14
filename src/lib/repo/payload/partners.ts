@@ -18,6 +18,11 @@ function toRecord(doc: Record<string, unknown>): PartnerRecord {
     name: (doc.name as string) ?? `Partner ${String(doc.id)}`,
     active: doc.active !== false,
     commissionPercent: Number.isFinite(commission) ? commission : DEFAULT_COMMISSION_PERCENT,
+    // The invoicing identity (#599). Normalised to null rather than left
+    // undefined so a caller can tell "not set" from "not loaded".
+    oib: (doc.oib as string) || null,
+    billingAddress: (doc.billingAddress as string) || null,
+    email: (doc.email as string) || null,
   }
 }
 
@@ -46,6 +51,18 @@ export function createPartnersRepo(
       const result = await payload.find({
         collection: 'partners',
         where: { active: { not_equals: false } },
+        sort: 'name',
+        limit: 1000,
+        depth: 0,
+        overrideAccess: true,
+      })
+      return (result.docs as unknown as Record<string, unknown>[]).map(toRecord)
+    },
+
+    async all() {
+      const payload = await load()
+      const result = await payload.find({
+        collection: 'partners',
         sort: 'name',
         limit: 1000,
         depth: 0,

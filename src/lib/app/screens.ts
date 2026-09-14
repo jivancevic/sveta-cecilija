@@ -142,13 +142,23 @@ export const APP_SCREENS: AppScreen[] = [
     groups: ['partner'],
   },
   {
+    // **Two readers, one document** (#599). The reseller reads what they owe;
+    // the secretary reads the same screen, picks a partner and a month, and
+    // sends the PDF. Until #599 she had no way in at all and worked from the
+    // Financije month panel instead, so she and the partner were never looking
+    // at the same paper — which is exactly what "usporediti je li sve okej"
+    // asks for. `tickets` deliberately does NOT unlock it: a statement is
+    // money, and money is `finance` (#500).
     key: 'statement',
     label: S.statement,
     route: '/app/statement',
     rank: 6,
-    unlockedBy: ['partner'],
-    servesToday: ['partner'],
-    groups: ['partner'],
+    unlockedBy: ['partner', 'finance'],
+    servesToday: ['partner', 'finance'],
+    // `partner` first, so a reseller's sidebar files it under their own
+    // workspace; `admin` is what puts it under Administracija for the
+    // secretary, by rule rather than by the `heldGroups[0]` fallback.
+    groups: ['partner', 'admin'],
   },
   {
     key: 'inquiries',

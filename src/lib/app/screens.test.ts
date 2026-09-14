@@ -197,20 +197,28 @@ describe('unlockedScreens', () => {
     expect(keys(unlockedScreens(user('season_stats'), ctx()))).toEqual(['stats'])
   })
 
-  it('gives a finance holder the season in counts and the season in euros', () => {
+  it('gives a finance holder the season, the euros and the partner statement', () => {
     // Statistika (#508) and Financije (#509) are the pair, and the split
-    // between them is the point: counts on one, cents on the other.
-    expect(keys(unlockedScreens(user('finance'), ctx()))).toEqual(['stats', 'finance'])
+    // between them is the point: counts on one, cents on the other. Obračun
+    // joined them with #599: the secretary is the one who SENDS the statement,
+    // and she and the partner have to be reading the same document for
+    // "usporediti je li sve okej" to mean anything.
+    expect(keys(unlockedScreens(user('finance'), ctx()))).toEqual([
+      'statement',
+      'stats',
+      'finance',
+    ])
   })
 
-  it('gives the president Skener, Statistika and Financije, and no way into Izvedbe', () => {
-    // Velebit is `finance` + `door` (#500). The pair unlocks the gate and both
-    // season screens, and NEITHER word unlocks Izvedbe — which is what makes
-    // every row on Statistika link-less for him (#508), and what makes his old
-    // `/admin/stats/[id]` bookmark land on the refusal page once that path
-    // 308s to `/app/performances/[id]`.
+  it('gives the president the gate, both season screens and Obračun, and no way into Izvedbe', () => {
+    // Velebit is `finance` + `door` (#500). The pair unlocks the gate, both
+    // season screens and, since #599, the partner statement — and NEITHER word
+    // unlocks Izvedbe, which is what makes every row on Statistika link-less
+    // for him (#508), and what makes his old `/admin/stats/[id]` bookmark land
+    // on the refusal page once that path 308s to `/app/performances/[id]`.
     expect(keys(unlockedScreens(user('finance', 'door'), ctx()))).toEqual([
       'scan',
+      'statement',
       'stats',
       'finance',
     ])
@@ -361,7 +369,10 @@ describe('the generic order', () => {
     expect(generic(['door'])).toEqual(['scan'])
     expect(generic(['partner'], { hasPartner: true })).toEqual(['sell', 'statement'])
     expect(generic(['season_stats'])).toEqual(['stats'])
-    expect(generic(['finance'])).toEqual(['finance', 'stats'])
+    // The money, the counts, and the statement she sends (#599): three, which
+    // is exactly a bar. `GENERIC_TABS.finance` names the first two and the
+    // rank top-up adds Obračun, which is where it sits for a reseller too.
+    expect(generic(['finance'])).toEqual(['finance', 'stats', 'statement'])
   })
 
   it('merges a multi-permission set dancer → box → other, first three winning', () => {
@@ -379,13 +390,14 @@ describe('the generic order', () => {
   it('collapses a duplicate rather than spending a tab on it twice', () => {
     // Statistika is on both rows: `season_stats` is the whole of it, and
     // `finance` lists it after the money. A set holding both must not spend two
-    // of its three tabs on one screen, and with nothing else unlocked the bar
-    // is honestly two long rather than padded to three.
+    // of its three tabs on one screen.
     //
     // `season_stats` is merged first (it is earlier in GENERIC_MERGE), so it
     // lays down Statistika and `finance` adds only the screen Statistika is
-    // not. Two tabs, not three, and Statistika appears once.
-    expect(generic(['season_stats', 'finance'])).toEqual(['stats', 'finance'])
+    // not. Obračun then fills the third tab by rank (#599) — a screen the set
+    // genuinely unlocks, rather than a repeat of one already on the bar, which
+    // is the property this asserts.
+    expect(generic(['season_stats', 'finance'])).toEqual(['stats', 'finance', 'statement'])
   })
 
   it('tops the bar up in rank order for a set the table has no row for', () => {

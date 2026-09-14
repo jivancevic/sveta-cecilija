@@ -36,6 +36,18 @@ export type CancelReason = 'storno' | 'refund' | null
 export interface ReconTicketRow {
   showId: string
   showLabel: string
+  /**
+   * The two halves the label is BUILT from, carried separately since #599 so a
+   * document can format them in its own language. `showLabel` stays the
+   * ISO-first string it has always been, because it is also the sort key that
+   * puts a statement's evenings in calendar order; a Croatian "17. 7. 2026."
+   * sorts by day-of-month and would scramble them.
+   *
+   * Optional: the callers that build rows from an already-grouped shape
+   * (`dashboard/revenue.ts`) have no date to hand and never render a document.
+   */
+  showDate?: string
+  showVenue?: string
   type: TicketType
   status: TicketStatus
   cancelReason?: CancelReason
@@ -51,6 +63,9 @@ export interface ReconTypeBreakdown {
 export interface ReconShowLine {
   showId: string
   showLabel: string
+  /** `YYYY-MM-DD` and the venue slug, when the caller had them. */
+  showDate?: string
+  showVenue?: string
   /** Active (billable) tickets on this show. */
   active: ReconTypeBreakdown
   activeCount: number
@@ -63,7 +78,7 @@ export interface ReconStatement {
   commissionPercent: number
   year: number
   month: number
-  /** Per-show lines, sorted by showLabel for a stable statement order. */
+  /** Per-show lines, in calendar order (see the sort below). */
   shows: ReconShowLine[]
   /** Season/month totals across all shows. */
   active: ReconTypeBreakdown
@@ -73,6 +88,13 @@ export interface ReconStatement {
   stornoCount: number
   refundCount: number
   grossCents: number
+  /**
+   * Face value of the CANCELLED tickets, EUR cents (#599). It is never part of
+   * gross, commission or net and must never be summed into one: the statement
+   * prints it on a line of its own so the partner can tick a void off against
+   * their own till, and the invoice the accountant issues stays net.
+   */
+  cancelledCents: number
   commissionCents: number
   netCents: number
 }
@@ -104,6 +126,7 @@ export function buildReconciliationStatement(input: BuildStatementInput): ReconS
   let stornoCount = 0
   let refundCount = 0
   let grossCents = 0
+  let cancelledCents = 0
 
   for (const row of rows) {
     let line = byShow.get(row.showId)
@@ -111,6 +134,8 @@ export function buildReconciliationStatement(input: BuildStatementInput): ReconS
       line = {
         showId: row.showId,
         showLabel: row.showLabel,
+        showDate: row.showDate,
+        showVenue: row.showVenue,
         active: { adults: 0, children: 0 },
         activeCount: 0,
         cancelledCount: 0,
@@ -122,6 +147,7 @@ export function buildReconciliationStatement(input: BuildStatementInput): ReconS
     if (row.status === 'cancelled') {
       line.cancelledCount += 1
       cancelledCount += 1
+      cancelledCents += faceValueCents(row.type)
       if (row.cancelReason === 'storno') stornoCount += 1
       else if (row.cancelReason === 'refund') refundCount += 1
       continue
@@ -144,8 +170,13 @@ export function buildReconciliationStatement(input: BuildStatementInput): ReconS
   const commissionCents = Math.round((grossCents * commissionPercent) / 100)
   const netCents = grossCents - commissionCents
 
-  const shows = [...byShow.values()].sort((a, b) =>
-    a.showLabel.localeCompare(b.showLabel) || a.showId.localeCompare(b.showId),
+  // Calendar order. `showLabel` opens with the ISO date when the data layer
+  // built it, so comparing it IS comparing dates; `showDate` is preferred where
+  // the caller carried it, because a label is a display string and may change.
+  const shows = [...byShow.values()].sort(
+    (a, b) =>
+      (a.showDate ?? a.showLabel).localeCompare(b.showDate ?? b.showLabel) ||
+      a.showId.localeCompare(b.showId),
   )
 
   return {
@@ -160,6 +191,7 @@ export function buildReconciliationStatement(input: BuildStatementInput): ReconS
     stornoCount,
     refundCount,
     grossCents,
+    cancelledCents,
     commissionCents,
     netCents,
   }
