@@ -262,12 +262,17 @@ describe('Shows field-level locks', () => {
     },
   )
 
-  it('lets only the backoffice set the public flag, on create and on update', () => {
-    for (const op of ['create', 'update'] as const) {
-      const access = fieldAccess('isPublic', op)!
-      expect(access({ req: { user: ticketAdmin } })).toBe(true)
-      expect(access({ req: { user: voditelj } })).toBe(false)
-    }
+  // #567, Q53: a voditelj entering next season's Redovna dates says that they
+  // sell tickets; flipping an EXISTING row stays with the desk that answers for
+  // the tickets already sold against it.
+  it('lets either half author the public flag, and only the backoffice flip it', () => {
+    const create = fieldAccess('isPublic', 'create')!
+    expect(create({ req: { user: ticketAdmin } })).toBe(true)
+    expect(create({ req: { user: voditelj } })).toBe(true)
+
+    const update = fieldAccess('isPublic', 'update')!
+    expect(update({ req: { user: ticketAdmin } })).toBe(true)
+    expect(update({ req: { user: voditelj } })).toBe(false)
   })
 
   it.each(['thresholdCrni', 'thresholdBili', 'voditeljNote'])(
@@ -304,30 +309,48 @@ describe('Shows field-level locks', () => {
   })
 })
 
-describe('Shows beforeValidate: the voditelj can never author a public row', () => {
+describe('Shows beforeValidate: what a voditelj may author (#567)', () => {
   const voditelj = { permissions: ['moreska'] }
 
-  it('forces a voditelj creation non-public, even when the default said otherwise', () => {
-    // The isPublic field lock has already dropped the submitted value and
-    // Payload has fallen back to the `true` default by the time this runs.
+  // Until #567 this create was forced non-public and non-redovna. Izvedbe is
+  // now one register for both halves (Q53), so the evening the voditelj typed
+  // is the evening that is stored — the invariants left are the validator's.
+  it('stores a voditelj’s PUBLIC evening as the public evening they typed', () => {
     const out = beforeValidate({
-      data: { isPublic: true, kind: 'redovna', date: '2026-09-20T12:00:00.000Z', time: '10:00', location: 'Zimsko kino' },
+      data: {
+        isPublic: true,
+        kind: 'redovna',
+        date: '2026-09-20T12:00:00.000Z',
+        time: '21:00',
+        venue: 'ljetno-kino',
+      },
       operation: 'create',
       req: { user: voditelj },
     })
-    expect(out.isPublic).toBe(false)
-    expect(out.kind).toBe('ostalo')
-    expect(out.venue).toBeNull()
+    expect(out.isPublic).toBe(true)
+    expect(out.kind).toBe('redovna')
+    expect(out.venue).toBe('ljetno-kino')
   })
 
-  it('keeps the kind a voditelj chose', () => {
+  it('still refuses a public evening with no house, whoever is typing', () => {
+    expect(() =>
+      beforeValidate({
+        data: { isPublic: true, kind: 'redovna', time: '21:00' },
+        operation: 'create',
+        req: { user: voditelj },
+      }),
+    ).toThrow()
+  })
+
+  it('keeps a booking a booking, with its place and no venue', () => {
     const out = beforeValidate({
-      data: { isPublic: true, kind: 'gulliver', location: 'Ljetno kino' },
+      data: { isPublic: false, kind: 'gulliver', location: 'Ljetno kino' },
       operation: 'create',
       req: { user: voditelj },
     })
     expect(out.isPublic).toBe(false)
     expect(out.kind).toBe('gulliver')
+    expect(out.venue).toBeNull()
   })
 
   it('never flips a public show a voditelj is only adding a note to', () => {

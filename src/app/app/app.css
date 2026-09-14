@@ -6910,8 +6910,10 @@ a.app__statrow-main:focus-visible {
   color: var(--ink);
 }
 
+/* The split is its own line under the figure: `.ui-row__body b` is a block, so
+   an inline span after it would hang one indent to the right of nothing. */
 .app__izv-sales > span {
-  margin-left: 8px;
+  display: block;
 }
 
 /* ── The detail's head ────────────────────────────────────── */
@@ -7052,10 +7054,18 @@ a.app__statrow-main:focus-visible {
   border-top: 1px solid var(--rule);
 }
 
+/* The first control in a card has nothing above it to be divided from. */
+.ui-card .app__perf-edit > .app__lead-row:first-child,
+.ui-card .app__note-edit > .app__lead-row:first-child {
+  margin-top: 0;
+  border-top: 0;
+}
+
 /* A field's label is a label, not a printed programme's heading (audit
    pattern 1): sentence case, the body face, the muted colour every other
    secondary line on this screen uses. */
 .ui-card .app__perf-head,
+.ui-card .app__note-label,
 .ui-card .app__perf-field > span,
 .ui-sheet .app__perf-field > span {
   font-family: inherit;

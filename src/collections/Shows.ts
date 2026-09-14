@@ -4,8 +4,8 @@ import {
   canEditRosterField,
   canEditScheduleField,
   canReadRosterField,
+  canAuthorPublicFlag,
   canSetPublicFlag,
-  nonPublicAuthoringOverrides,
   showsCreateAccess,
   showsDeleteAccess,
   showsHiddenInAdmin,
@@ -158,16 +158,10 @@ export const Shows: CollectionConfig = {
         // effective document, not the patch.
         const merged = { ...((originalDoc ?? {}) as Record<string, unknown>), ...patch }
 
-        // A voditelj (`moreska` without `tickets`) can never author a public
-        // performance. This runs AFTER Payload's field-access pass, which is
-        // what makes it the last word — see nonPublicAuthoringOverrides.
-        const overrides = nonPublicAuthoringOverrides(
-          (req as { user?: unknown } | undefined)?.user as ReqUser,
-          operation as string,
-          merged,
-        )
-        Object.assign(patch, overrides)
-        Object.assign(merged, overrides)
+        // Until #567 a voditelj's create was forced non-public here, because a
+        // denied `isPublic` fell back to the field's `true` default. Both
+        // halves of Izvedbe now author both kinds (Q53), so the value survives
+        // the field pass and the invariants below are the only rule left.
 
         let normalised: Record<string, unknown>
         try {
@@ -246,11 +240,11 @@ export const Shows: CollectionConfig = {
         description:
           'A public performance is listed on /tickets, sells seats against a venue capacity and is scanned at the door. Untick for a private booking: it then needs a location instead of a venue and never reaches a buyer. A Redovna is always public.',
       },
-      // Only the ticket backoffice decides what is on sale. A voditelj's create
-      // is additionally forced non-public by the beforeValidate hook, because a
-      // denied field falls back to this field's `true` default.
+      // Either half of Izvedbe may say that a NEW evening sells tickets (#567,
+      // Q53); flipping an existing row stays with the desk that answers for the
+      // tickets already sold against it.
       access: {
-        create: ({ req }) => canSetPublicFlag(req.user as ReqUser),
+        create: ({ req }) => canAuthorPublicFlag(req.user as ReqUser),
         update: ({ req }) => canSetPublicFlag(req.user as ReqUser),
       },
     },

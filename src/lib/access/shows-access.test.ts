@@ -5,8 +5,8 @@ import {
   canEditRosterField,
   canEditScheduleField,
   canReadRosterField,
+  canAuthorPublicFlag,
   canSetPublicFlag,
-  nonPublicAuthoringOverrides,
   showsCreateAccess,
   showsDeleteAccess,
   showsHiddenInAdmin,
@@ -71,8 +71,12 @@ describe('Shows create access', () => {
     expect(showsCreateAccess(voditeljBackoffice)).toBe(true)
   })
 
-  it('a `moreska`-only holder is constrained to non-public rows', () => {
-    expect(showsCreateAccess(voditelj)).toEqual(NON_PUBLIC_PERFORMANCE_WHERE)
+  // #567, Q53: Izvedbe is one register for both halves, so a voditelj enters
+  // the season's public evenings too. What a public evening costs afterwards —
+  // cancelling it, moving it, its ledger, its pause — is gated action by action
+  // in each action's own route.
+  it('a `moreska`-only holder creates either kind of performance (#567)', () => {
+    expect(showsCreateAccess(voditelj)).toBe(true)
   })
 
   it.each(doorAndStrangers)('%s creates nothing', (_label, user) => {
@@ -125,12 +129,22 @@ describe('Shows admin sidebar', () => {
 })
 
 describe('the public flag', () => {
-  it('is settable by `tickets` only', () => {
+  it('is FLIPPED on an existing row by `tickets` only', () => {
     expect(canSetPublicFlag(ticketAdmin)).toBe(true)
     expect(canSetPublicFlag(voditeljBackoffice)).toBe(true)
     expect(canSetPublicFlag(voditelj)).toBe(false)
     expect(canSetPublicFlag(doorAccount)).toBe(false)
     expect(canSetPublicFlag(anon)).toBe(false)
+  })
+
+  // The create side widened with #567 and the update side deliberately did
+  // not: nothing is sold against a row that does not exist yet, and that is
+  // what makes the same flip on an existing evening the blagajna's.
+  it('is AUTHORED on a new row by either half of Izvedbe (#567)', () => {
+    expect(canAuthorPublicFlag(voditelj)).toBe(true)
+    expect(canAuthorPublicFlag(ticketAdmin)).toBe(true)
+    expect(canAuthorPublicFlag(doorAccount)).toBe(false)
+    expect(canAuthorPublicFlag(anon)).toBe(false)
   })
 })
 
@@ -190,46 +204,3 @@ describe('placement fields (location, client)', () => {
   })
 })
 
-describe('nonPublicAuthoringOverrides', () => {
-  it('forces a `moreska`-only creation non-public, whatever the form sent', () => {
-    expect(
-      nonPublicAuthoringOverrides(voditelj, 'create', { isPublic: true, kind: 'redovna' }),
-    ).toEqual({ isPublic: false, kind: 'ostalo' })
-  })
-
-  it('keeps a kind the voditelj chose', () => {
-    expect(
-      nonPublicAuthoringOverrides(voditelj, 'create', { isPublic: true, kind: 'gulliver' }),
-    ).toEqual({ isPublic: false })
-  })
-
-  it('adds nothing when the row is already non-public and not redovna', () => {
-    expect(
-      nonPublicAuthoringOverrides(voditelj, 'create', { isPublic: false, kind: 'dmc' }),
-    ).toEqual({})
-  })
-
-  it('leaves a `tickets` holder alone', () => {
-    expect(
-      nonPublicAuthoringOverrides(ticketAdmin, 'create', { isPublic: true, kind: 'redovna' }),
-    ).toEqual({})
-    expect(
-      nonPublicAuthoringOverrides(voditeljBackoffice, 'create', { isPublic: true, kind: 'redovna' }),
-    ).toEqual({})
-  })
-
-  it('never touches an update: a voditelj noting a public show keeps it public', () => {
-    expect(
-      nonPublicAuthoringOverrides(voditelj, 'update', { isPublic: true, kind: 'redovna' }),
-    ).toEqual({})
-  })
-
-  it('leaves the trusted server paths (no session user) alone', () => {
-    // The Stripe webhook, bulk create, in-person sales and the seeds all run
-    // through the local API with no `req.user`; forcing a row non-public there
-    // would corrupt live shows.
-    expect(nonPublicAuthoringOverrides(null, 'create', { isPublic: true, kind: 'redovna' })).toEqual(
-      {},
-    )
-  })
-})

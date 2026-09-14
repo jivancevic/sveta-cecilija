@@ -12,11 +12,7 @@ import {
   ticketedSeats,
 } from '@/lib/app/sales-view'
 import { izvedbaHead } from '@/lib/app/izvedbe-screen'
-import {
-  mayCancelBooking,
-  mayWritePerformance,
-  performanceActionGates,
-} from '@/lib/app/performance-actions'
+import { mayCancelBooking, performanceActionGates } from '@/lib/app/performance-actions'
 import { APP_STRINGS } from '@/lib/app/strings'
 import { VENUE_CAPACITY } from '@/lib/venues'
 import type { NonPublicKind } from '@/lib/performance-input'
@@ -95,7 +91,6 @@ export default async function PerformanceDetailPage({
   // Who may press what, decided here from the caller's own set and handed down
   // as data. The client island never re-derives it and never re-types a `can()`.
   const gates = performanceActionGates(viewer.permissions)
-  const mayWrite = mayWritePerformance(viewer.permissions)
   // Whether the roster half belongs on this screen at all: the postava is the
   // one piece of the dance that has not moved to Stanje yet (#566).
   const roster = showsRosterHalf(voditelj, me != null)
@@ -166,67 +161,60 @@ export default async function PerformanceDetailPage({
         />
       )}
 
-      {mayWrite && !p.cancelled && (
-        <Card eyebrow={S.performanceCard}>
-          {p.isPublic ? (
-            <PublicPerformanceEditor
-              performanceId={p.id}
-              // The house of a SOLD evening moves through *Preseli u zimsko*,
-              // which mails every buyer (#502 review). Without the sales read
-              // (a voditelj) the field is locked rather than guessed at: the
-              // route would refuse the change anyway, and a control that looks
-              // editable until the save is a control that lies.
-              venueLocked={sales ? ticketedSeats(sales) > 0 : true}
-              initial={{
-                kind: p.kind,
-                date: p.date,
-                time: p.time,
-                venue: p.venue ?? 'ljetno-kino',
-              }}
-            />
-          ) : (
-            <PerformanceEditor
-              performanceId={p.id}
-              cancelled={p.cancelled}
-              canCancel={mayCancelBooking(viewer.permissions)}
-              initial={{
-                kind: (p.kind === 'redovna' ? 'ostalo' : p.kind) as NonPublicKind,
-                date: p.date,
-                time: p.time,
-                location: p.location ?? '',
-                client: p.client ?? '',
-              }}
-            />
-          )}
-        </Card>
-      )}
+      {/* One card for the evening itself: what it is, and the form that
+          corrects it. A booking's place and client are printed above the form
+          rather than in a card of their own, which was a second card wearing
+          the same title. */}
+      <Card eyebrow={S.performanceCard} className="app__izv-booking">
+        {!p.isPublic && p.location && (
+          <p>
+            <span className="ui-small">{S.place}</span>
+            {p.location}
+          </p>
+        )}
+        {!p.isPublic && p.client && (
+          <p>
+            <span className="ui-small">{S.client}</span>
+            {p.client}
+          </p>
+        )}
 
-      {/* A cancelled evening keeps its record and loses its form: Uredi is a
-          409 (moving it would push "premještena" at a roster that has been told
-          it is off) and the ledger is still open in Radnje above. */}
-      {mayWrite && p.cancelled && (
-        <Card eyebrow={S.performanceCard}>
+        {/* A cancelled evening keeps its record and loses its form: Uredi is a
+            409 (moving it would push "premještena" at a roster that has been
+            told it is off) and the ledger is still open in Radnje above. */}
+        {p.cancelled ? (
           <p className="ui-small">{APP_STRINGS.performance.cancelledNotEditable}</p>
-        </Card>
-      )}
-
-      {/* A booking's own two facts, for the reader who did not enter it. */}
-      {!p.isPublic && (p.location || p.client) && (
-        <Card eyebrow={S.performanceCard} className="app__izv-booking">
-          {p.location && (
-            <p>
-              <span className="ui-small">{S.place}</span>
-              {p.location}
-            </p>
-          )}
-          {p.client && (
-            <p>
-              <span className="ui-small">{S.client}</span>
-              {p.client}
-            </p>
-          )}
-        </Card>
-      )}
+        ) : p.isPublic ? (
+          <PublicPerformanceEditor
+            performanceId={p.id}
+            // The house of a SOLD evening moves through *Preseli u zimsko*,
+            // which mails every buyer (#502 review). Without the sales read
+            // (a voditelj) the field is locked rather than guessed at: the
+            // route would refuse the change anyway, and a control that looks
+            // editable until the save is a control that lies.
+            venueLocked={sales ? ticketedSeats(sales) > 0 : true}
+            initial={{
+              kind: p.kind,
+              date: p.date,
+              time: p.time,
+              venue: p.venue ?? 'ljetno-kino',
+            }}
+          />
+        ) : (
+          <PerformanceEditor
+            performanceId={p.id}
+            cancelled={p.cancelled}
+            canCancel={mayCancelBooking(viewer.permissions)}
+            initial={{
+              kind: (p.kind === 'redovna' ? 'ostalo' : p.kind) as NonPublicKind,
+              date: p.date,
+              time: p.time,
+              location: p.location ?? '',
+              client: p.client ?? '',
+            }}
+          />
+        )}
+      </Card>
 
       {voditelj && (
         <>
