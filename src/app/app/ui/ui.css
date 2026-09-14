@@ -2,9 +2,10 @@
    Cecilija's shared shapes (#562).
 
    Every rule here names a token from `app.css` and no hex of its own, except
-   the two places a colour IS the meaning (the ink of a crni disc, the gold a
-   bili king's crown is drawn in). That is what lets the night skin land later
-   by flipping one attribute.
+   the one place a colour IS the meaning (the gold a bili king's crown is drawn
+   in). That is what lets the night skin land by flipping one attribute — and
+   the crni disc, which held a hex until #592, is what it costs when a rule does
+   not: at night that hex sat a shade off the page ground.
 
    Loaded AFTER `app.css` by the route group's layout, so where a legacy
    `app__*` rule and a `ui-*` rule meet on one element, the new system wins the
@@ -923,8 +924,13 @@ button.ui-army:active {
   transition: box-shadow 0.2s;
 }
 
+/* The crni disc reads the TOKEN, not a hex (#592). It was hard-coded #1a140c
+   as "the ink a crni is", which is right on paper and a bug at night: the night
+   skin's `--crni` is #050403 for exactly this reason, and the hex sat a shade
+   off the page ground, so the disc had no body of its own and an empty one read
+   as a ring around nothing. */
 .ui-mark--crni {
-  background: #1a140c;
+  background: var(--crni);
   color: var(--grey);
   box-shadow: 0 0 0 1.5px var(--markEdge);
 }

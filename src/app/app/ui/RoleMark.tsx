@@ -10,7 +10,7 @@
 //
 // Four titles, four drawings:
 //   crni kralj    a grey crown WITH its base, on ink
-//   otmanović     the same crown WITHOUT the base, on ink
+//   otmanović     the same crown WITHOUT the base and with an O in it, on ink
 //   bili kralj    a gold crown on red
 //   bula          a gold disc; the bula OF THE NIGHT gets the white ring
 //
@@ -58,7 +58,28 @@ function Crown({ base }: { base: boolean }) {
           <path d="M5 21h14" />
         </>
       ) : (
-        <path d="m3 8 4.5 4.5L12 5l4.5 7.5L21 8l-2 11H5z" />
+        <>
+          <path d="m3 8 4.5 4.5L12 5l4.5 7.5L21 8l-2 11H5z" />
+          {/* The O of Otmanović, inside the crown's body (#592). The crown
+              without its base was the whole of the distinction from a kralj,
+              which is a difference nobody can name at 44px and nobody at all
+              at 32; the letter is the name. Labrada, because the letter is a
+              title and titles are the serif's job, and `stroke="none"` because
+              everything else in this svg is a drawn line and a stroked letter
+              at 9.5px fills its own counter. */}
+          <text
+            x="12"
+            y="17.4"
+            textAnchor="middle"
+            fontSize="9.5"
+            fontWeight="700"
+            stroke="none"
+            fill="currentColor"
+            style={{ fontFamily: 'var(--serif)' }}
+          >
+            O
+          </text>
+        </>
       )}
     </svg>
   )

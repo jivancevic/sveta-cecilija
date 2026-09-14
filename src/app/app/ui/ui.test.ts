@@ -132,6 +132,15 @@ describe('RoleMark', () => {
     expect(king).not.toContain('IM')
   })
 
+  // The crown without a base was the whole of the distinction between the two
+  // crni titles, and nobody can name it at 32px. The letter is the name (#592).
+  it('puts an O in the Otmanović crown and leaves the kralj’s alone', () => {
+    const otman = render(h(RoleMark, { army: 'crni', title: 'otmanovic' }))
+    expect(otman).toContain('>O</text>')
+    const king = render(h(RoleMark, { army: 'crni', title: 'crni_kralj' }))
+    expect(king).not.toContain('<text')
+  })
+
   it('rings the bula of the night and no other bula', () => {
     expect(render(h(RoleMark, { army: 'bula', title: 'bula' }))).toContain('ui-mark--titled')
     expect(render(h(RoleMark, { army: 'bula' }))).not.toContain('ui-mark--titled')

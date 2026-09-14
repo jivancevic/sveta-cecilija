@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { Bell, ChevronRight, KeyRound, LayoutGrid, Sparkles, Smartphone, UserRound } from 'lucide-react'
 import { armyOfPrimaryRole } from '@/lib/app/leaderboard-rank'
+import { initialsOf } from '@/lib/app/members-screen'
 import { APP_STRINGS } from '@/lib/app/strings'
 import { permissionChips } from '@/lib/app/users-view'
 import { APP_VERSION, versionLine } from '@/lib/app/version'
@@ -89,7 +90,15 @@ export default async function MorePage() {
   // The mark is the army of the reader's PRIMARY role and carries no title:
   // a title belongs to an evening, not to a person (glossary: *Title*), and
   // there is no evening on this screen.
+  //
+  // **So it carries their initials instead** (#592). Without them the disc is a
+  // blank colour swatch, which is exactly the hole #573 added `initials` to
+  // fill on Članovi and which nobody wired here: on the night skin a crni disc
+  // is a shade off the page, so an EMPTY one reads as a ring around nothing and
+  // Josip's own mark looked broken. The letters are the person's the way the
+  // crown would have been the evening's.
   const army = me ? armyOfPrimaryRole(me.primaryRole) : null
+  const initials = me ? initialsOf(me.name ?? me.nickname ?? name) : null
 
   // A dancer is named by what they dance; everybody else by what they may do.
   // The Croatian for a permission is Korisnici's, read rather than re-typed:
@@ -102,7 +111,7 @@ export default async function MorePage() {
   return (
     <AppShell viewer={viewer} screen="more">
       <div className="app__me">
-        {me && <RoleMark army={army} title={null} />}
+        {me && <RoleMark army={army} title={null} initials={initials} />}
         <div className="app__me-body">
           <h2>{name}</h2>
           {me && <p>{identityLine(me)}</p>}
