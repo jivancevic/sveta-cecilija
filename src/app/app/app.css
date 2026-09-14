@@ -1619,6 +1619,10 @@ html:has(> .app) {
   gap: 6px;
 }
 
+/* 11px at 0.05em is the size that fits "NE DOLAZIM" with its glyph inside half
+   of a 350px card, and `nowrap` is what makes that a promise rather than a
+   hope: a wrapped label pushes the button to two lines and the half to three
+   (#592). */
 .app__ans--sm .app__ansbtn {
   height: 36px;
   gap: 5px;
@@ -1626,6 +1630,7 @@ html:has(> .app) {
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
+  white-space: nowrap;
   border-radius: 12px;
 }
 
@@ -4243,13 +4248,17 @@ a.app__ob-link {
   font-variant-numeric: tabular-nums;
 }
 
-/* Two nastupa on one day (#591): the hero keeps the date and splits under it.
-   Two columns even on the narrowest phone, because the point of the split is
-   that the two evenings are read side by side; a first pass, #592 dresses it. */
+/* Two nastupa on one day (#591): the head names the day once, in the eyebrow,
+   and everything under it is per evening. Two columns even on the narrowest
+   phone, because the point of the split is that the two evenings are read side
+   by side. The shape is the prototype's `.split` verbatim (#592): a divider
+   rule between the halves rather than a gap alone, the time in serif above a
+   chip on its own line, and the answer pair STACKED so "NE DOLAZIM" fits
+   inside half a phone. */
 .app__hero-halves {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+  gap: 14px;
   margin-top: 14px;
 }
 
@@ -4258,6 +4267,14 @@ a.app__ob-link {
   flex-direction: column;
   gap: 8px;
   min-width: 0;
+}
+
+/* The rule between the two evenings. `margin-left: -1px` pulls the border back
+   onto the gap's centre line so the two halves stay equal. */
+.app__hero-half + .app__hero-half {
+  border-left: 1px solid var(--rule);
+  padding-left: 14px;
+  margin-left: -1px;
 }
 
 .app__hero-half-head {
@@ -4269,29 +4286,31 @@ a.app__ob-link {
 .app__hero-half-head b {
   display: block;
   font-family: var(--serif);
-  font-size: 30px;
-  font-weight: 600;
+  font-size: 32px;
+  font-weight: 700;
   line-height: 1;
+  letter-spacing: -0.02em;
 }
 
-.app__hero-half-head span {
+/* `:where()` on the parent, so this rule weighs 0,0,1 and the KindChip inside
+   it keeps the colour its own class gives it (#592). A plain
+   `.app__hero-half-head span` also matches the chip — it IS a span — and at
+   0,2,0 it painted REDOVNA gold on gold. Never `!important`: the chip owns its
+   colour, the line around it does not. */
+:where(.app__hero-half-head) span {
   display: flex;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 6px;
+  gap: 8px;
+  margin-top: 8px;
   font-size: 13px;
   color: var(--muted);
 }
 
-/* The house, beside the kind chip. An <em> only because the chip took the
-   <span>: it carries no emphasis and no italic. */
-.app__hero-half-head em {
-  font-style: normal;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+/* One under the other: side by side inside half a card the words wrap, and a
+   wrapped "NE DOLAZIM" was what Josip rejected on his phone. */
+.app__hero-half .app__ans--sm {
+  grid-template-columns: 1fr;
+  gap: 6px;
 }
 
 .app__hero-half-armies {
@@ -4299,6 +4318,11 @@ a.app__ob-link {
   font-size: 13px;
   color: var(--muted);
   font-variant-numeric: tabular-nums;
+}
+
+.app__hero-half-armies b {
+  color: var(--ink);
+  font-weight: 600;
 }
 
 /* The third evening and beyond, as a way into the agenda rather than a third

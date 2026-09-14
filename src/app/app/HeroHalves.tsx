@@ -23,6 +23,12 @@ import { KindChip } from './ui'
 // whole evening is one tap away at Stanje.
 //
 // Dressed by #592: the kind is a chip and the answer is the animated pair.
+//
+// The head of the card above this carries the whole day in ONE eyebrow line on
+// a split, not the big serif date: two halves and a 80px date do not both fit
+// on a phone, and the prototype Josip accepted puts the date in the eyebrow.
+
+const ARMIES = APP_STRINGS.moreska.armiesWords
 
 export function HeroHalves({
   halves,
@@ -43,10 +49,11 @@ export function HeroHalves({
             <Link className="app__hero-half-head" href={half.href}>
               <b>{half.time}</b>
               {/* The kind is a chip here too (#592), in the same tone its disc
-                  wears in the season list, with the house beside it as text. */}
+                  wears in the season list, and it stands on its line ALONE: the
+                  house beside it was the thing that wrapped a half to three
+                  lines on a phone, and the house is one tap away on the row. */}
               <span>
                 <KindChip tone={half.tone}>{half.title}</KindChip>
-                {half.place && <em>{half.place}</em>}
               </span>
             </Link>
 
@@ -61,7 +68,11 @@ export function HeroHalves({
               />
             )}
 
-            {half.armiesLine && <p className="app__hero-half-armies">{half.armiesLine}</p>}
+            {half.armies && (
+              <p className="app__hero-half-armies">
+                {ARMIES.crni} <b>{half.armies.crni}</b> · {ARMIES.bili} <b>{half.armies.bili}</b>
+              </p>
+            )}
           </div>
         ))}
       </div>
