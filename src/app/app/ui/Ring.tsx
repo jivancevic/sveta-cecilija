@@ -16,8 +16,17 @@ export interface RingProps {
   max: number
   /** What sits in the hole. Defaults to the value itself. */
   label?: React.ReactNode
-  /** `md` (the default) is a figure in a card; `lg` is a screen's subject. */
-  size?: 'md' | 'lg'
+  /**
+   * `md` (the default) is a figure in a card; `lg` is a screen's subject.
+   *
+   * `card` is #611's: a ring that IS a card's content, on a screen that shows
+   * two of them side by side. It sizes to its container rather than to the
+   * viewport — `lg` is `68vw`, which inside a half-width card overflowed the
+   * card and clipped its own arc — and draws a THIN stroke, because at 130px a
+   * 22px band reads as a doughnut and the number inside it stops being the
+   * subject.
+   */
+  size?: 'md' | 'lg' | 'card'
   className?: string
 }
 
@@ -25,7 +34,7 @@ export function Ring({ value, max, label, size = 'md', className }: RingProps) {
   const share = max > 0 ? Math.min(Math.max(value / max, 0), 1) : 0
   return (
     <div
-      className={['ui-ring', size === 'lg' ? 'ui-ring--lg' : '', className ?? '']
+      className={['ui-ring', size === 'md' ? '' : `ui-ring--${size}`, className ?? '']
         .filter(Boolean)
         .join(' ')}
       style={{ ['--deg' as string]: `${Math.round(share * 360)}deg` }}

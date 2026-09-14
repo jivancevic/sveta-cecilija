@@ -19,7 +19,7 @@ import { APP_STRINGS } from '@/lib/app/strings'
 import type { DancerStats } from '@/lib/lineup/stats'
 import { AppShell } from '../../../AppShell'
 import { openScreen } from '../../../gate'
-import { Chip, List, ListRow, RoleMark, Section, Trophy } from '../../../ui'
+import { Chip, List, ListRow, RoleMark, Section } from '../../../ui'
 
 // `/app/leaderboard/full` — the whole ranking of one list (#568, filtered by
 // #607).
@@ -131,16 +131,15 @@ function Row({
       href={`/app/leaderboard/${row.memberId}?season=${season}`}
       className={row.me ? 'app__lb-row--me' : undefined}
       lead={
-        <span className="app__lb-lead">
+        // The medal is the RANK, and the disc stays the PERSON (#611). The
+        // first version swapped a cup in for the disc on rows 1-3, which took
+        // the initials away from exactly the three people a reader is most
+        // likely to be looking for. Now the numeral wears the metal and the
+        // disc keeps a hairline of it, so a row reads as "who" and "how they
+        // placed" at once — the cup stays on the podium, where it has room.
+        <span className="app__lb-lead" data-place={row.rank <= 3 ? row.rank : undefined}>
           <i className="app__lb-rank">{S.rank(row.rank)}</i>
-          {/* The top three wear their cup instead of their disc: the place is
-              the more specific fact about a row at the top of a ranking, and
-              two 28px marks side by side is one mark too many for a phone. */}
-          {row.rank <= 3 ? (
-            <Trophy place={row.rank} small />
-          ) : (
-            <RoleMark army={row.army} title={row.title} initials={row.initials} small />
-          )}
+          <RoleMark army={row.army} title={row.title} initials={row.initials} small />
         </span>
       }
       title={row.nickname}

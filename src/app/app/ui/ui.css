@@ -567,6 +567,23 @@ button.ui-row:hover {
   font-size: 22px;
 }
 
+/* The ring as a card's whole content (#611). Sized by the CARD, never by the
+   viewport: two of these sit side by side, and `lg`'s 68vw overflowed its own
+   card and clipped the arc it was drawing. A 6px band, because the figure in
+   the middle is the subject and the arc is the context. */
+.ui-ring--card {
+  width: 100%;
+  max-width: 132px;
+  height: auto;
+  aspect-ratio: 1;
+}
+
+.ui-ring--card .ui-ring__hole {
+  width: calc(100% - 12px);
+  height: calc(100% - 12px);
+  font-size: inherit;
+}
+
 /* ── Podium ───────────────────────────────────────────────── */
 .ui-podium {
   display: flex;
@@ -577,6 +594,9 @@ button.ui-row:hover {
 
 .ui-podium__step {
   flex: 1;
+  /* A step is a link since #608, and a link underlines. Three underlined
+     nicknames under three cups was most of why the podium read as cheap. */
+  text-decoration: none;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -636,12 +656,22 @@ button.ui-row:hover {
    than the glance inside a tile, tall enough to carry a mark and a place. The
    steps scale from the bottom, so what is INSIDE them must not scale with them
    or the nickname would arrive squashed. */
+/* The staircase is PADDING, not a fixed height (#611).
+   The large podium used to be a 172px box with the three steps at 100/78/60
+   per cent of it, and every one of those was shorter than what it had to hold
+   once the cup arrived: the nickname was clipped between the count and the
+   place. Percentages of a fixed height can always be outgrown — by a longer
+   word, a bigger text size, one more line — so the height now comes from the
+   content and the steps are staggered by how much air sits ABOVE each one.
+   Same staircase, and nothing inside it can be cut off. */
 .ui-podium--lg {
-  height: 172px;
+  height: auto;
+  align-items: flex-end;
   gap: 8px;
 }
 
 .ui-podium--lg .ui-podium__step {
+  height: auto;
   gap: 4px;
   padding: 12px 6px 10px;
   border-radius: 14px 14px 6px 6px;
@@ -657,6 +687,23 @@ button.ui-row:hover {
 
 .ui-podium--lg .ui-podium__step--1 b {
   font-size: 32px;
+}
+
+/* The three rises of the staircase. The winner stands highest because it has
+   the most air above its cup, not because its box is taller than its words. */
+.ui-podium--lg .ui-podium__step--1 {
+  height: auto;
+  padding-top: 30px;
+}
+
+.ui-podium--lg .ui-podium__step--2 {
+  height: auto;
+  padding-top: 18px;
+}
+
+.ui-podium--lg .ui-podium__step--3 {
+  height: auto;
+  padding-top: 6px;
 }
 
 /* Taller steps than the tile's 100/78/60: a step has to hold a mark, a count,
@@ -1231,14 +1278,14 @@ button.ui-army:active {
 .ui-trophy {
   display: inline-grid;
   place-items: center;
-  width: 34px;
-  height: 34px;
+  width: 26px;
+  height: 26px;
   flex: 0 0 auto;
 }
 
 .ui-trophy--sm {
-  width: 26px;
-  height: 26px;
+  width: 20px;
+  height: 20px;
 }
 
 .ui-trophy svg {
@@ -1247,35 +1294,10 @@ button.ui-army:active {
   display: block;
 }
 
-.ui-trophy__bowl,
-.ui-trophy__base {
+/* One flat silhouette in one tone. No outline and no numeral inside it: the
+   place is printed beside the cup, in the same metal, where it is legible. */
+.ui-trophy svg path {
   fill: var(--cup);
-  stroke: var(--cupDeep);
-  stroke-width: 1;
-}
-
-.ui-trophy__stem {
-  fill: var(--cupDeep);
-}
-
-.ui-trophy__handle {
-  fill: none;
-  stroke: var(--cupDeep);
-  stroke-width: 1.6;
-  stroke-linecap: round;
-}
-
-/* The digit reads ON the bowl, so it takes the deep tone rather than the ink:
-   a dark numeral on a light metal is the one pairing that holds at 26px. */
-.ui-trophy__place {
-  fill: var(--cupDeep);
-  font-family: var(--serif);
-  font-size: 9.5px;
-  font-weight: 700;
-}
-
-.ui-trophy--sm .ui-trophy__place {
-  font-size: 10.5px;
 }
 
 .ui-trophy--1 {

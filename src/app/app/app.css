@@ -3353,26 +3353,78 @@ a.app__ob-link {
 }
 
 /* The roles a dancer wore, under the nickname. They sum to the count at the end
-   of the row, which is what makes them checkable rather than decorative. */
+   of the row, which is what makes them checkable rather than decorative.
+   Deliberately QUIET (#611): four 28px discs each with a bold number beside it
+   turned every row into a second row, and the nickname stopped being the thing
+   the eye lands on. The discs shrink to 18px and the counts drop to the muted
+   tone — the breakdown is there to be checked, not to be read first. */
 .app__lb-tallies {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 4px 10px;
-  margin-top: 5px;
+  gap: 3px 9px;
+  margin-top: 4px;
 }
 
 .app__lb-tally {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 3px;
+}
+
+.app__lb-tally .ui-mark--sm {
+  width: 18px;
+  height: 18px;
+}
+
+.app__lb-tally .ui-mark--sm svg {
+  width: 11px;
+  height: 11px;
 }
 
 .app__lb-tally b {
-  font-size: 13px;
-  font-weight: 700;
+  font-size: 12px;
+  font-weight: 600;
   font-variant-numeric: tabular-nums;
-  color: var(--ink);
+  color: var(--muted);
+}
+
+/* ── The medal (#611) ──────────────────────────────────────
+   The rank wears the metal and the disc keeps a hairline of it, so the top
+   three read as medalled WITHOUT losing the initials that say who they are.
+   A cup in the row was the first attempt and it took the person away. */
+.app__lb-lead[data-place] .app__lb-rank {
+  font-family: var(--serif);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.app__lb-lead[data-place='1'] .app__lb-rank {
+  color: var(--tr1);
+}
+
+.app__lb-lead[data-place='2'] .app__lb-rank {
+  color: var(--tr2);
+}
+
+.app__lb-lead[data-place='3'] .app__lb-rank {
+  color: var(--tr3);
+}
+
+.app__lb-lead[data-place] .ui-mark {
+  box-shadow: 0 0 0 1.5px var(--medal);
+}
+
+.app__lb-lead[data-place='1'] {
+  --medal: var(--tr1);
+}
+
+.app__lb-lead[data-place='2'] {
+  --medal: var(--tr2);
+}
+
+.app__lb-lead[data-place='3'] {
+  --medal: var(--tr3);
 }
 
 /* ── The season picker ─────────────────────────────────────
@@ -3419,6 +3471,26 @@ a.app__ob-link {
   font-style: normal;
   font-size: 13px;
   color: var(--muted);
+}
+
+/* The podium's place, in the metal its cup is drawn in (#611). The cup no
+   longer carries a numeral, so this line is where the number lives — which is
+   also where it is actually legible. */
+.app__lb-podium-place {
+  font-family: var(--serif);
+  font-weight: 700;
+}
+
+.app__lb-podium-place[data-place='1'] {
+  color: var(--tr1);
+}
+
+.app__lb-podium-place[data-place='2'] {
+  color: var(--tr2);
+}
+
+.app__lb-podium-place[data-place='3'] {
+  color: var(--tr3);
 }
 
 .app__lb-all {
@@ -3505,7 +3577,7 @@ a.app__ob-link {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
 }
 
 .app__pf-can-label {
@@ -3528,13 +3600,18 @@ a.app__ob-link {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   gap: 10px;
+  align-items: stretch;
 }
 
 .ui-card.app__pf-ring {
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   padding: 16px 12px;
   text-align: center;
+  /* The two cards are a pair and must agree on height whatever their splits
+     wrap to, or the screen reads as two unrelated cards that happen to be
+     adjacent. */
+  height: 100%;
 }
 
 .app__pf-ring-label {
@@ -3555,7 +3632,7 @@ a.app__ob-link {
 
 .app__pf-ring-in b {
   font-family: var(--serif);
-  font-size: 30px;
+  font-size: 34px;
   font-weight: 700;
 }
 
@@ -3574,7 +3651,8 @@ a.app__ob-link {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: 4px 10px;
+  gap: 3px 9px;
+  margin-top: auto;
 }
 
 /* The record: a label and a figure on one line, not a tile. It is one number
