@@ -209,6 +209,77 @@ html:has(> .app) {
   padding: env(safe-area-inset-top) 20px calc(var(--tabH) + env(safe-area-inset-bottom) + 40px);
 }
 
+/* ── The skeleton (#593) ───────────────────────────────────
+   What a cold tab tap paints in its first frame, before the server has
+   answered. It is drawn out of the two tokens the real screen is drawn out of
+   — `--sunk` for a surface below the page and `--rCard` for a card's corner —
+   so it follows the skin without knowing which one is on, and it carries no
+   text, no icon and no colour of its own.
+
+   The shimmer is a gradient swept across the block rather than an opacity
+   pulse: a pulse reads as something blinking at you, a sweep reads as
+   something arriving. Under `prefers-reduced-motion` the sweep is dropped and
+   the blocks simply sit there, which is the honest still version of the same
+   picture. */
+.app__skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px 0 0;
+}
+
+.app__sk {
+  border-radius: var(--rCard);
+  background: var(--sunk);
+  position: relative;
+  overflow: hidden;
+}
+
+.app__sk::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--ink) 6%, transparent),
+    transparent
+  );
+  animation: app-shimmer 1.3s var(--ease) infinite;
+}
+
+/* The title line: one heading's worth of height, and never the full width —
+   a screen name is a word or two, not a paragraph. */
+.app__sk--title {
+  height: 34px;
+  width: 58%;
+  border-radius: var(--rCtl);
+  margin-bottom: 8px;
+}
+
+/* The hero: every screen opens with one block this size (the next nastup, the
+   season band, the ring), so this is the one the eye lands on first. */
+.app__sk--hero {
+  height: 168px;
+}
+
+.app__sk--row {
+  height: 68px;
+}
+
+@keyframes app-shimmer {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app__sk::after {
+    animation: none;
+  }
+}
+
 /* The block the pull-to-refresh gesture moves (#562). It is a plain wrapper in
    the layout — no transform and, above all, no standing `will-change`, which
    would make it the containing block of every `position: fixed` descendant
