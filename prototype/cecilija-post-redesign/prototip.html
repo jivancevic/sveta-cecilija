@@ -1,0 +1,1323 @@
+<title>Cecilija prototip</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Labrada:wght@500;600;700&display=swap">
+<style>
+/* ─────────────────────────────────────────────────────────────
+   Cecilija — prototip za pet odluka o izgledu.
+   Tokeni su prepisani doslovno iz src/app/app/app.css i ui/ui.css.
+   Ovo je bacanje: nikad se ne mergea.
+   ───────────────────────────────────────────────────────────── */
+
+*, *::before, *::after { box-sizing: border-box; }
+/* our own display rules would otherwise beat the UA's [hidden] */
+[hidden] { display: none !important; }
+
+/* ── The app scope: tokens verbatim from app.css ───────────── */
+.app {
+  --bg: #f5f2ec;
+  --card: #ffffff;
+  --sunk: #ede9e0;
+  --ink: #1a140c;
+  --muted: #6b6259;
+  --gold: #b8881a;
+  --goldText: #8f6a10;
+  --goldSoft: rgba(184, 136, 26, 0.12);
+  --onGold: #14100a;
+  --red: #8b0000;
+  --warn: #a8321f;
+  --ok: #8f6a10;
+  --grey: #d9d4cc;
+  --crni: #1a140c;
+  --track: #ffffff;
+  --rule: rgba(26, 20, 12, 0.08);
+  --ghostEdge: rgba(26, 20, 12, 0.16);
+  --barBg: rgba(255, 255, 255, 0.92);
+  --markEdge: transparent;
+  --thumb: #1a140c;
+  --toast: #1a140c;
+  --onToast: #f5f2ec;
+
+  --shadowCard: 0 2px 4px rgba(26, 20, 12, 0.05), 0 18px 36px -14px rgba(26, 20, 12, 0.26);
+  --shadowHero: 0 2px 4px rgba(26, 20, 12, 0.05), 0 22px 44px -18px rgba(26, 20, 12, 0.32);
+  --shadowBar: 0 10px 30px -10px rgba(26, 20, 12, 0.35);
+
+  --rCard: 22px;
+  --rCtl: 16px;
+  --rPill: 999px;
+
+  --serif: Labrada, 'Iowan Old Style', Georgia, serif;
+  --sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', system-ui, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
+
+  --tabH: 64px;
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+
+  /* prototype-only roles */
+  --inkDisc: #1a140c;         /* Vanredna disc */
+  --onInkDisc: #f5f2ec;
+  --copper: #b5642a;          /* Experience */
+  --onCopper: #ffffff;
+  --desk: #e7e2d8;
+  --deskEdge: rgba(26, 20, 12, 0.14);
+
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--sans);
+  font-size: 15px;
+  line-height: 1.45;
+  -webkit-text-size-adjust: 100%;
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  color-scheme: light;
+}
+
+/* ── Dark, current palette ("Sadašnja") ────────────────────── */
+[data-skin='dark'] .app {
+  --bg: #17120c;
+  --card: #231c14;
+  --sunk: #100c08;
+  --ink: #f5f2ec;
+  --muted: #a89e91;
+  --gold: #d9ab3c;
+  --goldText: #e3b94e;
+  --goldSoft: rgba(217, 171, 60, 0.14);
+  --red: #b3262f;
+  --warn: #e07a5f;
+  --ok: #e3b94e;
+  --grey: #cfc8bd;
+  --crni: #050403;
+  --track: #3b322a;
+  --rule: rgba(245, 242, 236, 0.08);
+  --ghostEdge: rgba(245, 242, 236, 0.18);
+  --barBg: rgba(29, 23, 16, 0.92);
+  --markEdge: rgba(217, 212, 204, 0.4);
+  --thumb: rgba(217, 171, 60, 0.16);
+  --toast: #3b322a;
+  --onToast: #f5f2ec;
+  --shadowCard: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 14px 30px -12px rgba(0, 0, 0, 0.7);
+  --shadowHero: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 22px 44px -18px rgba(0, 0, 0, 0.8);
+  --shadowBar: 0 10px 30px -10px rgba(0, 0, 0, 0.8);
+  --inkDisc: #f5f2ec;
+  --onInkDisc: #1a140c;
+  --copper: #d27a3c;
+  --onCopper: #ffffff;
+  --desk: #0d0a07;
+  --deskEdge: rgba(245, 242, 236, 0.14);
+  color-scheme: dark;
+}
+
+/* ── Dark palette variants ─────────────────────────────────── */
+[data-skin='dark'][data-pal='a'] .app {
+  --bg: #1f1913; --card: #2c2419; --sunk: #17120c; --track: #43392f;
+  --barBg: rgba(35, 28, 20, 0.92); --desk: #14100b;
+}
+[data-skin='dark'][data-pal='b'] .app {
+  --bg: #26201a; --card: #342b20; --sunk: #1c1610; --track: #4a3f34;
+  --barBg: rgba(42, 34, 25, 0.92); --desk: #191410;
+}
+[data-skin='dark'][data-pal='c'] .app {
+  --bg: #17120c; --card: #2f261b; --sunk: #100c08; --track: #43392f;
+  --barBg: rgba(31, 25, 17, 0.92); --desk: #0d0a07;
+}
+
+/* ── Page ground / desk ────────────────────────────────────── */
+body { background: #0d0a07; }
+
+#root {
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 28px 16px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+}
+#root[data-skin='light'] { background: #e7e2d8; }
+#root[data-skin='dark'][data-pal='now'] { background: #0d0a07; }
+#root[data-skin='dark'][data-pal='a'] { background: #14100b; }
+#root[data-skin='dark'][data-pal='b'] { background: #191410; }
+#root[data-skin='dark'][data-pal='c'] { background: #0d0a07; }
+
+/* ── Phone frame ───────────────────────────────────────────
+   No `transform` on the frame, deliberately: a transformed ancestor breaks
+   backdrop-filter in WebKit and the whole point here is the blurred bar. */
+.phone {
+  position: relative;
+  width: 390px;
+  height: 844px;
+  max-height: calc(100dvh - 56px);
+  border-radius: 46px;
+  overflow: hidden;
+  background: var(--bg);
+  box-shadow:
+    0 0 0 10px #100c08,
+    0 0 0 11.5px rgba(255, 255, 255, 0.13),
+    0 40px 90px -30px rgba(0, 0, 0, 0.75);
+}
+
+.scroll {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding-bottom: var(--padBottom, calc(64px + env(safe-area-inset-bottom, 0px) + 40px));
+}
+.scroll::-webkit-scrollbar { display: none; }
+
+/* ── Status bar strip ──────────────────────────────────────── */
+.status {
+  height: 52px;
+  padding: 0 32px 0 34px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  color: var(--ink);
+  padding-bottom: 4px;
+}
+.status__right { display: flex; align-items: center; gap: 6px; }
+.status__bars { display: flex; align-items: flex-end; gap: 2px; height: 11px; }
+.status__bars i { width: 3px; background: currentColor; border-radius: 1px; display: block; }
+.status__bars i:nth-child(1) { height: 4px; }
+.status__bars i:nth-child(2) { height: 6px; }
+.status__bars i:nth-child(3) { height: 8px; }
+.status__bars i:nth-child(4) { height: 11px; opacity: 0.35; }
+.status__batt {
+  width: 25px; height: 12px; border-radius: 3.5px;
+  border: 1.2px solid currentColor; opacity: 0.9;
+  position: relative; padding: 1.5px;
+}
+.status__batt::after {
+  content: ''; position: absolute; right: -3px; top: 3.5px;
+  width: 2px; height: 4px; border-radius: 0 2px 2px 0; background: currentColor; opacity: 0.5;
+}
+.status__batt b { display: block; height: 100%; width: 72%; border-radius: 1.5px; background: #3ddc6b; }
+
+/* ── Header ────────────────────────────────────────────────── */
+.hdr {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px 4px;
+}
+.hdr__logo {
+  width: 34px; height: 34px; border-radius: var(--rPill);
+  background: var(--sunk);
+  display: grid; place-items: center;
+  color: var(--goldText);
+  box-shadow: 0 0 0 1px var(--rule);
+}
+.hdr__name {
+  font-family: var(--serif);
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.hdr__bell {
+  margin-left: auto;
+  position: relative;
+  width: 40px; height: 40px;
+  display: grid; place-items: center;
+  color: var(--ink);
+  background: none; border: 0; cursor: pointer;
+}
+.hdr__bell b {
+  position: absolute; top: 2px; right: 2px;
+  min-width: 18px; height: 18px; padding: 0 4px;
+  border-radius: var(--rPill);
+  background: var(--gold); color: var(--onGold);
+  font-size: 11px; font-weight: 700; line-height: 18px; text-align: center;
+  box-shadow: 0 0 0 2.5px var(--bg);
+}
+
+/* ── Screen body ───────────────────────────────────────────── */
+.screen { padding: 0 20px; display: flex; flex-direction: column; gap: 14px; }
+
+.greet { margin-top: 10px; }
+.greet h1 {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 34px; font-weight: 700; line-height: 1.08;
+  letter-spacing: -0.015em;
+  text-wrap: balance;
+}
+.greet p { margin: 4px 0 0; color: var(--muted); font-size: 15px; }
+
+.eyebrow {
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 0.13em; text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* ── Hero card ─────────────────────────────────────────────── */
+.hero {
+  background: var(--card);
+  border-radius: var(--rCard);
+  box-shadow: var(--shadowHero);
+  padding: 20px;
+  display: flex; flex-direction: column; gap: 16px;
+}
+.hero__day {
+  display: flex; align-items: baseline; gap: 12px;
+  font-family: var(--serif);
+  letter-spacing: -0.02em;
+}
+.hero__day b { font-size: 80px; font-weight: 700; line-height: 0.9; }
+.hero__day span { font-size: 34px; font-weight: 500; }
+.hero__meta {
+  display: flex; align-items: center; gap: 7px; flex-wrap: wrap;
+  color: var(--muted); font-size: 15px; margin-top: -6px;
+}
+
+.undo {
+  align-self: flex-start;
+  background: none; border: 0; padding: 2px 0;
+  color: var(--muted); font-size: 13px; font-family: inherit;
+  text-decoration: underline; text-underline-offset: 3px;
+  cursor: pointer; margin-top: -6px;
+}
+.undo:hover, .undo:focus-visible { color: var(--goldText); }
+
+/* ── Army panel ────────────────────────────────────────────── */
+.army {
+  background: var(--sunk);
+  border-radius: var(--rCtl);
+  padding: 14px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.army__top {
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: 12px; font-weight: 700; letter-spacing: 0.12em;
+  text-transform: uppercase; color: var(--muted);
+}
+.army__top strong {
+  font-family: var(--serif); font-size: 19px; color: var(--warn);
+  letter-spacing: 0; margin: 0 6px;
+}
+.army__bar { display: flex; gap: 4px; height: 8px; }
+.army__half {
+  flex: 1; background: var(--track); border-radius: var(--rPill);
+  position: relative; overflow: hidden;
+}
+.army__half::after {
+  content: ''; position: absolute; top: 0; bottom: 0; width: 2px;
+  background: var(--gold); border-radius: 1px;
+}
+.army__half--l::after { left: 32%; }
+.army__half--r::after { right: 32%; }
+.army__fill { position: absolute; inset: 0 auto 0 0; background: var(--gold); border-radius: var(--rPill); }
+.army__note {
+  display: flex; align-items: center; gap: 8px;
+  color: var(--warn); font-size: 14px; font-weight: 600;
+}
+.army__note i {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--warn); flex: none;
+}
+.army__note em { margin-left: auto; font-style: normal; opacity: 0.7; }
+
+/* ── Answer buttons ────────────────────────────────────────── */
+.ans {
+  position: relative;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.ansbtn {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  height: 52px;
+  border-radius: var(--rCtl);
+  background: transparent;
+  font-family: inherit;
+  font-size: 16px; font-weight: 600;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  cursor: pointer;
+  transition: opacity 0.28s var(--ease), transform 0.28s var(--ease), border-color 0.2s;
+}
+.ansbtn--yes { border: 1.5px solid var(--gold); color: var(--ink); }
+.ansbtn--no { border: 1px solid var(--ghostEdge); color: var(--muted); }
+.ansbtn:focus-visible { outline: 2.5px solid var(--gold); outline-offset: 2px; }
+
+.ansbtn .fill {
+  position: absolute;
+  left: var(--x, 50%); top: var(--y, 50%);
+  width: 460px; height: 460px; margin: -230px 0 0 -230px;
+  border-radius: 50%;
+  transform: scale(0);
+  transition: transform 0.38s cubic-bezier(0.22, 0.9, 0.3, 1);
+  z-index: -1;
+}
+.ansbtn--yes .fill { background: var(--gold); }
+.ansbtn--no .fill { background: var(--sunk); }
+
+.ansbtn .lbl { transition: color 0.18s var(--ease) 0.12s; }
+.ansbtn .mk { width: 20px; height: 20px; flex: none; transition: color 0.18s var(--ease) 0.12s; }
+.ansbtn .mk circle { opacity: 0.55; }
+.ansbtn .mk .draw { stroke-dasharray: 34; stroke-dashoffset: 34; }
+
+/* answered: coming */
+.ans[data-state='yes'] .ansbtn--yes .fill { transform: scale(1); }
+.ans[data-state='yes'] .ansbtn--yes { color: var(--onGold); }
+.ans[data-state='yes'] .ansbtn--yes .mk circle { opacity: 0; }
+.ans[data-state='yes'] .ansbtn--yes .mk .draw {
+  stroke-dashoffset: 0;
+  transition: stroke-dashoffset 0.3s ease 0.12s;
+}
+.ans[data-state='yes'] .ansbtn--no { opacity: 0.55; transform: scale(0.98); }
+
+/* answered: not coming */
+.ans[data-state='no'] .ansbtn--no .fill { transform: scale(1); }
+.ans[data-state='no'] .ansbtn--no { color: var(--ink); border-color: var(--muted); }
+.ans[data-state='no'] .ansbtn--no .mk circle { opacity: 0; }
+.ans[data-state='no'] .ansbtn--no .mk .draw {
+  stroke-dashoffset: 0;
+  transition: stroke-dashoffset 0.3s ease 0.12s;
+}
+.ans[data-state='no'] .ansbtn--yes { opacity: 0.55; transform: scale(0.98); }
+
+/* the spring */
+.ansbtn.pop { animation: spring 0.42s cubic-bezier(0.34, 1.56, 0.64, 1); }
+@keyframes spring {
+  0% { transform: scale(0.96); }
+  45% { transform: scale(1.04); }
+  100% { transform: scale(1); }
+}
+/* the small row variant */
+.ans--sm { grid-template-columns: 1fr 1fr; gap: 6px; }
+.ans--sm .ansbtn {
+  height: 36px; gap: 5px;
+  font-size: 11px; font-weight: 700;
+  letter-spacing: 0.05em; text-transform: uppercase;
+  border-radius: 12px;
+}
+.ans--sm .ansbtn .mk { width: 14px; height: 14px; }
+.ans--sm .ansbtn .fill { width: 280px; height: 280px; margin: -140px 0 0 -140px; }
+.ans--sm .ansbtn.pop { animation: springsm 0.32s cubic-bezier(0.34, 1.56, 0.64, 1); }
+@keyframes springsm {
+  0% { transform: scale(0.97); }
+  45% { transform: scale(1.03); }
+  100% { transform: scale(1); }
+}
+
+/* sparks live OUTSIDE the clipped button */
+.spark {
+  position: absolute;
+  width: 4px; height: 4px; border-radius: 50%;
+  background: var(--gold);
+  pointer-events: none;
+  z-index: 5;
+  animation: spark 0.52s ease-out forwards;
+}
+@keyframes spark {
+  0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+  100% {
+    transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(0.4);
+    opacity: 0;
+  }
+}
+
+/* ── Tiles ─────────────────────────────────────────────────── */
+.tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.tile {
+  background: var(--card);
+  border-radius: var(--rCard);
+  box-shadow: var(--shadowCard);
+  padding: 16px;
+  display: flex; flex-direction: column; gap: 12px;
+  min-height: 168px;
+}
+.tile__foot { margin-top: auto; color: var(--muted); font-size: 13px; }
+.podium { display: flex; align-items: flex-end; justify-content: center; gap: 6px; height: 84px; }
+.podium div {
+  flex: 1; border-radius: 10px;
+  display: flex; flex-direction: column; align-items: center; justify-content: flex-start;
+  padding-top: 8px; gap: 1px;
+  background: var(--sunk);
+}
+.podium div.first { background: var(--goldSoft); height: 84px; }
+.podium div.second { height: 66px; }
+.podium div.third { height: 58px; }
+.podium b { font-family: var(--serif); font-size: 16px; font-weight: 700; }
+.podium span { font-size: 11px; color: var(--muted); }
+.podium div.first span { color: var(--goldText); }
+.bignum { font-family: var(--serif); font-size: 56px; font-weight: 700; line-height: 1; letter-spacing: -0.02em; }
+
+/* ── Season list ───────────────────────────────────────────── */
+.sect { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
+.list {
+  background: var(--card);
+  border-radius: var(--rCard);
+  box-shadow: var(--shadowCard);
+  overflow: hidden;
+}
+.row {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 14px;
+  min-height: 72px;
+  border-bottom: 1px solid var(--rule);
+}
+.row:last-child { border-bottom: 0; }
+.row__body { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 9px; }
+.row__body b { display: block; font-size: 15px; font-weight: 600; }
+.row__body b span { display: block; color: var(--muted); font-size: 13px; font-weight: 400; margin-top: 1px; }
+.row .ans--sm { max-width: 252px; }
+
+/* ── DateDisc, three tones ─────────────────────────────────── */
+.disc {
+  flex: none;
+  width: 48px; height: 48px;
+  border-radius: var(--rPill);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  line-height: 1;
+  background: var(--sunk);
+}
+.disc b { font-family: var(--serif); font-weight: 600; font-size: 18px; }
+.disc span {
+  margin-top: 3px; font-size: 10px; font-weight: 600;
+  letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted);
+}
+.disc--redovna { background: var(--gold); color: var(--onGold); }
+.disc--redovna span { color: rgba(20, 16, 10, 0.7); }
+.disc--vanredna { background: var(--inkDisc); color: var(--onInkDisc); }
+.disc--vanredna span { color: var(--onInkDisc); opacity: 0.68; }
+.disc--experience { background: var(--copper); color: var(--onCopper); }
+.disc--experience span { color: rgba(255, 255, 255, 0.78); }
+
+/* ── RoleMark, verbatim shape from ui.css ──────────────────── */
+.mark {
+  flex: none;
+  width: 44px; height: 44px;
+  border-radius: var(--rPill);
+  display: grid; place-items: center;
+  color: var(--gold);
+}
+.mark svg { width: 22px; height: 22px; }
+.mark--crni { background: #1a140c; color: var(--grey); box-shadow: 0 0 0 1.5px var(--markEdge); }
+.mark--bili { background: var(--red); color: #f1d27a; }
+.mark--bula { background: var(--gold); color: #fff; box-shadow: inset 0 0 0 3px #fff, inset 0 0 0 5px var(--gold); }
+.mark--sm { width: 32px; height: 32px; }
+.mark--sm svg { width: 16px; height: 16px; }
+.mark--sm.mark--bula { box-shadow: inset 0 0 0 2px #fff, inset 0 0 0 3.5px var(--gold); }
+.mark--row { width: 48px; height: 48px; }
+
+/* ── Two / three shows in one day ──────────────────────────── */
+.split { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.split__half { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.split__half + .split__half {
+  border-left: 1px solid var(--rule);
+  padding-left: 14px; margin-left: -1px;
+}
+.split__time { font-family: var(--serif); font-size: 32px; font-weight: 700; line-height: 1; letter-spacing: -0.02em; }
+.split__kind { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.split .ans--sm { grid-template-columns: 1fr; gap: 6px; }
+.split__count { font-size: 13px; color: var(--muted); }
+.split__count b { color: var(--ink); font-weight: 600; }
+.hero__more {
+  display: flex; align-items: center; justify-content: space-between;
+  background: none; border: 0; padding: 0; cursor: pointer;
+  font-family: inherit; font-size: 14px; font-weight: 600; color: var(--goldText);
+  border-top: 1px solid var(--rule); padding-top: 14px; margin-top: -2px;
+}
+
+.kindchip {
+  display: inline-flex; align-items: center;
+  height: 22px; padding: 0 9px;
+  border-radius: var(--rPill);
+  font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+}
+.kindchip--redovna { background: var(--gold); color: var(--onGold); }
+.kindchip--vanredna { background: var(--inkDisc); color: var(--onInkDisc); }
+.kindchip--experience { background: var(--copper); color: var(--onCopper); }
+
+/* ── Bottom bar ────────────────────────────────────────────── */
+.barzone {
+  position: absolute;
+  left: 0; right: 0; bottom: 0;
+  z-index: 20;
+  pointer-events: none;
+}
+.barzone > * { pointer-events: auto; }
+
+/* progressive blur, only in the "new" bar */
+.blurlayer {
+  position: absolute; left: 0; right: 0; bottom: 0;
+  pointer-events: none;
+  display: none;
+}
+[data-bar='new'] .blurlayer { display: block; }
+.blurlayer--mid {
+  height: 132px;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  -webkit-mask-image: linear-gradient(to top, #000 0%, #000 42%, rgba(0, 0, 0, 0) 100%);
+  mask-image: linear-gradient(to top, #000 0%, #000 42%, rgba(0, 0, 0, 0) 100%);
+}
+.blurlayer--low {
+  height: 84px;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  -webkit-mask-image: linear-gradient(to top, #000 0%, #000 34%, rgba(0, 0, 0, 0) 100%);
+  mask-image: linear-gradient(to top, #000 0%, #000 34%, rgba(0, 0, 0, 0) 100%);
+}
+.blurlayer--fade {
+  height: 116px;
+  background: linear-gradient(to top,
+    color-mix(in srgb, var(--bg) 85%, transparent) 0%,
+    color-mix(in srgb, var(--bg) 55%, transparent) 46%,
+    rgba(0, 0, 0, 0) 100%);
+}
+
+.tabs {
+  position: relative;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  align-items: center;
+}
+/* "Sadašnji": a floating pill inset from the edges */
+[data-bar='now'] .tabs {
+  width: calc(100% - 24px);
+  margin-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
+  height: var(--tabH);
+  border-radius: var(--rCard);
+  background: var(--barBg);
+  backdrop-filter: blur(14px) saturate(1.4);
+  -webkit-backdrop-filter: blur(14px) saturate(1.4);
+  box-shadow: var(--shadowBar);
+  border: 1px solid var(--rule);
+}
+/* "Novi": the pill rides on top of the progressive blur, lighter */
+[data-bar='new'] .tabs {
+  width: calc(100% - 24px);
+  margin-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
+  height: var(--tabH);
+  border-radius: var(--rCard);
+  background: color-mix(in srgb, var(--barBg) 78%, transparent);
+  border: 1px solid var(--rule);
+}
+.tab {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  height: 100%;
+  background: none; border: 0; cursor: pointer;
+  color: var(--muted);
+  font-family: inherit; font-size: 11px; font-weight: 600;
+  position: relative;
+  /* the active thumb is a z-index:-1 pseudo: without its own stacking context
+     it would paint behind the bar's background instead of on it */
+  isolation: isolate;
+}
+.tab svg { width: 22px; height: 22px; }
+.tab--on { color: var(--goldText); }
+.tab--on::before {
+  content: '';
+  position: absolute;
+  inset: 6px 8px;
+  border-radius: var(--rPill);
+  background: var(--thumb);
+  z-index: -1;
+}
+[data-skin='light'] .tab--on { color: #f5f2ec; }
+
+/* ── Gear + sheet ──────────────────────────────────────────── */
+.gear {
+  position: fixed;
+  top: 18px; right: 18px;
+  width: 46px; height: 46px;
+  border-radius: 50%;
+  border: 1px solid var(--deskEdge);
+  background: var(--card);
+  color: var(--ink);
+  font-size: 19px;
+  cursor: pointer;
+  z-index: 60;
+  box-shadow: 0 10px 26px -12px rgba(0, 0, 0, 0.6);
+}
+.gear:focus-visible { outline: 2.5px solid var(--gold); outline-offset: 2px; }
+
+.scrim {
+  position: fixed; inset: 0;
+  background: rgba(10, 7, 4, 0.55);
+  z-index: 70;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.2s var(--ease);
+}
+[data-sheet='1'] .scrim { opacity: 1; pointer-events: auto; }
+
+.sheet {
+  position: fixed;
+  left: 50%; bottom: 0;
+  width: min(430px, 100%);
+  max-height: 92dvh;
+  overflow-y: auto;
+  z-index: 80;
+  background: var(--bg);
+  color: var(--ink);
+  border-radius: 26px 26px 0 0;
+  box-shadow: 0 -20px 60px -20px rgba(0, 0, 0, 0.7);
+  transform: translate(-50%, 102%);
+  transition: transform 0.32s var(--ease);
+  padding: 8px 20px calc(28px + env(safe-area-inset-bottom, 0px));
+  font-size: 15px;
+}
+[data-sheet='1'] .sheet { transform: translate(-50%, 0); }
+.sheet__grab { width: 42px; height: 5px; border-radius: 3px; background: var(--ghostEdge); margin: 6px auto 14px; }
+.sheet h2 {
+  font-family: var(--serif); font-size: 22px; font-weight: 700;
+  margin: 0 0 2px;
+}
+.sheet > p.lede { margin: 0 0 16px; color: var(--muted); font-size: 14px; }
+.grp { margin-bottom: 18px; }
+.grp > .eyebrow { display: block; margin-bottom: 8px; }
+.seg {
+  display: grid; gap: 4px;
+  background: var(--sunk);
+  border-radius: var(--rCtl);
+  padding: 4px;
+}
+.seg--2 { grid-template-columns: 1fr 1fr; }
+.seg--3 { grid-template-columns: repeat(3, 1fr); }
+.seg--4 { grid-template-columns: repeat(4, 1fr); }
+.seg button {
+  height: 44px;
+  border: 0; border-radius: 12px;
+  background: transparent;
+  color: var(--muted);
+  font-family: inherit; font-size: 14px; font-weight: 600;
+  cursor: pointer;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1.15;
+  transition: background 0.18s var(--ease), color 0.18s var(--ease);
+}
+.seg button em {
+  font-style: normal; font-size: 9px; font-weight: 700;
+  letter-spacing: 0.09em; text-transform: uppercase; color: var(--goldText);
+}
+.seg button[aria-pressed='true'] {
+  background: var(--card);
+  color: var(--ink);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
+}
+.seg--dim { opacity: 0.45; }
+.hint { font-size: 12.5px; color: var(--muted); margin: 7px 0 0; }
+
+.legend { display: flex; gap: 14px; }
+.legend div { display: flex; flex-direction: column; align-items: center; gap: 6px; flex: 1; }
+.legend span { font-size: 11.5px; color: var(--muted); text-align: center; }
+
+.marks { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.marks div { display: flex; flex-direction: column; align-items: center; gap: 7px; }
+.marks span { font-size: 11px; color: var(--muted); text-align: center; line-height: 1.25; }
+.marks .pair { display: flex; align-items: center; gap: 7px; }
+
+.check { display: flex; flex-direction: column; gap: 10px; }
+.check li { display: flex; gap: 10px; align-items: flex-start; }
+.check ol { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 12px; }
+.check i {
+  flex: none;
+  width: 22px; height: 22px; border-radius: 50%;
+  background: var(--goldSoft); color: var(--goldText);
+  font-style: normal; font-size: 12px; font-weight: 700;
+  display: grid; place-items: center;
+  margin-top: 1px;
+}
+.check b { display: block; font-size: 14.5px; font-weight: 600; }
+.check em { display: block; font-style: normal; font-size: 13px; color: var(--muted); }
+
+.sheetbtn {
+  width: 100%; height: 48px;
+  border-radius: var(--rCtl);
+  border: 1px solid var(--ghostEdge);
+  background: var(--card); color: var(--ink);
+  font-family: inherit; font-size: 15px; font-weight: 600;
+  cursor: pointer;
+}
+.sheetbtn:focus-visible, .seg button:focus-visible { outline: 2.5px solid var(--gold); outline-offset: 2px; }
+
+/* ── Phone-sized viewport: the frame goes away ─────────────── */
+@media (max-width: 480px) {
+  #root { padding: 0; display: block; }
+  .phone {
+    position: fixed; inset: 0;
+    width: auto; height: auto; max-height: none;
+    border-radius: 0;
+    box-shadow: none;
+  }
+  .status { display: none; }
+  .hdr { padding-top: calc(10px + env(safe-area-inset-top, 0px)); }
+  .gear { top: calc(10px + env(safe-area-inset-top, 0px)); right: 10px; width: 40px; height: 40px; font-size: 17px; }
+  .sheet { left: 0; transform: translate(0, 102%); width: 100%; }
+  [data-sheet='1'] .sheet { transform: translate(0, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ansbtn, .ansbtn .fill, .ansbtn .lbl, .ansbtn .mk, .ansbtn .mk .draw,
+  .sheet, .scrim, .seg button {
+    transition-duration: 0.01ms !important;
+  }
+  .ansbtn.pop { animation: none !important; }
+  .spark { display: none !important; }
+}
+</style>
+
+<div id="root" data-skin="dark" data-pal="now" data-hero="one" data-bar="now" data-kind="vanredna" data-sheet="0">
+
+  <div class="phone app">
+    <div class="scroll" id="scroll">
+
+      <div class="status">
+        <span>09:20</span>
+        <span class="status__right">
+          <span class="status__bars"><i></i><i></i><i></i><i></i></span>
+          <svg width="16" height="12" viewBox="0 0 16 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
+            <path d="M1 4.2A10.5 10.5 0 0 1 15 4.2"></path>
+            <path d="M3.6 7A6.8 6.8 0 0 1 12.4 7"></path>
+            <path d="M6.2 9.6a3 3 0 0 1 3.6 0"></path>
+          </svg>
+          <span class="status__batt"><b></b></span>
+        </span>
+      </div>
+
+      <div class="hdr">
+        <span class="hdr__logo">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="12" cy="12" r="9"></circle>
+            <path d="m7.5 7.5 9 9M16.5 7.5l-9 9"></path>
+          </svg>
+        </span>
+        <span class="hdr__name">Cecilija</span>
+        <button class="hdr__bell" type="button" aria-label="Obavijesti, 1 nova">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M6 8a6 6 0 0 1 12 0c0 7 3 7 3 9H3c0-2 3-2 3-9"></path>
+            <path d="M10.3 21a2 2 0 0 0 3.4 0"></path>
+          </svg>
+          <b>1</b>
+        </button>
+      </div>
+
+      <div class="screen">
+
+        <div class="greet">
+          <h1>Dobro jutro, Josip.</h1>
+          <p>Danas je nastup.</p>
+        </div>
+
+        <!-- ── HERO: jedan nastup ─────────────────────────── -->
+        <div class="hero" id="heroOne">
+          <div class="eyebrow">Sljedeći nastup · Prostor sv. Cecilije</div>
+          <div class="hero__day"><b>14</b><span>rujna</span></div>
+          <div class="hero__meta">Ponedjeljak · 16:30 · <span class="kindchip kindchip--vanredna" id="heroKindChip">Vanredna</span></div>
+
+          <div class="ans" data-state="none" data-name="hero">
+            <button class="ansbtn ansbtn--yes" type="button" data-ans="yes" aria-pressed="false">
+              <svg class="mk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="9.2"></circle>
+                <path class="draw" d="m7.4 12.3 3.2 3.2 6-6.6"></path>
+              </svg>
+              <span class="fill"></span>
+              <span class="lbl">Dolazim</span>
+            </button>
+            <button class="ansbtn ansbtn--no" type="button" data-ans="no" aria-pressed="false">
+              <svg class="mk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="12" cy="12" r="9.2"></circle>
+                <path class="draw" d="m8.6 8.6 6.8 6.8M15.4 8.6l-6.8 6.8"></path>
+              </svg>
+              <span class="fill"></span>
+              <span class="lbl">Ne dolazim</span>
+            </button>
+          </div>
+          <button class="undo" type="button" data-undo="hero">Poništi odgovor</button>
+
+          <div class="army">
+            <div class="army__top">
+              <span>Crni <strong>0</strong></span>
+              <span><strong>0</strong> Bili</span>
+            </div>
+            <div class="army__bar">
+              <span class="army__half army__half--l"><span class="army__fill" style="width:0"></span></span>
+              <span class="army__half army__half--r"><span class="army__fill" style="width:0"></span></span>
+            </div>
+            <div class="army__note">
+              <i></i>Fale još 8 crnih · fale još 8 bilih<em>›</em>
+            </div>
+          </div>
+        </div>
+
+        <!-- ── HERO: dva ili tri u danu ──────────────────── -->
+        <div class="hero" id="heroTwo" hidden>
+          <div class="eyebrow">Sljedeći nastupi · 14. rujna · Ponedjeljak</div>
+          <div class="split">
+            <div class="split__half">
+              <span class="split__time">16:30</span>
+              <span class="split__kind"><span class="kindchip kindchip--vanredna">Vanredna</span></span>
+              <div class="ans ans--sm" data-state="none" data-name="d1">
+                <button class="ansbtn ansbtn--yes" type="button" data-ans="yes" aria-pressed="false">
+                  <svg class="mk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="9.2"></circle>
+                    <path class="draw" d="m7.4 12.3 3.2 3.2 6-6.6"></path>
+                  </svg>
+                  <span class="fill"></span><span class="lbl">Dolazim</span>
+                </button>
+                <button class="ansbtn ansbtn--no" type="button" data-ans="no" aria-pressed="false">
+                  <svg class="mk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="9.2"></circle>
+                    <path class="draw" d="m8.6 8.6 6.8 6.8M15.4 8.6l-6.8 6.8"></path>
+                  </svg>
+                  <span class="fill"></span><span class="lbl">Ne dolazim</span>
+                </button>
+              </div>
+              <span class="split__count">crni <b>8</b> · bili <b>7</b></span>
+            </div>
+            <div class="split__half">
+              <span class="split__time">21:00</span>
+              <span class="split__kind"><span class="kindchip kindchip--redovna">Redovna</span></span>
+              <div class="ans ans--sm" data-state="none" data-name="d2">
+                <button class="ansbtn ansbtn--yes" type="button" data-ans="yes" aria-pressed="false">
+                  <svg class="mk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="9.2"></circle>
+                    <path class="draw" d="m7.4 12.3 3.2 3.2 6-6.6"></path>
+                  </svg>
+                  <span class="fill"></span><span class="lbl">Dolazim</span>
+                </button>
+                <button class="ansbtn ansbtn--no" type="button" data-ans="no" aria-pressed="false">
+                  <svg class="mk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <circle cx="12" cy="12" r="9.2"></circle>
+                    <path class="draw" d="m8.6 8.6 6.8 6.8M15.4 8.6l-6.8 6.8"></path>
+                  </svg>
+                  <span class="fill"></span><span class="lbl">Ne dolazim</span>
+                </button>
+              </div>
+              <span class="split__count">crni <b>11</b> · bili <b>9</b></span>
+            </div>
+          </div>
+          <button class="undo" type="button" data-undo="heroTwo">Poništi odgovore</button>
+          <button class="hero__more" type="button" id="heroMore" hidden>
+            <span>još 1 nastup taj dan</span><span>›</span>
+          </button>
+        </div>
+
+        <!-- ── Dvije pločice ─────────────────────────────── -->
+        <div class="tiles">
+          <div class="tile">
+            <span class="eyebrow">Ljestvica</span>
+            <div class="podium">
+              <div class="second"><b>20</b><span>Markan</span></div>
+              <div class="first"><b>21</b><span>Brane</span></div>
+              <div class="third"><b>19</b><span>Ratko</span></div>
+            </div>
+            <span class="tile__foot">ti si 13. s 13 nastupa</span>
+          </div>
+          <div class="tile">
+            <span class="eyebrow">Članovi</span>
+            <span class="bignum">70</span>
+            <span class="tile__foot">aktivnih moreškanata</span>
+          </div>
+        </div>
+
+        <!-- ── Sezona ────────────────────────────────────── -->
+        <div class="sect">
+          <span class="eyebrow">Moreška · sezona</span>
+          <div class="list" id="list"></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── Donji bar ───────────────────────────────────── -->
+    <div class="barzone">
+      <div class="blurlayer blurlayer--fade"></div>
+      <div class="blurlayer blurlayer--mid"></div>
+      <div class="blurlayer blurlayer--low"></div>
+      <nav class="tabs" aria-label="Glavna navigacija">
+        <button class="tab tab--on" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3.5 10.5 12 3.5l8.5 7"></path>
+            <path d="M5.5 9.5V20h13V9.5"></path>
+            <path d="M9.8 20v-5.2h4.4V20"></path>
+          </svg>
+          Početna
+        </button>
+        <button class="tab" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M14.5 17.5 21 4l-9.5 9"></path>
+            <path d="M9.5 17.5 3 4l9.5 9"></path>
+            <path d="M5 20h4M15 20h4"></path>
+          </svg>
+          Moreška
+        </button>
+        <button class="tab" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M7 4h10v5a5 5 0 0 1-10 0z"></path>
+            <path d="M7 5.5H4.5V7A3.5 3.5 0 0 0 7 10.3M17 5.5h2.5V7A3.5 3.5 0 0 1 17 10.3"></path>
+            <path d="M12 14v3.5M8.5 20h7"></path>
+          </svg>
+          Ljestvica
+        </button>
+        <button class="tab" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <circle cx="9.5" cy="8" r="3.2"></circle>
+            <path d="M3.5 19c0-3.1 2.7-5 6-5s6 1.9 6 5"></path>
+            <path d="M16.5 6.2a3 3 0 0 1 0 5.6M18 19c0-2.3-.9-3.8-2.3-4.7"></path>
+          </svg>
+          Članovi
+        </button>
+        <button class="tab" type="button">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true">
+            <path d="M6 12h.01M12 12h.01M18 12h.01"></path>
+          </svg>
+          Više
+        </button>
+      </nav>
+    </div>
+  </div>
+
+  <button class="gear app" type="button" id="gear" aria-label="Otvori postavke prototipa">⚙</button>
+
+  <div class="scrim" id="scrim"></div>
+
+  <!-- ── Kontrolna ploha ───────────────────────────────── -->
+  <div class="sheet app" id="sheet" role="dialog" aria-modal="true" aria-label="Postavke prototipa">
+    <div class="sheet__grab"></div>
+    <h2>Pet pitanja</h2>
+    <p class="lede">Prebaci i gledaj. Stanje ide u link, pa ga možeš poslati sebi na mobitel.</p>
+
+    <div class="grp">
+      <span class="eyebrow">1 · Koža</span>
+      <div class="seg seg--2" data-key="skin">
+        <button type="button" data-val="light" aria-pressed="false">Svijetlo</button>
+        <button type="button" data-val="dark" aria-pressed="true">Tamno</button>
+      </div>
+    </div>
+
+    <div class="grp">
+      <span class="eyebrow">2 · Tamna paleta</span>
+      <div class="seg seg--4" data-key="pal" id="palSeg">
+        <button type="button" data-val="now" aria-pressed="true">Sadašnja</button>
+        <button type="button" data-val="a" aria-pressed="false">A<em>Preporuka</em></button>
+        <button type="button" data-val="b" aria-pressed="false">B</button>
+        <button type="button" data-val="c" aria-pressed="false">C</button>
+      </div>
+      <p class="hint" id="palHint">A podiže papir za jedan ton, pa kartica ima gdje sjesti. Vrijedi samo na tamnoj koži.</p>
+    </div>
+
+    <div class="grp">
+      <span class="eyebrow">3 · Hero</span>
+      <div class="seg seg--3" data-key="hero">
+        <button type="button" data-val="one" aria-pressed="true">Jedan nastup</button>
+        <button type="button" data-val="two" aria-pressed="false">Dva u danu</button>
+        <button type="button" data-val="three" aria-pressed="false">Tri u danu</button>
+      </div>
+    </div>
+
+    <div class="grp">
+      <span class="eyebrow">4 · Donji bar</span>
+      <div class="seg seg--2" data-key="bar">
+        <button type="button" data-val="now" aria-pressed="true">Sadašnji</button>
+        <button type="button" data-val="new" aria-pressed="false">Novi: Revolut<em>Preporuka</em></button>
+      </div>
+      <p class="hint">Sadašnji ostavlja rupu ispod zadnjeg retka. Novi pušta sadržaj do samog ruba i muti ga u dva sloja.</p>
+    </div>
+
+    <div class="grp">
+      <span class="eyebrow">5 · Vrsta na heroju</span>
+      <div class="seg seg--3" data-key="kind">
+        <button type="button" data-val="redovna" aria-pressed="false">Redovna</button>
+        <button type="button" data-val="vanredna" aria-pressed="true">Vanredna</button>
+        <button type="button" data-val="experience" aria-pressed="false">Experience</button>
+      </div>
+      <div class="legend" style="margin-top:12px">
+        <div><span class="disc disc--redovna"><b>21</b><span>ruj</span></span><span>Redovna<br>zlatna</span></div>
+        <div><span class="disc disc--vanredna"><b>14</b><span>ruj</span></span><span>Vanredna<br>tinta</span></div>
+        <div><span class="disc disc--experience"><b>18</b><span>ruj</span></span><span>Experience<br>bakar</span></div>
+      </div>
+    </div>
+
+    <div class="grp">
+      <span class="eyebrow">Tko pleše što</span>
+      <div class="marks">
+        <div>
+          <span class="pair">
+            <span class="mark mark--crni">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="m3 7 4.5 4.5L12 4l4.5 7.5L21 7l-2 11H5z"></path>
+                <path d="M5 21h14"></path>
+              </svg>
+            </span>
+            <span class="mark mark--sm mark--crni">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="m3 7 4.5 4.5L12 4l4.5 7.5L21 7l-2 11H5z"></path>
+                <path d="M5 21h14"></path>
+              </svg>
+            </span>
+          </span>
+          <span>crni kralj</span>
+        </div>
+        <div>
+          <span class="pair">
+            <span class="mark mark--crni">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="m3 8 4.5 4.5L12 5l4.5 7.5L21 8l-2 11H5z"></path>
+                <text x="12" y="17.4" text-anchor="middle" font-size="9.5" font-weight="700" stroke="none" fill="currentColor" font-family="Labrada, Georgia, serif">O</text>
+              </svg>
+            </span>
+            <span class="mark mark--sm mark--crni">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="m3 8 4.5 4.5L12 5l4.5 7.5L21 8l-2 11H5z"></path>
+                <text x="12" y="17.6" text-anchor="middle" font-size="10.5" font-weight="700" stroke="none" fill="currentColor" font-family="Labrada, Georgia, serif">O</text>
+              </svg>
+            </span>
+          </span>
+          <span>Otmanović</span>
+        </div>
+        <div>
+          <span class="pair">
+            <span class="mark mark--bili">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="m3 7 4.5 4.5L12 4l4.5 7.5L21 7l-2 11H5z"></path>
+                <path d="M5 21h14"></path>
+              </svg>
+            </span>
+            <span class="mark mark--sm mark--bili">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="m3 7 4.5 4.5L12 4l4.5 7.5L21 7l-2 11H5z"></path>
+                <path d="M5 21h14"></path>
+              </svg>
+            </span>
+          </span>
+          <span>bili kralj</span>
+        </div>
+        <div>
+          <span class="pair">
+            <span class="mark mark--bula"></span>
+            <span class="mark mark--sm mark--bula"></span>
+          </span>
+          <span>bula</span>
+        </div>
+      </div>
+      <p class="hint">Svaki znak je prikazan na 44 i na 32 px, u koži koja je sada uključena.</p>
+    </div>
+
+    <div class="grp">
+      <span class="eyebrow">Što provjeriti na telefonu</span>
+      <div class="check">
+        <ol>
+          <li><i>1</i><span><b>Paleta A protiv ostalih</b><em>Gledaj karticu na podlozi u mraku. Preporuka: A.</em></span></li>
+          <li><i>2</i><span><b>Scroll s novim barom</b><em>Vuci sezonu gore dolje i gledaj zastajkuje li. Preporuka: novi bar ako je gladak.</em></span></li>
+          <li><i>3</i><span><b>Bakar za Experience</b><em>Mora se razlikovati od zlata na suncu. Preporuka: bakar na disku, chipu i u redovima.</em></span></li>
+          <li><i>4</i><span><b>Animacija gumba</b><em>Tapni Dolazim pa Ne dolazim nekoliko puta. Preporuka: ostaviti kako je.</em></span></li>
+        </ol>
+      </div>
+    </div>
+
+    <button class="sheetbtn" type="button" id="resetAll">Poništi sve odgovore</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  var root = document.getElementById('root');
+  var KEYS = ['skin', 'pal', 'hero', 'bar', 'kind'];
+  var ALLOWED = {
+    skin: ['light', 'dark'],
+    pal: ['now', 'a', 'b', 'c'],
+    hero: ['one', 'two', 'three'],
+    bar: ['now', 'new'],
+    kind: ['redovna', 'vanredna', 'experience']
+  };
+
+  /* ── Season list: 14 evenings ─────────────────────────── */
+  var MONTH = ['sij', 'velj', 'ožu', 'tra', 'svi', 'lip', 'srp', 'kol', 'ruj', 'lis', 'stu', 'pro'];
+  var ROWS = [
+    { d: 2, m: 8, wd: 'Utorak', t: '21:00' },
+    { d: 5, m: 8, wd: 'Petak', t: '21:00' },
+    { d: 7, m: 8, wd: 'Nedjelja', t: '18:00' },
+    { d: 9, m: 8, wd: 'Utorak', t: '21:00' },
+    { d: 12, m: 8, wd: 'Petak', t: '21:00' },
+    { d: 14, m: 8, wd: 'Ponedjeljak', t: '16:30' },
+    { d: 16, m: 8, wd: 'Srijeda', t: '19:00' },
+    { d: 18, m: 8, wd: 'Petak', t: '21:00' },
+    { d: 21, m: 8, wd: 'Ponedjeljak', t: '20:30' },
+    { d: 23, m: 8, wd: 'Srijeda', t: '19:00' },
+    { d: 26, m: 8, wd: 'Subota', t: '17:00' },
+    { d: 28, m: 8, wd: 'Ponedjeljak', t: '20:00' },
+    { d: 3, m: 9, wd: 'Petak', t: '20:00' },
+    { d: 10, m: 9, wd: 'Petak', t: '19:30' }
+  ];
+  var KIND_AT = {
+    3: 'experience', 7: 'experience', 11: 'experience',
+    2: 'redovna', 5: 'redovna', 9: 'redovna'
+  };
+  var KIND_WORD = { redovna: 'Redovna', vanredna: 'Vanredna', experience: 'Experience' };
+  var CROWN_BASE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 7 4.5 4.5L12 4l4.5 7.5L21 7l-2 11H5z"></path><path d="M5 21h14"></path></svg>';
+  var CROWN_O = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 8 4.5 4.5L12 5l4.5 7.5L21 8l-2 11H5z"></path><text x="12" y="17.4" text-anchor="middle" font-size="9.5" font-weight="700" stroke="none" fill="currentColor" font-family="Labrada, Georgia, serif">O</text></svg>';
+
+  function ansMarkup(name, small) {
+    var sw = small ? '2.4' : '2.2';
+    return '<div class="ans' + (small ? ' ans--sm' : '') + '" data-state="none" data-name="' + name + '">' +
+      '<button class="ansbtn ansbtn--yes" type="button" data-ans="yes" aria-pressed="false">' +
+      '<svg class="mk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="' + sw + '" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+      '<circle cx="12" cy="12" r="9.2"></circle><path class="draw" d="m7.4 12.3 3.2 3.2 6-6.6"></path></svg>' +
+      '<span class="fill"></span><span class="lbl">Dolazim</span></button>' +
+      '<button class="ansbtn ansbtn--no" type="button" data-ans="no" aria-pressed="false">' +
+      '<svg class="mk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="' + sw + '" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+      '<circle cx="12" cy="12" r="9.2"></circle><path class="draw" d="m8.6 8.6 6.8 6.8M15.4 8.6l-6.8 6.8"></path></svg>' +
+      '<span class="fill"></span><span class="lbl">Ne dolazim</span></button></div>';
+  }
+
+  var html = '';
+  ROWS.forEach(function (r, i) {
+    var n = i + 1;
+    var kind = KIND_AT[n] || 'vanredna';
+    var lead;
+    if (n === 4) {
+      lead = '<span class="mark mark--row mark--crni" title="crni kralj">' + CROWN_BASE + '</span>';
+    } else if (n === 8) {
+      lead = '<span class="mark mark--row mark--crni" title="Otmanović">' + CROWN_O + '</span>';
+    } else {
+      lead = '<span class="disc disc--' + kind + '"><b>' + r.d + '</b><span>' + MONTH[r.m] + '</span></span>';
+    }
+    var title = (n === 4 || n === 8)
+      ? r.d + '. ' + MONTH[r.m] + ' · ' + r.wd + ' · ' + r.t
+      : r.wd + ' · ' + r.t;
+    html += '<div class="row">' + lead +
+      '<div class="row__body"><b>' + title + '<span>' + KIND_WORD[kind] + ' · Ljetno kino</span></b>' +
+      ansMarkup('r' + n, true) + '</div></div>';
+  });
+  document.getElementById('list').innerHTML = html;
+
+  /* ── Answers ──────────────────────────────────────────── */
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function sparks(group, btn, x, y) {
+    if (reduce) return;
+    var gr = group.getBoundingClientRect();
+    var br = btn.getBoundingClientRect();
+    var ox = br.left - gr.left + x;
+    var oy = br.top - gr.top + y;
+    for (var i = 0; i < 7; i++) {
+      var a = (-90 + (i - 3) * 26 + (Math.random() * 14 - 7)) * Math.PI / 180;
+      var dist = 26 + Math.random() * 14;
+      var s = document.createElement('span');
+      s.className = 'spark';
+      s.style.left = ox + 'px';
+      s.style.top = oy + 'px';
+      s.style.setProperty('--dx', (Math.cos(a) * dist).toFixed(1) + 'px');
+      s.style.setProperty('--dy', (Math.sin(a) * dist).toFixed(1) + 'px');
+      group.appendChild(s);
+      setTimeout(function (el) { return function () { el.remove(); }; }(s), 560);
+    }
+  }
+
+  document.addEventListener('click', function (e) {
+    var btn = e.target.closest ? e.target.closest('.ansbtn') : null;
+    if (!btn) return;
+    var group = btn.closest('.ans');
+    var yes = btn.getAttribute('data-ans') === 'yes';
+    var r = btn.getBoundingClientRect();
+    var x = e.clientX ? e.clientX - r.left : r.width / 2;
+    var y = e.clientY ? e.clientY - r.top : r.height / 2;
+    btn.style.setProperty('--x', x + 'px');
+    btn.style.setProperty('--y', y + 'px');
+    group.setAttribute('data-state', yes ? 'yes' : 'no');
+    group.querySelectorAll('.ansbtn').forEach(function (b) {
+      b.setAttribute('aria-pressed', b === btn ? 'true' : 'false');
+    });
+    btn.classList.remove('pop');
+    void btn.offsetWidth;
+    btn.classList.add('pop');
+    if (yes && !group.classList.contains('ans--sm')) sparks(group, btn, x, y);
+    if (navigator.vibrate) navigator.vibrate(10);
+  });
+
+  function resetGroup(g) {
+    g.setAttribute('data-state', 'none');
+    g.querySelectorAll('.ansbtn').forEach(function (b) {
+      b.setAttribute('aria-pressed', 'false');
+      b.classList.remove('pop');
+    });
+  }
+  document.addEventListener('click', function (e) {
+    var u = e.target.closest ? e.target.closest('.undo') : null;
+    if (!u) return;
+    document.querySelectorAll('#heroOne .ans, #heroTwo .ans').forEach(resetGroup);
+  });
+  document.getElementById('resetAll').addEventListener('click', function () {
+    document.querySelectorAll('.ans').forEach(resetGroup);
+  });
+
+  /* ── State: root attributes + #hash ───────────────────── */
+  var state = { skin: 'dark', pal: 'now', hero: 'one', bar: 'now', kind: 'vanredna' };
+
+  function readHash() {
+    var h = location.hash.replace(/^#/, '');
+    if (!h) return;
+    h.split('&').forEach(function (part) {
+      var kv = part.split('=');
+      var k = kv[0], v = kv[1];
+      if (ALLOWED[k] && ALLOWED[k].indexOf(v) !== -1) state[k] = v;
+    });
+  }
+
+  function writeHash() {
+    var h = KEYS.map(function (k) { return k + '=' + state[k]; }).join('&');
+    if (('#' + h) !== location.hash) history.replaceState(null, '', '#' + h);
+  }
+
+  function apply() {
+    KEYS.forEach(function (k) { root.setAttribute('data-' + k, state[k]); });
+
+    /* content padding under the bar: 64 + safe + 40 (sadašnji) or + 12 (novi) */
+    var extra = state.bar === 'now' ? 40 : 12;
+    document.getElementById('scroll').style.setProperty(
+      '--padBottom', 'calc(64px + env(safe-area-inset-bottom, 0px) + ' + extra + 'px)'
+    );
+
+    var one = document.getElementById('heroOne');
+    var two = document.getElementById('heroTwo');
+    one.hidden = state.hero !== 'one';
+    two.hidden = state.hero === 'one';
+    document.getElementById('heroMore').hidden = state.hero !== 'three';
+
+    var chip = document.getElementById('heroKindChip');
+    chip.className = 'kindchip kindchip--' + state.kind;
+    chip.textContent = KIND_WORD[state.kind];
+
+    var dim = state.skin !== 'dark';
+    document.getElementById('palSeg').classList.toggle('seg--dim', dim);
+
+    document.querySelectorAll('.seg').forEach(function (seg) {
+      var key = seg.getAttribute('data-key');
+      seg.querySelectorAll('button').forEach(function (b) {
+        b.setAttribute('aria-pressed', b.getAttribute('data-val') === state[key] ? 'true' : 'false');
+      });
+    });
+
+    /* body ground has to be painted here: the tokens live on .app, one level in */
+    var ground = { light: '#e7e2d8', now: '#0d0a07', a: '#14100b', b: '#191410', c: '#0d0a07' };
+    document.body.style.background = state.skin === 'light' ? ground.light : ground[state.pal];
+    writeHash();
+  }
+
+  document.querySelectorAll('.seg').forEach(function (seg) {
+    seg.addEventListener('click', function (e) {
+      var b = e.target.closest ? e.target.closest('button[data-val]') : null;
+      if (!b) return;
+      state[seg.getAttribute('data-key')] = b.getAttribute('data-val');
+      apply();
+    });
+  });
+
+  /* ── Sheet ────────────────────────────────────────────── */
+  function sheet(open) { root.setAttribute('data-sheet', open ? '1' : '0'); }
+  document.getElementById('gear').addEventListener('click', function () { sheet(true); });
+  document.getElementById('scrim').addEventListener('click', function () { sheet(false); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') sheet(false); });
+
+  window.addEventListener('hashchange', function () { readHash(); apply(); });
+  readHash();
+  apply();
+})();
+</script>
