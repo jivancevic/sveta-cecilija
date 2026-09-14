@@ -11,6 +11,7 @@ import { AppShell } from './AppShell'
 import { deniedFor } from './DeniedPage'
 import { Answer } from './moreska/Answer'
 import { StateBar } from './moreska/StateBar'
+import { HeroHalves } from './HeroHalves'
 
 // `/app` — Početna, the front door (#564, decisions Q16, Q26, Q59, Q61).
 //
@@ -92,23 +93,33 @@ export default async function AppHomePage() {
           month={home.moreska.hero.month}
           meta={home.moreska.hero.meta}
         >
-          {home.moreska.memberId && (
-            <Answer
-              performanceId={home.moreska.performanceId}
+          {home.moreska.hero.halves ? (
+            <HeroHalves
+              halves={home.moreska.hero.halves}
+              moreLabel={home.moreska.hero.moreLabel}
               memberId={home.moreska.memberId}
-              current={home.moreska.answer}
-              currentArmy={home.moreska.army}
-              disabled={!home.moreska.canAnswer}
-              lockNote={home.moreska.canAnswer ? null : APP_STRINGS.answer.locked}
             />
-          )}
-          {home.moreska.hero.armies && (
-            <StateBar
-              crni={home.moreska.hero.armies.crni}
-              bili={home.moreska.hero.armies.bili}
-              threshold={home.moreska.hero.armies.threshold}
-              href={home.moreska.hero.href}
-            />
+          ) : (
+            <>
+              {home.moreska.memberId && (
+                <Answer
+                  performanceId={home.moreska.performanceId}
+                  memberId={home.moreska.memberId}
+                  current={home.moreska.answer}
+                  currentArmy={home.moreska.army}
+                  disabled={!home.moreska.canAnswer}
+                  lockNote={home.moreska.canAnswer ? null : APP_STRINGS.answer.locked}
+                />
+              )}
+              {home.moreska.hero.armies && (
+                <StateBar
+                  crni={home.moreska.hero.armies.crni}
+                  bili={home.moreska.hero.armies.bili}
+                  threshold={home.moreska.hero.armies.threshold}
+                  href={home.moreska.hero.href}
+                />
+              )}
+            </>
           )}
         </Hero>
       )}

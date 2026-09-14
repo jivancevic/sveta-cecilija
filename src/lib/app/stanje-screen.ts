@@ -44,7 +44,7 @@ import type { RosterPerson } from '@/lib/attendance/army-count'
 import type { Army } from '@/lib/attendance/rules'
 import { performancePlace } from './performance-place'
 import { APP_STRINGS, PUSH_MESSAGES, formatPerformanceDateLong } from './strings'
-import { nastupTitle } from './moreska-screen'
+import { kindWord } from './performance-kind'
 
 const S = APP_STRINGS.stanje
 
@@ -96,9 +96,10 @@ export interface StanjeView {
   /**
    * "Subota, 19. rujna · Redovna" — the evening, in the DANCER's register.
    *
-   * A non-regular evening reads "Vanredna" and never names its client (Q30,
-   * the same rule Moreška's rows follow): which agency booked it changes
-   * nothing about turning up.
+   * The kind is the one word `performance-kind.ts` gives it and never the
+   * client (Q30, the same rule Moreška's rows follow): which agency booked an
+   * evening changes nothing about turning up for it. Since #591 that is three
+   * words rather than two, because an Experience is its own thing.
    */
   head: string
   /** "21:00 · Ljetno kino". */
@@ -286,7 +287,7 @@ export function stanjeView(detail: PerformanceDetail): StanjeView {
 
   return {
     id: p.id,
-    head: [formatPerformanceDateLong(p.date), nastupTitle(p)].filter(Boolean).join(' · '),
+    head: [formatPerformanceDateLong(p.date), kindWord(p.kind)].filter(Boolean).join(' · '),
     meta: [p.time, performancePlace(p)].filter(Boolean).join(' · '),
     note: p.voditeljNote,
     cancelled: p.cancelled,

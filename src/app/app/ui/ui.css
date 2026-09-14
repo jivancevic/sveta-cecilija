@@ -102,6 +102,21 @@
   gap: 10px;
 }
 
+/* Half a hero wide (#591): the two evenings of one day stand side by side, so
+   the pair wraps and each control keeps a thumb-sized height rather than
+   squeezing two 52px buttons into half a phone. */
+.ui-btns--small {
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ui-btns--small .ui-btn {
+  height: 42px;
+  padding: 0 10px;
+  font-size: 14px;
+  min-width: 0;
+}
+
 .ui-btn {
   flex: 1;
   height: 52px;
@@ -417,6 +432,21 @@ button.ui-row:hover {
 
 .ui-date--gold span {
   color: rgba(20, 16, 10, 0.7);
+}
+
+/* Copper is the Moreška Experience, the third category (#591): a form of its
+   own, with its own postava and its own half of Ljestvica, so a dancer can
+   tell it from a booking down a column. Two tokens, like gold, so the night
+   skin gets it for free. A first pass so nothing is invisible; the colour
+   itself is #592's to settle. */
+.ui-date--experience {
+  background: var(--copper);
+  color: var(--onCopper);
+}
+
+.ui-date--experience span {
+  color: var(--onCopper);
+  opacity: 0.75;
 }
 
 /* ── Tile ─────────────────────────────────────────────────── */

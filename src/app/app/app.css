@@ -35,6 +35,8 @@
   --goldText: #8f6a10; /* gold that carries text or an icon, 4.8:1 on white */
   --goldSoft: rgba(184, 136, 26, 0.12); /* gold as a surface, never as text */
   --onGold: #14100a; /* text ON gold */
+  --copper: #b5642a; /* the Moreška Experience, the third kind (#591) */
+  --onCopper: #ffffff; /* text ON copper */
   --red: #8b0000; /* the bili army, a destructive action */
   --warn: #a8321f; /* an army below its threshold, a form error */
   --ok: #8f6a10; /* "enough of us tonight" — gold, not green: one brand */
@@ -149,6 +151,8 @@ html:has(> .app) {
   --gold: #d9ab3c;
   --goldText: #e3b94e;
   --goldSoft: rgba(217, 171, 60, 0.14);
+  --copper: #d27a3c;
+  --onCopper: #1a1209;
   --red: #b3262f;
   --warn: #e07a5f;
   --ok: #e3b94e;
@@ -3667,27 +3671,60 @@ a.app__ob-link {
   font-variant-numeric: tabular-nums;
 }
 
-/* The show-day strip (#472): a door holder reading another screen on the day of
-   an izvedba gets one line back to the scanner. */
-.app__daystrip {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin: 14px 0 0;
-  padding: 12px 14px;
-  background: var(--gold);
-  color: var(--onGold);
-  border-radius: var(--radius);
-  font-weight: 600;
-  text-decoration: none;
+/* Two nastupa on one day (#591): the hero keeps the date and splits under it.
+   Two columns even on the narrowest phone, because the point of the split is
+   that the two evenings are read side by side; a first pass, #592 dresses it. */
+.app__hero-halves {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
 }
 
-.app__daystrip b {
-  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+.app__hero-half {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.app__hero-half-head {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+
+.app__hero-half-head b {
+  display: block;
+  font-family: var(--serif);
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.app__hero-half-head span {
+  display: block;
+  margin-top: 4px;
   font-size: 13px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.app__hero-half-armies {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The third evening and beyond, as a way into the agenda rather than a third
+   column. */
+.app__hero-more {
+  display: inline-block;
+  margin-top: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--goldText);
+  text-decoration: none;
 }
 
 @media (min-width: 1024px) {

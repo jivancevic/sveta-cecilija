@@ -248,14 +248,14 @@ describe('the rules are reached, not re-implemented in the route', () => {
     expect(res.status).toBe(400)
   })
 
-  it('409s the caller arranging their own bar (#563)', async () => {
+  it('lets the caller arrange their own bar (#591)', async () => {
     signIn(['users'])
     byId.mockResolvedValue({ ...ACCOUNT, id: '1', shared: false, permissions: ['users'] })
     const res = await tabsPatch(request('/api/app/users/1/tabs', 'PATCH', { tabs: ['users'] }), {
       params: Promise.resolve({ id: '1' }),
     })
-    expect(res.status).toBe(409)
-    expect(setTabs).not.toHaveBeenCalled()
+    expect(res.status).toBe(200)
+    expect(setTabs).toHaveBeenCalled()
   })
 
   it('400s a tab the target account does not unlock (#563)', async () => {

@@ -33,7 +33,7 @@ import { getPendingJoinClaims } from './join-data'
 import { loadAccounts } from './users-data'
 import { getSeasonStats } from './stats-data'
 import { getSeasonPerformances } from './roster-data'
-import { pickNextPerformance, type RosterPerformance } from './roster-loaders'
+import { pickHeroPerformances, type RosterPerformance } from './roster-loaders'
 import { armyLabel, heroView, type HeroView } from './moreska-screen'
 import { kindsOf, myStanding, rankDancers } from './leaderboard-rank'
 import { formatEur } from './orders-view'
@@ -170,11 +170,15 @@ export async function loadHomeScreen(viewer: AppViewer): Promise<HomeScreen> {
     has('notifications') ? getMyNotifications(viewer.userId) : Promise.resolve(null),
   ])
 
-  const nextNastup = pickNextPerformance(season?.upcoming ?? [])
+  // The hero is the DAY rather than one evening (#591): two nastupa on the same
+  // Zagreb day split it into halves, and Početna and Moreška split it the same
+  // way because they read the same function.
+  const heroPick = pickHeroPerformances(season?.upcoming ?? [])
+  const nextNastup = heroPick?.first ?? null
   const moreska: MoreskaHero | null =
-    has('moreska') && nextNastup
+    has('moreska') && heroPick && nextNastup
       ? {
-          hero: heroView(nextNastup),
+          hero: heroView(heroPick),
           performanceId: nextNastup.id,
           memberId: viewer.me?.id ?? null,
           answer: nextNastup.myAnswer,

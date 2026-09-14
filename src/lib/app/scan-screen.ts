@@ -37,27 +37,6 @@ export function extractScanToken(decoded: string): string | null {
   return TOKEN.test(trimmed) ? trimmed : null
 }
 
-/**
- * Is the active door show tonight?
- *
- * A performance day is a calendar day (`shows.date` is `dayOnly`), never an
- * instant, so this compares local calendar days. It decides two things: the
- * show-day "Skeniraj" strip the shell offers a `door` holder on every other
- * screen (#472), and nothing else — the ring itself renders whatever
- * `getNextShow()` returned, with its date on it, because the canonical active
- * door show is what the door is admitting people to.
- */
-export function isDoorShowToday(date: string | null | undefined, now: Date = new Date()): boolean {
-  if (!date) return false
-  // Zagreb, never the server's local date: the container runs UTC, so between
-  // midnight and 02:00 Zagreb time the server's "today" is still yesterday and
-  // the strip would appear on the night AFTER the izvedba. `en-CA` is the
-  // locale whose short date is already `YYYY-MM-DD`, which is what `shows.date`
-  // is. Same pattern as `src/lib/app/comp-data.ts`.
-  const today = now.toLocaleDateString('en-CA', { timeZone: 'Europe/Zagreb' })
-  return date === today
-}
-
 function plural(n: number, one: string, many: string): string {
   return `${n} ${n === 1 ? one : many}`
 }

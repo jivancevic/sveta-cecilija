@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
   extractScanToken,
-  isDoorShowToday,
   partyBreakdown,
   remainingAfterAdmit,
   resultChrome,
@@ -42,42 +41,6 @@ describe('extractScanToken', () => {
     // Too short to be a token, so a stray barcode does not become a POST.
     expect(extractScanToken('abc')).toBeNull()
     expect(extractScanToken('hello world')).toBeNull()
-  })
-})
-
-describe('isDoorShowToday', () => {
-  // The show day is a calendar day in KORČULA, never an instant and never the
-  // server's date: the container runs UTC. Every instant below is written in
-  // UTC (the `Z`) so the test says the same thing wherever it runs.
-  const utc = (iso: string) => new Date(iso)
-
-  it('is true through the Zagreb day, from morning to just before midnight', () => {
-    expect(isDoorShowToday('2026-08-14', utc('2026-08-14T08:00:00Z'))).toBe(true)
-    // 23:30 Zagreb, which is 21:30 UTC in summer.
-    expect(isDoorShowToday('2026-08-14', utc('2026-08-14T21:30:00Z'))).toBe(true)
-  })
-
-  it('is false for tomorrow and for yesterday', () => {
-    expect(isDoorShowToday('2026-08-15', utc('2026-08-14T19:00:00Z'))).toBe(false)
-    expect(isDoorShowToday('2026-08-13', utc('2026-08-14T10:00:00Z'))).toBe(false)
-  })
-
-  it('reads 00:30 Zagreb as the new day, not as the server’s yesterday', () => {
-    // 00:30 on the 15th in Zagreb is 22:30 on the 14th in UTC. A server-local
-    // comparison answers "the 14th" here, which would put the strip on the
-    // night AFTER the izvedba and hide it on the morning of the next one.
-    const justAfterMidnightZagreb = utc('2026-08-14T22:30:00Z')
-    expect(isDoorShowToday('2026-08-15', justAfterMidnightZagreb)).toBe(true)
-    expect(isDoorShowToday('2026-08-14', justAfterMidnightZagreb)).toBe(false)
-  })
-
-  it('holds in winter too, when Zagreb is UTC+1', () => {
-    // 00:30 on 2 November Zagreb = 23:30 on 1 November UTC.
-    expect(isDoorShowToday('2026-11-02', utc('2026-11-01T23:30:00Z'))).toBe(true)
-  })
-
-  it('is false with no active door show at all', () => {
-    expect(isDoorShowToday(null, utc('2026-08-14T08:00:00Z'))).toBe(false)
   })
 })
 

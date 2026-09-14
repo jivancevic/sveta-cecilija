@@ -360,13 +360,24 @@ export const APP_STRINGS = {
    */
   moreska: {
     next: 'Sljedeći nastup',
+    /** Two nastupa on one day share one header, so the word is plural (#591). */
+    nextTwo: 'Sljedeći nastupi',
+    /** The one line of numbers a half carries: the two armies, no thresholds. */
+    armiesLine: (crni: number, bili: number) => `crni ${crni} · bili ${bili}`,
+    /** "još 2 nastupa taj dan" — the third and beyond, which the hero caps off. */
+    moreThatDay: { one: 'nastup taj dan', few: 'nastupa taj dan', many: 'nastupa taj dan' },
     /** "9 nastupa pred tobom": what is still ahead of the reader this season. */
     ahead: { one: 'nastup pred tobom', few: 'nastupa pred tobom', many: 'nastupa pred tobom' },
     /** The quiet count beside a month heading. */
     count: { one: 'nastup', few: 'nastupa', many: 'nastupa' },
-    /** The only two words a row's title may say. */
+    /**
+     * The only three words a row's title may say (#591). "Experience" is the
+     * English word on purpose: it is what the society calls the product,
+     * Croatian conversation included. The rule is `performance-kind.ts`.
+     */
     regular: 'Redovna',
     extra: 'Vanredna',
+    experienceWord: 'Experience',
     cancelled: 'otkazano',
     /** The chip on a row: the reader's own answer, or its absence. */
     chipNone: 'bez odgovora',
@@ -1612,8 +1623,6 @@ export const APP_STRINGS = {
     admittedOf: (done: number, all: number) => `${done} / ${all} propušteno`,
     adults: (n: number) => `${n} odraslih`,
     children: (n: number) => `${n} djece`,
-    /** The show-day strip the shell offers a door holder on other screens. */
-    stripToday: 'Izvedba je večeras',
     /**
      * The English result card (#476). A guest reads it over the volunteer's
      * shoulder, so these five lines are the one place in Cecilija that is not
@@ -2198,8 +2207,6 @@ export const APP_STRINGS = {
       tooMany: (max: number) => `Najviše ${max} taba.`,
       locked: (screen: string) =>
         `${screen} ovaj račun ne otvara. Prvo mu dodaj dozvolu u Dozvolama.`,
-      /** Q52: a bar is somebody else's decision about this account. */
-      notSelf: 'Vlastite tabove mijenja drugi korisnik s dozvolom Korisnici.',
     },
 
     create: {

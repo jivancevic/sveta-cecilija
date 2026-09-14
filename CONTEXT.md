@@ -495,12 +495,14 @@ Every occasion the Moreška is danced, public or not. Extends the existing `Show
 _Avoid_: show (for non-public ones), gig, event.
 
 ### Vanredna izvedba
-Any performance that is not a *redovna*: a ship group (DMC, Gulliver), a festival, a concert, a *Moreška Experience*, a charity evening. The word the notebook uses for every non-public evening ("vandredni nastup 28.07. 19:00"). Not a kind of its own: it is the complement of `redovna`, and the specific kind still says what it was.
+Any performance that is neither a *redovna* nor a *Moreška Experience*: a ship group (DMC, Gulliver), a festival, a concert, a charity evening. The word the notebook uses for such an evening ("vandredni nastup 28.07. 19:00"). Not a kind of its own: it is the complement of `redovna` AND `experience`, and the specific kind still says what it was. The Experience used to read as a vanredna too; since the app shows three categories it reads as itself.
 _Avoid_: extra show, private show (that is the sales-page name for a bespoke *redovna*-sized booking).
 
 ### Moreška Experience
 The short form of the Moreška sold as a service on the public site (*Private Experiences*, "The Moreška Experience" / "Moreška iskustvo"): a talk on the dance's origins and regalia and excerpts of the sword fight, danced with fewer pairs (usually three crni, three bili and a bula) for a small or medium group, by appointment, in the society's own premises (*Prostor Sv. Cecilije*). A performance of kind `experience`: always non-public, never sold by ticket, counted in a dancer's season like any other confirmed lineup.
-_Avoid_: experience (lower-case, as a generic word for an evening), workshop, demo.
+
+It is the **third category** an evening is read as, beside *redovna* and *vanredna*, and wherever the app prints an evening's kind to a dancer the word is exactly **"Experience"** (the hero, the *Stanje* head, the rows of the season). It carries a colour of its own, copper, the way a redovna carries gold. Its own half of *Ljestvica* is the same distinction.
+_Avoid_: experience (lower-case, as a generic word for an evening), workshop, demo; calling one a *vanredna izvedba*.
 
 ### Cijelu godinu u Korčuli (year-round)
 A moreškant who lives in Korčula the whole year, not only over the summer. Marked "c" on the notebook's master lists. The flag matters in the pre-season and post-season (April to May, late September to October), when the students are away and only the year-round dancers can be cast, so a voditelj planning an *Experience* or a spring booking filters the roster by it. Independent of *active*: a year-round dancer can sit a season out, and a student is active all summer.
