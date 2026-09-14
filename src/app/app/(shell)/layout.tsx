@@ -1,6 +1,7 @@
 import { resolveAppViewer } from '@/lib/app/viewer'
 import { Sidebar, TabBar } from '../AppNav'
 import { PullToRefresh } from '../PullToRefresh'
+import { ScreenTransition } from '../ScreenTransition'
 
 // The chrome that does NOT remount (#593).
 //
@@ -37,7 +38,11 @@ export default async function ShellLayout({ children }: { children: React.ReactN
 
       {/* Everything that scrolls is inside the gesture (#562); the sidebar and
           the bar are outside it, because neither of them moves. */}
-      <PullToRefresh>{children}</PullToRefresh>
+      <PullToRefresh>
+        {/* Keyed on the pathname: the new screen slides in from the side its
+            tab sits on, the bar and the sidebar do not move at all (#593). */}
+        <ScreenTransition nav={viewer.nav}>{children}</ScreenTransition>
+      </PullToRefresh>
 
       <TabBar nav={viewer.nav} />
     </div>

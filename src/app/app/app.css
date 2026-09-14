@@ -209,6 +209,56 @@ html:has(> .app) {
   padding: env(safe-area-inset-top) 20px calc(var(--tabH) + env(safe-area-inset-bottom) + 40px);
 }
 
+/* ── Between two screens (#593) ────────────────────────────
+   The chrome is in the layout now, so a tab tap changes only this block — and
+   a block that simply swaps reads as a jump cut. 200 ms and 24 px is the
+   distance at which the movement is read rather than watched: enough to say
+   "you went right", not enough to make anybody wait for it.
+
+   `both` so the from-state applies before the first frame (no flash of the
+   screen in its final place) and the to-state after the last. The to-state is
+   `transform: none`, which creates no containing block, so the scanner overlay
+   and every sheet resolve their `position: fixed` against the viewport again
+   the moment the animation is over.
+
+   Reduced motion drops it entirely: the screen appears, which is the honest
+   still version of the same thing. */
+.app__screen {
+  animation: app-screen-in 0.2s var(--ease) both;
+}
+
+.app__screen[data-slide='left'] {
+  animation-name: app-screen-in-left;
+}
+
+@keyframes app-screen-in {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes app-screen-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app__screen {
+    animation: none;
+  }
+}
+
 /* ── The skeleton (#593) ───────────────────────────────────
    What a cold tab tap paints in its first frame, before the server has
    answered. It is drawn out of the two tokens the real screen is drawn out of
