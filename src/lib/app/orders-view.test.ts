@@ -8,7 +8,9 @@ import {
   partyLabel,
   performanceLabel,
   refundOffer,
+  shortPerformanceLabel,
   ticketView,
+  totalLabel,
   zagrebStamp,
 } from './orders-view'
 import type { OrderRow, OrderTicketRow } from '@/lib/repo/orders'
@@ -33,6 +35,29 @@ const ONLINE: OrderRow = {
   createdAt: '2026-08-14T18:30:00.000Z',
   show: { id: '6', date: '2026-08-14', time: '21:00', venue: 'ljetno-kino' },
 }
+
+describe('totalLabel', () => {
+  it('is the amount on an order that was paid for', () => {
+    expect(totalLabel(ONLINE)).toBe('50,00 €')
+    expect(totalLabel({ ...ONLINE, channel: 'partner' })).toBe('50,00 €')
+  })
+
+  it('says Gratis on a comp rather than printing a price of zero (#570)', () => {
+    // A comp is `total = 0` by construction (ADR-0019): the row is not missing
+    // a price, the seat was given away.
+    expect(totalLabel({ ...ONLINE, channel: 'comp', totalCents: 0 })).toBe('Gratis')
+  })
+})
+
+describe('shortPerformanceLabel', () => {
+  it('is short enough to sit inside a filter chip', () => {
+    expect(shortPerformanceLabel({ date: '2026-08-14' })).toBe('14. kol')
+  })
+
+  it('prints an unreadable date as it is rather than as a hole', () => {
+    expect(shortPerformanceLabel({ date: 'nekad' })).toBe('nekad')
+  })
+})
 
 describe('formatEur', () => {
   it('is the Croatian spelling of an amount in cents', () => {
@@ -227,7 +252,22 @@ describe('orderRowView', () => {
       total: '50,00 €',
       channel: 'Online',
       refunded: false,
+      disc: { day: '14', weekday: 'pet' },
+      // An online order says nothing about its channel on the row: that is the
+      // normal case, and "Online" on nine rows in ten is noise (#570).
+      meta: 'pet, 14. kolovoza · Ljetno kino · 2 odrasle, 1 dječja',
     })
+  })
+
+  it('names the channel on the row only when the channel is news', () => {
+    expect(orderRowView({ ...ONLINE, channel: 'partner', partnerName: 'Kaleta' }).meta).toContain(
+      'Partner · Kaleta',
+    )
+    expect(orderRowView({ ...ONLINE, promoCode: 'MARIJA' }).meta).toContain('Online · Promo')
+  })
+
+  it('has no disc when the performance behind the order is gone', () => {
+    expect(orderRowView({ ...ONLINE, show: null }).disc).toBeNull()
   })
 
   it('names a nameless partner sale rather than leaving the row blank', () => {

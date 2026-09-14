@@ -3782,399 +3782,6 @@ a.app__ob-link {
   }
 }
 
-/* ─────────────────────────────────────────────────────────────
-   Narudžbe (#501): the blagajna's list of orders and one order.
-
-   Phone first, and the phone is the harder case: Tatjana holds it in one hand
-   at the door while a guest waits. So the search box is the first thing under
-   the header, every row of the list is a whole tap target, and the four named
-   actions on an order are full-width buttons stacked under the facts they act
-   on. The laptop gets the same markup wider, with the filters inline beside
-   the search and the facts in two columns.
-
-   Numbers use the utility face with tabular figures (#490): a column of totals
-   that does not line up is a column nobody scans.
-   ───────────────────────────────────────────────────────────── */
-
-/* ── The filter bar ─────────────────────────────────────── */
-.app__orders-filters {
-  margin-top: 16px;
-}
-
-.app__orders-search {
-  display: block;
-}
-
-.app__orders-search .app__input {
-  margin-bottom: 8px;
-}
-
-.app__orders-selects {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-}
-
-.app__orders-select {
-  display: block;
-  flex: 1 1 150px;
-  min-width: 0;
-}
-
-.app__orders-select .app__select {
-  width: 100%;
-}
-
-.app__orders-clear {
-  color: var(--goldText);
-  font-size: 13px;
-  text-decoration: none;
-}
-
-.app__orders-clear:hover {
-  text-decoration: underline;
-}
-
-.app__orders-count {
-  margin: 16px 0 2px;
-  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
-  font-variant-numeric: tabular-nums;
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-
-/* ── One row of the list ────────────────────────────────── */
-.app__order-row {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 12px;
-  /* The #490 row rhythm, which tightens on a laptop. Never a fixed px pair:
-     that is what the token is for. */
-  padding: var(--rowY) 0;
-  border-top: 1px solid var(--rule);
-  color: inherit;
-  text-decoration: none;
-}
-
-.app__orders-list .app__order-row:last-child {
-  border-bottom: 1px solid var(--rule);
-}
-
-.app__order-row:hover {
-  background: rgba(184, 136, 26, 0.07);
-}
-
-.app__order-main {
-  display: block;
-  min-width: 0;
-}
-
-.app__order-buyer {
-  display: block;
-  font-size: 16px;
-  font-weight: 600;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* The order code beside the name: the thing a guest reads off their phone. */
-.app__order-buyer small {
-  margin-left: 8px;
-  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
-  font-variant-numeric: tabular-nums;
-  font-size: 11px;
-  font-weight: 400;
-  letter-spacing: 0.08em;
-  color: var(--muted);
-}
-
-.app__order-show,
-.app__order-meta {
-  display: block;
-  margin-top: 1px;
-  font-size: 13px;
-  color: var(--muted);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.app__order-right {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 4px;
-  flex: 0 0 auto;
-}
-
-.app__order-total {
-  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
-  font-variant-numeric: tabular-nums;
-  font-size: 15px;
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-/* Storno: the one badge that has to be readable at a glance in a long list. */
-.app__badge--refunded {
-  border-color: var(--red);
-  color: var(--warn);
-}
-
-/* ── The pager ──────────────────────────────────────────── */
-.app__orders-pager {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-top: 20px;
-}
-
-/* Quiet, outlined: a pager is a way to keep reading, not a call to action, and
-   two gold blocks at the bottom of a list would out-shout every row above. */
-.app__orders-pager .app__button--link {
-  padding: 9px 16px;
-  text-decoration: none;
-  text-align: center;
-  line-height: 1.2;
-}
-
-.app__orders-page {
-  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
-  font-variant-numeric: tabular-nums;
-  font-size: 12px;
-  color: var(--muted);
-}
-
-/* ── One order ──────────────────────────────────────────── */
-.app__order-back {
-  display: inline-block;
-  margin: 12px 0 4px;
-  color: var(--goldText);
-  font-size: 14px;
-  text-decoration: none;
-}
-
-.app__order-facts {
-  margin-top: 8px;
-}
-
-.app__order-fact {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 10px 0;
-  border-bottom: 1px solid var(--rule);
-  font-size: 15px;
-}
-
-.app__order-fact > span {
-  flex: 0 0 auto;
-  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-
-.app__order-fact > b {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-  font-weight: 500;
-  text-align: right;
-  overflow-wrap: anywhere;
-}
-
-.app__order-amount {
-  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
-  font-variant-numeric: tabular-nums;
-  font-weight: 600;
-}
-
-.app__order-samelink {
-  color: var(--goldText);
-  font-size: 13px;
-  font-weight: 400;
-  white-space: nowrap;
-}
-
-/* ── The four named actions ─────────────────────────────── */
-.app__order-actions {
-  margin-top: 22px;
-}
-
-.app__order-buttons {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.app__order-buttons .app__button--link {
-  width: 100%;
-  text-align: center;
-}
-
-.app__order-note,
-.app__order-hint {
-  margin: 0;
-  font-size: 13px;
-  color: var(--muted);
-}
-
-.app__order-done {
-  margin: 0 0 12px;
-  padding: 10px 12px;
-  border: 1px solid var(--gold);
-  color: var(--goldText);
-  font-size: 14px;
-}
-
-/* The confirmation: in the flow under the buttons, not a modal. A dialog on a
-   phone held at a gate is one more surface that can land under a thumb. */
-.app__order-sheet {
-  margin-top: 14px;
-  padding: 14px;
-  background: var(--card);
-  border: 1px solid var(--cardEdge);
-}
-
-.app__order-sheet-title {
-  margin: 0 0 4px;
-  font-family: var(--font-bodoni), Georgia, serif;
-  font-size: 19px;
-  font-weight: 600;
-}
-
-.app__order-sheet-body {
-  margin: 0 0 12px;
-  font-size: 14px;
-  color: var(--muted);
-}
-
-.app__order-sheet-buttons {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.app__order-sheet-buttons .app__button {
-  flex: 1 1 140px;
-  width: auto;
-  text-align: center;
-}
-
-/* ── The order's tickets ────────────────────────────────── */
-.app__order-tickets {
-  margin-top: 26px;
-}
-
-.app__order-tickets-head {
-  margin: 0 0 6px;
-  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
-  font-size: 11px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-
-.app__order-ticket-list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.app__order-ticket {
-  display: grid;
-  grid-template-columns: minmax(0, auto) minmax(0, 1fr);
-  gap: 2px 12px;
-  padding: var(--rowY) 0;
-  border-top: 1px solid var(--rule);
-  font-size: 15px;
-}
-
-.app__order-ticket:last-child {
-  border-bottom: 1px solid var(--rule);
-}
-
-/* A voided seat is still part of the record, just visibly not a seat. */
-.app__order-ticket--void {
-  opacity: 0.6;
-}
-
-.app__order-ticket--void .app__order-ticket-type {
-  text-decoration: line-through;
-}
-
-.app__order-ticket-state {
-  text-align: right;
-  color: var(--muted);
-  font-size: 13px;
-}
-
-.app__order-ticket-scan {
-  grid-column: 1 / -1;
-  font-size: 13px;
-  color: var(--muted);
-}
-
-@media (min-width: 1024px) {
-  /* The filters sit beside the search rather than under it: one line of
-     controls over a wide list, which is what an office screen has room for. */
-  .app__orders-filters {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .app__orders-search {
-    flex: 1 1 320px;
-  }
-
-  .app__orders-search .app__input {
-    margin-bottom: 0;
-  }
-
-  .app__orders-selects {
-    flex: 0 0 auto;
-  }
-
-  .app__orders-select {
-    flex: 0 0 auto;
-  }
-
-  /* Two columns of facts, and the actions in a row: a laptop reads an order in
-     one screen rather than a scroll. */
-  .app__order-facts {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    column-gap: 32px;
-  }
-
-  .app__order-buttons {
-    flex-direction: row;
-    flex-wrap: wrap;
-  }
-
-  .app__order-buttons .app__button,
-  .app__order-buttons .app__button--link {
-    width: auto;
-    flex: 0 1 auto;
-    padding-inline: 20px;
-  }
-
-  .app__order-sheet {
-    max-width: 520px;
-  }
-}
-
 /* ── Izvedbe: the voditelj's forms (#503) ──────────────────────────────────
    Dodaj on the list, Uredi / Otkaži / Pragovi inside the tools card. They
    reuse the shell's existing controls (.app__input, .app__select,
@@ -5242,293 +4849,11 @@ a.app__statrow-main:focus-visible {
    breakpoint to change: the chart is the same shape on a phone and a laptop,
    and only the surrounding rhythm tightens (the shell's own #490 rules). */
 
-/* ─────────────────────────────────────────────────────────────
-   Upiti (#507): the enquiry inbox and one enquiry.
-
-   A mailbox rather than a table, and the phone is the case it is drawn for:
-   Tatjana reads these between other things, so a row is three lines and a
-   whole tap target, an unanswered one carries a gold edge she can find without
-   reading, and the message itself is the largest thing on the screen behind it.
-
-   Two badges and no third: *Novo* is the state, *Rezervacija* is the money.
-   The booking badge is the one filled shape on the screen, because lifting a
-   booking enquiry above a general one is the inbox's only opinion.
-
-   Tokens throughout, never a hex (#490): the badges borrow the gold and the
-   card edge the rest of the app already uses.
-   ───────────────────────────────────────────────────────────── */
-
-/* ── The state filter ───────────────────────────────────── */
-.app__inquiries-filter {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  margin-top: 16px;
-}
-
-.app__inquiries-select {
-  display: block;
-  flex: 1 1 180px;
-  min-width: 0;
-  max-width: 260px;
-}
-
-.app__inquiries-select .app__select {
-  width: 100%;
-}
-
-.app__inquiries-clear {
-  color: var(--goldText);
-  font-size: 13px;
-  text-decoration: none;
-}
-
-.app__inquiries-clear:hover {
-  text-decoration: underline;
-}
-
-.app__inquiries-count {
-  margin: 16px 0 2px;
-  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
-  font-variant-numeric: tabular-nums;
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-
-/* ── One row of the inbox ───────────────────────────────── */
-.app__inquiry-row {
-  display: block;
-  /* The #490 row rhythm, which tightens on a laptop. */
-  padding: var(--rowY) 0;
-  border-top: 1px solid var(--rule);
-  color: inherit;
-  text-decoration: none;
-}
-
-.app__inquiries-list .app__inquiry-row:last-child {
-  border-bottom: 1px solid var(--rule);
-}
-
-.app__inquiry-row:hover {
-  background: rgba(184, 136, 26, 0.07);
-}
-
-/* Unanswered: a gold edge down the left, so the part of the list that still
-   wants something is findable without reading a single badge. The padding
-   compensates for the border so the two kinds of row still line up. */
-.app__inquiry-row--new {
-  border-left: 3px solid var(--gold);
-  padding-left: 10px;
-  margin-left: -13px;
-}
-
-.app__inquiry-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.app__inquiry-name {
-  font-size: 16px;
-  font-weight: 600;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.app__inquiry-when {
-  flex: 0 0 auto;
-  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
-  font-variant-numeric: tabular-nums;
-  font-size: 11px;
-  letter-spacing: 0.06em;
-  color: var(--muted);
-  white-space: nowrap;
-}
-
-.app__inquiry-badges {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-top: 4px;
-}
-
-.app__inquiry-type {
-  font-size: 13px;
-  color: var(--muted);
-}
-
-.app__inquiry-preview {
-  display: block;
-  margin-top: 3px;
-  font-size: 13px;
-  color: var(--muted);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* Novo: outlined in gold, the same weight as the row's own edge. */
-.app__badge--new {
-  border-color: var(--gold);
-  color: var(--goldText);
-}
-
-/* Rezervacija: the one filled badge in the app outside an answer button. An
-   enquiry that wants to BUY something is the reason this screen exists. */
-.app__badge--booking {
-  background: var(--gold);
-  border-color: var(--gold);
-  color: var(--onGold);
-}
-
-/* ── The pager ──────────────────────────────────────────── */
-.app__inquiries-pager {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin-top: 20px;
-}
-
-.app__inquiries-page {
-  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
-  font-variant-numeric: tabular-nums;
-  font-size: 12px;
-  color: var(--muted);
-}
-
-/* ── One enquiry ────────────────────────────────────────── */
-.app__inquiry-back {
-  display: inline-block;
-  margin: 12px 0 4px;
-  color: var(--goldText);
-  font-size: 13px;
-  text-decoration: none;
-}
-
-.app__inquiry-back:hover {
-  text-decoration: underline;
-}
-
-.app__inquiry-facts {
-  margin-top: 12px;
-  border-top: 1px solid var(--rule);
-}
-
-.app__inquiry-fact {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 16px;
-  padding: var(--rowY) 0;
-  border-bottom: 1px solid var(--rule);
-}
-
-.app__inquiry-fact > span {
-  flex: 0 0 auto;
-  font-size: 12px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-
-.app__inquiry-fact > b {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: 8px;
-  min-width: 0;
-  font-weight: 600;
-  text-align: right;
-  overflow-wrap: anywhere;
-}
-
-.app__inquiry-address {
-  color: var(--goldText);
-  text-decoration: none;
-}
-
-.app__inquiry-address:hover {
-  text-decoration: underline;
-}
-
-/* The message: the largest thing on the screen, in a card of its own, with the
-   line breaks the enquirer typed. `pre-wrap` and not `pre`, so a long line
-   still wraps inside a phone rather than scrolling it sideways. */
-.app__inquiry-message {
-  margin-top: 20px;
-  padding: 14px 16px;
-  background: var(--card);
-  border: 1px solid var(--cardEdge);
-  border-radius: var(--radius);
-}
-
-.app__inquiry-message-head {
-  margin: 0 0 8px;
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-
-.app__inquiry-message-body {
-  margin: 0;
-  font-size: 16px;
-  line-height: 1.6;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-}
-
-/* ── The two actions ────────────────────────────────────── */
-.app__inquiry-actions {
-  margin-top: 20px;
-}
-
-.app__inquiry-buttons {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.app__inquiry-done {
-  margin: 0 0 10px;
-  font-size: 14px;
-  color: var(--goldText);
-}
-
-.app__inquiry-note {
-  margin: 0;
-  font-size: 14px;
-  color: var(--muted);
-}
-
-/* The laptop: the filter and the facts have room, so the two actions sit side
-   by side instead of stacking under the thumb. */
-@media (min-width: 700px) {
-  .app__inquiry-buttons {
-    flex-direction: row;
-    align-items: center;
-    flex-wrap: wrap;
-  }
-
-  .app__inquiry-buttons .app__button {
-    width: auto;
-    min-width: 180px;
-  }
-}
-
 /* ── Gratis: the comp screen (#506) ────────────────────────────────────────
    A port of the Backoffice comp panel, so most of it is the shell's vocabulary
    already: `app__stepper*` for the counts, `app__sale*` for the void list (a
    comp order is shaped exactly like a partner sale), `app__stats` for the
-   season table, `app__order-sheet` for the confirmation. What is new is the
+   season table, `app__confirm` for the confirmation (#570). What is new is the
    member picker, which is a search box over a scrollable list of names rather
    than a `<select>`: a roster of a hundred members is unreadable in a native
    picker on a phone, and the one thing the secretary knows is the name. */
@@ -7125,4 +6450,311 @@ a.app__statrow-main:focus-visible {
   align-items: center;
   gap: 10px;
   margin-top: 10px;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   The blagajna's three screens in the T1 skin (#570).
+
+   Narudžbe, Upiti and Gratis were the last screens still drawing their own
+   rows, their own badges and their own five kinds of button, so what is left
+   here is only what T1 has no shape for: the search box, the facts card's two
+   columns, the confirmation in the flow, and the taller mailbox row Upiti
+   needs because it carries a line of the message.
+
+   Everything else on those screens is now `ui-*`: Card, List, ListRow, Chip,
+   Section, Button, Sheet, FilterChips. Never a hex here — a token or nothing,
+   so the night skin follows (#562).
+   ───────────────────────────────────────────────────────────── */
+
+/* ── The controls above a list ──────────────────────────── */
+.app__filters {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.app__search {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* The box, not the input: the glyph sits inside the field so the label does
+   not need a line of its own on a phone. */
+.app__search-field {
+  display: flex;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 14px;
+  border-radius: var(--rCtl);
+  background: var(--card);
+  box-shadow: var(--shadowCard);
+  color: var(--muted);
+}
+
+.app__search-field input {
+  flex: 1 1 auto;
+  min-width: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-size: 16px; /* 16px or iOS zooms the page on focus. */
+}
+
+.app__search-field input:focus {
+  outline: none;
+}
+
+.app__search-field:focus-within {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+/* The order code beside the buyer: quiet, and on its own line on a phone. */
+.app__order-code {
+  display: block;
+  font-family: var(--sans);
+  font-variant-numeric: tabular-nums;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.app__order-right b {
+  font-variant-numeric: tabular-nums;
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* A voided ticket is still a row, just not one that counts. */
+.app__ticket--void .ui-row__body b {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+/* The one badge #570 did not replace with a Chip: the partner and comp lists
+   (`app__sale*`) still wear it, and they are not this ticket's screens. */
+.app__badge--refunded {
+  border-color: var(--red);
+  color: var(--warn);
+}
+
+/* ── The pager under a list ─────────────────────────────── */
+.app__pages {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 16px;
+  color: var(--muted);
+}
+
+/* ── The facts of one record ────────────────────────────── */
+.app__facts {
+  gap: 0;
+  margin-top: 12px;
+}
+
+.app__fact {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 0;
+  border-top: 1px solid var(--rule);
+}
+
+.app__fact:first-of-type {
+  border-top: 0;
+}
+
+.app__fact > span {
+  flex: 0 0 auto;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.app__fact > b {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  justify-content: flex-end;
+  min-width: 0;
+  font-size: 15px;
+  font-weight: 600;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.app__fact-link {
+  font-weight: 500;
+  font-size: 13px;
+  color: var(--goldText);
+}
+
+.app__amount {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── The named actions under the facts ──────────────────── */
+.app__actions {
+  margin-top: 16px;
+}
+
+/* Four verbs of very different lengths, so they are content-sized and wrap
+   rather than being forced into equal columns that break "Pošalji ulaznice
+   ponovno" across three lines (#570). */
+.app__actions .ui-btns {
+  flex-wrap: wrap;
+}
+
+.app__actions .ui-btns > .ui-btn {
+  flex: 1 1 auto;
+  white-space: nowrap;
+}
+
+/* What just happened, in the past tense, where the buttons are. */
+.app__done {
+  margin: 0 0 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--goldText);
+}
+
+/* Why there is nothing to press, or what a field will do. Not `.app__hint`,
+   which is the install card's bordered box. */
+.app__quiet {
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* The confirmation: a card in the flow under the buttons, never a modal,
+   because on a phone at a gate a dialog is one more thing that can land under
+   a finger. The red lives on Potvrdi and nowhere else (#570). */
+.app__confirm {
+  margin-top: 12px;
+  gap: 8px;
+}
+
+.app__confirm > b {
+  font-family: var(--serif);
+  font-size: 18px;
+}
+
+.app__confirm > p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+/* ── Upiti: the mailbox row ─────────────────────────────── */
+.app__inbox {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+/* Three lines and a whole tap target: who wrote, what kind of enquiry it is,
+   and the first line of what they said. Taller than a `ListRow` on purpose,
+   which is why it is the screen's own shape. */
+.app__mail {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px;
+  border-radius: var(--rCard);
+  background: var(--card);
+  box-shadow: var(--shadowCard);
+  color: inherit;
+  text-decoration: none;
+  transition: transform 0.12s var(--ease);
+}
+
+.app__mail:active {
+  transform: scale(0.99);
+}
+
+/* An unanswered enquiry, found without reading: the one gold edge on the
+   screen. */
+.app__mail--new {
+  box-shadow: inset 3px 0 0 0 var(--gold), var(--shadowCard);
+}
+
+.app__mail-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.app__mail-head b {
+  font-size: 16px;
+}
+
+.app__mail-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.app__mail-preview {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+/* The whole message, and the paragraphs the person typed. */
+.app__message {
+  margin-top: 12px;
+}
+
+.app__message p {
+  margin: 0;
+  font-size: 15px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* ── Gratis: the one button the form is behind ──────────── */
+.app__comp-open {
+  margin-top: 16px;
+}
+
+/* The laptop: the facts in two columns and the actions in a row, from the same
+   markup. The phone keeps everything stacked under the thumb. */
+@media (min-width: 700px) {
+  .app__facts {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 24px;
+  }
+
+  .app__fact:nth-of-type(2) {
+    border-top: 0;
+  }
+
+  .app__confirm {
+    max-width: 520px;
+  }
+
+  .app__mail-preview {
+    font-size: 15px;
+  }
+}
+
+/* One order is one line: which evening, how many seats, and the channel when
+   it is news. It never wraps — a row that grows to three lines stops being a
+   row and the list stops being scannable (#570). */
+.app__orders .ui-row__body span {
+  display: block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }

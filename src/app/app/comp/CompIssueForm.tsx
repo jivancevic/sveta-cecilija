@@ -13,8 +13,12 @@ import type { SellOption } from '@/lib/app/partner-screen'
 import { APP_STRINGS } from '@/lib/app/strings'
 import { Stepper } from '../Stepper'
 import { DrainBanner } from '../DrainBanner'
+import { Button } from '../ui'
 
-// "Podijeli gratis" (#506), ported from the Backoffice `CompIssueForm`.
+// "Podijeli gratis" (#506), ported from the Backoffice `CompIssueForm` and, as
+// of #570, living inside the sheet `CompIssueSheet` opens rather than at the
+// top of the screen. The flow, the route and every rule below are unchanged;
+// the heading moved out because the sheet already carries it.
 //
 // Same flow and same guarantees: the counts go to `/api/comp/issue`, which
 // re-reads the member, re-does the seat maths inside the per-show advisory lock
@@ -205,10 +209,6 @@ export function CompIssueForm({
 
   return (
     <section className="app__comp-issue">
-      <h2 className="app__month-head">
-        <span>{S.issueTitle}</span>
-      </h2>
-
       {done && <IssuedBanner done={done} onDone={dismiss} onOpenPdf={() => openPdf(done.orderId)} />}
 
       {shows.length === 0 ? (
@@ -284,31 +284,20 @@ export function CompIssueForm({
                 disabled={savingMember}
                 onChange={(e) => setNewName(e.target.value)}
               />
-              <button
-                type="button"
-                className="app__button"
+              <Button
                 disabled={savingMember || newName.trim() === ''}
                 onClick={addMember}
               >
                 {savingMember ? S.savingMember : S.saveMember}
-              </button>
-              <button
-                type="button"
-                className="app__button app__button--link"
-                disabled={savingMember}
-                onClick={() => setAdding(false)}
-              >
+              </Button>
+              <Button variant="link" disabled={savingMember} onClick={() => setAdding(false)}>
                 {S.cancel}
-              </button>
+              </Button>
             </div>
           ) : (
-            <button
-              type="button"
-              className="app__button app__button--link app__button--quiet"
-              onClick={() => setAdding(true)}
-            >
+            <Button variant="link" onClick={() => setAdding(true)}>
               {S.addMember}
-            </button>
+            </Button>
           )}
           {memberError && <p className="app__error">{memberError}</p>}
 
@@ -359,14 +348,14 @@ export function CompIssueForm({
 
           {error && <p className="app__error">{error}</p>}
 
-          <button
-            type="button"
-            className="app__button"
+          <Button
+            variant="primary"
+            className="ui-btn--wide"
             disabled={!view.canSubmit}
             onClick={submit}
           >
             {busy ? S.issuing : S.issue}
-          </button>
+          </Button>
           {memberId === '' && view.total > 0 && <p className="app__comp-hint">{S.memberRequired}</p>}
         </>
       )}
@@ -402,9 +391,9 @@ function IssuedBanner({
       <b>{S.doneTitle}</b>
       <span>{S.doneBody(done.ticketCount, done.code)}</span>
       <span className="app__comp-email">{line}</span>
-      <button type="button" className="app__button app__button--link" onClick={onOpenPdf}>
+      <Button variant="link" onClick={onOpenPdf}>
         {S.openPdf}
-      </button>
+      </Button>
     </div>
   )
 

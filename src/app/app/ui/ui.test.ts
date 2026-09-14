@@ -8,6 +8,7 @@ import { Button } from './Button'
 import { Card } from './Card'
 import { Chip } from './Chip'
 import { DateDisc } from './DateDisc'
+import { FilterChips } from './FilterChips'
 import { Hero } from './Hero'
 import { List, ListRow } from './ListRow'
 import { Note } from './Note'
@@ -211,6 +212,24 @@ describe('the rest of the shapes render', () => {
     expect(row).toContain('<svg')
     // The blades are Cecilija's own drawing and belong to the dance (#565).
     expect(render(h(ScreenIcon, { screen: 'moreska' as const }))).toContain('M14.5 17.5')
+  })
+
+  it('a row of filter chips fills the one that is on, and links the rest', () => {
+    const filters = render(
+      h(FilterChips, {
+        items: [
+          { key: '', label: 'Sve narudžbe', href: '/app/orders' },
+          { key: 'refunded', label: 'Vraćene', href: '/app/orders?state=refunded' },
+        ],
+        active: 'refunded',
+        label: 'Stanje',
+      }),
+    )
+    expect(filters).toContain('ui-filter--on')
+    expect(filters).toContain('aria-current="true"')
+    // Every chip is an address, so the control works with no JavaScript and a
+    // filtered list can be sent to somebody in a message.
+    expect(filters).toContain('href="/app/orders?state=refunded"')
   })
 
   it('a large podium carries a mark, a place and the reader own step', () => {

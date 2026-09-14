@@ -1795,11 +1795,17 @@ export const APP_STRINGS = {
    * the buyer's name and address, which is a repair rather than a decision.
    */
   orders: {
-    /** The search box and the two filters, above the list. */
+    /**
+     * The search box and the two filter rows, above the list.
+     *
+     * Since #570 the search runs as it is typed and the filters are chips, so
+     * there is no Traži button to name and no "poništi filtre" link: the first
+     * chip of each row IS the way back to the whole list, and it says so.
+     */
     searchLabel: 'Pretraži narudžbe',
     searchPlaceholder: 'Ime, e-pošta ili kod',
-    search: 'Traži',
-    clear: 'Poništi filtre',
+    /** The divider between the filters and the rows, with the count on it. */
+    listTitle: 'Narudžbe',
     showLabel: 'Izvedba',
     allShows: 'Sve izvedbe',
     stateLabel: 'Stanje',
@@ -1853,6 +1859,8 @@ export const APP_STRINGS = {
     /** The one order: its facts, in the order they are read. */
     detail: {
       back: 'Sve narudžbe',
+      /** The line above the facts card: what this card is (#570). */
+      eyebrow: 'Narudžba',
       noName: 'Bez imena',
       noEmail: 'Bez e-pošte',
       performance: 'Izvedba',
@@ -1949,9 +1957,11 @@ export const APP_STRINGS = {
    * stranger wrote and nobody in this app rewrites it.
    */
   inquiries: {
-    /** The state filter, above the list. */
+    /** The state filter, above the list; chips since #570, a select before it. */
     filterLabel: 'Stanje',
     all: 'Svi upiti',
+    /** The divider between the filter and the rows, with the count on it. */
+    listTitle: 'Upiti',
     states: {
       new: 'Novi',
       handled: 'Riješeni',
@@ -1971,6 +1981,8 @@ export const APP_STRINGS = {
     /** One enquiry: its facts, then the whole message, then the two actions. */
     detail: {
       back: 'Svi upiti',
+      /** The line above the facts card: what this card is (#570). */
+      eyebrow: 'Upit',
       missing: 'Ovaj upit ne postoji.',
       noName: 'Bez imena',
       noEmail: 'Bez e-pošte',
@@ -2618,8 +2630,10 @@ export const APP_STRINGS = {
    * drains.
    */
   gratis: {
-    /** Podijeli gratis: the issue form. */
+    /** Podijeli gratis: the button, and the title of the sheet it opens (#570). */
     issueTitle: 'Podijeli gratis',
+    /** The sheet's own way out, under the form. */
+    close: 'Zatvori',
     show: 'Izvedba',
     noShows: 'Nema nadolazećih izvedbi za koje se dijele ulaznice.',
     seatsLeft: (n: number) => `${n} slobodno`,

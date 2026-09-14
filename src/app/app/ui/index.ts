@@ -1,14 +1,15 @@
 // Cecilija's shared shapes (#562).
 //
-// Nineteen components and one stylesheet (`ui.css`, loaded by the route
+// Twenty components and one stylesheet (`ui.css`, loaded by the route
 // group's layout). Fifteen landed with T1; Ljestvica (#568) brought the
-// segmented control it needed and the count that runs up on first paint, and
-// Profil (#569) brought the switch, here rather than beside itself, which is
-// the rule. `ScreenIcon` came the other way: it was `AppNav`'s private map
-// until Više had to draw the same screens as rows.
+// segmented control it needed and the count that runs up on first paint,
+// Profil (#569) the switch, and Narudžbe (#570) the row of filter chips Upiti
+// reads too — each here rather than beside itself, which is the rule.
+// `ScreenIcon` came the other way: it was `AppNav`'s private map until Više
+// had to draw the same screens as rows.
 //
 // A screen composes these; a screen does not restyle them, and a
-// screen that needs a sixteenth shape brings it here rather than inventing one
+// screen that needs a twenty-first shape brings it here rather than inventing one
 // beside itself — that is exactly how the app ended up with five kinds of
 // button and no rule about which was primary (audit, pattern 2).
 //
@@ -25,6 +26,7 @@ export { Card, type CardProps } from './Card'
 export { Chip, type ChipProps, type ChipTone } from './Chip'
 export { CountUp, type CountUpProps } from './CountUp'
 export { DateDisc, type DateDiscProps } from './DateDisc'
+export { FilterChips, type FilterChipItem, type FilterChipsProps } from './FilterChips'
 export { Hero, type HeroProps } from './Hero'
 export { List, ListRow, type ListRowProps } from './ListRow'
 export { Note, type NoteProps } from './Note'

@@ -3,8 +3,11 @@
 import { useRouter } from 'next/navigation'
 import type { CompMemberTally } from '@/lib/app/comp-screen'
 import { APP_STRINGS } from '@/lib/app/strings'
+import { Card, Section } from '../ui'
 
-// "Gratis po članu" (#506) — the flat per-member table ADR-0019 asked for.
+// "Gratis po članu" (#506) — the flat per-member table ADR-0019 asked for, and
+// since #570 the first thing on the screen (Q44): the season's record is what
+// Gratis is opened to read, and the form that writes it is one tap away.
 //
 // Client-side for one reason only: the season dropdown navigates. Everything in
 // it is server-rendered data, counted by `tallyCompsByMember` and never
@@ -30,9 +33,7 @@ export function PerMemberTable({
 
   return (
     <section className="app__comp-permember">
-      <h2 className="app__month-head">
-        <span>{S.perMemberTitle}</span>
-      </h2>
+      <Section title={S.perMemberTitle} />
 
       <div className="app__stats-season">
         <label className="app__stats-label" htmlFor="comp-season">
@@ -53,7 +54,9 @@ export function PerMemberTable({
       </div>
 
       {rows.length === 0 ? (
-        <p className="app__empty">{S.perMemberEmpty}</p>
+        <Card className="app__empty">
+          <p>{S.perMemberEmpty}</p>
+        </Card>
       ) : (
         <table className="app__stats">
           <thead>

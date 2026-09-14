@@ -23,10 +23,14 @@ interface RowBase {
   children?: React.ReactNode
 }
 
+// `title` is omitted from both sides on purpose: the DOM's own `title`
+// attribute is a string, and a row whose first line is a fragment (a name with
+// an order code under it, #570) would otherwise fail to type-check against it.
+// The tooltip is no loss — a row this size says what it is on the row.
 export type ListRowProps = RowBase &
   (
-    | ({ href: string } & Omit<React.ComponentProps<typeof Link>, 'href' | 'className'>)
-    | ({ href?: undefined } & Omit<React.HTMLAttributes<HTMLDivElement>, 'className'>)
+    | ({ href: string } & Omit<React.ComponentProps<typeof Link>, 'href' | 'className' | 'title'>)
+    | ({ href?: undefined } & Omit<React.HTMLAttributes<HTMLDivElement>, 'className' | 'title'>)
   )
 
 export function ListRow({ lead, title, meta, trail, className, children, ...rest }: ListRowProps) {

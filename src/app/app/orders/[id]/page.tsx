@@ -4,19 +4,20 @@ import { loadOrderDetail } from '@/lib/app/orders-data'
 import { ordersHref, type OrdersQuery } from '@/lib/app/orders-query'
 import {
   channelLabel,
-  formatEur,
   partyLabel,
   performanceLabel,
   refundOffer,
   ticketView,
+  totalLabel,
   zagrebStamp,
 } from '@/lib/app/orders-view'
 import { APP_STRINGS } from '@/lib/app/strings'
 import { AppShell } from '../../AppShell'
 import { openScreen } from '../../gate'
+import { Card, Chip, List, ListRow, Section } from '../../ui'
 import { OrderActions } from './OrderActions'
 
-// `/app/orders/[id]` — one order (#501).
+// `/app/orders/[id]` — one order (#501, redressed by #570).
 //
 // The facts first, the actions under them, the tickets last. That order is the
 // order of the moment it serves: a guest says something is wrong, Tatjana reads
@@ -39,10 +40,10 @@ const D = S.detail
 /** The unfiltered list, as the base of the one link this page builds. */
 const EMPTY_QUERY: OrdersQuery = { q: '', showId: null, state: null, page: 1 }
 
-/** One line of the facts block: a label and a value, never an input. */
+/** One line of the facts card: a label and a value, never an input. */
 function Fact({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="app__order-fact">
+    <div className="app__fact">
       <span>{label}</span>
       <b>{children}</b>
     </div>
@@ -59,31 +60,36 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
   if (!order) {
     return (
       <AppShell viewer={viewer} screen="orders" title={D.missing}>
-        <p className="app__empty">{D.missing}</p>
-        <Link className="app__button app__button--link" href="/app/orders">
-          {D.back}
-        </Link>
+        <Card className="app__empty">
+          <p>{D.missing}</p>
+          <Link className="ui-btn ui-btn--link" href="/app/orders">
+            {D.back}
+          </Link>
+        </Card>
       </AppShell>
     )
   }
 
   const buyer = (order.buyerName ?? '').trim() || D.noName
   const refund = refundOffer(order, can({ permissions: viewer.permissions }, 'refunds'))
-  const amount = formatEur(order.totalCents)
+  const amount = totalLabel(order)
 
   return (
     <AppShell viewer={viewer} screen="orders" title={buyer}>
-      <Link className="app__order-back" href="/app/orders">
+      <Link className="app__back" href="/app/orders">
         ‹ {D.back}
       </Link>
 
-      <section className="app__order-facts">
+      <Card eyebrow={D.eyebrow} className="app__facts">
         <Fact label={D.performance}>
           {performanceLabel(order.show)}
           {order.show && (
             <>
               {' '}
-              <Link className="app__order-samelink" href={ordersHref({ ...EMPTY_QUERY, showId: order.show.id })}>
+              <Link
+                className="app__fact-link"
+                href={ordersHref({ ...EMPTY_QUERY, showId: order.show.id })}
+              >
                 {D.sameShow}
               </Link>
             </>
@@ -95,11 +101,12 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
         {order.promoCode && <Fact label={D.promoCode}>{order.promoCode}</Fact>}
         <Fact label={D.party}>{partyLabel(order.adultCount, order.childCount)}</Fact>
         <Fact label={D.total}>
-          <span className="app__order-amount">{amount}</span>
-          {order.refunded && <span className="app__badge app__badge--refunded">{S.refunded}</span>}
+          {/* "Gratis" on a comp, the amount on everything else (#570, Q41). */}
+          <span className="app__amount">{amount}</span>
+          {order.refunded && <Chip tone="warn">{S.refunded}</Chip>}
         </Fact>
         <Fact label={D.created}>{zagrebStamp(order.createdAt)}</Fact>
-      </section>
+      </Card>
 
       <OrderActions
         orderId={order.id}
@@ -109,28 +116,27 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
         buyerName={order.buyerName ?? ''}
       />
 
-      <section className="app__order-tickets">
-        <h2 className="app__order-tickets-head">{D.ticketsTitle}</h2>
-        {order.tickets.length === 0 ? (
-          <p className="app__empty">{D.noTickets}</p>
-        ) : (
-          <ul className="app__order-ticket-list">
-            {order.tickets.map((ticket) => {
-              const view = ticketView(ticket)
-              return (
-                <li
-                  key={ticket.id}
-                  className={`app__order-ticket${view.cancelled ? ' app__order-ticket--void' : ''}`}
-                >
-                  <span className="app__order-ticket-type">{view.type}</span>
-                  <span className="app__order-ticket-state">{view.state}</span>
-                  <span className="app__order-ticket-scan">{view.scan}</span>
-                </li>
-              )
-            })}
-          </ul>
-        )}
-      </section>
+      <Section title={D.ticketsTitle} />
+      {order.tickets.length === 0 ? (
+        <Card className="app__empty">
+          <p>{D.noTickets}</p>
+        </Card>
+      ) : (
+        <List>
+          {order.tickets.map((ticket) => {
+            const view = ticketView(ticket)
+            return (
+              <ListRow
+                key={ticket.id}
+                className={view.cancelled ? 'app__ticket--void' : undefined}
+                title={view.type}
+                meta={view.scan}
+                trail={<Chip tone={view.cancelled ? 'warn' : 'plain'}>{view.state}</Chip>}
+              />
+            )
+          })}
+        </List>
+      )}
     </AppShell>
   )
 }

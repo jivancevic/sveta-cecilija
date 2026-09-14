@@ -13,7 +13,7 @@
 import { VENUE_LABEL, type Venue } from '@/lib/venues'
 import type { OrderPerformance, OrderRow, OrderTicketRow } from '@/lib/repo/orders'
 import { pluralize } from './roster-loaders'
-import { APP_STRINGS, MONTHS_GENITIVE, shortWeekday } from './strings'
+import { APP_STRINGS, MONTHS_GENITIVE, shortMonthLabel, shortWeekday } from './strings'
 
 const S = APP_STRINGS.orders
 
@@ -24,6 +24,27 @@ export function formatEur(cents: number): string {
   const whole = Math.floor(abs / 100)
   const rest = String(abs % 100).padStart(2, '0')
   return `${sign}${whole},${rest} €`
+}
+
+/**
+ * What the money column says: "50,00 €", or "Gratis" (#570, Q41).
+ *
+ * A comp is `total = 0` by construction (ADR-0019), and a column of "0,00 €"
+ * read as a bug every time somebody scrolled past one: an order that cost
+ * nothing is not an order with a missing price, it is a seat the society gave
+ * away. The word is the channel's own (`S.channels.comp`), so the row and the
+ * detail say the same thing the Kanal line says.
+ */
+export function totalLabel(order: Pick<OrderRow, 'channel' | 'totalCents'>): string {
+  if (order.channel === 'comp') return S.channels.comp
+  return formatEur(order.totalCents)
+}
+
+/** "14. kol" — one evening, short enough to sit inside a filter chip. */
+export function shortPerformanceLabel(show: Pick<OrderPerformance, 'date'>): string {
+  const [, month, day] = (show.date ?? '').split('-').map(Number)
+  if (!month || !day) return show.date ?? ''
+  return `${day}. ${shortMonthLabel(month)}`.trim()
 }
 
 /** "2 odrasle, 1 dječja" — the party, with the empty half left out. */
@@ -152,19 +173,49 @@ export interface OrderRowView {
   total: string
   channel: string
   refunded: boolean
+  /**
+   * The disc on the left of the row: the evening this order is for (#570).
+   *
+   * Null when the performance is gone, because a disc with nothing on it is
+   * worse than no disc: the row still reads, it just has no date to mark.
+   */
+  disc: { day: string; weekday: string } | null
+  /**
+   * The row's second line: the evening, the party, and the channel when the
+   * channel is news (#570).
+   *
+   * An online order is the normal case and saying "Online" on nine rows out of
+   * ten is noise; a partner sale, a comp and a promo order are each something
+   * the reader has to know about the row, so those keep their words. The money
+   * column already says "Gratis" on a comp, and this line is what names the
+   * reseller behind a partner sale.
+   */
+  meta: string
 }
 
 /** Everything one row of the list prints, gathered so the page has no logic. */
 export function orderRowView(order: OrderRow): OrderRowView {
   const buyer = (order.buyerName ?? '').trim()
+  const day = order.show ? Number((order.show.date ?? '').split('-')[2]) : NaN
   return {
+    disc:
+      order.show && Number.isFinite(day)
+        ? { day: String(day), weekday: shortWeekday(order.show.date) }
+        : null,
     href: `/app/orders/${order.id}`,
     buyer: buyer || S.detail.noName,
     code: order.code,
     performance: performanceLabel(order.show),
     party: partyLabel(order.adultCount, order.childCount),
-    total: formatEur(order.totalCents),
+    total: totalLabel(order),
     channel: channelLabel(order),
+    meta: [
+      performanceLabel(order.show),
+      partyLabel(order.adultCount, order.childCount),
+      order.channel === 'online' && !order.promoCode ? '' : channelLabel(order),
+    ]
+      .filter(Boolean)
+      .join(' · '),
     refunded: order.refunded,
   }
 }

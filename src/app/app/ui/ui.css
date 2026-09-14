@@ -247,6 +247,51 @@
   color: var(--warn);
 }
 
+/* ── FilterChips (#570) ───────────────────────────────────
+   A row of addresses, one of them filled. It scrolls sideways and hides its
+   scrollbar, because a season's performances are twenty chips and a control
+   that wraps to four lines pushes the list it filters off the screen. The
+   edge padding is negative so the row bleeds to the screen edge while the
+   first chip still lines up with the cards above it. */
+.ui-filters {
+  display: flex;
+  gap: 8px;
+  margin: 0 -20px;
+  padding: 2px 20px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.ui-filters::-webkit-scrollbar {
+  display: none;
+}
+
+.ui-filter {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: var(--rPill);
+  background: var(--sunk);
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-decoration: none;
+  transition: background 0.2s var(--ease), color 0.2s var(--ease);
+}
+
+.ui-filter:active {
+  transform: scale(0.97);
+}
+
+.ui-filter--on {
+  background: var(--thumb);
+  color: var(--bg);
+}
+
 /* ── Note ─────────────────────────────────────────────────── */
 .ui-note {
   display: flex;

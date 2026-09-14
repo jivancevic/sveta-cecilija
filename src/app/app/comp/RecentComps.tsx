@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import type { CompOrderRow, CompTicket } from '@/lib/comp/comp-report'
 import { shortShowDay } from '@/lib/app/partner-screen'
 import { APP_STRINGS, shortMonthLabel } from '@/lib/app/strings'
+import { Button, Card, Section } from '../ui'
 
 // "Zadnji gratisi" (#506): the list a comp is voided from.
 //
@@ -98,14 +99,14 @@ export function RecentComps({ initial }: { initial: CompOrderRow[] }) {
 
   return (
     <section className="app__comp-recent">
-      <h2 className="app__month-head">
-        <span>{S.recentTitle}</span>
-      </h2>
+      <Section title={S.recentTitle} />
 
-      {done && <p className="app__order-done">{done}</p>}
+      {done && <p className="app__done">{done}</p>}
 
       {initial.length === 0 ? (
-        <p className="app__empty">{S.recentEmpty}</p>
+        <Card className="app__empty">
+          <p>{S.recentEmpty}</p>
+        </Card>
       ) : (
         <ul className="app__sale-list">
           {initial.map((order) => {
@@ -193,40 +194,28 @@ export function RecentComps({ initial }: { initial: CompOrderRow[] }) {
       )}
 
       {target && (
-        <div
-          className="app__order-sheet"
+        <Card
+          className="app__confirm"
           role="group"
           aria-label={target.ticket ? S.confirmTicketTitle : S.confirmOrderTitle}
         >
-          <p className="app__order-sheet-title">
-            {target.ticket ? S.confirmTicketTitle : S.confirmOrderTitle}
-          </p>
-          <p className="app__order-sheet-body">
+          <b>{target.ticket ? S.confirmTicketTitle : S.confirmOrderTitle}</b>
+          <p>
             {target.ticket
               ? S.confirmTicketBody(target.ticket.ref)
               : S.confirmOrderBody(target.order.code, target.order.activeCount)}
           </p>
           {target.ticket?.scanned && <p className="app__comp-warn">{S.confirmScanned}</p>}
           {error && <p className="app__error">{error}</p>}
-          <div className="app__order-sheet-buttons">
-            <button
-              type="button"
-              className="app__button app__button--danger"
-              disabled={busy}
-              onClick={confirm}
-            >
+          <div className="ui-btns">
+            <Button variant="destructive" disabled={busy} onClick={confirm}>
               {busy ? S.cancelling : S.confirm}
-            </button>
-            <button
-              type="button"
-              className="app__button app__button--link"
-              disabled={busy}
-              onClick={() => setTarget(null)}
-            >
+            </Button>
+            <Button variant="link" disabled={busy} onClick={() => setTarget(null)}>
               {S.cancel}
-            </button>
+            </Button>
           </div>
-        </div>
+        </Card>
       )}
 
       {error && !target && <p className="app__error">{error}</p>}
