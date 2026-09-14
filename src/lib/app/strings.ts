@@ -1733,18 +1733,75 @@ export const APP_STRINGS = {
     children: 'Djeca',
     monthlyTitle: 'Mjesečni obračun',
     monthlyIntro: 'Odaberi mjesec i provjeri iznose prije uplate.',
+    partner: 'Partner',
     month: 'Mjesec',
     year: 'Godina',
+    show: 'Prikaži',
     loading: 'Učitavam...',
     failed: 'Obračun se nije učitao. Pokušaj ponovno.',
     tickets: 'Prodanih ulaznica',
     cancelled: 'Otkazanih',
-    gross: 'Ukupno naplaćeno',
-    commission: (percent: number) => `Tvoja provizija (${percent}%)`,
-    owed: 'Za uplatiti HGD-u',
+    /**
+     * **One name for one number** (#599). It was *Ukupno naplaćeno* here and
+     * *Naplaćeno* on Financije, one line under *Prikupljeni prihod*, which
+     * means something else entirely: money the society actually holds. Partner
+     * money is not collected revenue and the two must never be summed
+     * (ADR-0015). The secretary's own phrase settles it, and the document
+     * prints the same words (`STATEMENT_DOC_COPY.gross`).
+     */
+    gross: 'Vrijednost prodanog',
+    commission: (percent: number) => `Provizija (${percent}%)`,
+    owed: 'Za uplatu HGD-u',
     perShow: 'Po izvedbama',
     empty: 'U tom mjesecu nema prodaje.',
-    download: 'Preuzmi CSV',
+    downloadPdf: 'Preuzmi PDF',
+    downloadCsv: 'Preuzmi tablicu',
+    /** The row under the table: what was voided, never a deduction. */
+    cancelledLine: (count: number, amount: string) =>
+      `Stornirano u razdoblju: ${count} kom., ${amount}`,
+    cancelledNote: 'Nije uključeno u iznose iznad.',
+    /** The period, spelled as the SALE days it covers. */
+    periodLabel: 'Razdoblje',
+    periodValue: (label: string) => `prodaja ${label}`,
+    noPartners: 'Nema partnera za prikaz.',
+
+    /**
+     * **Označi poslanim** (#599): the secretary's stamp, and the moment a
+     * live calculation becomes a settlement.
+     *
+     * The copy carries the consequence rather than hiding it, because the
+     * action is not undoable by accident and should not read as a tick: once a
+     * month is stamped, its figures stop moving, and changing the partner's
+     * commission afterwards leaves it exactly where it was.
+     */
+    sent: {
+      title: 'Slanje partneru',
+      idle: 'Ovaj mjesec još nije označen poslanim, pa se iznosi računaju uživo.',
+      mark: 'Označi poslanim',
+      marking: 'Spremam...',
+      unmark: 'Poništi oznaku',
+      /** `date` is already a Croatian date and carries its own final dot. */
+      stamped: (date: string) => `Poslano ${date}`,
+      frozen: 'Iznosi su zamrznuti onakvi kakvi su poslani. Promjena provizije ih više ne mijenja.',
+      /** The refusal the route gives, said before the button is pressed too. */
+      monthNotOver: 'Obračun se može označiti poslanim tek kad mjesec završi.',
+      failed: 'Spremanje nije uspjelo. Pokušaj ponovno.',
+      invalid: 'Neispravan zahtjev.',
+      rejected: 'Zahtjev je odbijen.',
+      noPartner: 'Partner nije pronađen.',
+      /** The handover: Cecilija never sends the mail (same rule as Upiti). */
+      mailTitle: 'Pošalji e-mailom',
+      mailNote: 'Preuzmi PDF, pa ga priloži u poruci koja se otvori. Odgovor tako dolazi na info@.',
+      mailOpen: 'Otvori poruku',
+      mailNoAddress: 'Partner nema upisanu e-mail adresu za obračun. Dodaj je u Backofficeu.',
+      mailFallback: (address: string) => `Adresa obračuna nije upisana, pa se koristi ${address}.`,
+      mailSubject: (partner: string, period: string) => `Obračun ${period} - ${partner}`,
+      mailBody: (partner: string, period: string, amount: string) =>
+        `Poštovani,\n\nu prilogu je obračun prodaje za ${period}.\n` +
+        `Za uplatu HGD-u: ${amount}.\n\n` +
+        `Na temelju ovog obračuna knjigovodstvo izdaje račun.\n\n` +
+        `Lijep pozdrav,\nHGD Sveta Cecilija\n${partner}`,
+    },
   },
 
   /**
@@ -1811,11 +1868,13 @@ export const APP_STRINGS = {
     year: 'Godina',
     show: 'Prikaži',
     tickets: 'Ulaznica',
-    gross: 'Naplaćeno',
+    /** The one name, shared with Obračun and with the document (#599). */
+    gross: 'Vrijednost prodanog',
     commission: 'Provizija',
-    owed: 'Za uplatu',
+    owed: 'Za uplatu HGD-u',
     cancelled: (n: number) => `${n} otkazanih`,
-    download: 'Preuzmi obračun',
+    /** Not a file any more: the link opens the DOCUMENT, on Obračun (#599). */
+    download: 'Otvori obračun',
     noPartners: 'Nema partnera za prikaz.',
     /**
      * The ledger (ADR-0025). Every line says what was charged and, where that

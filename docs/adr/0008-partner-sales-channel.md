@@ -12,6 +12,29 @@
 > opposite case** — those must be fiscalized by the app itself, with an automatic
 > R1 company invoice on request. See ADR-0020 as amended.
 
+> **Amendment added 2026-09-14 (#599).** Two things this ADR left open turned out
+> to matter, and both are now decided.
+>
+> **1. A sent statement is frozen.** The ADR says the statement is computed from
+> `sold × face value` and the partner's `commissionPercent`, and until #599 that
+> computation ran on every read — so raising a reseller's rate silently rewrote
+> every month the accountant had already invoiced. Marking a month **sent** now
+> stores the whole document (party, lines, cents) in `partner_statements`, and
+> every later read of that month serves the stored one. A month that has not
+> ended in Europe/Zagreb cannot be marked sent; un-marking returns it to live,
+> and is the sanctioned way to correct a statement sent in error. **Payment is
+> not tracked** — that is the accountant's book.
+>
+> **2. The season receivable buckets by sale date too.** The ADR fixes the
+> monthly period at `order.created_at`, and the document now says so in words
+> (*Razdoblje: prodaja …*), because a partner closes their till by sale day.
+> The SEASON figure on Financije used to window on the performance date with a
+> public-performance filter, so it could never equal the sum of the twelve
+> statements. It is now the same query with a year window and **no filter on
+> `isPublic`**: the sell route already refuses a non-public evening, and a
+> receivable is a debt that does not stop existing because somebody later
+> unticked a flag on the evening it was sold for.
+
 ## Context
 
 Until now moreska.eu has had two ways tickets reach attendees: **online** (buyer pays via Stripe on the site → `Order` + tickets + PDF email) and **in-person** (a bare `inPersonSold` integer counter on `Shows`, no order, no artifact, no PII — the door cash tally).

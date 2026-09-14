@@ -5142,6 +5142,76 @@ span.app__sale-head {
   margin-top: 16px;
 }
 
+/* The picker grew a third field for the secretary (#599), so it wraps rather
+   than squeezing three selects onto one phone row. The partner is the widest
+   of the three and takes a whole row of its own when they cannot all fit. */
+.app__statement-picker {
+  flex-wrap: wrap;
+}
+
+.app__statement-picker-partner {
+  flex: 1 1 100%;
+}
+
+/* The period, above the figures: it says the month is bucketed by SALE date,
+   which is the one thing a reseller has to know to check it against their own
+   till. */
+.app__statement-period {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 4px;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.app__statement-period b {
+  color: var(--ink);
+}
+
+/* Storno: under the total, never in it. Quiet on purpose — it is context for a
+   reader reconciling their own book, not a figure anybody is billed for. */
+.app__statement-cancelled {
+  margin: 14px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--rule);
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.app__statement-cancelled i {
+  font-style: normal;
+  display: block;
+}
+
+.app__statement-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.app__statement-send {
+  margin-top: 24px;
+}
+
+.app__statement-frozen {
+  margin-top: 12px;
+}
+
+.app__statement-mail {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--rule);
+}
+
+.app__statement-mailnote {
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
 .app__statbars {
   margin-top: 10px;
 }

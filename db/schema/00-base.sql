@@ -398,6 +398,7 @@ CREATE TABLE IF NOT EXISTS public.partners (
     name character varying NOT NULL,
     oib character varying,
     billing_address character varying,
+    email character varying,
     commission_percent numeric DEFAULT 10 NOT NULL,
     active boolean DEFAULT true,
     updated_at timestamp(3) with time zone DEFAULT now() NOT NULL,

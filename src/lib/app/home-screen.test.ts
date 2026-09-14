@@ -92,10 +92,13 @@ describe('homeCardKeys', () => {
     ])
   })
 
-  it('gives a finance holder the euros card and the counts card', () => {
+  it('gives a finance holder the euros, the counts and the partner statement', () => {
+    // Obračun joined the secretary's bar with #599, so it joins her Početna by
+    // the same rule: the cards come off `nav.tabs` and never off a second list.
     expect(homeCardKeys(appNav(user('finance'), ctx()))).toEqual([
       'finance',
       'stats',
+      'statement',
       'notifications',
     ])
   })

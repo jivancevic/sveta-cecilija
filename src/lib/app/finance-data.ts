@@ -19,14 +19,17 @@
 //     half is Σ(quantity × unit_price_cents) off `offline_sales`, which is also
 //     where the per-evening door listing comes from: one query, two answers,
 //     so the season total and the lines under it cannot disagree.
-//   - **Only a public performance sells anything** (ADR-0024), so every query
-//     carries `publicPerformanceSql`, spelled in the one place it is spelled.
-//   - **The month panel buckets the way the statement does.** The receivable
-//     for a chosen month is bucketed by `orders.created_at` in Europe/Zagreb,
-//     because that is what `/api/partner/reconciliation` does, and the row on
-//     screen has the CSV of the same month one tap away. The SEASON figure is
-//     windowed by the performance date instead, like every other season number
-//     on this screen.
+//   - **Only a public performance sells anything** (ADR-0024), so every REVENUE
+//     query carries `publicPerformanceSql`, spelled in the one place it is
+//     spelled. The two partner queries are the exception and say why: a
+//     receivable is a debt, and a debt does not stop existing because somebody
+//     later unticked `isPublic` on the evening it was sold for.
+//   - **Both partner figures bucket by SALE date, in Europe/Zagreb** (#599).
+//     The month is what `/api/partner/reconciliation` computes, so the row on
+//     screen and the statement behind it are the same period; the season is the
+//     same query with a year window, so the season card IS the sum of the
+//     twelve statements rather than a second number that resembles it. Before
+//     #599 the season windowed on `shows.date` and the two could not agree.
 //
 // No buyer reaches this file: no `email`, no name, no order id. Financije
 // answers "how much", never "from whom" (#509, `finance-no-pii.test.ts`).
@@ -141,11 +144,26 @@ async function seasonLedger(query: PoolQuery, season: number): Promise<LedgerLin
 }
 
 /**
- * Partner-channel tickets of the season, windowed by the performance date,
- * each carrying its own Partner row.
+ * Partner-channel tickets SOLD in one season, each carrying its own Partner row.
  *
- * The join to `partners` is what makes the season receivable correct rather
- * than merely plausible (the same shape `dashboard/revenue-data.ts` uses): a
+ * **This is `monthPartnerTickets` with a year window, and it has to stay that
+ * way** (#599). Until then the season windowed on `shows.date` while the month
+ * windowed on `orders.created_at`, so a December sale for a July evening landed
+ * in two different periods and the season card could not equal the sum of the
+ * twelve statements the accountant had actually invoiced. The two queries now
+ * differ in one clause and nothing else, which makes that equality a property
+ * of the shape rather than a coincidence anyone has to re-verify.
+ *
+ * **No `shows` join and no `publicPerformanceSql`**, also deliberately. The
+ * filter is unreachable in normal operation — `createPartnerSale` throws
+ * `SHOW_NOT_PUBLIC` before a partner seat can exist on a non-public evening —
+ * and the only way it could ever bite is somebody flipping `isPublic` on a show
+ * a partner had already sold for. The partner still owes that money, so
+ * filtering it out would understate a real receivable. The guard belongs in the
+ * sell route, where it already is.
+ *
+ * The join to `partners` is what makes the receivable correct rather than
+ * merely plausible (the same shape `dashboard/revenue-data.ts` uses): a
  * reseller deactivated in August still owes for what it sold in July, and
  * building the total from the list of partners who may still SELL would drop
  * that debt without a trace.
@@ -154,15 +172,13 @@ async function seasonPartnerTickets(
   query: PoolQuery,
   season: number,
 ): Promise<PartnerTicketRow[]> {
-  const [from, to] = YEAR_BOUNDS(season)
   const res = await query(
     `SELECT ${PARTNER_TICKET_COLUMNS}
      FROM tickets t
      JOIN orders o ON o.id = t.order_id
      JOIN partners p ON p.id = o.partner_id
-     JOIN shows s ON s.id = o.show_id
-     WHERE s.date >= $1 AND s.date < $2 AND ${publicPerformanceSql('s')}`,
-    [from, to],
+     WHERE EXTRACT(YEAR FROM (o.created_at AT TIME ZONE 'Europe/Zagreb')) = $1`,
+    [season],
   )
   return res.rows.map(toPartnerTicket)
 }

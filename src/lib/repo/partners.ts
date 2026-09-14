@@ -32,6 +32,16 @@ export interface PartnersRepo {
    * it keep working until somebody unlinks them.
    */
   activeList(): Promise<PartnerRecord[]>
+
+  /**
+   * EVERY partner, active or not, by name (#599). Obračun's partner picker
+   * reads this rather than `activeList`, and the difference is a real debt: a
+   * reseller deactivated in September still owes for what it sold in August,
+   * and a statement the secretary cannot open is a receivable nobody chases.
+   * Prodaja keeps `activeList`, because a retired partner must not be offered
+   * a new sale.
+   */
+  all(): Promise<PartnerRecord[]>
 }
 
 export type { PartnerRecord }
