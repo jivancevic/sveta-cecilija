@@ -4,60 +4,26 @@ import { useRef } from 'react'
 import { APP_STRINGS } from '@/lib/app/strings'
 import type { MonthOption } from '@/lib/app/finance-view'
 
-// The two pickers of Financije (#509).
+// The statement picker of Financije (#509), and since #571 the only one.
 //
-// Plain GET forms, which is why the whole screen's state is in the URL: with
-// JavaScript off they still submit, and with it on a select submits itself so
-// changing a month is one tap rather than a tap and a press. Each form carries
-// the other picker's value in a hidden field, so choosing a month keeps the
-// season and choosing a season keeps the month.
+// A plain GET form, which is why the whole screen's state is in the URL: with
+// JavaScript off it still submits, and with it on a select submits itself so
+// changing a month is one tap rather than a tap and a press. It carries the
+// season in a hidden field, so picking a month keeps the year the cards above
+// are counting.
 //
-// They are client components for that auto-submit and nothing else; every
-// option they render was decided on the server.
+// The season itself became a row of links (`ui/Seasons`) with the redesign, so
+// the form that used to wrap it is gone: a season is a navigation, and a select
+// bought a client island for it while hiding the other years behind a tap.
+//
+// A client component for that auto-submit and nothing else; every option it
+// renders was decided on the server.
+//
+// **The month cap is not this file's** and must stay that way: `statementMonths`
+// stops at the current Zagreb month (`finance-view.ts`), because there is no
+// obračun for a month that has not happened.
 
 const S = APP_STRINGS.finance
-
-export function SeasonForm({
-  season,
-  seasons,
-  year,
-  month,
-}: {
-  season: number
-  seasons: number[]
-  year: number
-  month: number
-}) {
-  const form = useRef<HTMLFormElement>(null)
-
-  return (
-    <form ref={form} className="app__finance-season" action="/app/finance" method="get">
-      <input type="hidden" name="year" value={year} />
-      <input type="hidden" name="month" value={month} />
-      <label className="app__finance-label" htmlFor="finance-season">
-        {S.season}
-      </label>
-      <select
-        id="finance-season"
-        name="season"
-        className="app__select"
-        defaultValue={String(season)}
-        onChange={() => form.current?.requestSubmit()}
-      >
-        {seasons.map((y) => (
-          <option key={y} value={y}>
-            {y}
-          </option>
-        ))}
-      </select>
-      <noscript>
-        <button type="submit" className="app__button app__button--quiet">
-          {S.show}
-        </button>
-      </noscript>
-    </form>
-  )
-}
 
 export function MonthForm({
   season,
@@ -76,10 +42,10 @@ export function MonthForm({
   const submit = () => form.current?.requestSubmit()
 
   return (
-    <form ref={form} className="app__finance-picker" action="/app/finance" method="get">
+    <form ref={form} className="app__fin-picker" action="/app/finance" method="get">
       <input type="hidden" name="season" value={season} />
       <div>
-        <label className="app__finance-label" htmlFor="finance-month">
+        <label className="app__fin-label" htmlFor="finance-month">
           {S.month}
         </label>
         <select
@@ -97,7 +63,7 @@ export function MonthForm({
         </select>
       </div>
       <div>
-        <label className="app__finance-label" htmlFor="finance-year">
+        <label className="app__fin-label" htmlFor="finance-year">
           {S.year}
         </label>
         <select
@@ -115,7 +81,7 @@ export function MonthForm({
         </select>
       </div>
       <noscript>
-        <button type="submit" className="app__button app__button--quiet">
+        <button type="submit" className="ui-btn ui-btn--ghost">
           {S.show}
         </button>
       </noscript>

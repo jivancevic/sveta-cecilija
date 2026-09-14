@@ -617,6 +617,75 @@ button.ui-row:hover {
   color: var(--ink);
 }
 
+/* ── Seasons ──────────────────────────────────────────────
+   A row of years, the current one filled in gold. Pills rather than the
+   bordered box the old nav drew, which framed a single year in a full-width
+   rectangle; they wrap on a phone once a society has had six seasons. */
+.ui-seasons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ui-season {
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 14px;
+  border-radius: var(--rPill);
+  background: var(--sunk);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-decoration: none;
+}
+
+.ui-season--on {
+  background: var(--gold);
+  color: var(--onGold);
+}
+
+/* ── Explain ──────────────────────────────────────────────
+   The "i" beside a heading: the rest of an explanation, one tap away. A circle
+   the size of a word, never a full button, because it is not the thing the
+   reader came to press — and 44px of hit area around it anyway, which is what
+   the negative margin buys back from the line it sits on. */
+.ui-explain {
+  position: relative;
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  margin: -11px 0;
+  padding: 0;
+  border: 1px solid var(--ghostEdge);
+  border-radius: var(--rPill);
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.ui-explain::after {
+  content: '';
+  position: absolute;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--rPill);
+}
+
+.ui-explain:active {
+  background: var(--sunk);
+}
+
+.ui-explain__body {
+  margin: 0;
+  color: var(--muted);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
 /* ── ArmyBar ──────────────────────────────────────────────
    Two armies, one bar, filling outwards from the middle: crni left in ink,
    bili right in red. The gold ticks are the threshold, so "are we enough

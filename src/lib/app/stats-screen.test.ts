@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { buildStatsScreen, type StatsScreenInput } from './stats-screen'
 
@@ -186,5 +188,31 @@ describe('the season picker', () => {
     const screen = buildStatsScreen(input())
     expect(screen.season).toBe(2026)
     expect(screen.seasons).toEqual([2026, 2025])
+  })
+})
+
+describe('Statistika carries no money', () => {
+  // The rule the screen exists under (#500, #508, restated by the redesign in
+  // #571): counts here, euros on Financije, and never the same figure twice.
+  //
+  // A source scan rather than a rendered assertion, for the same reason
+  // `finance-no-pii.test.ts` scans: the way this breaks is an import — a
+  // `formatEur` pulled in to "just show the revenue on the row" — and a field
+  // nobody renders yet would pass any runtime check. Comments are stripped, so
+  // the module comments may go on explaining the rule in the words the code
+  // may not use.
+  const ROOT = path.resolve(__dirname, '../../..')
+  const FILES = ['src/app/app/stats/page.tsx', 'src/lib/app/stats-screen.ts'] as const
+  const MONEY = ['formateur', 'cents', 'revenue', 'eur(', '€'] as const
+
+  function stripComments(source: string): string {
+    return source.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1')
+  }
+
+  it.each(FILES)('%s names no money', (file) => {
+    const code = stripComments(readFileSync(path.join(ROOT, file), 'utf8')).toLowerCase()
+    for (const word of MONEY) {
+      expect(code, `${file} must not mention ${word}`).not.toContain(word)
+    }
   })
 })

@@ -2654,31 +2654,6 @@ a.app__ob-link {
    A row of pills, not a bordered box with a year centred in it. One season is
    then one small pill rather than a full-width frame around a number, and ten
    seasons wrap instead of squeezing. */
-.app__lb-seasons {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.app__lb-season {
-  min-height: 32px;
-  display: inline-flex;
-  align-items: center;
-  padding: 5px 14px;
-  border-radius: var(--rPill);
-  background: var(--sunk);
-  color: var(--muted);
-  font-size: 13px;
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-  text-decoration: none;
-}
-
-.app__lb-season--on {
-  background: var(--gold);
-  color: var(--onGold);
-}
-
 /* "Ti si 5. s 11 nastupa. Još 2 nastupa do 4. mjesta." */
 .app__lb-standing {
   margin: 0;
@@ -4605,46 +4580,106 @@ span.app__sale-head {
    the mix bar and the legend all read one token rather than three hexes.
    Gold is online because it is the primary channel; the other three are the
    muted earth tones of the same family, distinct enough to tell apart without
-   the legend. */
+   the legend.
+
+   **They are tokens with a night set of their own** (#571). A chart is the one
+   place a screen is tempted to hard-code a colour, and the three earth tones
+   drawn for paper go to mud on a dark card; these five re-point under the
+   theme like every other token, so the charts follow the skin instead of
+   holding it. Nothing in the two charts below names a colour of its own. */
 .app {
   --ch-online: var(--gold);
   --ch-door: #4a6670; /* slate teal */
   --ch-partner: #8c5a3c; /* terracotta bronze */
   --ch-comp: #6a5a7d; /* muted plum */
+  --ch-cancelled: var(--rule);
+  --ch-track: var(--sunk); /* the ceiling a bar fills up to */
+}
+
+/* The same four, lifted for a dark card: the hue is kept so the legend still
+   teaches the light chart, the value is raised so a 6px segment reads at all.
+   `--ch-cancelled` goes the other way and becomes a surface a shade above the
+   track, because `--rule` at night is an eighth of an alpha and invisible. */
+.app[data-theme='dark'] {
+  --ch-door: #7da5b3;
+  --ch-partner: #d4936a;
+  --ch-comp: #a795c4;
+  --ch-cancelled: var(--track);
+  /* On paper the ceiling is a surface below the card; at night `--sunk` is
+     almost black and twenty of them read as holes cut in the card, so the
+     ceiling goes the other way and lifts. */
+  --ch-track: var(--track);
+}
+
+/* The screen: one column of cards and section lines, like every other (#571). */
+.app__st {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
 }
 
 /* ── The season band ─────────────────────────────────────── */
-.app__statband {
-  margin-bottom: 22px;
+.app__st-band {
+  gap: 12px;
 }
 
-.app__statband-track {
+/* Four figures, two by two on a phone: a 4-up row of 34px numbers is four
+   columns of two characters each and reads as a table nobody asked for. */
+.app__st-figs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px 12px;
+}
+
+.app__st-fig b {
+  display: block;
+  font-family: var(--serif);
+  font-variant-numeric: tabular-nums;
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+/* The direct child only: the figure itself may be a `CountUp`, which renders a
+   span of its own inside the number and would otherwise be shrunk to a caption. */
+.app__st-fig > span {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.app__st-track {
   display: block;
   height: 8px;
-  margin-top: 10px;
+  border-radius: var(--rPill);
   background: var(--sunk);
   overflow: hidden;
 }
 
-.app__statband-track i {
+.app__st-track i {
   display: block;
   height: 100%;
+  border-radius: var(--rPill);
   background: var(--gold);
 }
 
 /* A sentence that explains a number, never a warning: small, muted, and under
    the block it is about rather than floating at the foot of the screen. */
-.app__statnote {
-  margin: 8px 0 0;
+.app__st-note {
+  margin: 0;
   font-size: 12px;
   color: var(--muted);
 }
 
-/* ── Tijek sezone: one column per evening ─────────────────── */
-.app__traj {
-  margin-top: 24px;
+/* A chart sits in a card and needs no rhythm of its own; the scroll is the
+   chart's, so the card keeps its own padding and lets the bars run past it. */
+.app__st-chart,
+.app__st-rows,
+.app__st-comps {
+  gap: 10px;
 }
 
+/* ── Tijek sezone: one column per evening ─────────────────── */
 /* Twenty-two evenings do not fit a phone, so the chart scrolls sideways rather
    than crushing every bar to a hairline. The height comes from the columns
    (the tallest ceiling plus its two labels), never from this box: the bar
@@ -4683,7 +4718,8 @@ span.app__sale-head {
   flex-direction: column-reverse;
   width: 100%;
   margin: 4px 0 6px;
-  background: var(--sunk);
+  border-radius: 3px;
+  background: var(--ch-track);
   overflow: hidden;
 }
 
@@ -4716,7 +4752,7 @@ span.app__sale-head {
 /* A cancelled evening is one flat block: its seats no longer mean anything
    worth splitting apart. */
 .app__traj-seg--cancelled {
-  background: var(--rule);
+  background: var(--ch-cancelled);
 }
 
 .app__traj-date {
@@ -4727,14 +4763,11 @@ span.app__sale-head {
 }
 
 /* ── Odakle su mjesta: one stacked bar and its legend ─────── */
-.app__mix {
-  margin-top: 24px;
-}
-
 .app__mix-track {
   display: flex;
   height: 14px;
-  background: var(--sunk);
+  border-radius: var(--rPill);
+  background: var(--ch-track);
   overflow: hidden;
 }
 
@@ -4756,19 +4789,20 @@ span.app__sale-head {
 }
 
 /* ── One evening in the season table ──────────────────────── */
-.app__statrows {
-  margin-top: 24px;
-}
-
-.app__statrows ul {
+.app__st-rows ul {
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
 .app__statrow {
-  padding-block: var(--rowY);
+  padding-block: 10px;
   border-bottom: 1px solid var(--rule);
+}
+
+.app__statrow:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
 }
 
 /* The tappable half. A row is a link only when the reader can open Izvedbe:
@@ -4815,7 +4849,8 @@ a.app__statrow-main:focus-visible {
   display: block;
   height: 6px;
   margin: 6px 0 5px;
-  background: var(--sunk);
+  border-radius: var(--rPill);
+  background: var(--ch-track);
   overflow: hidden;
 }
 
@@ -4826,7 +4861,7 @@ a.app__statrow-main:focus-visible {
 }
 
 .app__statrow-fill--off {
-  background: var(--rule);
+  background: var(--ch-cancelled);
 }
 
 /* The two count lines under the bar: small, muted and tabular, because they
@@ -4838,11 +4873,6 @@ a.app__statrow-main:focus-visible {
   font-size: 11px;
   letter-spacing: 0.01em;
   color: var(--muted);
-}
-
-/* ── Gratis po članu ──────────────────────────────────────── */
-.app__comptable {
-  margin-top: 24px;
 }
 
 /* A column's bars are sized in px by the page, so there is nothing here for a
@@ -4977,11 +5007,11 @@ a.app__statrow-main:focus-visible {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   Financije (#509): the society's money, and only for `finance`.
+   Financije (#509), in the system skin since #571.
 
    The layout carries the one rule the screen exists for (ADR-0015, glossary
    *Dashboard*): prikupljeni prihod and potraživanje od partnera are two
-   facts, so they are two CARDS with a gap and a sentence between them, never
+   facts, so they are two CARDS with a gap and a sentence under each, never
    two columns of one band. Two euro figures side by side invite a reader to
    add them, and there is no honest sum of those two numbers.
 
@@ -4989,230 +5019,209 @@ a.app__statrow-main:focus-visible {
    air above it, which is the only visual difference on the screen and says
    "this one is not like the two above".
 
-   Every figure is `tabular-nums` through `.app__finance-num`, so a column of
-   euros lines up on the decimal comma. Tokens throughout, never a hex (#490).
+   Every figure is `tabular-nums` through `.app__fin-num`, so a column of euros
+   lines up on the decimal comma. The card, the button and the pills come from
+   `ui/`; nothing here restyles them, and there is no hex in the block.
    ───────────────────────────────────────────────────────────── */
 
-/* ── The two pickers ─────────────────────────────────────── */
-.app__finance-season {
+/* The screen is one column of cards and section lines, on the shell's gap. */
+.app__fin {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 18px;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
 }
 
-.app__finance-label {
-  color: var(--muted);
-  font-size: 13px;
-}
-
-.app__finance-picker {
+/* ── The statement picker ────────────────────────────────── */
+.app__fin-picker {
   display: flex;
   gap: 12px;
-  margin-top: 14px;
 }
 
-.app__finance-picker > div {
+.app__fin-picker > div {
   flex: 1 1 0;
   min-width: 0;
 }
 
-/* ── The three cards ─────────────────────────────────────── */
-.app__finance-card {
-  margin-bottom: 14px;
-  padding: 14px 16px;
-  border: 1px solid var(--cardEdge);
-  background: var(--card);
-}
-
-/* The receivable: money the society has not collected, and the one card on the
-   screen that is deliberately set apart from the two above it. */
-.app__finance-card--apart {
-  margin-top: 22px;
-  border-left: 3px solid var(--gold);
-}
-
-.app__finance-head {
-  margin: 0;
-  font-size: 14px;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-  color: var(--muted);
-}
-
-.app__finance-figure {
-  margin: 6px 0 0;
-  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
-  font-variant-numeric: tabular-nums;
-  font-size: 28px;
-  line-height: 1.15;
-}
-
-.app__finance-count {
-  margin: 4px 0 0;
+.app__fin-label {
+  display: block;
+  margin-bottom: 4px;
   color: var(--muted);
   font-size: 13px;
 }
 
-/* The sentence under a figure that says what it is not. Muted and small: it
-   explains, it never warns. */
-.app__finance-note {
-  margin: 8px 0 0;
+/* ── The three cards ─────────────────────────────────────── */
+.app__fin-card {
+  gap: 4px;
+}
+
+/* The receivable: money the society has not collected, and the one card on the
+   screen that is deliberately set apart from the two above it. */
+.app__fin-card--apart {
+  margin-top: 10px;
+  border-left: 3px solid var(--gold);
+}
+
+.app__fin-head {
+  margin: 0;
   color: var(--muted);
-  font-size: 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.app__fin-figure {
+  margin: 2px 0 0;
+  font-family: var(--serif);
+  font-variant-numeric: tabular-nums;
+  font-size: 34px;
+  line-height: 1.1;
+}
+
+.app__fin-count {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* The one sentence that stays on the card, with the "i" at the end of it. The
+   rest of the explanation is a tap away (#571); this line never warns. */
+.app__fin-lead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.4;
 }
 
 /* ── The "of which" rows inside a card ───────────────────── */
-.app__finance-split {
-  margin: 10px 0 0;
+.app__fin-split {
+  margin: 6px 0 0;
 }
 
-.app__finance-splitrow {
+.app__fin-splitrow {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: 12px;
-  padding-block: var(--rowY);
+  padding-block: 9px;
   border-top: 1px solid var(--rule);
 }
 
-.app__finance-splitrow dt {
+.app__fin-splitrow dt {
   color: var(--muted);
   font-size: 14px;
 }
 
-.app__finance-splitrow dd {
+.app__fin-splitrow dd {
   margin: 0;
+  font-size: 14px;
 }
 
-.app__finance-num {
-  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+.app__fin-num {
   font-variant-numeric: tabular-nums;
 }
 
-/* ── A panel: promo codes, the month, the ledger ─────────── */
-.app__finance-panel {
-  margin-top: 28px;
+/* ── Promo codes ─────────────────────────────────────────── */
+.app__fin-panel {
+  gap: 4px;
 }
 
-.app__finance-rows {
-  margin: 12px 0 0;
+.app__fin-rows,
+.app__fin-partners,
+.app__fin-lines {
+  margin: 6px 0 0;
   padding: 0;
   list-style: none;
 }
 
-/* One promo code: the code and the member it belongs to on the left, the
-   tickets in the middle, the euros hard right where the eye scans them. */
-.app__finance-row {
+.app__fin-row {
   display: flex;
   align-items: baseline;
   gap: 10px;
-  padding-block: var(--rowY);
+  padding-block: 10px;
   border-top: 1px solid var(--rule);
 }
 
-.app__finance-row-name {
+.app__fin-row-name {
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
   min-width: 0;
 }
 
-.app__finance-row-name i {
+.app__fin-row-name i {
   color: var(--muted);
   font-size: 12px;
   font-style: normal;
 }
 
-.app__finance-row-sub {
+.app__fin-row-sub {
   color: var(--muted);
   font-size: 13px;
   white-space: nowrap;
 }
 
-/* ── One partner's month ─────────────────────────────────── */
-.app__finance-partners {
-  margin: 16px 0 0;
-  padding: 0;
-  list-style: none;
-}
-
-.app__finance-partner {
-  margin-bottom: 14px;
+/* ── One partner's month, and one evening of the ledger ──── */
+.app__fin-partner,
+.app__fin-evening {
+  margin-top: 10px;
   padding: 12px 14px;
-  border: 1px solid var(--cardEdge);
-  background: var(--card);
+  border-radius: var(--rCtl);
+  background: var(--sunk);
 }
 
-.app__finance-partner-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-  font-size: 17px;
-}
-
-/* "neaktivan": a reseller that may no longer sell but may still owe. A quiet
-   outline rather than a warning colour, because it is a fact about the
-   partner's status and not a problem with the figure next to it. */
-.app__finance-inactive {
-  margin-left: 8px;
-  padding: 1px 6px;
-  border: 1px solid var(--rule);
-  color: var(--muted);
-  font-size: 11px;
-  font-style: normal;
-  font-weight: 400;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-  vertical-align: middle;
-}
-
-.app__finance-csv {
-  margin-top: 12px;
-}
-
-/* ── The ledger, one evening at a time ───────────────────── */
-.app__finance-evening {
-  margin-top: 16px;
-  padding: 12px 14px;
-  border: 1px solid var(--cardEdge);
-  background: var(--card);
-}
-
-.app__finance-evening-head {
+.app__fin-partner-head,
+.app__fin-evening-head {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: 12px;
   margin: 0;
+  font-size: 16px;
+}
+
+.app__fin-evening-head {
   font-size: 15px;
 }
 
-.app__finance-lines {
-  margin: 10px 0 0;
-  padding: 0;
-  list-style: none;
+/* "neaktivan": a reseller that may no longer sell but may still owe. A quiet
+   outline rather than a warning colour, because it is a fact about the
+   partner's status and not a problem with the figure next to it. */
+.app__fin-inactive {
+  margin-left: 8px;
+  padding: 1px 6px;
+  border: 1px solid var(--ghostEdge);
+  border-radius: var(--rPill);
+  color: var(--muted);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 400;
+  vertical-align: middle;
 }
 
-.app__finance-line {
+.app__fin-csv {
+  margin-top: 10px;
+}
+
+.app__fin-line {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: 12px;
-  padding-block: var(--rowY);
+  padding-block: 9px;
   border-top: 1px solid var(--rule);
 }
 
-.app__finance-line-what {
+.app__fin-line-what {
   display: flex;
   flex: 1 1 auto;
   flex-direction: column;
   min-width: 0;
 }
 
-.app__finance-line-what i {
+.app__fin-line-what i {
   color: var(--muted);
   font-size: 12px;
   font-style: normal;
@@ -5220,20 +5229,20 @@ a.app__statrow-main:focus-visible {
 
 /* The reason a seat cost less than face value (ADR-0025). Gold, because it is
    the one thing on a line that cannot be derived from the other three. */
-.app__finance-discount {
+.app__fin-discount {
   color: var(--goldText);
   font-size: 12px;
   font-style: normal;
 }
 
-.app__finance-subtotal {
+.app__fin-subtotal {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
   gap: 12px;
   margin: 0;
-  padding-top: var(--rowY);
-  border-top: 2px solid var(--cardEdge);
+  padding-top: 10px;
+  border-top: 2px solid var(--rule);
   font-size: 14px;
 }
 
@@ -5242,6 +5251,7 @@ a.app__statrow-main:focus-visible {
    Backoffice shape that invited a reader to add them, and the whole reason
    this screen exists is that two of those numbers must never be summed. The
    shell's own 640px column is the only width constraint they get. */
+
 /* ═══════════════════════════════════════════════════════════
    Članovi (#511) — the voditelj's roster screen
    ═══════════════════════════════════════════════════════════
