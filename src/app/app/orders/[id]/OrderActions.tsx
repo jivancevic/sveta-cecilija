@@ -4,14 +4,23 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { APP_STRINGS } from '@/lib/app/strings'
 import { MAX_BUYER_EMAIL, MAX_BUYER_NAME } from '@/lib/app/orders-buyer'
+import { Button, Card } from '../../ui'
 
-// The four named actions of one order (#501, #476's "named actions only").
+// The four named actions of one order (#501, #476's "named actions only"),
+// in the T1 skin (#570).
 //
 // Each is a button with a verb on it and a confirmation under it, never a raw
 // form: Povrat moves real money, Pošalji ulaznice ponovno sends real mail, and
 // a mis-tap on a phone held in one hand at a gate is the normal case rather
-// than the unlucky one. The sheet states the consequence in a sentence and
-// names the amount or the address it is about to use.
+// than the unlucky one. The confirmation states the consequence in a sentence
+// and names the amount or the address it is about to use.
+//
+// **Pošalji ulaznice ponovno is the one primary** (T1's one-primary rule): it
+// is what the screen is opened for, a guest standing there with no ticket on
+// their phone. **Povrat is last and quiet** (#570, Q41) — a ghost button, not a
+// red one, because red on this screen made the most destructive thing also the
+// loudest thing on it. The confirmation behind it is unchanged and its Potvrdi
+// is still red, which is where the weight belongs: the decision, not the door.
 //
 // Three of the four call routes that already existed and are already guarded
 // (`/api/orders/[id]/refund`, `…/resend-ticket-email`, `…/tickets.pdf`): this
@@ -25,7 +34,7 @@ import { MAX_BUYER_EMAIL, MAX_BUYER_NAME } from '@/lib/app/orders-buyer'
 
 const S = APP_STRINGS.orders
 
-type Sheet = 'refund' | 'resend' | 'edit' | null
+type Confirm = 'refund' | 'resend' | 'edit' | null
 
 export function OrderActions({
   orderId,
@@ -43,15 +52,15 @@ export function OrderActions({
   buyerName: string
 }) {
   const router = useRouter()
-  const [sheet, setSheet] = useState<Sheet>(null)
+  const [confirm, setConfirm] = useState<Confirm>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState<string | null>(null)
   const [name, setName] = useState(buyerName)
   const [address, setAddress] = useState(email ?? '')
 
-  function open(next: Sheet) {
-    setSheet(next)
+  function open(next: Confirm) {
+    setConfirm(next)
     setError(null)
     setDone(null)
   }
@@ -83,7 +92,7 @@ export function OrderActions({
         return false
       }
       setDone(success)
-      setSheet(null)
+      setConfirm(null)
       router.refresh()
       return true
     } catch {
@@ -126,30 +135,18 @@ export function OrderActions({
     )
 
   return (
-    <section className="app__order-actions">
-      {done && <p className="app__order-done">{done}</p>}
+    <section className="app__actions">
+      {done && <p className="app__done">{done}</p>}
 
-      <div className="app__order-buttons">
-        {refund === 'available' && (
-          <button
-            type="button"
-            className="app__button app__button--danger"
-            onClick={() => open('refund')}
-          >
-            {S.actions.refund}
-          </button>
-        )}
-        {refund === 'already' && <p className="app__order-note">{S.refund.already}</p>}
-        {refund === 'not-payable' && <p className="app__order-note">{S.refund.notPayable}</p>}
-
-        <button type="button" className="app__button" onClick={() => open('resend')}>
+      <div className="ui-btns">
+        <Button variant="primary" onClick={() => open('resend')}>
           {S.actions.resend}
-        </button>
+        </Button>
 
         {/* A file, so an anchor: the PDF route answers with the ticket sheet and
             the phone opens it in whatever it opens PDFs in. */}
         <a
-          className="app__button app__button--link"
+          className="ui-btn ui-btn--ghost"
           href={`/api/orders/${orderId}/tickets.pdf`}
           target="_blank"
           rel="noreferrer"
@@ -157,46 +154,46 @@ export function OrderActions({
           {S.actions.pdf}
         </a>
 
-        <button
-          type="button"
-          className="app__button app__button--link"
-          onClick={() => open('edit')}
-        >
-          {S.actions.edit}
-        </button>
+        <Button onClick={() => open('edit')}>{S.actions.edit}</Button>
+
+        {/* Last, and quiet (#570, Q41). The red is in the confirmation. */}
+        {refund === 'available' && <Button onClick={() => open('refund')}>{S.actions.refund}</Button>}
       </div>
 
-      {sheet === 'refund' && (
-        <Sheet
+      {refund === 'already' && <p className="app__quiet">{S.refund.already}</p>}
+      {refund === 'not-payable' && <p className="app__quiet">{S.refund.notPayable}</p>}
+
+      {confirm === 'refund' && (
+        <Confirmation
           title={S.refund.title}
           body={S.refund.body(amount)}
           error={error}
           busy={busy}
           confirm={confirmRefund}
-          close={() => setSheet(null)}
+          close={() => setConfirm(null)}
           danger
         />
       )}
 
-      {sheet === 'resend' && (
-        <Sheet
+      {confirm === 'resend' && (
+        <Confirmation
           title={S.resend.title}
           body={email ? S.resend.body(email) : S.resend.noEmail}
           error={error}
           busy={busy}
           confirm={email ? confirmResend : null}
-          close={() => setSheet(null)}
+          close={() => setConfirm(null)}
         />
       )}
 
-      {sheet === 'edit' && (
-        <Sheet
+      {confirm === 'edit' && (
+        <Confirmation
           title={S.edit.title}
           body={S.edit.body}
           error={error}
           busy={busy}
           confirm={confirmEdit}
-          close={() => setSheet(null)}
+          close={() => setConfirm(null)}
         >
           <label className="app__field">
             <span>{S.edit.nameLabel}</span>
@@ -219,8 +216,8 @@ export function OrderActions({
               onChange={(e) => setAddress(e.target.value)}
             />
           </label>
-          <p className="app__order-hint">{S.edit.emailHint}</p>
-        </Sheet>
+          <p className="app__quiet">{S.edit.emailHint}</p>
+        </Confirmation>
       )}
     </section>
   )
@@ -231,11 +228,11 @@ export function OrderActions({
  * Odustani. Not a modal — it sits in the flow where the thumb already is, and a
  * dialog on a phone at a gate is one more thing that can land under a finger.
  *
- * `confirm: null` is a sheet that explains why there is nothing to confirm (an
- * order with no address to mail to), so the refusal is read in the same place
- * the action would have been.
+ * `confirm: null` is a confirmation that explains why there is nothing to
+ * confirm (an order with no address to mail to), so the refusal is read in the
+ * same place the action would have been.
  */
-function Sheet({
+function Confirmation({
   title,
   body,
   error,
@@ -255,31 +252,25 @@ function Sheet({
   children?: React.ReactNode
 }) {
   return (
-    <div className="app__order-sheet" role="group" aria-label={title}>
-      <p className="app__order-sheet-title">{title}</p>
-      <p className="app__order-sheet-body">{body}</p>
+    <Card className="app__confirm" role="group" aria-label={title}>
+      <b>{title}</b>
+      <p>{body}</p>
       {children}
       {error && <p className="app__error">{error}</p>}
-      <div className="app__order-sheet-buttons">
+      <div className="ui-btns">
         {confirm && (
-          <button
-            type="button"
-            className={`app__button${danger ? ' app__button--danger' : ''}`}
+          <Button
+            variant={danger ? 'destructive' : 'primary'}
             disabled={busy}
             onClick={confirm}
           >
             {busy ? S.actions.working : S.actions.confirm}
-          </button>
+          </Button>
         )}
-        <button
-          type="button"
-          className="app__button app__button--link"
-          disabled={busy}
-          onClick={close}
-        >
+        <Button variant="link" disabled={busy} onClick={close}>
           {S.actions.cancel}
-        </button>
+        </Button>
       </div>
-    </div>
+    </Card>
   )
 }

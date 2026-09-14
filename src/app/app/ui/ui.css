@@ -121,6 +121,9 @@
   background: none;
   color: inherit;
   cursor: pointer;
+  /* An anchor wearing this class is still a button (#570: Otvori PDF is a
+     file, so it has to be a link), and a button does not carry an underline. */
+  text-decoration: none;
   transition: transform 0.12s var(--ease), box-shadow 0.2s, background 0.2s, color 0.2s,
     opacity 0.2s;
 }
@@ -245,6 +248,54 @@
 .ui-chip--warn {
   background: var(--goldSoft);
   color: var(--warn);
+}
+
+/* ── FilterChips (#570) ───────────────────────────────────
+   A row of addresses, one of them filled. It scrolls sideways and hides its
+   scrollbar, because a season's performances are twenty chips and a control
+   that wraps to four lines pushes the list it filters off the screen. The
+   edge padding is negative so the row bleeds to the screen edge while the
+   first chip still lines up with the cards above it. */
+.ui-filters {
+  display: flex;
+  gap: 8px;
+  margin: 0 -20px;
+  padding: 2px 20px;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.ui-filters::-webkit-scrollbar {
+  display: none;
+}
+
+.ui-filter {
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: var(--rPill);
+  background: var(--sunk);
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-decoration: none;
+  transition: background 0.2s var(--ease), color 0.2s var(--ease);
+}
+
+.ui-filter:active {
+  transform: scale(0.97);
+}
+
+/* The same pair the tab bar wears (`--thumb` behind, `--gold` on top): it is
+   the same "you are here" and it is the one pairing that survives the night
+   skin, where `--thumb` is a translucent gold rather than ink (#570). */
+.ui-filter--on {
+  background: var(--thumb);
+  color: var(--gold);
 }
 
 /* ── Note ─────────────────────────────────────────────────── */

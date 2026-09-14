@@ -4,8 +4,11 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { InquiryState } from '@/lib/app/inquiries-query'
 import { APP_STRINGS } from '@/lib/app/strings'
+import { Button } from '../../ui'
 
-// The two named actions of one enquiry (#507, #476's "named actions only").
+// The two named actions of one enquiry (#507, #476's "named actions only"),
+// in the T1 skin (#570): Odgovori is the screen's one primary, because opening
+// the reply is what somebody came here to do.
 //
 // **Odgovori** is an anchor, not a button, because it is not a request: the
 // `mailto:` is built on the server (`inquiries-mailto.ts`) and the phone or the
@@ -66,27 +69,26 @@ export function InquiryActions({
   }
 
   return (
-    <section className="app__inquiry-actions">
-      {done && <p className="app__inquiry-done">{done}</p>}
+    <section className="app__actions">
+      {done && <p className="app__done">{done}</p>}
       {error && <p className="app__error">{error}</p>}
 
-      <div className="app__inquiry-buttons">
+      <div className="ui-btns">
         {mailto ? (
-          <a className="app__button" href={mailto}>
+          <a className="ui-btn ui-btn--primary" href={mailto}>
             {S.reply}
           </a>
         ) : (
-          <p className="app__inquiry-note">{S.noEmail}</p>
+          <p className="app__quiet">{S.noEmail}</p>
         )}
 
-        <button
-          type="button"
-          className={`app__button${handled ? ' app__button--link' : ''}`}
+        <Button
+          variant={handled ? 'link' : 'ghost'}
           disabled={busy}
           onClick={() => void setHandled(!handled)}
         >
           {busy ? S.working : handled ? S.reopen : S.handle}
-        </button>
+        </Button>
       </div>
     </section>
   )

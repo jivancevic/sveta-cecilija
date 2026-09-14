@@ -11,9 +11,10 @@ import { foundLabel, inquiryRowView, pageCount } from '@/lib/app/inquiries-view'
 import { APP_STRINGS } from '@/lib/app/strings'
 import { AppShell } from '../AppShell'
 import { openScreen } from '../gate'
+import { Card, Chip, Section } from '../ui'
 import { InquiriesFilter } from './InquiriesFilter'
 
-// `/app/inquiries` — Upiti (#507), the enquiry inbox.
+// `/app/inquiries` — Upiti (#507), the enquiry inbox, in the T1 skin (#570).
 //
 // Twenty-six enquiries have arrived through the public form and not one of them
 // has ever been marked anything, because until now the only place to read one
@@ -21,6 +22,12 @@ import { InquiriesFilter } from './InquiriesFilter'
 // a mailbox, not a table: the unanswered ones at the top, the ones with money
 // behind them lifted above the general questions, and a row that is a whole tap
 // target opening the enquiry itself.
+//
+// A row is taller than T1's `ListRow` on purpose and is therefore the screen's
+// own shape rather than a shared one: a mailbox row carries a line of the
+// message, which is the one thing that tells a reader whether this enquiry is
+// worth opening now. Everything else on it — the card, the chips, the rhythm —
+// is the system's.
 //
 // The order is the seam's (`repo/payload/inquiries-sql.ts`) rather than this
 // page's, so it holds across pages instead of only within the one being looked
@@ -52,34 +59,35 @@ export default async function InquiriesPage({
     <AppShell viewer={viewer} screen="inquiries">
       <InquiriesFilter query={query} />
 
-      <p className="app__inquiries-count" aria-live="polite">
-        {foundLabel(total)}
-      </p>
+      <Section title={S.listTitle} aside={<span aria-live="polite">{foundLabel(total)}</span>} />
 
       {rows.length === 0 ? (
-        <p className="app__empty">{query.state ? S.empty : S.emptyAll}</p>
+        <Card className="app__empty">
+          <p>{query.state ? S.empty : S.emptyAll}</p>
+        </Card>
       ) : (
-        <div className="app__inquiries-list">
+        <div className="app__inbox">
           {rows.map((inquiry) => {
             const row = inquiryRowView(inquiry)
             return (
               <Link
                 key={inquiry.id}
-                className={`app__inquiry-row${row.isNew ? ' app__inquiry-row--new' : ''}`}
+                className={`app__mail${row.isNew ? ' app__mail--new' : ''}`}
                 href={row.href}
               >
-                <span className="app__inquiry-head">
-                  <span className="app__inquiry-name">{row.name}</span>
-                  <span className="app__inquiry-when">{row.when}</span>
+                <span className="app__mail-head">
+                  <b>{row.name}</b>
+                  <span className="ui-small">{row.when}</span>
                 </span>
-                <span className="app__inquiry-badges">
-                  {row.isNew && <span className="app__badge app__badge--new">{S.newBadge}</span>}
-                  {row.booking && (
-                    <span className="app__badge app__badge--booking">{S.booking}</span>
-                  )}
-                  <span className="app__inquiry-type">{row.type}</span>
+                <span className="app__mail-chips">
+                  {/* One gold thing per row: the booking, which is the inbox's
+                      only opinion. "Novo" is a plain chip because the card's
+                      gold edge is already saying it. */}
+                  {row.isNew && <Chip>{S.newBadge}</Chip>}
+                  {row.booking && <Chip tone="gold">{S.booking}</Chip>}
+                  <Chip>{row.type}</Chip>
                 </span>
-                <span className="app__inquiry-preview">{row.preview}</span>
+                <span className="app__mail-preview">{row.preview}</span>
               </Link>
             )
           })}
@@ -87,10 +95,10 @@ export default async function InquiriesPage({
       )}
 
       {pages > 1 && (
-        <nav className="app__inquiries-pager" aria-label={S.pageOf(query.page, pages)}>
+        <nav className="app__pages" aria-label={S.pageOf(query.page, pages)}>
           {query.page > 1 ? (
             <Link
-              className="app__button app__button--link app__button--quiet"
+              className="ui-btn ui-btn--link"
               href={inquiriesHref({ ...query, page: query.page - 1 })}
             >
               {S.previous}
@@ -98,10 +106,10 @@ export default async function InquiriesPage({
           ) : (
             <span />
           )}
-          <span className="app__inquiries-page">{S.pageOf(query.page, pages)}</span>
+          <span className="ui-small">{S.pageOf(query.page, pages)}</span>
           {query.page < pages ? (
             <Link
-              className="app__button app__button--link app__button--quiet"
+              className="ui-btn ui-btn--link"
               href={inquiriesHref({ ...query, page: query.page + 1 })}
             >
               {S.next}

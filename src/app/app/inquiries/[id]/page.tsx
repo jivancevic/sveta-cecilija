@@ -6,9 +6,10 @@ import { zagrebStamp } from '@/lib/app/orders-view'
 import { APP_STRINGS } from '@/lib/app/strings'
 import { AppShell } from '../../AppShell'
 import { openScreen } from '../../gate'
+import { Card, Chip } from '../../ui'
 import { InquiryActions } from './InquiryActions'
 
-// `/app/inquiries/[id]` — one enquiry (#507).
+// `/app/inquiries/[id]` — one enquiry (#507), in the T1 skin (#570).
 //
 // The facts, then the whole message, then the two actions. The message is the
 // point of the screen and it is printed in full, unwrapped and unsummarised:
@@ -28,10 +29,10 @@ export const dynamic = 'force-dynamic'
 const S = APP_STRINGS.inquiries
 const D = S.detail
 
-/** One line of the facts block: a label and a value, never an input. */
+/** One line of the facts card: a label and a value, never an input. */
 function Fact({ label, children }: { label: string; children: React.ReactNode }) {
   return (
-    <div className="app__inquiry-fact">
+    <div className="app__fact">
       <span>{label}</span>
       <b>{children}</b>
     </div>
@@ -48,10 +49,12 @@ export default async function InquiryDetailPage({ params }: { params: Promise<{ 
   if (!inquiry) {
     return (
       <AppShell viewer={viewer} screen="inquiries" title={D.missing}>
-        <p className="app__empty">{D.missing}</p>
-        <Link className="app__button app__button--link" href="/app/inquiries">
-          {D.back}
-        </Link>
+        <Card className="app__empty">
+          <p>{D.missing}</p>
+          <Link className="ui-btn ui-btn--link" href="/app/inquiries">
+            {D.back}
+          </Link>
+        </Card>
       </AppShell>
     )
   }
@@ -61,16 +64,16 @@ export default async function InquiryDetailPage({ params }: { params: Promise<{ 
 
   return (
     <AppShell viewer={viewer} screen="inquiries" title={name}>
-      <Link className="app__inquiry-back" href="/app/inquiries">
+      <Link className="app__back" href="/app/inquiries">
         ‹ {D.back}
       </Link>
 
-      <section className="app__inquiry-facts">
+      <Card eyebrow={D.eyebrow} className="app__facts">
         <Fact label={D.email}>
           {inquiry.email ? (
             // A tap on the address is the second way to answer, and on a laptop
             // it is the one that lands in the mail client that is already open.
-            <a className="app__inquiry-address" href={`mailto:${inquiry.email}`}>
+            <a className="app__fact-link" href={`mailto:${inquiry.email}`}>
               {inquiry.email}
             </a>
           ) : (
@@ -79,26 +82,21 @@ export default async function InquiryDetailPage({ params }: { params: Promise<{ 
         </Fact>
         <Fact label={D.type}>
           {typeLabel(inquiry.enquiryType)}
-          {isBookingInquiry(inquiry.enquiryType) && (
-            <span className="app__badge app__badge--booking">{S.booking}</span>
-          )}
+          {isBookingInquiry(inquiry.enquiryType) && <Chip tone="gold">{S.booking}</Chip>}
         </Fact>
         <Fact label={D.received}>{zagrebStamp(inquiry.createdAt)}</Fact>
         <Fact label={D.state}>
-          <span
-            className={`app__badge${inquiry.status === 'new' ? ' app__badge--new' : ''}`}
-          >
+          <Chip tone={inquiry.status === 'new' ? 'gold' : 'plain'}>
             {stateLabel(inquiry.status)}
-          </span>
+          </Chip>
         </Fact>
-      </section>
+      </Card>
 
-      <section className="app__inquiry-message">
-        <h2 className="app__inquiry-message-head">{D.message}</h2>
+      <Card eyebrow={D.message} className="app__message">
         {/* The message keeps its own line breaks (`white-space: pre-wrap` in
             app.css): a paragraph a person typed is a paragraph. */}
-        <p className="app__inquiry-message-body">{inquiry.message}</p>
-      </section>
+        <p>{inquiry.message}</p>
+      </Card>
 
       <InquiryActions inquiryId={inquiry.id} status={inquiry.status} mailto={mailto} />
     </AppShell>
