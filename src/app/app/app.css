@@ -116,12 +116,19 @@
      `overscroll-behavior: none` rather than `contain`: installed on a Home
      Screen there is nothing behind this app to chain a scroll INTO, and the
      glow at the end of a list is the one thing a standalone PWA gets for free
-     that a native app never shows. `-webkit-overflow-scrolling: touch` is what
-     buys momentum on the older iOS versions that need it told. */
-  height: 100dvh;
+     that a native app never shows. */
+  /* `100%` of `html` (which is pinned to the viewport below), NOT `100dvh`:
+     installed on an iPhone Home Screen, WebKit reports the dvh units as if
+     Safari's toolbar were still on screen, so a 100dvh body stopped 65pt above
+     the bottom and every `position: fixed` descendant (the tab bar, a sheet)
+     anchored to that false edge, leaving a band of bare canvas under the bar.
+     Josip saw it on every screen; a fresh Home Screen icon did not clear it.
+     No `-webkit-overflow-scrolling: touch` either: it has been a no-op since
+     iOS 13, and on WebKit it also turned every fixed descendant of the
+     scroller into an absolutely positioned one. */
+  height: 100%;
   overflow-y: auto;
   overscroll-behavior: none;
-  -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
   /* `pan-y` alone took pinch-zoom away from the whole app, which is not the
      gesture's to take: a volunteer reading a buyer's name off a phone in the
@@ -3551,7 +3558,8 @@ a.app__ob-link {
    and the rows tighten by one token (#490's `--rowY`).
    ───────────────────────────────────────────────────────────── */
 .app__frame {
-  min-height: 100dvh;
+  /* `100%`, not `100dvh`: see the body's own comment on the standalone iPhone. */
+  min-height: 100%;
 }
 
 /* Hidden on the phone: four tabs and Više are the whole navigation there. */
