@@ -30,6 +30,8 @@
 
 import { rejectAppRequest, type AppRequestMeta } from '@/lib/app/request-guard'
 import type { AttendanceMember } from '@/lib/attendance/rules'
+import type { PerformanceKind } from '@/lib/show-performance'
+import { lineupRequirements } from './titles'
 import { APP_STRINGS } from '@/lib/app/strings'
 import {
   roleWarnings,
@@ -53,6 +55,17 @@ export interface ConfirmBody {
 export interface LineupPerformance {
   id: string
   confirmed: boolean
+  /**
+   * What kind of evening it is (#620).
+   *
+   * The postava of an ordinary moreška has no `voditelj` line at all: the role
+   * exists for the Moreška Experience, where one member runs the morning
+   * without dancing it (glossary: *Voditelj (u postavi)*). So the route refuses
+   * such a row on every other kind rather than storing a line the screens do
+   * not draw and the statistics do not count. `lineupRequirements` is the other
+   * half of the same split, applied at CONFIRM.
+   */
+  kind: PerformanceKind
 }
 
 export interface LineupReplaceDeps {
@@ -125,6 +138,16 @@ export async function handleLineupReplace(
   const validated = validateLineupEntries(body?.entries, roster)
   if (!validated.ok) return { status: 400, body: { error: validated.error } }
 
+  // A `voditelj` line belongs to a Moreška Experience and to nothing else
+  // (#620). Refused HERE rather than silently dropped: a caller that sent one
+  // means it, and a write that quietly loses a row is how the MCP tool and the
+  // Izvedbe editor would disagree with the screen about what was saved.
+  if (!lineupRequirements(performance.kind).voditelj) {
+    if (validated.entries.some((entry) => entry.role === 'voditelj')) {
+      return { status: 400, body: { error: APP_STRINGS.lineup.voditeljKind } }
+    }
+  }
+
   const outcome = await deps.replaceEntries(performanceId, validated.entries)
   if (!outcome.written) {
     // The locked re-check disagreed with the pre-check: a Potvrdi (or a delete)
@@ -173,14 +196,18 @@ export async function handleLineupConfirm(
       status: 400,
       body: {
         error:
-          // The title refusal carries its own sentence, because the only
-          // useful thing to say is WHICH of the four is missing or doubled
-          // (#566). The other two are one fixed line each.
+          // The rule refusals carry their own sentence, because the only useful
+          // thing to say is WHICH of the four titles is missing or doubled
+          // (#566), or that the Experience has no voditelj (#620). The
+          // explanation after it is the rule for THAT kind of evening; the
+          // other two refusals are one fixed line each.
           outcome.reason === 'titles'
             ? `${outcome.message} ${APP_STRINGS.lineup.confirmTitles}`
-            : outcome.reason === 'empty'
-              ? APP_STRINGS.lineup.confirmEmpty
-              : APP_STRINGS.lineup.missing,
+            : outcome.reason === 'voditelj'
+              ? `${outcome.message} ${APP_STRINGS.lineup.confirmVoditelj}`
+              : outcome.reason === 'empty'
+                ? APP_STRINGS.lineup.confirmEmpty
+                : APP_STRINGS.lineup.missing,
       },
     }
   }

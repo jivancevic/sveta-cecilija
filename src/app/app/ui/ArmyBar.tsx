@@ -30,13 +30,20 @@ export interface ArmyBarProps {
    * any screen that forgot to pass it.
    */
   threshold: { crni: number; bili: number }
+  /**
+   * The nastup has started (#620): the status line reads the two counts rather
+   * than a shortfall, and a number below its threshold stops wearing the warn
+   * colour. Nothing is missing from an evening that has been danced.
+   */
+  past?: boolean
   /** Makes the whole bar a button, with a chevron on the status line. */
   onClick?: React.MouseEventHandler<HTMLButtonElement>
   className?: string
 }
 
-export function ArmyBar({ crni, bili, threshold, onClick, className }: ArmyBarProps) {
-  const status = armyStatus(crni, bili, threshold)
+export function ArmyBar({ crni, bili, threshold, past = false, onClick, className }: ArmyBarProps) {
+  const status = armyStatus(crni, bili, threshold, { past })
+  const low = (n: number, want: number) => !past && n < want
   const half = 50
   const width = (n: number) => `${Math.min(n / FULL_HALF, 1) * half}%`
   const tick = (n: number) => (Math.min(n, FULL_HALF) / FULL_HALF) * half
@@ -46,12 +53,12 @@ export function ArmyBar({ crni, bili, threshold, onClick, className }: ArmyBarPr
       <div className="ui-army__heads">
         <div className="ui-army__side">
           <span className="ui-army__k">{APP_STRINGS.ui.armyCrni}</span>
-          <span className={`ui-army__v${crni < threshold.crni ? ' ui-army__v--low' : ''}`}>
+          <span className={`ui-army__v${low(crni, threshold.crni) ? ' ui-army__v--low' : ''}`}>
             {crni}
           </span>
         </div>
         <div className="ui-army__side">
-          <span className={`ui-army__v${bili < threshold.bili ? ' ui-army__v--low' : ''}`}>
+          <span className={`ui-army__v${low(bili, threshold.bili) ? ' ui-army__v--low' : ''}`}>
             {bili}
           </span>
           <span className="ui-army__k">{APP_STRINGS.ui.armyBili}</span>

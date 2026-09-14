@@ -64,6 +64,17 @@ export const APP_STRINGS = {
     armyCrni: 'Crni',
     armyBili: 'Bili',
     enough: 'Ima nas dovoljno',
+    /**
+     * A PAST evening's bar: the plain counts, never a shortfall (#620).
+     *
+     * "Fale još 2 crna" about an evening that has been danced is an instruction
+     * nobody can act on. Once the nastup has started the same line states what
+     * turned up, in the same two words the rest of the app uses for the armies.
+     */
+    countCrni: (n: number) =>
+      n === 1 ? '1 crni' : `${n} ${n < 5 ? 'crna' : 'crnih'}`,
+    countBili: (n: number) =>
+      n === 1 ? '1 bili' : `${n} ${n < 5 ? 'bila' : 'bilih'}`,
     /** "fale još 2 crna" / "fali još 1 bili": Croatian counts, not a plural. */
     shortCrni: (n: number) =>
       n === 1 ? 'fali još 1 crni' : `fale još ${n} ${n < 5 ? 'crna' : 'crnih'}`,
@@ -514,6 +525,35 @@ export const APP_STRINGS = {
     /** The Pozovi sheet: the message that goes out, and the two thresholds. */
     callBody: 'Alarm zvoni na mobitelima onih koji još nisu odgovorili.',
     callMessage: 'Poruka',
+
+    /* Dodavanje u postavu (#620).
+       One gesture with two meanings, and the voditelj is told neither: before
+       the nastup the tap records PRISUTNOST, after it records the POSTAVA. So
+       the wording is about the column and never about the table. */
+
+    /** The empty place and the past evening's row both open the same sheet. */
+    addTo: { crni: 'Dodaj u crne', bili: 'Dodaj u bile', bula: 'Dodaj bulu' },
+    /** The sheet over the whole roster, on an Experience only. */
+    addVoditelj: 'Dodaj voditelja',
+    /** Above the list in every picker, so a name is a letter away. */
+    search: 'Traži moreškanta',
+    /** The chip that shows every role at once: the filter turned off. */
+    allRoles: 'Sve',
+    /** Nobody is left who may dance this. Not an error, just the end of a list. */
+    nobodyToAdd: 'Nema nikoga za dodati.',
+    /** Beside a name at the bottom of a picker: they have already said no. */
+    notComingChip: 'ne dolazi',
+
+    /* Voditelj (#620).
+       A Moreška Experience is run by somebody who does not dance it, and the
+       2026 notebook names him. An ordinary moreška has no such line at all
+       (glossary: *Voditelj (u postavi)*), which is why the card is drawn only
+       on an Experience. */
+
+    voditelj: 'Voditelj',
+    noVoditelj: 'Nije određen.',
+    /** Why Potvrdi is not available on an Experience yet. */
+    needVoditelj: 'Odredi voditelja pa potvrdi postavu.',
     saving: 'Spremam...',
     failed: 'Nije spremljeno. Pokušaj ponovno.',
   },
@@ -1708,6 +1748,14 @@ export const APP_STRINGS = {
      * matters, rather than a rule with no example in front of it.
      */
     confirmTitles: 'Potvrđena postava nosi sve četiri titule, svaku po jednom.',
+    /**
+     * The same, for the other half of the kind split (#620). An Experience is
+     * confirmed by naming who ran it and never by handing out crowns, so the
+     * explanation under the complaint has to be the Experience's own rule.
+     */
+    confirmVoditelj: 'Potvrđeni Moreška Experience ima jednog voditelja.',
+    /** A `voditelj` line on an evening that has no such line at all (#620). */
+    voditeljKind: 'Voditelja ima samo Moreška Experience.',
     failed: 'Postava nije spremljena. Pokušaj ponovno.',
   },
 

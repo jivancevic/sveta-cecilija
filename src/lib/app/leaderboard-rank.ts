@@ -22,7 +22,12 @@
 //     make up a fact the lineups do not contain,
 //   - no streaks, ever.
 
-import { ARMY_OF_ROLE, isDanceRole, type DanceRole } from '@/lib/moreskant-profile'
+import {
+  ARMY_OF_ROLE,
+  isDanceRole,
+  type DanceRole,
+  type LineupRole,
+} from '@/lib/moreskant-profile'
 import { STAT_ROLES, type StatRole } from '@/lib/lineup/stats'
 import { PERFORMANCE_KINDS, type PerformanceKind } from '@/lib/show-performance'
 import type { DancerStats } from '@/lib/lineup/stats'
@@ -616,9 +621,10 @@ export function rankMovement(
    otmanović in" is exactly the drift `ARMY_OF_ROLE` exists to prevent. */
 
 export interface RoleMarkSpec {
-  army: BoardArmy
+  /** Null for the voditelj (#620): he is in neither vojska. */
+  army: BoardArmy | null
   /** The ROLE the disc stands for, never a title (see `MARK_OF_ROLE`). */
-  role: DanceRole
+  role: LineupRole
 }
 
 /**
@@ -636,13 +642,16 @@ export interface RoleMarkSpec {
  * reason: `ui-mark--titled` is the white ring that marks the bula OF AN
  * EVENING.
  */
-export const MARK_OF_ROLE: Record<DanceRole, RoleMarkSpec> = {
+export const MARK_OF_ROLE: Record<LineupRole, RoleMarkSpec> = {
   crni: { army: 'crni', role: 'crni' },
   crni_kralj: { army: 'crni', role: 'crni_kralj' },
   otmanovic: { army: 'crni', role: 'otmanovic' },
   bili: { army: 'bili', role: 'bili' },
   bili_kralj: { army: 'bili', role: 'bili_kralj' },
   bula: { army: 'bula', role: 'bula' },
+  // No army at all (#620): the voditelj of a Moreška Experience is in neither,
+  // so his disc is the sunk ground with the gold ring `RoleMark` draws for it.
+  voditelj: { army: null, role: 'voditelj' },
 }
 
 /**
@@ -653,18 +662,22 @@ export const MARK_OF_ROLE: Record<DanceRole, RoleMarkSpec> = {
  * `DANCE_ROLES` interleaves the armies because that is the order the profile
  * form needs, which is a different screen with a different question.
  */
-export const TALLY_ORDER: DanceRole[] = [
+export const TALLY_ORDER: LineupRole[] = [
   'crni',
   'crni_kralj',
   'otmanovic',
   'bili',
   'bili_kralj',
   'bula',
+  // Last, and after the armies rather than among them, because it is the one
+  // line that is not a dance (#620). It can only ever be non-zero on the
+  // Experience list, and the zeros filter below drops it everywhere else.
+  'voditelj',
 ]
 
 /** One line of a row's breakdown: which role, and how many evenings of it. */
 export interface RoleTally {
-  role: DanceRole
+  role: LineupRole
   count: number
 }
 

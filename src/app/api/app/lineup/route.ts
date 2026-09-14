@@ -5,6 +5,7 @@ import { handleLineupReplace, type LineupPerformance } from '@/lib/lineup/replac
 import { createLineupStore, type LineupStorePayload } from '@/lib/lineup/lineup-store'
 import { replaceLineupInTransaction } from '@/lib/lineup/write-tx'
 import { toAttendanceMember } from '@/lib/attendance/rules'
+import { isPerformanceKind } from '@/lib/show-performance'
 
 // POST /api/app/lineup — the ONE writer of a postava (#432).
 //
@@ -46,7 +47,14 @@ export async function POST(req: Request) {
           overrideAccess: true,
         })) as unknown as Record<string, unknown> | null
         if (!doc) return null
-        return { id: String(doc.id), confirmed: doc.lineupConfirmed === true }
+        return {
+          id: String(doc.id),
+          confirmed: doc.lineupConfirmed === true,
+          // An unreadable kind falls back to `ostalo`, the strictest side of the
+          // split: a row nobody can parse must not become the one evening that
+          // accepts a voditelj line.
+          kind: isPerformanceKind(doc.kind) ? doc.kind : 'ostalo',
+        }
       } catch {
         // A bad id in the body is a 400 from the handler, never a 500 from here.
         return null

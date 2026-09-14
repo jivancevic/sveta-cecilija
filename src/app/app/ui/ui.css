@@ -1122,6 +1122,18 @@ button.ui-army:active {
   background: var(--sunk);
 }
 
+/* The voditelj of a Moreška Experience (#620): the sunk ground with a gold ring
+   around it. He is in NEITHER army, so the disc borrows neither ink nor red —
+   the ring is the society's own colour and this is the one mark on the app that
+   is not a vojska. The ring is drawn OUTSIDE (a plain `box-shadow`, like the
+   crni disc's edge) rather than inset, so the microphone inside it keeps its
+   full 22px and the E in its head stays readable at 28. */
+.ui-mark--voditelj {
+  background: var(--sunk);
+  color: var(--gold);
+  box-shadow: 0 0 0 1.5px var(--gold);
+}
+
 /* The bula of the night: a white ring inside the gold disc. One woman an
    evening, and this is the whole of how the screen says which. */
 .ui-mark--titled.ui-mark--bula {

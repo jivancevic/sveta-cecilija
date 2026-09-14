@@ -24,6 +24,7 @@
 
 import { sql } from '@payloadcms/db-postgres'
 import { relationIdForWrite } from '@/lib/payload-relation'
+import { isPerformanceKind, type PerformanceKind } from '@/lib/show-performance'
 import { isDanceTitle, type TitleCounts } from './titles'
 import type { LineupTxStore, LockedLineupState } from './write-tx'
 import type { LineupEntry } from './rules'
@@ -101,9 +102,12 @@ export function createLineupStore(
       // FOR UPDATE: the second writer of this evening blocks here until the
       // first commits, and then reads what it committed rather than what was
       // true when the request arrived.
+      // `kind` rides along with the flag (#620): what a confirmed postava must
+      // carry depends on it, and reading it outside the lock would be a second
+      // opinion about the row being written.
       const locked = rowsOf(
         await execute(
-          sql`SELECT lineup_confirmed, lineup_confirmed_at FROM shows WHERE id = ${id} FOR UPDATE`,
+          sql`SELECT lineup_confirmed, lineup_confirmed_at, kind FROM shows WHERE id = ${id} FOR UPDATE`,
         ),
       )
       if (locked.length === 0) return null
@@ -119,17 +123,27 @@ export function createLineupStore(
       )
 
       let entryCount = 0
+      let voditelji = 0
       const titles: TitleCounts = { crni_kralj: 0, otmanovic: 0, bili_kralj: 0, bula: 0 }
       for (const row of counted) {
         const n = Number(row.n ?? 0)
         entryCount += n
         if (isDanceTitle(row.role)) titles[row.role] += n
+        if (row.role === 'voditelj') voditelji += n
       }
+
+      // An unreadable kind falls back to `ostalo`, which is the strictest of the
+      // two rules (the four titles): a row whose kind nobody can parse must not
+      // become the one evening that confirms without them.
+      const rawKind = locked[0].kind
+      const kind: PerformanceKind = isPerformanceKind(rawKind) ? rawKind : 'ostalo'
 
       return {
         confirmed: locked[0].lineup_confirmed === true,
         confirmedAt: isoOf(locked[0].lineup_confirmed_at),
+        kind,
         entryCount,
+        voditelji,
         titles,
       }
     },
