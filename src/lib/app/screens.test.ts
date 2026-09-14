@@ -565,6 +565,14 @@ describe('activeTabKey', () => {
     expect(activeTabKey(dancer, '/app/moreska/42')).toBe('moreska')
     expect(activeTabKey(voditelj, '/app/moreska/42')).toBe('moreska')
   })
+
+  // The same prefix rule, one screen over (#568).
+  it('keeps Ljestvica lit on its full list', () => {
+    const dancer = appNav(user('moreskant'), ctx({ hasMember: true }))
+    expect(activeTabKey(dancer, '/app/leaderboard/full?season=2026&kind=moreska')).toBe(
+      'leaderboard',
+    )
+  })
 })
 
 describe('activeScreenKey', () => {
@@ -573,6 +581,13 @@ describe('activeScreenKey', () => {
     expect(activeScreenKey('/app/performances/42')).toBe('performances')
     expect(activeScreenKey('/app/leaderboard?season=2026')).toBe('leaderboard')
     expect(activeScreenKey('/app/more')).toBe('more')
+  })
+
+  it('lights Ljestvica on the full list under it (#568)', () => {
+    expect(activeScreenKey('/app/leaderboard/full')).toBe('leaderboard')
+    expect(activeScreenKey('/app/leaderboard/full?season=2026&kind=experience')).toBe(
+      'leaderboard',
+    )
   })
 
   it('does not light a screen whose route is only a prefix of the path', () => {

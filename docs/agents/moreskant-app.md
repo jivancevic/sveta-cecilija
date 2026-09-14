@@ -49,7 +49,7 @@ two fields apart for this reason.
 | 1.5 | Moreška (the dancer's register screen) | `/app/moreska` | `moreskant`, `moreska` | **live** (#565): the 44px RoleMark with the name and "N nastupa pred tobom"; the hero of the next nastup (the day at 80px, weekday · time · Redovna, the voditelj's note, Dolazim / Ne dolazim, and after an answer "Dolaziš · Crni" or "Ne dolaziš" with Promijeni); the ArmyBar under it, which taps through to Stanje; then the season by month, a gold DateDisc for every Redovna and one chip per row. **A non-regular evening reads "Vanredna" and never names its client or its kind**, there is no seat count or revenue anywhere on it (Q29) and no Dodaj (Q31). What it says is `src/lib/app/moreska-screen.ts`, pure and tested without a database. **`/app/moreska/[id]` is Stanje** (#566), one nastup with its two armies and its four titles | new; nothing 308s here |
 | 2 | Izvedbe (one screen, content by `can()`) | `/app/performances`, `/app/performances/[id]` | `tickets`, `moreska` (a `moreskant` reads the schedule on Moreška since #565 and one evening on Stanje since #566, so Izvedbe is not theirs at all) | **live** (#495): the voditelj's Dodaj / Uredi / Otkaži / Pragovi (#503), and the blagajna's sold-of-capacity, channel split, per-show numbers and six named actions (#502), which is where the old `/admin/stats/[id]` drill-down now lives. Since #538 the per-show *Prihod* is online money net of refunds plus the evening's ledger, with the partner seats named under it at face value, before commission | 308 from `/app/izvedba/[id]`; push messages now carry the new path |
 | 2.5 | Članovi (dancer profiles, invitations, join code; absorbs Pozivnice, added by #476) | `/app/members`, `/app/members/[id]` | `moreska` | **live** (#511): the rehearsal join code and its pending claims at the top, Dodaj plesača beside them, then the roster — a diacritic-insensitive search, active moreškanti first and retired ones under them, one row per dancer carrying the nickname, the real name, the primary role, whether a login exists, and the two invitation channels behind a disclosure (`POST /api/app/invite/link` for the SMS link, `POST /api/app/invite` for the letter), plus "Pošalji pozivnice svima"; the profile at `/app/members/[id]` writes nadimak, mobitel, e-mail, plesne uloge, glavna uloga and aktivan through `PATCH /api/app/members/[id]`, and Dodaj plesača through `POST /api/app/members` | `/app/invitations` and `/app/pozivnice` both 308 here; the Backoffice Members list stays for the attribution half |
-| 3 | Ljestvica (own season + roster ranking; voditelj sees the full table) | `/app/leaderboard?season=2026&part=mine\|all` | `moreskant`, `moreska` | **live** (#495): both panels on one screen, the voditelj's *Ljestvica* panel is the old scoreboard | 308 from `/app/moje` and `/app/statistika` |
+| 3 | Ljestvica (roster ranking + own season) | `/app/leaderboard?season=2026&part=all\|mine`, `/app/leaderboard/full?season=&kind=` | `moreskant`, `moreska` | **live** (#568): *Ljestvica* first and by default, *Moja sezona* second. The board is TWO lists, Moreška and Experience, each a podium of its top three, the rows to twenty, the reader's own row highlighted or pinned, and "Vidi cijeli popis" into the whole ranking. Everyone reads the same two lists: the voditelj's six-column scoreboard went with `StatsTable` | 308 from `/app/moje` (→ `part=mine`) and `/app/statistika` (→ `part=all`) |
 | 4 | Skener (camera, code entry, door list) | `/app/scan` | `door` | **live** (#504): the camera and the four result states, Pusti ostatak grupe (n), Poništi propuštanje, Pronađi ulaznicu and the "ušlo X od Y" ring, all on one screen | `/admin/scan` 308s here and the Backoffice view is deleted; the ticket QR stays `/scan/[token]`, whose staff buttons point at `/app/scan` |
 | 5 | Prodaja | `/app/sell` | `partner` | **live** (#505): the izvedba picker with seats left, the two steppers, Izdaj ulaznice → the PDF, Zadnje prodaje with the delete-then-undo storno, and the live month card | the Backoffice partner dashboard stays until #512 |
 | 6 | Obračun | `/app/statement` | `partner` | **live** (#505): the season's per-izvedba bars, and a month/year picker that shows the statement on screen before offering its CSV | the Backoffice partner dashboard stays until #512 |
@@ -2004,27 +2004,73 @@ there.
 ### The Ljestvica
 
 Glossary: *Ljestvica* — that entry is the rulebook, this is where it is
-implemented. `buildLeaderboard` (`src/lib/app/leaderboard-loaders.ts`) is pure
-and sits **downstream of `loadSeasonStats`**: it ranks the scoreboard's own rows
-rather than re-deriving a count, which is what keeps both panels of
-`/app/leaderboard` and the board from ever printing three numbers for one season.
+implemented. Two pure modules, both **downstream of `loadSeasonStats`**: they
+rank the scoreboard's own rows rather than re-deriving a count, which is what
+keeps the two panels of `/app/leaderboard`, the full list and the Početna card
+from ever printing three numbers for one season.
 
-- Only confirmed lineups count (already true of `SeasonStats.rows`), every
-  active moreškant is a row even at zero, and the incoming order (performances
-  desc, then nickname) is never re-sorted.
+| | |
+|---|---|
+| `src/lib/app/leaderboard-rank.ts` | the redesign's rules (#568): the two lists, the ranking, the cut, the pinned row, the standing |
+| `src/lib/app/leaderboard-loaders.ts` | `buildLeaderboard`, the WHOLE season's ranking, which is now read only for the milestones on *Moja sezona* |
+
+**One season is two lists** (#568, Q36). A *Moreška Experience* is danced by
+three pairs in the society's own premises and a full evening by the whole
+ansambl, so ranking both in one column told a dancer with twelve Redovne that
+they were behind somebody with fifteen Experiences. `kindsOf` splits them off
+`PERFORMANCE_KINDS`, so a seventh kind lands in the Moreška list rather than
+falling out of both, and `SeasonStats.confirmedByKind` is what each list is
+"out of".
+
+- Only confirmed lineups count, every active moreškant is a row even at zero,
+  and **a cancelled evening counts for nobody** — `loadSeasonStats` drops it
+  since #568, which is the rule `my-season-loaders.ts` had applied alone since
+  #457 and the reason one dancer's season could read 18 on the board and 17 on
+  the panel beside it.
 - **Competition ranking**: equal counts share a rank and the next rank skips
-  (1, 1, 3).
-- `share` is the count over the season's confirmed performances (0 when there
-  are none); `fullSeason` means it equals them and there was at least one;
-  milestones are 5, 10, 15, 20 read off the same count. No streaks.
-- `me` carries `toNextPlace` — how many more performances would reach the next
+  (1, 1, 3). The rows are re-sorted by the LIST's own count (then nickname, `hr`
+  collation), because a list of Experiences ordered by somebody's Redovne would
+  be ordered by a number it does not show.
+- **The cut is by POSITION, not by rank**: `boardView` shows twenty and offers
+  the rest behind "Vidi cijeli popis", and cutting by rank would show a
+  different number of dancers depending on how the season tied. A reader below
+  the cut is **pinned** as a last row of their own ("ti · 24."), so the one
+  number they opened the screen for is never behind a link.
+- `myStanding` carries `toNextPlace` — how many more nastupa reach the next
   higher distinct count, null at the top — together with `nextPlace`, the rank
-  that count already holds, and the next milestone. `nextPlace` is **not**
-  `rank - 1`: with ranks 1, 1, 3 the dancer at 3 reaches 1 by tying, and 2 is a
-  place nobody holds. The sentences built from it go through `pluralize`
-  (`roster-loaders.ts`), the one home of the three Croatian plural buckets.
-- The bottom of the list gets **no** treatment: no red, no "zadnji". An empty
-  season hides the card and the podium and says so once.
+  that count already holds. `nextPlace` is **not** `rank - 1`: with ranks 1, 1,
+  3 the dancer at 3 reaches 1 by tying, and 2 is a place nobody holds. Counted
+  nouns go through `pluralize` (`roster-loaders.ts`), and the standing sentence
+  takes the INSTRUMENTAL (`board.withCount`: "s 1 nastupom"), because
+  `moreska.count` is the nominative and "s 1 nastup" reads as a typo.
+- **Every mark is an army and every title is null.** A *titula* belongs to one
+  evening's lineup and never to a person (CONTEXT.md → *Title*), so the disc
+  comes from the profile's primary role (`SeasonStats.primaryRoles`, the one
+  profile fact this payload carries — no mobile, no e-mail) and no crown is
+  drawn. A season's counts contain no title anybody currently holds; #566's
+  `lineupWithTitles` is one evening's draft and is not this screen's to read.
+- `fullSeason` means the reader danced every confirmed evening of THAT list;
+  milestones are 5, 10, 15, 20 read off the whole season's count and live on
+  *Moja sezona* since #568, beside the split by kind. **No streaks**, which is a
+  decision rather than an omission.
+- The bottom of the list gets **no** treatment: no red, no "zadnji". A season
+  with no confirmed postava of a kind says so once, in one line.
+- `/app/leaderboard/full?season=&kind=` is the whole ranking of one list, same
+  gate (`openScreen('leaderboard')`), lit as Ljestvica by the prefix rule in
+  `activeScreenKey`. It is a PAGE rather than a "show more" button because a
+  ranking of the whole roster appearing under a tap moves the row the reader was
+  looking at; rendered on the server, whole, on first paint, there is no loading
+  state to reflow. A `moreska` holder reads two lines more per row: which
+  evenings the count is made of ("9 Redovna · 7 Adriatic DMC"), and quieter
+  under it the titles worn in them ("2 × crni kralj · 1 × otmanović") — the four
+  columns of the old `StatsTable`, which is where they live now that that table
+  is gone. They come from `DancerStats.rolesByKind` (#568) summed over THIS
+  list's kinds, **never** from `roles`, which is the whole season: a titles line
+  drawn from the season sat beside a count that excluded the Experiences it was
+  counting. `roles` keeps its #437 meaning; `rolesByKind` is a new field beside
+  it, and only the four titles are in either — a plain crni or bili is an army,
+  not a titula. Zeros are not printed, and a dancer who wore no title that
+  season gets no line.
 
 ## Narudžbe (#501)
 
@@ -2253,7 +2299,11 @@ spellings. When the last one goes, so do the aliases.
 
 **A shape goes in `src/app/app/ui/`, or it does not exist.** Button, Card, Hero,
 Tile, ListRow, Chip, DateDisc, Note, Section, ArmyBar, RoleMark, Sheet, Toast,
-Ring, Podium. A screen COMPOSES them; a screen does not restyle them, and a
+Ring, Podium — plus, since #568, Segmented (two views of one screen, a sunk
+track and a white thumb) and CountUp (a number that runs up once on first paint;
+the server renders its FINAL value, so nothing reflows and a reader with no
+JavaScript still reads the count). `Podium` grew a `large` size there rather
+than a screen-side override. A screen COMPOSES them; a screen does not restyle them, and a
 screen that needs a sixteenth shape brings it here rather than inventing one
 beside itself — inventing beside itself is exactly how the app ended up with
 five kinds of button and no rule about which was primary. Only `Sheet` is a

@@ -57,6 +57,20 @@ describe('the Croatian → English renames', () => {
     expect(to('/app/invitations')).toBe('/app/members')
   })
 
+  it('sends the two old Moje paths to the panel each one means (#568)', () => {
+    // Ljestvica opens on the board since #568, so a path whose own meaning is
+    // "my season" has to say `part=mine` or the bookmark lands on the ranking.
+    // `/app/statistika` WAS the scoreboard, so it keeps `part=all`.
+    const to = (source: string) =>
+      APP_ROUTE_RENAMES.find((r) => r.source === source && !r.has)?.destination
+    expect(to('/app/moje')).toBe('/app/leaderboard?part=mine')
+    expect(to('/app/statistika')).toBe('/app/leaderboard?part=all')
+
+    const withSeason = (source: string) =>
+      APP_ROUTE_RENAMES.find((r) => r.source === source && r.has)?.destination
+    expect(withSeason('/app/moje')).toBe('/app/leaderboard?season=:sezona&part=mine')
+  })
+
   it('renames only Croatian segments, and only under /app', () => {
     for (const { source, destination } of APP_ROUTE_RENAMES) {
       expect(source.startsWith('/app/')).toBe(true)

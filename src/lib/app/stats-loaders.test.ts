@@ -92,6 +92,47 @@ describe('loadSeasonStats', () => {
     expect(result.rows.every((r) => r.performances === 0)).toBe(true)
   })
 
+  // #568 — the two panels of Ljestvica read one season through two loaders, and
+  // this is the rule they used to disagree about: `my-season-loaders.ts` has
+  // dropped cancelled evenings since #457 and this half counted them.
+  it('counts no cancelled evening, for the season or for a dancer', async () => {
+    const { all, loadLineups } = deps({
+      loadPerformances: async () => [
+        { id: 10, date: '2026-07-01T12:00:00.000Z', kind: 'redovna', lineupConfirmed: true },
+        {
+          id: 11,
+          date: '2026-07-08T12:00:00.000Z',
+          kind: 'dmc',
+          lineupConfirmed: true,
+          status: 'cancelled',
+        },
+      ],
+    })
+    const result = await loadSeasonStats('2026', all)
+    expect(loadLineups).toHaveBeenCalledWith(['10'])
+    expect(result.confirmedPerformances).toBe(1)
+    expect(result.confirmedByKind.redovna).toBe(1)
+    expect(result.confirmedByKind.dmc).toBe(0)
+    expect(result.rows.find((r) => r.nickname === 'Cici')!.performances).toBe(1)
+  })
+
+  it('splits the season by kind, for the two lists of Ljestvica (#568)', async () => {
+    const { all } = deps({
+      loadPerformances: async () => [
+        { id: 10, date: '2026-07-01T12:00:00.000Z', kind: 'redovna', lineupConfirmed: true },
+        { id: 11, date: '2026-07-08T12:00:00.000Z', kind: 'experience', lineupConfirmed: true },
+        { id: 12, date: '2026-07-15T12:00:00.000Z', kind: 'redovna', lineupConfirmed: false },
+      ],
+    })
+    const result = await loadSeasonStats('2026', all)
+    expect(result.confirmedByKind.redovna).toBe(1)
+    expect(result.confirmedByKind.experience).toBe(1)
+    expect(result.confirmedByKind.gulliver).toBe(0)
+    // The profile fact the board draws a mark from, and nothing else about a
+    // member: no mobile, no e-mail (ADR-0024's PII boundary).
+    expect(result.primaryRoles).toEqual({ '1': 'crni_kralj', '2': 'bili' })
+  })
+
   it('offers only this season when nothing older exists', async () => {
     const { all } = deps({ loadFirstSeason: async () => null })
     expect((await loadSeasonStats(undefined, all)).seasons).toEqual([2026])

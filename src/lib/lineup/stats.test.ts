@@ -52,6 +52,80 @@ describe('aggregateDancerStats', () => {
     expect(dado.roles).toEqual({ crni_kralj: 0, bili_kralj: 1, otmanovic: 1, bula: 0 })
   })
 
+  // #568 — Ljestvica ranks one KIND of evening at a time, so the titles line
+  // beside a count has to be scoped the same way or the two do not add up.
+  it('splits the four titles by kind, leaving the season-wide count alone', () => {
+    const rows = aggregateDancerStats({
+      performances: [
+        performance('10', 'redovna'),
+        performance('11', 'redovna'),
+        performance('12', 'experience'),
+      ],
+      lineups: [
+        row('10', '1', 'crni_kralj'),
+        row('11', '1', 'crni_kralj'),
+        row('12', '1', 'bula'),
+      ],
+      roster,
+    })
+    const cici = rows.find((r) => r.nickname === 'Cici')!
+    // The season-wide field keeps the meaning it has had since #437.
+    expect(cici.roles).toEqual({ crni_kralj: 2, bili_kralj: 0, otmanovic: 0, bula: 1 })
+    expect(cici.rolesByKind.redovna).toEqual({
+      crni_kralj: 2,
+      bili_kralj: 0,
+      otmanovic: 0,
+      bula: 0,
+    })
+    expect(cici.rolesByKind.experience).toEqual({
+      crni_kralj: 0,
+      bili_kralj: 0,
+      otmanovic: 0,
+      bula: 1,
+    })
+    // Every kind is a key, zeros included, so no caller has to guard.
+    expect(cici.rolesByKind.dmc).toEqual({
+      crni_kralj: 0,
+      bili_kralj: 0,
+      otmanovic: 0,
+      bula: 0,
+    })
+  })
+
+  it('counts an army as no titula in the per-kind split either', () => {
+    // A plain crni or bili is an army, not a title (CONTEXT.md → *Title*).
+    const rows = aggregateDancerStats({
+      performances: [performance('10', 'redovna')],
+      lineups: [row('10', '1', 'crni'), row('10', '2', 'bili')],
+      roster,
+    })
+    for (const nickname of ['Cici', 'Dado']) {
+      const dancer = rows.find((r) => r.nickname === nickname)!
+      expect(dancer.performances).toBe(1)
+      expect(dancer.rolesByKind.redovna).toEqual({
+        crni_kralj: 0,
+        bili_kralj: 0,
+        otmanovic: 0,
+        bula: 0,
+      })
+    }
+  })
+
+  it('leaves a dancer who danced nothing with every per-kind title at zero', () => {
+    const rows = aggregateDancerStats({
+      performances: [performance('10', 'redovna')],
+      lineups: [row('10', '1', 'crni_kralj')],
+      roster,
+    })
+    const grgo = rows.find((r) => r.nickname === 'Grgo')!
+    expect(grgo.performances).toBe(0)
+    expect(
+      Object.values(grgo.rolesByKind).every((byRole) =>
+        Object.values(byRole).every((n) => n === 0),
+      ),
+    ).toBe(true)
+  })
+
   it('counts a plain crni or bili as a performance and no special role', () => {
     const rows = aggregateDancerStats({
       performances: [performance('10', 'redovna')],

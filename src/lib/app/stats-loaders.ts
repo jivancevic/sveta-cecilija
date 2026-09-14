@@ -18,7 +18,7 @@
 
 import { seasonYear } from '@/lib/member/season'
 import { toIsoDate } from '@/lib/to-iso-date'
-import type { PerformanceKind } from '@/lib/show-performance'
+import { PERFORMANCE_KINDS, type PerformanceKind } from '@/lib/show-performance'
 import { toAttendanceMember } from '@/lib/attendance/rules'
 import { relationIdString } from '@/lib/payload-relation'
 import { isDanceRole } from '@/lib/moreskant-profile'
@@ -38,6 +38,21 @@ export interface SeasonStats {
   rows: DancerStats[]
   /** Confirmed performances in the season: what the numbers are out of. */
   confirmedPerformances: number
+  /**
+   * The same confirmed evenings, split by kind (#568).
+   *
+   * Ljestvica is two lists — the Experience and everything else — and each one
+   * is "out of" its own kinds: a dancer in every Experience of the season has a
+   * puna sezona of Experiences even if they danced no Redovna.
+   */
+  confirmedByKind: Record<PerformanceKind, number>
+  /**
+   * `memberId` → the dancer's primary role, for the mark beside their name
+   * (#568). The ARMY is a profile fact and may be read from a profile; a
+   * *titula* is not (CONTEXT.md → *Title*), which is why this map carries the
+   * role and nothing derived from an evening.
+   */
+  primaryRoles: Record<string, string | null>
 }
 
 /** A Payload shows doc → the fact the aggregation needs about an evening. */
@@ -89,7 +104,14 @@ export async function loadSeasonStats(
   const seasons = seasonOptions(firstSeason, current)
   const season = resolveSeason(requested, current, seasons)
 
-  const performanceDocs = await deps.loadPerformances(season)
+  // A CANCELLED EVENING IS NOT AN EVENING. It never happened, so it is neither
+  // in the season total nor in anybody's count, whatever its lineup says
+  // (glossary: *Ljestvica*, *Statistika*). `my-season-loaders.ts` has applied
+  // that rule since #457 and this half did not, which is how one dancer's
+  // season could read 18 on the board and 17 on the panel beside it (#568).
+  const performanceDocs = (await deps.loadPerformances(season)).filter(
+    (doc) => doc.status !== 'cancelled',
+  )
   const performances = performanceDocs.map(toStatsPerformance)
   const confirmedIds = performances.filter((p) => p.confirmed).map((p) => p.id)
 
@@ -102,11 +124,34 @@ export async function loadSeasonStats(
 
   const roster = (await deps.loadMoreskanti()).map(toAttendanceMember)
 
+  // The kind vocabulary is `show-performance.ts`'s, never re-typed: a kind that
+  // is not in the enum folds into `ostalo` here exactly as it does in the
+  // aggregation, so the two halves of one season agree about what an evening was.
+  const confirmedByKind = Object.fromEntries(PERFORMANCE_KINDS.map((k) => [k, 0])) as Record<
+    PerformanceKind,
+    number
+  >
+  for (const p of performances) {
+    if (!p.confirmed) continue
+    const kind = (PERFORMANCE_KINDS as readonly string[]).includes(p.kind) ? p.kind : 'ostalo'
+    confirmedByKind[kind as PerformanceKind] += 1
+  }
+
+  // The one profile fact the board reads. Never the mobile or the e-mail: this
+  // payload is rendered to every moreškant on the roster, and the PII boundary
+  // (ADR-0024) is what keeps it a leaderboard rather than a directory.
+  const primaryRoles: Record<string, string | null> = {}
+  for (const member of roster) {
+    primaryRoles[String(member.id)] = member.primaryRole ?? null
+  }
+
   return {
     season,
     seasons,
     rows: aggregateDancerStats({ performances, lineups, roster }),
     confirmedPerformances: confirmedIds.length,
+    confirmedByKind,
+    primaryRoles,
   }
 }
 

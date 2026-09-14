@@ -21,21 +21,29 @@ import type { SeasonStats } from './stats-loaders'
 /** The four milestones, in order (glossary: *Ljestvica*). */
 export const MILESTONES = [5, 10, 15, 20] as const
 
-/** The two panels of `/app/leaderboard` (#457, renamed by #473). */
-export const LEADERBOARD_SEGMENTS = ['mine', 'all'] as const
+/**
+ * The two panels of `/app/leaderboard` (#457, renamed by #473), in the order
+ * they are read.
+ *
+ * **Ljestvica first since #568** (decision Q36). The screen is called Ljestvica
+ * and a tab that opens on something else than its own name asks the reader to
+ * find it; "Moja sezona" is the second thing a dancer looks at, after where
+ * they stand.
+ */
+export const LEADERBOARD_SEGMENTS = ['all', 'mine'] as const
 
 export type LeaderboardSegment = (typeof LEADERBOARD_SEGMENTS)[number]
 
 /**
- * Which panel `?part=` asks for, defaulting to the dancer's own season.
+ * Which panel `?part=` asks for, defaulting to the board.
  *
- * Anything unrecognised opens on "mine" rather than erroring: a stale link is
- * still a link to the screen, and `?dio=moja` from before #495 lands there too.
+ * Anything unrecognised opens on "all" rather than erroring: a stale link is
+ * still a link to the screen.
  */
 export function parseLeaderboardSegment(raw: string | undefined | null): LeaderboardSegment {
   return LEADERBOARD_SEGMENTS.includes(raw as LeaderboardSegment)
     ? (raw as LeaderboardSegment)
-    : 'mine'
+    : 'all'
 }
 
 export interface LeaderboardRow {

@@ -454,6 +454,18 @@ export const APP_STRINGS = {
     legend: 'Zlatno: u potvrđenoj postavi. Sivo: svi potvrđeni nastupi sezone.',
     roles: 'Uloge',
     times: (count: number) => `${count}×`,
+    /**
+     * The four milestones of the glossary (5, 10, 15, 20) and "puna sezona",
+     * on the dancer's own panel since #568 — the board next to it is a ranking
+     * and a ranking is about everybody, while a prekretnica is about one
+     * person's season. **No streaks here or anywhere**, which is a decision
+     * rather than an omission (glossary: *Ljestvica*).
+     */
+    milestones: 'Prekretnice',
+    milestoneReached: (count: number) => `${count} nastupa: dosegnuto`,
+    milestoneAhead: (count: number) => `${count} nastupa: još nije`,
+    /** The season's nastupi split by what kind of evening they were. */
+    byKind: 'Po vrsti nastupa',
     emptyTitle: 'Još nisi plesao ove sezone',
     emptyBody: 'Prva potvrđena postava pojavit će se ovdje.',
     emptyLink: 'Odgovori na sljedeći nastup',
@@ -496,6 +508,54 @@ export const APP_STRINGS = {
     footer: (confirmed: string) =>
       `Broji se samo potvrđena postava. ${confirmed} u sezoni.`,
     empty: 'Ljestvica počinje s prvom potvrđenom postavom.',
+
+    /* ── One season, two lists (#568, decision Q36) ──────────────────────
+       The Experience is danced by three pairs and a full evening by the whole
+       ansambl, so they are ranked apart. The second name is the English one on
+       purpose: *Moreška Experience* is what the society sells it as (glossary),
+       and "iskustvo" is nobody's word for it. */
+    lists: {
+      moreska: 'Moreška',
+      experience: 'Experience',
+    },
+    /** The quiet count beside a list heading: how many moreškanata are on it. */
+    onList: { one: 'moreškant', few: 'moreškanta', many: 'moreškanata' },
+    /** Under each list, when there is more of it than the screen shows. */
+    seeAll: 'Vidi cijeli popis',
+    /**
+     * "s 1 nastupom", "s 14 nastupa" — the INSTRUMENTAL, which is the case the
+     * standing sentence needs and the only place in the app that needs it.
+     * `moreska.count` is the nominative ("1 nastup") and reads as a typo after
+     * "s": Croatian declines, and a counted noun is not one word.
+     */
+    withCount: { one: 'nastupom', few: 'nastupa', many: 'nastupa' },
+    /** The reader's standing, above the list rather than in a card of its own. */
+    standing: (rank: number, count: string) => `Ti si ${rank}. s ${count}.`,
+    /**
+     * The pinned last row of a reader who is further down than the cut: their
+     * own place, always on the screen, never behind "vidi cijeli popis".
+     */
+    pinned: (rank: number) => `ti · ${rank}.`,
+    /** A row's rank, in the column in front of the mark. */
+    rank: (rank: number) => `${rank}.`,
+    /** An Experience list in a season that has had none. */
+    emptyExperience: 'Ove sezone još nema potvrđene postave za Moreška Experience.',
+
+    /* ── The full list (#568) ────────────────────────────────────────── */
+    full: {
+      title: 'Cijeli popis',
+      back: 'Natrag na ljestvicu',
+      /** The voditelj's own line on a row: which evenings the count is made of. */
+      breakdown: (parts: string[]) => parts.join(' · '),
+      /**
+       * "2 × crni kralj · 1 × otmanović" — the titles a dancer wore in THOSE
+       * evenings, the quiet second line under the split.
+       *
+       * Only the four titles, and only the ones above zero: a dancer with no
+       * titula that season gets no line rather than four zeros.
+       */
+      worn: (count: number, label: string) => `${count} × ${label}`,
+    },
   },
 
   /** The "Više" tab: everything that is not an evening (#457). */

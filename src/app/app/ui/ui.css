@@ -436,6 +436,15 @@ button.ui-row:hover {
   color: var(--ink);
 }
 
+/* A nickname is as long as its owner made it and the step is a third of a
+   phone: it ends in an ellipsis rather than wrapping the podium out of shape. */
+.ui-podium__name {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .ui-podium__step--1 {
   height: 100%;
   background: var(--goldSoft);
@@ -460,6 +469,98 @@ button.ui-row:hover {
     transform: none;
     opacity: 1;
   }
+}
+
+/* The large podium (#568): the same three steps as the head of a screen rather
+   than the glance inside a tile, tall enough to carry a mark and a place. The
+   steps scale from the bottom, so what is INSIDE them must not scale with them
+   or the nickname would arrive squashed. */
+.ui-podium--lg {
+  height: 172px;
+  gap: 8px;
+}
+
+.ui-podium--lg .ui-podium__step {
+  gap: 4px;
+  padding: 12px 6px 10px;
+  border-radius: 14px 14px 6px 6px;
+  font-size: 13px;
+  color: var(--ink);
+  animation-name: ui-rise-lg;
+}
+
+.ui-podium--lg .ui-podium__step b {
+  font-size: 26px;
+  line-height: 1;
+}
+
+.ui-podium--lg .ui-podium__step--1 b {
+  font-size: 32px;
+}
+
+/* Taller steps than the tile's 100/78/60: a step has to hold a mark, a count,
+   a nickname and a place, and the third one at 60% would cut the place off. */
+.ui-podium--lg .ui-podium__step--2 {
+  height: 86%;
+}
+
+.ui-podium--lg .ui-podium__step--3 {
+  height: 74%;
+}
+
+.ui-podium--lg .ui-podium__place {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.ui-podium--lg .ui-podium__step--me {
+  outline: 1.5px solid var(--gold);
+  outline-offset: -1.5px;
+}
+
+/* A step that carries text rises by sliding, not by stretching: `scaleY` on a
+   172px block visibly squashes the nickname inside it on the way up. */
+@keyframes ui-rise-lg {
+  from {
+    transform: translateY(16px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+/* ── Segmented control ────────────────────────────────────
+   Two or three views of one screen: a sunk track with a white thumb under the
+   chosen word. The tab bar's object, one size down. */
+.ui-seg {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 4px;
+  padding: 4px;
+  border-radius: var(--rPill);
+  background: var(--sunk);
+}
+
+.ui-seg__item {
+  min-height: 36px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: var(--rPill);
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s var(--ease), color 0.2s var(--ease);
+}
+
+.ui-seg__item--on {
+  background: var(--card);
+  color: var(--ink);
 }
 
 /* ── ArmyBar ──────────────────────────────────────────────
