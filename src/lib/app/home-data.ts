@@ -260,8 +260,10 @@ export async function loadHomeScreen(viewer: AppViewer): Promise<HomeScreen> {
             me: standing,
             // Ljestvica answers to `moreskant` and `moreska` and to nobody
             // else, so its count is in the dancer's register: "1. s 11
-            // nastupa", never "izvedbi" (CONTEXT.md, two registers).
-            countWords: APP_STRINGS.moreska.count,
+            // nastupa", never "izvedbi" (CONTEXT.md, two registers). The
+            // INSTRUMENTAL of it, because the sentence is "s …" (#568): the
+            // nominative read "ti si 4. s 1 nastup".
+            countWords: APP_STRINGS.board.withCount,
           }),
         )
         break

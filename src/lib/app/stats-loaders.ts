@@ -104,7 +104,14 @@ export async function loadSeasonStats(
   const seasons = seasonOptions(firstSeason, current)
   const season = resolveSeason(requested, current, seasons)
 
-  const performanceDocs = await deps.loadPerformances(season)
+  // A CANCELLED EVENING IS NOT AN EVENING. It never happened, so it is neither
+  // in the season total nor in anybody's count, whatever its lineup says
+  // (glossary: *Ljestvica*, *Statistika*). `my-season-loaders.ts` has applied
+  // that rule since #457 and this half did not, which is how one dancer's
+  // season could read 18 on the board and 17 on the panel beside it (#568).
+  const performanceDocs = (await deps.loadPerformances(season)).filter(
+    (doc) => doc.status !== 'cancelled',
+  )
   const performances = performanceDocs.map(toStatsPerformance)
   const confirmedIds = performances.filter((p) => p.confirmed).map((p) => p.id)
 

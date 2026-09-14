@@ -522,6 +522,13 @@ export const APP_STRINGS = {
     onList: { one: 'moreškant', few: 'moreškanta', many: 'moreškanata' },
     /** Under each list, when there is more of it than the screen shows. */
     seeAll: 'Vidi cijeli popis',
+    /**
+     * "s 1 nastupom", "s 14 nastupa" — the INSTRUMENTAL, which is the case the
+     * standing sentence needs and the only place in the app that needs it.
+     * `moreska.count` is the nominative ("1 nastup") and reads as a typo after
+     * "s": Croatian declines, and a counted noun is not one word.
+     */
+    withCount: { one: 'nastupom', few: 'nastupa', many: 'nastupa' },
     /** The reader's standing, above the list rather than in a card of its own. */
     standing: (rank: number, count: string) => `Ti si ${rank}. s ${count}.`,
     /**
@@ -538,7 +545,7 @@ export const APP_STRINGS = {
     full: {
       title: 'Cijeli popis',
       back: 'Natrag na ljestvicu',
-      /** The voditelj's own line on a row: the titles and kinds behind the count. */
+      /** The voditelj's own line on a row: which evenings the count is made of. */
       breakdown: (parts: string[]) => parts.join(' · '),
     },
   },

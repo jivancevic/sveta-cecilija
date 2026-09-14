@@ -53,7 +53,10 @@ function Row({ row, pinned = false }: { row: RankRow; pinned?: boolean }) {
       className={row.me ? 'app__lb-row--me' : undefined}
       lead={
         <span className="app__lb-lead">
-          <i className="app__lb-rank">{S.rank(row.rank)}</i>
+          {/* The pinned row carries its place in its TITLE ("ti · 24."), so the
+              column is left empty rather than printing 24 twice; it still holds
+              its width, which is what keeps every mark on the screen in line. */}
+          <i className="app__lb-rank">{pinned ? '' : S.rank(row.rank)}</i>
           <RoleMark army={row.army} title={row.title} small />
         </span>
       }
@@ -71,7 +74,9 @@ function Standing({ standing }: { standing: MyStanding }) {
   const counted = (n: number) => pluralize(n, APP_STRINGS.moreska.count)
   return (
     <p className="app__lb-standing">
-      {S.standing(standing.rank, counted(standing.performances))}{' '}
+      {/* The first half takes the instrumental ("s 1 nastupom"), the second the
+          nominative ("Još 1 nastup"). Two cases, two word sets, one sentence. */}
+      {S.standing(standing.rank, pluralize(standing.performances, S.withCount))}{' '}
       {/* The place NAMED is the one those evenings actually reach: a tie shares
           a rank, so from rank 3 behind two dancers at the top the sentence says
           "do 1. mjesta", never "do 2." (#457 review). */}

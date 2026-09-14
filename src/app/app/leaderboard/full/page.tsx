@@ -8,8 +8,8 @@ import {
   type RankRow,
 } from '@/lib/app/leaderboard-rank'
 import { pluralize } from '@/lib/app/roster-loaders'
-import { APP_STRINGS, KIND_LABELS, ROLE_LABELS } from '@/lib/app/strings'
-import { STAT_ROLES, type DancerStats } from '@/lib/lineup/stats'
+import { APP_STRINGS, KIND_LABELS } from '@/lib/app/strings'
+import type { DancerStats } from '@/lib/lineup/stats'
 import { PERFORMANCE_KINDS } from '@/lib/show-performance'
 import { AppShell } from '../../AppShell'
 import { openScreen } from '../../gate'
@@ -28,28 +28,32 @@ import { Chip, List, ListRow, RoleMark, Section } from '../../ui'
 // lights Ljestvica for it, because the tab rule matches a route's PREFIX
 // (`lib/app/screens.ts`).
 //
-// A `moreska` holder reads one line more per row: the titles and the kinds
-// behind the count, which is what the old voditelj scoreboard put in six
-// columns (#437). It is a line rather than a table because a phone carries a
-// sentence better than it carries six numeric columns, and because the reader
-// who wants the season by evening has Statistika and Izvedbe for that.
+// A `moreska` holder reads one line more per row: **which evenings** the count
+// is made of ("9 Redovna · 7 Adriatic DMC"), which is the split the old
+// voditelj scoreboard hid behind a tap (#437, story 40). A line rather than a
+// table because a phone carries a sentence better than six numeric columns.
+//
+// What that line deliberately does NOT carry is the four title counts the same
+// scoreboard put in four columns. `DancerStats.roles` counts titles over the
+// WHOLE season and this list is one kind of evening, so printing both beside
+// each other showed "6 crni kralj · 17 bili kralj" against a count of 19 —
+// numbers that do not add up are worse than numbers that are not there. A
+// per-kind title count would have to come from `lib/lineup/stats.ts`, and that
+// is a ticket of its own.
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 const S = APP_STRINGS.board
 
-/** "2 crni kralj · 8 Redovna · 2 Adriatic DMC" — the count, unpacked. */
+/** "8 Redovna · 2 Adriatic DMC" — which evenings the count is made of. */
 function breakdown(row: DancerStats, kinds: readonly string[]): string | null {
-  const parts = [
-    ...STAT_ROLES.filter((r) => row.roles[r] > 0).map(
-      (r) => `${row.roles[r]} ${ROLE_LABELS[r].toLocaleLowerCase('hr')}`,
-    ),
-    ...PERFORMANCE_KINDS.filter((k) => kinds.includes(k) && row.byKind[k] > 0).map(
-      (k) => `${row.byKind[k]} ${KIND_LABELS[k]}`,
-    ),
-  ]
-  return parts.length > 0 ? S.full.breakdown(parts) : null
+  const parts = PERFORMANCE_KINDS.filter((k) => kinds.includes(k) && row.byKind[k] > 0).map(
+    (k) => `${row.byKind[k]} ${KIND_LABELS[k]}`,
+  )
+  // One kind is not a split, it is the count again: the Experience list is
+  // every row, and a dancer who only ever danced Redovne needs no line either.
+  return parts.length > 1 ? S.full.breakdown(parts) : null
 }
 
 function Row({ row, meta }: { row: RankRow; meta: string | null }) {

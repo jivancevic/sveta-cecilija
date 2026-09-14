@@ -2550,10 +2550,13 @@ a.app__ob-link {
   text-align: right;
 }
 
+/* The serif carries the count, as it carries every figure in this app. NOT
+   `tabular-nums`: Labrada's tabular figures are a third wider than its
+   proportional ones, and "18" came out with a hole in the middle of it. The
+   column is right-aligned, which is what tabular was wanted for anyway. */
 .app__lb-count {
   font-family: var(--serif);
   font-size: 20px;
-  font-variant-numeric: tabular-nums;
   line-height: 1;
 }
 
@@ -2606,7 +2609,9 @@ a.app__ob-link {
 /* ── Moja sezona ─────────────────────────────────────────── */
 /* Four figures in one card rather than four cards: they are one fact about one
    season, and four lifted surfaces would say they are four things. */
-.app__lb-figs {
+/* `.ui-card` is a flex column and `ui.css` loads after this sheet, so the two
+   classes together are what makes a card lay its children out in two columns. */
+.ui-card.app__lb-figs {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px 12px;
@@ -2617,11 +2622,12 @@ a.app__ob-link {
   font-family: var(--serif);
   font-size: 32px;
   font-weight: 600;
-  font-variant-numeric: tabular-nums;
   line-height: 1.05;
 }
 
-.app__lb-fig span {
+/* The DIRECT child only: `CountUp` renders a span inside the figure's <b>, and
+   a descendant selector here shrank the one number on the card that moves. */
+.app__lb-fig > span {
   font-size: 13px;
   color: var(--muted);
 }
