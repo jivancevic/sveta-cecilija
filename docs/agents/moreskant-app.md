@@ -2182,9 +2182,18 @@ of search term resolves to something harmless: the query string is the one
 input a stranger hands this screen directly. `page=1` is never written, so one
 view has one address.
 
+**The search runs as it is typed and the filters are chips** (#570, Q40/Q41).
+The box debounces 300 ms and writes `q` with `router.replace`, so the address
+still IS the state: a reload, a Back and a pasted link all keep the search. The
+performance and state filters are rows of `FilterChips` (T1's shared shape, one
+of them filled) rather than self-submitting selects, which is also why they
+still work with JavaScript off. On the row and on the detail a comp order reads
+**Gratis** where the amount would be, because `total = 0` is not a missing
+price; `totalLabel()` in `orders-view.ts` decides that once for both.
+
 **The four states are two questions in one control.** `active` / `refunded` ask
 about the money (`refundStatus`), `partner` / `comp` about the channel. One
-dropdown rather than two, because Tatjana picks one at a time. The `where` is
+control rather than two, because Tatjana picks one at a time. The `where` is
 built inside the seam (`src/lib/repo/payload/orders-where.ts`, unit-tested), and
 the search is one OR over three columns — the name ANDed word by word so "ivan
 horvat" finds "Horvat Ivan", the address as a `like`, the code as an exact
@@ -2248,6 +2257,10 @@ can only name columns. Ordering a page in memory after fetching it would
 reorder within the page and lie across pages, which is the bug a pager hides
 best. The write still goes through the local API, which is the seam's rule.
 
+**#570 changed how it looks and nothing else** (Q42): the rows are cards with
+T1 chips, the state filter is the same row of `FilterChips` Narudžbe wears, and
+the routes, the query parameter and the three views are exactly what they were.
+
 **Which enquiries are bookings is not restated here.** `BOOKING_ENQUIRY_TYPES`
 in `src/lib/dashboard/inquiries.ts` has owned that since #239; the Backoffice
 badge, this screen's *Rezervacija* flag and the inbox's `ORDER BY` all read that
@@ -2288,7 +2301,14 @@ this season. A port of the Backoffice comp panel (`CompIssuePanel` /
 `CompIssueForm`), not a redesign — ADR-0019 already decided everything that
 matters and the two routes behind it are untouched.
 
-**Three sections, in the order of the moments they serve.**
+**Three sections, and since #570 (Q44) the records come first.** Podijeli
+gratis is one primary button at the top that opens the form in a `Sheet`; the
+season table and Zadnji gratisi are the screen itself. Giving a comp away
+happens a few times a season with somebody standing at the desk, while reading
+the table is what the screen is opened for the rest of the time, and an
+eight-control form sitting open pushed both records off a phone. The sheet
+stays open after a comp is issued, because the answer (the code, whether the
+e-mail left, the PDF to print) is in it.
 
 | Section | What it does | Route behind it |
 |---|---|---|
@@ -2417,7 +2437,9 @@ spellings. When the last one goes, so do the aliases.
 
 **A shape goes in `src/app/app/ui/`, or it does not exist.** Button, Card, Hero,
 Tile, ListRow, Chip, DateDisc, Note, Section, ArmyBar, RoleMark, Sheet, Toast,
-Ring, Podium — plus, since #568, Segmented (two views of one screen, a sunk
+Ring, Podium — plus, since #570, FilterChips (a scrolling row of link chips,
+one of them filled: a filter is an address, so it is never a `Chip`, which is a
+fact about a row) and, since #568, Segmented (two views of one screen, a sunk
 track and a white thumb) and CountUp (a number that runs up once on first paint;
 the server renders its FINAL value, so nothing reflows and a reader with no
 JavaScript still reads the count), and since #569 **Switch** (one thing this

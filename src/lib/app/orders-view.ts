@@ -55,6 +55,19 @@ export function partyLabel(adults: number, children: number): string {
   return parts.join(', ')
 }
 
+/**
+ * What a row says about its channel, or nothing (#570).
+ *
+ * Online with no promo code is the normal case and says nothing. A comp says
+ * the member, because the money column has already said "Gratis". A partner
+ * sale names the reseller, and a promo order says it carried a code.
+ */
+function rowChannelNote(order: OrderRow): string {
+  if (order.channel === 'comp') return order.memberName ?? ''
+  if (order.channel === 'partner') return channelLabel(order)
+  return order.promoCode ? S.promo : ''
+}
+
 /** "26 narudžbi" — how many rows the filters matched, above the list. */
 export function foundLabel(total: number): string {
   return pluralize(total, S.count)
@@ -174,21 +187,14 @@ export interface OrderRowView {
   channel: string
   refunded: boolean
   /**
-   * The disc on the left of the row: the evening this order is for (#570).
-   *
-   * Null when the performance is gone, because a disc with nothing on it is
-   * worse than no disc: the row still reads, it just has no date to mark.
-   */
-  disc: { day: string; weekday: string } | null
-  /**
    * The row's second line: the evening, the party, and the channel when the
    * channel is news (#570).
    *
    * An online order is the normal case and saying "Online" on nine rows out of
    * ten is noise; a partner sale, a comp and a promo order are each something
    * the reader has to know about the row, so those keep their words. The money
-   * column already says "Gratis" on a comp, and this line is what names the
-   * reseller behind a partner sale.
+   * column already says "Gratis" on a comp, so what the line adds there is the
+   * member it was attributed to, never the word again.
    */
   meta: string
 }
@@ -196,12 +202,7 @@ export interface OrderRowView {
 /** Everything one row of the list prints, gathered so the page has no logic. */
 export function orderRowView(order: OrderRow): OrderRowView {
   const buyer = (order.buyerName ?? '').trim()
-  const day = order.show ? Number((order.show.date ?? '').split('-')[2]) : NaN
   return {
-    disc:
-      order.show && Number.isFinite(day)
-        ? { day: String(day), weekday: shortWeekday(order.show.date) }
-        : null,
     href: `/app/orders/${order.id}`,
     buyer: buyer || S.detail.noName,
     code: order.code,
@@ -212,7 +213,7 @@ export function orderRowView(order: OrderRow): OrderRowView {
     meta: [
       performanceLabel(order.show),
       partyLabel(order.adultCount, order.childCount),
-      order.channel === 'online' && !order.promoCode ? '' : channelLabel(order),
+      rowChannelNote(order),
     ]
       .filter(Boolean)
       .join(' · '),

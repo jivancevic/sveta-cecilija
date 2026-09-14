@@ -80,7 +80,10 @@ export default async function InquiriesPage({
                   <span className="ui-small">{row.when}</span>
                 </span>
                 <span className="app__mail-chips">
-                  {row.isNew && <Chip tone="gold">{S.newBadge}</Chip>}
+                  {/* One gold thing per row: the booking, which is the inbox's
+                      only opinion. "Novo" is a plain chip because the card's
+                      gold edge is already saying it. */}
+                  {row.isNew && <Chip>{S.newBadge}</Chip>}
                   {row.booking && <Chip tone="gold">{S.booking}</Chip>}
                   <Chip>{row.type}</Chip>
                 </span>

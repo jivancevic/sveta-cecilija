@@ -6,7 +6,7 @@ import { foundLabel, orderRowView, pageCount } from '@/lib/app/orders-view'
 import { APP_STRINGS } from '@/lib/app/strings'
 import { AppShell } from '../AppShell'
 import { openScreen } from '../gate'
-import { Card, Chip, DateDisc, List, ListRow, Section } from '../ui'
+import { Card, Chip, List, ListRow, Section } from '../ui'
 import { OrdersFilters } from './OrdersFilters'
 
 // `/app/orders` — Narudžbe (#501), the blagajna's list of orders.
@@ -21,10 +21,12 @@ import { OrdersFilters } from './OrdersFilters'
 // and Skener's "Otvori narudžbu" and Izvedbe's "Narudžbe za ovu izvedbu" are
 // plain links into this screen.
 //
-// A row says four things and no more (T1's `ListRow`): the evening as a disc,
-// the buyer, the party and the channel, and the money on the right — where a
-// comp reads "Gratis" rather than "0,00 €" (#570, Q41), because a seat the
-// society gave away is not an order with a missing price.
+// A row says three things and no more (T1's `ListRow`): the buyer with the
+// order code under the name, one line saying which evening and how many seats,
+// and the money on the right — where a comp reads "Gratis" rather than
+// "0,00 €" (#570, Q41), because a seat the society gave away is not an order
+// with a missing price. No date disc: the evening is already the second line,
+// and a disc that repeats it is a mark that means nothing.
 //
 // Not here, deliberately (#476): no CSV, no delete, no editing counts, totals
 // or channel. What was sold is a record; the Backoffice keeps the raw edit.
@@ -62,14 +64,13 @@ export default async function OrdersPage({
           <p>{filtered ? S.empty : S.emptyAll}</p>
         </Card>
       ) : (
-        <List>
+        <List className="app__orders">
           {rows.map((order) => {
             const row = orderRowView(order)
             return (
               <ListRow
                 key={order.id}
                 href={row.href}
-                lead={row.disc ? <DateDisc day={row.disc.day} weekday={row.disc.weekday} /> : null}
                 title={
                   <>
                     {row.buyer}

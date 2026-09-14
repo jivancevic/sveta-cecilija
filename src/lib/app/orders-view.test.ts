@@ -252,7 +252,6 @@ describe('orderRowView', () => {
       total: '50,00 €',
       channel: 'Online',
       refunded: false,
-      disc: { day: '14', weekday: 'pet' },
       // An online order says nothing about its channel on the row: that is the
       // normal case, and "Online" on nine rows in ten is noise (#570).
       meta: 'pet, 14. kolovoza · Ljetno kino · 2 odrasle, 1 dječja',
@@ -263,11 +262,22 @@ describe('orderRowView', () => {
     expect(orderRowView({ ...ONLINE, channel: 'partner', partnerName: 'Kaleta' }).meta).toContain(
       'Partner · Kaleta',
     )
-    expect(orderRowView({ ...ONLINE, promoCode: 'MARIJA' }).meta).toContain('Online · Promo')
+    // A promo order IS an online order (ADR-0018), so the row says only what
+    // is new about it: it carried a code.
+    expect(orderRowView({ ...ONLINE, promoCode: 'MARIJA' }).meta).toContain('Promo')
   })
 
-  it('has no disc when the performance behind the order is gone', () => {
-    expect(orderRowView({ ...ONLINE, show: null }).disc).toBeNull()
+  it('names the member on a comp rather than saying Gratis twice', () => {
+    const comp = orderRowView({
+      ...ONLINE,
+      channel: 'comp',
+      totalCents: 0,
+      memberName: 'Marija Fabris',
+    })
+    // The money column is already the word (#570, Q41).
+    expect(comp.total).toBe('Gratis')
+    expect(comp.meta).toContain('Marija Fabris')
+    expect(comp.meta).not.toContain('Gratis')
   })
 
   it('names a nameless partner sale rather than leaving the row blank', () => {
