@@ -209,10 +209,13 @@ export interface HeroHalf {
   /** "Redovna" / "Vanredna" / "Experience". */
   title: string
   tone: KindTone
-  /** "Ljetno kino" or the free-text place. Empty when the row names none. */
-  place: string
-  /** "crni 7 · bili 5", or null when the counts were not loaded. */
-  armiesLine: string | null
+  /**
+   * The two headcounts, or null when they were not loaded.
+   *
+   * Counts rather than a line: the half draws "crni 7 · bili 5" with the words
+   * muted and the numbers in ink (#592), which needs the two apart.
+   */
+  armies: { crni: number; bili: number } | null
   /** The reader's OWN answer on THIS evening, for this half's own buttons. */
   answer: 'coming' | 'not_coming' | null
   /** "Crni" / "Bili" as the server recorded it for this evening, or null. */
@@ -267,9 +270,8 @@ function heroHalf(performance: RosterPerformance): HeroHalf {
     time: performance.time,
     title: kindWord(performance.kind),
     tone: kindTone(performance.kind),
-    place: performancePlace(performance),
-    armiesLine: performance.chip
-      ? S.armiesLine(performance.chip.crni.count, performance.chip.bili.count)
+    armies: performance.chip
+      ? { crni: performance.chip.crni.count, bili: performance.chip.bili.count }
       : null,
     answer: performance.myAnswer,
     army: armyLabel(performance.myArmy),
@@ -291,8 +293,19 @@ export function heroView(pick: HeroPick): HeroView {
   return {
     id: performance.id,
     // A split day has two places in it, so the eyebrow cannot name one: it
-    // names the day instead, and each half carries its own place.
-    eyebrow: split ? S.nextTwo : [S.next, place].filter(Boolean).join(' · '),
+    // names the DAY instead, whole — "Sljedeći nastupi · 14. rujna ·
+    // Ponedjeljak" — because it is the only head the split card has (#592).
+    // The big serif date and the weekday line belong to the single hero: under
+    // two halves they push the answers off a phone screen.
+    eyebrow: split
+      ? [
+          S.nextTwo,
+          `${dayOfMonth(performance.date)}. ${monthGenitiveOf(performance.date)}`,
+          weekdayLabel(performance.date),
+        ]
+          .filter(Boolean)
+          .join(' · ')
+      : [S.next, place].filter(Boolean).join(' · '),
     day: dayOfMonth(performance.date),
     month: monthGenitiveOf(performance.date),
     meta: split

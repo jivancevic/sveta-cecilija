@@ -364,8 +364,14 @@ export const APP_STRINGS = {
     next: 'Sljedeći nastup',
     /** Two nastupa on one day share one header, so the word is plural (#591). */
     nextTwo: 'Sljedeći nastupi',
-    /** The one line of numbers a half carries: the two armies, no thresholds. */
-    armiesLine: (crni: number, bili: number) => `crni ${crni} · bili ${bili}`,
+    /**
+     * The one line of numbers a half carries: the two armies, no thresholds.
+     *
+     * The words only. The counts are drawn beside them by the component, which
+     * sets them in ink against the muted words (#592), so the line reads as two
+     * numbers rather than as a sentence.
+     */
+    armiesWords: { crni: 'crni', bili: 'bili' },
     /** "još 2 nastupa taj dan" — the third and beyond, which the hero caps off. */
     moreThatDay: { one: 'nastup taj dan', few: 'nastupa taj dan', many: 'nastupa taj dan' },
     /** "9 nastupa pred tobom": what is still ahead of the reader this season. */

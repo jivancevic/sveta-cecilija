@@ -269,10 +269,11 @@ describe('heroView', () => {
     const evening = performance()
     const split = { first: evening, second: morning, moreCount: 0 }
 
-    it('names the day in the plural and drops the single evening’s meta line', () => {
+    it('names the whole day in one eyebrow and drops the single evening’s meta line', () => {
       const out = heroView(split)
-      expect(out.eyebrow).toBe('Sljedeći nastupi')
-      // The date stays shared and big; the times live in the halves.
+      // The head of a split card is this line and nothing else (#592): the
+      // date is in it, so the big serif date is not drawn above the halves.
+      expect(out.eyebrow).toBe('Sljedeći nastupi · 14. rujna · Ponedjeljak')
       expect(out.day).toBe('14')
       expect(out.meta).toBe('Ponedjeljak')
       // No chip on the shared line either: each half names its own kind (#592).
@@ -280,7 +281,7 @@ describe('heroView', () => {
       expect(out.kind).toBeNull()
     })
 
-    it('gives each half its own time, word, place and answer', () => {
+    it('gives each half its own time, word and answer, and no place', () => {
       const halves = heroView(split).halves
       expect(halves).toHaveLength(2)
       expect(halves?.[0]).toMatchObject({
@@ -288,19 +289,20 @@ describe('heroView', () => {
         time: '21:00',
         title: 'Redovna',
         tone: 'regular',
-        place: 'Ljetno kino',
         answer: null,
         href: '/app/moreska/10',
       })
+      // The house is NOT on a half (#592): the chip stands alone on its line,
+      // and the house is one tap away on the row the time links to.
+      expect(halves?.[0]).not.toHaveProperty('place')
       expect(halves?.[1]).toMatchObject({
         id: '11',
         time: '10:00',
         title: 'Experience',
         tone: 'experience',
-        place: 'Prostor Sv. Cecilije',
         answer: 'coming',
         army: 'Crni',
-        armiesLine: 'crni 7 · bili 5',
+        armies: { crni: 7, bili: 5 },
         href: '/app/moreska/11',
       })
     })

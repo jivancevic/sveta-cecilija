@@ -94,9 +94,15 @@ export default async function MoreskaPage() {
       {hero && next ? (
         <Hero
           eyebrow={hero.eyebrow}
-          day={hero.day}
-          month={hero.month}
-          meta={<HeroMeta lead={hero.metaLead} kind={hero.kind} tone={hero.tone} />}
+          {...(hero.halves
+            ? // A split day says the date once, in the eyebrow: the big serif
+              // date and the weekday line belong to the single hero (#592).
+              {}
+            : {
+                day: hero.day,
+                month: hero.month,
+                meta: <HeroMeta lead={hero.metaLead} kind={hero.kind} tone={hero.tone} />,
+              })}
         >
           {hero.note && <Note>{hero.note}</Note>}
 

@@ -90,15 +90,21 @@ export default async function AppHomePage() {
       {home.moreska && (
         <Hero
           eyebrow={home.moreska.hero.eyebrow}
-          day={home.moreska.hero.day}
-          month={home.moreska.hero.month}
-          meta={
-            <HeroMeta
-              lead={home.moreska.hero.metaLead}
-              kind={home.moreska.hero.kind}
-              tone={home.moreska.hero.tone}
-            />
-          }
+          {...(home.moreska.hero.halves
+            ? // A split day says the date once, in the eyebrow: the big serif
+              // date and the weekday line belong to the single hero (#592).
+              {}
+            : {
+                day: home.moreska.hero.day,
+                month: home.moreska.hero.month,
+                meta: (
+                  <HeroMeta
+                    lead={home.moreska.hero.metaLead}
+                    kind={home.moreska.hero.kind}
+                    tone={home.moreska.hero.tone}
+                  />
+                ),
+              })}
         >
           {home.moreska.hero.halves ? (
             <HeroHalves
