@@ -185,6 +185,19 @@ export function createUsersRepo(
       })
     },
 
+    async setName(id, name, ctx) {
+      const payload = await load()
+      await payload.update({
+        collection: 'users',
+        id,
+        // `null` clears the column; Payload writes it as SQL NULL rather than
+        // the empty string, so "no name" has one spelling in the database.
+        data: { name } as never,
+        user: actor(ctx),
+        overrideAccess: true,
+      })
+    },
+
     async linkPartner(id, partnerId, ctx) {
       const payload = await load()
       await payload.update({

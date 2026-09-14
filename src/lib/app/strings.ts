@@ -2432,6 +2432,7 @@ export const APP_STRINGS = {
     actions: {
       create: 'Novi korisnik',
       permissions: 'Dozvole',
+      name: 'Ime',
       resetPassword: 'Resetiraj lozinku',
       linkPartner: 'Poveži partnera',
       linkMember: 'Poveži člana',
@@ -2463,6 +2464,28 @@ export const APP_STRINGS = {
       /** The other half of the rule above: nobody grants `users` to a shared login. */
       sharedUsers:
         'Zajednički račun ne može imati dozvolu Korisnici. Prvo makni oznaku zajedničkog računa.',
+    },
+
+    /**
+     * The seventh action (#617): whom this login belongs to, in words.
+     *
+     * The copy says what the name is FOR (the list, the letter), because the
+     * reader's first guess is that it is a login name, and it says that empty
+     * is an answer rather than a mistake: `tehnika` is a room.
+     */
+    name: {
+      title: 'Ime i prezime',
+      body: 'Ime osobe kojoj ovaj račun pripada. Stoji na popisu računa i u e-mailu za lozinku. Zajednički račun (tehnika) ostavi bez imena.',
+      label: 'Ime i prezime',
+      placeholder: 'npr. Tatjana Vigna',
+      save: 'Spremi',
+      saved: 'Ime je spremljeno.',
+      cleared: 'Ime je maknuto.',
+      unchanged: 'Ništa nije promijenjeno.',
+      failed: 'Spremanje imena nije uspjelo. Pokušaj ponovno.',
+      invalid: 'Ime nije ispravno.',
+      /** The row on the facts card when nobody has been named yet. */
+      none: 'bez imena',
     },
 
     /**

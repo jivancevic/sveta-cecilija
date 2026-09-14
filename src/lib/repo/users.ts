@@ -63,6 +63,15 @@ export interface UsersRepo {
   setShared(id: string, shared: boolean, ctx: WriteCtx): Promise<void>
 
   /**
+   * Whom this login belongs to, in words, or null for a shared one (#617).
+   *
+   * The one write in this repo that grants nothing: `Users.name` is the single
+   * unlocked field on the collection, so the guard in the route is the ordinary
+   * `users` check rather than the thing standing in for a field lock.
+   */
+  setName(id: string, name: string | null, ctx: WriteCtx): Promise<void>
+
+  /**
    * The three screens this account opens on, in order (#563).
    *
    * Replaced whole, like the permission set, and for the same reason: a bar is

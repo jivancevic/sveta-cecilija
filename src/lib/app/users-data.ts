@@ -8,7 +8,7 @@
 // imports no Payload and needs no entry in the repo guard's allow-list — the
 // first write-heavy screen for which that is true.
 //
-// The six dep factories exist so the six routes are four lines each. Every
+// The seven dep factories exist so the seven routes are four lines each. Every
 // one of them carries the caller twice over, for two different reasons: as a
 // `UsersCaller`, which the pure rules read (the self-lockout, the shared
 // refusal), and inside a `WriteCtx`, which the seam hands to Payload's local
@@ -31,6 +31,7 @@ import {
   type ResetPasswordDeps,
 } from './users-account'
 import type {
+  SetNameDeps,
   SetSharedDeps,
   UpdatePermissionsDeps,
   UsersCaller,
@@ -93,6 +94,20 @@ export function createSetSharedDeps(
     caller,
     loadUser: (id) => users.byId(id),
     setShared: (id, shared) => users.setShared(id, shared, ctx),
+  }
+}
+
+export function createSetNameDeps(
+  request: AppRequestMeta,
+  caller: UsersCaller,
+  ctx: WriteCtx,
+): SetNameDeps {
+  const users = getRepo().users
+  return {
+    request,
+    caller,
+    loadUser: (id) => users.byId(id),
+    setName: (id, name) => users.setName(id, name, ctx),
   }
 }
 
