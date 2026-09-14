@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import type { HeroHalf } from '@/lib/app/moreska-screen'
 import { APP_STRINGS } from '@/lib/app/strings'
-import { Answer } from './moreska/Answer'
+import { Answer } from './(shell)/moreska/Answer'
 
 // A day with TWO nastupa in it, inside the one hero (#591).
 //

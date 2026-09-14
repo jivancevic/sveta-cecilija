@@ -202,7 +202,7 @@ describe('Statistika carries no money', () => {
   // the module comments may go on explaining the rule in the words the code
   // may not use.
   const ROOT = path.resolve(__dirname, '../../..')
-  const FILES = ['src/app/app/stats/page.tsx', 'src/lib/app/stats-screen.ts'] as const
+  const FILES = ['src/app/app/(shell)/stats/page.tsx', 'src/lib/app/stats-screen.ts'] as const
   const MONEY = ['formateur', 'cents', 'revenue', 'eur(', '€'] as const
 
   function stripComments(source: string): string {
