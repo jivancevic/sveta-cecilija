@@ -2,7 +2,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Labrada:wght@500;600;700&display=swap">
 <style>
 /* ─────────────────────────────────────────────────────────────
-   Cecilija — prototip za pet odluka o izgledu.
+   Cecilija — prototip za odluke o izgledu.
    Tokeni su prepisani doslovno iz src/app/app/app.css i ui/ui.css.
    Ovo je bacanje: nikad se ne mergea.
    ───────────────────────────────────────────────────────────── */
@@ -46,19 +46,21 @@
 
   --serif: Labrada, 'Iowan Old Style', Georgia, serif;
   --sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', system-ui, sans-serif;
-  --mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, monospace;
 
   --tabH: 64px;
   --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
   --spring: cubic-bezier(0.34, 1.4, 0.64, 1);
 
   /* prototype-only roles */
-  --inkDisc: #1a140c;         /* Vanredna disc */
+  --inkDisc: #1a140c;         /* Vanredna */
   --onInkDisc: #f5f2ec;
   --copper: #b5642a;          /* Experience */
   --onCopper: #ffffff;
-  --desk: #e7e2d8;
   --deskEdge: rgba(26, 20, 12, 0.14);
+
+  /* "dobra stvar" zelena: maslina je zadana, trava je druga ponuda */
+  --yes: #4f7a2f;
+  --onYes: #ffffff;
 
   background: var(--bg);
   color: var(--ink);
@@ -101,23 +103,27 @@
   --onInkDisc: #1a140c;
   --copper: #d27a3c;
   --onCopper: #ffffff;
-  --desk: #0d0a07;
   --deskEdge: rgba(245, 242, 236, 0.14);
   color-scheme: dark;
 }
 
+/* The green is a pair per skin, so it reads as "good" on both grounds. */
+#root[data-skin='light'][data-green='grass'] .app { --yes: #1f8a5b; --onYes: #ffffff; }
+#root[data-skin='dark'][data-green='olive'] .app { --yes: #6fae4a; --onYes: #14100a; }
+#root[data-skin='dark'][data-green='grass'] .app { --yes: #34c37f; --onYes: #14100a; }
+
 /* ── Dark palette variants ─────────────────────────────────── */
 [data-skin='dark'][data-pal='a'] .app {
   --bg: #1f1913; --card: #2c2419; --sunk: #17120c; --track: #43392f;
-  --barBg: rgba(35, 28, 20, 0.92); --desk: #14100b;
+  --barBg: rgba(35, 28, 20, 0.92);
 }
 [data-skin='dark'][data-pal='b'] .app {
   --bg: #26201a; --card: #342b20; --sunk: #1c1610; --track: #4a3f34;
-  --barBg: rgba(42, 34, 25, 0.92); --desk: #191410;
+  --barBg: rgba(42, 34, 25, 0.92);
 }
 [data-skin='dark'][data-pal='c'] .app {
   --bg: #17120c; --card: #2f261b; --sunk: #100c08; --track: #43392f;
-  --barBg: rgba(31, 25, 17, 0.92); --desk: #0d0a07;
+  --barBg: rgba(31, 25, 17, 0.92);
 }
 
 /* ── Page ground / desk ────────────────────────────────────── */
@@ -168,7 +174,7 @@ body { background: #0d0a07; }
 /* ── Status bar strip ──────────────────────────────────────── */
 .status {
   height: 52px;
-  padding: 0 32px 0 34px;
+  padding: 0 32px 4px 34px;
   display: flex;
   align-items: flex-end;
   justify-content: space-between;
@@ -176,7 +182,6 @@ body { background: #0d0a07; }
   font-weight: 600;
   letter-spacing: 0.01em;
   color: var(--ink);
-  padding-bottom: 4px;
 }
 .status__right { display: flex; align-items: center; gap: 6px; }
 .status__bars { display: flex; align-items: flex-end; gap: 2px; height: 11px; }
@@ -308,7 +313,6 @@ body { background: #0d0a07; }
 }
 .army__half--l::after { left: 32%; }
 .army__half--r::after { right: 32%; }
-.army__fill { position: absolute; inset: 0 auto 0 0; background: var(--gold); border-radius: var(--rPill); }
 .army__note {
   display: flex; align-items: center; gap: 8px;
   color: var(--warn); font-size: 14px; font-weight: 600;
@@ -370,7 +374,7 @@ body { background: #0d0a07; }
 }
 .ans[data-state='yes'] .ansbtn--no { opacity: 0.55; transform: scale(0.98); }
 
-/* answered: not coming */
+/* answered: not coming — neutral in every variant */
 .ans[data-state='no'] .ansbtn--no .fill { transform: scale(1); }
 .ans[data-state='no'] .ansbtn--no { color: var(--ink); border-color: var(--muted); }
 .ans[data-state='no'] .ansbtn--no .mk circle { opacity: 0; }
@@ -387,6 +391,7 @@ body { background: #0d0a07; }
   45% { transform: scale(1.04); }
   100% { transform: scale(1); }
 }
+
 /* the small row variant */
 .ans--sm { grid-template-columns: 1fr 1fr; gap: 6px; }
 .ans--sm .ansbtn {
@@ -404,7 +409,7 @@ body { background: #0d0a07; }
   100% { transform: scale(1); }
 }
 
-/* sparks live OUTSIDE the clipped button */
+/* sparks and the clash flash live OUTSIDE the clipped button */
 .spark {
   position: absolute;
   width: 4px; height: 4px; border-radius: 50%;
@@ -413,12 +418,106 @@ body { background: #0d0a07; }
   z-index: 5;
   animation: spark 0.52s ease-out forwards;
 }
+.spark--yes { background: var(--yes); }
 @keyframes spark {
   0% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
   100% {
     transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy))) scale(0.4);
     opacity: 0;
   }
+}
+.flash {
+  position: absolute;
+  width: 26px; height: 26px; margin: -13px 0 0 -13px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  pointer-events: none;
+  z-index: 6;
+  animation: flashring 0.3s ease-out forwards;
+}
+@keyframes flashring {
+  0% { transform: scale(0); opacity: 1; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+
+/* ── Gumbi Dolazim: prijedlozi A, B, C ─────────────────────
+   `cur` je sadašnji zlatni s kvačicom i ostaje netaknut za usporedbu.
+   A, B i C dijele zelenu (--yes) i razlikuju se samo u tome ŠTO se crta. */
+.ansbtn--yes .mk--check,
+.ansbtn--yes .mk--swords,
+.ansbtn--yes .mk--sword { display: none; }
+#root[data-ans='cur'] .ansbtn--yes .mk--check,
+#root[data-ans='b'] .ansbtn--yes .mk--check { display: block; }
+#root[data-ans='a'] .ansbtn--yes .mk--swords { display: block; }
+#root[data-ans='c'] .ansbtn--yes .mk--sword { display: block; }
+
+#root:not([data-ans='cur']) .ansbtn--yes { border-color: var(--yes); }
+#root:not([data-ans='cur']) .ansbtn--yes .fill { background: var(--yes); }
+#root:not([data-ans='cur']) .ansbtn--yes .mk { color: var(--yes); opacity: 0.8; }
+#root:not([data-ans='cur']) .ans[data-state='yes'] .ansbtn--yes { color: var(--onYes); }
+#root:not([data-ans='cur']) .ans[data-state='yes'] .ansbtn--yes .mk {
+  color: var(--onYes); opacity: 1;
+}
+#root:not([data-ans='cur']) .ansbtn--yes:focus-visible { outline-color: var(--yes); }
+
+/* A · Mačevi: u mirovanju stoje nacrtani, na dodir se ponovno izvuku iz
+   suprotnih kutova i sudare se u sredini (odatle bukne zelena). */
+.mk--swords .s1, .mk--swords .s2 { stroke-dasharray: 30; stroke-dashoffset: 0; }
+@keyframes drawin {
+  from { stroke-dashoffset: 30; }
+  to { stroke-dashoffset: 0; }
+}
+@keyframes hiltin {
+  0%, 70% { opacity: 0; }
+  100% { opacity: 1; }
+}
+#root[data-ans='a'] .ans[data-state='yes'] .mk--swords .s1 {
+  animation: drawin 0.26s ease-out;
+}
+#root[data-ans='a'] .ans[data-state='yes'] .mk--swords .s2 {
+  animation: drawin 0.26s ease-out 0.06s both;
+}
+#root[data-ans='a'] .ans[data-state='yes'] .mk--swords .hilt {
+  animation: hiltin 0.4s ease-out;
+}
+
+/* C · Izvučen mač: zelena ide kao brisač slijeva, oštrica je njen vrh */
+#root[data-ans='c'] .ansbtn--yes .fill {
+  left: 0; top: 0; margin: 0;
+  width: 100%; height: 100%;
+  border-radius: inherit;
+  transform: scale(1);
+  clip-path: inset(0 100% 0 0);
+  transition: clip-path 0.38s ease-out;
+}
+#root[data-ans='c'] .ans[data-state='yes'] .ansbtn--yes .fill { clip-path: inset(0 0 0 0); }
+.blade {
+  position: absolute; inset: 0;
+  display: none; align-items: center; justify-content: flex-end;
+  padding-right: 6px;
+  pointer-events: none;
+  color: #fff;
+  filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.4));
+  opacity: 0;
+  transform: translateX(-100%);
+}
+.blade svg { width: 26px; height: 26px; }
+#root[data-ans='c'] .ansbtn--yes .blade { display: flex; }
+#root[data-ans='c'] .ans[data-state='yes'] .ansbtn--yes .blade {
+  animation: bladeSweep 0.38s ease-out;
+}
+@keyframes bladeSweep {
+  0% { transform: translateX(-100%); opacity: 0; }
+  10% { opacity: 1; }
+  86% { opacity: 1; }
+  100% { transform: translateX(0); opacity: 0; }
+}
+#root[data-ans='c'] .ans[data-state='yes'] .mk--sword {
+  animation: flick 0.22s ease-out 0.34s;
+}
+@keyframes flick {
+  0% { transform: scale(1.15); }
+  100% { transform: scale(1); }
 }
 
 /* ── Tiles ─────────────────────────────────────────────────── */
@@ -519,9 +618,9 @@ body { background: #0d0a07; }
 .split__count b { color: var(--ink); font-weight: 600; }
 .hero__more {
   display: flex; align-items: center; justify-content: space-between;
-  background: none; border: 0; padding: 0; cursor: pointer;
+  background: none; border: 0; padding: 14px 0 0; cursor: pointer;
   font-family: inherit; font-size: 14px; font-weight: 600; color: var(--goldText);
-  border-top: 1px solid var(--rule); padding-top: 14px; margin-top: -2px;
+  border-top: 1px solid var(--rule);
 }
 
 .kindchip {
@@ -543,7 +642,6 @@ body { background: #0d0a07; }
 }
 .barzone > * { pointer-events: auto; }
 
-/* progressive blur, only in the "new" bar */
 .blurlayer {
   position: absolute; left: 0; right: 0; bottom: 0;
   pointer-events: none;
@@ -578,27 +676,21 @@ body { background: #0d0a07; }
   display: grid;
   grid-template-columns: repeat(5, 1fr);
   align-items: center;
-}
-/* "Sadašnji": a floating pill inset from the edges */
-[data-bar='now'] .tabs {
   width: calc(100% - 24px);
-  margin-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
   height: var(--tabH);
   border-radius: var(--rCard);
+  border: 1px solid var(--rule);
+}
+[data-bar='now'] .tabs {
+  margin-bottom: calc(12px + env(safe-area-inset-bottom, 0px));
   background: var(--barBg);
   backdrop-filter: blur(14px) saturate(1.4);
   -webkit-backdrop-filter: blur(14px) saturate(1.4);
   box-shadow: var(--shadowBar);
-  border: 1px solid var(--rule);
 }
-/* "Novi": the pill rides on top of the progressive blur, lighter */
 [data-bar='new'] .tabs {
-  width: calc(100% - 24px);
   margin-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
-  height: var(--tabH);
-  border-radius: var(--rCard);
   background: color-mix(in srgb, var(--barBg) 78%, transparent);
-  border: 1px solid var(--rule);
 }
 .tab {
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
@@ -666,10 +758,7 @@ body { background: #0d0a07; }
 }
 [data-sheet='1'] .sheet { transform: translate(-50%, 0); }
 .sheet__grab { width: 42px; height: 5px; border-radius: 3px; background: var(--ghostEdge); margin: 6px auto 14px; }
-.sheet h2 {
-  font-family: var(--serif); font-size: 22px; font-weight: 700;
-  margin: 0 0 2px;
-}
+.sheet h2 { font-family: var(--serif); font-size: 22px; font-weight: 700; margin: 0 0 2px; }
 .sheet > p.lede { margin: 0 0 16px; color: var(--muted); font-size: 14px; }
 .grp { margin-bottom: 18px; }
 .grp > .eyebrow { display: block; margin-bottom: 8px; }
@@ -701,6 +790,14 @@ body { background: #0d0a07; }
   color: var(--ink);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.18);
 }
+.seg--green button i {
+  width: 12px; height: 12px; border-radius: 50%;
+  display: block; margin-bottom: 3px;
+}
+.seg--green button[data-val='olive'] i { background: #4f7a2f; }
+.seg--green button[data-val='grass'] i { background: #1f8a5b; }
+[data-skin='dark'] .seg--green button[data-val='olive'] i { background: #6fae4a; }
+[data-skin='dark'] .seg--green button[data-val='grass'] i { background: #34c37f; }
 .seg--dim { opacity: 0.45; }
 .hint { font-size: 12.5px; color: var(--muted); margin: 7px 0 0; }
 
@@ -713,9 +810,8 @@ body { background: #0d0a07; }
 .marks span { font-size: 11px; color: var(--muted); text-align: center; line-height: 1.25; }
 .marks .pair { display: flex; align-items: center; gap: 7px; }
 
-.check { display: flex; flex-direction: column; gap: 10px; }
-.check li { display: flex; gap: 10px; align-items: flex-start; }
 .check ol { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 12px; }
+.check li { display: flex; gap: 10px; align-items: flex-start; }
 .check i {
   flex: none;
   width: 22px; height: 22px; border-radius: 50%;
@@ -749,7 +845,7 @@ body { background: #0d0a07; }
   .status { display: none; }
   .hdr { padding-top: calc(10px + env(safe-area-inset-top, 0px)); }
   .gear { top: calc(10px + env(safe-area-inset-top, 0px)); right: 10px; width: 40px; height: 40px; font-size: 17px; }
-  .sheet { left: 0; transform: translate(0, 102%); width: 100%; }
+  .sheet { left: 0; width: 100%; transform: translate(0, 102%); }
   [data-sheet='1'] .sheet { transform: translate(0, 0); }
 }
 
@@ -758,12 +854,13 @@ body { background: #0d0a07; }
   .sheet, .scrim, .seg button {
     transition-duration: 0.01ms !important;
   }
-  .ansbtn.pop { animation: none !important; }
-  .spark { display: none !important; }
+  .ansbtn.pop, .blade, .mk--sword,
+  .mk--swords .s1, .mk--swords .s2, .mk--swords .hilt { animation: none !important; }
+  .spark, .flash, .blade { display: none !important; }
 }
 </style>
 
-<div id="root" data-skin="dark" data-pal="now" data-hero="one" data-bar="now" data-kind="vanredna" data-sheet="0">
+<div id="root" data-skin="dark" data-pal="now" data-hero="one" data-bar="now" data-kind="vanredna" data-ans="a" data-green="olive" data-sheet="0">
 
   <div class="phone app">
     <div class="scroll" id="scroll">
@@ -811,25 +908,8 @@ body { background: #0d0a07; }
           <div class="hero__day"><b>14</b><span>rujna</span></div>
           <div class="hero__meta">Ponedjeljak · 16:30 · <span class="kindchip kindchip--vanredna" id="heroKindChip">Vanredna</span></div>
 
-          <div class="ans" data-state="none" data-name="hero">
-            <button class="ansbtn ansbtn--yes" type="button" data-ans="yes" aria-pressed="false">
-              <svg class="mk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <circle cx="12" cy="12" r="9.2"></circle>
-                <path class="draw" d="m7.4 12.3 3.2 3.2 6-6.6"></path>
-              </svg>
-              <span class="fill"></span>
-              <span class="lbl">Dolazim</span>
-            </button>
-            <button class="ansbtn ansbtn--no" type="button" data-ans="no" aria-pressed="false">
-              <svg class="mk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                <circle cx="12" cy="12" r="9.2"></circle>
-                <path class="draw" d="m8.6 8.6 6.8 6.8M15.4 8.6l-6.8 6.8"></path>
-              </svg>
-              <span class="fill"></span>
-              <span class="lbl">Ne dolazim</span>
-            </button>
-          </div>
-          <button class="undo" type="button" data-undo="hero">Poništi odgovor</button>
+          <div class="ans" data-state="none" data-name="hero"></div>
+          <button class="undo" type="button">Poništi odgovor</button>
 
           <div class="army">
             <div class="army__top">
@@ -837,8 +917,8 @@ body { background: #0d0a07; }
               <span><strong>0</strong> Bili</span>
             </div>
             <div class="army__bar">
-              <span class="army__half army__half--l"><span class="army__fill" style="width:0"></span></span>
-              <span class="army__half army__half--r"><span class="army__fill" style="width:0"></span></span>
+              <span class="army__half army__half--l"></span>
+              <span class="army__half army__half--r"></span>
             </div>
             <div class="army__note">
               <i></i>Fale još 8 crnih · fale još 8 bilih<em>›</em>
@@ -853,47 +933,17 @@ body { background: #0d0a07; }
             <div class="split__half">
               <span class="split__time">16:30</span>
               <span class="split__kind"><span class="kindchip kindchip--vanredna">Vanredna</span></span>
-              <div class="ans ans--sm" data-state="none" data-name="d1">
-                <button class="ansbtn ansbtn--yes" type="button" data-ans="yes" aria-pressed="false">
-                  <svg class="mk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <circle cx="12" cy="12" r="9.2"></circle>
-                    <path class="draw" d="m7.4 12.3 3.2 3.2 6-6.6"></path>
-                  </svg>
-                  <span class="fill"></span><span class="lbl">Dolazim</span>
-                </button>
-                <button class="ansbtn ansbtn--no" type="button" data-ans="no" aria-pressed="false">
-                  <svg class="mk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <circle cx="12" cy="12" r="9.2"></circle>
-                    <path class="draw" d="m8.6 8.6 6.8 6.8M15.4 8.6l-6.8 6.8"></path>
-                  </svg>
-                  <span class="fill"></span><span class="lbl">Ne dolazim</span>
-                </button>
-              </div>
+              <div class="ans ans--sm" data-state="none" data-name="d1"></div>
               <span class="split__count">crni <b>8</b> · bili <b>7</b></span>
             </div>
             <div class="split__half">
               <span class="split__time">21:00</span>
               <span class="split__kind"><span class="kindchip kindchip--redovna">Redovna</span></span>
-              <div class="ans ans--sm" data-state="none" data-name="d2">
-                <button class="ansbtn ansbtn--yes" type="button" data-ans="yes" aria-pressed="false">
-                  <svg class="mk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <circle cx="12" cy="12" r="9.2"></circle>
-                    <path class="draw" d="m7.4 12.3 3.2 3.2 6-6.6"></path>
-                  </svg>
-                  <span class="fill"></span><span class="lbl">Dolazim</span>
-                </button>
-                <button class="ansbtn ansbtn--no" type="button" data-ans="no" aria-pressed="false">
-                  <svg class="mk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                    <circle cx="12" cy="12" r="9.2"></circle>
-                    <path class="draw" d="m8.6 8.6 6.8 6.8M15.4 8.6l-6.8 6.8"></path>
-                  </svg>
-                  <span class="fill"></span><span class="lbl">Ne dolazim</span>
-                </button>
-              </div>
+              <div class="ans ans--sm" data-state="none" data-name="d2"></div>
               <span class="split__count">crni <b>11</b> · bili <b>9</b></span>
             </div>
           </div>
-          <button class="undo" type="button" data-undo="heroTwo">Poništi odgovore</button>
+          <button class="undo" type="button">Poništi odgovore</button>
           <button class="hero__more" type="button" id="heroMore" hidden>
             <span>još 1 nastup taj dan</span><span>›</span>
           </button>
@@ -981,7 +1031,7 @@ body { background: #0d0a07; }
   <!-- ── Kontrolna ploha ───────────────────────────────── -->
   <div class="sheet app" id="sheet" role="dialog" aria-modal="true" aria-label="Postavke prototipa">
     <div class="sheet__grab"></div>
-    <h2>Pet pitanja</h2>
+    <h2>Pitanja za odluku</h2>
     <p class="lede">Prebaci i gledaj. Stanje ide u link, pa ga možeš poslati sebi na mobitel.</p>
 
     <div class="grp">
@@ -1000,7 +1050,7 @@ body { background: #0d0a07; }
         <button type="button" data-val="b" aria-pressed="false">B</button>
         <button type="button" data-val="c" aria-pressed="false">C</button>
       </div>
-      <p class="hint" id="palHint">A podiže papir za jedan ton, pa kartica ima gdje sjesti. Vrijedi samo na tamnoj koži.</p>
+      <p class="hint">A podiže papir za jedan ton, pa kartica ima gdje sjesti. Vrijedi samo na tamnoj koži.</p>
     </div>
 
     <div class="grp">
@@ -1033,6 +1083,21 @@ body { background: #0d0a07; }
         <div><span class="disc disc--vanredna"><b>14</b><span>ruj</span></span><span>Vanredna<br>tinta</span></div>
         <div><span class="disc disc--experience"><b>18</b><span>ruj</span></span><span>Experience<br>bakar</span></div>
       </div>
+    </div>
+
+    <div class="grp">
+      <span class="eyebrow">6 · Gumbi Dolazim</span>
+      <div class="seg seg--4" data-key="ans">
+        <button type="button" data-val="cur" aria-pressed="false">Sadašnji</button>
+        <button type="button" data-val="a" aria-pressed="true">A mačevi<em>Preporuka</em></button>
+        <button type="button" data-val="b" aria-pressed="false">B kvačica</button>
+        <button type="button" data-val="c" aria-pressed="false">C mač</button>
+      </div>
+      <div class="seg seg--2 seg--green" data-key="green" style="margin-top:6px">
+        <button type="button" data-val="olive" aria-pressed="true"><i></i>Maslina</button>
+        <button type="button" data-val="grass" aria-pressed="false"><i></i>Trava</button>
+      </div>
+      <p class="hint">A: dvije oštrice se sudare pa zelena bukne iz sudara. B: tiha zelena kvačica. C: mač se izvuče slijeva i za sobom povuče zelenu. Sadašnji je zlatni s kvačicom, samo za usporedbu. Ne dolazim ostaje neutralan u svima.</p>
     </div>
 
     <div class="grp">
@@ -1107,7 +1172,7 @@ body { background: #0d0a07; }
           <li><i>1</i><span><b>Paleta A protiv ostalih</b><em>Gledaj karticu na podlozi u mraku. Preporuka: A.</em></span></li>
           <li><i>2</i><span><b>Scroll s novim barom</b><em>Vuci sezonu gore dolje i gledaj zastajkuje li. Preporuka: novi bar ako je gladak.</em></span></li>
           <li><i>3</i><span><b>Bakar za Experience</b><em>Mora se razlikovati od zlata na suncu. Preporuka: bakar na disku, chipu i u redovima.</em></span></li>
-          <li><i>4</i><span><b>Animacija gumba</b><em>Tapni Dolazim pa Ne dolazim nekoliko puta. Preporuka: ostaviti kako je.</em></span></li>
+          <li><i>4</i><span><b>Gumbi: A mačevi, B zelena kvačica, C izvučen mač; i koja zelena.</b><em>Preporuka: A s maslinom.</em></span></li>
         </ol>
       </div>
     </div>
@@ -1119,14 +1184,55 @@ body { background: #0d0a07; }
 <script>
 (function () {
   var root = document.getElementById('root');
-  var KEYS = ['skin', 'pal', 'hero', 'bar', 'kind'];
+  var KEYS = ['skin', 'pal', 'hero', 'bar', 'kind', 'ans', 'green'];
   var ALLOWED = {
     skin: ['light', 'dark'],
     pal: ['now', 'a', 'b', 'c'],
     hero: ['one', 'two', 'three'],
     bar: ['now', 'new'],
-    kind: ['redovna', 'vanredna', 'experience']
+    kind: ['redovna', 'vanredna', 'experience'],
+    ans: ['cur', 'a', 'b', 'c'],
+    green: ['olive', 'grass']
   };
+
+  /* ── Icons ────────────────────────────────────────────── */
+  var SVG_OPEN = '<svg class="mk mk--{c}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="{w}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">';
+
+  function icons(w) {
+    var open = function (c) { return SVG_OPEN.replace('{c}', c).replace('{w}', w); };
+    return (
+      /* sadašnji i B: kružić s kvačicom */
+      open('check') + '<circle cx="12" cy="12" r="9.2"></circle>' +
+        '<path class="draw" d="m7.4 12.3 3.2 3.2 6-6.6"></path></svg>' +
+      /* A: prekriženi mačevi, ista putanja kao tab Moreška */
+      open('swords') + '<path class="s1" d="M14.5 17.5 21 4l-9.5 9"></path>' +
+        '<path class="s2" d="M9.5 17.5 3 4l9.5 9"></path>' +
+        '<path class="hilt" d="M5 20h4M15 20h4"></path></svg>' +
+      /* C: jedna oštrica, vodoravno */
+      open('sword') + '<path d="M7 12h9.5"></path><path d="m16.5 9 3.5 3-3.5 3"></path>' +
+        '<path d="M7 9.5v5"></path><path d="M3.5 12H7"></path></svg>'
+    );
+  }
+
+  var BLADE =
+    '<span class="blade"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+    'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+    '<path d="M6 12h10.5"></path><path d="m16.5 8.5 4 3.5-4 3.5"></path>' +
+    '<path d="M6 9v6"></path><path d="M2.5 12H6"></path></svg></span>';
+
+  function ansMarkup(small) {
+    var w = small ? '2.4' : '2.2';
+    return (
+      '<button class="ansbtn ansbtn--yes" type="button" data-ans="yes" aria-pressed="false">' +
+      icons(w) + '<span class="fill"></span>' + BLADE + '<span class="lbl">Dolazim</span></button>' +
+      '<button class="ansbtn ansbtn--no" type="button" data-ans="no" aria-pressed="false">' +
+      '<svg class="mk mk--x" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="' + w + '" ' +
+      'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+      '<circle cx="12" cy="12" r="9.2"></circle>' +
+      '<path class="draw" d="m8.6 8.6 6.8 6.8M15.4 8.6l-6.8 6.8"></path></svg>' +
+      '<span class="fill"></span><span class="lbl">Ne dolazim</span></button>'
+    );
+  }
 
   /* ── Season list: 14 evenings ─────────────────────────── */
   var MONTH = ['sij', 'velj', 'ožu', 'tra', 'svi', 'lip', 'srp', 'kol', 'ruj', 'lis', 'stu', 'pro'];
@@ -1154,19 +1260,6 @@ body { background: #0d0a07; }
   var CROWN_BASE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 7 4.5 4.5L12 4l4.5 7.5L21 7l-2 11H5z"></path><path d="M5 21h14"></path></svg>';
   var CROWN_O = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 8 4.5 4.5L12 5l4.5 7.5L21 8l-2 11H5z"></path><text x="12" y="17.4" text-anchor="middle" font-size="9.5" font-weight="700" stroke="none" fill="currentColor" font-family="Labrada, Georgia, serif">O</text></svg>';
 
-  function ansMarkup(name, small) {
-    var sw = small ? '2.4' : '2.2';
-    return '<div class="ans' + (small ? ' ans--sm' : '') + '" data-state="none" data-name="' + name + '">' +
-      '<button class="ansbtn ansbtn--yes" type="button" data-ans="yes" aria-pressed="false">' +
-      '<svg class="mk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="' + sw + '" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-      '<circle cx="12" cy="12" r="9.2"></circle><path class="draw" d="m7.4 12.3 3.2 3.2 6-6.6"></path></svg>' +
-      '<span class="fill"></span><span class="lbl">Dolazim</span></button>' +
-      '<button class="ansbtn ansbtn--no" type="button" data-ans="no" aria-pressed="false">' +
-      '<svg class="mk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="' + sw + '" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-      '<circle cx="12" cy="12" r="9.2"></circle><path class="draw" d="m8.6 8.6 6.8 6.8M15.4 8.6l-6.8 6.8"></path></svg>' +
-      '<span class="fill"></span><span class="lbl">Ne dolazim</span></button></div>';
-  }
-
   var html = '';
   ROWS.forEach(function (r, i) {
     var n = i + 1;
@@ -1184,26 +1277,34 @@ body { background: #0d0a07; }
       : r.wd + ' · ' + r.t;
     html += '<div class="row">' + lead +
       '<div class="row__body"><b>' + title + '<span>' + KIND_WORD[kind] + ' · Ljetno kino</span></b>' +
-      ansMarkup('r' + n, true) + '</div></div>';
+      '<div class="ans ans--sm" data-state="none" data-name="r' + n + '">' + ansMarkup(true) + '</div>' +
+      '</div></div>';
   });
   document.getElementById('list').innerHTML = html;
 
-  /* ── Answers ──────────────────────────────────────────── */
+  /* the three hand-placed groups get the same markup */
+  document.querySelectorAll('.hero .ans').forEach(function (g) {
+    g.innerHTML = ansMarkup(g.classList.contains('ans--sm'));
+  });
+
+  /* ── Effects ──────────────────────────────────────────── */
   var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  function sparks(group, btn, x, y) {
-    if (reduce) return;
+  function at(group, btn, x, y) {
     var gr = group.getBoundingClientRect();
     var br = btn.getBoundingClientRect();
-    var ox = br.left - gr.left + x;
-    var oy = br.top - gr.top + y;
-    for (var i = 0; i < 7; i++) {
-      var a = (-90 + (i - 3) * 26 + (Math.random() * 14 - 7)) * Math.PI / 180;
+    return { x: br.left - gr.left + x, y: br.top - gr.top + y };
+  }
+
+  function sparks(group, p, count, greenish) {
+    if (reduce) return;
+    for (var i = 0; i < count; i++) {
+      var a = (-90 + (i - (count - 1) / 2) * 26 + (Math.random() * 14 - 7)) * Math.PI / 180;
       var dist = 26 + Math.random() * 14;
       var s = document.createElement('span');
-      s.className = 'spark';
-      s.style.left = ox + 'px';
-      s.style.top = oy + 'px';
+      s.className = 'spark' + (greenish && i % 2 ? ' spark--yes' : '');
+      s.style.left = p.x + 'px';
+      s.style.top = p.y + 'px';
       s.style.setProperty('--dx', (Math.cos(a) * dist).toFixed(1) + 'px');
       s.style.setProperty('--dy', (Math.sin(a) * dist).toFixed(1) + 'px');
       group.appendChild(s);
@@ -1211,16 +1312,38 @@ body { background: #0d0a07; }
     }
   }
 
+  function flash(group, p, delay) {
+    if (reduce) return;
+    var f = document.createElement('span');
+    f.className = 'flash';
+    f.style.left = p.x + 'px';
+    f.style.top = p.y + 'px';
+    if (delay) f.style.animationDelay = delay + 'ms';
+    group.appendChild(f);
+    setTimeout(function () { f.remove(); }, 340 + (delay || 0));
+  }
+
   document.addEventListener('click', function (e) {
     var btn = e.target.closest ? e.target.closest('.ansbtn') : null;
     if (!btn) return;
     var group = btn.closest('.ans');
     var yes = btn.getAttribute('data-ans') === 'yes';
+    var variant = root.getAttribute('data-ans');
+    var small = group.classList.contains('ans--sm');
     var r = btn.getBoundingClientRect();
     var x = e.clientX ? e.clientX - r.left : r.width / 2;
     var y = e.clientY ? e.clientY - r.top : r.height / 2;
+
+    /* A: zelena bukne iz sudara oštrica, ne iz prsta */
+    var icon = yes ? btn.querySelector('.mk--swords') : null;
+    if (yes && variant === 'a' && icon) {
+      var ir = icon.getBoundingClientRect();
+      x = ir.left - r.left + ir.width / 2;
+      y = ir.top - r.top + ir.height / 2;
+    }
     btn.style.setProperty('--x', x + 'px');
     btn.style.setProperty('--y', y + 'px');
+
     group.setAttribute('data-state', yes ? 'yes' : 'no');
     group.querySelectorAll('.ansbtn').forEach(function (b) {
       b.setAttribute('aria-pressed', b === btn ? 'true' : 'false');
@@ -1228,7 +1351,13 @@ body { background: #0d0a07; }
     btn.classList.remove('pop');
     void btn.offsetWidth;
     btn.classList.add('pop');
-    if (yes && !group.classList.contains('ans--sm')) sparks(group, btn, x, y);
+
+    if (yes && !small) {
+      var p = at(group, btn, x, y);
+      if (variant === 'cur') sparks(group, p, 7, false);
+      else if (variant === 'a') { flash(group, p, 230); sparks(group, p, 6, true); }
+      else if (variant === 'c') flash(group, p, 330);
+    }
     if (navigator.vibrate) navigator.vibrate(10);
   });
 
@@ -1242,14 +1371,17 @@ body { background: #0d0a07; }
   document.addEventListener('click', function (e) {
     var u = e.target.closest ? e.target.closest('.undo') : null;
     if (!u) return;
-    document.querySelectorAll('#heroOne .ans, #heroTwo .ans').forEach(resetGroup);
+    document.querySelectorAll('.hero .ans').forEach(resetGroup);
   });
   document.getElementById('resetAll').addEventListener('click', function () {
     document.querySelectorAll('.ans').forEach(resetGroup);
   });
 
   /* ── State: root attributes + #hash ───────────────────── */
-  var state = { skin: 'dark', pal: 'now', hero: 'one', bar: 'now', kind: 'vanredna' };
+  var state = {
+    skin: 'dark', pal: 'now', hero: 'one', bar: 'now',
+    kind: 'vanredna', ans: 'a', green: 'olive'
+  };
 
   function readHash() {
     var h = location.hash.replace(/^#/, '');
@@ -1285,8 +1417,7 @@ body { background: #0d0a07; }
     chip.className = 'kindchip kindchip--' + state.kind;
     chip.textContent = KIND_WORD[state.kind];
 
-    var dim = state.skin !== 'dark';
-    document.getElementById('palSeg').classList.toggle('seg--dim', dim);
+    document.getElementById('palSeg').classList.toggle('seg--dim', state.skin !== 'dark');
 
     document.querySelectorAll('.seg').forEach(function (seg) {
       var key = seg.getAttribute('data-key');
