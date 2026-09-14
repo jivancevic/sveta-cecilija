@@ -309,7 +309,7 @@ Each batch has its own section further down; this is the map.
 | Batch | Tickets | What it added | Section |
 |---|---|---|---|
 | A | #431, #435 | Web push: the service worker, per-device subscriptions, the sender, the cron, and notification types (1) alarm and (2) reminder | [Push](#push-431-435--phase-4-batch-a) |
-| B | #436, #433 | Notification types (3) change, (4) new performance, (5) withdrawal; the manual alarm; the note edit; the shared calendar feed | [Triggered notifications](#triggered-notifications-436--phase-4-batch-b), [The calendar feed](#the-calendar-feed-433--phase-4-batch-b) |
+| B | #436, #433 | Notification types (3) change, (4) new performance, and (5) withdrawal (retired in #609); the manual alarm; the note edit; the shared calendar feed | [Triggered notifications](#triggered-notifications-436--phase-4-batch-b), [The calendar feed](#the-calendar-feed-433--phase-4-batch-b) |
 | C | #432, #437 | **Lineups** with confirmation, and the season **statistics** built on them | [Lineups](#lineups--postave-432--phase-4-batch-c), [Statistics](#statistics-437--phase-4-batch-c) |
 | D | #434 | **Self-issued comps**: four free tickets per performance, cancellable | [Self-issued comps](#self-issued-comps-434--phase-4-batch-d) |
 | E | #438, #439 | The **MCP server** and its OAuth, so a voditelj dictates a postava to Claude | [MCP and OAuth](#mcp-and-oauth-438--phase-4-batch-e) |
@@ -954,7 +954,7 @@ sentence covers a phone that lost the session cookie after approval.
 
 Web push is the **only** notification channel (ADR-0024): no email, no SMS. What
 ships here is the plumbing plus two of the five notification types — the
-**alarm** (1) and the **T-48h reminder** (2). Types (3), (4) and (5) are #436,
+**alarm** (1) and the **T-48h reminder** (2). Types (3) and (4) are #436,
 the next section.
 
 ### The service worker lives at the ROOT, and that is load-bearing
@@ -1096,7 +1096,8 @@ Više, and `decideInstallStep` still runs the Dobrodošlica and that guide.
 
 ## Triggered notifications (#436 — phase 4 batch B)
 
-Types (3), (4) and (5) of the glossary, on top of batch A's sender. Nothing here
+Types (3) and (4) of the glossary, on top of batch A's sender. Type (5), the
+withdrawal, was retired in #609 (see below). Nothing here
 is scheduled: each one is a consequence of somebody saving something.
 
 ### The Shows `afterChange` hook
@@ -1156,22 +1157,59 @@ justified there. The hook sends push and only push: buyer email is still only
 ever sent by the explicit admin actions (ADR-0024 rejected mail as a roster
 channel).
 
-### The withdrawal (type 5)
+### Odustajanje, and the withdrawal push that used to be type (5)
 
-`POST /api/app/attendance` fires `deps.onAnswered` after a successful write and
-the route hands it to `notifyWithdrawal`. The rule is `isWithdrawal`
-(`src/lib/push/withdrawal.ts`): a `coming` that became anything else (including
-a *cleared* row, which is the absence of a row), answered by the DANCER for
-their own Member, within 24 hours of a start that has not happened yet. A
-voditelj correcting somebody's answer notifies nobody — they are the audience.
-The audience is every **unshared** user holding `moreska`, read straight off
-`users_permissions` (`loadVoditeljUserIds`), because `permissions` is a hasMany
-select in its own table and a Payload `contains` query does not reach it. The
-`shared IS NOT TRUE` half is a rule, not an optimisation: the society's shared
-`member` login (ADR-0022) holds `moreska` and lives on whatever phone last
-signed in. Deps are built lazily and the send is detached, so an ordinary
-"dolazim" costs no pool lookup and a withdrawal never makes the dancer wait for
-the voditelji's phones.
+**There is no withdrawal notification any more (#609).** `src/lib/push/withdrawal.ts`,
+`notifyWithdrawal`, the `withdrawal` audience rule, its push strings and the
+`onAnswered` seam on the answer handler are all gone, and the migration deletes
+the inbox rows they had already filed.
+
+What replaced it is a list under the evening rather than a message about it. A
+dancer who answered `dolazim`, let that answer stand at least ten minutes and
+then moved to `ne dolazim` has **odustao** (CONTEXT.md *Odustajanje*), and that
+shows on *Stanje* as **Odustali**, above *Bez odgovora*, with the hour and with
+whether the dancer did it or a voditelj wrote it down. The reason for the change
+is what the old push actually produced: twelve unread notices on the bell the
+night before, each naming one person, none of them a thing anybody could act on
+in that form. The list is.
+
+The rule is `stampWithdrawal` (`src/lib/attendance/withdrawal-stamp.ts`), pure
+and tested, and `POST /api/app/attendance` is its only caller. Three columns on
+`attendance` carry it:
+
+| column | meaning |
+|---|---|
+| `confirmed_at` | when the row most recently ENTERED `coming`. It does **not** move while the answer stays `coming`, so the grace window measures how long the promise stood, not when the phone was last touched. |
+| `withdrew_at` | when a standing `coming` was taken back. |
+| `withdrew_own` | `true` when the dancer did it, `false` when a voditelj wrote it down for them. |
+
+Four things worth knowing before you touch it:
+
+- **Ten minutes is a mis-tap filter, not a policy about lateness.** *Dolazim* and
+  *Ne dolazim* are adjacent on a phone card; a reversal inside the window is a
+  slip correcting itself, and putting it on the list would send a voditelj
+  chasing a dancer who is coming.
+- **Coming back clears the trace.** The list answers "who is missing tonight",
+  not "who is unreliable". Clearing an answer deletes the row and the stamps
+  with it, because "no answer" is the absence of a row.
+- **Re-answering `ne dolazim` must not recompute.** On that branch the previous
+  status reads as "never promised", so recomputing would erase the very row
+  Stanje is showing. The rule returns the stamps untouched there.
+- **`withdrew_own` is stamped at write time** because the fact is free there and
+  expensive afterwards: the row stores `answeredBy` as a user id, and turning
+  that back into "was this the dancer's own login" needs the field-locked
+  `Users.member` link. A dancer who withdrew has gone quiet; one a voditelj
+  wrote down phoned somebody.
+
+Nothing backfills. Rows answered before the migration carry NULL in all three,
+so Odustali starts empty and fills from the first answer after deploy, and a
+pre-migration `coming` taken back is treated as a mis-tap rather than given an
+invented time.
+
+`loadVoditeljUserIds` and the `voditelji` audience group survive the removal
+even though no notification kind maps to that group today: they are what any
+future voditelj-only notice would want, and deleting them would take the group
+plumbing with them.
 
 ### The note edit
 
@@ -1467,7 +1505,6 @@ secretary has to act on.
 | `reminder` | dancers | `Users.member` | yes | no |
 | `performance_created` | dancers | `Users.member` | yes | **yes** |
 | `performance_changed` | dancers | `Users.member` | yes | **yes** |
-| `withdrawal` | voditelji | holds `moreska` | yes | no |
 | `inquiry` | staff | holds `tickets` | no | no |
 | `dispute` | staff | holds `tickets` | no | no |
 
@@ -1733,7 +1770,7 @@ column immediately, before any postava is saved.
   the list from answers alone would delete that work on the first title tap and
   leave an evening whose four titles sit on nobody, so it could never be
   confirmed. "No answer" is the ABSENCE of a row, which is exactly what tells it
-  apart from a withdrawal. The column's own "N od prag" still counts ANSWERS,
+  apart from an odustajanje. The column's own "N od prag" still counts ANSWERS,
   because the ArmyBar above it does.
 - `checkTitles` — **a confirmed postava carries all four, once each.**
 
