@@ -25,7 +25,7 @@ import {
   type AttendancePerformance,
   type AttendanceStatus,
 } from './rules'
-import { stampWithdrawal } from './withdrawal-stamp'
+import { stampWithdrawal, type WithdrawalStamps } from './withdrawal-stamp'
 import { rejectAppRequest, type AppRequestMeta } from '@/lib/app/request-guard'
 
 export interface AnswerBody {
@@ -48,9 +48,7 @@ export interface ExistingAnswer {
    */
   status?: AttendanceStatus | null
   /** The odustajanje stamps as they stand (`./withdrawal-stamp.ts`). */
-  confirmedAt?: string | null
-  withdrewAt?: string | null
-  withdrewOwn?: boolean | null
+  stamps?: Partial<WithdrawalStamps>
 }
 
 export interface AnswerDeps {
@@ -72,10 +70,7 @@ export interface AnswerDeps {
     army: Army | null
     answeredBy: string | number | null
     answeredAt: string
-    confirmedAt: string | null
-    withdrewAt: string | null
-    withdrewOwn: boolean | null
-  }) => Promise<unknown>
+  } & WithdrawalStamps) => Promise<unknown>
   update: (
     id: string | number,
     row: {
@@ -83,10 +78,7 @@ export interface AnswerDeps {
       army: Army | null
       answeredBy: string | number | null
       answeredAt: string
-      confirmedAt: string | null
-      withdrewAt: string | null
-      withdrewOwn: boolean | null
-    },
+    } & WithdrawalStamps,
   ) => Promise<unknown>
   remove: (id: string | number) => Promise<unknown>
   now?: () => Date
@@ -185,9 +177,9 @@ export async function handleAttendanceAnswer(
   const stamps = stampWithdrawal({
     previousStatus: existing?.status ?? null,
     nextStatus: decision.status,
-    confirmedAt: existing?.confirmedAt ?? null,
-    withdrewAt: existing?.withdrewAt ?? null,
-    withdrewOwn: existing?.withdrewOwn ?? null,
+    confirmedAt: existing?.stamps?.confirmedAt ?? null,
+    withdrewAt: existing?.stamps?.withdrewAt ?? null,
+    withdrewOwn: existing?.stamps?.withdrewOwn ?? null,
     ownAnswer: deps.actor.memberId != null && String(deps.actor.memberId) === memberId,
     nowMs,
   })

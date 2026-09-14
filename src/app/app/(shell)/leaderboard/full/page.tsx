@@ -65,7 +65,7 @@ const S = APP_STRINGS.board
 /** The disc a chip or a tally draws for one role. */
 function Mark({ role, small = false }: { role: keyof typeof MARK_OF_ROLE; small?: boolean }) {
   const spec = MARK_OF_ROLE[role]
-  return <RoleMark army={spec.army} title={spec.title} small={small} />
+  return <RoleMark army={spec.army} role={spec.role} small={small} />
 }
 
 /** The row of seven chips: which slice of the season is being ranked. */

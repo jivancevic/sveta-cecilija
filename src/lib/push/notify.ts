@@ -48,14 +48,6 @@ export interface NotifyDeps {
   /** Member id → user id, for the dancers that own a login. */
   loadUserIdsByMember: (memberIds: readonly string[]) => Promise<Map<string, string>>
   /** Every user holding `moreska`. Their devices are found by the sender. */
-  /**
-   * Every account holding `moreska`. No notification kind uses it since the
-   * withdrawal push was retired (#612): odustajanje is written under the
-   * evening, in Odustali on Stanje, and rings nobody. Kept because it is the
-   * loader any future voditelj-only notice would want, and because dropping it
-   * would take the `voditelji` audience group with it.
-   */
-  loadVoditeljUserIds: () => Promise<string[]>
   send: (userIds: readonly string[], message: PushMessage) => Promise<SendPushResult>
   /** Hand back a scheduled claim, so the cron can take it again. */
   release: (performanceId: string, type: ScheduledNotificationType) => Promise<void>

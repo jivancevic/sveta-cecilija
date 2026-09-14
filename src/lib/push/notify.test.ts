@@ -47,7 +47,6 @@ function deps(overrides: Partial<NotifyDeps> = {}) {
       new Map(
         ids.filter((id) => id !== '3').map((id) => [String(id), `u${id}`]),
       ),
-    loadVoditeljUserIds: async () => ['u9'],
     send: async (userIds, message) => {
       sent.push({ userIds: [...userIds], message })
       return SENT

@@ -385,24 +385,32 @@ export function rankMovement(
 
 export interface RoleMarkSpec {
   army: BoardArmy
-  /** The glyph, or null for a plain army disc. */
-  title: 'crni_kralj' | 'bili_kralj' | 'otmanovic' | null
+  /** The ROLE the disc stands for, never a title (see `MARK_OF_ROLE`). */
+  role: DanceRole
 }
 
 /**
- * What to draw for one dance role.
+ * What to draw for one dance role: a chip, or a tally saying how often this
+ * role was danced.
  *
- * The bula gets a plain gold disc rather than the titled one: `ui-mark--titled`
- * is the white ring that marks the bula OF AN EVENING, and nothing in a season's
- * counts is of an evening.
+ * It carries the role itself and NOT a title (#612). The two produce the same
+ * drawing, so this used to express a role through the nastup-side `title`
+ * prop — which is exactly the confusion the mark's two meanings exist to
+ * prevent (CONTEXT.md *Znak*): a disc standing for "crni kralj, four times
+ * this season" is a role, and a title belongs to one evening and to one
+ * holder. Nothing here is of an evening, so nothing here has a title.
+ *
+ * The bula gets a plain gold disc rather than the titled one for the same
+ * reason: `ui-mark--titled` is the white ring that marks the bula OF AN
+ * EVENING.
  */
 export const MARK_OF_ROLE: Record<DanceRole, RoleMarkSpec> = {
-  crni: { army: 'crni', title: null },
-  crni_kralj: { army: 'crni', title: 'crni_kralj' },
-  otmanovic: { army: 'crni', title: 'otmanovic' },
-  bili: { army: 'bili', title: null },
-  bili_kralj: { army: 'bili', title: 'bili_kralj' },
-  bula: { army: 'bula', title: null },
+  crni: { army: 'crni', role: 'crni' },
+  crni_kralj: { army: 'crni', role: 'crni_kralj' },
+  otmanovic: { army: 'crni', role: 'otmanovic' },
+  bili: { army: 'bili', role: 'bili' },
+  bili_kralj: { army: 'bili', role: 'bili_kralj' },
+  bula: { army: 'bula', role: 'bula' },
 }
 
 /**

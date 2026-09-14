@@ -22,7 +22,7 @@ describe('loadStaffUserIds', () => {
 
     expect(calls).toHaveLength(1)
     expect(calls[0]!.sql).toContain('users_permissions')
-    // Shared logins are excluded for the same reason the withdrawal notice
+    // Shared logins are excluded for the same reason every roster notice
     // excludes them (#441 review): a shared account's inbox belongs to nobody.
     expect(calls[0]!.sql).toMatch(/shared IS NOT TRUE/i)
     expect(calls[0]!.params).toEqual(['tickets'])

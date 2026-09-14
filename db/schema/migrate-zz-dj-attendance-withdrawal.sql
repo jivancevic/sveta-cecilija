@@ -59,11 +59,15 @@ CREATE INDEX IF NOT EXISTS attendance_performance_withdrew_idx
 
 -- The withdrawal PUSH is retired with this change (#612): a dancer changing
 -- their mind is written under the evening, in Odustali, and no longer rings a
--- voditelj's phone or lands in anyone's Sandučić. The rows it already filed are
--- the twelve-unread noise the change exists to remove, so they go too.
+-- voditelj's phone or lands in anyone's Sanducic.
 --
--- A mutation inside bootstrap, which the schema files otherwise avoid, and it
--- earns the exception by being idempotent in the strongest sense: after the
--- first run it matches nothing, and if an old container were ever rolled back
--- and filed more, the next restart would clear those as well.
-DELETE FROM app_notifications WHERE kind = 'withdrawal';
+-- The rows it already filed are the unread noise the change exists to remove,
+-- but clearing them is a ONE-SHOT DATA FIX and does not belong in this
+-- directory (db/schema/README.md, "One-shot migrations": the history here
+-- should be schema evolution, not one-time data fixes). It is run once by hand
+-- against prod instead:
+--
+--   DELETE FROM app_notifications WHERE kind = 'withdrawal';
+--
+-- Keeping it here would also foreclose the name: every future notice filed
+-- under `withdrawal` would be deleted again on the next container restart.

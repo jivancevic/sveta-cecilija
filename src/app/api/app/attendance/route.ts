@@ -3,6 +3,7 @@ import { requirePermission } from '@/lib/access/route-guard'
 import { appRequestMeta } from '@/lib/app/request-guard'
 import { resolveOwnMemberId, type MemberLinkReader } from '@/lib/access/attendance-access'
 import { relationIdForWrite as relId } from '@/lib/payload-relation'
+import { toIsoInstant } from '@/lib/to-iso-date'
 import { handleAttendanceAnswer, type ExistingAnswer } from '@/lib/attendance/answer'
 import type { Army, AttendanceMember, AttendancePerformance } from '@/lib/attendance/rules'
 import { showStartMs } from '@/lib/show-time'
@@ -46,14 +47,6 @@ export async function POST(req: Request) {
   )
 
   const body = await req.json().catch(() => null)
-
-  // A Payload date field reads back as a Date or an ISO string depending on the
-  // adapter; the stamps travel as ISO or not at all.
-  const iso = (value: unknown): string | null => {
-    if (value instanceof Date) return Number.isNaN(value.getTime()) ? null : value.toISOString()
-    if (typeof value === 'string' && value.trim() !== '') return value
-    return null
-  }
 
   const result = await handleAttendanceAnswer(body, {
     request: appRequestMeta(req, process.env.NEXT_PUBLIC_BASE_URL),
@@ -124,9 +117,11 @@ export async function POST(req: Request) {
               row.status === 'coming' || row.status === 'not_coming'
                 ? (row.status as 'coming' | 'not_coming')
                 : null,
-            confirmedAt: iso(row.confirmedAt),
-            withdrewAt: iso(row.withdrewAt),
-            withdrewOwn: typeof row.withdrewOwn === 'boolean' ? row.withdrewOwn : null,
+            stamps: {
+              confirmedAt: toIsoInstant(row.confirmedAt),
+              withdrewAt: toIsoInstant(row.withdrewAt),
+              withdrewOwn: typeof row.withdrewOwn === 'boolean' ? row.withdrewOwn : null,
+            },
           }
         : null
     },

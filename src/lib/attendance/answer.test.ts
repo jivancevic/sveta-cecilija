@@ -204,7 +204,12 @@ describe('handleAttendanceAnswer — the upsert', () => {
     // is what reads the row as it stands and hands the stamps to the writer.
     const stood = new Date(NOW.getTime() - 60 * 60 * 1000).toISOString()
     const d = deps({
-      findExisting: async () => ({ id: 55, army: 'crni', status: 'coming', confirmedAt: stood }),
+      findExisting: async () => ({
+        id: 55,
+        army: 'crni',
+        status: 'coming',
+        stamps: { confirmedAt: stood, withdrewAt: null, withdrewOwn: null },
+      }),
     })
     await handleAttendanceAnswer(body({ status: 'not_coming' }), d)
     expect(d.update).toHaveBeenCalledWith(

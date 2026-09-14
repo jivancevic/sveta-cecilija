@@ -390,7 +390,11 @@ function WithdrawnName({
       <span className="app__withdrawn-body">
         <b>{person.nickname}</b>
         <span className="app__withdrawn-when">
-          {person.withdrewOwn === false ? S.withdrewByVoditelj(when) : S.withdrewSelf(when)}
+          {person.withdrewOwn === true
+            ? S.withdrewSelf(when)
+            : person.withdrewOwn === false
+              ? S.withdrewByVoditelj(when)
+              : S.withdrewUnknown(when)}
         </span>
       </span>
     </>

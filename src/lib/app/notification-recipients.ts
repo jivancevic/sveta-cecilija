@@ -1,12 +1,11 @@
 // The two audiences the inbox added (#496): staff, and the door.
 //
-// Dancers and voditelji already had loaders — `loadUserIdsByMember` and
-// `loadVoditeljUserIds` in `src/lib/push/store.ts` — because push already
-// needed them. These two are new, because the two staff kinds (a new inquiry, a
-// new card dispute) and the door's inbox-only rows have no push behind them.
+// Dancers already had a loader — `loadUserIdsByMember` in
+// `src/lib/push/store.ts` — because push already needed it. These two are new,
+// because the two staff kinds (a new inquiry, a new card dispute) and the
+// door's inbox-only rows have no push behind them.
 //
-// Raw SQL rather than a Payload `find`, for the reason `loadVoditeljUserIds`
-// spells out: `permissions` is a hasMany select living in its own
+// Raw SQL rather than a Payload `find`: `permissions` is a hasMany select living in its own
 // `users_permissions` join table, and `{ permissions: { contains: 'tickets' } }`
 // is not a query Payload's Postgres adapter expresses over it. The vocabulary
 // is still `src/lib/access/permissions.ts`'s (CLAUDE.md hard rule: never

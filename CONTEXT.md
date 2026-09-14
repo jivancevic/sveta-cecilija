@@ -521,7 +521,7 @@ _Avoid_: RSVP, availability, sign-up.
 ### Odustajanje (odustali)
 A moreškant who answered **coming**, let that answer stand for at least **ten minutes**, and then moved to **not coming**. A faster reversal is a mis-tap and is not an odustajanje at all: *Dolazim* and *Ne dolazim* sit next to each other on a phone card, and a list that reported the slip would send a voditelj chasing a dancer who is coming.
 
-It is a property of the answer as it stands, not a history: *Attendance* keeps one row per (performance, member) and the row carries only when the promise last began, when it was taken back, and whether the dancer did it or a voditelj wrote it down. **Coming back clears the trace** — the list is a picture of who is missing tonight, never a record of who is unreliable. A voditelj writing "ne dolazi" for somebody who phoned counts as an odustajanje too, because the list is about the hole in the evening and not about who typed.
+It is a property of the answer as it stands, not a history: *Attendance* keeps one row per (performance, member) and the row carries only when the promise last began, when it was taken back, and whether the dancer did it or a voditelj wrote it down. **Coming back clears the trace** — the list is a picture of who is missing tonight, never a record of who is unreliable. A voditelj writing "ne dolazi" for somebody who phoned counts as an odustajanje too, because the list is about the hole in the evening and not about who typed; the line says which of the two it was, and says neither when the row was stamped before that was recorded.
 
 It is the word this project uses, deliberately **not** *otkazivanje*: in Cecilija *otkazati* is what happens to an izvedba, with refunds behind it, and a dancer and an evening must never share that verb. Read on *Stanje* as **Odustali**, its own list above *Bez odgovora* and disjoint from *Ne dolaze*, which holds only those who never promised anything. Since #612 it replaces a push: nobody's phone rings for it.
 _Avoid_: otkazali, cancelled, no-show (a no-show never said anything), flake.
@@ -557,7 +557,7 @@ The disc beside a moreškant's name. It means **one of two things and never both
 
 The distinction is the whole reason a *Title* is not allowed on a profile: "Josip can dance the crni kralj" and "Josip **is** the crni kralj on Monday" are different facts, and one disc that meant both would erase the difference the postava exists to record.
 
-**Ljestvica is an explicit exception**: there a disc is the army with the dancer's initials and never a glyph, because a season's counts have no evening to take a title from, and the top three already wear a cup carrying their rank.
+**Ljestvica is an explicit exception**, and it covers the season profile a row opens as well: a disc standing for a PERSON there is the army with their initials and never a glyph, because a season's counts have no evening to take a title from and the top three already wear a cup carrying their rank. A disc standing for a ROLE on those screens — a filter chip, a "crni kralj, four times" tally — is the profile meaning and does carry the role's glyph, which is why it is passed as a role and not as a title.
 _Avoid_: badge, avatar, crown (the crown is one of the four glyphs, not the thing itself).
 
 ### Voditelj (u postavi)

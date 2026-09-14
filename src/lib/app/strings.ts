@@ -477,9 +477,15 @@ export const APP_STRINGS = {
      * refunds behind it, and the two must never share a verb.
      */
     withdrawn: 'Odustali',
-    /** Under a name on that list: "odustao u 19:40" / "voditelj upisao u 19:40". */
+    /**
+     * Under a name on that list. THREE wordings, not two: `withdrewOwn` is
+     * null on a row stamped before it existed, and a screen that read null as
+     * "the dancer did it" would assert something nobody knows. The neutral one
+     * says only what the row actually holds.
+     */
     withdrewSelf: (time: string) => `odustao u ${time}`,
     withdrewByVoditelj: (time: string) => `voditelj upisao u ${time}`,
+    withdrewUnknown: (time: string) => `povukao se u ${time}`,
     nobody: 'Nema nikoga.',
     lineupConfirmed: 'Postava potvrđena',
     cancelled: 'Otkazano',
