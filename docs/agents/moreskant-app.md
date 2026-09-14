@@ -58,18 +58,26 @@ two fields apart for this reason.
 | 9 | Korisnici | `/app/users`, `/app/users/[id]` | `users` | **live** (#510): the list of every account with its permission set as Croatian chips, the shared badge, the address or "bez e-pošte" and both links by name, over one search box (username, name, e-mail, and the linked dancer's name, diacritic-insensitive); the detail with five named actions — **Dozvole** (a checkbox per word of the vocabulary, `PATCH /api/app/users/[id]/permissions`), **Resetiraj lozinku**, **Poveži partnera**, **Poveži člana** and **Dijeljeni račun**. **Novi korisnik** opens an account on the list screen. Three refusals are the route's and nothing else's, because the local API runs `overrideAccess` and field access does not: a caller may not take `users` off their OWN row (409), a `shared` login may not edit itself (403), and a named-person set (`users`, `tickets`, `moreska`, `finance`, `editor`) on an address-less account is a 400 naming the repair. Linking a member re-applies #487's rule in `/app/account`'s own words — `taken` for a Member who already has a login, `not-active` / `not-moreskant` otherwise — and writes the LINK only: `moreskant` is a permission a `users` holder adds on purpose. **The handover is the point of the screen**: an account with an address **whose permission set unlocks a Cecilija screen** gets a one-hour sign-in link to copy; every other account (no address, or a set like `editor` that lands nowhere) gets a temporary password shown exactly once (14 characters from an alphabet with no `l`, `I`, `1`, `O` or `0`, drawn without modulo bias, never logged). The link is the same token "Zaboravljena lozinka" mints, so it is **not** single-use and there is only one live at a time per account: issuing a second one silently kills the first. A shared login (ADR-0022) is refused as a CALLER on all five routes, not merely on its own row, and no write may leave `users` on one — the `tehnika` password is written on a wall. Deleting an account stays Backoffice work and the detail says so, with a link only for `dev` | the Backoffice keeps `/admin/collections/users`; no 308, because raw account editing is still the fallback |
 | 10 | Statistika (counts only) | `/app/stats?season=2026` | `tickets`, `season_stats`, `finance` | **live for all three** (#508): the season band (prodano, gratis, kapacitet, popunjenost), one row per public izvedba (sold of capacity, odrasli/djeca, the four channels, ušlo), the trajectory and channel-mix charts moved as-is, and "gratis po članu" for `tickets` only, which is Gratis's own table (#506) read through `repo.comp` and tallied by `tallyCompsByMember` rather than counted a second way. Counts only, never money: euros are Financije (#509). A row links into `/app/performances/[id]` only for a reader who unlocks Izvedbe, so the shared `member` login gets the numbers without a link that would refuse itself. **That rule catches a second account, not just the shared one:** Velebit holds `finance` + `door`, which unlocks Statistika but NOT Izvedbe, so he reads every row's numbers with no link on any of them — and his old `/admin/stats/[id]` bookmark, which now 308s to `/app/performances/[id]`, lands on the "Ovaj dio nije za tvoj račun" page rather than on an evening. A `door`-only account does not reach this screen at all, because `door` unlocks neither. **The single-show drill-down had already moved**: `/app/performances/[id]` carries the per-show numbers since #502 | 308 from both, through `src/lib/backoffice-ports.ts` |
 | 11 | Financije (money without buyers, added by #476) | `/app/finance?season=2026&year=2026&month=9` | `finance` | **live** (#509): **Prikupljeni prihod** for the season (`channel='online'` order totals net of the refunded ones, plus the offline ledger's own Σ quantity × unit price), shown APART from **Potraživanje od partnera** in a card of its own, never summed and never called dobit (ADR-0015, glossary *Dashboard*). **The channel clause is the correctness of both cards**: a partner order stores `total` at face value the moment the reseller issues the seat, so counting it as collected would put the same euros in both, and a storno voids the tickets while leaving `total` and `refund_status` alone, so a cancelled partner sale would never leave the figure. A comp order is €0 and drops out of the same clause. `seasonMoney` re-applies the filter in pure code, which is where it is tested, and since [#538](https://github.com/jivancevic/sveta-cecilija/issues/538) the rule lives in `revenueCollectedCents` itself, so the Backoffice season band and the per-show *Prihod* on Izvedbe apply the SAME rule as this card, though not over the same rows (the band is all-time and unscoped to public performances, this card is one season; `CollectedOrderRow.channel` is a REQUIRED field, so a caller that forgets to read the column fails `tsc`); **Povrati** as a count and an amount, which includes a lost chargeback because #380 writes the same `refund_status`; **Promo kodovi** as an "of which" line, the revenue column #500 gave `finance` and which had no home after the Backoffice panel; **Obračun po partnerima** for a month the picker caps at the current Zagreb month (Obračun's own bounds, #505), one card per partner with tickets / naplaćeno / provizija / za uplatu and the CSV of the same month behind `GET /api/partner/reconciliation?partnerId=&year=&month=&format=csv` — the figures on screen and the file come from the same arithmetic, so they cannot disagree. **A deactivated reseller still appears where it still owes**: the season total is derived from the SALES (the ticket query joins `partners`, so nobody has to still be sellable to be counted) and the month panel lists every partner that may sell PLUS every partner the month's rows name, badged *neaktivan*. Taking `activeList()` as the whole truth would have dropped a mid-season deactivation's debt from the total and left Velebit with no way to download that month's statement; and **Prodaja na ulazu**, the season's ledger by evening with every line's source, type, quantity, unit price and discount label, a negative line reading as the correction it is. **No buyer appears anywhere on it** and that is asserted as a source scan (`finance-no-pii.test.ts`): whose order it was is a question for Narudžbe, which answers to `tickets`. Counts are Statistika (#508); the two screens never repeat a figure | none, the Backoffice dashboard keeps its band until #512 |
-| last | Više (a list, always the last tab) | `/app/more` | any screen | **live** (#495): the overflow screens, then the standing rows | 308 from `/app/vise` |
+| last | Više (a list, always the last tab) | `/app/more` | any screen | **live** (#495, reskinned #569): **the person first** — a moreškant's RoleMark (the army of their primary role; no title, because a title belongs to an evening) or, for everybody else, their permission set as the Croatian chips Korisnici renders, read through `permissionChips` rather than re-typed. A shared login is named by its USERNAME with a "Dijeljeni račun" chip, because `tehnika` is a room and `member` is the society. Then four rows of their own (Profil · Obavijesti with the unread count as a chip · Sigurnost, which is `/app/account#security` rather than a route of its own · Podrška, a Sheet with `info@moreska.eu` and never a telephone number), then the overflow screens with the SAME icons their tabs carry (`ui/ScreenIcon.tsx`, one map), then the app's own rows (Dobrodošlica, Instalacija, and the Backoffice for `dev`), Odjava, and the build line | 308 from `/app/vise` |
 
 Rows under Više, after the overflow screens:
 
 | Row | Route | Unlocked by | Today | Old path |
 |---|---|---|---|---|
-| Kalendar | `/app/calendar` | `moreskant`, `moreska` | a row in Više | new |
+| Kalendar | `/app/calendar` | `moreskant`, `moreska` | **moved** (#569): the panel now sits UNDER the list on Obavijesti, because both halves of that screen are the same promise at two speeds | new |
 <!-- Pozivnice was a row here until #511 folded it into Članovi; both of its old
      paths now 308 to /app/members. -->
-| Moj račun (password, member link, push on/off) | `/app/account` | any screen | **live** (#495): profile, install + push, self-link, password | 308 from `/app/set-password` and `/app/povezi` |
+| Profil (the person, the two switches, the member link, the password) | `/app/account` | any screen | **live** (#495, reskinned and renamed #569): "Moj račun" became **Profil** so the row and the screen are called the same thing; Moji podaci, **Izgled** (the theme switch), **Obavijesti** (push as a switch), the self-link and, under `#security`, the password | 308 from `/app/set-password` and `/app/povezi` |
 | Backoffice (link to `/admin`) | `/admin` | `dev` only | **live** (#495): the row, the denied panel and the consent screen all lost their general `/admin` link | done |
 | Odjava | `POST /api/app/logout` | any screen | same | unchanged |
+
+**The foot of Više names the build**: "Cecilija · <version> (<commit>)" and,
+under it in very small type, "Created by: Josip Ivančević". The version is
+`package.json`'s and the commit is `deployedCommit()` in
+`src/lib/health/health.ts` — **the same reader `GET /api/health` reports from**,
+which is #569's acceptance criterion and is asserted in
+`src/lib/app/version.test.ts`. Two `process.env.SOURCE_COMMIT` reads would be two
+answers to "which build am I looking at" the day Coolify's variable is renamed.
 
 Screens that are not rows: **Obavijesti** is a bell in the header of every
 screen with the unread count, opening the inbox at `/app/notifications`
@@ -1001,15 +1009,28 @@ Both cron routes compare their bearer with `timingSafeEqual`
 exactly the stable target a byte-at-a-time timing compare leaks to. A voditelj who disagrees has the manual alarm, which
 has no claim and no limit.
 
-### The banner
+### The switch (was the banner)
 
-`InstallHint.tsx` is the one banner (#430 stories 1-3), which since #457 lives
-in the Više tab and carries its own heading: unsubscribed and able to
-subscribe → "Uključi obavijesti"; already subscribed → one muted line with the
-per-device off switch, which is the whole of the per-device control (story 5).
-Which of those it asks, and whether it asks about installing first instead, is
-`decideInstallStep` in `src/lib/app/platform.ts` — see [the install flow](#the-install-flow-455)
-for why the order is per platform rather than fixed (#455).
+`PushSwitch.tsx` on **Profil** is the per-device control (#430 stories 1-3,
+#569). It is a `Switch` reading this browser's own subscription through
+`push-client.ts`, and nothing renders until it has looked: a switch that shows
+"isključeno" for a beat to somebody who turned it on last week is a lie with a
+spinner. Turning it off takes a successful unsubscribe, never an optimistic flip
+(#457 review), or a dancer would be told the phone is quiet while it keeps
+ringing.
+
+**The three refusals are a `Note`, never a dead switch**: an iPhone that is
+still a Safari tab (no `PushManager` until the app is on the home screen, so
+there the install IS the switch, and the note links to `/app/install`), a
+webview inside Viber or Messenger, and a browser with no push at all.
+
+It replaced `InstallHint.tsx`, deleted by #569. That component asked "uključi
+obavijesti?" and answered with a button whose label flipped to "Isključi", and
+decided from `decideInstallStep` whether to ask about installing first instead
+— see [the install flow](#the-install-flow-455) for why that order was per
+platform (#455). A banner that asks a question is right the first time and noise
+the fifth; the install half is a whole screen (`/app/install`) one row away in
+Više, and `decideInstallStep` still runs the Dobrodošlica and that guide.
 
 ## Triggered notifications (#436 — phase 4 batch B)
 
@@ -1423,8 +1444,8 @@ permissions would re-type the vocabulary and drift the first time a screen's
 `markNotificationRead` carries `user_id` in its WHERE, so an id from somebody
 else's inbox is a 404 rather than a confirmation that the row exists.
 
-The push on/off switch is on **Moj račun** (`/app/account`, inside
-`InstallHint`), moved there by #495 and not in Više.
+The push on/off switch is on **Profil** (`/app/account`, `PushSwitch` since
+#569), moved there by #495 and not in Više.
 
 ## The calendar feed (#433 — phase 4 batch B)
 
@@ -1985,7 +2006,7 @@ grouped sidebar from 1024 px up.
 | `/app` | Izvedbe | the next live evening as a hero, then the season by month, the past behind a disclosure |
 | `/app/performances/[id]` | Izvedbe | one evening, three segments, the two answer buttons pinned above the bar |
 | `/app/leaderboard` | Ljestvica | two panels (`?part=mine\|all`): the dancer's own season, and the ranking — the full scoreboard for a voditelj (#495) |
-| `/app/more` | Više | the overflow screens, then the standing rows: invitations, own account, the Dobrodošlica replay, the install guide, calendar, Odjava |
+| `/app/more` | Više | the person (mark or permission chips), their four rows, the overflow screens, the app's own rows, Odjava, the build line |
 | `/app/welcome` | none | the walkthrough: no bar, no brand header |
 | `/app/install` | none | the full-screen install guide (#455), public by design: the QR target at a rehearsal |
 
@@ -2355,11 +2376,36 @@ screen. T1 is the system; everything under it is a screen's own ticket.
 does not follow it. The same rule is why the two night islands (#490) re-point
 tokens rather than restating colours.
 
-**The night skin ships switched off.** The values are all there under
-`.app[data-theme="dark"]`; the switch is T8, in Više · Profil, and it sets that
-one attribute. There is deliberately no `prefers-color-scheme`: a phone's system
-setting does not know whether its owner is at a rehearsal or at the door. To
-look at it before T8, set `data-theme="dark"` on the `<body>` by hand.
+**The night skin has a switch** (#569, T8). It is on Profil (`/app/account`),
+under *Izgled*, and it is the only thing in the app that writes `data-theme`.
+
+| | |
+|---|---|
+| three states | **Svijetla** · **Tamna** · **Kao sustav**, the last one the default |
+| stored | `localStorage`, key `cecilija.theme`, one value per device |
+| applied | `data-theme="dark"` or `"light"` on `.app` (the `<body>`), always written out rather than removed, so the state can be read back off the element |
+| no flash | `THEME_BOOT_SCRIPT`, inline in `src/app/app/layout.tsx` ABOVE everything it renders |
+
+The rules live in `src/lib/app/theme.ts` and NOTHING re-types them: the boot
+script is built from the same three constants the switch writes with, so a
+renamed key renames itself in both. `ThemeSwitch.tsx` is a `useSyncExternalStore`
+over localStorage and `matchMedia`, never a piece of state copied out of them in
+an effect — the snapshot carries the CHOICE and the RESOLVED skin together,
+because otherwise a phone flipping at sunset would move the skin without moving
+the snapshot and nothing would re-render.
+
+**Per device, never per account**, and that is the decision rather than an
+implementation detail: which skin to wear is a fact of the phone in the hand —
+its brightness, where it is being read — and a shared login (`tehnika` on a
+wall, `member` in an office) has no single answer at all. So there is no column
+on `Users` and there must not be one.
+
+**"Kao sustav" is the default, and it is the one `prefers-color-scheme` in the
+app.** T1 shipped without it on purpose: a phone's system setting does not know
+whether its owner is at a rehearsal or at the door. What changed is that the
+other two states now exist, so the system setting is a starting point a person
+can override rather than a decision made for them. The Skener stays dark through
+the tokens, not through this switch (T10).
 
 **Four token names and two font variables are aliases, and they are meant to
 die.** `--frame`, `--cardEdge`, `--radius` and `--rowY` were the old contract
@@ -2374,9 +2420,17 @@ Tile, ListRow, Chip, DateDisc, Note, Section, ArmyBar, RoleMark, Sheet, Toast,
 Ring, Podium — plus, since #568, Segmented (two views of one screen, a sunk
 track and a white thumb) and CountUp (a number that runs up once on first paint;
 the server renders its FINAL value, so nothing reflows and a reader with no
-JavaScript still reads the count). `Podium` grew a `large` size there rather
+JavaScript still reads the count), and since #569 **Switch** (one thing this
+device does or does not do; the whole 56px row is the target, and `aria-checked`
+carries the state so a reader hears the state rather than a label they have to
+interpret) and **ScreenIcon** (the icon map, which was `AppNav`'s private
+constant until Više listed the overflow as rows and wanted the same drawing the
+tab has). `Segmented` grew an `options` mode there rather than beside itself: a
+setting with no panel behind it is a radiogroup, and a `role="tab"` whose
+`aria-controls` points at nothing is a lie a screen reader repeats out loud.
+`Podium` grew a `large` size there rather
 than a screen-side override. A screen COMPOSES them; a screen does not restyle them, and a
-screen that needs a sixteenth shape brings it here rather than inventing one
+screen that needs a further shape brings it here rather than inventing one
 beside itself — inventing beside itself is exactly how the app ended up with
 five kinds of button and no rule about which was primary. Only `Sheet` is a
 client component; the rest render on the server.
