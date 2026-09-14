@@ -1,6 +1,7 @@
 'use client'
 
-import { useEffect } from 'react'
+import { useEffect, useSyncExternalStore } from 'react'
+import { createPortal } from 'react-dom'
 import { APP_STRINGS } from '@/lib/app/strings'
 
 // A sheet: a choice, from the bottom, one thumb away (#562).
@@ -15,6 +16,22 @@ import { APP_STRINGS } from '@/lib/app/strings'
 //
 // A client component, and one of only two in this folder: it owns the key
 // listener and the scrim's click. The options inside it are the caller's.
+//
+// **It renders into the BODY and not where it is written** (#624). The panel is
+// `z-index: 31` and the tab bar is 20, which should have settled it; what it
+// did not settle is that `.app__screen` animates a transform with
+// `animation-fill-mode: both`, so the wrapper keeps a stacking context of its
+// own for as long as the screen is on the page — and a z-index inside a
+// stacking context cannot reach past it. Every sheet in the app was therefore
+// trapped under the bar, which is what Josip photographed twice. A portal takes
+// the sheet out of that wrapper and makes it a child of the body; the body IS
+// `.app`, so the panel keeps every token it is drawn out of (`--card`, `--ink`,
+// `--tabH`, `--shim`) and inherits nothing it should not. The CSS fill-mode is
+// fixed as well, but the portal is what makes this correct rather than lucky:
+// a modal belongs at the top of the document, not in the middle of a screen.
+//
+// `data-no-pull` survives the move, because pull-to-refresh reads `closest()`
+// on the touched node and the attribute travels with the markup.
 
 export interface SheetProps {
   open: boolean
@@ -34,18 +51,23 @@ export interface SheetProps {
   children: React.ReactNode
 }
 
-export function Sheet({ open, title, onClose, footer, children }: SheetProps) {
-  useEffect(() => {
-    if (!open) return
-    function onKey(event: KeyboardEvent) {
-      if (event.key === 'Escape') onClose()
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [open, onClose])
-
-  if (!open) return null
-
+/**
+ * The panel itself: the scrim, the handle, the title, the scroller, the footer.
+ *
+ * Split from `Sheet` in #624 because the two answer different questions. This
+ * is WHAT a sheet looks like and it draws wherever it is put; `Sheet` is
+ * whether it is open, how it closes, and WHERE in the document it goes. The
+ * split is also what keeps the shape testable as markup: a portal renders into
+ * a live DOM and never into a string, so a test of `Sheet` could only ever see
+ * an empty one. Not in the `ui` barrel — every screen wants the sheet, not half
+ * of one.
+ */
+export function SheetPanel({
+  title,
+  onClose,
+  footer,
+  children,
+}: Omit<SheetProps, 'open'>) {
   return (
     <>
       {/* `data-no-pull` on both halves: a sheet covers the screen, and a
@@ -71,6 +93,74 @@ export function Sheet({ open, title, onClose, footer, children }: SheetProps) {
         {footer != null && <div className="ui-sheet__foot">{footer}</div>}
       </div>
     </>
+  )
+}
+
+const subscribeToNothing = () => () => {}
+const onClient = () => true
+const onServer = () => false
+
+/**
+ * How many sheets are open, so the tab bar knows (#624).
+ *
+ * A counter and not a boolean: Stanje opens a person sheet FROM a list sheet,
+ * and for one frame both are mounted. With a boolean the closing one would tell
+ * the bar the coast is clear while the opening one still has the screen.
+ *
+ * The flag itself is an attribute on `.app` (the body) rather than a piece of
+ * React state, because the thing that has to react to it is the tab bar, which
+ * lives in the shell and shares no owner with any sheet. CSS is the only thing
+ * both of them can see.
+ */
+let openSheets = 0
+
+function markSheetOpen(): () => void {
+  openSheets += 1
+  document.body.dataset.sheet = 'open'
+  return () => {
+    openSheets -= 1
+    if (openSheets <= 0) {
+      openSheets = 0
+      delete document.body.dataset.sheet
+    }
+  }
+}
+
+export function Sheet({ open, title, onClose, footer, children }: SheetProps) {
+  // The portal needs a DOM to aim at, and the server has none. Every sheet in
+  // this app opens from a tap, so "not mounted yet" is never a state a reader
+  // sees; this only keeps the first server render honest and hydration silent.
+  //
+  // `useSyncExternalStore` rather than a `useState` + `useEffect` pair: the
+  // store has nothing to subscribe to and the two snapshots ARE the answer —
+  // false on the server, true in the browser — so React reaches it during the
+  // first client render instead of scheduling a second one.
+  const mounted = useSyncExternalStore(subscribeToNothing, onClient, onServer)
+
+  useEffect(() => {
+    if (!open) return
+    function onKey(event: KeyboardEvent) {
+      if (event.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [open, onClose])
+
+  // The bar stays visible OVER the panel while a sheet is up, dimmed and deaf
+  // (#624). It is the one thing on the screen a sheet does not cover, because
+  // Josip asked for it in as many words: "traka se vidi cijelo vrijeme".
+  useEffect(() => {
+    if (!open) return
+    return markSheetOpen()
+  }, [open])
+
+  if (!open || !mounted) return null
+
+  return createPortal(
+    <SheetPanel title={title} onClose={onClose} footer={footer}>
+      {children}
+    </SheetPanel>,
+    document.body,
   )
 }
 

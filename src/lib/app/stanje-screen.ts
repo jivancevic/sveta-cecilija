@@ -130,6 +130,17 @@ export interface StanjePerson {
   roles: DanceRole[]
   /** Their primary role: the disc a picker row wears. Null when unknown. */
   primaryRole: DanceRole | null
+  /**
+   * Their mobile, for the Nazovi row on the person sheet (#624).
+   *
+   * Filled for a VODITELJ only, and null for everybody else: he is the one who
+   * chases a missing dancer, and a number nobody on this screen is going to
+   * ring has no business being serialised into a dancer's browser. That the
+   * roster already carries it (ADR-0024 draws the PII line at mobiles yes,
+   * e-mails never) is what makes the row possible, not a reason to ship it to
+   * every reader.
+   */
+  mobile: string | null
 }
 
 /** One army's column. */
@@ -256,6 +267,17 @@ export interface StanjeView {
   noAnswer: StanjePerson[]
   /** The four "add somebody" sheets, by the list they fill (#620). */
   pickers: Record<PickerKey, StanjePicker>
+  /**
+   * The READER's own answer, when they are a dancer and the evening is still
+   * ahead (#624). Null for anybody else, and the whole of the rule.
+   *
+   * A voditelj who does not dance has no Member to answer for; a blagajna never
+   * reaches this screen at all (`moreska` is unlocked by `moreskant` and
+   * `moreska` only). Josip asked for the pair here because Stanje is where a
+   * dancer ends up when they tap the bar on Moreška, and having to go back a
+   * screen to say "dolazim" is the one thing the deep link was for.
+   */
+  me: { memberId: string; answer: 'coming' | 'not_coming' | null } | null
   /**
    * The alarm exactly as it would be sent, for the Pozovi sheet to show before
    * anybody sends it (#566, Q35).
@@ -413,6 +435,18 @@ export function stanjeView(detail: PerformanceDetail): StanjeView {
   for (const row of detail.lineup.roster) names.set(row.memberId, row.nickname)
   for (const row of detail.lineup.entries) names.set(row.memberId, row.nickname)
 
+  /**
+   * A mobile for anybody the screen can name, and ONLY for a voditelj (#624).
+   * Everybody else gets an empty map, so the field is null all the way to the
+   * browser rather than hidden once it has arrived there.
+   */
+  const mobiles = new Map<string, string>()
+  if (detail.voditelj) {
+    for (const person of [...answeredPeople, ...count.noAnswer]) {
+      if (person.mobile) mobiles.set(person.memberId, person.mobile)
+    }
+  }
+
   /** The profile half of a name: their roles and their primary one (#620). */
   const profiles = new Map(
     detail.lineup.roster.map((row) => [
@@ -464,6 +498,7 @@ export function stanjeView(detail: PerformanceDetail): StanjeView {
       withdrewOwn: extra.withdrew ? extra.withdrew.own : null,
       roles: profile?.roles ?? [],
       primaryRole: profile?.primaryRole ?? null,
+      mobile: mobiles.get(memberId) ?? null,
     }
   }
 
@@ -627,6 +662,15 @@ export function stanjeView(detail: PerformanceDetail): StanjeView {
     // "who has not said anything", which a dictated row does not change.
     noAnswer: count.noAnswer.map((person) => personOf(person.memberId, null)),
     pickers,
+    // `canAnswer` is the loader's own rule (not cancelled, not yet started), the
+    // same one the hero on Moreška reads and the answer route enforces again.
+    me:
+      detail.myMemberId && p.canAnswer
+        ? {
+            memberId: detail.myMemberId,
+            answer: answerOf.get(detail.myMemberId) ?? null,
+          }
+        : null,
     callMessage: {
       title: PUSH_MESSAGES.alarm.title,
       body: PUSH_MESSAGES.alarm.body({

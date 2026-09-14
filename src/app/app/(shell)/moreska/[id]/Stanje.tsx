@@ -2,8 +2,9 @@
 
 import { useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Bell, ChevronRight, Plus } from 'lucide-react'
+import { Bell, ChevronRight, Phone, Plus } from 'lucide-react'
 import { APP_STRINGS } from '@/lib/app/strings'
+import { Answer } from '../Answer'
 import { MAX_THRESHOLD } from '@/lib/app/performance-form'
 import { memberSearchKey } from '@/lib/app/members-screen'
 import { armyOfLineupRole, assignTitle, type DanceTitle } from '@/lib/lineup/titles'
@@ -231,6 +232,22 @@ export function Stanje({
 
   return (
     <div className="app__stanje">
+      {/* The reader's OWN answer, under the date and above the bar (#624).
+          Stanje is where a dancer lands when they tap the ArmyBar on Moreška,
+          and having to go back a screen to say "dolazim" was the one thing that
+          deep link was for. `view.me` is the whole gate: a voditelj with no
+          Member of his own has nothing to answer, a nastup that has started
+          takes no answer, and the blagajna never reaches this screen at all. */}
+      {view.me && (
+        <div className="app__stanje-mine">
+          <Answer
+            performanceId={view.id}
+            memberId={view.me.memberId}
+            current={view.me.answer}
+          />
+        </div>
+      )}
+
       <ArmyBar
         crni={view.armies.crni}
         bili={view.armies.bili}
@@ -743,7 +760,7 @@ function PeopleSheet({
                       key={r}
                       army={armyOfLineupRole(r)}
                       role={r}
-                      small
+                      tiny
                       label={DANCE_ROLE_LABELS[r]}
                     />
                   ))}
@@ -877,6 +894,18 @@ function PersonSheet({
         >
           {APP_STRINGS.detail.moveTo(person.moveTo)}
         </SheetOption>
+      )}
+
+      {/* Ring them (#624). A link and not a button, because `tel:` is the
+          phone's own job and a button would be this screen pretending to make
+          the call. `mobile` is filled for a VODITELJ only and is null when the
+          profile has no number, so the row is absent rather than dead: a
+          control that cannot work is worse than no control. */}
+      {person.mobile && (
+        <a className="ui-sheet__opt" href={`tel:${person.mobile}`}>
+          <Phone size={18} strokeWidth={1.75} aria-hidden="true" />
+          <div>{APP_STRINGS.detail.call}</div>
+        </a>
       )}
 
       {person.titles.length > 0 && !locked && (

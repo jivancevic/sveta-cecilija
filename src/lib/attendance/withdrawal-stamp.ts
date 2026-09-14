@@ -127,3 +127,64 @@ export function stampWithdrawal(input: StampInput): WithdrawalStamps {
     withdrewOwn: withdrew ? input.ownAnswer : null,
   }
 }
+
+/**
+ * What "poništi moj odgovor" does to a row (#624).
+ *
+ * The two-circle control on Moreška lets a dancer un-tap the answer they gave,
+ * and that gesture cannot be a plain delete. A standing `dolazim` that somebody
+ * has been counting on is not un-said by pressing a button again: taking it
+ * back IS the odustajanje this file exists for, and a delete would erase the
+ * one thing the voditelj's list is built out of. So the grace window decides,
+ * exactly as it does for a Ne dolazim:
+ *
+ *   never promised, or promised within the last ten minutes → delete the row,
+ *     and the dancer is back to having said nothing.
+ *   a promise that STOOD → the row becomes `ne dolazim` carrying the
+ *     withdrawal stamps, and the dancer's screen fills the red circle, which is
+ *     the truth about where they now stand.
+ *   a `ne dolazim` that IS an odustajanje → nothing moves (#624 review). This
+ *     is the same hole seen from the other side: un-tapping the red circle on a
+ *     row that got there by withdrawing would delete the stamps with it, and
+ *     the dancer would drop off the voditelj's Odustali list one tap after
+ *     landing on it. There is one way back out of an odustajanje and it is the
+ *     honest one — say Dolazim again, which clears the trace because coming
+ *     back is exactly what the trace was waiting for.
+ *
+ * `undo` is therefore NOT `clear`, and the two must not be merged. `clear` is
+ * the voditelj's "obriši odgovor" on the person sheet (#612, Q2): a correction
+ * of the RECORD, saying this answer was never given, and it deletes
+ * unconditionally. `undo` is an act BY the person, and an act leaves a trace.
+ *
+ * The grace rule itself is not restated here: this asks `stampWithdrawal` what
+ * the move from `coming` to `not_coming` would stamp, and a row it declines to
+ * mark is by definition a mis-tap.
+ */
+export type UndoOutcome = 'delete' | 'withdraw' | 'keep'
+
+export function resolveUndo(input: {
+  /** The answer standing before this write; null when there is no row. */
+  previousStatus: AttendanceStatus | null
+  ownAnswer: boolean
+  nowMs: number
+  stamps: WithdrawalStamps
+}): UndoOutcome {
+  if (input.previousStatus !== 'coming') {
+    return input.stamps.withdrewAt ? 'keep' : 'delete'
+  }
+
+  // Which of the two it is, and NOT the stamps that go with it. A withdrawal is
+  // an ordinary `not_coming` write, so the route falls through to the one it
+  // already makes and gets its stamps from the same `stampWithdrawal` call
+  // every other answer does. Asking the question here and answering it again
+  // there is cheap; two copies of the patch would not be.
+  const stamps = stampWithdrawal({
+    ...input.stamps,
+    previousStatus: 'coming',
+    nextStatus: 'not_coming',
+    ownAnswer: input.ownAnswer,
+    nowMs: input.nowMs,
+  })
+
+  return stamps.withdrewAt ? 'withdraw' : 'delete'
+}

@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
   aheadLabel,
-  answerChip,
   armyLabel,
   heroView,
   identityOf,
@@ -83,8 +82,10 @@ describe('nastupRow', () => {
     expect(row.meta).toContain('otkazano')
   })
 
-  it('carries no chip for a reader with no Member row', () => {
-    expect(nastupRow(performance(), { showAnswer: false }).chip).toBeNull()
+  it('offers no answer on the half of the list nobody answers', () => {
+    const row = nastupRow(performance(), { showAnswer: false })
+    expect(row.answer).toBeNull()
+    expect(row.canAnswer).toBe(false)
   })
 
   it('links into Stanje, which is the performance detail until #566', () => {
@@ -149,11 +150,19 @@ describe('nastupRow · the countdown chip (#612)', () => {
   })
 })
 
-describe('answerChip', () => {
-  it('says which of the three states the reader is in, in the dancer’s register', () => {
-    expect(answerChip('coming')).toEqual({ label: 'dolaziš', tone: 'gold' })
-    expect(answerChip('not_coming')).toEqual({ label: 'ne dolaziš', tone: 'plain' })
-    expect(answerChip(null)).toEqual({ label: 'bez odgovora', tone: 'plain' })
+describe('the row’s own answer (#624)', () => {
+  it('carries the reader’s answer rather than a word for it', () => {
+    expect(nastupRow(performance({ myAnswer: 'coming' }), { showAnswer: true }).answer).toBe(
+      'coming',
+    )
+    expect(nastupRow(performance({ myAnswer: null }), { showAnswer: true }).answer).toBeNull()
+  })
+
+  it('lets the circles be tapped only where the loader says they may be', () => {
+    expect(nastupRow(performance(), { showAnswer: true }).canAnswer).toBe(true)
+    expect(nastupRow(performance({ canAnswer: false }), { showAnswer: true }).canAnswer).toBe(
+      false,
+    )
   })
 })
 

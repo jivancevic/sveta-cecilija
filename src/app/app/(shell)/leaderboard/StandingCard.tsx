@@ -60,7 +60,12 @@ export function StandingCard({
       <div className="app__lb-you-top">
         <span className="app__lb-you-rank">
           {animate ? <CountUp value={standing.rank} /> : standing.rank}
-          <sup>.</sup>
+          {/* An ORDINAL dot, which means it sits on the baseline (#624). It was
+              a `<sup>`, which put it up beside the top of the digits where it
+              read as a footnote marker or a degree sign rather than as the dot
+              in "petnaesti". Croatian writes an ordinal with a full stop after
+              the numeral, so the full stop has to look like one. */}
+          <i>.</i>
         </span>
         <span className="app__lb-you-txt">
           <b>{pluralize(standing.performances, APP_STRINGS.moreska.count)}</b>

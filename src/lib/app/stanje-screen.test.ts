@@ -570,3 +570,43 @@ describe('stanjeView and the voditelj of an Experience (#620)', () => {
     expect(out.canConfirm).toBe(false)
   })
 })
+
+describe('the reader\u2019s own answer and the numbers to ring (#624)', () => {
+  it('offers the pair to a dancer on an evening that is still ahead', () => {
+    const out = stanjeView(detail())
+    expect(out.me).toEqual({ memberId: '1', answer: 'coming' })
+  })
+
+  it('offers it to nobody once the nastup can no longer be answered', () => {
+    // The loader's own rule, the same one the hero reads and the route enforces
+    // again: cancelled, or already started.
+    const out = stanjeView(
+      detail({ performance: { ...detail().performance, canAnswer: false } }),
+    )
+    expect(out.me).toBeNull()
+  })
+
+  it('offers it to nobody when the reader has no Member of their own', () => {
+    // A voditelj who does not dance. There is nothing for him to answer.
+    expect(stanjeView(detail({ myMemberId: null })).me).toBeNull()
+  })
+
+  it('carries a mobile for a voditelj, and for nobody else', () => {
+    const roster = [{ ...CICI, mobile: '0915551234' }]
+    const withPhones = (voditelj: boolean) =>
+      stanjeView(
+        detail({
+          voditelj,
+          count: {
+            ...detail().count,
+            crni: { count: 1, threshold: 3, below: true, nicknames: [], members: roster },
+          },
+        }),
+      ).columns[0].people.find((p) => p.memberId === '1')?.mobile ?? null
+
+    expect(withPhones(true)).toBe('0915551234')
+    // A dancer's browser never receives it: the Nazovi row is the voditelj's,
+    // so the number is left out of the payload rather than hidden in the CSS.
+    expect(withPhones(false)).toBeNull()
+  })
+})

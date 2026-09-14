@@ -62,26 +62,14 @@ import {
 } from '@/lib/moreskant-profile'
 
 /**
- * The two shapes of the design system this module hands values to, restated
- * rather than imported: `src/lib/` must not depend on `src/app/`, and these are
- * the whole of the contract (`RoleMark`'s disc and `Chip`'s tone).
+ * The one shape of the design system this module hands values to, restated
+ * rather than imported: `src/lib/` must not depend on `src/app/`, and this is
+ * the whole of the contract (`RoleMark`'s disc). The chip tone went with the
+ * answer chip in #624, when the row's answer became two circles.
  */
 type MarkArmy = 'crni' | 'bili' | 'bula'
-type ChipTone = 'plain' | 'gold' | 'warn' | 'outline' | 'green'
 
 const S = APP_STRINGS.moreska
-
-/** The chip on a row: the reader's own answer, or its absence. */
-export interface AnswerChip {
-  label: string
-  tone: ChipTone
-}
-
-export function answerChip(answer: 'coming' | 'not_coming' | null): AnswerChip {
-  if (answer === 'coming') return { label: S.chipYes, tone: 'gold' }
-  if (answer === 'not_coming') return { label: S.chipNo, tone: 'plain' }
-  return { label: S.chipNone, tone: 'plain' }
-}
 
 /** How far out an evening is before the list stops counting: one week. */
 const SOON_WINDOW_DAYS = 7
@@ -130,7 +118,18 @@ export interface NastupRow {
   meta: string
   cancelled: boolean
   /** Null for a reader with no Member row: they have no answer to report. */
-  chip: AnswerChip | null
+  /**
+   * The reader's own answer on a FUTURE nastup, or null when they have not
+   * given one — and null on the whole past list, which is not answerable.
+   *
+   * It used to be a word chip ("bez odgovora" / "dolaziš"). Since #624 the row
+   * carries the two circles instead, so what it needs is the STATE rather than
+   * a label: the same evening reads as a green circle on the list and as a full
+   * Dolazim button in the hero, and neither of them owns a second wording.
+   */
+  answer: 'coming' | 'not_coming' | null
+  /** Whether those circles may be tapped: not cancelled, not yet started. */
+  canAnswer: boolean
   /**
    * Whether this evening's postava was confirmed (#432).
    *
@@ -179,7 +178,12 @@ export function nastupRow(performance: RosterPerformance, opts: NastupRowOptions
       .filter(Boolean)
       .join(' · '),
     cancelled: performance.cancelled,
-    chip: opts.showAnswer ? answerChip(performance.myAnswer) : null,
+    answer: opts.showAnswer ? performance.myAnswer : null,
+    // A past evening is read, not answered (#624), and the loader has already
+    // said the same thing: `canAnswer` is false there anyway. Both are stated
+    // because the list also draws rows the loader thinks are answerable and
+    // this option is what says "this is the half nobody answers".
+    canAnswer: opts.showAnswer && performance.canAnswer,
     lineupConfirmed: performance.lineupConfirmed,
     // A cancelled evening gets no countdown: "za 2 dana" under "otkazano" reads
     // as a thing still coming, which is the one thing that row must not say.

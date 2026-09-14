@@ -13,7 +13,7 @@ import { zagrebToday } from '@/lib/app/home-screen'
 import { Card, Chip, DateDisc, Hero, List, ListRow, Note, RoleMark, Section } from '../../ui'
 import { AppShell } from '../../AppShell'
 import { openScreen } from '../../gate'
-import { Answer } from './Answer'
+import { Answer, RowAnswer } from './Answer'
 import { StateBar } from './StateBar'
 import { HeroHalves } from '../../HeroHalves'
 import { HeroMeta } from '../../HeroMeta'
@@ -208,7 +208,17 @@ export default async function MoreskaPage() {
                 lead={<DateDisc day={row.day} weekday={row.weekday} tone={row.tone} />}
                 title={<RowTitle row={row} />}
                 meta={row.meta}
-                trail={row.chip && <Chip tone={row.chip.tone}>{row.chip.label}</Chip>}
+                // The row's own answer, since #624: two circles where the
+                // "bez odgovora" pill stood. `after` and not `trail`, because
+                // they are BUTTONS and the row is a link — see `ListRow`.
+                // `me` is what makes them possible at all (a voditelj with no
+                // Member of his own answers for nobody) and `row.canAnswer` is
+                // the loader's rule, so a cancelled or started evening has none.
+                after={
+                  me && row.canAnswer ? (
+                    <RowAnswer performanceId={row.id} memberId={me.id} current={row.answer} />
+                  ) : null
+                }
               />
             ))}
           </List>

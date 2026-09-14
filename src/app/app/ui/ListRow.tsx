@@ -19,6 +19,19 @@ interface RowBase {
   meta?: React.ReactNode
   /** One chip, or a chevron, on the right. */
   trail?: React.ReactNode
+  /**
+   * A control of the row's OWN, standing beside the link rather than inside it
+   * (#624).
+   *
+   * `trail` is content: it is drawn within the link and tapping it opens the
+   * row. This is the other thing — the two answer circles on a nastup — and it
+   * cannot be `trail` for two reasons that are really one. A `button` inside an
+   * `a` is invalid HTML, and even where a browser tolerates it the tap bubbles
+   * to the link, so a dancer trying to say "dolazim" would be taken to Stanje
+   * instead. The row is wrapped only when this is given, so every row that does
+   * not use it is the same single element it always was.
+   */
+  after?: React.ReactNode
   className?: string
   children?: React.ReactNode
 }
@@ -33,7 +46,16 @@ export type ListRowProps = RowBase &
     | ({ href?: undefined } & Omit<React.HTMLAttributes<HTMLDivElement>, 'className' | 'title'>)
   )
 
-export function ListRow({ lead, title, meta, trail, className, children, ...rest }: ListRowProps) {
+export function ListRow({
+  lead,
+  title,
+  meta,
+  trail,
+  after,
+  className,
+  children,
+  ...rest
+}: ListRowProps) {
   const classes = ['ui-row', className ?? ''].filter(Boolean).join(' ')
   const inside = (
     <>
@@ -49,19 +71,30 @@ export function ListRow({ lead, title, meta, trail, className, children, ...rest
     </>
   )
 
+  /** The wrapper exists only for `after`: see the prop. */
+  const beside = (row: React.ReactNode) =>
+    after == null ? (
+      row
+    ) : (
+      <div className="ui-row__wrap">
+        {row}
+        <div className="ui-row__after">{after}</div>
+      </div>
+    )
+
   if ('href' in rest && rest.href) {
     const { href, ...link } = rest as { href: string }
-    return (
+    return beside(
       <Link href={href} className={classes} {...link}>
         {inside}
-      </Link>
+      </Link>,
     )
   }
 
-  return (
+  return beside(
     <div className={classes} {...(rest as React.HTMLAttributes<HTMLDivElement>)}>
       {inside}
-    </div>
+    </div>,
   )
 }
 

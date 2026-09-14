@@ -470,7 +470,8 @@ rather than counting locally.
 ### The one writer
 
 `POST /api/app/attendance` (`{ performanceId, memberId, status: coming |
-not_coming | clear, army? }` — `army` is read only from a voditelj), guarded by
+not_coming | clear | undo, army? }` — `army` is read only from a voditelj),
+guarded by
 `requirePermission(req, ['moreskant', 'moreska'])`. The local API runs
 `overrideAccess: true`, so the collection access does not gate it — the rules
 do. The army move posts through the same route; there is no second writer.
@@ -1200,6 +1201,30 @@ Four things worth knowing before you touch it:
   that back into "was this the dancer's own login" needs the field-locked
   `Users.member` link. A dancer who withdrew has gone quiet; one a voditelj
   wrote down phoned somebody.
+
+**`undo` is the fourth request and it is not `clear`** (#624). The season list
+on Moreška carries two circles per future nastup, and pressing the filled one
+again takes the answer back. What that does is `resolveUndo`, in the same file
+as the stamps and tested beside them: the row is DELETED when there was no
+answer, when the answer is a plain `not_coming` (nothing was ever promised, so
+nothing was lost), or when the `coming` is still inside the grace window; past
+the window the row falls through to the handler's ordinary `not_coming` write
+and picks up the withdrawal stamps from the same `stampWithdrawal` call every
+other answer does, and the route answers with that status so the browser fills
+the red circle rather than clearing both. The fourth case is a `not_coming` that
+IS an odustajanje — it is KEPT, untouched: deleting it would take the voditelj's
+Odustali entry with it one tap after it landed there, which is the same hole
+seen from the other side. The way back out of an odustajanje is Dolazim, which
+clears the trace on purpose.
+
+That split is the whole reason the request exists. Collapsing it into `clear`
+would have given a dancer a way out of a postava the voditelj never sees, which
+is exactly what Odustali was built to stop; keeping `clear` unconditional is
+right for what `clear` is, the voditelj's "this answer was never given" on the
+person sheet. The browser cannot decide between the two, because the ten minutes
+are measured from a stamp only the server holds — which is why every answer in
+`Answer.tsx` settles on the status the route returns instead of on its own
+optimistic guess.
 
 Nothing backfills. Rows answered before the migration carry NULL in all three,
 so Odustali starts empty and fills from the first answer after deploy, and a
