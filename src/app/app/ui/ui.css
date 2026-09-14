@@ -78,8 +78,9 @@
 }
 
 /* ── Section heading ──────────────────────────────────────── */
-/* No margin of its own since #592. It carried 6px, which is half of the 12px
-   the shell now puts between two blocks (`.app__shell > * + *` in `app.css`) —
+/* No margin of its own since #592. It carried 6px, which is less than half of
+   the floor the shell puts between two blocks (`.app__shell > * + *` in
+   `app.css`, 16px since #609) —
    and because this sheet loads after that one, those 6px would have won the tie
    and left every screen whose blocks are Sections spaced tighter than every
    screen whose blocks are cards. A heading nested inside a group is separated
@@ -277,6 +278,30 @@
 .ui-chip--warn {
   background: var(--goldSoft);
   color: var(--warn);
+}
+
+/* The two OUTLINED tones. No fill at all, a hairline edge and the type one step
+   quieter: they are asides about a row, not states of it, and a filled pill
+   beside a filled pill turns a list into a row of badges.
+
+   `background: none` is written out on both because `.ui-chip` fills by
+   default, and a tone that only set a colour would sit on `--sunk`. */
+.ui-chip--outline {
+  background: none;
+  border: 1px solid var(--rule);
+  color: var(--muted);
+  font-weight: 500;
+  text-transform: lowercase;
+}
+
+/* POPIS on a past nastup (#609): the postava was confirmed, the reader was
+   either in it or not, and it is over. Green because it is settled and good,
+   OUTLINED because `--yes` filled is the Dolazim button — the one green surface
+   in the app — and a past evening must never read as a thing to press. */
+.ui-chip--green {
+  background: none;
+  border: 1px solid var(--yes);
+  color: var(--yes);
 }
 
 /* ── FilterChips (#570) ───────────────────────────────────
@@ -502,10 +527,14 @@ button.ui-row:hover {
 }
 
 /* ── Tile ─────────────────────────────────────────────────── */
+/* 16px, the same number the shell puts between two blocks (#609): the two
+   tiles sit in a row that is itself one of those blocks, and a horizontal gap
+   tighter than the vertical one made the pair read as a single wide card cut
+   down the middle. */
 .ui-tiles {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  gap: 16px;
 }
 
 .ui-tile {
@@ -610,6 +639,57 @@ button.ui-row:hover {
   height: 100%;
   background: var(--goldSoft);
   animation-delay: 0.1s;
+}
+
+/* ── The TILE's podium, and only the tile's (#609) ─────────
+   Everything in this block is scoped `:not(.ui-podium--lg)` on purpose. The
+   Ljestvica screen's podium is finished work and stays exactly as it is; what
+   needed the help was the glance on Početna, where three flat blocks of the
+   same colour said "there is a ranking" and nothing about who won it.
+
+   The winner's step gets a GRADIENT rather than the flat `--goldSoft` it wore:
+   the saturated end is at the top, where the cup sits, and it has faded back to
+   the old surface by the time it reaches the count and the nickname, so the
+   step reads as gold without any text having to sit on it. */
+.ui-podium:not(.ui-podium--lg) .ui-podium__step--1 {
+  background: linear-gradient(180deg, var(--gold) 0%, var(--goldSoft) 72%);
+}
+
+/* The reader's own step, marked the same way their row in the full list is: an
+   inset outline and the nickname in ink rather than muted. A dancer on this
+   podium should not have to read three nicknames to find out. */
+.ui-podium:not(.ui-podium--lg) .ui-podium__step--me {
+  outline: 1.5px solid var(--gold);
+  outline-offset: -1.5px;
+}
+
+.ui-podium:not(.ui-podium--lg) .ui-podium__step--me .ui-podium__name {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+/* The cup stands ABOVE the winner's step, not inside it. Inside, it would sit
+   on the gradient's saturated end, and a gold cup on gold is a cup nobody can
+   see; the 26px of clearance the podium reserves for it is cheaper than making
+   the bar paler to host it.
+
+   It is anchored to the STEP rather than to the podium, so it stays centred
+   over the middle column whether the tile is 150px wide or 200px, and it rides
+   the step's own rise animation up from the bottom with it. */
+.ui-podium:not(.ui-podium--lg) {
+  margin-top: 26px;
+}
+
+.ui-podium:not(.ui-podium--lg) .ui-podium__step {
+  position: relative;
+}
+
+.ui-podium:not(.ui-podium--lg) .ui-podium__cup {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin: 0 0 3px;
 }
 
 .ui-podium__step--2 {

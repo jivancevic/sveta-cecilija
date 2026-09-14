@@ -7,6 +7,7 @@ import {
   identityOf,
   monthSections,
   nastupRow,
+  soonLabel,
 } from './moreska-screen'
 import { groupByMonth, type RosterPerformance } from './roster-loaders'
 
@@ -91,6 +92,63 @@ describe('nastupRow', () => {
   })
 })
 
+describe('soonLabel', () => {
+  it('says the word a dancer would say, inside the week', () => {
+    expect(soonLabel(0)).toBe('danas')
+    expect(soonLabel(1)).toBe('sutra')
+    expect(soonLabel(2)).toBe('za 2 dana')
+    expect(soonLabel(5)).toBe('za 5 dana')
+    expect(soonLabel(7)).toBe('za 7 dana')
+  })
+
+  it('stops at a week, and never counts backwards', () => {
+    expect(soonLabel(8)).toBeNull()
+    expect(soonLabel(40)).toBeNull()
+    expect(soonLabel(-1)).toBeNull()
+    expect(soonLabel(null)).toBeNull()
+  })
+})
+
+describe('nastupRow · the countdown chip (#609)', () => {
+  it('counts CALENDAR days, so a late-night today still reads sutra tomorrow', () => {
+    // The difference is computed off two Zagreb calendar days, never off hours:
+    // at 23:50 on the 14th, the 15th's 21:00 nastup is 21 hours away and a
+    // 24-hour bucket would have called it "danas".
+    const row = nastupRow(performance({ date: '2026-09-15' }), {
+      showAnswer: true,
+      today: '2026-09-14',
+    })
+    expect(row.soon).toBe('sutra')
+  })
+
+  it('says danas on the day itself and nothing past the week', () => {
+    const on = (date: string) =>
+      nastupRow(performance({ date }), { showAnswer: true, today: '2026-09-14' }).soon
+    expect(on('2026-09-14')).toBe('danas')
+    expect(on('2026-09-17')).toBe('za 3 dana')
+    expect(on('2026-09-21')).toBe('za 7 dana')
+    expect(on('2026-09-22')).toBeNull()
+  })
+
+  it('never counts down to an evening that is off', () => {
+    const row = nastupRow(performance({ date: '2026-09-15', cancelled: true }), {
+      showAnswer: true,
+      today: '2026-09-14',
+    })
+    expect(row.soon).toBeNull()
+  })
+
+  it('says nothing at all when the caller hands over no day, which is the past list', () => {
+    expect(nastupRow(performance(), { showAnswer: false }).soon).toBeNull()
+  })
+
+  it('carries whether the postava was confirmed, for the past list POPIS chip', () => {
+    expect(nastupRow(performance({ lineupConfirmed: true }), { showAnswer: false }).lineupConfirmed)
+      .toBe(true)
+    expect(nastupRow(performance(), { showAnswer: false }).lineupConfirmed).toBe(false)
+  })
+})
+
 describe('answerChip', () => {
   it('says which of the three states the reader is in, in the dancer’s register', () => {
     expect(answerChip('coming')).toEqual({ label: 'dolaziš', tone: 'gold' })
@@ -144,10 +202,13 @@ describe('aheadLabel', () => {
 })
 
 describe('identityOf', () => {
-  // Q65 and the glossary's *Title*: a title belongs to one evening's lineup,
-  // never to a person, so nobody wears a crown on the screen's own top block.
-  // The profile's primary role survives as the WORD beside the mark.
-  it('gives a crni kralj the ink disc and NO crown', () => {
+  // #609: the identity block is a PROFILE, so its mark answers "who is this
+  // person". The disc is the army of the primary role and the GLYPH is that
+  // role; the evening's title is drawn where a person is shown IN an evening
+  // (the hero, Stanje), which is the split `RoleMark`'s two contexts exist for.
+  // The glossary is untouched: a titula still lives in a lineup, not on a
+  // Member row, and nothing here reads one.
+  it('gives a crni kralj the ink disc AND his own role, with the rest beside it', () => {
     expect(
       identityOf(
         {
@@ -163,27 +224,66 @@ describe('identityOf', () => {
       name: 'Josip Ivančević',
       line: 'Crni kralj · 9 nastupa pred tobom',
       army: 'crni',
-      title: null,
+      primaryRole: 'crni_kralj',
+      others: [{ role: 'crni', army: 'crni', label: 'Crni' }],
     })
   })
 
-  it('puts a bula on the gold disc, which is neither army, and still untitled', () => {
-    // The white ring that marks the bula OF THE NIGHT is a lineup fact too, so
-    // it is not drawn from a profile whose primary role happens to be `bula`.
+  it('puts a bula on the gold disc, which is neither army', () => {
     const out = identityOf(
       { id: '2', name: 'Ana', roles: ['bula'], primaryRole: 'bula' },
       '3 nastupa pred tobom',
     )
-    expect(out).toMatchObject({ army: 'bula', title: null, line: 'Bula · 3 nastupa pred tobom' })
+    expect(out).toMatchObject({
+      army: 'bula',
+      primaryRole: 'bula',
+      others: [],
+      line: 'Bula · 3 nastupa pred tobom',
+    })
   })
 
-  it('never carries a title, whatever the primary role says', () => {
+  it('never repeats the primary role among the small discs', () => {
     for (const primaryRole of ['crni', 'bili', 'crni_kralj', 'bili_kralj', 'otmanovic', 'bula']) {
-      expect(
-        identityOf({ id: '3', name: 'Ivo', roles: [primaryRole], primaryRole }, '1 nastup pred tobom')
-          ?.title,
-      ).toBeNull()
+      const out = identityOf(
+        { id: '3', name: 'Ivo', roles: [primaryRole], primaryRole },
+        '1 nastup pred tobom',
+      )
+      expect(out?.primaryRole).toBe(primaryRole)
+      expect(out?.others).toEqual([])
     }
+  })
+
+  it("shows EVERY other role, in the profile form's own order, with its OWN army", () => {
+    const out = identityOf(
+      {
+        id: '5',
+        name: 'Marin',
+        // Deliberately out of order and with a duplicate: `roles` arrives raw
+        // off a Member row, and neither slip may reach the screen.
+        roles: ['bula', 'crni_kralj', 'crni', 'crni', 'otmanovic'],
+        primaryRole: 'crni',
+      },
+      '',
+    )
+    expect(out?.others).toEqual([
+      { role: 'crni_kralj', army: 'crni', label: 'Crni kralj' },
+      { role: 'otmanovic', army: 'crni', label: 'Otmanović' },
+      { role: 'bula', army: 'bula', label: 'Bula' },
+    ])
+  })
+
+  it('ignores a role the vocabulary does not know', () => {
+    const out = identityOf(
+      { id: '6', name: 'Ive', roles: ['crni', 'kapetan'], primaryRole: 'crni' },
+      '',
+    )
+    expect(out?.others).toEqual([])
+  })
+
+  it('has no primary role, and so no glyph, when the row carries none', () => {
+    const out = identityOf({ id: '7', name: 'Duje', roles: [], primaryRole: null }, '')
+    expect(out?.primaryRole).toBeNull()
+    expect(out?.army).toBeNull()
   })
 
   it('falls back to the nickname when the row carries no legal name', () => {
@@ -200,6 +300,36 @@ describe('identityOf', () => {
 describe('heroView', () => {
   /** One evening, as the hero loader hands it over. */
   const solo = (p: RosterPerformance) => ({ first: p, second: null, moreCount: 0 })
+
+  describe('DANAS (#609)', () => {
+    // Decided on the SERVER, against the Europe/Zagreb day the loader already
+    // holds: a phone in Vienna and a phone in Korčula disagree about the date
+    // for an hour a night, and a card that changed its whole treatment on
+    // hydration would be the visible form of that disagreement.
+    it('labels the card when its evening is today, and not when it is not', () => {
+      expect(heroView(solo(performance()), { today: '2026-09-14' }).todayLabel).toBe('DANAS')
+      expect(heroView(solo(performance()), { today: '2026-09-13' }).todayLabel).toBeNull()
+      expect(heroView(solo(performance()), { today: '2026-09-15' }).todayLabel).toBeNull()
+    })
+
+    it('decides nothing when it is handed no day', () => {
+      expect(heroView(solo(performance())).todayLabel).toBeNull()
+      expect(heroView(solo(performance()), { today: null }).todayLabel).toBeNull()
+    })
+
+    it('follows the DAY on a split, because both halves are on it', () => {
+      const out = heroView(
+        {
+          first: performance({ id: '1', time: '10:00' }),
+          second: performance({ id: '2', time: '21:00' }),
+          moreCount: 0,
+        },
+        { today: '2026-09-14' },
+      )
+      expect(out.halves).toHaveLength(2)
+      expect(out.todayLabel).toBe('DANAS')
+    })
+  })
 
   it('splits the date into the big day and the genitive month', () => {
     expect(heroView(solo(performance()))).toMatchObject({

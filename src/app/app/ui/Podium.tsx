@@ -11,6 +11,13 @@ import Link from 'next/link'
 // half a phone wide. The `large` one is the head of the Ljestvica screen: the
 // same three steps, tall enough to carry a `RoleMark` and a caption, because
 // there the podium IS the screen's first sentence rather than a preview of it.
+//
+// **`large` is a SIZE and not a feature list** (#609). It gates the mark and
+// the caption, which are text that does not fit in a tile; it does NOT gate the
+// cup, which is 26px of drawing and is the whole reason a reader knows the
+// middle step is first place rather than merely tallest. A caller opts into a
+// cup by passing one, at either size, and Ljestvica's own podium is untouched
+// by that because it was already passing three.
 
 export interface PodiumEntry {
   /**
@@ -31,7 +38,7 @@ export interface PodiumEntry {
   /** The 28px mark above the name on the large podium (a `RoleMark`). */
   mark?: React.ReactNode
   /**
-   * The cup above the mark on the large podium (a `Trophy`), #607.
+   * The cup above the mark (a `Trophy`), #607, at either size since #609.
    *
    * Its own slot rather than part of `mark`, because the two say different
    * things — the cup is the PLACE and the mark is the PERSON — and a caller
@@ -74,7 +81,7 @@ export function Podium({ entries, large = false, className }: PodiumProps) {
           .join(' ')
         const body = (
           <>
-            {large && entry.cup}
+            {entry.cup}
             {large && entry.mark}
             <b>{entry.value}</b>
             <span className="ui-podium__name">{entry.label}</span>

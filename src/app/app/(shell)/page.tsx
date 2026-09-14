@@ -6,13 +6,14 @@ import type { HomeCard } from '@/lib/app/home-screen'
 import { ONBOARDING_COOKIE, needsOnboarding } from '@/lib/app/onboarding'
 import { APP_STRINGS } from '@/lib/app/strings'
 import { resolveAppViewer } from '@/lib/app/viewer'
-import { Card, Chip, Hero, List, ListRow, Podium, Ring, Tile, Tiles } from '../ui'
+import { Card, Chip, Hero, List, ListRow, Podium, Ring, Tile, Tiles, Trophy } from '../ui'
 import { AppShell } from '../AppShell'
 import { deniedFor } from '../DeniedPage'
 import { Answer } from './moreska/Answer'
 import { StateBar } from './moreska/StateBar'
 import { HeroHalves } from '../HeroHalves'
 import { HeroMeta } from '../HeroMeta'
+import { HeroEyebrow } from '../HeroEyebrow'
 
 // `/app` — Početna, the front door (#564, decisions Q16, Q26, Q59, Q61).
 //
@@ -89,7 +90,13 @@ export default async function AppHomePage() {
           second hero on a screen (T1), which is why every other card is a tile. */}
       {home.moreska && (
         <Hero
-          eyebrow={home.moreska.hero.eyebrow}
+          eyebrow={
+            <HeroEyebrow
+              text={home.moreska.hero.eyebrow}
+              today={home.moreska.hero.todayLabel}
+            />
+          }
+          className={home.moreska.hero.todayLabel ? 'app__hero--today' : undefined}
           {...(home.moreska.hero.halves
             ? // A split day says the date once, in the eyebrow: the big serif
               // date and the weekday line belong to the single hero (#592).
@@ -179,7 +186,24 @@ function renderTile(card: HomeCard) {
         eyebrow={card.eyebrow}
         caption={card.caption}
       >
-        <Podium entries={card.entries} />
+        {/* The glance, dressed the way the screen it previews is (#609): a cup
+            over the winner's step, so the tallest bar is read as FIRST rather
+            than merely tall, and the reader's own step outlined if they are on
+            it. The cup is the winner's alone — Ljestvica draws all three,
+            because there a tie is a thing the cups have to explain; a tile has
+            no room to explain anything and one cup is the whole sentence.
+
+            `large` stays off: it would also switch on the marks and the "1.
+            mjesto" captions, which are text this card is half a phone too
+            narrow for. */}
+        <Podium
+          entries={card.entries.map((entry, index) => ({
+            label: entry.label,
+            value: entry.value,
+            me: entry.me,
+            cup: index === 0 ? <Trophy place={1} small className="ui-podium__cup" /> : undefined,
+          }))}
+        />
       </Tile>
     )
   }

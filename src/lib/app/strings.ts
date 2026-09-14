@@ -334,7 +334,6 @@ export const APP_STRINGS = {
     armyBili: 'Bila vojska',
     cancelled: 'otkazano',
     past: (count: number) => `Prošle izvedbe (${count})`,
-    lineupConfirmed: 'Postava potvrđena',
     /**
      * Two ways to have no next evening, and they are not the same news: the
      * season is over, or it has not started. The title is picked on whether
@@ -365,6 +364,17 @@ export const APP_STRINGS = {
     /** Two nastupa on one day share one header, so the word is plural (#591). */
     nextTwo: 'Sljedeći nastupi',
     /**
+     * The label in the hero's eyebrow when the evening is TONIGHT (#609).
+     *
+     * Uppercase because it sits in the eyebrow row, which is the one place in
+     * Cecilija where the uppercase micro-label survives, and one word because
+     * it has to be readable at the far edge of a card a dancer is glancing at.
+     * It carries the news on its own: the gold edge and the sweep around it are
+     * both decoration a reader may never see (reduced motion, a colour-blind
+     * eye), and this word is what is left when they are gone.
+     */
+    todayBadge: 'DANAS',
+    /**
      * The one line of numbers a half carries: the two armies, no thresholds.
      *
      * The words only. The counts are drawn beside them by the component, which
@@ -387,6 +397,27 @@ export const APP_STRINGS = {
     extra: 'Vanredna',
     experienceWord: 'Experience',
     cancelled: 'otkazano',
+    /**
+     * How close a nastup is, beside the kind word in the season list (#609).
+     *
+     * Only inside a week: past seven days "za 12 dana" stops being a distance a
+     * dancer feels and becomes a number they have to convert back into a date,
+     * which the row already prints. The wording is deliberately the one said
+     * out loud, which is why 1 is "sutra" and not "za 1 dan" — and why
+     * `soonInDays` never has to spell the singular: 2 through 7 all take "dana".
+     */
+    soonToday: 'danas',
+    soonTomorrow: 'sutra',
+    soonInDays: (days: number) => `za ${days} dana`,
+    /**
+     * The chip on a PAST row (#609): there is a list of who danced that
+     * evening, and the reader can open the row to see whether they are on it.
+     *
+     * It replaced "Postava potvrđena", which was a gold chip saying a thing
+     * about the voditelj's workflow on a screen a dancer reads backwards. The
+     * word is short and green because it is an aside, not news.
+     */
+    lineupList: 'POPIS',
     /** The chip on a row: the reader's own answer, or its absence. */
     chipNone: 'bez odgovora',
     chipYes: 'dolaziš',

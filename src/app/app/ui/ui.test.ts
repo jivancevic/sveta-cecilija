@@ -146,6 +146,42 @@ describe('RoleMark', () => {
     expect(render(h(RoleMark, { army: 'bula', title: 'bula' }))).toContain('ui-mark--titled')
     expect(render(h(RoleMark, { army: 'bula' }))).not.toContain('ui-mark--titled')
   })
+
+  // #609: the mark means ONE of two things and never both. `title` is the
+  // evening's answer, `role` is the person's, and the union in the props makes
+  // passing both a compile error rather than a judgement call at each of the
+  // nine call sites.
+  describe('the PROFILE context', () => {
+    it('draws the person’s own role as the glyph, on their own army', () => {
+      const king = render(h(RoleMark, { army: 'crni', role: 'crni_kralj' }))
+      expect(king).toContain('ui-mark--crni')
+      expect(king).toContain('<svg')
+
+      const otman = render(h(RoleMark, { army: 'crni', role: 'otmanovic' }))
+      expect(otman).toContain('>O</text>')
+    })
+
+    it('leaves a plain crni or bili with no glyph, so the initials still show', () => {
+      const plain = render(h(RoleMark, { army: 'crni', role: 'crni', initials: 'JI' }))
+      expect(plain).not.toContain('<svg')
+      expect(plain).toContain('JI')
+    })
+
+    // The white ring marks the bula OF AN EVENING. A bula by trade is not that:
+    // she wears the plain gold disc her army already is, the way a crni by
+    // trade wears a plain ink one.
+    it('never rings a bula off her profile', () => {
+      expect(render(h(RoleMark, { army: 'bula', role: 'bula' }))).not.toContain('ui-mark--titled')
+    })
+
+    it('announces a disc that stands alone, because a colour is not a role', () => {
+      const alone = render(h(RoleMark, { army: 'bula', role: 'bula', small: true, label: 'Bula' }))
+      expect(alone).toContain('aria-label="Bula"')
+      expect(alone).toContain('role="img"')
+      // A mark beside a name needs none: the name is already saying it.
+      expect(render(h(RoleMark, { army: 'crni', role: 'crni' }))).not.toContain('aria-label')
+    })
+  })
 })
 
 describe('Trophy', () => {
@@ -210,8 +246,10 @@ describe('the rest of the shapes render', () => {
     expect(render(h(Podium, { entries: [{ label: 'Brko', value: 14 }] }))).toContain(
       'ui-podium__step--1',
     )
-    // The cup is its own slot above the mark (#607), and the large podium is
-    // the only place that draws either.
+    // The cup is its own slot above the mark (#607) and, since #609, it is
+    // drawn at BOTH sizes: `large` is a size, gating the text a tile has no
+    // room for (the mark, the "1. mjesto" caption), not a feature list. A
+    // caller opts into a cup by passing one.
     expect(
       render(
         h(Podium, {
@@ -222,7 +260,16 @@ describe('the rest of the shapes render', () => {
     ).toContain('ui-trophy--1')
     expect(
       render(h(Podium, { entries: [{ label: 'Brko', value: 14, cup: h(Trophy, { place: 1 }) }] })),
-    ).not.toContain('ui-trophy')
+    ).toContain('ui-trophy--1')
+    // The mark and the caption stay the large podium's, though: a tile half a
+    // phone wide cannot hold a 28px disc and two lines of text under a count.
+    expect(
+      render(
+        h(Podium, {
+          entries: [{ label: 'Brko', value: 14, mark: h('i', { className: 'ui-mark' }) }],
+        }),
+      ),
+    ).not.toContain('ui-mark')
   })
 
   it('renders the count at its final value on the server, so nothing reflows', () => {

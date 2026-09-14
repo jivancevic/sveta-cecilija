@@ -306,11 +306,25 @@ describe('the ring and the podium', () => {
       countWords: APP_STRINGS.moreska.count,
     })
     expect(card.entries).toEqual([
-      { label: 'Brko', value: 14 },
-      { label: 'Cici', value: 13 },
-      { label: 'Baro', value: 12 },
+      { label: 'Brko', value: 14, me: false },
+      { label: 'Cici', value: 13, me: false },
+      { label: 'Baro', value: 12, me: false },
     ])
     expect(card.caption).toBe('ti si 4. s 11 nastupa')
+  })
+
+  it('marks the reader’s own step, so the tile does not have to be read to be understood', () => {
+    // Off the ranked row's own flag (#609), never by comparing nicknames: two
+    // moreškanti can share one, and the tile would then outline the wrong bar.
+    const card = leaderboardCard({
+      top: [
+        { nickname: 'Brko', performances: 14 },
+        { nickname: 'Cici', performances: 13, me: true },
+      ],
+      me: { rank: 2, performances: 13 },
+      countWords: APP_STRINGS.moreska.count,
+    })
+    expect(card.entries.map((e) => e.me)).toEqual([false, true])
   })
 
   it('names the leader for a reader who is not on the board', () => {
