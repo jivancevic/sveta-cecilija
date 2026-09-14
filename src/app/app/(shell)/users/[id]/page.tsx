@@ -15,7 +15,7 @@ import { UserActions } from './UserActions'
 
 // `/app/users/[id]` — one account (#510).
 //
-// The facts first, then the seven named actions, and on a laptop the two side by
+// The facts first, then the eight named actions, and on a laptop the two side by
 // side (#573, Q51): what this account IS on the left, what can be done to it on
 // the right. The facts are the ones that decide access: the permission set as
 // Croatian chips, the address (or its absence, which is what decides how a

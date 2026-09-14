@@ -237,6 +237,103 @@ export async function handleSetShared(
 }
 
 /**
+ * An address, as a login carries it: trimmed, lowercased, or null when it is
+ * not an address at all.
+ *
+ * Lives here rather than beside the create it was written for (#621) because
+ * two writers now produce this column, and a second definition of "an address"
+ * is how one door starts accepting what the other refuses.
+ */
+export function normaliseEmail(raw: unknown): string | null {
+  if (typeof raw !== 'string') return null
+  const value = raw.trim().toLowerCase()
+  return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(value) ? value : null
+}
+
+export interface SetEmailDeps extends Omit<UpdatePermissionsDeps, 'save'> {
+  /** Is this address already on some account? Asked only for a NEW one. */
+  emailTaken: (email: string) => Promise<boolean>
+  setEmail: (id: string, email: string | null) => Promise<void>
+}
+
+/**
+ * PATCH /api/app/users/[id]/email `{ email }` — "E-mail" (#621).
+ *
+ * The eighth action, and the one whose field is not cosmetic. An address on a
+ * Users row decides three separate things, so this handler is three refusals
+ * rather than one:
+ *
+ *  1. **It is the handover.** With an address (and a set that opens a Cecilija
+ *     screen) the next Resetiraj lozinku mints a one-hour sign-in link; without
+ *     one it mints a temporary password read off a screen. Nothing here has to
+ *     enforce that — `handleResetPassword` re-reads the row — but it is why the
+ *     sheet's copy says what the change will do.
+ *  2. **A named person must keep one.** Clearing is refused for a set
+ *     `emailRequiredFor` covers. The collection's `beforeValidate` hook would
+ *     refuse it too, in English and about a document; this answers in Croatian
+ *     and names Dozvole as the repair.
+ *  3. **It is unique.** A different address that already belongs to somebody is
+ *     a 409. The row's OWN address is not a collision: an unchanged write
+ *     answers 200 and touches nothing, so the taken check only ever asks about
+ *     an address this account does not already hold.
+ *
+ * No mail is sent, here or anywhere down the path. Cecilija never tells a
+ * person their address changed, the same way it never sends the invitation:
+ * whoever made the change tells them.
+ */
+export async function handleUpdateEmail(
+  targetId: string,
+  input: { email?: unknown } | null | undefined,
+  deps: SetEmailDeps,
+): Promise<UsersResult> {
+  const refused = refuseCaller(deps.request, deps.caller)
+  if (refused) return refused
+
+  const target = await loadOr404(targetId, deps.loadUser)
+  if ('missing' in target) return target.missing
+
+  if (input?.email !== undefined && typeof input.email !== 'string') {
+    return fail(400, S.create.badEmail)
+  }
+
+  const typed = typeof input?.email === 'string' ? input.email.trim() : ''
+  const next = typed ? normaliseEmail(typed) : null
+  if (typed && !next) return fail(400, S.create.badEmail)
+
+  const before = target.user.email?.trim().toLowerCase() || null
+  if (next === before) {
+    return { status: 200, body: { ok: true, email: next, message: S.email.unchanged } }
+  }
+
+  // The same rule the Users hook applies, before the write rather than after,
+  // and naming the screen that repairs it.
+  if (!next && emailRequiredFor({ permissions: target.user.permissions })) {
+    return fail(400, S.email.required)
+  }
+
+  if (next) {
+    try {
+      if (await deps.emailTaken(next)) return fail(409, S.create.emailTaken)
+    } catch (err) {
+      console.error('[handleUpdateEmail] lookup failed:', err instanceof Error ? err.message : err)
+      return fail(500, S.email.failed)
+    }
+  }
+
+  try {
+    await deps.setEmail(target.user.id, next)
+  } catch (err) {
+    console.error('[handleUpdateEmail] save failed:', err instanceof Error ? err.message : err)
+    return fail(500, S.email.failed)
+  }
+
+  return {
+    status: 200,
+    body: { ok: true, email: next, message: next ? S.email.saved : S.email.cleared },
+  }
+}
+
+/**
  * The name a login belongs to, as the column carries it: trimmed, capped, and
  * **null when it is empty**.
  *

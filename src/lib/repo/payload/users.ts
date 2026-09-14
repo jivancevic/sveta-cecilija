@@ -198,6 +198,20 @@ export function createUsersRepo(
       })
     },
 
+    async setEmail(id, email, ctx) {
+      const payload = await load()
+      await payload.update({
+        collection: 'users',
+        id,
+        // `null` is the explicit clear the Users `beforeValidate` hook is
+        // written to see: it reads `'email' in data` and judges the merged
+        // document, so omitting the key would silently keep the old address.
+        data: { email } as never,
+        user: actor(ctx),
+        overrideAccess: true,
+      })
+    },
+
     async linkPartner(id, partnerId, ctx) {
       const payload = await load()
       await payload.update({

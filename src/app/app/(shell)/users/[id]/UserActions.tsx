@@ -12,18 +12,21 @@ import { Button, Chip, Section, Sheet as UiSheet, SheetOption, Toast } from '../
 import { PermissionChecklist } from '../NewUserForm'
 import { HandoverPanel, Sheet } from '../UserSheet'
 
-// The seven named actions of one account (#510, #563, #617; #476's "named actions
-// only").
+// The eight named actions of one account (#510, #563, #617, #621; #476's
+// "named actions only").
 //
 // Each is a button with a verb on it and a confirmation under it, never a raw
-// edit form, because six of them change who can do what: a permission set
-// reaches every screen in this app, a link decides whose roster identity a
-// login is, and a reset hands somebody a live way in.
+// edit form, because seven of them change who can do what or how: a permission
+// set reaches every screen in this app, a link decides whose roster identity a
+// login is, a reset hands somebody a live way in, and an address decides which
+// of the two ways in that reset produces.
 //
-// Ime (#617) is the exception that proves it is a rule about ACCESS rather
-// than about forms: a name grants nothing, so its sheet is a field with a Spremi
-// on it. It is still a named action and not an inline edit on the facts card,
-// because "what can be done to this account" is one list in one place.
+// Ime (#617) is the exception that proves it is a rule about ACCESS rather than
+// about forms: a name grants nothing, so its sheet is a field with a Spremi on
+// it. E-mail (#621) borrows that shape and is not the exception — the field is
+// small, what it decides is not, which is why its sheet spells out what the
+// change does. Both are named actions rather than inline edits on the facts
+// card, because "what can be done to this account" is one list in one place.
 //
 // Nothing here is optimistic. Every refusal on this screen is a server rule
 // (the lockout guard, the e-mail policy, `taken`), so the honest answer only
@@ -33,15 +36,24 @@ import { HandoverPanel, Sheet } from '../UserSheet'
 // The two handover actions do NOT close their sheet on success: they turn into
 // the panel that shows the credential once and wait for Gotovo.
 //
-// All seven sit in ONE section under one heading since #573 (Q47), each as T1's
+// All eight sit in ONE section under one heading since #573 (Q47), each as T1's
 // `Button`: the first two are the ones a `users` holder presses weekly, so they
-// lead, and the five that change what an account IS or is CALLED follow as
-// ghosts. An eighth button here would be the moment to ask whether it is an
-// action at all.
+// lead, and the six that change what an account IS, is CALLED or signs in with
+// follow as ghosts. A ninth button here would be the moment to ask whether it
+// is an action at all.
 
 const S = APP_STRINGS.users
 
-type Which = 'permissions' | 'reset' | 'name' | 'partner' | 'member' | 'shared' | 'tabs' | null
+type Which =
+  | 'permissions'
+  | 'reset'
+  | 'name'
+  | 'email'
+  | 'partner'
+  | 'member'
+  | 'shared'
+  | 'tabs'
+  | null
 
 export interface PickerOption {
   id: string
@@ -84,6 +96,7 @@ export function UserActions({
   const [memberId, setMemberId] = useState(account.memberId ?? '')
   const [tabs, setTabs] = useState<AppScreenKey[]>([...account.tabs])
   const [name, setName] = useState(account.name ?? '')
+  const [email, setEmail] = useState(account.email ?? '')
 
   // The toast says it landed and then stops saying it (#562). The state it
   // reads is the same `done` every action already set; only the shape changed.
@@ -103,6 +116,7 @@ export function UserActions({
     setMemberId(account.memberId ?? '')
     setTabs([...account.tabs])
     setName(account.name ?? '')
+    setEmail(account.email ?? '')
   }
 
   function close() {
@@ -176,6 +190,18 @@ export function UserActions({
     router.refresh()
   }
 
+  async function saveEmail() {
+    const res = await call(
+      `/api/app/users/${account.id}/email`,
+      json({ email }, 'PATCH'),
+      S.email.failed,
+    )
+    if (!res.ok) return
+    setDone((res.body?.message as string) ?? S.email.saved)
+    setSheet(null)
+    router.refresh()
+  }
+
   async function saveLink(field: 'partner' | 'member', value: string) {
     const res = await call(
       `/api/app/users/${account.id}/link`,
@@ -218,7 +244,7 @@ export function UserActions({
   return (
     <section className="app__user-actions">
       {/* One toast, the shape the whole app confirms with since T1 (#562), for
-          all seven actions rather than a second one for the newest. */}
+          all eight actions rather than a second one for the newest. */}
       <Toast message={done ?? ''} open={done !== null} />
 
       <Section title={S.actionsTitle} />
@@ -232,6 +258,9 @@ export function UserActions({
         </Button>
         <Button variant="ghost" onClick={() => open('name')}>
           {S.actions.name}
+        </Button>
+        <Button variant="ghost" onClick={() => open('email')}>
+          {S.actions.email}
         </Button>
         <Button variant="ghost" onClick={() => open('partner')}>
           {S.actions.linkPartner}
@@ -309,6 +338,38 @@ export function UserActions({
               onChange={(e) => setName(e.target.value)}
             />
           </label>
+        </Sheet>
+      )}
+
+      {/* The address is an auth field, so the sheet says what it DOES (the
+          next Resetiraj lozinku changes shape) and that nobody is told about
+          the change. Both refusals it can meet name their repair. */}
+      {sheet === 'email' && (
+        <Sheet
+          title={S.email.title}
+          body={S.email.body}
+          error={error}
+          busy={busy}
+          confirm={() => void saveEmail()}
+          confirmLabel={S.email.save}
+          close={close}
+        >
+          <label className="app__field">
+            <span>{S.email.label}</span>
+            <input
+              type="email"
+              inputMode="email"
+              autoCapitalize="none"
+              autoCorrect="off"
+              spellCheck={false}
+              value={email}
+              maxLength={120}
+              autoFocus
+              placeholder={S.email.placeholder}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+          </label>
+          <p className="app__sheet-warn">{S.email.note}</p>
         </Sheet>
       )}
 
