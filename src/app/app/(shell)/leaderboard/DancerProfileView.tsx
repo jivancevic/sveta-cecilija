@@ -119,7 +119,7 @@ function RingCard({ ring }: { ring: ProfileRing }) {
       <Ring
         value={ring.count}
         max={Math.max(1, ring.of)}
-        size="lg"
+        size="card"
         label={
           <span className="app__pf-ring-in">
             <b>{ring.animate ? <CountUp value={ring.count} /> : ring.count}</b>
@@ -179,7 +179,7 @@ export function DancerProfileView({
         {identity.roles.length === 0 ? (
           <span className="app__pf-can-none">{S.canDanceNone}</span>
         ) : (
-          identity.roles.map((role) => <Role key={role} role={role} />)
+          identity.roles.map((role) => <Role key={role} role={role} small />)
         )}
       </div>
 
@@ -231,7 +231,7 @@ export function DancerProfileView({
               // says what one person did and Stanje says who they did it with,
               // which closes the loop between the two screens.
               href={`/app/moreska/${evening.performanceId}`}
-              lead={<Role role={evening.role} />}
+              lead={<Role role={evening.role} small />}
               // The DATE is the title, as it is on an Izvedbe detail (#567):
               // an evening is identified by when it was, and the kind is the
               // chip beside it.

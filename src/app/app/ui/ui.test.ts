@@ -155,8 +155,17 @@ describe('Trophy', () => {
     expect(render(h(Trophy, { place: 3 }))).toContain('ui-trophy--3')
   })
 
-  it('puts the place INSIDE the cup, because gold and bronze are one hue at night', () => {
-    expect(render(h(Trophy, { place: 3 }))).toContain('>3<')
+  it('draws one flat silhouette and no numeral inside it (#611)', () => {
+    // A digit in a 26px bowl was unreadable and made the cup read as clip art.
+    // The place is printed beside the cup, in the same metal; the cup itself
+    // only has to say "a medal" and does that with one path.
+    const bronze = render(h(Trophy, { place: 3 }))
+    expect(bronze).not.toContain('>3<')
+    expect(bronze).not.toContain('<text')
+    expect((bronze.match(/<path/g) ?? []).length).toBe(1)
+  })
+
+  it('still names its place for a reader who cannot see the metal', () => {
     expect(render(h(Trophy, { place: 2 }))).toContain('2. mjesto')
   })
 

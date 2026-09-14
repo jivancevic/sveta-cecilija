@@ -17,10 +17,18 @@ import { Chip, CountUp, List, ListRow, Podium, RoleMark, Section, Trophy } from 
 // column told a dancer with twelve Redovne that they were behind somebody with
 // fifteen Experiences, which is not a comparison anybody in the society makes.
 //
-// **The three steps wear cups** (#607). The trophy carries the RANK, which is
-// what makes a tie legible without a sentence about ties: equal counts share a
-// rank and the next one skips, so two dancers on 21 both wear a gold cup with a
-// 1 in it and no silver is drawn at all.
+// **The three steps wear cups** (#607, redrawn in #611). The trophy carries the
+// RANK, which is what makes a tie legible without a sentence about ties: equal
+// counts share a rank and the next one skips, so two dancers on 21 both wear a
+// gold cup and no silver is drawn at all. The cup is a flat silhouette and the
+// place is printed under it in the same metal — the first version put the digit
+// inside the bowl, where at 34px it was four details fighting in the space of a
+// fingernail and the whole podium read as clip art.
+//
+// The rows under it carry no cup. There the metal is on the RANK NUMERAL and as
+// a hairline around the disc, so the top three keep the initials that say who
+// they are: swapping a cup in for the disc took the identity away from exactly
+// the three people a reader is most likely to be looking for.
 //
 // **Every disc carries initials** (#607). `RoleMark` has had them since #573
 // for exactly this case — a list of people out of an evening, where no disc has
@@ -88,7 +96,10 @@ function Row({
       href={`/app/leaderboard/${row.memberId}?season=${season}`}
       className={row.me ? 'app__lb-row--me' : undefined}
       lead={
-        <span className="app__lb-lead">
+        <span
+          className="app__lb-lead"
+          data-place={!pinned && row.rank <= 3 ? row.rank : undefined}
+        >
           {/* The pinned row carries its place in its TITLE ("ti · 24."), so the
               column is left empty rather than printing 24 twice; it still holds
               its width, which is what keeps every mark on the screen in line. */}
@@ -161,7 +172,14 @@ function OneList({ list, season }: { list: BoardList; season: number }) {
               href: `/app/leaderboard/${row.memberId}?season=${season}`,
               cup: <Trophy place={row.rank} className="ui-podium__cup" />,
               mark: <Mark row={row} />,
-              caption: S.place(row.rank),
+              // The cup carries no numeral any more (#611): a digit inside a
+              // 26px silhouette was unreadable, so the place is printed here,
+              // in the metal its cup is drawn in, where it can be read.
+              caption: (
+                <span className="app__lb-podium-place" data-place={row.rank}>
+                  {S.place(row.rank)}
+                </span>
+              ),
               me: row.me,
             }))}
           />
