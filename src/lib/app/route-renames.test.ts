@@ -1,4 +1,4 @@
-import { existsSync } from 'node:fs'
+import { existsSync, readdirSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import { APP_ROUTE_RENAMES, appRouteRedirects } from './route-renames'
 
@@ -6,8 +6,47 @@ import { APP_ROUTE_RENAMES, appRouteRedirects } from './route-renames'
 // checked against the filesystem rather than against a second list: every
 // destination has to be a page that actually exists, and every source must not.
 
-const pagePath = (route: string) =>
-  `src/app/${route.replace(/^\//, '').split('?')[0]!.replace(/:(\w+)/g, '[$1]')}/page.tsx`
+/**
+ * The file that serves a URL, route GROUPS included (#593).
+ *
+ * `/app/orders` is `src/app/app/(shell)/orders/page.tsx`: a folder in
+ * parentheses is a layout boundary and never a path segment, so the walk may
+ * step into one at any level without consuming a segment of the URL. Spelling
+ * the group into the expected path instead would make this test a second copy
+ * of the folder layout, which is exactly what it exists not to be.
+ */
+function pagePath(route: string): string {
+  const segments = route
+    .replace(/^\//, '')
+    .split('?')[0]!
+    .replace(/:(\w+)/g, '[$1]')
+    .split('/')
+    .filter((s) => s !== '')
+
+  function walk(dir: string, rest: string[]): string | null {
+    if (rest.length === 0) return existsSync(`${dir}/page.tsx`) ? `${dir}/page.tsx` : null
+    const [head, ...tail] = rest
+    const direct = walk(`${dir}/${head}`, tail)
+    if (direct) return direct
+    let entries: string[] = []
+    try {
+      entries = readdirSync(dir, { withFileTypes: true })
+        .filter((e) => e.isDirectory() && e.name.startsWith('(') && e.name.endsWith(')'))
+        .map((e) => e.name)
+    } catch {
+      return null
+    }
+    for (const group of entries) {
+      const found = walk(`${dir}/${group}`, rest)
+      if (found) return found
+    }
+    return null
+  }
+
+  // A route that resolves to nothing still has to produce a path, so the
+  // assertion's message names the file the reader would have expected.
+  return walk('src/app', segments) ?? `src/app/${segments.join('/')}/page.tsx`
+}
 
 describe('the Croatian → English renames', () => {
   it('sends every old path somewhere that exists', () => {

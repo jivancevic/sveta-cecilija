@@ -91,7 +91,22 @@
   margin: 0;
   /* The document never scrolls: `.app` is its own scroll container, so the tab
      bar cannot rubber-band away from the bottom of the screen and a sheet
-     cannot be dragged off the top of it. `html` is pinned in the rule below. */
+     cannot be dragged off the top of it. `html` is pinned in the rule below.
+
+     **This is the app's ONE scroller and it stays the body** (#593). The body
+     is as close to the document as this app can get while keeping a fixed bar
+     that cannot be dragged: there is no wrapper with an `overflow` between it
+     and a screen — `app__frame`, `app__pull`, `app__screen` and `app__shell`
+     are all plain blocks — so a screen scrolls exactly one element deep and the
+     phone never has to decide which of two nested scrollers a finger meant. Any
+     new full-screen wrapper must stay that way; a scroller inside a scroller is
+     what makes a phone feel like a web page.
+
+     `overscroll-behavior: none` rather than `contain`: installed on a Home
+     Screen there is nothing behind this app to chain a scroll INTO, and the
+     glow at the end of a list is the one thing a standalone PWA gets for free
+     that a native app never shows. `-webkit-overflow-scrolling: touch` is what
+     buys momentum on the older iOS versions that need it told. */
   height: 100dvh;
   overflow-y: auto;
   overscroll-behavior: none;
@@ -207,6 +222,127 @@ html:has(> .app) {
   /* The bar FLOATS 10px above the safe area now (#562), so the content clears
      one bar, one home indicator and a thumb's worth of air. */
   padding: env(safe-area-inset-top) 20px calc(var(--tabH) + env(safe-area-inset-bottom) + 40px);
+}
+
+/* ── Between two screens (#593) ────────────────────────────
+   The chrome is in the layout now, so a tab tap changes only this block — and
+   a block that simply swaps reads as a jump cut. 200 ms and 24 px is the
+   distance at which the movement is read rather than watched: enough to say
+   "you went right", not enough to make anybody wait for it.
+
+   `both` so the from-state applies before the first frame (no flash of the
+   screen in its final place) and the to-state after the last. The to-state is
+   `transform: none`, which creates no containing block, so the scanner overlay
+   and every sheet resolve their `position: fixed` against the viewport again
+   the moment the animation is over.
+
+   Reduced motion drops it entirely: the screen appears, which is the honest
+   still version of the same thing. */
+.app__screen {
+  animation: app-screen-in 0.2s var(--ease) both;
+}
+
+.app__screen[data-slide='left'] {
+  animation-name: app-screen-in-left;
+}
+
+@keyframes app-screen-in {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes app-screen-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app__screen {
+    animation: none;
+  }
+}
+
+/* ── The skeleton (#593) ───────────────────────────────────
+   What a cold tab tap paints in its first frame, before the server has
+   answered. It is drawn out of the two tokens the real screen is drawn out of
+   — `--sunk` for a surface below the page and `--rCard` for a card's corner —
+   so it follows the skin without knowing which one is on, and it carries no
+   text, no icon and no colour of its own.
+
+   The shimmer is a gradient swept across the block rather than an opacity
+   pulse: a pulse reads as something blinking at you, a sweep reads as
+   something arriving. Under `prefers-reduced-motion` the sweep is dropped and
+   the blocks simply sit there, which is the honest still version of the same
+   picture. */
+.app__skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px 0 0;
+}
+
+.app__sk {
+  border-radius: var(--rCard);
+  background: var(--sunk);
+  position: relative;
+  overflow: hidden;
+}
+
+.app__sk::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    color-mix(in srgb, var(--ink) 6%, transparent),
+    transparent
+  );
+  animation: app-shimmer 1.3s var(--ease) infinite;
+}
+
+/* The title line: one heading's worth of height, and never the full width —
+   a screen name is a word or two, not a paragraph. */
+.app__sk--title {
+  height: 34px;
+  width: 58%;
+  border-radius: var(--rCtl);
+  margin-bottom: 8px;
+}
+
+/* The hero: every screen opens with one block this size (the next nastup, the
+   season band, the ring), so this is the one the eye lands on first. */
+.app__sk--hero {
+  height: 168px;
+}
+
+.app__sk--row {
+  height: 68px;
+}
+
+@keyframes app-shimmer {
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app__sk::after {
+    animation: none;
+  }
 }
 
 /* The block the pull-to-refresh gesture moves (#562). It is a plain wrapper in
@@ -3210,6 +3346,9 @@ a.app__ob-link {
     align-self: start;
     height: 100dvh;
     overflow-y: auto;
+    /* The laptop's own scroller: reaching the end of the sidebar must not
+       start scrolling the screen beside it (#593). */
+    overscroll-behavior: contain;
     padding: 20px 12px 16px;
     background: var(--bg);
     border-right: 1px solid var(--rule);
@@ -3469,7 +3608,12 @@ a.app__ob-link {
   justify-content: center;
   padding: 20px;
   background: rgba(0, 0, 0, 0.75);
+  /* A deliberate nested scroller, over the viewfinder: a tall result card on a
+     short phone scrolls INSIDE the overlay and never drags the screen behind
+     it (#593). */
   overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 .app__scan-result {
@@ -4707,7 +4851,12 @@ span.app__sale-head {
   align-items: flex-end;
   gap: 6px;
   padding-bottom: 2px;
+  /* Sideways only, and contained on that axis alone (#593): a finger dragged
+     across the season must not take the page with it, and a finger dragged
+     down it must still scroll the screen. */
   overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 .app__traj-col {
@@ -4931,7 +5080,11 @@ a.app__statrow-main:focus-visible {
   padding: 0;
   list-style: none;
   max-height: 210px;
+  /* Inside a sheet: the end of this list is the end of the gesture, not the
+     start of one on the sheet behind it (#593). */
   overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   border: 1px solid var(--cardEdge);
   border-radius: var(--radius);
   background: var(--sunk);

@@ -23,8 +23,8 @@ const ROOT = path.resolve(__dirname, '../../..')
 const FINANCE_FILES = [
   'src/lib/app/finance-view.ts',
   'src/lib/app/finance-data.ts',
-  'src/app/app/finance/page.tsx',
-  'src/app/app/finance/FinancePickers.tsx',
+  'src/app/app/(shell)/finance/page.tsx',
+  'src/app/app/(shell)/finance/FinancePickers.tsx',
 ] as const
 
 /**

@@ -277,9 +277,22 @@ ships until that screen's ticket lands, and goes when #560 closes.
 
 ### The frame
 
-One responsive layout (ADR-0027), in `AppShell`: the laptop gets the grouped
-sidebar from 1024 px up and the phone keeps the fixed bottom bar. Both read the
-same `AppNav` the server computed, so a phone never ships the permission table.
+One responsive layout (ADR-0027), in `(shell)/layout.tsx` since #593 (it was
+`AppShell` until then): the laptop gets the grouped sidebar from 1024 px up and
+the phone keeps the fixed bottom bar. Both read the same `AppNav` the server
+computed, so a phone never ships the permission table.
+
+**A tab tap is meant to paint in one frame** (#593). Three things make that
+true and all three have to stay: the bar's links carry `prefetch={true}` and
+`PrefetchTabs` asks the router for every route in `nav.tabs` on mount (a bottom
+bar is five targets a thumb never hovers, so viewport prefetch fires one tap too
+late); `loading.tsx` gives a cold tap a skeleton instead of the old screen held
+frozen; and the chrome is in the layout, so only the content changes. The price
+of the prefetch is that **every write in `/app` must call `router.refresh()`
+after it succeeds** — `staleTimes` is left at its default, so a cached tab is
+only as fresh as the last refresh. The one deliberate omission is
+`ScanStation`: it owns the "ušlo X od Y" count in its own state and a refresh
+per scanned ticket would re-run the whole server render on the door's hot path.
 
 ## What ships in phase 3 (#420 → #424)
 
@@ -2547,15 +2560,25 @@ knowing before debugging anything:
 Pull to refresh arms only at the top of the scroll and only downwards, calls
 `router.refresh()`, and does nothing at all under `prefers-reduced-motion`.
 
-**`AppShell` is rendered by every page.tsx, not by the route group's layout, so
-it REMOUNTS on every client navigation.** Anything that has to survive a
-navigation therefore cannot hold its state in the shell: the instance that
-heard the event is unmounted before the next screen mounts, and a fresh one
-starts empty. `ScrollMemory` lives in `layout.tsx` for exactly this reason
-(#562 review), and the tab bar's thumb does not slide between screens — it is
-re-rendered in its new place rather than animated into it. T1 accepts that; a
-later ticket that wants the prototype's slide has to lift the bar into the
-layout first.
+**The persistent chrome lives in `src/app/app/(shell)/layout.tsx` since #593.**
+The sidebar, the floating bar and the pull gesture are rendered there, once, so
+a tab tap no longer tears them down and builds them again — which is what makes
+the bar's thumb actually slide (the CSS transition was always on it; nothing
+survived long enough to run it). `(shell)` is a route GROUP: the parentheses
+change no URL, and what the folder does is draw the line between the screens
+that wear the chrome and the pages that must not (`login`, `forgot`, `session`,
+`join/[code]`, `install`, `authorize`, `welcome`), which stay one level up. The
+viewer is resolved once in that layout and `resolveAppViewer` is wrapped in
+React's `cache`, so the page's own `openScreen()` reuses it rather than asking
+Payload twice; **the gate stays on the page**, because a layout cannot refuse a
+screen it does not know the name of.
+
+`AppShell` is what is left: the header and the `app__shell` column, rendered by
+every page.tsx, and it still REMOUNTS on every client navigation — which is
+right, because a title and a screen's own actions are per-page. Anything that
+has to survive a navigation still cannot hold its state there: `ScrollMemory`
+lives in the ROOT `layout.tsx` for exactly this reason (#562 review), a level
+above `(shell)`, because the pages outside the group scroll too.
 
 **The laptop** hides the bar, sets `--tabH: 0` so everything that clears a bar
 has nothing to clear, and offers two layout classes for a screen to opt into:

@@ -59,6 +59,8 @@ export const APP_STRINGS = {
     refreshed: (time: string) => `Osvježeno · ${time}`,
     /** What the gesture IS, for a reader who cannot see the ring fill. */
     refreshing: 'Osvježavam',
+    /** The skeleton says nothing on screen, so it says this out loud (#593). */
+    loading: 'Učitavam',
     armyCrni: 'Crni',
     armyBili: 'Bili',
     enough: 'Ima nas dovoljno',

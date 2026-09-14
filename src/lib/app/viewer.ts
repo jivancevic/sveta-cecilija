@@ -1,3 +1,4 @@
+import { cache } from 'react'
 import { headers } from 'next/headers'
 import { getPayload } from 'payload'
 import config from '@payload-config'
@@ -188,7 +189,18 @@ export async function resolveAppAccessFor(
   }
 }
 
-export async function resolveAppViewer(): Promise<AppViewer> {
+/**
+ * Who is asking, once per request (#593).
+ *
+ * Wrapped in React's `cache` because the shell moved into a layout: the layout
+ * needs the navigation and every page below it needs the same viewer for its
+ * gate, and without this the two would each run `payload.auth()` plus two
+ * `findByID`s on every single navigation. `cache` is per-request and per-render,
+ * so the layout and its page share one resolution and two requests never do.
+ */
+export const resolveAppViewer = cache(resolveAppViewerUncached)
+
+async function resolveAppViewerUncached(): Promise<AppViewer> {
   const payload = await getPayload({ config })
   const { user } = await payload.auth({ headers: await headers() })
   if (!user) return DENIED

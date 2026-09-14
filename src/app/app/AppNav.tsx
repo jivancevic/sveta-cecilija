@@ -6,6 +6,7 @@ import { Bell } from 'lucide-react'
 import { APP_STRINGS } from '@/lib/app/strings'
 import { activeScreenKey, activeTabKey, type AppNav as Nav, type AppScreenKey } from '@/lib/app/screens'
 import { ICON_STROKE, ScreenIcon } from './ui/ScreenIcon'
+import { PrefetchTabs } from './PrefetchTabs'
 
 // The two faces of one navigation (#472, #495, #562): the phone's floating
 // pill bar and the laptop's grouped sidebar, both built from the same `AppNav`
@@ -46,6 +47,9 @@ export function TabBar({ nav }: { nav: Nav }) {
 
   return (
     <nav className="app__tabbar" aria-label={APP_STRINGS.header.navLabel}>
+      {/* Renders nothing: it warms every tab in the bar on mount, so the next
+          tap paints from the router cache instead of waiting on the server. */}
+      <PrefetchTabs routes={nav.tabs.map((screen) => screen.route)} />
       <div
         className="app__tabbar-pill"
         style={{ ['--n' as string]: nav.tabs.length, ['--i' as string]: Math.max(index, 0) }}
@@ -60,6 +64,8 @@ export function TabBar({ nav }: { nav: Nav }) {
             <Link
               key={screen.key}
               href={screen.route}
+              // The full payload of a dynamic route, not just its frame (#593).
+              prefetch={true}
               className={`app__tabbar-item${on ? ' app__tabbar-item--on' : ''}`}
               aria-current={on ? 'page' : undefined}
             >
@@ -88,6 +94,7 @@ export function Sidebar({ nav }: { nav: Nav }) {
       <div className="app__sidebar-group">
         <Link
           href="/app"
+          prefetch={true}
           className={`app__sidebar-item${active === 'home' ? ' app__sidebar-item--on' : ''}`}
           aria-current={active === 'home' ? 'page' : undefined}
         >
@@ -105,6 +112,7 @@ export function Sidebar({ nav }: { nav: Nav }) {
               <Link
                 key={screen.key}
                 href={screen.route}
+                prefetch={true}
                 className={`app__sidebar-item${on ? ' app__sidebar-item--on' : ''}`}
                 aria-current={on ? 'page' : undefined}
               >
@@ -119,6 +127,7 @@ export function Sidebar({ nav }: { nav: Nav }) {
       <div className="app__sidebar-group app__sidebar-group--last">
         <Link
           href="/app/more"
+          prefetch={true}
           className={`app__sidebar-item${active === 'more' ? ' app__sidebar-item--on' : ''}`}
           aria-current={active === 'more' ? 'page' : undefined}
         >

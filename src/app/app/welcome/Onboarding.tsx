@@ -158,7 +158,12 @@ export function Onboarding({
       if (!seen || cancelled) return
       setRescuing(true)
       await rememberOnDevice()
-      if (!cancelled) router.replace('/app')
+      // The landing screen may already be prefetched and still showing the
+      // walkthrough's own prompt (#593).
+      if (!cancelled) {
+        router.replace('/app')
+        router.refresh()
+      }
     }
     void rescue()
     return () => {
@@ -173,7 +178,10 @@ export function Onboarding({
     } catch {
       // Not remembered here; the cookie below is the record anyway.
     }
-    void rememberOnDevice().then(() => router.replace('/app'))
+    void rememberOnDevice().then(() => {
+      router.replace('/app')
+      router.refresh()
+    })
   }, [router])
 
   const advance = useCallback(() => {

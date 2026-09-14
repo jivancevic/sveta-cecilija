@@ -17,12 +17,14 @@ import {
 // Back therefore left the list at the order's offset. Five screens have long
 // lists (Narudžbe, Izvedbe, Upiti, Članovi, Korisnici) and all five had it.
 //
-// **Mounted by `layout.tsx`, never by `AppShell`.** The shell is rendered by
-// every page.tsx, so it remounts on every client navigation: the instance that
-// hears `popstate` is unmounted before the screen it was going to restore has
-// mounted, and a fresh instance starts with an empty ref and does nothing. That
-// is exactly the bug this note exists to stop somebody re-introducing. The
-// layout is the only thing in `/app` that survives a navigation.
+// **Mounted by the ROOT `layout.tsx`, never by `AppShell`.** `AppShell` is
+// rendered by every page.tsx, so it remounts on every client navigation: the
+// instance that hears `popstate` would be unmounted before the screen it was
+// going to restore has mounted, and a fresh instance starts with an empty ref
+// and does nothing. That is exactly the bug this note exists to stop somebody
+// re-introducing. Since #593 the sidebar, the bar and the pull gesture live in
+// `(shell)/layout.tsx` for the same reason, and this one stays a level above
+// them, because the pages outside that group scroll too.
 //
 // Nothing is restored on a FORWARD navigation: arriving at a screen you chose
 // belongs at the top, and only `popstate` says "you have been here before".

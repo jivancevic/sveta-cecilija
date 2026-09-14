@@ -512,6 +512,31 @@ export function activeTabKey(nav: AppNav, pathname: string): AppScreenKey | null
   return nav.overflow.some((s) => s.key === screen) ? MORE_SCREEN.key : null
 }
 
+/** Which way a screen arrives from (#593). */
+export type SlideDirection = 'right' | 'left'
+
+/**
+ * The direction of travel between two tabs, as an index pair.
+ *
+ * The bar is read left to right, so moving right along it must look like
+ * moving right: the new screen comes in from the right edge, the way the tab
+ * you pressed sits to the right of the one you were on. Moving back the other
+ * way reverses it, and that is the whole of the rule a reader ever notices.
+ *
+ * **A path that is not a tab arrives from the right, whichever end it is.** A
+ * detail screen (an order, a dancer, one nastup) is a step FORWARD out of a
+ * list, which on every phone in the world comes in from the right; and the step
+ * back out of it is a Back, which the browser is already animating on iOS. `-1`
+ * is how "not in the bar" reaches here, and comparing it as a number gives both
+ * of those the right answer without a second branch.
+ *
+ * Pure and tested without a router: the browser only supplies the pathname.
+ */
+export function slideDirection(from: number, to: number): SlideDirection {
+  if (to < 0 || from < 0) return 'right'
+  return to < from ? 'left' : 'right'
+}
+
 /** The screen a route belongs to, so a page can gate on the table (#473). */
 export function screenForPath(pathname: string): AppScreen | null {
   const path = normalize(pathname)

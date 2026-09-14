@@ -12,6 +12,7 @@ import {
   isTabKey,
   screenByKey,
   screenForPath,
+  slideDirection,
   tabKeysOf,
   unlockedScreens,
   type AppScreenKey,
@@ -648,5 +649,30 @@ describe('screenByKey', () => {
     expect(screenByKey('home')).toBe(HOME_SCREEN)
     expect(screenByKey('more')).toBe(MORE_SCREEN)
     expect(screenByKey('orders').route).toBe('/app/orders')
+  })
+})
+
+describe('which way a screen arrives from (#593)', () => {
+  it('comes in from the right when the tab is further right', () => {
+    expect(slideDirection(0, 1)).toBe('right')
+    expect(slideDirection(1, 4)).toBe('right')
+  })
+
+  it('comes in from the left when the tab is further left', () => {
+    expect(slideDirection(4, 1)).toBe('left')
+    expect(slideDirection(1, 0)).toBe('left')
+  })
+
+  it('does not slide backwards onto the tab it is already on', () => {
+    // A refresh, or a filter in the query string: the same tab both times.
+    expect(slideDirection(2, 2)).toBe('right')
+  })
+
+  it('brings a screen the bar does not carry in from the right, both ways', () => {
+    // Into an order: a step forward out of a list.
+    expect(slideDirection(1, -1)).toBe('right')
+    // And back out of it, where the browser own Back is the gesture.
+    expect(slideDirection(-1, 1)).toBe('right')
+    expect(slideDirection(-1, -1)).toBe('right')
   })
 })
