@@ -215,7 +215,7 @@ export function toAttendanceRow(doc: Record<string, unknown>): AttendanceRow | n
     status: doc.status as AttendanceStatus,
     army: doc.army === 'crni' || doc.army === 'bili' ? (doc.army as Army) : null,
     // A Payload date reads back as a Date or an ISO string depending on the
-    // adapter; Odustali only ever needs it as ISO (#609).
+    // adapter; Odustali only ever needs it as ISO (#612).
     withdrewAt:
       doc.withdrewAt instanceof Date
         ? doc.withdrewAt.toISOString()

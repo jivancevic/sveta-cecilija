@@ -178,7 +178,7 @@ export function Stanje({
       </Card>
 
       {/* Odustali, ABOVE Bez odgovora and open rather than behind a chevron
-          (#609). These are the places the voditelj thought were filled, so the
+          (#612). These are the places the voditelj thought were filled, so the
           screen states them; "nobody has said anything yet" can wait behind a
           tap the way it always has. */}
       {view.withdrawn.length > 0 && (
@@ -369,7 +369,7 @@ function Name({
 }
 
 /**
- * One name on Odustali, with the hour under it (#609).
+ * One name on Odustali, with the hour under it (#612).
  *
  * The line says WHO recorded it as much as when: "odustao u 19:40" is a dancer
  * who went quiet, "voditelj upisao u 19:40" is one who phoned somebody. The

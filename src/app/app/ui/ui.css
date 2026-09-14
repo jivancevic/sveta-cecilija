@@ -80,7 +80,7 @@
 /* ── Section heading ──────────────────────────────────────── */
 /* No margin of its own since #592. It carried 6px, which is less than half of
    the floor the shell puts between two blocks (`.app__shell > * + *` in
-   `app.css`, 16px since #609) —
+   `app.css`, 16px since #612) —
    and because this sheet loads after that one, those 6px would have won the tie
    and left every screen whose blocks are Sections spaced tighter than every
    screen whose blocks are cards. A heading nested inside a group is separated
@@ -294,7 +294,7 @@
   text-transform: lowercase;
 }
 
-/* POPIS on a past nastup (#609): the postava was confirmed, the reader was
+/* POPIS on a past nastup (#612): the postava was confirmed, the reader was
    either in it or not, and it is over. Green because it is settled and good,
    OUTLINED because `--yes` filled is the Dolazim button — the one green surface
    in the app — and a past evening must never read as a thing to press. */
@@ -527,7 +527,7 @@ button.ui-row:hover {
 }
 
 /* ── Tile ─────────────────────────────────────────────────── */
-/* 16px, the same number the shell puts between two blocks (#609): the two
+/* 16px, the same number the shell puts between two blocks (#612): the two
    tiles sit in a row that is itself one of those blocks, and a horizontal gap
    tighter than the vertical one made the pair read as a single wide card cut
    down the middle. */
@@ -641,7 +641,7 @@ button.ui-row:hover {
   animation-delay: 0.1s;
 }
 
-/* ── The TILE's podium, and only the tile's (#609) ─────────
+/* ── The TILE's podium, and only the tile's (#612) ─────────
    Everything in this block is scoped `:not(.ui-podium--lg)` on purpose. The
    Ljestvica screen's podium is finished work and stays exactly as it is; what
    needed the help was the glance on Početna, where three flat blocks of the

@@ -117,7 +117,7 @@ export const Attendance: CollectionConfig = {
       label: { en: 'Answered at', hr: 'Vrijeme odgovora' },
       admin: { date: { pickerAppearance: 'dayAndTime' } },
     },
-    // The odustajanje stamps (#609). Written ONLY by the answer route, through
+    // The odustajanje stamps (#612). Written ONLY by the answer route, through
     // `stampWithdrawal` — a voditelj fixing a row here by hand changes the
     // answer without restamping it, which is the right way round: the stamps
     // record what the DANCER did, and an administrative correction is not that.

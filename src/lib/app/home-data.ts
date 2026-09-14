@@ -179,7 +179,7 @@ export async function loadHomeScreen(viewer: AppViewer): Promise<HomeScreen> {
     has('moreska') && heroPick && nextNastup
       ? {
           // The screen's one clock, again: "DANAS" on the card has to agree
-          // with the sentence above it, and both read this `today` (#609).
+          // with the sentence above it, and both read this `today` (#612).
           hero: heroView(heroPick, { today }),
           performanceId: nextNastup.id,
           memberId: viewer.me?.id ?? null,

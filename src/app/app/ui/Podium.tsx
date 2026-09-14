@@ -12,7 +12,7 @@ import Link from 'next/link'
 // same three steps, tall enough to carry a `RoleMark` and a caption, because
 // there the podium IS the screen's first sentence rather than a preview of it.
 //
-// **`large` is a SIZE and not a feature list** (#609). It gates the mark and
+// **`large` is a SIZE and not a feature list** (#612). It gates the mark and
 // the caption, which are text that does not fit in a tile; it does NOT gate the
 // cup, which is 26px of drawing and is the whole reason a reader knows the
 // middle step is first place rather than merely tallest. A caller opts into a
@@ -38,7 +38,7 @@ export interface PodiumEntry {
   /** The 28px mark above the name on the large podium (a `RoleMark`). */
   mark?: React.ReactNode
   /**
-   * The cup above the mark (a `Trophy`), #607, at either size since #609.
+   * The cup above the mark (a `Trophy`), #607, at either size since #612.
    *
    * Its own slot rather than part of `mark`, because the two say different
    * things — the cup is the PLACE and the mark is the PERSON — and a caller

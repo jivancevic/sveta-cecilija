@@ -23,7 +23,7 @@ describe('audienceFor', () => {
     }
   })
 
-  it('maps no kind to the voditelji since the withdrawal push was retired (#609)', () => {
+  it('maps no kind to the voditelji since the withdrawal push was retired (#612)', () => {
     for (const kind of APP_NOTIFICATION_KINDS) {
       expect(audienceFor(kind).group).not.toBe('voditelji')
     }

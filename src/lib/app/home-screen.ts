@@ -239,7 +239,7 @@ export interface PodiumCard extends CardBase {
   /**
    * The top three, in finishing order.
    *
-   * `me` is the reader's own step (#609). The tile's three bars were three
+   * `me` is the reader's own step (#612). The tile's three bars were three
    * anonymous blocks: a dancer who IS on the podium had to read three nicknames
    * to find out, on a card whose whole job is to be read in a glance. The flag
    * is decided here, off the ranked rows, rather than by comparing nicknames in

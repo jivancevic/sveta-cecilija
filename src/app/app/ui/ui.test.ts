@@ -147,7 +147,7 @@ describe('RoleMark', () => {
     expect(render(h(RoleMark, { army: 'bula' }))).not.toContain('ui-mark--titled')
   })
 
-  // #609: the mark means ONE of two things and never both. `title` is the
+  // #612: the mark means ONE of two things and never both. `title` is the
   // evening's answer, `role` is the person's, and the union in the props makes
   // passing both a compile error rather than a judgement call at each of the
   // nine call sites.
@@ -246,7 +246,7 @@ describe('the rest of the shapes render', () => {
     expect(render(h(Podium, { entries: [{ label: 'Brko', value: 14 }] }))).toContain(
       'ui-podium__step--1',
     )
-    // The cup is its own slot above the mark (#607) and, since #609, it is
+    // The cup is its own slot above the mark (#607) and, since #612, it is
     // drawn at BOTH sizes: `large` is a size, gating the text a tile has no
     // room for (the mark, the "1. mjesto" caption), not a feature list. A
     // caller opts into a cup by passing one.

@@ -314,7 +314,7 @@ describe('the ring and the podium', () => {
   })
 
   it('marks the reader’s own step, so the tile does not have to be read to be understood', () => {
-    // Off the ranked row's own flag (#609), never by comparing nicknames: two
+    // Off the ranked row's own flag (#612), never by comparing nicknames: two
     // moreškanti can share one, and the tile would then outline the wrong bar.
     const card = leaderboardCard({
       top: [

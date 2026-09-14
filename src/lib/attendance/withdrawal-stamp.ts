@@ -1,5 +1,5 @@
 // Odustajanje: the three stamps an attendance row carries, and the rule that
-// moves them (#609). Glossary: CONTEXT.md → *Odustajanje*.
+// moves them (#612). Glossary: CONTEXT.md → *Odustajanje*.
 //
 // `attendance` holds ONE row per (performance, member) and the answer route
 // upserts it, so the previous answer is unrecoverable the moment the next one

@@ -173,7 +173,7 @@ describe('handleAttendanceAnswer — the upsert', () => {
       army: 'crni',
       answeredBy: 'u9',
       answeredAt: NOW.toISOString(),
-      // The odustajanje stamps (#609): a first "dolazim" starts the promise.
+      // The odustajanje stamps (#612): a first "dolazim" starts the promise.
       confirmedAt: NOW.toISOString(),
       withdrewAt: null,
       withdrewOwn: null,
@@ -200,7 +200,7 @@ describe('handleAttendanceAnswer — the upsert', () => {
   })
 
   it('stamps an odustajanje when a standing "dolazim" is taken back', async () => {
-    // The end-to-end of #609: the rule is `stampWithdrawal`'s, but the handler
+    // The end-to-end of #612: the rule is `stampWithdrawal`'s, but the handler
     // is what reads the row as it stands and hands the stamps to the writer.
     const stood = new Date(NOW.getTime() - 60 * 60 * 1000).toISOString()
     const d = deps({

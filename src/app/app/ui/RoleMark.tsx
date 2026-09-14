@@ -75,7 +75,7 @@ interface RoleMarkBase {
   initials?: string | null
   /**
    * What this disc says out loud, when the disc is the ONLY thing saying it
-   * (#609).
+   * (#612).
    *
    * A mark beside a name needs none: the name is already there and the disc is
    * the decoration on it. A mark standing alone — the row of other dance roles

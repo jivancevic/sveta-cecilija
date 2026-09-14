@@ -325,7 +325,7 @@ html:has(> .app) {
      rather than adding to it. A screen that was already spaced is left exactly
      as it was, and a screen that was not gets the floor.
 
-   **The floor is 16px since #609**, up from the 12px it shipped at. 12 was the
+   **The floor is 16px since #612**, up from the 12px it shipped at. 12 was the
    design system's gap token and it was the right number for two things INSIDE
    one card; between two whole widgets on Početna it still read as one block
    with seams in it. 16 is the next step of the same scale, so nothing else in
@@ -544,7 +544,7 @@ html:has(> .app) {
 
 /* The greeting: the reader's name in the serif, the evening's news under it.
 
-   It sets its own margins rather than taking the shell's floor, and since #609
+   It sets its own margins rather than taking the shell's floor, and since #612
    the top one is real: "Dobar dan, Josip." at 34px sat directly under the logo
    row, so the wordmark and the greeting read as one two-line heading instead of
    as the chrome and then the welcome. 14px is what separates them without
@@ -2500,7 +2500,7 @@ html:has(> .app) {
 }
 
 /* A row's first line when something sits beside the title: the kind word and
-   the "za 3 dana" chip on Moreška (#609).
+   the "za 3 dana" chip on Moreška (#612).
 
    It exists mostly to win a specificity argument. `:where(.ui-row__body) span`
    paints every span in a row body muted at 13px, which is right for the second
@@ -4590,7 +4590,7 @@ a.app__ob-link {
   min-width: 0;
 }
 
-/* The rule between the two evenings, and it is drawn IN THE GAP (#609).
+/* The rule between the two evenings, and it is drawn IN THE GAP (#612).
 
    It used to be a `border-left` plus 14px of `padding-left` on the second half,
    which looked right and was not: padding comes out of the track, so the second
@@ -4664,7 +4664,7 @@ a.app__ob-link {
   font-weight: 600;
 }
 
-/* ── The hero, when the evening is TONIGHT (#609) ───────────
+/* ── The hero, when the evening is TONIGHT (#612) ───────────
    Three things say it, and they are deliberately of three different kinds,
    because each one fails for a different reader:
 
@@ -7013,7 +7013,7 @@ a.app__statrow-main:focus-visible {
   min-width: 0;
 }
 
-/* The name and the reader's OTHER dance roles, on one line (#609).
+/* The name and the reader's OTHER dance roles, on one line (#612).
    `flex-wrap` rather than a scroller or a "+N": five roles is the most anybody
    holds, they are 28px each, and a dancer's own profile is the last place to
    hide half of what they do. A second line is a fine outcome; a hidden role is
@@ -7062,7 +7062,7 @@ a.app__statrow-main:focus-visible {
   margin-top: 22px;
 }
 
-/* The month heading stays on screen while its own rows scroll past (#609).
+/* The month heading stays on screen while its own rows scroll past (#612).
 
    A season is twenty-two evenings and the list is read with a thumb: without
    this, a dancer three rows into kolovoz has no way to tell which month they
@@ -7288,7 +7288,7 @@ a.app__statrow-main:focus-visible {
   margin-top: 12px;
 }
 
-/* Odustali (#609): the one roster list on Stanje that is open rather than
+/* Odustali (#612): the one roster list on Stanje that is open rather than
    behind a chevron, because it is the list a voditelj is looking for. Each
    name carries the hour under it, so a row is two lines and cannot use the
    single-line `.app__name` layout unchanged. */

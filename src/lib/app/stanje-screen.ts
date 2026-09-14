@@ -25,7 +25,7 @@
 //      moment somebody else gets it his own disc goes plain again.
 //   4. **Odustali is not a second copy of Ne dolaze.** A dancer who promised
 //      and took it back is lifted OUT of "Ne dolaze" into its own list above
-//      Bez odgovora (#609; glossary: *Odustajanje*), because the two are
+//      Bez odgovora (#612; glossary: *Odustajanje*), because the two are
 //      operationally different: one is a place that was never filled, the other
 //      a place that emptied after somebody counted on it. The two lists are
 //      disjoint, so nobody is read twice.
@@ -81,7 +81,7 @@ export interface StanjePerson {
   noAnswer: boolean
   /**
    * When they took a standing dolazim back, as a time of day ("19:40"), and
-   * null for everybody else (#609). The date is the evening's own, so the hour
+   * null for everybody else (#612). The date is the evening's own, so the hour
    * is the whole of what a voditelj reads.
    */
   withdrewAt: string | null
@@ -137,7 +137,7 @@ export interface StanjeView {
   columns: StanjeColumn[]
   bule: StanjePerson[]
   /**
-   * Said dolazim, let it stand, then took it back (#609; glossary:
+   * Said dolazim, let it stand, then took it back (#612; glossary:
    * *Odustajanje*). Newest first, and ABOVE Bez odgovora on the screen, because
    * these are the places a voditelj thought were filled.
    *
@@ -218,7 +218,7 @@ function toPerson(
     noAnswer?: boolean
     titles: Map<string, DanceTitle>
     moveTargets: Record<string, Army[]>
-    /** The odustajanje, for the one list that has it (#609). */
+    /** The odustajanje, for the one list that has it (#612). */
     withdrew?: { at: string; own: boolean | null }
   },
 ): StanjePerson {

@@ -98,7 +98,7 @@ describe('stampWithdrawal → not_coming', () => {
   })
 
   it('records nothing for a row answered before the migration', () => {
-    // `coming` with no `confirmedAt` is a pre-#609 row. Guessing the promise
+    // `coming` with no `confirmedAt` is a pre-#612 row. Guessing the promise
     // was old enough would put somebody on the list with an invented time.
     const out = stamp({ previousStatus: 'coming', nextStatus: 'not_coming', confirmedAt: null })
     expect(out.withdrewAt).toBeNull()

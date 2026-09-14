@@ -1,4 +1,4 @@
--- Odustali: who said "dolazim" and then took it back (#609).
+-- Odustali: who said "dolazim" and then took it back (#612).
 --
 -- Glossary: CONTEXT.md → *Odustajanje*. A dancer who answers `dolazim`, leaves
 -- it standing for at least ten minutes and then moves to `ne dolazim` has
@@ -57,7 +57,7 @@ CREATE INDEX IF NOT EXISTS attendance_performance_withdrew_idx
   ON attendance USING btree (performance_id, withdrew_at)
   WHERE withdrew_at IS NOT NULL;
 
--- The withdrawal PUSH is retired with this change (#609): a dancer changing
+-- The withdrawal PUSH is retired with this change (#612): a dancer changing
 -- their mind is written under the evening, in Odustali, and no longer rings a
 -- voditelj's phone or lands in anyone's Sandučić. The rows it already filed are
 -- the twelve-unread noise the change exists to remove, so they go too.

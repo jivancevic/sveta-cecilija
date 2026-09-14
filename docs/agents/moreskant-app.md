@@ -309,7 +309,7 @@ Each batch has its own section further down; this is the map.
 | Batch | Tickets | What it added | Section |
 |---|---|---|---|
 | A | #431, #435 | Web push: the service worker, per-device subscriptions, the sender, the cron, and notification types (1) alarm and (2) reminder | [Push](#push-431-435--phase-4-batch-a) |
-| B | #436, #433 | Notification types (3) change, (4) new performance, and (5) withdrawal (retired in #609); the manual alarm; the note edit; the shared calendar feed | [Triggered notifications](#triggered-notifications-436--phase-4-batch-b), [The calendar feed](#the-calendar-feed-433--phase-4-batch-b) |
+| B | #436, #433 | Notification types (3) change, (4) new performance, and (5) withdrawal (retired in #612); the manual alarm; the note edit; the shared calendar feed | [Triggered notifications](#triggered-notifications-436--phase-4-batch-b), [The calendar feed](#the-calendar-feed-433--phase-4-batch-b) |
 | C | #432, #437 | **Lineups** with confirmation, and the season **statistics** built on them | [Lineups](#lineups--postave-432--phase-4-batch-c), [Statistics](#statistics-437--phase-4-batch-c) |
 | D | #434 | **Self-issued comps**: four free tickets per performance, cancellable | [Self-issued comps](#self-issued-comps-434--phase-4-batch-d) |
 | E | #438, #439 | The **MCP server** and its OAuth, so a voditelj dictates a postava to Claude | [MCP and OAuth](#mcp-and-oauth-438--phase-4-batch-e) |
@@ -1097,7 +1097,7 @@ Više, and `decideInstallStep` still runs the Dobrodošlica and that guide.
 ## Triggered notifications (#436 — phase 4 batch B)
 
 Types (3) and (4) of the glossary, on top of batch A's sender. Type (5), the
-withdrawal, was retired in #609 (see below). Nothing here
+withdrawal, was retired in #612 (see below). Nothing here
 is scheduled: each one is a consequence of somebody saving something.
 
 ### The Shows `afterChange` hook
@@ -1159,7 +1159,7 @@ channel).
 
 ### Odustajanje, and the withdrawal push that used to be type (5)
 
-**There is no withdrawal notification any more (#609).** `src/lib/push/withdrawal.ts`,
+**There is no withdrawal notification any more (#612).** `src/lib/push/withdrawal.ts`,
 `notifyWithdrawal`, the `withdrawal` audience rule, its push strings and the
 `onAnswered` seam on the answer handler are all gone, and the migration deletes
 the inbox rows they had already filed.

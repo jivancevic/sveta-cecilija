@@ -109,7 +109,7 @@ describe('soonLabel', () => {
   })
 })
 
-describe('nastupRow · the countdown chip (#609)', () => {
+describe('nastupRow · the countdown chip (#612)', () => {
   it('counts CALENDAR days, so a late-night today still reads sutra tomorrow', () => {
     // The difference is computed off two Zagreb calendar days, never off hours:
     // at 23:50 on the 14th, the 15th's 21:00 nastup is 21 hours away and a
@@ -202,7 +202,7 @@ describe('aheadLabel', () => {
 })
 
 describe('identityOf', () => {
-  // #609: the identity block is a PROFILE, so its mark answers "who is this
+  // #612: the identity block is a PROFILE, so its mark answers "who is this
   // person". The disc is the army of the primary role and the GLYPH is that
   // role; the evening's title is drawn where a person is shown IN an evening
   // (the hero, Stanje), which is the split `RoleMark`'s two contexts exist for.
@@ -301,7 +301,7 @@ describe('heroView', () => {
   /** One evening, as the hero loader hands it over. */
   const solo = (p: RosterPerformance) => ({ first: p, second: null, moreCount: 0 })
 
-  describe('DANAS (#609)', () => {
+  describe('DANAS (#612)', () => {
     // Decided on the SERVER, against the Europe/Zagreb day the loader already
     // holds: a phone in Vienna and a phone in Korčula disagree about the date
     // for an hour a night, and a card that changed its whole treatment on

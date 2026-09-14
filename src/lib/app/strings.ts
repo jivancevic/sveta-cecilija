@@ -364,7 +364,7 @@ export const APP_STRINGS = {
     /** Two nastupa on one day share one header, so the word is plural (#591). */
     nextTwo: 'Sljedeći nastupi',
     /**
-     * The label in the hero's eyebrow when the evening is TONIGHT (#609).
+     * The label in the hero's eyebrow when the evening is TONIGHT (#612).
      *
      * Uppercase because it sits in the eyebrow row, which is the one place in
      * Cecilija where the uppercase micro-label survives, and one word because
@@ -398,7 +398,7 @@ export const APP_STRINGS = {
     experienceWord: 'Experience',
     cancelled: 'otkazano',
     /**
-     * How close a nastup is, beside the kind word in the season list (#609).
+     * How close a nastup is, beside the kind word in the season list (#612).
      *
      * Only inside a week: past seven days "za 12 dana" stops being a distance a
      * dancer feels and becomes a number they have to convert back into a date,
@@ -410,7 +410,7 @@ export const APP_STRINGS = {
     soonTomorrow: 'sutra',
     soonInDays: (days: number) => `za ${days} dana`,
     /**
-     * The chip on a PAST row (#609): there is a list of who danced that
+     * The chip on a PAST row (#612): there is a list of who danced that
      * evening, and the reader can open the row to see whether they are on it.
      *
      * It replaced "Postava potvrđena", which was a gold chip saying a thing
@@ -472,7 +472,7 @@ export const APP_STRINGS = {
     noAnswer: 'Bez odgovora',
     notComing: 'Ne dolaze',
     /**
-     * Odustali (#609; glossary: *Odustajanje*). The word is deliberately NOT
+     * Odustali (#612; glossary: *Odustajanje*). The word is deliberately NOT
      * "Otkazali": in this app *otkazati* is what happens to an izvedba, with
      * refunds behind it, and the two must never share a verb.
      */
@@ -3170,7 +3170,7 @@ function atNoon(date: string): Date | null {
 }
 
 /**
- * "19:40" — the hour a stored instant happened, in Zagreb (#609).
+ * "19:40" — the hour a stored instant happened, in Zagreb (#612).
  *
  * Odustali is read against ONE evening, whose date the screen already carries,
  * so the time of day is the whole of the useful fact. Zagreb explicitly rather

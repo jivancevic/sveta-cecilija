@@ -19,7 +19,7 @@
 //      whose ship was typed into the place rather than into `client` shows it
 //      here and nothing in code can tell the difference.
 //   2. **A mark means ONE of two things, and which one depends on where it is
-//      drawn** (#609; the rule is written out in full in `RoleMark`'s header).
+//      drawn** (#612; the rule is written out in full in `RoleMark`'s header).
 //      In an EVENING — Stanje, the postava, the hero — the disc is the army and
 //      the glyph is that evening's title, because a titula belongs to one
 //      lineup and never to a person (glossary: *Title*, Q65). In a PROFILE —
@@ -88,7 +88,7 @@ const SOON_WINDOW_DAYS = 7
 
 /**
  * "danas" / "sutra" / "za 3 dana" — how close an evening is, or null when it is
- * further out than a week (#609).
+ * further out than a week (#612).
  *
  * **Calendar days, never hours.** The input is a whole-day difference computed
  * off the Europe/Zagreb day (`daysBetween`), which is the only counting that
@@ -140,7 +140,7 @@ export interface NastupRow {
    */
   lineupConfirmed: boolean
   /**
-   * "danas" / "sutra" / "za 3 dana", beside the kind word, or null (#609).
+   * "danas" / "sutra" / "za 3 dana", beside the kind word, or null (#612).
    *
    * The SEASON LIST's own, and deliberately nowhere else: the hero already says
    * how close its evening is in a whole sentence, and Početna's one line does
@@ -221,7 +221,7 @@ export function aheadLabel(upcoming: readonly RosterPerformance[]): string {
 
 /**
  * One of the reader's OTHER dance roles, as a 28px disc beside their name
- * (#609).
+ * (#612).
  *
  * A moreškant is rarely one thing: the notebook has people down as crni and
  * otmanović and bula across a season, and until now the screen printed exactly
@@ -251,7 +251,7 @@ export interface Identity {
   /** The disc: the army of the primary role. */
   army: MarkArmy | null
   /**
-   * The primary role itself, for the big disc's glyph (#609).
+   * The primary role itself, for the big disc's glyph (#612).
    *
    * The identity block is a PROFILE context, so the mark it draws answers "who
    * is this person" and not "what were they given tonight" — a crni kralj by
@@ -276,7 +276,7 @@ export interface Identity {
  * The reader's own identity, or null when the login carries no dancer (a
  * voditelj who does not dance, #419 story 15).
  *
- * **This block is a PROFILE, and #609 settled what that means for its mark.**
+ * **This block is a PROFILE, and #612 settled what that means for its mark.**
  * It used to draw the title of the next nastup's confirmed postava — a crown
  * that appeared and vanished as a voditelj worked — on the theory that a crown
  * anywhere in the app always means an evening. The theory was right about
@@ -370,7 +370,7 @@ export interface HeroView {
   kind: string | null
   /**
    * "DANAS" when the card's evening is TODAY in Europe/Zagreb, else null
-   * (#609).
+   * (#612).
    *
    * Decided HERE, on the server, and handed over as a word rather than as a
    * boolean the page would have to find a string for. Two reasons it is not a
@@ -426,7 +426,7 @@ function heroHalf(performance: RosterPerformance): HeroHalf {
  *
  * Both screens that draw a hero go through this one function, so Početna and
  * Moreška can never split a day differently or name the same evening two ways
- * — and since #609 they cannot disagree about whether it is tonight either.
+ * — and since #612 they cannot disagree about whether it is tonight either.
  *
  * `today` is Europe/Zagreb's date, YYYY-MM-DD, handed in by the loader that
  * already holds the screen's one clock. Omitting it is not an error: it means

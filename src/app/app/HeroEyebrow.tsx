@@ -1,4 +1,4 @@
-// The hero's top line, and the DANAS label at the far end of it (#609).
+// The hero's top line, and the DANAS label at the far end of it (#612).
 //
 // Shared by Početna and Moreška, the same way `HeroMeta` and `HeroHalves` are:
 // both screens draw the same evening out of the same `heroView()`, and a second

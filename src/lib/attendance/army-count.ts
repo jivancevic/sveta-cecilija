@@ -26,14 +26,14 @@ export interface AttendanceRow {
   memberId: string
   status: 'coming' | 'not_coming'
   army: Army | null
-  /** ISO of the odustajanje, when this row carries one (#609). */
+  /** ISO of the odustajanje, when this row carries one (#612). */
   withdrewAt?: string | null
   /** True when the dancer withdrew, false when a voditelj wrote it down. */
   withdrewOwn?: boolean | null
 }
 
 /**
- * Somebody who said dolazim and took it back (#609; glossary: *Odustajanje*).
+ * Somebody who said dolazim and took it back (#612; glossary: *Odustajanje*).
  *
  * A SUBSET of `notComing`, never a replacement for it: every other reader of
  * this count asks "is this person coming tonight", and for that question an
@@ -73,7 +73,7 @@ export interface ArmyCount {
   notComing: RosterPerson[]
   /**
    * The subset of `notComing` who had said dolazim first and let it stand
-   * (#609). Newest first: a voditelj reading the night before wants the one
+   * (#612). Newest first: a voditelj reading the night before wants the one
    * that just happened at the top, not the one from last Tuesday.
    */
   withdrawn: WithdrawnPerson[]

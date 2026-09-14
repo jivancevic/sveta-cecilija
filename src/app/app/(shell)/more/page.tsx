@@ -88,7 +88,7 @@ export default async function MorePage() {
   // tablet on the wall is called out loud.
   const name = viewer.accountName ?? me?.name ?? me?.nickname ?? viewer.username ?? APP_STRINGS.name
 
-  // This is a PROFILE context, and #609 settled what a mark means in one: the
+  // This is a PROFILE context, and #612 settled what a mark means in one: the
   // disc is the army of the reader's PRIMARY role and the glyph is that role
   // (`RoleMark`'s header states the rule). There is no evening on this screen,
   // so there is no title on it either — a titula belongs to a lineup and never

@@ -47,7 +47,7 @@ export type AppNotificationKind = (typeof APP_NOTIFICATION_KINDS)[number]
  * The three ways an audience is resolved.
  *
  * `voditelji` has no kind mapped to it since the withdrawal push was retired
- * (#609). It stays in the union because it is a way an audience CAN be
+ * (#612). It stays in the union because it is a way an audience CAN be
  * resolved, not a list of what is switched on today.
  */
 export type NotificationAudienceGroup = 'roster' | 'voditelji' | 'staff'

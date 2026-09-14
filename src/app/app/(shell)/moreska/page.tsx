@@ -78,7 +78,7 @@ export default async function MoreskaPage() {
   const pick = pickHeroPerformances(season.upcoming)
   const next = pick?.first ?? null
   const ahead = aheadLabel(season.upcoming)
-  // The identity block is a PROFILE (#609): the big disc is the reader's own
+  // The identity block is a PROFILE (#612): the big disc is the reader's own
   // primary role, the small ones are the rest of what they dance, and the
   // evening's title is drawn where a person is shown IN an evening — the hero
   // below, and Stanje (glossary: *Title*, unchanged).
@@ -99,7 +99,7 @@ export default async function MoreskaPage() {
     <AppShell viewer={viewer} screen="moreska" season={season.year}>
       {identity ? (
         <div className="app__me">
-          {/* PROFILE context (#609): `role`, never `title`. The type makes the
+          {/* PROFILE context (#612): `role`, never `title`. The type makes the
               two mutually exclusive, which is what stops an evening's crown
               from ever reaching a person's own block by accident. */}
           {identity.primaryRole ? (
@@ -219,7 +219,7 @@ export default async function MoreskaPage() {
           this screen looks forward and the past is something a dancer goes
           looking for; their own tally of it lives on Ljestvica.
 
-          Inside it, the same month groups the upcoming half has (#609). A flat
+          Inside it, the same month groups the upcoming half has (#612). A flat
           list of twenty-two evenings was readable in July and stopped being so
           in September: a dancer looking back for "that Thursday in kolovoz"
           was counting rows. Descending, because the past is read backwards —
@@ -240,7 +240,7 @@ export default async function MoreskaPage() {
                     lead={<DateDisc day={row.day} weekday={row.weekday} tone={row.tone} />}
                     title={row.title}
                     meta={row.meta}
-                    // POPIS, not "Postava potvrđena" (#609). The old gold chip
+                    // POPIS, not "Postava potvrđena" (#612). The old gold chip
                     // named a step in the voditelj's workflow on a screen a
                     // dancer reads backwards; what the dancer wants to know is
                     // that there IS a list, and that the row opens it. Green
@@ -261,7 +261,7 @@ export default async function MoreskaPage() {
 }
 
 /**
- * A row's first line: the evening's category, and how close it is (#609).
+ * A row's first line: the evening's category, and how close it is (#612).
  *
  * The countdown is a chip rather than a third item in the grey meta line under
  * it, because "za 2 dana" is not of the same kind as "21:00 · Ljetno kino":

@@ -43,7 +43,7 @@ export interface ExistingAnswer {
   army: Army | null
   /**
    * The answer that stands before this write. Read by `stampWithdrawal`
-   * (#609): "a dolazim turned into anything else" is a fact about the PREVIOUS
+   * (#612): "a dolazim turned into anything else" is a fact about the PREVIOUS
    * row, and once the upsert has run it is unrecoverable.
    */
   status?: AttendanceStatus | null
@@ -168,7 +168,7 @@ export async function handleAttendanceAnswer(
     // Clearing deletes the row, and the odustajanje stamps go with it. That is
     // the rule, not an oversight: "no answer" is the absence of a row, and a
     // dancer who takes their answer away entirely is back to never having said
-    // anything (#609, Q2).
+    // anything (#612, Q2).
     if (existing) await deps.remove(existing.id)
     return { status: 200, body: { ok: true, status: null, army: null } }
   }
@@ -181,7 +181,7 @@ export async function handleAttendanceAnswer(
   // Odustajanje is decided from the row as it STANDS, before this write lands,
   // which is the only moment the previous answer still exists. A voditelj
   // writing on a dancer's behalf stamps it the same way a dancer does: the list
-  // is a picture of who is missing, not of who did the typing (#609, Q18).
+  // is a picture of who is missing, not of who did the typing (#612, Q18).
   const stamps = stampWithdrawal({
     previousStatus: existing?.status ?? null,
     nextStatus: decision.status,

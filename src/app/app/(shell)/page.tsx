@@ -186,7 +186,7 @@ function renderTile(card: HomeCard) {
         eyebrow={card.eyebrow}
         caption={card.caption}
       >
-        {/* The glance, dressed the way the screen it previews is (#609): a cup
+        {/* The glance, dressed the way the screen it previews is (#612): a cup
             over the winner's step, so the tallest bar is read as FIRST rather
             than merely tall, and the reader's own step outlined if they are on
             it. The cup is the winner's alone — Ljestvica draws all three,
