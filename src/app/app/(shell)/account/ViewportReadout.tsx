@@ -24,9 +24,8 @@ export function ViewportReadout() {
       probe.style.height = '100svh'
       const svh = probe.offsetHeight
       probe.remove()
-      const standalone =
-        window.matchMedia('(display-mode: standalone)').matches ||
-        (navigator as Navigator & { standalone?: boolean }).standalone === true
+      const mmStandalone = window.matchMedia('(display-mode: standalone)').matches
+      const navStandalone = (navigator as Navigator & { standalone?: boolean }).standalone === true
       const vv = window.visualViewport
       setLine(
         [
@@ -37,7 +36,8 @@ export function ViewportReadout() {
           `body ${document.body.clientHeight}`,
           `safe ${safeTop}/${safeBottom}`,
           `dvh ${dvh} · svh ${svh}`,
-          standalone ? 'standalone' : 'browser',
+          `mode ${mmStandalone ? 'standalone' : 'browser'}/${navStandalone ? 'nav' : '-'}`,
+          `shim ${getComputedStyle(document.body).getPropertyValue('--shim').trim() || '-'}`,
           `ua ${navigator.userAgent.replace(/^.*(OS \d+_\d+).*$/, '$1')}`,
         ].join(' · '),
       )

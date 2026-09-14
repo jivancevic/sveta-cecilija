@@ -1002,6 +1002,7 @@ button.ui-army:active {
 .ui-sheet__scrim {
   position: fixed;
   inset: 0;
+  bottom: calc(0px - var(--shim, 0px));
   background: rgba(26, 20, 12, 0.45);
   z-index: 30;
   animation: ui-fade 0.2s;
@@ -1016,7 +1017,8 @@ button.ui-army:active {
 .ui-sheet {
   position: fixed;
   left: 50%;
-  bottom: 0;
+  /* Minus the installed iPhone's dead band: see `--shim` in app.css. */
+  bottom: calc(0px - var(--shim, 0px));
   transform: translateX(-50%);
   width: min(430px, 100%);
   z-index: 31;
@@ -1119,7 +1121,7 @@ button.ui-army:active {
 .ui-toast {
   position: fixed;
   left: 50%;
-  bottom: calc(var(--tabH) + env(safe-area-inset-bottom, 0px) + 28px);
+  bottom: calc(var(--tabH) + env(safe-area-inset-bottom, 0px) + 28px - var(--shim, 0px));
   transform: translateX(-50%) translateY(10px);
   padding: 10px 16px;
   border-radius: var(--rPill);
