@@ -1612,8 +1612,6 @@ export const APP_STRINGS = {
     admittedOf: (done: number, all: number) => `${done} / ${all} propušteno`,
     adults: (n: number) => `${n} odraslih`,
     children: (n: number) => `${n} djece`,
-    /** The show-day strip the shell offers a door holder on other screens. */
-    stripToday: 'Izvedba je večeras',
     /**
      * The English result card (#476). A guest reads it over the volunteer's
      * shoulder, so these five lines are the one place in Cecilija that is not

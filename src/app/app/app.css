@@ -3667,29 +3667,6 @@ a.app__ob-link {
   font-variant-numeric: tabular-nums;
 }
 
-/* The show-day strip (#472): a door holder reading another screen on the day of
-   an izvedba gets one line back to the scanner. */
-.app__daystrip {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  margin: 14px 0 0;
-  padding: 12px 14px;
-  background: var(--gold);
-  color: var(--onGold);
-  border-radius: var(--radius);
-  font-weight: 600;
-  text-decoration: none;
-}
-
-.app__daystrip b {
-  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
-  font-size: 13px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
 @media (min-width: 1024px) {
   /* The search is a sheet since #572, so the laptop has one column like the
      phone: what is left on the page is the ring, the button and the result,

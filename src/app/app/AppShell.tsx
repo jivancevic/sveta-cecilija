@@ -1,5 +1,4 @@
 import Image from 'next/image'
-import { can } from '@/lib/access/permissions'
 import type { AppMember } from '@/lib/app/access'
 import type { AppScreenKey } from '@/lib/app/screens'
 import { screenByKey } from '@/lib/app/screens'
@@ -9,7 +8,6 @@ import type { DanceRole } from '@/lib/moreskant-profile'
 import { Sidebar, TabBar } from './AppNav'
 import { NotificationBell } from './NotificationBell'
 import { PullToRefresh } from './PullToRefresh'
-import { ShowDayStrip } from './ShowDayStrip'
 
 // The chrome every screen wears (#495): the sidebar, the header, the content
 // and the bar, in one place so no screen has to assemble them.
@@ -126,11 +124,6 @@ export function AppShell({
               <NotificationBell unread={viewer.unreadNotifications} />
             </div>
           </header>
-
-          {/* One line back to the scanner on the day of an izvedba (#472). Only
-              for a `door` holder, and never on Skener itself, where the ring
-              already says it with a number. */}
-          {screen !== 'scan' && can({ permissions: viewer.permissions }, 'door') && <ShowDayStrip />}
 
           {intro}
           {children}
