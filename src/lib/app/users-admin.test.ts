@@ -3,9 +3,11 @@ import { PERMISSIONS, type Permission } from '@/lib/access/permissions'
 import { APP_STRINGS } from './strings'
 import {
   handleSetShared,
+  handleUpdateName,
   handleUpdatePermissions,
   parsePermissionSet,
   permissionDiff,
+  type SetNameDeps,
   type UpdatePermissionsDeps,
   type UsersTarget,
 } from './users-admin'
@@ -286,5 +288,123 @@ describe('POST /api/app/users/[id]/shared', () => {
   it('wants a boolean, not a guess', async () => {
     const res = await handleSetShared('7', { shared: 'da' }, { ...deps(), setShared: async () => {} })
     expect(res.status).toBe(400)
+  })
+})
+
+describe('PATCH /api/app/users/[id]/name', () => {
+  function nameDeps(over: Partial<SetNameDeps> = {}): SetNameDeps {
+    return {
+      request: SAME_SITE,
+      caller: { id: '1', shared: false },
+      loadUser: async () => target({ name: null }),
+      setName: vi.fn(async () => {}),
+      ...over,
+    }
+  }
+
+  it('writes the trimmed name', async () => {
+    const setName = vi.fn(async () => {})
+    const res = await handleUpdateName('7', { name: '  Tatjana Vigna ' }, nameDeps({ setName }))
+
+    expect(res.status).toBe(200)
+    expect(setName).toHaveBeenCalledWith('7', 'Tatjana Vigna')
+    expect(res.body.message).toBe(S.name.saved)
+  })
+
+  it('clears the name on an empty field: a shared login is not a person', async () => {
+    const setName = vi.fn(async () => {})
+    const res = await handleUpdateName(
+      '7',
+      { name: '   ' },
+      nameDeps({ loadUser: async () => target({ name: 'Tehnika' }), setName }),
+    )
+
+    expect(res.status).toBe(200)
+    // Null, never '': the absence of a name has one spelling in the column.
+    expect(setName).toHaveBeenCalledWith('7', null)
+    expect(res.body.message).toBe(S.name.cleared)
+  })
+
+  it('caps a paste at 80 characters rather than letting it title a screen', async () => {
+    const setName = vi.fn(async () => {})
+    await handleUpdateName('7', { name: 'x'.repeat(200) }, nameDeps({ setName }))
+    expect(setName).toHaveBeenCalledWith('7', 'x'.repeat(80))
+  })
+
+  it('does not write when the name is the one already on the row', async () => {
+    const setName = vi.fn(async () => {})
+    const res = await handleUpdateName(
+      '7',
+      { name: 'Tatjana Vigna' },
+      nameDeps({ loadUser: async () => target({ name: 'Tatjana Vigna' }), setName }),
+    )
+
+    expect(res.status).toBe(200)
+    expect(res.body.message).toBe(S.name.unchanged)
+    expect(setName).not.toHaveBeenCalled()
+  })
+
+  it('refuses a name that is not a string', async () => {
+    const setName = vi.fn(async () => {})
+    const res = await handleUpdateName('7', { name: 42 }, nameDeps({ setName }))
+
+    expect(res.status).toBe(400)
+    expect(setName).not.toHaveBeenCalled()
+  })
+
+  it('refuses a shared caller, like the other six routes', async () => {
+    const setName = vi.fn(async () => {})
+    const res = await handleUpdateName(
+      '7',
+      { name: 'Tatjana Vigna' },
+      nameDeps({ caller: { id: '1', shared: true }, setName }),
+    )
+
+    expect(res.status).toBe(403)
+    expect(setName).not.toHaveBeenCalled()
+  })
+
+  it('refuses a cross-site request', async () => {
+    const setName = vi.fn(async () => {})
+    const res = await handleUpdateName(
+      '7',
+      { name: 'Tatjana Vigna' },
+      nameDeps({ request: { ...SAME_SITE, secFetchSite: 'cross-site' }, setName }),
+    )
+
+    expect(res.status).toBe(403)
+    expect(setName).not.toHaveBeenCalled()
+  })
+
+  it('404s on an id that is nobody', async () => {
+    const res = await handleUpdateName('999', { name: 'X' }, nameDeps({ loadUser: async () => null }))
+    expect(res.status).toBe(404)
+  })
+
+  it('lets the caller rename their OWN login: a name grants nothing', async () => {
+    const setName = vi.fn(async () => {})
+    const res = await handleUpdateName(
+      '1',
+      { name: 'Josip Ivančević' },
+      nameDeps({ loadUser: async () => target({ id: '1', name: null }), setName }),
+    )
+
+    expect(res.status).toBe(200)
+    expect(setName).toHaveBeenCalledWith('1', 'Josip Ivančević')
+  })
+
+  it('answers 500 when the write fails, without claiming it landed', async () => {
+    const res = await handleUpdateName(
+      '7',
+      { name: 'Tatjana Vigna' },
+      nameDeps({
+        setName: async () => {
+          throw new Error('db down')
+        },
+      }),
+    )
+
+    expect(res.status).toBe(500)
+    expect(res.body).toEqual({ error: S.name.failed })
   })
 })

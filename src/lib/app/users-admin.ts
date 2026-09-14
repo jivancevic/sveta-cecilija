@@ -237,6 +237,75 @@ export async function handleSetShared(
 }
 
 /**
+ * The name a login belongs to, as the column carries it: trimmed, capped, and
+ * **null when it is empty**.
+ *
+ * Null rather than `''` because the absence of a name is a fact about the
+ * account (`tehnika` is a room, not a person) and one spelling of that fact is
+ * enough. The 80 characters are the same cap the create applies; it is there so
+ * a paste accident cannot become the title of a screen.
+ */
+export function normaliseName(raw: unknown): string | null {
+  if (typeof raw !== 'string') return null
+  const value = raw.trim().slice(0, 80)
+  return value === '' ? null : value
+}
+
+export interface SetNameDeps extends Omit<UpdatePermissionsDeps, 'save'> {
+  setName: (id: string, name: string | null) => Promise<void>
+}
+
+/**
+ * PATCH /api/app/users/[id]/name `{ name }` — "Ime" (#617).
+ *
+ * The seventh action, and the only one on this screen that changes nothing
+ * about access: a name is what the reader of a list sees instead of `ttvigna`.
+ * So the refusals are the two every route here shares (cross-site, a shared
+ * CALLER) plus the 404, and **no self refusal** — correcting the spelling of
+ * your own name grants you nothing, which is why `Users.name` is the one
+ * unlocked field on this collection.
+ *
+ * An empty string CLEARS the name rather than failing. A shared login must be
+ * able to lose a name somebody typed on it by mistake, and "delete the text and
+ * save" is how everybody expects that to work.
+ */
+export async function handleUpdateName(
+  targetId: string,
+  input: { name?: unknown } | null | undefined,
+  deps: SetNameDeps,
+): Promise<UsersResult> {
+  const refused = refuseCaller(deps.request, deps.caller)
+  if (refused) return refused
+
+  const target = await loadOr404(targetId, deps.loadUser)
+  if ('missing' in target) return target.missing
+
+  // A number or an object is a bug in the caller, not an empty name: only a
+  // string (or nothing at all) may reach the column.
+  if (input?.name !== undefined && typeof input.name !== 'string') {
+    return fail(400, S.name.invalid)
+  }
+
+  const next = normaliseName(input?.name)
+  const before = target.user.name?.trim() || null
+  if (next === before) {
+    return { status: 200, body: { ok: true, name: next, message: S.name.unchanged } }
+  }
+
+  try {
+    await deps.setName(target.user.id, next)
+  } catch (err) {
+    console.error('[handleUpdateName] save failed:', err instanceof Error ? err.message : err)
+    return fail(500, S.name.failed)
+  }
+
+  return {
+    status: 200,
+    body: { ok: true, name: next, message: next ? S.name.saved : S.name.cleared },
+  }
+}
+
+/**
  * The account, or the 404 every handler answers with.
  *
  * A read that throws is the same answer as a read that found nothing: from the

@@ -15,7 +15,7 @@ import { UserActions } from './UserActions'
 
 // `/app/users/[id]` — one account (#510).
 //
-// The facts first, then the six named actions, and on a laptop the two side by
+// The facts first, then the seven named actions, and on a laptop the two side by
 // side (#573, Q51): what this account IS on the left, what can be done to it on
 // the right. The facts are the ones that decide access: the permission set as
 // Croatian chips, the address (or its absence, which is what decides how a
@@ -84,7 +84,14 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
             {account.username ?? account.id}
             {self && <Chip tone="gold">{S.selfBadge}</Chip>}
           </Fact>
-          {name && <Fact label={S.create.name}>{name}</Fact>}
+          {/* The account's OWN name, not `displayName`: that one falls back to
+              the linked dancer or reseller, and this row is the one Ime edits,
+              so an empty one has to read as empty (#617). */}
+          <Fact label={S.create.name}>
+            {account.name?.trim() || (
+              <span className="app__user-noemail">{S.name.none}</span>
+            )}
+          </Fact>
           <Fact label={S.create.email}>
             <span className={account.email ? undefined : 'app__user-noemail'}>
               {emailLabel(account.email)}

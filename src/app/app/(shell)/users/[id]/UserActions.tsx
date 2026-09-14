@@ -12,13 +12,18 @@ import { Button, Chip, Section, Sheet as UiSheet, SheetOption, Toast } from '../
 import { PermissionChecklist } from '../NewUserForm'
 import { HandoverPanel, Sheet } from '../UserSheet'
 
-// The six named actions of one account (#510, #563; #476's "named actions
+// The seven named actions of one account (#510, #563, #617; #476's "named actions
 // only").
 //
 // Each is a button with a verb on it and a confirmation under it, never a raw
-// edit form, because each of them changes who can do what: a permission set
+// edit form, because six of them change who can do what: a permission set
 // reaches every screen in this app, a link decides whose roster identity a
 // login is, and a reset hands somebody a live way in.
+//
+// Ime (#617) is the exception that proves it is a rule about ACCESS rather
+// than about forms: a name grants nothing, so its sheet is a field with a Spremi
+// on it. It is still a named action and not an inline edit on the facts card,
+// because "what can be done to this account" is one list in one place.
 //
 // Nothing here is optimistic. Every refusal on this screen is a server rule
 // (the lockout guard, the e-mail policy, `taken`), so the honest answer only
@@ -28,14 +33,15 @@ import { HandoverPanel, Sheet } from '../UserSheet'
 // The two handover actions do NOT close their sheet on success: they turn into
 // the panel that shows the credential once and wait for Gotovo.
 //
-// All six sit in ONE section under one heading since #573 (Q47), each as T1's
+// All seven sit in ONE section under one heading since #573 (Q47), each as T1's
 // `Button`: the first two are the ones a `users` holder presses weekly, so they
-// lead, and the four that change what an account IS follow as ghosts. A seventh
-// button here would be the moment to ask whether it is an action at all.
+// lead, and the five that change what an account IS or is CALLED follow as
+// ghosts. An eighth button here would be the moment to ask whether it is an
+// action at all.
 
 const S = APP_STRINGS.users
 
-type Which = 'permissions' | 'reset' | 'partner' | 'member' | 'shared' | 'tabs' | null
+type Which = 'permissions' | 'reset' | 'name' | 'partner' | 'member' | 'shared' | 'tabs' | null
 
 export interface PickerOption {
   id: string
@@ -77,6 +83,7 @@ export function UserActions({
   const [partnerId, setPartnerId] = useState(account.partnerId ?? '')
   const [memberId, setMemberId] = useState(account.memberId ?? '')
   const [tabs, setTabs] = useState<AppScreenKey[]>([...account.tabs])
+  const [name, setName] = useState(account.name ?? '')
 
   // The toast says it landed and then stops saying it (#562). The state it
   // reads is the same `done` every action already set; only the shape changed.
@@ -95,6 +102,7 @@ export function UserActions({
     setPartnerId(account.partnerId ?? '')
     setMemberId(account.memberId ?? '')
     setTabs([...account.tabs])
+    setName(account.name ?? '')
   }
 
   function close() {
@@ -160,6 +168,14 @@ export function UserActions({
     setHandover((res.body?.handover as Handover) ?? { kind: 'none' })
   }
 
+  async function saveName() {
+    const res = await call(`/api/app/users/${account.id}/name`, json({ name }, 'PATCH'), S.name.failed)
+    if (!res.ok) return
+    setDone((res.body?.message as string) ?? S.name.saved)
+    setSheet(null)
+    router.refresh()
+  }
+
   async function saveLink(field: 'partner' | 'member', value: string) {
     const res = await call(
       `/api/app/users/${account.id}/link`,
@@ -202,7 +218,7 @@ export function UserActions({
   return (
     <section className="app__user-actions">
       {/* One toast, the shape the whole app confirms with since T1 (#562), for
-          all six actions rather than a second one for the newest. */}
+          all seven actions rather than a second one for the newest. */}
       <Toast message={done ?? ''} open={done !== null} />
 
       <Section title={S.actionsTitle} />
@@ -213,6 +229,9 @@ export function UserActions({
         </Button>
         <Button variant="primary" onClick={() => open('reset')}>
           {S.actions.resetPassword}
+        </Button>
+        <Button variant="ghost" onClick={() => open('name')}>
+          {S.actions.name}
         </Button>
         <Button variant="ghost" onClick={() => open('partner')}>
           {S.actions.linkPartner}
@@ -264,6 +283,34 @@ export function UserActions({
             close={close}
           />
         ))}
+
+      {/* The one sheet here that is a FIELD rather than a choice or a
+          confirmation. Empty is an answer (it clears the name), so the confirm
+          button is never disabled and the copy says so rather than the control
+          having to. */}
+      {sheet === 'name' && (
+        <Sheet
+          title={S.name.title}
+          body={S.name.body}
+          error={error}
+          busy={busy}
+          confirm={() => void saveName()}
+          confirmLabel={S.name.save}
+          close={close}
+        >
+          <label className="app__field">
+            <span>{S.name.label}</span>
+            <input
+              type="text"
+              value={name}
+              maxLength={80}
+              autoFocus
+              placeholder={S.name.placeholder}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </label>
+        </Sheet>
+      )}
 
       {sheet === 'partner' && (
         <Sheet

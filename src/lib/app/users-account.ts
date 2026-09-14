@@ -39,6 +39,7 @@ import { mayOpenAppSession } from './token-login'
 import {
   fail,
   loadOr404,
+  normaliseName,
   parsePermissionSet,
   refuseCaller,
   sharedMayHold,
@@ -221,7 +222,7 @@ export async function handleCreateUser(
     return fail(500, S.create.failed)
   }
 
-  const name = typeof input?.name === 'string' ? input.name.trim().slice(0, 80) : ''
+  const name = normaliseName(input?.name)
   // The password the row is created with is NOT the one that gets handed over
   // when there is an address: the link is the way in then, so the account gets
   // one nobody holds rather than a short one nobody was told.
