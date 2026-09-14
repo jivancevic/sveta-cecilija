@@ -29,11 +29,18 @@ export interface SeasonsProps {
 }
 
 export function Seasons({ seasons, season, href, label, className }: SeasonsProps) {
-  // One season is not a choice (#614, finding 14). A lone gold pill reads as a
-  // filter somebody switched on, and tapping it does nothing — so where there
-  // is nothing to pick, the year is a caption.
+  // One season is not a choice (#614, finding 14), and it is still not a link:
+  // tapping it would do nothing. But it takes the PILL'S SHAPE since #627,
+  // unhighlighted — a caption said "this year is a fact about the screen", when
+  // what it is is the only year there is so far. The shape says a second one
+  // will stand beside it, and the missing gold says this one is not a filter
+  // anybody turned on.
   if (seasons.length <= 1) {
-    return <p className={['ui-seasons__one', className ?? ''].filter(Boolean).join(' ')}>{season}</p>
+    return (
+      <p className={['ui-season', 'ui-seasons__one', className ?? ''].filter(Boolean).join(' ')}>
+        {season}
+      </p>
+    )
   }
 
   return (
