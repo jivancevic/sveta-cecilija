@@ -360,6 +360,12 @@ export const APP_STRINGS = {
    */
   moreska: {
     next: 'Sljedeći nastup',
+    /** Two nastupa on one day share one header, so the word is plural (#591). */
+    nextTwo: 'Sljedeći nastupi',
+    /** The one line of numbers a half carries: the two armies, no thresholds. */
+    armiesLine: (crni: number, bili: number) => `crni ${crni} · bili ${bili}`,
+    /** "još 2 nastupa taj dan" — the third and beyond, which the hero caps off. */
+    moreThatDay: { one: 'nastup taj dan', few: 'nastupa taj dan', many: 'nastupa taj dan' },
     /** "9 nastupa pred tobom": what is still ahead of the reader this season. */
     ahead: { one: 'nastup pred tobom', few: 'nastupa pred tobom', many: 'nastupa pred tobom' },
     /** The quiet count beside a month heading. */

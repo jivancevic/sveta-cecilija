@@ -37,6 +37,7 @@ export function Answer({
   currentArmy,
   disabled = false,
   lockNote,
+  small = false,
 }: {
   performanceId: string
   memberId: string
@@ -45,6 +46,8 @@ export function Answer({
   currentArmy: string | null
   disabled?: boolean
   lockNote?: string | null
+  /** Half the width of a hero: one of two evenings on the same day (#591). */
+  small?: boolean
 }) {
   const router = useRouter()
   const [answer, setAnswer] = useState<AttendanceStatus | null>(current)
@@ -118,7 +121,7 @@ export function Answer({
 
   return (
     <>
-      <div className="ui-btns">
+      <div className={small ? 'ui-btns ui-btns--small' : 'ui-btns'}>
         {asking ? (
           <>
             <Button

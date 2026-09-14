@@ -3671,6 +3671,62 @@ a.app__ob-link {
   font-variant-numeric: tabular-nums;
 }
 
+/* Two nastupa on one day (#591): the hero keeps the date and splits under it.
+   Two columns even on the narrowest phone, because the point of the split is
+   that the two evenings are read side by side; a first pass, #592 dresses it. */
+.app__hero-halves {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.app__hero-half {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+
+.app__hero-half-head {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+
+.app__hero-half-head b {
+  display: block;
+  font-family: var(--serif);
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.app__hero-half-head span {
+  display: block;
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.app__hero-half-armies {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+/* The third evening and beyond, as a way into the agenda rather than a third
+   column. */
+.app__hero-more {
+  display: inline-block;
+  margin-top: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--goldText);
+  text-decoration: none;
+}
+
 @media (min-width: 1024px) {
   /* The search is a sheet since #572, so the laptop has one column like the
      phone: what is left on the page is the ring, the button and the result,

@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { getSeasonPerformances } from '@/lib/app/roster-data'
-import { groupByMonth, pickNextPerformance } from '@/lib/app/roster-loaders'
+import { groupByMonth, pickHeroPerformances } from '@/lib/app/roster-loaders'
 import {
   aheadLabel,
   armyLabel,
@@ -15,6 +15,7 @@ import { AppShell } from '../AppShell'
 import { openScreen } from '../gate'
 import { Answer } from './Answer'
 import { StateBar } from './StateBar'
+import { HeroHalves } from '../HeroHalves'
 
 // `/app/moreska` — Moreška, the dancer's register screen (#565).
 //
@@ -63,13 +64,14 @@ export default async function MoreskaPage() {
     armyCounts: true,
   })
 
-  const next = pickNextPerformance(season.upcoming)
+  const pick = pickHeroPerformances(season.upcoming)
+  const next = pick?.first ?? null
   const ahead = aheadLabel(season.upcoming)
   // The crown on the reader's own mark is the NEXT nastup's title, from its
   // confirmed postava and from nowhere else (#566, glossary: *Title*).
   const identity = identityOf(me, ahead, next?.myTitle ?? null)
   const months = monthSections(groupByMonth(season.upcoming), { showAnswer: me != null })
-  const hero = next ? heroView(next) : null
+  const hero = pick ? heroView(pick) : null
   const lastPast = season.past[0] ?? null
 
   return (
@@ -93,24 +95,30 @@ export default async function MoreskaPage() {
         <Hero eyebrow={hero.eyebrow} day={hero.day} month={hero.month} meta={hero.meta}>
           {hero.note && <Note>{hero.note}</Note>}
 
-          {me && (
-            <Answer
-              performanceId={next.id}
-              memberId={me.id}
-              current={next.myAnswer}
-              currentArmy={armyLabel(next.myArmy)}
-              disabled={!next.canAnswer}
-              lockNote={next.canAnswer ? null : APP_STRINGS.answer.locked}
-            />
-          )}
+          {hero.halves ? (
+            <HeroHalves halves={hero.halves} moreLabel={hero.moreLabel} memberId={me?.id ?? null} />
+          ) : (
+            <>
+              {me && (
+                <Answer
+                  performanceId={next.id}
+                  memberId={me.id}
+                  current={next.myAnswer}
+                  currentArmy={armyLabel(next.myArmy)}
+                  disabled={!next.canAnswer}
+                  lockNote={next.canAnswer ? null : APP_STRINGS.answer.locked}
+                />
+              )}
 
-          {hero.armies && (
-            <StateBar
-              crni={hero.armies.crni}
-              bili={hero.armies.bili}
-              threshold={hero.armies.threshold}
-              href={hero.href}
-            />
+              {hero.armies && (
+                <StateBar
+                  crni={hero.armies.crni}
+                  bili={hero.armies.bili}
+                  threshold={hero.armies.threshold}
+                  href={hero.href}
+                />
+              )}
+            </>
           )}
         </Hero>
       ) : (

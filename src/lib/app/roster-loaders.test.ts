@@ -8,6 +8,7 @@ import {
   daysUntil,
   groupByMonth,
   loadSeasonPerformances,
+  pickHeroPerformances,
   pickNextPerformance,
   splitSeasonPerformances,
   toRosterPerformance,
@@ -550,6 +551,72 @@ describe('pickNextPerformance', () => {
   it('is null when there is nothing, or nothing but cancellations', () => {
     expect(pickNextPerformance([])).toBeNull()
     expect(pickNextPerformance([p(1, '2026-08-05', true)])).toBeNull()
+  })
+})
+
+describe('pickHeroPerformances', () => {
+  const p = (id: number, date: string, time = '21:00', cancelled = false) =>
+    toRosterPerformance(doc({ id, date, time, status: cancelled ? 'cancelled' : 'active' }))
+
+  it('is a single evening when the next one has the day to itself', () => {
+    const pick = pickHeroPerformances([p(1, '2026-08-05'), p(2, '2026-08-09')])
+    expect(pick?.first.id).toBe('1')
+    expect(pick?.second).toBeNull()
+    expect(pick?.moreCount).toBe(0)
+  })
+
+  it('carries the second evening of the same Zagreb day', () => {
+    // A morning Experience and the 21:00 redovna: two questions, one day.
+    const pick = pickHeroPerformances([
+      p(1, '2026-08-05', '10:00'),
+      p(2, '2026-08-05', '21:00'),
+      p(3, '2026-08-09'),
+    ])
+    expect(pick?.first.id).toBe('1')
+    expect(pick?.second?.id).toBe('2')
+    expect(pick?.moreCount).toBe(0)
+  })
+
+  it('never picks up a cancelled evening, first or second', () => {
+    const cancelledFirst = pickHeroPerformances([
+      p(1, '2026-08-05', '10:00', true),
+      p(2, '2026-08-05', '21:00'),
+    ])
+    expect(cancelledFirst?.first.id).toBe('2')
+    expect(cancelledFirst?.second).toBeNull()
+
+    const cancelledSecond = pickHeroPerformances([
+      p(1, '2026-08-05', '10:00'),
+      p(2, '2026-08-05', '21:00', true),
+    ])
+    expect(cancelledSecond?.first.id).toBe('1')
+    expect(cancelledSecond?.second).toBeNull()
+  })
+
+  it('caps the card at two and counts the rest of the day', () => {
+    const pick = pickHeroPerformances([
+      p(1, '2026-08-05', '09:00'),
+      p(2, '2026-08-05', '11:00'),
+      p(3, '2026-08-05', '21:00'),
+    ])
+    expect(pick?.first.id).toBe('1')
+    expect(pick?.second?.id).toBe('2')
+    expect(pick?.moreCount).toBe(1)
+  })
+
+  it('counts only the FIRST evening’s day, never the next one', () => {
+    const pick = pickHeroPerformances([
+      p(1, '2026-08-05', '21:00'),
+      p(2, '2026-08-09', '10:00'),
+      p(3, '2026-08-09', '21:00'),
+    ])
+    expect(pick?.second).toBeNull()
+    expect(pick?.moreCount).toBe(0)
+  })
+
+  it('is null when there is nothing, or nothing but cancellations', () => {
+    expect(pickHeroPerformances([])).toBeNull()
+    expect(pickHeroPerformances([p(1, '2026-08-05', '21:00', true)])).toBeNull()
   })
 })
 

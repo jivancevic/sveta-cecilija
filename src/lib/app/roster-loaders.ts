@@ -247,6 +247,47 @@ export function pickNextPerformance(
   return upcoming.find((p) => !p.cancelled) ?? null
 }
 
+/**
+ * The evenings the hero shows: the next one, and the one that shares its day.
+ *
+ * A day with two nastupa is ordinary here — an Experience in the morning and a
+ * redovna at 21:00, two ship groups an hour apart — and a hero that shows only
+ * the first of them asks a dancer to answer for one evening while the other
+ * one, the same afternoon, is three screens away in the agenda (#591).
+ *
+ * **A day is a calendar day in Korčula and nothing else.** `shows.date` is a
+ * `dayOnly` column already written in Europe/Zagreb, so two rows share a day
+ * exactly when their `date` strings match: no clock is read here and no
+ * instant is compared, which is what keeps this pure and keeps a phone in
+ * another timezone from splitting an evening off its own morning.
+ *
+ * Capped at TWO. Three nastupa in a day happen (a festival, three Experiences)
+ * and three halves on a phone is a list pretending to be a hero, so the rest
+ * are a count and a way into the agenda. A cancelled row is skipped throughout,
+ * for the same reason `pickNextPerformance` skips it: the hero answers "where
+ * am I next", never "nowhere, this is off".
+ */
+export interface HeroPick {
+  /** The next non-cancelled evening. */
+  first: RosterPerformance
+  /** The one sharing its day, when there is one. */
+  second: RosterPerformance | null
+  /** How many more non-cancelled evenings share that day beyond those two. */
+  moreCount: number
+}
+
+export function pickHeroPerformances(upcoming: readonly RosterPerformance[]): HeroPick | null {
+  const live = upcoming.filter((p) => !p.cancelled)
+  const first = live[0]
+  if (!first) return null
+  const sameDay = live.filter((p) => p.id !== first.id && p.date === first.date)
+  return {
+    first,
+    second: sameDay[0] ?? null,
+    moreCount: Math.max(0, sameDay.length - 1),
+  }
+}
+
 /** One month's worth of the agenda. */
 export interface MonthGroup {
   /** 1-12. */

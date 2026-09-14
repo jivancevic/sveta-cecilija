@@ -198,8 +198,11 @@ describe('identityOf', () => {
 })
 
 describe('heroView', () => {
+  /** One evening, as the hero loader hands it over. */
+  const solo = (p: RosterPerformance) => ({ first: p, second: null, moreCount: 0 })
+
   it('splits the date into the big day and the genitive month', () => {
-    expect(heroView(performance())).toMatchObject({
+    expect(heroView(solo(performance()))).toMatchObject({
       eyebrow: 'Sljedeći nastup · Ljetno kino',
       day: '14',
       month: 'rujna',
@@ -211,7 +214,7 @@ describe('heroView', () => {
   })
 
   it('names a booking Vanredna in the meta line too, and its place in the eyebrow', () => {
-    expect(heroView(booking())).toMatchObject({
+    expect(heroView(solo(booking()))).toMatchObject({
       eyebrow: 'Sljedeći nastup · Luka',
       meta: 'Ponedjeljak · 10:00 · Vanredna',
       tone: 'extra',
@@ -219,7 +222,7 @@ describe('heroView', () => {
   })
 
   it('names an Experience by its own word and carries its own tone (#591)', () => {
-    expect(heroView(booking({ kind: 'experience' }))).toMatchObject({
+    expect(heroView(solo(booking({ kind: 'experience' })))).toMatchObject({
       meta: 'Ponedjeljak · 10:00 · Experience',
       tone: 'experience',
     })
@@ -227,14 +230,93 @@ describe('heroView', () => {
 
   it('hands the ArmyBar the counts and the evening’s own thresholds', () => {
     const out = heroView(
-      performance({
-        chip: {
-          crni: { count: 7, threshold: 8, below: true },
-          bili: { count: 9, threshold: 6, below: false },
-        },
-      }),
+      solo(
+        performance({
+          chip: {
+            crni: { count: 7, threshold: 8, below: true },
+            bili: { count: 9, threshold: 6, below: false },
+          },
+        }),
+      ),
     )
     expect(out.armies).toEqual({ crni: 7, bili: 9, threshold: { crni: 8, bili: 6 } })
+  })
+
+  it('carries no halves and no "more" line for an ordinary single evening', () => {
+    const out = heroView(solo(performance()))
+    expect(out.halves).toBeNull()
+    expect(out.moreLabel).toBeNull()
+  })
+
+  // #591: a day with two nastupa on it is one card with two answers in it.
+  describe('two on one day', () => {
+    const morning = booking({
+      id: '11',
+      kind: 'experience',
+      time: '10:00',
+      location: 'Prostor Sv. Cecilije',
+      myAnswer: 'coming',
+      myArmy: 'crni',
+      chip: {
+        crni: { count: 7, threshold: 8, below: true },
+        bili: { count: 5, threshold: 8, below: true },
+      },
+    })
+    const evening = performance()
+    const split = { first: evening, second: morning, moreCount: 0 }
+
+    it('names the day in the plural and drops the single evening’s meta line', () => {
+      const out = heroView(split)
+      expect(out.eyebrow).toBe('Sljedeći nastupi')
+      // The date stays shared and big; the times live in the halves.
+      expect(out.day).toBe('14')
+      expect(out.meta).toBe('Ponedjeljak')
+    })
+
+    it('gives each half its own time, word, place and answer', () => {
+      const halves = heroView(split).halves
+      expect(halves).toHaveLength(2)
+      expect(halves?.[0]).toMatchObject({
+        id: '10',
+        time: '21:00',
+        title: 'Redovna',
+        tone: 'regular',
+        place: 'Ljetno kino',
+        answer: null,
+        href: '/app/moreska/10',
+      })
+      expect(halves?.[1]).toMatchObject({
+        id: '11',
+        time: '10:00',
+        title: 'Experience',
+        tone: 'experience',
+        place: 'Prostor Sv. Cecilije',
+        answer: 'coming',
+        army: 'Crni',
+        armiesLine: 'crni 7 · bili 5',
+        href: '/app/moreska/11',
+      })
+    })
+
+    it('drops the ArmyBar: a bar is one evening’s, and two under one date is a chart', () => {
+      const out = heroView({
+        first: performance({
+          chip: {
+            crni: { count: 7, threshold: 8, below: true },
+            bili: { count: 9, threshold: 6, below: false },
+          },
+        }),
+        second: morning,
+        moreCount: 0,
+      })
+      expect(out.armies).toBeNull()
+    })
+
+    it('counts the rest of the day in Croatian, singular and plural', () => {
+      expect(heroView({ ...split, moreCount: 1 }).moreLabel).toBe('još 1 nastup taj dan ›')
+      expect(heroView({ ...split, moreCount: 2 }).moreLabel).toBe('još 2 nastupa taj dan ›')
+      expect(heroView({ ...split, moreCount: 5 }).moreLabel).toBe('još 5 nastupa taj dan ›')
+    })
   })
 })
 

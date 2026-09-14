@@ -130,6 +130,47 @@ under Izvedbe. Three consequences, all of them deliberate:
   everything under it, so `/app/moreska/[id]` lights the Moreška tab for a
   dancer and a voditelj alike.
 
+### The hero is a DAY, not an evening (#591)
+
+Both screens that draw one — Početna's Moreška card and Moreška itself — go
+through `pickHeroPerformances()` (`roster-loaders.ts`) and `heroView()`
+(`moreska-screen.ts`), so they can never split a day differently or name the
+same evening two ways.
+
+- **A day is `shows.date`, a Zagreb calendar day.** The column is `dayOnly` and
+  already written in Europe/Zagreb, so two rows share a day exactly when their
+  date strings match. No clock is read and no instant is compared, which is what
+  keeps the function pure and keeps a phone in another timezone from splitting
+  an evening off its own morning.
+- **Two halves at most**, plus a count. A morning Experience and the 21:00
+  redovna is ordinary; three nastupa in a day happen, and three halves on a
+  phone is a list pretending to be a hero. The rest become "još 1 nastup taj
+  dan ›" linking into the agenda.
+- **Each half is a whole question**: its own time, its own kind word, its own
+  place, its own Dolazim / Ne dolazim (`Answer small`) and its own "crni N ·
+  bili M". A dancer may be in one of the two and not in the other.
+- **No ArmyBar in a half.** The bar is a statement about ONE evening's two
+  lines; two of them under one date is a chart. It stays on the single hero and
+  on Stanje.
+- A cancelled row is skipped throughout, first or second, for the same reason
+  `pickNextPerformance` skips it: the hero answers "where am I next", never
+  "nowhere, this is off".
+
+### An evening reads as one of THREE categories (#591)
+
+`src/lib/app/performance-kind.ts` is the only place that knows: `kindWord()`
+gives "Redovna", "Vanredna" or "Experience" and `kindTone()` gives
+`regular | extra | experience` for whatever dresses it. The hero, the Stanje
+head and the Moreška rows all read it.
+
+Q30 of #565 had two words and "Vanredna" covered every non-regular kind. That
+is still right for a ship group, a concert or a charity evening and wrong for
+the Moreška Experience, which has a postava of its own and its own half of
+Ljestvica (glossary: *Moreška Experience*, *Vanredna izvedba*). The word is the
+English one because that is what the society calls the product. The tone is a
+CATEGORY and never a colour: `DateDisc` maps it to gold, nothing, or copper
+(`--copper` / `--onCopper`, a first pass; #592 settles the palette).
+
 ### The access rule
 
 **A signed-in account is in when its permission set unlocks at least one
