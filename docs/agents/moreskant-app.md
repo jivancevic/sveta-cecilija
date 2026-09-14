@@ -372,7 +372,7 @@ Access follows the **roster, not the login table**: unticking `active` or `isMor
 
 `public/manifest.webmanifest`: name and short name "Cecilija", `display: standalone`, `start_url` and `scope` `/app`, stone background and gold theme taken from the `.t-stone` tokens, 192 and 512 px PNG icons plus a 512 px maskable one (the webp rule in `assets.md` covers photos in `public/`; manifest icons are PNG by spec). Linked from the `/app` layout only, so no public page advertises it.
 
-The icons are **generated, not drawn**: `node scripts/generate-app-icons.mjs` builds `cecilija-icon-192.png`, `cecilija-icon-512.png`, `cecilija-icon-maskable-512.png` and the root `apple-touch-icon.png` from `assets/images/cecilija-logo.png` (ImageMagick, the same local tool `assets.md` assumes for `cwebp`). The maskable one carries a smaller crest because Android crops to the central 80% circle, and it drops the gold hairline the other three have. A logo change is one command, never a hunt through `public/`.
+The icons are **generated, not drawn**: `node scripts/generate-app-icons.mjs` builds `cecilija-icon-192.png`, `cecilija-icon-512.png`, `cecilija-icon-maskable-512.png` and the root `apple-touch-icon.png` from `assets/images/cecilija-logo.png` (ImageMagick, the same local tool `assets.md` assumes for `cwebp`). The maskable one carries a smaller crest because Android crops to the central 80% circle. **No icon carries a frame**: a gold hairline was drawn inset until #596, and on an iPhone home screen it read as a second border just inside the system's own squircle mask. A logo change is one command, never a hunt through `public/`.
 
 **The icon an iPhone installs is not the manifest's.** iOS reads the
 `apple-touch-icon` link, which Next emits from the nearest segment's

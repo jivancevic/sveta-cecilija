@@ -11,9 +11,10 @@
 //   - the ground is the app's own `--bg` (#0a0a0a), the same colour as the
 //     manifest's `background_color`, so the splash screen and the icon are one
 //     surface rather than two blacks;
-//   - the gold hairline (#b8881a, the manifest's `theme_color`) is what keeps
-//     the icon from reading as a hole on a dark home screen. It is INSET, and
-//     it is dropped from the maskable icon, which a launcher crops to a circle;
+//   - there is NO frame around the crest: a gold hairline was drawn inset until
+//     #596, and on an iPhone home screen it read as a second, competing border
+//     just inside the system's own squircle mask. The crest on the ground is the
+//     whole drawing now;
 //   - the maskable icon carries a smaller crest: Android's safe zone is the
 //     central 80% circle, so a crest wider than ~60% of the square can lose its
 //     wreath to a round or squircle mask.
@@ -34,7 +35,6 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const SOURCE = path.join(root, 'assets/images/cecilija-logo.png')
 
 const GROUND = '#0a0a0a'
-const GOLD = '#b8881a'
 
 /**
  * The five files, where each goes, and how much of its square the crest fills.
@@ -48,18 +48,18 @@ const GOLD = '#b8881a'
  * roster ever sees.
  */
 const ICONS = [
-  { file: 'public/cecilija-icon-192.png', size: 192, crest: 0.76, frame: true },
-  { file: 'public/cecilija-icon-512.png', size: 512, crest: 0.76, frame: true },
-  { file: 'public/cecilija-icon-maskable-512.png', size: 512, crest: 0.58, frame: false },
-  { file: 'public/apple-touch-icon.png', size: 180, crest: 0.76, frame: true },
-  { file: 'src/app/app/apple-icon.png', size: 180, crest: 0.76, frame: true },
+  { file: 'public/cecilija-icon-192.png', size: 192, crest: 0.76 },
+  { file: 'public/cecilija-icon-512.png', size: 512, crest: 0.76 },
+  { file: 'public/cecilija-icon-maskable-512.png', size: 512, crest: 0.58 },
+  { file: 'public/apple-touch-icon.png', size: 180, crest: 0.76 },
+  { file: 'src/app/app/apple-icon.png', size: 180, crest: 0.76 },
 ]
 
 function magick(args) {
   execFileSync('magick', args, { stdio: ['ignore', 'ignore', 'inherit'] })
 }
 
-function render({ file, size, crest, frame }) {
+function render({ file, size, crest }) {
   const out = path.join(root, file)
   const crestPx = Math.round(size * crest)
 
@@ -77,26 +77,6 @@ function render({ file, size, crest, frame }) {
     '-extent',
     `${size}x${size}`,
   ]
-
-  if (frame) {
-    // A hairline, not a border: 1px at 192, scaled up with the icon so the two
-    // sizes are the same drawing rather than two different weights.
-    const inset = Math.max(2, Math.round(size * 0.055))
-    const stroke = Math.max(1, Math.round(size * 0.0075))
-    const radius = Math.round(size * 0.12)
-    const a = inset
-    const b = size - inset - 1
-    args.push(
-      '-fill',
-      'none',
-      '-stroke',
-      GOLD,
-      '-strokewidth',
-      String(stroke),
-      '-draw',
-      `roundrectangle ${a},${a} ${b},${b} ${radius},${radius}`,
-    )
-  }
 
   args.push('-strip', 'PNG32:' + out)
   magick(args)
