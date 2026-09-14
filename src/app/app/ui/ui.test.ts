@@ -250,6 +250,14 @@ describe('Trophy', () => {
     expect(render(h(Trophy, { place: 0 }))).toBe('')
   })
 
+  // #627, Q1: the blades on Ljestvica, a cup on the tile that leads there.
+  it('draws a cup when asked for one, and the blades by default', () => {
+    const cup = render(h(Trophy, { place: 1, shape: 'cup' }))
+    expect(cup).toContain('ui-trophy--1')
+    expect(cup).not.toContain(SWORDS_PATHS.blades[0])
+    expect(render(h(Trophy, { place: 1 }))).toContain(SWORDS_PATHS.blades[0])
+  })
+
   it('has a small size for a mark that stands in a list row', () => {
     expect(render(h(Trophy, { place: 1, small: true }))).toContain('ui-trophy--sm')
     expect(render(h(Trophy, { place: 1 }))).not.toContain('ui-trophy--sm')

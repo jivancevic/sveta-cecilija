@@ -216,7 +216,13 @@ function renderTile(card: HomeCard) {
             label: entry.label,
             value: entry.value,
             me: entry.me,
-            cup: index === 0 ? <Trophy place={1} small className="ui-podium__cup" /> : undefined,
+            // A CUP here and the blades on Ljestvica itself (#627, Q1): this
+            // tile's job is to lead to that screen, and the cup is the mark the
+            // Ljestvica tab already wears.
+            cup:
+              index === 0 ? (
+                <Trophy place={1} small shape="cup" className="ui-podium__cup" />
+              ) : undefined,
           }))}
         />
       </Tile>

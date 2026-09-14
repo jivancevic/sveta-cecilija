@@ -11,11 +11,19 @@
 // of the place: one drawing, three colours, and a top three that could not
 // belong to any other app.
 //
+// **Two shapes, by where it stands** (#627, Q1). On LJESTVICA the blades stay:
+// the reader is already on the board, and there the society's own mark is the
+// better one. On POČETNA's podium tile it is a cup — the same lucide trophy the
+// Ljestvica tab wears two centimetres below it — because that tile's whole job
+// is to lead to Ljestvica, and the cup is what says "leaderboard" before
+// anybody has read a word. The blades say "us"; the cup says "over there".
+//
 // The place itself is NOT drawn inside it. It sits beside it, in the metal, in
 // the serif the rest of this app sets numbers in: at 26px on a phone a numeral
 // inside a silhouette is unreadable, and the podium's step and the list's rank
 // column both already print the number.
 
+import { Trophy as CupIcon } from 'lucide-react'
 import { SWORDS_PATHS } from './ScreenIcon'
 
 export interface TrophyProps {
@@ -23,15 +31,30 @@ export interface TrophyProps {
   place: number
   /** 20px instead of 26px, for a mark that stands in a list row. */
   small?: boolean
+  /**
+   * `swords` (the default) on Ljestvica, `cup` on the tile that leads to it.
+   * See the note at the top of this file.
+   */
+  shape?: 'swords' | 'cup'
   className?: string
 }
 
-export function Trophy({ place, small = false, className }: TrophyProps) {
+export function Trophy({ place, small = false, shape = 'swords', className }: TrophyProps) {
   if (!Number.isInteger(place) || place < 1 || place > 3) return null
 
   const classes = ['ui-trophy', `ui-trophy--${place}`, small ? 'ui-trophy--sm' : '', className ?? '']
     .filter(Boolean)
     .join(' ')
+
+  if (shape === 'cup') {
+    return (
+      <span className={classes} role="img" aria-label={`${place}. mjesto`}>
+        {/* `currentColor` and no size: the metal comes from `ui-trophy--n` and
+            the box from `.ui-trophy svg`, exactly as the blades do. */}
+        <CupIcon strokeWidth={2.1} aria-hidden="true" />
+      </span>
+    )
+  }
 
   return (
     <span className={classes} role="img" aria-label={`${place}. mjesto`}>

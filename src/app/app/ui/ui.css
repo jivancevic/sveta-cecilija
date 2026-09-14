@@ -720,7 +720,11 @@ button.ui-row:hover {
 
 /* A nickname is as long as its owner made it and the step is a third of a
    phone: it ends in an ellipsis rather than wrapping the podium out of shape. */
+/* Labrada, as every nickname in this app is (#627, Q11): the podium was the
+   one place a name was set in the platform's face, so the top three read as a
+   different kind of thing from the rows under them. */
 .ui-podium__name {
+  font-family: var(--serif);
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1219,11 +1223,17 @@ button.ui-army:active {
 }
 
 /* The initials, when the disc stands for a person and not for a title (#573).
-   The mono face is the app's "this is an identifier" voice, and the letters
-   stay the disc's own colour, so a crni reads grey on ink exactly as a crown
-   does. */
+   The letters stay the disc's own colour, so a crni reads grey on ink exactly
+   as a crown does.
+
+   **Labrada, and everywhere the disc is drawn** (#627, Q11). It was the mono
+   face, the app's "this is an identifier" voice — but a disc with two letters
+   in it is a PERSON, not a code, and the app already sets a person's name in
+   the serif. Two letters is also the one size at which a face is read as a
+   shape rather than as text, which is what makes the discs down a list read as
+   a column of people. */
 .ui-mark i {
-  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-family: var(--serif);
   font-size: 14px;
   font-style: normal;
   font-weight: 600;

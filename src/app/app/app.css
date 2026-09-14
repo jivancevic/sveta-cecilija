@@ -3450,7 +3450,11 @@ a.app__ob-link {
    tabular was wanted for. */
 .app__lb-rank {
   min-width: 26px;
-  font-family: var(--serif);
+  /* The utility face, not Labrada (#627, Q11). An ordinal is a position in a
+     list and not one of the app's figures: the count on the right is the number
+     this row is ABOUT, and setting both in the serif made the row read as two
+     headline numbers with a name between them. */
+  font-family: var(--sans);
   font-style: normal;
   font-size: 15px;
   font-weight: 600;
@@ -3458,11 +3462,15 @@ a.app__ob-link {
   text-align: right;
 }
 
-/* And the nickname with it. The two together are what a reader's eye actually
-   lands on — "tko je 4." — so they are set in the face the rest of the app
-   reserves for its figures and its headings, while the count on the right keeps
-   its own. */
-.app__lb-race .ui-row__body b {
+/* The nickname, in the face the rest of the app reserves for a name.
+   **The child combinator is load-bearing** (#627): `.ui-row__body b` also
+   caught the role tallies, which live inside the row's meta line, and they
+   inherited Labrada while their own rule re-declared size, weight and
+   `tabular-nums` without a family. Labrada's tabular figures are a third wider
+   than its proportional ones (#611), so "17" rendered as "1 7" — the "cijeli
+   popis mi je konfuzan" of the phone round. The row's title is a direct child;
+   the tallies are not. */
+.app__lb-race .ui-row__body > b {
   font-family: var(--serif);
   font-size: 16px;
   font-weight: 600;
@@ -3598,6 +3606,10 @@ a.app__ob-link {
 }
 
 .app__lb-tally b {
+  /* Stated rather than inherited (#627): this number is a count beside a role,
+     which is the utility face's job, and saying so here means no future rule
+     over the row can quietly hand it the serif again. */
+  font-family: var(--sans);
   font-size: 12px;
   font-weight: 600;
   font-variant-numeric: tabular-nums;
@@ -3609,7 +3621,6 @@ a.app__ob-link {
    three read as medalled WITHOUT losing the initials that say who they are.
    A cup in the row was the first attempt and it took the person away. */
 .app__lb-lead[data-place] .app__lb-rank {
-  font-family: var(--serif);
   font-size: 15px;
   font-weight: 700;
 }
@@ -3744,6 +3755,10 @@ a.app__ob-link {
   gap: 12px;
 }
 
+  /* No `tabular-nums` on a Labrada figure (#611, swept in #627): its tabular
+     digits are a third wider than its proportional ones, so a two-digit number
+     comes out with a hole in the middle of it. This figure stands alone rather
+     than in a scrolling column, so nothing is lost by dropping it. */
 .app__lb-you-rank {
   flex: none;
   font-family: var(--serif);
@@ -3751,7 +3766,6 @@ a.app__ob-link {
   font-weight: 700;
   line-height: 1;
   color: var(--goldText);
-  font-variant-numeric: tabular-nums;
 }
 
 /* ── The row's answer: two circles (#624) ──────────────────
@@ -4788,7 +4802,6 @@ a.app__ob-link {
 
 .app__scan-figure b {
   font-family: var(--serif);
-  font-variant-numeric: tabular-nums;
   font-size: 52px;
   font-weight: 600;
 }
@@ -6342,7 +6355,6 @@ span.app__sale-head {
 .app__st-fig b {
   display: block;
   font-family: var(--serif);
-  font-variant-numeric: tabular-nums;
   font-size: 30px;
   font-weight: 600;
   line-height: 1.1;
@@ -6788,7 +6800,6 @@ a.app__statrow-main:focus-visible {
 .app__fin-figure {
   margin: 2px 0 0;
   font-family: var(--serif);
-  font-variant-numeric: tabular-nums;
   font-size: 34px;
   line-height: 1.1;
 }
@@ -7774,7 +7785,6 @@ a.app__statrow-main:focus-visible {
   font-family: var(--serif);
   font-size: 17px;
   font-weight: 600;
-  font-variant-numeric: tabular-nums;
 }
 
 /* Short of the threshold. The same warn the ArmyBar's own number takes, so the
