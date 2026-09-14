@@ -46,16 +46,25 @@ export function showsReadAccess(user: PermissionUser): boolean | Where {
 }
 
 /**
- * Create: the backoffice creates anything; a voditelj creates non-public
- * performances only. Payload treats a `Where` on create as "allowed" (it has no
- * row to filter yet), so the invariant is really carried by
- * {@link nonPublicAuthoringOverrides} in the collection's beforeValidate hook —
- * the Where documents the intent and is what the API reports as the constraint.
+ * Create: both holders of the schedule create either kind of performance
+ * (#567, Q53).
+ *
+ * It used to be "the backoffice creates anything, a voditelj creates non-public
+ * performances only", carried by an override in the collection's beforeValidate
+ * hook because Payload reads a `Where` on create as plain "allowed". Izvedbe is
+ * now one register for both halves: a voditelj enters the season's public
+ * evenings as readily as the secretary enters a cruise call, and what a public
+ * evening COSTS — cancelling it, moving its date or its house, its ledger and
+ * its pause — is gated action by action instead
+ * (`src/lib/app/performance-actions.ts`), in each action's own route.
+ *
+ * What did NOT widen is editing a public row's schedule in the Backoffice:
+ * {@link canEditScheduleField} still refuses a voditelj the date, the time, the
+ * house and the status of a public evening, because changing one there mails
+ * nobody. On Cecilija those are named actions that do tell the buyers.
  */
-export function showsCreateAccess(user: PermissionUser): boolean | Where {
-  if (can(user, 'tickets')) return true
-  if (can(user, 'moreska')) return NON_PUBLIC_PERFORMANCE_WHERE
-  return false
+export function showsCreateAccess(user: PermissionUser): boolean {
+  return isScheduleHolder(user)
 }
 
 /**
@@ -92,11 +101,26 @@ export function showsHiddenInAdmin(user: PermissionUser): boolean {
 }
 
 /**
- * The public flag: `tickets` only, on create and on update. A sales show can
- * only ever be born in the ticket backoffice.
+ * The public flag on an EXISTING row: `tickets` only.
+ *
+ * Turning a selling evening private (or a private one into a seller) changes
+ * what a row IS after people may already hold tickets for it, so it stays with
+ * the desk that answers for those tickets.
  */
 export function canSetPublicFlag(user: PermissionUser): boolean {
   return can(user, 'tickets')
+}
+
+/**
+ * The public flag on a NEW row: either holder of the schedule (#567, Q53).
+ *
+ * A voditelj entering next season's Redovna dates has to be able to say that
+ * they sell tickets. It is a create-only widening on purpose: nothing is sold
+ * yet and nobody has been told anything, which is exactly what makes the same
+ * flip on an existing row the blagajna's.
+ */
+export function canAuthorPublicFlag(user: PermissionUser): boolean {
+  return isScheduleHolder(user)
 }
 
 /**
@@ -138,35 +162,15 @@ export function canEditPlacementField(user: PermissionUser): boolean {
   return isScheduleHolder(user)
 }
 
-/**
- * The invariant: a holder of `moreska` without `tickets` can never produce a
- * public row.
+/*
+ * `nonPublicAuthoringOverrides` lived here until #567 (Q53).
  *
- * Field access alone cannot carry this. Payload enforces field access during
- * the *field* beforeValidate pass, where a denied value is dropped and replaced
- * by the field's `defaultValue` — and `isPublic` defaults to `true`, so a
- * voditelj's create would silently land as public. The *collection*
- * beforeValidate hook runs after that pass, which makes it the last word: this
- * function returns the keys it must force.
- *
- * `kind` comes along because `redovna` is public by definition (the validator
- * rejects a non-public redovna), and `redovna` is the form's default: a
- * voditelj who leaves the kind alone gets `ostalo`, not a save error.
- *
- * Only an authenticated non-`tickets` session is touched. The trusted server
- * paths (Stripe webhook, bulk create, in-person sales, the seeds) call the
- * local API with no `req.user` and must pass through untouched.
+ * It forced every create by a `moreska` holder without `tickets` to be
+ * non-public and non-redovna, because Payload's field-access pass drops a
+ * denied value and falls back to the field's default — and `isPublic` defaults
+ * to `true`, so a refused voditelj's create would silently have landed as a
+ * public row. With the create side of the flag open to both halves
+ * (`canAuthorPublicFlag`) there is no denied value to fall back from, and the
+ * two remaining invariants are the validator's: a Redovna is always public, and
+ * a public evening needs a house while a booking needs a place.
  */
-export function nonPublicAuthoringOverrides(
-  user: PermissionUser,
-  operation: string,
-  merged: { isPublic?: unknown; kind?: unknown },
-): { isPublic?: false; kind?: string } {
-  if (operation !== 'create') return {}
-  if (!user || can(user, 'tickets')) return {}
-
-  const overrides: { isPublic?: false; kind?: string } = {}
-  if (merged.isPublic !== false) overrides.isPublic = false
-  if (merged.kind == null || merged.kind === 'redovna') overrides.kind = 'ostalo'
-  return overrides
-}

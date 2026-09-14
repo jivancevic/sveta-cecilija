@@ -11,11 +11,17 @@ import { performanceFormDeps } from '@/lib/app/performance-form-deps'
 // The `/app` cross-site guard is inside the pure handler, as on every other
 // cookie-authenticated `/app` POST.
 //
-// The gate lets EITHER half of Izvedbe in and the handler decides which kind of
-// row this particular body may become (#502): a public evening needs `tickets`,
-// a booking needs `moreska`. That split is a property of the row rather than of
-// the URL, which is why it is settled in `performance-form.ts` and re-checked
-// there against the caller's own set rather than assumed from the gate.
+// The gate lets EITHER half of Izvedbe in, and since #567 (Q53) so does the
+// handler: a voditelj and the secretary may both enter both kinds of evening,
+// because a season's schedule is one job. The handler still re-checks the set
+// it was handed (`mayWritePerformance`) rather than trusting the gate, because
+// the local API runs `overrideAccess: true` and the collection cannot be the
+// one to say no; what it no longer does is ask WHICH half is knocking.
+//
+// The money and the buyers are where the two halves still part, and that is one
+// permission per ACTION in the routes those actions have
+// (`/api/shows/[id]/{cancel,reschedule,move-to-indoor,offline-sales}` and
+// `…/[id]/pause`), mapped for the screen by `lib/app/performance-actions.ts`.
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'

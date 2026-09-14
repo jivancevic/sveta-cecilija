@@ -464,8 +464,11 @@ describe('Shows access', () => {
     expect(call(Shows.access?.read, anon)).toBe(false)
   })
 
-  it('a voditelj creates and deletes non-public performances only', () => {
-    expect(raw(Shows.access?.create, voditelj)).toEqual({ isPublic: { equals: false } })
+  it('a voditelj creates any performance (#567) and deletes non-public ones only', () => {
+    // Create widened with #567 (Q53): Izvedbe is one register and both halves
+    // enter a season. Deleting a row somebody may hold a ticket for stays with
+    // the desk that sold it.
+    expect(raw(Shows.access?.create, voditelj)).toBe(true)
     expect(raw(Shows.access?.delete, voditelj)).toEqual({ isPublic: { equals: false } })
     // Update reaches every row: the roster note and thresholds belong on public
     // shows too. The field-level locks below decide what may change there.

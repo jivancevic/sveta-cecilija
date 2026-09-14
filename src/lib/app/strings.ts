@@ -749,14 +749,19 @@ export const APP_STRINGS = {
     publicRow:
       'Ovo je javna izvedba. Njezin datum, mjesto i otkazivanje vodi blagajna, jer o tome ovise prodane ulaznice.',
     /**
-     * The two halves of Dodaj, each refusing the other's row (#502).
+     * The one refusal Dodaj and Uredi have left (#567, Q53).
      *
-     * Both name the person who CAN do it rather than the permission that is
-     * missing: "blagajna" and "voditelj" are words the reader uses about their
-     * own society, and `tickets` is a word from the codebase.
+     * Both halves of Izvedbe may now enter and correct both kinds of evening,
+     * so the two sentences that told each half off the other's row are gone
+     * (#502's `publicNeedsTickets` and `nonPublicNeedsMoreska`). What remains
+     * is the caller who holds neither word and has no business on this screen
+     * at all — the route's own gate answers that first, so this is the
+     * handler's backstop rather than something a reader meets.
+     *
+     * It names the SCREEN rather than a permission: `tickets` and `moreska` are
+     * words from the codebase.
      */
-    publicNeedsTickets: 'Javnu izvedbu, koja prodaje ulaznice, unosi blagajna.',
-    nonPublicNeedsMoreska: 'Izvedbu koja ne prodaje ulaznice unosi voditelj.',
+    needsIzvedbe: 'Izvedbe unose blagajna i voditelj.',
     /** The blagajna's own fields on a public evening (#502). */
     venue: 'Mjesto',
     isPublic: 'Javna izvedba, prodaje ulaznice',
@@ -2148,6 +2153,45 @@ export const APP_STRINGS = {
   },
 
   /**
+   * Izvedbe, the box-office register of the season (#567).
+   *
+   * Every word here is in the SELLING register: an evening is an *izvedba*,
+   * never a *nastup* (CONTEXT.md, *Two registers*). The dancer's words for the
+   * same evening live in `moreska` and in `stanje`, and the two vocabularies
+   * never borrow from each other — a person who holds both sets reads "nastup"
+   * on Moreška and "izvedba" here for the same night, which is correct.
+   *
+   * The screen is one screen for both halves (#476): the blagajna's numbers and
+   * the voditelj's own bookings are rows of the same list, so the words that
+   * name a row are here rather than in either half's block.
+   */
+  izvedbe: {
+    /** The hero: the next evening on the schedule, whoever is reading. */
+    next: 'Sljedeća izvedba',
+    /** The quiet count beside a month heading. */
+    count: { one: 'izvedba', few: 'izvedbe', many: 'izvedbi' },
+    past: (count: number) => `Prošle izvedbe (${count})`,
+    /** A row's own line about its sale: "prodano 132 od 350". */
+    sold: (sold: number, capacity: number) => `prodano ${sold} od ${capacity}`,
+    /** The title of a row that sells nothing and has no client to name. */
+    booking: 'Izvedba po narudžbi',
+    /** The detail's cards, in the order they are read. */
+    salesCard: 'Prodaja',
+    actionsCard: 'Radnje',
+    performanceCard: 'Izvedba',
+    lineupCard: 'Postava',
+    compCard: 'Gratis ulaznice',
+    /** Where a booking's own two facts are printed, for a reader who is not a dancer. */
+    place: 'Mjesto',
+    client: 'Naručitelj',
+    /** Two ways to have no next izvedba, and they are not the same news. */
+    eosTitle: 'Sezona je završila',
+    eosBody: (date: string) => `Zadnja izvedba bila je ${date}.`,
+    eosNothingTitle: 'Sezona još nije počela',
+    eosNothing: 'Ove sezone još nije bilo izvedbi.',
+  },
+
+  /**
    * The blagajna's half of Izvedbe (#502): the numbers on a public evening and
    * the named actions that change it.
    *
@@ -2302,6 +2346,22 @@ export const APP_STRINGS = {
    */
   showActions: {
     title: 'Radnje',
+    /**
+     * Why a named action is greyed rather than missing (#567, Q53).
+     *
+     * A voditelj may now enter and correct a public evening, so they read this
+     * screen and its six actions; what they may NOT do is move the money or the
+     * buyers. The button stays where it is and says who to ask, because a
+     * control that disappears teaches nobody that it exists — and the route
+     * refuses the same request anyway, so the caption is the honest half of a
+     * refusal rather than the whole of the rule.
+     *
+     * Both sentences name a PERSON ("Blagajna", the desk that answers for the
+     * seats), never a permission word: `tickets` and `refunds` are words from
+     * the codebase.
+     */
+    needsBox: 'traži Blagajnu',
+    needsRefundsCaption: 'traži dozvolu za povrate',
     confirm: 'Potvrdi',
     cancel: 'Odustani',
     close: 'Zatvori',
@@ -2337,9 +2397,8 @@ export const APP_STRINGS = {
         'Izvedba je već otkazana. Ponovno pokretanje dovršava povrate i e-poštu koje raniji pokušaj nije stigao obaviti.',
       overLimit: (limit: number) =>
         `To je više od ${limit} poruka dnevno koliko Brevo dopušta, a dio današnje kvote je možda već potrošen. Poruke koje ne prođu broje se kao neuspjele: pokreni radnju ponovno sutra i poslat će se samo one koje su ostale.`,
-      needsRefunds:
-        'Otkazivanje vraća novac, pa traži dozvolu za povrate. Zamoli nekoga tko je ima (Tatjana, Josip).',
       confirm: 'Otkaži, vrati novac i obavijesti',
+      /** The way OUT of the cancel sheet: naming the outcome, not "Odustani". */
       keep: 'Zadrži izvedbu',
       done: (refunded: number, amount: string, voided: number, notified: number) =>
         `Otkazano. Povrat na ${refunded} narudžbi (${amount}), stornirano ${voided} ulaznica, obaviješteno ${notified} kupaca.`,

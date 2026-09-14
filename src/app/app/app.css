@@ -6550,8 +6550,14 @@ a.app__statrow-main:focus-visible {
 }
 
 /* The card that stands where the hero would: the season is over, or it has
-   not started. Same card, so the screen keeps its shape either way. */
-.app__empty {
+   not started. Same card, so the screen keeps its shape either way.
+
+   Scoped to a CARD (#567): `app__empty` is also the eight-year-old class for
+   "there is nothing in this list", a muted paragraph on half the screens in
+   the app, and an unscoped block here gave every one of them 26px of padding
+   and a centre. A card that is empty and a paragraph that says so are two
+   different shapes. */
+.ui-card.app__empty {
   margin-top: 4px;
   align-items: center;
   gap: 8px;
@@ -6559,14 +6565,14 @@ a.app__statrow-main:focus-visible {
   text-align: center;
 }
 
-.app__empty h2 {
+.ui-card.app__empty h2 {
   margin: 0;
   font-family: var(--serif);
   font-weight: 600;
   font-size: 20px;
 }
 
-.app__empty p {
+.ui-card.app__empty p {
   margin: 0;
   font-size: 14px;
   color: var(--muted);
@@ -6843,4 +6849,237 @@ a.app__statrow-main:focus-visible {
   .app__stanje-actions {
     bottom: 22px;
   }
+}
+
+/* ─────────────────────────────────────────────────────────
+   Izvedbe — the box office's register of the season (#567)
+
+   Layout only. Every shape on these two screens is a `ui-*` one (Card, Hero,
+   Ring, List, ListRow, DateDisc, Chip, Section, Sheet, Button, Toast) and none
+   of them is restyled here; what is below is how they stand next to each
+   other, plus the three things the design system has no shape for: a row's
+   second line about its sale, a greyed action with the person to ask under it,
+   and the grid of an evening's numbers.
+
+   The forms are the old ones (`PerformanceForm`, `ThresholdEditor`,
+   `NoteEditor`, `LineupEditor`) and they now live INSIDE cards, so the last
+   block here takes the box off them: a bordered panel inside a card is two
+   edges around one thing, and the uppercase mono micro-label the old skin put
+   on every field is the one pattern the audit named twice.
+   ───────────────────────────────────────────────────────── */
+
+/* ── The list ─────────────────────────────────────────────── */
+
+/* The seats, in the hero of the next evening. A voditelj has no ring here:
+   the whole block is absent from their payload rather than hidden. */
+.app__izv-hero-seats {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.app__izv-hero-seats b {
+  display: block;
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 22px;
+  line-height: 1.1;
+}
+
+.app__izv-hero-seats .ui-small {
+  display: block;
+  margin-top: 2px;
+}
+
+.app__izv-hero-link {
+  align-self: flex-start;
+  padding-left: 0;
+}
+
+/* One row's sale, under the hour and the house: what it sold, then where the
+   seats came from. A second LINE inside the row's meta rather than a fourth
+   thing on the row. */
+.app__izv-sales {
+  display: block;
+  margin-top: 3px;
+}
+
+.app__izv-sales b {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--ink);
+}
+
+/* The split is its own line under the figure: `.ui-row__body b` is a block, so
+   an inline span after it would hang one indent to the right of nothing. */
+.app__izv-sales > span {
+  display: block;
+}
+
+/* ── The detail's head ────────────────────────────────────── */
+
+/* The title is the DATE and the header draws it (Q32); this is the line under
+   it, which is what kind of evening it is and where. */
+.app__izv-head {
+  margin-bottom: 16px;
+}
+
+.app__izv-meta {
+  margin: 10px 0 0;
+  font-size: 15px;
+  color: var(--muted);
+}
+
+.app__izv-head .app__chips {
+  margin-top: 10px;
+}
+
+/* ── Prodaja ──────────────────────────────────────────────── */
+
+.app__izv-ring {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.app__izv-ring b {
+  display: block;
+  font-family: var(--serif);
+  font-weight: 600;
+  font-size: 24px;
+  line-height: 1.1;
+}
+
+.app__izv-split {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+/* Every number of the evening, two to a row on a phone and four on a laptop.
+   A definition list, because that is what it is: a label and its figure. */
+.app__izv-numbers {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 12px;
+  margin: 4px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--rule);
+}
+
+.app__izv-numbers dt {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.app__izv-numbers dd {
+  margin: 2px 0 0;
+  font-weight: 600;
+  font-size: 17px;
+}
+
+/* Under Prihod and never inside it (#538): face value the society has not
+   collected, named so it cannot quietly vanish and never summed into anything. */
+.app__izv-partner-face {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.app__izv-booking p {
+  margin: 0;
+}
+
+.app__izv-booking .ui-small {
+  display: block;
+}
+
+/* ── The six named actions ────────────────────────────────── */
+
+.app__izv-acts-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.app__izv-act {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.app__izv-act .ui-btn {
+  width: 100%;
+}
+
+/* Why a button is greyed rather than missing: who to ask. Quiet, and under the
+   control it belongs to — the route refuses the same request anyway, so this
+   is the courtesy half of a refusal. */
+.app__izv-act-why {
+  font-size: 12px;
+  color: var(--muted);
+  text-align: center;
+}
+
+@media (min-width: 700px) {
+  .app__izv-acts-row {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .app__izv-numbers {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* ── The old forms, inside the new cards ──────────────────── */
+
+.ui-card .app__perf-add,
+.ui-card .app__perf-edit,
+.ui-card .app__thresholds,
+.ui-card .app__note-edit,
+.ui-card .app__lineup {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+/* Two forms in one card are still two things: a hairline between them, the
+   same one a list draws between two rows. */
+.ui-card .app__thresholds,
+.ui-card .app__lineup {
+  margin-top: 4px;
+  padding-top: 12px;
+  border-top: 1px solid var(--rule);
+}
+
+/* The first control in a card has nothing above it to be divided from. */
+.ui-card .app__perf-edit > .app__lead-row:first-child,
+.ui-card .app__note-edit > .app__lead-row:first-child {
+  margin-top: 0;
+  border-top: 0;
+}
+
+/* A field's label is a label, not a printed programme's heading (audit
+   pattern 1): sentence case, the body face, the muted colour every other
+   secondary line on this screen uses. */
+.ui-card .app__perf-head,
+.ui-card .app__note-label,
+.ui-card .app__perf-field > span,
+.ui-sheet .app__perf-field > span {
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--muted);
+}
+
+.ui-card .app__perf-actions,
+.ui-sheet .app__perf-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
 }

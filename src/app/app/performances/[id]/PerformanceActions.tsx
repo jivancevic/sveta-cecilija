@@ -1,16 +1,24 @@
 'use client'
 
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { APP_STRINGS } from '@/lib/app/strings'
 import { formatEur } from '@/lib/app/orders-view'
 import { ledgerErrorMessage } from '@/lib/app/sales-view'
+import type {
+  PerformanceActionGate,
+  PerformanceActionGates,
+} from '@/lib/app/performance-actions'
 import { MAX_DISCOUNT_LABEL_LENGTH } from '@/lib/offline-sales/lines'
 import { Stepper } from '../../Stepper'
+import { Button, type ButtonVariant } from '../../ui/Button'
+import { Card } from '../../ui/Card'
+import { Sheet } from '../../ui/Sheet'
+import { Toast } from '../../ui/Toast'
 
-// The blagajna's named actions on one public evening (#502, #476's "named
-// actions only").
+// The six named actions on one public evening (#502, reskinned and gated by
+// #567).
 //
 // Five verbs and a link, each one a button with a sheet under it that says what
 // is about to happen before it happens. Three of them move money or mail every
@@ -18,12 +26,19 @@ import { Stepper } from '../../Stepper'
 // phone that dialog is a wall of system chrome over the page the decision is
 // about, and the second tap is the same decision made visibly.
 //
-// **Every route behind them already existed and is unchanged**, which is the
-// point of the ticket: this is a port of the five Backoffice edit-menu items
-// (`components/payload/{Cancel,RescheduleShow,MarkMovedToZimsko,InPersonSales,
-// ViewOrdersForShow}MenuItem.tsx`) onto a screen a person can open on the pier.
-// The one exception is Pauziraj, whose route is new because the pause had none
-// (#366 shipped it as a checkbox on the Shows form).
+// **Every route behind them already existed and is unchanged**, which was the
+// point of #502: this is the five Backoffice edit-menu items on a screen a
+// person can open on the pier. The two exceptions are Pauziraj, whose route was
+// new (#366 shipped the pause as a checkbox on the Shows form), and Otkaži,
+// which #567 taught to ask for `tickets` as well as `refunds`.
+//
+// **Who may press what is a PROP, computed on the server** (`gates`, from
+// `lib/app/performance-actions.ts`). Since #567 a voditelj reads this evening
+// too, so an action they may not take is **greyed with the person to ask under
+// it** rather than hidden (Q53) — a control that disappears with a permission
+// teaches nobody that it exists. The caption is a courtesy: every one of these
+// routes re-checks the permission in its own handler, so the 403 is the rule.
+// Nothing here re-types a `can()`.
 //
 // The two-step shape is the routes' own and is kept exactly: GET is a PREVIEW
 // that writes nothing and names who is about to be mailed; POST is the claim.
@@ -38,7 +53,7 @@ import { Stepper } from '../../Stepper'
 
 const S = APP_STRINGS.showActions
 
-type Sheet = 'pause' | 'cancel' | 'reschedule' | 'move' | 'door' | null
+type OpenSheet = 'pause' | 'cancel' | 'reschedule' | 'move' | 'door' | null
 
 // ── The route payloads, as the routes already answer them ──────────────────
 
@@ -99,60 +114,52 @@ interface StoredLine {
   discountLabel: string | null
 }
 
-// ── The sheet ──────────────────────────────────────────────────────────────
+// ── One action, open or greyed ─────────────────────────────────────────────
 
 /**
- * The confirmation under the buttons: what is about to happen, then the verb
- * and Odustani. In the flow rather than in a modal, for the same reason the
- * order actions are (#501).
+ * A named action as the reader may have it.
+ *
+ * A refused action keeps its place in the row and says who to ask; it is
+ * `off` rather than `disabled` so a keyboard still reaches it and a screen
+ * reader still reads the caption beside it. `aria-disabled` is what says it
+ * does nothing, because a `disabled` button is skipped and the reason with it.
  */
-function Sheet({
-  title,
-  error,
-  busy,
-  confirm,
-  confirmLabel,
-  danger,
-  close,
-  closeLabel,
-  children,
+function Act({
+  gate,
+  label,
+  variant = 'ghost',
+  href,
+  onClick,
 }: {
-  title: string
-  error: string | null
-  busy: boolean
-  /** Null is a sheet that explains why there is nothing to confirm. */
-  confirm: (() => void) | null
-  confirmLabel: string
-  danger?: boolean
-  close: () => void
-  closeLabel?: string
-  children?: React.ReactNode
+  gate: PerformanceActionGate
+  label: string
+  variant?: ButtonVariant
+  /** A link action (Narudžbe), which is a navigation rather than a decision. */
+  href?: string
+  onClick?: () => void
 }) {
-  return (
-    <div className="app__sheet" role="group" aria-label={title}>
-      <p className="app__sheet-title">{title}</p>
-      {children}
-      {error && <p className="app__error">{error}</p>}
-      <div className="app__sheet-buttons">
-        {confirm && (
-          <button
-            type="button"
-            className={`app__button${danger ? ' app__button--danger' : ''}`}
-            disabled={busy}
-            onClick={confirm}
-          >
-            {busy ? S.working : confirmLabel}
-          </button>
-        )}
-        <button
-          type="button"
-          className="app__button app__button--link"
-          disabled={busy}
-          onClick={close}
-        >
-          {closeLabel ?? S.cancel}
-        </button>
+  if (!gate.enabled) {
+    return (
+      <div className="app__izv-act">
+        <Button variant={variant} off aria-disabled="true">
+          {label}
+        </Button>
+        <span className="app__izv-act-why">{gate.reason}</span>
       </div>
+    )
+  }
+
+  return (
+    <div className="app__izv-act">
+      {href ? (
+        <Link className={`ui-btn ui-btn--${variant}`} href={href}>
+          {label}
+        </Link>
+      ) : (
+        <Button variant={variant} onClick={onClick}>
+          {label}
+        </Button>
+      )}
     </div>
   )
 }
@@ -164,18 +171,18 @@ export function PerformanceActions({
   paused,
   cancelled,
   atLjetno,
-  canRefund,
+  gates,
 }: {
   performanceId: string
   paused: boolean
   cancelled: boolean
   /** Only a Ljetno evening can be moved indoors (#94). */
   atLjetno: boolean
-  /** `can(viewer, 'refunds')`, applied on the server. Cancelling moves money. */
-  canRefund: boolean
+  /** Who may press what, decided on the server from the caller's own set. */
+  gates: PerformanceActionGates
 }) {
   const router = useRouter()
-  const [sheet, setSheet] = useState<Sheet>(null)
+  const [sheet, setSheet] = useState<OpenSheet>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [done, setDone] = useState<string | null>(null)
@@ -199,6 +206,15 @@ export function PerformanceActions({
   const [discountCount, setDiscountCount] = useState(0)
   const [discountPrice, setDiscountPrice] = useState('')
   const [discountReason, setDiscountReason] = useState('')
+
+  // The toast says "it landed" and then goes: it carries no action, so there
+  // is nothing to miss by not reading it, and a sentence that stays on screen
+  // for the rest of the session reads as a state rather than as news.
+  useEffect(() => {
+    if (done === null) return
+    const timer = setTimeout(() => setDone(null), 5000)
+    return () => clearTimeout(timer)
+  }, [done])
 
   const close = useCallback(() => {
     setSheet(null)
@@ -253,8 +269,7 @@ export function PerformanceActions({
     }
   }
 
-
-  async function open(next: Exclude<Sheet, null>) {
+  async function open(next: Exclude<OpenSheet, null>) {
     setSheet(next)
     setError(null)
     setDone(null)
@@ -396,296 +411,286 @@ export function PerformanceActions({
     finish(S.door.done(body.counter))
   }
 
-  return (
-    <section className="app__acts">
-      <h2 className="app__acts-head">{S.title}</h2>
-      {done && <p className="app__alarm-result">{done}</p>}
+  /** The footer of every sheet: the verb, then the way out. */
+  function foot(
+    confirm: (() => void) | null,
+    label: string,
+    variant: ButtonVariant = 'primary',
+    /** The way out, when "Odustani" is not what leaving this sheet means. */
+    closeLabel: string = S.cancel,
+  ) {
+    return (
+      <>
+        {confirm && (
+          <Button variant={variant} disabled={busy} onClick={confirm}>
+            {busy ? S.working : label}
+          </Button>
+        )}
+        <Button variant="link" disabled={busy} onClick={close}>
+          {closeLabel}
+        </Button>
+      </>
+    )
+  }
 
-      <div className="app__acts-buttons">
+  return (
+    <Card eyebrow={S.title} className="app__izv-acts">
+      <div className="app__izv-acts-row">
         {!cancelled && (
-          <button type="button" className="app__button" onClick={() => open('pause')}>
-            {paused ? S.pause.resume : S.pause.pause}
-          </button>
+          <Act
+            gate={gates.pause}
+            label={paused ? S.pause.resume : S.pause.pause}
+            variant={paused ? 'primary' : 'ghost'}
+            onClick={() => void open('pause')}
+          />
         )}
         {!cancelled && (
-          <button
-            type="button"
-            className="app__button app__button--link"
-            onClick={() => open('reschedule')}
-          >
-            {S.reschedule.action}
-          </button>
+          <Act
+            gate={gates.reschedule}
+            label={S.reschedule.action}
+            onClick={() => void open('reschedule')}
+          />
         )}
         {!cancelled && atLjetno && (
-          <button
-            type="button"
-            className="app__button app__button--link"
-            onClick={() => open('move')}
-          >
-            {S.move.action}
-          </button>
+          <Act gate={gates.move} label={S.move.action} onClick={() => void open('move')} />
         )}
         {/* The ledger reaches a PAST evening and a cancelled one: a season is
             backfilled after the fact, and a miscount is corrected later
             (ADR-0025). */}
-        <button
-          type="button"
-          className="app__button app__button--link"
-          onClick={() => open('door')}
-        >
-          {S.door.action}
-        </button>
-        <Link
-          className="app__button app__button--link"
+        <Act gate={gates.door} label={S.door.action} onClick={() => void open('door')} />
+        <Act
+          gate={gates.orders}
+          label={APP_STRINGS.sales.ordersLink}
           href={`/app/orders?show=${performanceId}`}
-        >
-          {APP_STRINGS.sales.ordersLink}
-        </Link>
-        <button
-          type="button"
-          className="app__button app__button--danger"
-          onClick={() => open('cancel')}
-        >
-          {S.cancelShow.action}
-        </button>
+        />
+        <Act
+          gate={gates.cancel}
+          label={S.cancelShow.action}
+          variant="destructive"
+          onClick={() => void open('cancel')}
+        />
       </div>
 
-      {sheet === 'pause' && (
-        <Sheet
-          title={paused ? S.pause.resumeTitle : S.pause.pauseTitle}
-          error={error}
-          busy={busy}
-          confirm={confirmPause}
-          confirmLabel={S.confirm}
-          close={close}
-        >
-          <p className="app__sheet-body">{paused ? S.pause.resumeBody : S.pause.pauseBody}</p>
-        </Sheet>
-      )}
+      <Sheet
+        open={sheet === 'pause'}
+        title={paused ? S.pause.resumeTitle : S.pause.pauseTitle}
+        onClose={close}
+        footer={foot(() => void confirmPause(), S.confirm)}
+      >
+        <p>{paused ? S.pause.resumeBody : S.pause.pauseBody}</p>
+        {error && <p className="app__error">{error}</p>}
+      </Sheet>
 
-      {sheet === 'cancel' && (
-        <Sheet
-          title={S.cancelShow.title}
-          error={error}
-          busy={busy}
-          confirm={canRefund && cancelPreview ? () => void postCancel(false) : null}
-          confirmLabel={S.cancelShow.confirm}
-          danger
-          close={close}
-          closeLabel={S.cancelShow.keep}
-        >
-          {busy && !cancelPreview && <p className="app__sheet-body">{S.loading}</p>}
-          {cancelPreview && (
-            <>
-              {cancelPreview.alreadyCancelled && (
-                <p className="app__sheet-warn">{S.cancelShow.already}</p>
-              )}
-              <p className="app__sheet-body">
-                {S.cancelShow.lead(cancelPreview.date, cancelPreview.time)}
-              </p>
-              <ul className="app__sheet-list">
-                <li>
-                  {S.cancelShow.refunds(
-                    formatEur(cancelPreview.refundCents),
-                    cancelPreview.onlineOrders,
-                  )}
-                </li>
-                <li>
-                  {S.cancelShow.voids(cancelPreview.partnerSeats, cancelPreview.compSeats)}
-                </li>
-                <li>{S.cancelShow.mails(cancelPreview.toNotify, cancelPreview.noEmail)}</li>
-              </ul>
-              {cancelPreview.overDailyMailLimit && (
-                <p className="app__sheet-warn">
-                  {S.cancelShow.overLimit(cancelPreview.dailyMailLimit)}
-                </p>
-              )}
-              {!canRefund && <p className="app__sheet-warn">{S.cancelShow.needsRefunds}</p>}
-              {retry && <p className="app__sheet-warn">{S.cancelShow.retry}</p>}
-              {testNote && <p className="app__alarm-result">{testNote}</p>}
-              {canRefund && (
-                <button
-                  type="button"
-                  className="app__button app__button--quiet"
-                  disabled={busy}
-                  onClick={() => void postCancel(true)}
-                >
-                  {S.reschedule.test}
-                </button>
-              )}
-            </>
-          )}
-        </Sheet>
-      )}
-
-      {sheet === 'reschedule' && (
-        <Sheet
-          title={S.reschedule.title}
-          error={error}
-          busy={busy}
-          confirm={reschedulePreview ? () => void postReschedule(false) : null}
-          confirmLabel={S.reschedule.confirm}
-          danger
-          close={close}
-        >
-          {busy && !reschedulePreview && <p className="app__sheet-body">{S.loading}</p>}
-          {reschedulePreview && (
-            <>
-              <p className="app__sheet-body">
-                {S.reschedule.lead(
-                  reschedulePreview.currentDate,
-                  reschedulePreview.time,
-                  reschedulePreview.buyerCount,
+      <Sheet
+        open={sheet === 'cancel'}
+        title={S.cancelShow.title}
+        onClose={close}
+        footer={foot(
+          cancelPreview ? () => void postCancel(false) : null,
+          S.cancelShow.confirm,
+          'destructive',
+          S.cancelShow.keep,
+        )}
+      >
+        {busy && !cancelPreview && <p>{S.loading}</p>}
+        {cancelPreview && (
+          <>
+            {cancelPreview.alreadyCancelled && (
+              <p className="app__sheet-warn">{S.cancelShow.already}</p>
+            )}
+            <p>{S.cancelShow.lead(cancelPreview.date, cancelPreview.time)}</p>
+            <ul className="app__sheet-list">
+              <li>
+                {S.cancelShow.refunds(
+                  formatEur(cancelPreview.refundCents),
+                  cancelPreview.onlineOrders,
                 )}
+              </li>
+              <li>{S.cancelShow.voids(cancelPreview.partnerSeats, cancelPreview.compSeats)}</li>
+              <li>{S.cancelShow.mails(cancelPreview.toNotify, cancelPreview.noEmail)}</li>
+            </ul>
+            {cancelPreview.overDailyMailLimit && (
+              <p className="app__sheet-warn">
+                {S.cancelShow.overLimit(cancelPreview.dailyMailLimit)}
               </p>
-              <label className="app__perf-field" htmlFor="reschedule-date">
-                <span>{S.reschedule.newDate}</span>
-                <input
-                  id="reschedule-date"
-                  className="app__input"
-                  type="date"
-                  value={newDate}
-                  disabled={busy}
-                  onChange={(e) => setNewDate(e.target.value)}
-                />
-              </label>
-              {testNote && <p className="app__alarm-result">{testNote}</p>}
-              <button
-                type="button"
-                className="app__button app__button--quiet"
-                disabled={busy || !newDate}
-                onClick={() => void postReschedule(true)}
-              >
-                {S.reschedule.test}
-              </button>
-            </>
-          )}
-        </Sheet>
-      )}
+            )}
+            {retry && <p className="app__sheet-warn">{S.cancelShow.retry}</p>}
+            {testNote && <p className="app__alarm-result">{testNote}</p>}
+            <Button variant="ghost" disabled={busy} onClick={() => void postCancel(true)}>
+              {S.reschedule.test}
+            </Button>
+          </>
+        )}
+        {error && <p className="app__error">{error}</p>}
+      </Sheet>
 
-      {sheet === 'move' && (
-        <Sheet
-          title={S.move.title}
-          error={error}
-          busy={busy}
-          confirm={movePreview && !movePreview.alreadyMoved ? confirmMove : null}
-          confirmLabel={S.move.confirm}
-          close={close}
-        >
-          {busy && !movePreview && <p className="app__sheet-body">{S.loading}</p>}
-          {movePreview && (
-            <p className="app__sheet-body">
-              {movePreview.alreadyMoved
-                ? S.move.already
-                : movePreview.venue !== 'ljetno-kino'
-                  ? S.move.notApplicable
-                  : S.move.lead(movePreview.buyerCount)}
+      <Sheet
+        open={sheet === 'reschedule'}
+        title={S.reschedule.title}
+        onClose={close}
+        footer={foot(
+          reschedulePreview ? () => void postReschedule(false) : null,
+          S.reschedule.confirm,
+          'destructive',
+        )}
+      >
+        {busy && !reschedulePreview && <p>{S.loading}</p>}
+        {reschedulePreview && (
+          <>
+            <p>
+              {S.reschedule.lead(
+                reschedulePreview.currentDate,
+                reschedulePreview.time,
+                reschedulePreview.buyerCount,
+              )}
             </p>
-          )}
-        </Sheet>
-      )}
-
-      {sheet === 'door' && (
-        <Sheet
-          title={S.door.title}
-          error={error}
-          busy={busy}
-          confirm={confirmDoor}
-          confirmLabel={S.door.confirm}
-          close={close}
-        >
-          <p className="app__sheet-body">{S.door.hint}</p>
-
-          {lines !== null && lines.length > 0 && (
-            <div className="app__ledger">
-              <p className="app__ledger-head">{S.door.recorded}</p>
-              {lines.map((line) => (
-                <p className="app__ledger-line" key={line.id}>
-                  {line.quantity > 0 ? '+' : ''}
-                  {line.quantity} ×{' '}
-                  {line.ticketType === 'child'
-                    ? APP_STRINGS.orders.detail.child
-                    : APP_STRINGS.orders.detail.adult}{' '}
-                  {formatEur(line.unitPriceCents)}
-                  {line.discountLabel ? ` (${line.discountLabel})` : ''}
-                  {line.source === 'legacy' ? ` · ${S.door.sourceLegacy}` : ''}
-                </p>
-              ))}
-              <p className="app__ledger-hint">{S.door.recordedHint}</p>
-            </div>
-          )}
-
-          <label className="app__perf-field" htmlFor="door-source">
-            <span>{S.door.sourceLabel}</span>
-            <select
-              id="door-source"
-              className="app__select"
-              value={source}
-              disabled={busy}
-              onChange={(e) => setSource(e.target.value as 'door' | 'legacy')}
+            <label className="app__perf-field" htmlFor="reschedule-date">
+              <span>{S.reschedule.newDate}</span>
+              <input
+                id="reschedule-date"
+                className="app__input"
+                type="date"
+                value={newDate}
+                disabled={busy}
+                onChange={(e) => setNewDate(e.target.value)}
+              />
+            </label>
+            {testNote && <p className="app__alarm-result">{testNote}</p>}
+            <Button
+              variant="ghost"
+              disabled={busy || !newDate}
+              onClick={() => void postReschedule(true)}
             >
-              <option value="door">{S.door.sourceDoor}</option>
-              <option value="legacy">{S.door.sourceLegacy}</option>
-            </select>
-          </label>
+              {S.reschedule.test}
+            </Button>
+          </>
+        )}
+        {error && <p className="app__error">{error}</p>}
+      </Sheet>
 
-          <Stepper
-            label={S.door.adults}
-            value={adults}
-            min={-999}
-            max={999}
-            bigStep={10}
-            onChange={setAdults}
-            disabled={busy}
-          />
-          <Stepper
-            label={S.door.children}
-            value={children}
-            min={-999}
-            max={999}
-            bigStep={10}
-            onChange={setChildren}
-            disabled={busy}
-          />
+      <Sheet
+        open={sheet === 'move'}
+        title={S.move.title}
+        onClose={close}
+        footer={foot(movePreview && !movePreview.alreadyMoved ? confirmMove : null, S.move.confirm)}
+      >
+        {busy && !movePreview && <p>{S.loading}</p>}
+        {movePreview && (
+          <p>
+            {movePreview.alreadyMoved
+              ? S.move.already
+              : movePreview.venue !== 'ljetno-kino'
+                ? S.move.notApplicable
+                : S.move.lead(movePreview.buyerCount)}
+          </p>
+        )}
+        {error && <p className="app__error">{error}</p>}
+      </Sheet>
 
-          <p className="app__sheet-sub">{S.door.discountHead}</p>
-          <Stepper
-            label={S.door.discountCount}
-            value={discountCount}
-            min={-999}
-            max={999}
-            bigStep={10}
-            onChange={setDiscountCount}
+      <Sheet
+        open={sheet === 'door'}
+        title={S.door.title}
+        onClose={close}
+        footer={foot(confirmDoor, S.door.confirm)}
+      >
+        <p>{S.door.hint}</p>
+
+        {/* What is already in the ledger, while a correction is typed: a
+            correction from memory can land the right seats and the wrong money
+            (ADR-0025). */}
+        {lines !== null && lines.length > 0 && (
+          <div className="app__ledger">
+            <p className="app__ledger-head">{S.door.recorded}</p>
+            {lines.map((line) => (
+              <p className="app__ledger-line" key={line.id}>
+                {line.quantity > 0 ? '+' : ''}
+                {line.quantity} ×{' '}
+                {line.ticketType === 'child'
+                  ? APP_STRINGS.orders.detail.child
+                  : APP_STRINGS.orders.detail.adult}{' '}
+                {formatEur(line.unitPriceCents)}
+                {line.discountLabel ? ` (${line.discountLabel})` : ''}
+                {line.source === 'legacy' ? ` · ${S.door.sourceLegacy}` : ''}
+              </p>
+            ))}
+            <p className="app__ledger-hint">{S.door.recordedHint}</p>
+          </div>
+        )}
+
+        <label className="app__perf-field" htmlFor="door-source">
+          <span>{S.door.sourceLabel}</span>
+          <select
+            id="door-source"
+            className="app__select"
+            value={source}
             disabled={busy}
+            onChange={(e) => setSource(e.target.value as 'door' | 'legacy')}
+          >
+            <option value="door">{S.door.sourceDoor}</option>
+            <option value="legacy">{S.door.sourceLegacy}</option>
+          </select>
+        </label>
+
+        <Stepper
+          label={S.door.adults}
+          value={adults}
+          min={-999}
+          max={999}
+          bigStep={10}
+          onChange={setAdults}
+          disabled={busy}
+        />
+        <Stepper
+          label={S.door.children}
+          value={children}
+          min={-999}
+          max={999}
+          bigStep={10}
+          onChange={setChildren}
+          disabled={busy}
+        />
+
+        <p className="app__sheet-sub">{S.door.discountHead}</p>
+        <Stepper
+          label={S.door.discountCount}
+          value={discountCount}
+          min={-999}
+          max={999}
+          bigStep={10}
+          onChange={setDiscountCount}
+          disabled={busy}
+        />
+        <label className="app__perf-field" htmlFor="door-price">
+          <span>{S.door.discountPrice}</span>
+          <input
+            id="door-price"
+            className="app__input"
+            type="text"
+            inputMode="decimal"
+            value={discountPrice}
+            disabled={busy}
+            placeholder="15"
+            onChange={(e) => setDiscountPrice(e.target.value)}
           />
-          <label className="app__perf-field" htmlFor="door-price">
-            <span>{S.door.discountPrice}</span>
-            <input
-              id="door-price"
-              className="app__input"
-              type="text"
-              inputMode="decimal"
-              value={discountPrice}
-              disabled={busy}
-              placeholder="15"
-              onChange={(e) => setDiscountPrice(e.target.value)}
-            />
-          </label>
-          <label className="app__perf-field" htmlFor="door-reason">
-            <span>{S.door.discountReason}</span>
-            <input
-              id="door-reason"
-              className="app__input"
-              type="text"
-              maxLength={MAX_DISCOUNT_LABEL_LENGTH}
-              value={discountReason}
-              disabled={busy}
-              placeholder={S.door.discountReasonPlaceholder}
-              onChange={(e) => setDiscountReason(e.target.value)}
-            />
-          </label>
-        </Sheet>
-      )}
-    </section>
+        </label>
+        <label className="app__perf-field" htmlFor="door-reason">
+          <span>{S.door.discountReason}</span>
+          <input
+            id="door-reason"
+            className="app__input"
+            type="text"
+            maxLength={MAX_DISCOUNT_LABEL_LENGTH}
+            value={discountReason}
+            disabled={busy}
+            placeholder={S.door.discountReasonPlaceholder}
+            onChange={(e) => setDiscountReason(e.target.value)}
+          />
+        </label>
+        {error && <p className="app__error">{error}</p>}
+      </Sheet>
+
+      {/* "It landed", in the past tense and with nothing to press (T1). */}
+      <Toast message={done ?? ''} open={done !== null} />
+    </Card>
   )
 }

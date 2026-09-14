@@ -1,24 +1,34 @@
-// The voditelj's half of Izvedbe: Dodaj, Uredi, Otkaži, Pragovi (#503, ADR-0024).
+// Dodaj, Uredi, Otkaži, Pragovi and Pauziraj on one izvedba (#503, #502, #567).
 //
-// Branimir keeps next month's cruise calls in the Backoffice today, which means
-// a raw collection form with a venue field, sales counters and a public flag on
-// it. These four handlers are the same four jobs as named actions, and the rule
-// that shapes all of them is one sentence from the collections table in
-// CLAUDE.md: **`moreska` owns non-public rows, and on a public row it owns the
-// roster fields and nothing else.**
+// Branimir kept next month's cruise calls in the Backoffice, which meant a raw
+// collection form with a venue field, sales counters and a public flag on it.
+// These handlers are those jobs as named actions on Izvedbe.
 //
-// So Dodaj can only ever produce a non-public performance (the shared validator
-// refuses `redovna` outright), Uredi and Otkaži refuse a public row, and only
-// Pragovi reaches one — a threshold is a fact about how many dancers an evening
-// needs, which is true of a Redovna as much as of a ship call.
+// **Since #567 the two halves of the screen share the writing** (Q53): a
+// voditelj and the secretary may both enter and correct both kinds of evening,
+// because a season's schedule is one job and the two shapes of the form differ
+// by what an evening IS (a house and a capacity, or a place and a client)
+// rather than by who is typing. `mayWritePerformance` is the whole of the
+// permission rule here, and it is the same predicate the screen offers its form
+// from.
+//
+// What the halves do NOT share is the money and the buyers. Cancelling a public
+// evening refunds every online order and mails every buyer (#497), moving its
+// date or its house mails them too (#379, #94), the ledger is the till's own
+// record and the pause stops a sale — every one of those is `tickets`, gated
+// per ACTION in its own route and mapped for the screen by
+// `performance-actions.ts`. Two rules in this file are the same fact from the
+// inside: `handleCancelPerformance` stays the voditelj's and refuses a public
+// row, and Uredi on a public row carries neither the date nor a house that has
+// already sold a ticket.
 //
 // Pure + DI in the `note.ts` / `alarm.ts` shape: the cross-site guard first,
-// then the validation, then the work, with the permission gate left to the
-// route (`requirePermission(req, 'moreska')`). The writes themselves are the
+// then the permission, then the validation, then the work. The writes are the
 // seam's (`getRepo().shows`), which puts them on Payload's local API so the
 // Shows hooks keep telling the roster what changed.
 
-import { can, type Permission } from '@/lib/access/permissions'
+import type { Permission } from '@/lib/access/permissions'
+import { mayWritePerformance } from './performance-actions'
 import {
   newPerformanceRow,
   newPublicPerformanceRow,
@@ -46,15 +56,14 @@ export const MAX_THRESHOLD = 40
 export interface PerformanceFormDeps {
   request: AppRequestMeta
   /**
-   * The caller's permission set, which is what decides WHICH kind of row this
-   * request may touch (#502).
+   * The caller's permission set, re-checked here rather than assumed from the
+   * gate (#502, #567).
    *
-   * The route's `requirePermission` lets either half of Izvedbe in; the split
-   * between them is a property of the ROW, not of the URL, so it is settled
-   * here: a public evening is the blagajna's (`tickets`), a booking is the
-   * voditelj's (`moreska`). It cannot be left to the collection, because the
-   * seam writes through the local API and `overrideAccess: true` means field
-   * access never runs (CLAUDE.md).
+   * The local API runs `overrideAccess: true`, so the collection's field access
+   * never runs for these writes and the handler has to be the one that says no
+   * (CLAUDE.md's hard rule). Since #567 what it says is one sentence — either
+   * half of Izvedbe may write either kind of row — and the row-by-row split
+   * that used to live here moved to the six named ACTIONS, where the money is.
    */
   permissions: readonly Permission[]
   /**
@@ -99,9 +108,22 @@ function guarded(deps: PerformanceFormDeps): PerformanceFormResult | null {
   return rejection ? refuse(rejection.status, APP_STRINGS.performance.rejected) : null
 }
 
-/** `can()` over the set the route handed down, never a re-typed string list. */
-function holds(deps: PerformanceFormDeps, permission: Permission): boolean {
-  return can({ permissions: [...deps.permissions] }, permission)
+/**
+ * May this caller enter or correct an izvedba at all (#567, Q53)?
+ *
+ * Since #567 the answer is the same for both kinds of row: a voditelj enters
+ * the public evenings of a season as readily as the secretary enters a cruise
+ * call, because a schedule is one job and the two shapes of the form differ by
+ * what an evening IS rather than by who is typing it. What the two halves do
+ * NOT share is the money and the buyers — cancelling a public evening, moving
+ * its date or its house, the ledger and the pause are all `tickets` and are
+ * gated per ACTION in their own routes (`performance-actions.ts`).
+ *
+ * `mayWritePerformance` is the same predicate the screen renders its form from,
+ * so a form that is offered is a form this handler accepts.
+ */
+function mayWrite(deps: PerformanceFormDeps): boolean {
+  return mayWritePerformance(deps.permissions)
 }
 
 /**
@@ -132,11 +154,16 @@ async function loadOwned(
 /**
  * POST /api/app/performances — Dodaj izvedbu, both halves of it.
  *
- * The BODY says which kind of evening is being added, and the permission set
- * says whether the caller may add that kind. A public row needs `tickets`
- * (it sells seats and a capacity is attached to it); a booking needs `moreska`
- * (nobody sells a ticket to a cruise call). Somebody who holds both may enter
- * either, which is the ordinary case for the secretary.
+ * The BODY says which KIND of evening is being added, and since #567 either
+ * half of Izvedbe may add either kind (Q53): the screen is one register of the
+ * season, and a voditelj who has the season's dates in front of them should not
+ * have to hand them to the secretary to be typed a second time. What a public
+ * row still costs is the actions attached to it — moving it, pausing it,
+ * cancelling it — and those ask for `tickets` one at a time, where they live.
+ *
+ * The shape of the body is still checked against the kind: a public evening has
+ * a house and may be a Redovna, a booking has a free-text place and a client
+ * and may never be one (`performance-input.ts`, shared with the MCP tool).
  */
 export async function handleCreatePerformance(
   body: unknown,
@@ -145,10 +172,9 @@ export async function handleCreatePerformance(
   const rejection = guarded(deps)
   if (rejection) return rejection
 
+  if (!mayWrite(deps)) return refuse(403, APP_STRINGS.performance.needsIzvedbe)
+
   if ((body as { isPublic?: unknown } | null)?.isPublic === true) {
-    if (!holds(deps, 'tickets')) {
-      return refuse(403, APP_STRINGS.performance.publicNeedsTickets)
-    }
     const parsed = parsePublicPerformance(body)
     if (!parsed.ok) return refuse(400, parsed.error)
 
@@ -164,10 +190,6 @@ export async function handleCreatePerformance(
 
     await deps.createPerformances([row])
     return ok({ date: parsed.fields.dateStr })
-  }
-
-  if (!holds(deps, 'moreska')) {
-    return refuse(403, APP_STRINGS.performance.nonPublicNeedsMoreska)
   }
 
   const parsed = parseNonPublicPerformance(body)
@@ -191,8 +213,14 @@ export async function handleCreatePerformance(
 }
 
 /**
- * PATCH /api/app/performances/[id] — Uredi. Non-public rows only, and not a
- * cancelled one.
+ * PATCH /api/app/performances/[id] — Uredi, either kind of row (#567), and
+ * never a cancelled one.
+ *
+ * What may change is decided by the ROW and not by the caller: a booking's five
+ * fields include its date, a public evening's three deliberately do not
+ * (#379's reschedule mails every buyer and reissues every ticket), and the
+ * house of a public evening that has sold a ticket moves through *Preseli u
+ * zimsko*, which tells the buyers.
  *
  * The cancelled case is a **409** rather than a 400: the request is
  * well-formed and the row is the voditelj's, it is simply in a state where
@@ -211,6 +239,8 @@ export async function handleEditPerformance(
   const rejection = guarded(deps)
   if (rejection) return rejection
 
+  if (!mayWrite(deps)) return refuse(403, APP_STRINGS.performance.needsIzvedbe)
+
   const found = await loadOwned(rawId, deps, { nonPublicOnly: false })
   if ('refusal' in found) return found.refusal
 
@@ -222,10 +252,8 @@ export async function handleEditPerformance(
     return refuse(409, APP_STRINGS.performance.cancelledNotEditable)
   }
 
-  // ── The blagajna's half (#502): the hour, the house and the kind ────────
+  // ── A public evening: the hour, the house and the kind (#502, #567) ─────
   if (found.row.isPublic) {
-    if (!holds(deps, 'tickets')) return refuse(403, APP_STRINGS.performance.publicRow)
-
     const parsed = parsePublicPerformanceEdit(body)
     if (!parsed.ok) return refuse(400, parsed.error)
 
@@ -248,9 +276,7 @@ export async function handleEditPerformance(
     return ok()
   }
 
-  // ── The voditelj's half (#503): the five fields of a booking ────────────
-  if (!holds(deps, 'moreska')) return refuse(403, APP_STRINGS.performance.nonPublicNeedsMoreska)
-
+  // ── A booking: the five fields, its date among them (#503, #567) ────────
   const parsed = parseNonPublicPerformance(body)
   if (!parsed.ok) return refuse(400, parsed.error)
 
