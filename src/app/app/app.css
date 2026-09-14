@@ -1792,6 +1792,13 @@ html:has(> .app) {
    between the groups, the 44px icon slot in front of a row, and the two lines
    at the foot that say which build this is. */
 
+/* The old group wrapper, still worn by the four Članovi panels (#511) and by
+   any screen the redesign has not reached. `.app__more-group` below is its
+   successor on the two screens T8 rebuilt. */
+.app__more-block {
+  margin-top: 28px;
+}
+
 /* One group: its uppercase heading and the list or card under it. */
 .app__more-group {
   display: flex;
@@ -2387,6 +2394,16 @@ html:has(> .app) {
   font-weight: 700;
 }
 
+/* The preview's body column. It used to be shared with the inbox's own rows;
+   those became `ui-row__body` with #569, so this is the preview's alone. */
+.app__notif-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
 .app__notif-text b {
   display: block;
   font-size: 14px;
@@ -2767,14 +2784,31 @@ a.app__ob-link {
   margin-top: 18px;
 }
 
+/* The rehearsal QR's list of dancers to claim (#463). It wore `.app__more-row`
+   as its base until #569 reskinned Više onto the shared shapes and that class
+   went; the layout it borrowed is written out here instead, because this page
+   is public and has no shell to inherit from. */
 .app__pick-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
   width: 100%;
+  padding: 14px 0;
   background: transparent;
   border: none;
   border-bottom: 1px solid var(--rule);
   font-family: inherit;
+  font-size: 16px;
+  color: inherit;
   text-align: left;
   cursor: pointer;
+}
+
+/* The chevron on the right: everything in the row that is not the name. */
+.app__pick-row > span:not(.app__pick-name) {
+  font-size: 14px;
+  color: var(--muted);
 }
 
 .app__pick-row[disabled] {
@@ -2782,9 +2816,9 @@ a.app__ob-link {
   cursor: default;
 }
 
-/* Scoped through the row, not written as `.app__pick-name`: the name is a
-   <span> inside .app__more-row, and `.app__more-row span` (the chevron rule)
-   would otherwise win on specificity and right-align it in muted grey. */
+/* Scoped through the row rather than written as `.app__pick-name`: the chevron
+   rule above is a sibling selector on the same element type, and the name must
+   win it rather than be right-aligned in muted grey. */
 .app__pick-row .app__pick-name {
   display: flex;
   flex-direction: column;

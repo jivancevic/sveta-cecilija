@@ -191,7 +191,7 @@ export function JoinClaim({ code, candidates }: { code: string; candidates: Join
           <button
             key={c.id}
             type="button"
-            className="app__more-row app__pick-row"
+            className="app__pick-row"
             disabled={busyId !== null}
             onClick={() => claim(c)}
           >

@@ -62,7 +62,7 @@ export default function MoreskantAppLayout({ children }: { children: React.React
           and the one-tap install button then never appears on the one platform
           that has one, so the listener is installed inline, ahead of hydration
           (#455). It only parks the event on `window`; every decision about it
-          lives in `InstallHint`.
+          lives in `use-install.ts` and the install guide that reads it.
         */}
         <script dangerouslySetInnerHTML={{ __html: INSTALL_PROMPT_CAPTURE }} />
         <ServiceWorkerMigration vapidPublicKey={vapidPublicKey()} />
