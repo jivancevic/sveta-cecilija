@@ -232,9 +232,12 @@ html:has(> .app) {
 .app__shell {
   max-width: 640px;
   margin: 0 auto;
-  /* The bar FLOATS 10px above the safe area now (#562), so the content clears
-     one bar, one home indicator and a thumb's worth of air. */
-  padding: env(safe-area-inset-top) 20px calc(var(--tabH) + env(safe-area-inset-bottom) + 40px);
+  /* The bar is a blurred zone now (#592), not a pill with a band of empty page
+     under it: the last card scrolls UNDER the bar and is read through it, so
+     the shell only has to clear the bar itself, the home indicator and enough
+     air that nothing important ends exactly at the pill's edge. 40px of that
+     air was the hole Josip found under the last row. */
+  padding: env(safe-area-inset-top) 20px calc(var(--tabH) + env(safe-area-inset-bottom) + 12px);
 }
 
 /* ── Between two screens (#593) ────────────────────────────
@@ -568,19 +571,26 @@ html:has(> .app) {
    from the permission set (#495) and handed in as `--n`. */
 .app__tabbar {
   position: fixed;
-  left: 50%;
-  transform: translateX(-50%);
-  bottom: calc(env(safe-area-inset-bottom, 0px) + 10px);
-  width: min(430px, 100%);
-  padding: 0 12px;
+  /* Full width, and NO `transform` (#592). A transformed ancestor is a
+     containing block, and in WebKit that kills `backdrop-filter` in every
+     descendant — which is the whole of the bar now. The pill is centred by
+     `margin: 0 auto` on itself instead, which needs no transform at all. */
+  left: 0;
+  right: 0;
+  bottom: 0;
   z-index: 20;
-  /* The strip either side of the pill belongs to the screen under it. */
+  /* The zone spans the screen, so the strip either side of the pill — and the
+     blur layers, which cover the bottom of the page — must let a finger
+     through to the list underneath. Only the pill takes taps. */
   pointer-events: none;
 }
 
 .app__tabbar-pill {
   pointer-events: auto;
   position: relative;
+  /* Centred without a transform: see the zone above. */
+  width: min(430px, 100%);
+  margin: 0 auto calc(8px + env(safe-area-inset-bottom, 0px));
   height: var(--tabH);
   padding: 6px;
   display: grid;
@@ -590,6 +600,66 @@ html:has(> .app) {
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   box-shadow: var(--shadowBar);
+}
+
+/* ── The three layers under the bar (#592) ─────────────────
+   The "Revolut" bar: content scrolls to the very bottom edge of the screen and
+   is blurred out from under the pill rather than stopping 40px short of it.
+
+   Three presentational layers, bottom of the page upwards, each masked so it
+   fades out at its own top edge. A single blur with a hard edge reads as a
+   pane of glass laid on the page; three of them stacked, each shorter and
+   blurrier than the last, read as the page itself going out of focus.
+
+     --fade  no blur at all, just the page colour coming up to 85% at the very
+             bottom, so text that is still legible through the blur does not
+             compete with the labels
+     --mid   a light blur over the taller band
+     --low   a heavy blur over the short band right behind the pill
+
+   `color-mix` gets an rgba fallback line before it for the same reason every
+   `-webkit-` prefix here exists: an older iOS that does not parse the
+   function keeps the flat fill rather than losing the layer entirely. The
+   fallback is the light paper, which is the default skin; a browser new
+   enough to have a theme switch is new enough for `color-mix`. */
+.app__tabbar-blur {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+}
+
+.app__tabbar-blur--fade {
+  height: 116px;
+  background: linear-gradient(
+    to top,
+    rgba(245, 242, 236, 0.85) 0%,
+    rgba(245, 242, 236, 0.55) 46%,
+    rgba(245, 242, 236, 0) 100%
+  );
+  background: linear-gradient(
+    to top,
+    color-mix(in srgb, var(--bg) 85%, transparent) 0%,
+    color-mix(in srgb, var(--bg) 55%, transparent) 46%,
+    rgba(0, 0, 0, 0) 100%
+  );
+}
+
+.app__tabbar-blur--mid {
+  height: 132px;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  -webkit-mask-image: linear-gradient(to top, #000 0%, #000 42%, rgba(0, 0, 0, 0) 100%);
+  mask-image: linear-gradient(to top, #000 0%, #000 42%, rgba(0, 0, 0, 0) 100%);
+}
+
+.app__tabbar-blur--low {
+  height: 84px;
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  -webkit-mask-image: linear-gradient(to top, #000 0%, #000 34%, rgba(0, 0, 0, 0) 100%);
+  mask-image: linear-gradient(to top, #000 0%, #000 34%, rgba(0, 0, 0, 0) 100%);
 }
 
 /* The pill behind the tab you are on. One element that slides rather than five
@@ -3431,8 +3501,11 @@ a.app__ob-link {
      ground: the shell's 20px is given back as a negative margin and taken
      again as padding. Without the ground, a ghost button inside it would be
      the island's light ink on the app's paper page and invisible. */
-  margin: 16px -20px calc(var(--tabH) * -1 - 40px);
-  padding: 16px 20px calc(var(--tabH) + 40px);
+  /* The bottom half cancels the shell's own bottom padding exactly (#592
+     shortened it to `tabH + safe + 12`), so the island reaches the foot of the
+     page and the blurred bar sits on it rather than on a band of paper. */
+  margin: 16px -20px calc(var(--tabH) * -1 - env(safe-area-inset-bottom, 0px) - 12px);
+  padding: 16px 20px calc(var(--tabH) + env(safe-area-inset-bottom, 0px) + 12px);
   min-height: 60vh;
   background: var(--bg);
   color: var(--ink);
