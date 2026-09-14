@@ -32,8 +32,9 @@ import { StateBar } from './StateBar'
 //     unlock at all.
 //   - no "Dodaj" (Q31). A performance is created on Izvedbe, by the voditelj or
 //     the blagajna, and the route refuses a dancer anyway.
-//   - no client and no kind name on a non-regular evening: it reads "Vanredna"
-//     (Q30, glossary *Vanredna izvedba*).
+//   - no client and no kind name on a non-regular evening: it reads "Vanredna",
+//     or "Experience" for the one kind that is a form of its own (Q30, widened
+//     by #591; glossary *Vanredna izvedba*, *Moreška Experience*).
 //
 // Everything is server-rendered except the two answer buttons and the bar's
 // tap. Data comes through the seam (`getSeasonPerformances` → `getRepo()`), and
@@ -136,7 +137,7 @@ export default async function MoreskaPage() {
                 key={row.id}
                 href={row.href}
                 className={row.cancelled ? 'app__row--cancelled' : undefined}
-                lead={<DateDisc day={row.day} weekday={row.weekday} gold={row.gold} />}
+                lead={<DateDisc day={row.day} weekday={row.weekday} tone={row.tone} />}
                 title={row.title}
                 meta={row.meta}
                 trail={row.chip && <Chip tone={row.chip.tone}>{row.chip.label}</Chip>}
@@ -162,7 +163,7 @@ export default async function MoreskaPage() {
                   key={row.id}
                   href={row.href}
                   className={row.cancelled ? 'app__row--cancelled' : undefined}
-                  lead={<DateDisc day={row.day} weekday={row.weekday} gold={row.gold} />}
+                  lead={<DateDisc day={row.day} weekday={row.weekday} tone={row.tone} />}
                   title={row.title}
                   meta={row.meta}
                   trail={

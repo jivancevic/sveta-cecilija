@@ -159,6 +159,10 @@ describe('the rest of the shapes render', () => {
     expect(render(h(Section, { title: 'Rujan', aside: '5 izvedbi' }))).toContain('ui-section')
     expect(render(h(Chip, { tone: 'gold' }, '2 nove'))).toContain('ui-chip--gold')
     expect(render(h(DateDisc, { day: 14, weekday: 'pon', gold: true }))).toContain('ui-date--gold')
+    // The third category wears copper, and `tone` is what says which (#591).
+    expect(render(h(DateDisc, { day: 14, tone: 'experience' }))).toContain('ui-date--experience')
+    expect(render(h(DateDisc, { day: 14, tone: 'regular' }))).toContain('ui-date--gold')
+    expect(render(h(DateDisc, { day: 14, tone: 'extra' }))).not.toContain('ui-date--')
     expect(render(h(Note, {}, 'Skup u 20:15'))).toContain('ui-note')
     expect(render(h(List, {}, h(ListRow, { title: 'Redovna', meta: '21:00' })))).toContain('ui-row')
     expect(render(h(Tiles, { children: h(Tile, { eyebrow: 'Ljestvica' }) }))).toContain('ui-tile')

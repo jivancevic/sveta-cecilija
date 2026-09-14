@@ -7,7 +7,6 @@ import {
   identityOf,
   monthSections,
   nastupRow,
-  nastupTitle,
 } from './moreska-screen'
 import { groupByMonth, type RosterPerformance } from './roster-loaders'
 
@@ -50,21 +49,6 @@ const booking = (over: Partial<RosterPerformance> = {}) =>
     ...over,
   })
 
-describe('nastupTitle', () => {
-  it('names a Redovna and nothing else by name', () => {
-    expect(nastupTitle({ kind: 'redovna' })).toBe('Redovna')
-  })
-
-  // Q30: the client is the voditelj's business and lives on Izvedbe. A dancer
-  // reads one word, the one the notebook has always used.
-  it.each(['dmc', 'gulliver', 'koncert', 'experience', 'ostalo'])(
-    'calls a %s evening Vanredna',
-    (kind) => {
-      expect(nastupTitle({ kind })).toBe('Vanredna')
-    },
-  )
-})
-
 describe('nastupRow', () => {
   it('never prints the client or the kind name of a booking', () => {
     const row = nastupRow(booking(), { showAnswer: true })
@@ -72,7 +56,13 @@ describe('nastupRow', () => {
     expect(row.meta).toBe('10:00 · Luka')
     expect(JSON.stringify(row)).not.toContain('Le Ponant')
     expect(JSON.stringify(row)).not.toContain('Adriatic DMC')
-    expect(row.gold).toBe(false)
+    expect(row.tone).toBe('extra')
+  })
+
+  it('reads an Experience as its own category, copper rather than sunk (#591)', () => {
+    const row = nastupRow(booking({ kind: 'experience' }), { showAnswer: true })
+    expect(row.title).toBe('Experience')
+    expect(row.tone).toBe('experience')
   })
 
   it('gives a Redovna the gold disc, the venue label and the day', () => {
@@ -80,7 +70,7 @@ describe('nastupRow', () => {
     expect(row).toMatchObject({
       day: '14',
       weekday: 'pon',
-      gold: true,
+      tone: 'regular',
       title: 'Redovna',
       meta: '21:00 · Ljetno kino',
     })
@@ -215,6 +205,7 @@ describe('heroView', () => {
       month: 'rujna',
       meta: 'Ponedjeljak · 21:00 · Redovna',
       href: '/app/moreska/10',
+      tone: 'regular',
       armies: null,
     })
   })
@@ -223,6 +214,14 @@ describe('heroView', () => {
     expect(heroView(booking())).toMatchObject({
       eyebrow: 'Sljedeći nastup · Luka',
       meta: 'Ponedjeljak · 10:00 · Vanredna',
+      tone: 'extra',
+    })
+  })
+
+  it('names an Experience by its own word and carries its own tone (#591)', () => {
+    expect(heroView(booking({ kind: 'experience' }))).toMatchObject({
+      meta: 'Ponedjeljak · 10:00 · Experience',
+      tone: 'experience',
     })
   })
 

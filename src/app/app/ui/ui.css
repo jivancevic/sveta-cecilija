@@ -419,6 +419,21 @@ button.ui-row:hover {
   color: rgba(20, 16, 10, 0.7);
 }
 
+/* Copper is the Moreška Experience, the third category (#591): a form of its
+   own, with its own postava and its own half of Ljestvica, so a dancer can
+   tell it from a booking down a column. Two tokens, like gold, so the night
+   skin gets it for free. A first pass so nothing is invisible; the colour
+   itself is #592's to settle. */
+.ui-date--experience {
+  background: var(--copper);
+  color: var(--onCopper);
+}
+
+.ui-date--experience span {
+  color: var(--onCopper);
+  opacity: 0.75;
+}
+
 /* ── Tile ─────────────────────────────────────────────────── */
 .ui-tiles {
   display: grid;

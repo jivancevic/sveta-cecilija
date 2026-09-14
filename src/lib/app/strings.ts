@@ -364,9 +364,14 @@ export const APP_STRINGS = {
     ahead: { one: 'nastup pred tobom', few: 'nastupa pred tobom', many: 'nastupa pred tobom' },
     /** The quiet count beside a month heading. */
     count: { one: 'nastup', few: 'nastupa', many: 'nastupa' },
-    /** The only two words a row's title may say. */
+    /**
+     * The only three words a row's title may say (#591). "Experience" is the
+     * English word on purpose: it is what the society calls the product,
+     * Croatian conversation included. The rule is `performance-kind.ts`.
+     */
     regular: 'Redovna',
     extra: 'Vanredna',
+    experienceWord: 'Experience',
     cancelled: 'otkazano',
     /** The chip on a row: the reader's own answer, or its absence. */
     chipNone: 'bez odgovora',

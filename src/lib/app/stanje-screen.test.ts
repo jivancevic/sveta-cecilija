@@ -107,6 +107,21 @@ describe('stanjeView header', () => {
     expect(out.meta).toBe('21:00 · Luka')
     expect(JSON.stringify(out)).not.toContain('Le Ponant')
   })
+
+  it('reads an Experience as itself, the third category (#591)', () => {
+    const d = detail()
+    const out = stanjeView({
+      ...d,
+      performance: {
+        ...d.performance,
+        kind: 'experience',
+        isPublic: false,
+        venue: null,
+        location: 'Prostor Sv. Cecilije',
+      },
+    })
+    expect(out.head).toBe('Subota, 19. rujna · Experience')
+  })
 })
 
 describe('stanjeView columns', () => {

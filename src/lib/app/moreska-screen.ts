@@ -8,14 +8,16 @@
 //
 // Two rules here are worth more than the formatting they look like:
 //
-//   1. **A non-regular evening reads "Vanredna" and nothing else** (Q30). Never
-//      the client, never the kind name. A dancer turns up for the evening;
-//      which agency booked it changes nothing about that, and the notebook has
-//      called them "vandredni nastup" for decades (glossary: *Vanredna
-//      izvedba*). The guarantee is only as good as the DATA, though: the row's
-//      free-text `location` IS printed, so a booking whose ship was typed into
-//      the place rather than into `client` shows it here and nothing in code
-//      can tell the difference.
+//   1. **An evening reads as its CATEGORY and nothing else** (Q30, widened to
+//      three by #591): "Redovna", "Experience" or "Vanredna". Never the client,
+//      never the kind name. A dancer turns up for the evening; which agency
+//      booked it changes nothing about that, and the notebook has called the
+//      rest "vandredni nastup" for decades (glossary: *Vanredna izvedba*). The
+//      word and the tone both come from `performance-kind.ts`, which is the one
+//      place that knows there are three. The guarantee is only as good as the
+//      DATA, though: the row's free-text `location` IS printed, so a booking
+//      whose ship was typed into the place rather than into `client` shows it
+//      here and nothing in code can tell the difference.
 //   2. **The mark on a name is the ARMY of their primary role; the crown on it
 //      is THIS EVENING's title.** A title belongs to one performance's lineup
 //      rather than to a person (glossary: *Title*, Q65), so the disc comes from
@@ -38,6 +40,7 @@ import {
 } from './strings'
 import { pluralize, type MonthGroup, type RosterPerformance } from './roster-loaders'
 import { performancePlace } from './performance-place'
+import { kindTone, kindWord, type KindTone } from './performance-kind'
 import { ARMY_OF_ROLE, DANCE_ROLE_LABELS, isDanceRole } from '@/lib/moreskant-profile'
 
 /**
@@ -50,11 +53,6 @@ type DanceTitle = 'crni_kralj' | 'otmanovic' | 'bili_kralj' | 'bula'
 type ChipTone = 'plain' | 'gold' | 'warn'
 
 const S = APP_STRINGS.moreska
-
-/** The only two words a nastup is named by on this screen (Q30). */
-export function nastupTitle(performance: { kind: string }): string {
-  return performance.kind === 'redovna' ? S.regular : S.extra
-}
 
 /** The chip on a row: the reader's own answer, or its absence. */
 export interface AnswerChip {
@@ -76,9 +74,9 @@ export interface NastupRow {
   day: string
   /** "pon" */
   weekday: string
-  /** Gold disc: a Redovna, the evening the society exists for. */
-  gold: boolean
-  /** "Redovna" or "Vanredna". */
+  /** Which of the three categories the evening is, for the disc (#591). */
+  tone: KindTone
+  /** "Redovna", "Vanredna" or "Experience". */
   title: string
   /** "21:00 · Ljetno kino", plus "· otkazano" when it is off. */
   meta: string
@@ -97,8 +95,8 @@ export function nastupRow(
     href: `/app/moreska/${performance.id}`,
     day: dayOfMonth(performance.date),
     weekday: shortWeekday(performance.date),
-    gold: performance.kind === 'redovna',
-    title: nastupTitle(performance),
+    tone: kindTone(performance.kind),
+    title: kindWord(performance.kind),
     meta: [performance.time, place, performance.cancelled ? S.cancelled : null]
       .filter(Boolean)
       .join(' · '),
@@ -200,6 +198,8 @@ export interface HeroView {
   month: string
   /** "Ponedjeljak · 21:00 · Redovna" */
   meta: string
+  /** Which of the three categories the evening is, for the skin (#591). */
+  tone: KindTone
   note: string | null
   /** Where the ArmyBar taps through to. */
   href: string
@@ -214,9 +214,10 @@ export function heroView(performance: RosterPerformance): HeroView {
     eyebrow: [S.next, place].filter(Boolean).join(' · '),
     day: dayOfMonth(performance.date),
     month: monthGenitiveOf(performance.date),
-    meta: [weekdayLabel(performance.date), performance.time, nastupTitle(performance)]
+    meta: [weekdayLabel(performance.date), performance.time, kindWord(performance.kind)]
       .filter(Boolean)
       .join(' · '),
+    tone: kindTone(performance.kind),
     note: performance.voditeljNote,
     href: `/app/moreska/${performance.id}`,
     armies: performance.chip

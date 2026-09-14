@@ -35,6 +35,8 @@
   --goldText: #8f6a10; /* gold that carries text or an icon, 4.8:1 on white */
   --goldSoft: rgba(184, 136, 26, 0.12); /* gold as a surface, never as text */
   --onGold: #14100a; /* text ON gold */
+  --copper: #b5642a; /* the Moreška Experience, the third kind (#591) */
+  --onCopper: #ffffff; /* text ON copper */
   --red: #8b0000; /* the bili army, a destructive action */
   --warn: #a8321f; /* an army below its threshold, a form error */
   --ok: #8f6a10; /* "enough of us tonight" — gold, not green: one brand */
@@ -149,6 +151,8 @@ html:has(> .app) {
   --gold: #d9ab3c;
   --goldText: #e3b94e;
   --goldSoft: rgba(217, 171, 60, 0.14);
+  --copper: #d27a3c;
+  --onCopper: #1a1209;
   --red: #b3262f;
   --warn: #e07a5f;
   --ok: #e3b94e;
