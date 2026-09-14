@@ -2060,12 +2060,17 @@ falling out of both, and `SeasonStats.confirmedByKind` is what each list is
   `activeScreenKey`. It is a PAGE rather than a "show more" button because a
   ranking of the whole roster appearing under a tap moves the row the reader was
   looking at; rendered on the server, whole, on first paint, there is no loading
-  state to reflow. A `moreska` holder reads one line more per row: which
-  evenings the count is made of ("9 Redovna · 7 Adriatic DMC"). It does **not**
-  carry the four title counts the old `StatsTable` had — `DancerStats.roles` is
-  season-wide and the list is one kind of evening, so the two printed side by
-  side did not add up. A per-kind title count would have to come from
-  `lib/lineup/stats.ts`, and that is a ticket of its own.
+  state to reflow. A `moreska` holder reads two lines more per row: which
+  evenings the count is made of ("9 Redovna · 7 Adriatic DMC"), and quieter
+  under it the titles worn in them ("2 × crni kralj · 1 × otmanović") — the four
+  columns of the old `StatsTable`, which is where they live now that that table
+  is gone. They come from `DancerStats.rolesByKind` (#568) summed over THIS
+  list's kinds, **never** from `roles`, which is the whole season: a titles line
+  drawn from the season sat beside a count that excluded the Experiences it was
+  counting. `roles` keeps its #437 meaning; `rolesByKind` is a new field beside
+  it, and only the four titles are in either — a plain crni or bili is an army,
+  not a titula. Zeros are not printed, and a dancer who wore no title that
+  season gets no line.
 
 ## Narudžbe (#501)
 

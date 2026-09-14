@@ -47,9 +47,24 @@ export interface DancerStats {
   nickname: string
   /** Confirmed performances this dancer appears in. */
   performances: number
+  /** The season's titles, over EVERY kind of evening. Unchanged since #437. */
   roles: Record<StatRole, number>
   /** The split behind the tap: performances per kind, zeros included. */
   byKind: Record<PerformanceKind, number>
+  /**
+   * The same four titles, split by kind of evening (#568).
+   *
+   * `roles` stays what it has always been — the whole season — and this is the
+   * breakdown beside it, because Ljestvica ranks one KIND of evening at a time:
+   * a titles line drawn from `roles` sat next to a count that did not include
+   * the Experiences it was counting, and two numbers that do not add up are
+   * worse than one number that is not there.
+   *
+   * Only the four titles. A plain crni or bili is an army, not a titula
+   * (CONTEXT.md → *Title*), and neither is the `voditelj` line, which never
+   * reaches this module at all.
+   */
+  rolesByKind: Record<PerformanceKind, Record<StatRole, number>>
 }
 
 /**
@@ -66,6 +81,14 @@ function emptyKinds(): Record<PerformanceKind, number> {
 
 function emptyRoles(): Record<StatRole, number> {
   return { crni_kralj: 0, bili_kralj: 0, otmanovic: 0, bula: 0 }
+}
+
+/** One `emptyRoles()` per kind, zeros included, so no caller has to guard. */
+function emptyRolesByKind(): Record<PerformanceKind, Record<StatRole, number>> {
+  return Object.fromEntries(PERFORMANCE_KINDS.map((k) => [k, emptyRoles()])) as Record<
+    PerformanceKind,
+    Record<StatRole, number>
+  >
 }
 
 function label(member: AttendanceMember): string {
@@ -108,6 +131,7 @@ export function aggregateDancerStats(input: {
       performances: 0,
       roles: emptyRoles(),
       byKind: emptyKinds(),
+      rolesByKind: emptyRolesByKind(),
     })
   }
 
@@ -128,6 +152,7 @@ export function aggregateDancerStats(input: {
     stats.byKind[kind] += 1
     if (isDanceRole(row.role) && (STAT_ROLES as readonly string[]).includes(row.role)) {
       stats.roles[row.role as StatRole] += 1
+      stats.rolesByKind[kind][row.role as StatRole] += 1
     }
   }
 

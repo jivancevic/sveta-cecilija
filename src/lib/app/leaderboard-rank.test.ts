@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { PERFORMANCE_KINDS, type PerformanceKind } from '@/lib/show-performance'
 import { STAT_ROLES, type DancerStats, type StatRole } from '@/lib/lineup/stats'
+import { pluralize } from './roster-loaders'
+import { APP_STRINGS } from './strings'
 import {
   TOP_ROWS,
   armyOfPrimaryRole,
@@ -29,6 +31,12 @@ function dancer(
     nickname,
     performances: Object.values(kinds).reduce((a, b) => a + b, 0),
     roles: Object.fromEntries(STAT_ROLES.map((r) => [r, 0])) as Record<StatRole, number>,
+    rolesByKind: Object.fromEntries(
+      PERFORMANCE_KINDS.map((k) => [
+        k,
+        Object.fromEntries(STAT_ROLES.map((r) => [r, 0])) as Record<StatRole, number>,
+      ]),
+    ) as Record<PerformanceKind, Record<StatRole, number>>,
     byKind: kinds,
   }
 }
@@ -148,6 +156,25 @@ describe('rankDancers', () => {
     })
     expect(rows[0].army).toBe('crni')
     expect(rows[0].title).toBeNull()
+  })
+})
+
+// The sentence the standing is printed as. Croatian declines, and a counted
+// noun after "s" is in the instrumental: the nominative `moreska.count` read
+// "Ti si 24. s 1 nastup", which is the kind of sentence that tells a dancer the
+// app was written by somebody who does not speak to them (#568).
+describe('the standing sentence', () => {
+  const say = (n: number, rank = 24) =>
+    APP_STRINGS.board.standing(rank, pluralize(n, APP_STRINGS.board.withCount))
+
+  it('puts one nastup in the instrumental', () => {
+    expect(say(1)).toBe('Ti si 24. s 1 nastupom.')
+  })
+
+  it('keeps the genitive for every other bucket', () => {
+    expect(say(3, 9)).toBe('Ti si 9. s 3 nastupa.')
+    expect(say(14, 9)).toBe('Ti si 9. s 14 nastupa.')
+    expect(say(21, 2)).toBe('Ti si 2. s 21 nastupom.')
   })
 })
 

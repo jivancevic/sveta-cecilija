@@ -57,12 +57,15 @@ export function LeaderboardSegments({
         panelId={PANEL}
       />
 
-      <nav className="app__seasons" aria-label={APP_STRINGS.mySeason.season}>
+      {/* A row of pills rather than the bordered box the old nav drew, which
+          framed a single year in a full-width rectangle. The links stay links:
+          a season is a server navigation and carries `?part=` with it. */}
+      <nav className="app__lb-seasons" aria-label={APP_STRINGS.mySeason.season}>
         {seasons.map((year) => (
           <Link
             key={year}
             href={`/app/leaderboard?season=${year}&part=${segment}`}
-            className={`app__seasons-item${year === season ? ' app__seasons-item--on' : ''}`}
+            className={`app__lb-season${year === season ? ' app__lb-season--on' : ''}`}
             aria-current={year === season ? 'page' : undefined}
           >
             {year}

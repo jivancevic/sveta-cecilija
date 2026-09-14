@@ -547,6 +547,14 @@ export const APP_STRINGS = {
       back: 'Natrag na ljestvicu',
       /** The voditelj's own line on a row: which evenings the count is made of. */
       breakdown: (parts: string[]) => parts.join(' · '),
+      /**
+       * "2 × crni kralj · 1 × otmanović" — the titles a dancer wore in THOSE
+       * evenings, the quiet second line under the split.
+       *
+       * Only the four titles, and only the ones above zero: a dancer with no
+       * titula that season gets no line rather than four zeros.
+       */
+      worn: (count: number, label: string) => `${count} × ${label}`,
     },
   },
 

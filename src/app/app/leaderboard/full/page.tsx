@@ -8,9 +8,9 @@ import {
   type RankRow,
 } from '@/lib/app/leaderboard-rank'
 import { pluralize } from '@/lib/app/roster-loaders'
-import { APP_STRINGS, KIND_LABELS } from '@/lib/app/strings'
-import type { DancerStats } from '@/lib/lineup/stats'
-import { PERFORMANCE_KINDS } from '@/lib/show-performance'
+import { APP_STRINGS, KIND_LABELS, ROLE_LABELS } from '@/lib/app/strings'
+import { STAT_ROLES, type DancerStats } from '@/lib/lineup/stats'
+import { PERFORMANCE_KINDS, type PerformanceKind } from '@/lib/show-performance'
 import { AppShell } from '../../AppShell'
 import { openScreen } from '../../gate'
 import { Chip, List, ListRow, RoleMark, Section } from '../../ui'
@@ -33,13 +33,17 @@ import { Chip, List, ListRow, RoleMark, Section } from '../../ui'
 // voditelj scoreboard hid behind a tap (#437, story 40). A line rather than a
 // table because a phone carries a sentence better than six numeric columns.
 //
-// What that line deliberately does NOT carry is the four title counts the same
-// scoreboard put in four columns. `DancerStats.roles` counts titles over the
-// WHOLE season and this list is one kind of evening, so printing both beside
-// each other showed "6 crni kralj · 17 bili kralj" against a count of 19 —
-// numbers that do not add up are worse than numbers that are not there. A
-// per-kind title count would have to come from `lib/lineup/stats.ts`, and that
-// is a ticket of its own.
+// Under it, quieter, are the four titles the same scoreboard put in four
+// columns: "2 × crni kralj · 1 × otmanović". They come from `rolesByKind`
+// and summed over THIS list's kinds, never from `roles`, which is the whole
+// season: a titles line drawn from the season sat next to a count that excluded
+// the Experiences it was counting, and showed "6 crni kralj · 17 bili kralj"
+// against a count of 19. Two numbers that do not add up are worse than one
+// number that is not there.
+//
+// Only the four titles, only above zero, and a dancer who wore none this season
+// gets no line: a titula is given per evening (CONTEXT.md → *Title*), and a row
+// of zeros would say something about a dancer that is not about them.
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -47,7 +51,7 @@ export const dynamic = 'force-dynamic'
 const S = APP_STRINGS.board
 
 /** "8 Redovna · 2 Adriatic DMC" — which evenings the count is made of. */
-function breakdown(row: DancerStats, kinds: readonly string[]): string | null {
+function breakdown(row: DancerStats, kinds: readonly PerformanceKind[]): string | null {
   const parts = PERFORMANCE_KINDS.filter((k) => kinds.includes(k) && row.byKind[k] > 0).map(
     (k) => `${row.byKind[k]} ${KIND_LABELS[k]}`,
   )
@@ -56,7 +60,43 @@ function breakdown(row: DancerStats, kinds: readonly string[]): string | null {
   return parts.length > 1 ? S.full.breakdown(parts) : null
 }
 
-function Row({ row, meta }: { row: RankRow; meta: string | null }) {
+/** "2 × crni kralj · 1 × otmanović" — the titles worn in THOSE evenings. */
+function titles(row: DancerStats, kinds: readonly PerformanceKind[]): string | null {
+  const counted = STAT_ROLES.map((title) => ({
+    title,
+    count: kinds.reduce((sum, k) => sum + row.rolesByKind[k][title], 0),
+  })).filter((t) => t.count > 0)
+
+  return counted.length > 0
+    ? S.full.breakdown(
+        counted.map((t) => S.full.worn(t.count, ROLE_LABELS[t.title].toLocaleLowerCase('hr'))),
+      )
+    : null
+}
+
+function Row({
+  row,
+  split,
+  worn,
+}: {
+  row: RankRow
+  /** Which evenings the count is made of; `moreska` only. */
+  split: string | null
+  /** The titles worn in them; `moreska` only. */
+  worn: string | null
+}) {
+  // "Puna sezona" is a fact about the dancer and the split is a fact about the
+  // count; the voditelj's detail ADDS to the row rather than replacing what
+  // every reader sees, so all three stack in that order (review, #582).
+  const meta =
+    row.fullSeason || split || worn ? (
+      <>
+        {row.fullSeason && <span className="app__lb-meta-line">{S.fullSeason}</span>}
+        {split && <span className="app__lb-meta-line">{split}</span>}
+        {worn && <span className="app__lb-meta-line app__lb-titles">{worn}</span>}
+      </>
+    ) : undefined
+
   return (
     <ListRow
       className={row.me ? 'app__lb-row--me' : undefined}
@@ -67,7 +107,7 @@ function Row({ row, meta }: { row: RankRow; meta: string | null }) {
         </span>
       }
       title={row.nickname}
-      meta={meta ?? (row.fullSeason ? S.fullSeason : undefined)}
+      meta={meta}
       trail={<b className="app__lb-count">{row.performances}</b>}
     >
       {row.me && <Chip tone="gold">{S.you}</Chip>}
@@ -119,11 +159,13 @@ export default async function FullLeaderboardPage({
         <List>
           {rows.map((row) => {
             const source = byId.get(row.memberId)
+            const detail = viewer.voditelj && source
             return (
               <Row
                 key={row.memberId}
                 row={row}
-                meta={viewer.voditelj && source ? breakdown(source, kinds) : null}
+                split={detail ? breakdown(source, kinds) : null}
+                worn={detail ? titles(source, kinds) : null}
               />
             )
           })}

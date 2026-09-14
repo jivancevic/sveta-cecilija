@@ -1494,15 +1494,19 @@ html:has(> .app) {
   margin-top: 12px;
 }
 
+/* The app's one <select>, dressed as a T1 control (#568): a sunk surface and a
+   16px radius, no square hairline. The NATIVE appearance is kept on purpose —
+   the platform draws its own chevron and that one follows `color-scheme`, where
+   an SVG of ours would be a hex the night skin could not re-point. */
 .app__select {
-  min-height: 40px;
-  padding: 8px 10px;
+  min-height: 44px;
+  padding: 10px 12px;
   font: inherit;
   font-size: 14px;
   color: var(--ink);
   background: var(--sunk);
-  border: 1px solid var(--cardEdge);
-  border-radius: var(--radius);
+  border: 0;
+  border-radius: var(--rCtl);
 }
 
 .app__stats-season {
@@ -1704,29 +1708,6 @@ html:has(> .app) {
 }
 
 /* ── Moje: one dancer's own season (#457) ───────────────── */
-.app__seasons {
-  display: flex;
-  flex-wrap: wrap;
-  margin: 18px 0 0;
-  border: 1px solid var(--cardEdge);
-}
-
-.app__seasons-item {
-  flex: 1 1 0;
-  min-width: 64px;
-  padding: 9px 4px;
-  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
-  font-size: 13px;
-  text-align: center;
-  color: var(--muted);
-  text-decoration: none;
-}
-
-.app__seasons-item--on {
-  background: var(--card);
-  color: var(--goldText);
-}
-
 .app__tiles {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2576,6 +2557,50 @@ a.app__ob-link {
    the twenty-first place. */
 .app__lb-pinned {
   margin-top: -2px;
+}
+
+/* A row's meta can carry three facts on the full list: puna sezona, the split
+   of evenings the count is made of, and the titles worn in them. One line each,
+   in that order, because the first is about the dancer and the other two are
+   about the count. */
+.app__lb-meta-line {
+  display: block;
+}
+
+/* The titles, quieter than the split above them: the split is what the count
+   is made of and this is colour. */
+.app__lb-titles {
+  margin-top: 2px;
+  opacity: 0.75;
+}
+
+/* ── The season picker ─────────────────────────────────────
+   A row of pills, not a bordered box with a year centred in it. One season is
+   then one small pill rather than a full-width frame around a number, and ten
+   seasons wrap instead of squeezing. */
+.app__lb-seasons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.app__lb-season {
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 14px;
+  border-radius: var(--rPill);
+  background: var(--sunk);
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-decoration: none;
+}
+
+.app__lb-season--on {
+  background: var(--gold);
+  color: var(--onGold);
 }
 
 /* "Ti si 5. s 11 nastupa. Još 2 nastupa do 4. mjesta." */

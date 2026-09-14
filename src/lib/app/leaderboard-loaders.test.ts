@@ -10,6 +10,12 @@ function dancer(memberId: string, nickname: string, performances: number): Dance
     nickname,
     performances,
     roles: Object.fromEntries(STAT_ROLES.map((r) => [r, 0])) as Record<StatRole, number>,
+    rolesByKind: Object.fromEntries(
+      PERFORMANCE_KINDS.map((k) => [
+        k,
+        Object.fromEntries(STAT_ROLES.map((r) => [r, 0])) as Record<StatRole, number>,
+      ]),
+    ) as Record<PerformanceKind, Record<StatRole, number>>,
     byKind: Object.fromEntries(PERFORMANCE_KINDS.map((k) => [k, 0])) as Record<
       PerformanceKind,
       number

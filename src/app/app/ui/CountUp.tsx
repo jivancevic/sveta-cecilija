@@ -58,8 +58,34 @@ export function CountUp({ value, duration = 800, className }: CountUpProps) {
     // in the body of the effect: a synchronous one cascades a second render
     // out of every mount for no gain, and the paint is a frame away either way.
     frame = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(frame)
+    return () => {
+      cancelAnimationFrame(frame)
+      // **The ref is released here, and that is what makes dev honest.**
+      // StrictMode runs every effect twice: the first run queues a frame, the
+      // cleanup cancels it, and a `ran` that stayed true made the second run
+      // exit before queuing anything — so the animation never ran at all in
+      // development while working in production. Releasing it lets the second
+      // run start over, which is the behaviour the double-invoke is for.
+      ran.current = false
+    }
   }, [value, duration])
 
-  return <span className={className}>{shown}</span>
+  return (
+    // The box is as wide as the FINAL number from the first paint, so counting
+    // up from zero moves nothing around it. `ch` is the width of a "0" in the
+    // current face, and the digits sit to the right of the box because that is
+    // the edge a column of counts is read against. Deliberately NOT
+    // `tabular-nums`: Labrada's tabular figures are a third wider than its
+    // proportional ones and put a visible hole in the middle of "18".
+    <span
+      className={className}
+      style={{
+        display: 'inline-block',
+        minWidth: `${String(value).length}ch`,
+        textAlign: 'right',
+      }}
+    >
+      {shown}
+    </span>
+  )
 }
