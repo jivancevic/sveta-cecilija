@@ -2,16 +2,24 @@
 
 import { useRouter } from 'next/navigation'
 import { useState, useTransition } from 'react'
+import { ChevronRight } from 'lucide-react'
 import type { AppNotification } from '@/lib/app/notifications-store'
 import { notificationTimeLabel } from '@/lib/app/notification-view'
 import { APP_STRINGS } from '@/lib/app/strings'
+import { Card, List, Note, Section } from '../ui'
 
-// The rows of the Sandučić obavijesti, and the one button above them (#496).
+// The rows of the Sandučić obavijesti, and the one action over them (#496,
+// reskinned #569).
 //
 // A client island because two things need the browser: the tap has to mark the
 // row read BEFORE it follows the row's url, and "Označi sve pročitanim" has to
 // leave the reader on this screen with the bell already at zero. The rows
 // themselves are server data, handed down as a prop.
+//
+// **"Označi sve pročitanim" is quiet text on the right of the section heading**
+// (#569, Q48), where it used to be a button of its own above the list. It is
+// not a thing anybody came here to do: it is the way out of a list you have
+// already read, so it sits where a section's count sits and reads like one.
 //
 // A row is a BUTTON, not a link, and that is deliberate: its job is a write
 // followed by a navigation, and a link that did the write in an onClick would
@@ -82,58 +90,60 @@ export function NotificationList({
 
   if (rows.length === 0) {
     return (
-      <div className="app__empty-state">
-        <b>{S.emptyTitle}</b>
+      <Card className="app__empty">
+        <h2>{S.emptyTitle}</h2>
         <p>{S.emptyBody}</p>
-      </div>
+      </Card>
     )
   }
 
   return (
-    <>
-      {unread > 0 && (
-        <div className="app__notif-actions">
-          <button
-            type="button"
-            className="app__button app__button--quiet"
-            onClick={markAll}
-            disabled={clearing}
-          >
-            {clearing ? S.marking : S.markAll}
-          </button>
-        </div>
-      )}
+    <section className="app__more-group">
+      <Section
+        title={S.section}
+        aside={
+          unread > 0 ? (
+            <button
+              type="button"
+              className="app__quiet-action"
+              onClick={markAll}
+              disabled={clearing}
+            >
+              {clearing ? S.marking : S.markAll}
+            </button>
+          ) : null
+        }
+      />
 
-      {failed && <p className="app__error">{S.markAllFailed}</p>}
+      {failed && <Note>{S.markAllFailed}</Note>}
 
-      <ul className="app__notif-list">
+      <List>
         {rows.map((row) => {
           const isUnread = row.readAt === null && !read.has(row.id)
           return (
-            <li key={row.id}>
-              <button
-                type="button"
-                className={`app__notif-row${isUnread ? ' app__notif-row--unread' : ''}`}
-                onClick={() => void open(row)}
-              >
-                <span className="app__notif-dot">
-                  {isUnread && <span className="app__sr-only">{S.unread}</span>}
+            <button
+              key={row.id}
+              type="button"
+              className={`ui-row app__notif-row${isUnread ? ' app__notif-row--unread' : ''}`}
+              onClick={() => void open(row)}
+            >
+              <span className="app__notif-dot">
+                {isUnread && <span className="app__sr-only">{S.unread}</span>}
+              </span>
+              <span className="ui-row__body">
+                <b>{row.title}</b>
+                <span>{row.body}</span>
+                <span className="app__notif-time">
+                  {notificationTimeLabel(row.createdAt, nowMs)}
                 </span>
-                <span className="app__notif-text">
-                  <span className="app__notif-title">{row.title}</span>
-                  <span className="app__notif-body">{row.body}</span>
-                  <span className="app__notif-time">
-                    {notificationTimeLabel(row.createdAt, nowMs)}
-                  </span>
-                </span>
-                <span className="app__notif-chevron" aria-hidden="true">
-                  ›
-                </span>
-              </button>
-            </li>
+              </span>
+              <span className="app__row-chev" aria-hidden="true">
+                <ChevronRight size={20} strokeWidth={1.75} />
+              </span>
+            </button>
           )
         })}
-      </ul>
-    </>
+      </List>
+    </section>
   )
 }

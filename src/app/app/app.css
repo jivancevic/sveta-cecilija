@@ -1415,10 +1415,7 @@ html:has(> .app) {
 /* The shared calendar link (#433). The URL is a long token, so it wraps and
    scrolls rather than pushing the layout wide on a phone. */
 .app__calendar {
-  margin: 28px 0 8px;
-  padding: 14px;
-  border: 1px solid var(--cardEdge);
-  border-radius: var(--radius);
+  align-items: stretch;
 }
 
 .app__calendar-body {
@@ -1435,8 +1432,7 @@ html:has(> .app) {
   font-size: 12px;
   color: var(--ink);
   background: var(--sunk);
-  border: 1px solid var(--cardEdge);
-  border-radius: var(--radius);
+  border-radius: var(--rCtl);
   overflow-wrap: anywhere;
 }
 
@@ -1791,51 +1787,114 @@ html:has(> .app) {
   color: var(--muted);
 }
 
-/* ── Više: the once-a-season things (#457) ──────────────── */
-.app__more {
-  margin-top: 18px;
+/* ── Više and Profil: the person and their settings (#457, #569) ──
+   Both screens are made of `ui-*` shapes; what is left here is the spacing
+   between the groups, the 44px icon slot in front of a row, and the two lines
+   at the foot that say which build this is. */
+
+/* One group: its uppercase heading and the list or card under it. */
+.app__more-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 22px;
 }
 
-.app__more-row {
-  padding-block: calc(var(--rowY) + 3px);
+/* The person's own four rows sit right under the header, with no heading of
+   their own: what they are about is the name above them. */
+.app__more-list {
+  margin-top: 4px;
+}
+
+/* The chips under a name: what this login may do, or that several people hold
+   it. Only ever on Više, and only for a reader who is not a dancer. */
+.app__me-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: -10px 0 18px;
+}
+
+/* The 44px slot in front of a row, so four lists line their titles up whatever
+   is drawn in it. */
+.app__row-icon {
+  flex: none;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 14px 0;
-  border-bottom: 1px solid var(--rule);
-  font-size: 16px;
-  color: inherit;
-  text-decoration: none;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--rCtl);
+  background: var(--sunk);
+  color: var(--goldText);
 }
 
-.app__more-row span {
-  font-size: 14px;
+.app__row-chev {
+  flex: none;
+  display: flex;
   color: var(--muted);
-  text-align: right;
 }
 
-.app__more-row--static {
+/* The quiet line under a setting: what it applies to, never an instruction. */
+.app__setting-note {
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* A section heading's right-hand side when it carries an action rather than a
+   count ("Označi sve pročitanim"). It reads like the count it replaces. */
+.app__quiet-action {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 13px;
+  color: var(--goldText);
+  cursor: pointer;
+}
+
+.app__quiet-action:disabled {
+  color: var(--muted);
   cursor: default;
 }
 
-.app__more-block {
-  margin-top: 28px;
-}
-
-.app__more-block .app__hint,
-.app__more-block .app__calendar {
-  margin-top: 10px;
-}
-
-.app__more-block .app__calendar {
-  border: none;
-  padding: 0;
+/* The sheet's one paragraph (Podrška). */
+.app__sheet-body {
+  margin: 0 0 14px;
+  color: var(--muted);
 }
 
 .app__more-logout {
-  margin: 32px 0 8px;
+  margin: 28px 0 4px;
+  display: flex;
+  justify-content: center;
+}
+
+.app__more-logout .ui-btn {
+  flex: 0 0 auto;
+  padding-inline: 28px;
+}
+
+/* Which build is this (#569). The commit is the one `/api/health` reports, so
+   the line is readable rather than decorative: it is what a voditelj reads out
+   over the phone. The credit under it is a signature, not a sentence. */
+.app__build {
+  margin: 22px 0 6px;
   text-align: center;
+}
+
+.app__build p {
+  margin: 0;
+  font-family: var(--font-ibm-plex-mono), ui-monospace, monospace;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.app__build-credit {
+  margin-top: 4px !important;
+  font-size: 10px !important;
+  opacity: 0.7;
 }
 
 /* ── One evening: head, segments, panels (#457) ──────────── */
@@ -3070,42 +3129,16 @@ a.app__ob-link {
   text-align: center;
 }
 
-.app__notif-actions {
-  margin-top: 16px;
-  text-align: right;
-}
-
-.app__notif-list {
-  margin: 6px 0 0;
-  padding: 0;
-  list-style: none;
-}
-
-/* A row is a button (it writes, then navigates), dressed as `.app__more-row`:
-   one tap, a chevron, a hairline under it. */
-.app__notif-row {
-  width: 100%;
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 14px 0;
-  background: transparent;
-  border: none;
-  border-bottom: 1px solid var(--rule);
-  border-radius: 0;
-  color: inherit;
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
+/* The inbox rows are `ui-row` buttons inside a `ui-list` since #569: a row
+   writes and then navigates, which is why it is a button, and what is left
+   here is the unread dot and the time under the body. */
 
 /* The dot occupies its space whether or not it is filled, so a row does not
    shift left the moment it is read. */
 .app__notif-dot {
-  flex: 0 0 auto;
-  width: 7px;
-  height: 7px;
-  margin-top: 7px;
+  flex: none;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   background: transparent;
 }
@@ -3114,42 +3147,18 @@ a.app__ob-link {
   background: var(--gold);
 }
 
-.app__notif-text {
-  flex: 1 1 auto;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
 /* Read rows stay present rather than fading away: an inbox is also a record of
    what you were told. Only the weight of the title separates the two. */
-.app__notif-title {
-  font-size: 15px;
-  color: var(--ink);
+.app__notif-row--unread .ui-row__body b {
+  font-weight: 700;
 }
 
-.app__notif-row--unread .app__notif-title {
-  font-weight: 600;
-}
-
-.app__notif-body {
-  font-size: 14px;
-  color: var(--muted);
-}
-
-.app__notif-time {
+.app__notif-row .app__notif-time {
+  display: block;
   margin-top: 2px;
   font-family: var(--font-ibm-plex-mono), ui-monospace, monospace;
   font-size: 12px;
   font-variant-numeric: tabular-nums;
-  color: var(--muted);
-}
-
-.app__notif-chevron {
-  flex: 0 0 auto;
-  margin-top: 2px;
-  font-size: 14px;
   color: var(--muted);
 }
 

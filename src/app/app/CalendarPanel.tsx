@@ -2,10 +2,11 @@
 
 import { useState } from 'react'
 import { APP_STRINGS } from '@/lib/app/strings'
+import { Button, Card, Note } from './ui'
 
-// The "Kalendar" panel on `/app/more` (#433, story 42).
+// The "Kalendar" panel, under the inbox since #569 (#433, story 42).
 //
-// It prints no heading of its own (#457): the Više tab already puts "Kalendar
+// It prints no heading of its own (#457): the screen already puts "Kalendar
 // izvedbi" above it, and a second title under the first read as two panels.
 //
 // One URL and a copy button. The URL is rendered as TEXT rather than as a link:
@@ -34,14 +35,14 @@ export function CalendarPanel({ url }: { url: string }) {
   }
 
   return (
-    <section className="app__calendar">
+    <Card className="app__calendar">
       <p className="app__calendar-body">{APP_STRINGS.calendar.body}</p>
       <code className="app__calendar-url">{url}</code>
-      <button type="button" className="app__button" onClick={copy}>
+      <Button variant="ghost" onClick={copy}>
         {APP_STRINGS.calendar.copy}
-      </button>
-      {message && <p className="app__alarm-result">{message}</p>}
-      {error && <p className="app__answer-error">{error}</p>}
-    </section>
+      </Button>
+      {message && <Note>{message}</Note>}
+      {error && <Note>{error}</Note>}
+    </Card>
   )
 }

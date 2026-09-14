@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { APP_STRINGS } from '@/lib/app/strings'
+import { Button, Note } from '../ui'
 
 // Posts to /api/app/set-password, which writes the hash on the caller's own row
 // and nothing else (#424, rewritten #463).
@@ -47,16 +48,8 @@ export function SetPasswordForm() {
 
   return (
     <form onSubmit={submit} noValidate>
-      {error && (
-        <p className="app__error" role="alert">
-          {error}
-        </p>
-      )}
-      {done && !error && (
-        <p className="app__answer-note" role="status">
-          {APP_STRINGS.setPassword.saved}
-        </p>
-      )}
+      {error && <Note role="alert">{error}</Note>}
+      {done && !error && <Note role="status">{APP_STRINGS.setPassword.saved}</Note>}
       <label className="app__field">
         <span>{APP_STRINGS.setPassword.password}</span>
         <input
@@ -83,9 +76,9 @@ export function SetPasswordForm() {
           }}
         />
       </label>
-      <button className="app__button" type="submit" disabled={busy}>
+      <Button variant="primary" type="submit" disabled={busy}>
         {busy ? APP_STRINGS.setPassword.submitting : APP_STRINGS.setPassword.submit}
-      </button>
+      </Button>
     </form>
   )
 }

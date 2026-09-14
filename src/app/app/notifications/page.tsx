@@ -2,11 +2,14 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { getMyNotifications } from '@/lib/app/notifications-data'
 import { APP_STRINGS } from '@/lib/app/strings'
+import { calendarFeedUrl } from '@/lib/calendar/feed'
+import { Section } from '../ui'
 import { AppShell } from '../AppShell'
+import { CalendarPanel } from '../CalendarPanel'
 import { openScreen } from '../gate'
 import { NotificationList } from './NotificationList'
 
-// `/app/notifications` — the Sandučić obavijesti (#473, #496).
+// `/app/notifications` — the Sandučić obavijesti (#473, #496, reskinned #569).
 //
 // `openScreen()` with NO screen key, like `/app/account`:
 // this is a Više row rather than a tab, so it has no entry in the permission →
@@ -17,6 +20,13 @@ import { NotificationList } from './NotificationList'
 // Every account that is in has an inbox, whatever it holds: the bell is on
 // every screen, so a screen behind it that some accounts could not open would
 // be a control that sometimes refuses itself.
+//
+// **The calendar sits UNDER the list** (#569, Q48). It used to be a panel in
+// Više. Both halves of this screen are the same promise told at two speeds —
+// "we will tell you" and "your phone will already know" — and the loud one goes
+// first: a person opens this screen because something happened, not because
+// they came to subscribe to a feed. A deployment missing either half of the
+// feed URL simply shows no panel, rather than a heading over a broken link.
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -35,6 +45,11 @@ export default async function NotificationsPage() {
   // browser) is both impure and a chance for the two to disagree.
   const { rows, nowMs } = await getMyNotifications(viewer.userId)
 
+  const calendarUrl = calendarFeedUrl(
+    process.env.NEXT_PUBLIC_BASE_URL,
+    process.env.CALENDAR_FEED_TOKEN,
+  )
+
   return (
     <AppShell viewer={viewer} screen="more" title={APP_STRINGS.notifications.title}>
       <Link className="app__back" href="/app/more">
@@ -42,6 +57,13 @@ export default async function NotificationsPage() {
       </Link>
 
       <NotificationList rows={rows} nowMs={nowMs} />
+
+      {calendarUrl && (
+        <section className="app__more-group">
+          <Section title={APP_STRINGS.more.calendar} />
+          <CalendarPanel url={calendarUrl} />
+        </section>
+      )}
     </AppShell>
   )
 }
