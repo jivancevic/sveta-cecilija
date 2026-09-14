@@ -44,6 +44,8 @@ export {
   ICON_STROKE,
   ICON_STROKE_ON,
   ScreenIcon,
+  SWORDS_BLADE_LENGTH,
+  SWORDS_PATHS,
   Swords,
   type ScreenIconProps,
 } from './ScreenIcon'

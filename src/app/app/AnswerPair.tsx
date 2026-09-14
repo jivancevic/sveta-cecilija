@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { APP_STRINGS } from '@/lib/app/strings'
+import { SWORDS_PATHS } from './ui/ScreenIcon'
 
 // Dolazim / Ne dolazim, as a PAIR that never collapses (#592, prototype
 // variant A).
@@ -51,7 +52,16 @@ export type AnswerPairState = 'none' | 'yes' | 'no'
 
 const S = APP_STRINGS.answer
 
-/** The crossed swords: the same drawing the Moreška tab carries. */
+/**
+ * The crossed swords: the same drawing the Moreška tab carries, and since #592
+ * literally the same paths (`SWORDS_PATHS`) rather than a lookalike copied out
+ * of the prototype. A dancer taps this button to say they are coming to a
+ * moreška, so the picture on it has to be the picture of the moreška screen.
+ *
+ * The two blades keep `app__ans-s1` / `app__ans-s2`, the hilts `app__ans-hilt`:
+ * the animation is the blades redrawing themselves and the hilts arriving after
+ * them, and it is spelled in `app.css`, not here.
+ */
 function SwordsMark({ strokeWidth }: { strokeWidth: number }) {
   return (
     <svg
@@ -64,9 +74,12 @@ function SwordsMark({ strokeWidth }: { strokeWidth: number }) {
       strokeLinejoin="round"
       aria-hidden="true"
     >
-      <path className="app__ans-s1" d="M14.5 17.5 21 4l-9.5 9" />
-      <path className="app__ans-s2" d="M9.5 17.5 3 4l9.5 9" />
-      <path className="app__ans-hilt" d="M5 20h4M15 20h4" />
+      {SWORDS_PATHS.blades.map((d, i) => (
+        <path key={d} className={i === 0 ? 'app__ans-s1' : 'app__ans-s2'} d={d} />
+      ))}
+      {SWORDS_PATHS.hilts.map((d) => (
+        <path key={d} className="app__ans-hilt" d={d} />
+      ))}
     </svg>
   )
 }
