@@ -30,7 +30,10 @@ export function UsersSearch({ q }: { q: string }) {
         />
       </label>
 
-      <button type="submit" className="app__button app__button--quiet">
+      {/* A ghost, not the gold: the loud button on this screen is "Novi
+          korisnik", and a search that shouts over it is the wrong emphasis
+          (#573). Still a real submit, so the form works with no JavaScript. */}
+      <button type="submit" className="ui-btn ui-btn--ghost">
         {S.searchPlaceholder}
       </button>
 

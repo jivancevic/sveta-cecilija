@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
+  armyOfRole,
   foundLabel,
+  initialsOf,
   memberListRows,
+  memberMatchesFilter,
   memberMatchesSearch,
   memberSearchKey,
   toMemberListInput,
@@ -154,5 +157,79 @@ describe('toMemberListInput', () => {
       yearRound: false,
       isMoreskant: true,
     })
+  })
+})
+
+// The row's mark and the three chips (#573).
+
+describe('armyOfRole', () => {
+  it('reads a special role back to the army it presupposes', () => {
+    expect(armyOfRole('otmanovic')).toBe('crni')
+    expect(armyOfRole('bili_kralj')).toBe('bili')
+  })
+
+  // `ARMY_OF_ROLE` says a bula is in neither army, which is right for a
+  // headcount and wrong for a disc, where bula is a colour of its own.
+  it('gives the bula her own colour, not neither', () => {
+    expect(armyOfRole('bula')).toBe('bula')
+  })
+
+  it('is null for a dancer with no role yet, which draws the empty disc', () => {
+    expect(armyOfRole(null)).toBeNull()
+    expect(armyOfRole('')).toBeNull()
+    expect(armyOfRole('kapetan')).toBeNull()
+  })
+})
+
+describe('initialsOf', () => {
+  it('is the first letter of the first two words', () => {
+    expect(initialsOf('Ivan Marić')).toBe('IM')
+    expect(initialsOf('Ivan Petar Marić')).toBe('IP')
+  })
+
+  it('keeps Croatian letters as Croatian letters', () => {
+    expect(initialsOf('Ćiro Šain')).toBe('ĆŠ')
+  })
+
+  it('gives one letter for one word, and nothing for nothing', () => {
+    expect(initialsOf('Ćiro')).toBe('Ć')
+    expect(initialsOf('   ')).toBe('')
+  })
+})
+
+describe('memberMatchesFilter', () => {
+  it('lets everybody through the chip that filters nothing', () => {
+    expect(memberMatchesFilter({ active: false, hasLogin: false }, 'all')).toBe(true)
+  })
+
+  it('keeps only the dancers who still dance', () => {
+    expect(memberMatchesFilter({ active: true, hasLogin: true }, 'active')).toBe(true)
+    expect(memberMatchesFilter({ active: false, hasLogin: true }, 'active')).toBe(false)
+  })
+
+  // The chip that leads somewhere: every row under it is an invitation
+  // waiting to be sent.
+  it('keeps only the dancers who cannot get in yet', () => {
+    expect(memberMatchesFilter({ active: true, hasLogin: false }, 'no-login')).toBe(true)
+    expect(memberMatchesFilter({ active: true, hasLogin: true }, 'no-login')).toBe(false)
+  })
+})
+
+describe('memberListRows, with a chip on', () => {
+  const rows = [
+    member({ id: '1', name: 'Ana Anić', active: true, primaryRole: 'crni' }),
+    member({ id: '2', name: 'Bruno Bulić', active: false, primaryRole: 'bili' }),
+  ]
+
+  it('carries the disc and the dot on every row', () => {
+    const [first] = memberListRows(rows, new Set(), '')
+    expect(first.army).toBe('crni')
+    expect(first.initials).toBe('AA')
+  })
+
+  it('narrows to what the chip asks for, search and order unchanged', () => {
+    expect(memberListRows(rows, new Set(['1']), '', 'active').map((r) => r.id)).toEqual(['1'])
+    expect(memberListRows(rows, new Set(['1']), '', 'no-login').map((r) => r.id)).toEqual(['2'])
+    expect(memberListRows(rows, new Set(), '', 'all')).toHaveLength(2)
   })
 })

@@ -1,9 +1,15 @@
-import Link from 'next/link'
 import { APP_STRINGS } from '@/lib/app/strings'
 import { loadAccounts } from '@/lib/app/users-data'
-import { displayName, emailLabel, filterAccounts, permissionChips, sortAccounts } from '@/lib/app/users-view'
+import {
+  displayName,
+  emailLabel,
+  filterAccounts,
+  permissionPills,
+  sortAccounts,
+} from '@/lib/app/users-view'
 import { AppShell } from '../AppShell'
 import { openScreen } from '../gate'
+import { Card, Chip, List, ListRow, Section } from '../ui'
 import { NewUserForm } from './NewUserForm'
 import { UsersSearch } from './UsersSearch'
 
@@ -11,9 +17,14 @@ import { UsersSearch } from './UsersSearch'
 //
 // The screen the Backoffice could never be: eighteen logins whose whole meaning
 // is a permission set, listed as Croatian words instead of as
-// `['tickets','refunds']`, with the shared flag and both links visible on the
-// row rather than three clicks inside a collection nobody but the developer
-// opens.
+// `['tickets','refunds']`, with the shared flag visible on the row rather than
+// three clicks inside a collection nobody but the developer opens.
+//
+// **The person first, the login second** (#573, Q47): a row is somebody, and
+// the username is how they sign in. A shared account has no person, so its
+// username IS the first line and the "Zajednički" chip beside it says why. The
+// set reads as three soft pills and a "+8", because eleven pills on a row is a
+// paragraph and the whole set is one tap away on the detail.
 //
 // Everything is in one page because there is no volume here to page through:
 // the society has fewer accounts than a phone screen has rows, so the search
@@ -47,71 +58,58 @@ export default async function UsersPage({
 
   return (
     <AppShell viewer={viewer} screen="users">
-      <UsersSearch q={q} />
+      <div className="app__col">
+        <UsersSearch q={q} />
 
-      <p className="app__users-count" aria-live="polite">
-        {S.found(rows.length)}
-      </p>
+        <Section title={S.listTitle} aside={<span aria-live="polite">{S.found(rows.length)}</span>} />
 
-      {rows.length === 0 ? (
-        <p className="app__empty">{S.empty}</p>
-      ) : (
-        <div className="app__users-list">
-          {rows.map((account) => {
-            const name = displayName(account)
-            return (
-              <Link key={account.id} className="app__user-row" href={`/app/users/${account.id}`}>
-                <span className="app__user-head">
-                  <span className="app__user-name">{account.username ?? account.id}</span>
-                  <span className="app__user-badges">
-                    {account.id === viewer.userId && (
-                      <span className="app__badge">{S.selfBadge}</span>
-                    )}
-                    {account.shared && (
-                      <span className="app__badge app__badge--shared">{S.sharedBadge}</span>
-                    )}
-                  </span>
-                </span>
-
-                <span className="app__user-sub">
-                  {name && <b>{name}</b>}
-                  <span className={account.email ? undefined : 'app__user-noemail'}>
-                    {emailLabel(account.email)}
-                  </span>
-                </span>
-
-                <span className="app__user-chips">
-                  {permissionChips(account.permissions).map((chip) => (
-                    <span key={chip.key} className="app__user-chip">
-                      {chip.label}
+        {rows.length === 0 ? (
+          <Card className="app__empty">
+            <p>{S.empty}</p>
+          </Card>
+        ) : (
+          <List className="app__users-list">
+            {rows.map((account) => {
+              const name = displayName(account)
+              const { pills, extra } = permissionPills(account.permissions)
+              return (
+                <ListRow
+                  key={account.id}
+                  href={`/app/users/${account.id}`}
+                  title={
+                    <>
+                      {name || account.username || account.id}
+                      {account.id === viewer.userId && <Chip tone="gold">{S.selfBadge}</Chip>}
+                      {account.shared && <Chip>{S.sharedBadge}</Chip>}
+                    </>
+                  }
+                  // The login under the person. A row with no person is
+                  // already titled with its username, so the second line says
+                  // the other thing that decides how it is handed over.
+                  meta={name ? (account.username ?? account.id) : emailLabel(account.email)}
+                  trail={
+                    <span className="app__user-pills">
+                      {pills.map((chip) => (
+                        <span key={chip.key} className="app__user-pill">
+                          {chip.label}
+                        </span>
+                      ))}
+                      {extra > 0 && <span className="app__user-pill">+{extra}</span>}
+                      {account.permissions.length === 0 && (
+                        <span className="app__user-pill app__user-pill--none">
+                          {S.noPermissions}
+                        </span>
+                      )}
                     </span>
-                  ))}
-                  {account.permissions.length === 0 && (
-                    <span className="app__user-chip app__user-chip--none">{S.noPermissions}</span>
-                  )}
-                </span>
+                  }
+                />
+              )
+            })}
+          </List>
+        )}
 
-                {(account.partnerName || account.memberName) && (
-                  <span className="app__user-links">
-                    {account.partnerName && (
-                      <span>
-                        {S.partnerLabel}: <b>{account.partnerName}</b>
-                      </span>
-                    )}
-                    {account.memberName && (
-                      <span>
-                        {S.memberLabel}: <b>{account.memberName}</b>
-                      </span>
-                    )}
-                  </span>
-                )}
-              </Link>
-            )
-          })}
-        </div>
-      )}
-
-      <NewUserForm />
+        <NewUserForm />
+      </div>
     </AppShell>
   )
 }

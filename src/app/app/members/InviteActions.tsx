@@ -2,10 +2,17 @@
 
 import { useState } from 'react'
 import { APP_STRINGS } from '@/lib/app/strings'
+import { Button, Note } from '../ui'
 import { normalizeMobile, smsHref, whatsappHref } from '@/lib/app/invite-link'
 import { usePlatform } from '../use-install'
 
-// The invitation, on the dancer's own row (#463, moved onto Članovi by #511).
+// The invitation, on the dancer's own profile (#463, onto Članovi by #511, and
+// off the list row onto the profile by #573).
+//
+// The list is a list of names now, so the invitation lost the per-row
+// disclosure it lived behind and became the profile's quick actions: it is the
+// thing a voditelj does while looking at one dancer, and it reads better with
+// that dancer's name at the top of the screen than folded under a row.
 //
 // One tap on "Kopiraj pozivnicu" mints a FRESH seven-day link
 // (`POST /api/app/invite/link`, which opens the login if there is none) and the
@@ -111,28 +118,17 @@ export function InviteActions({
   const phone = platform === 'ios' ? 'ios' : platform === 'android' ? 'android' : 'other'
   const dial = normalizeMobile(minted?.mobile ?? mobile)
 
-  // Behind a disclosure, one per row: the list a voditelj scrolls is one line
-  // per dancer, and the invitation is one tap under the name it belongs to.
   return (
-    <details className="app__member-invite">
-      <summary>{APP_STRINGS.members.invite}</summary>
+    <section className="app__member-invite">
+      <Note>{APP_STRINGS.inviteLink.channelHint}</Note>
+
       <div className="app__invite-actions">
-        <button
-          type="button"
-          className="app__button app__button--quiet"
-          onClick={mint}
-          disabled={busy !== null}
-        >
+        <Button variant="ghost" onClick={() => void mint()} disabled={busy !== null}>
           {busy === 'link' ? APP_STRINGS.inviteLink.working : APP_STRINGS.inviteLink.action}
-        </button>
-        <button
-          type="button"
-          className="app__button app__button--quiet"
-          onClick={sendMail}
-          disabled={busy !== null}
-        >
+        </Button>
+        <Button variant="ghost" onClick={() => void sendMail()} disabled={busy !== null}>
           {busy === 'mail' ? APP_STRINGS.invite.sending : APP_STRINGS.invite.action}
-        </button>
+        </Button>
       </div>
 
       {notice && <p className="app__invite-hint">{notice}</p>}
@@ -142,24 +138,24 @@ export function InviteActions({
           {/* The whole message, visible: the voditelj is about to send it. */}
           <p className="app__invite-message">{minted.message}</p>
           <div className="app__invite-actions">
-            <a className="app__button" href={smsHref(dial, minted.message, phone)}>
+            <a className="ui-btn ui-btn--primary" href={smsHref(dial, minted.message, phone)}>
               {APP_STRINGS.inviteLink.sms}
             </a>
             <a
-              className="app__button app__button--quiet"
+              className="ui-btn ui-btn--ghost"
               href={whatsappHref(dial, minted.message)}
               target="_blank"
               rel="noreferrer"
             >
               {APP_STRINGS.inviteLink.whatsapp}
             </a>
-            <button type="button" className="app__button app__button--quiet" onClick={copy}>
+            <Button variant="ghost" onClick={() => void copy()}>
               {copied ? APP_STRINGS.inviteLink.copiedShort : APP_STRINGS.inviteLink.copy}
-            </button>
+            </Button>
           </div>
           {!dial && <p className="app__invite-hint">{`${nickname}: ${APP_STRINGS.inviteLink.noMobile}`}</p>}
         </>
       )}
-    </details>
+    </section>
   )
 }

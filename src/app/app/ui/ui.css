@@ -290,6 +290,16 @@
   transform: scale(0.97);
 }
 
+/* The same chip as a button, for a list that narrows in the page (#573): a
+   button carries the browser's own font and border, and neither belongs here. */
+button.ui-filter {
+  border: 0;
+  font-family: inherit;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
 /* The same pair the tab bar wears (`--thumb` behind, `--gold` on top): it is
    the same "you are here" and it is the one pairing that survives the night
    skin, where `--thumb` is a translucent gold rather than ink (#570). */
@@ -869,6 +879,22 @@ button.ui-army:active {
 .ui-mark svg {
   width: 22px;
   height: 22px;
+}
+
+/* The initials, when the disc stands for a person and not for a title (#573).
+   The mono face is the app's "this is an identifier" voice, and the letters
+   stay the disc's own colour, so a crni reads grey on ink exactly as a crown
+   does. */
+.ui-mark i {
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 14px;
+  font-style: normal;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.ui-mark--sm i {
+  font-size: 11px;
 }
 
 .ui-mark--sm {

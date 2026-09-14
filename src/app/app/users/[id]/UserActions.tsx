@@ -8,7 +8,7 @@ import { APP_STRINGS } from '@/lib/app/strings'
 import type { Handover } from '@/lib/app/users-account'
 import type { TabOption } from '@/lib/app/users-data'
 import type { UserAccount } from '@/lib/app/users-view'
-import { Button, Chip, Sheet as UiSheet, SheetOption, Toast } from '../../ui'
+import { Button, Chip, Section, Sheet as UiSheet, SheetOption, Toast } from '../../ui'
 import { PermissionChecklist } from '../NewUserForm'
 import { HandoverPanel, Sheet } from '../UserSheet'
 
@@ -27,6 +27,11 @@ import { HandoverPanel, Sheet } from '../UserSheet'
 //
 // The two handover actions do NOT close their sheet on success: they turn into
 // the panel that shows the credential once and wait for Gotovo.
+//
+// All six sit in ONE section under one heading since #573 (Q47), each as T1's
+// `Button`: the first two are the ones a `users` holder presses weekly, so they
+// lead, and the four that change what an account IS follow as ghosts. A seventh
+// button here would be the moment to ask whether it is an action at all.
 
 const S = APP_STRINGS.users
 
@@ -200,25 +205,27 @@ export function UserActions({
           all six actions rather than a second one for the newest. */}
       <Toast message={done ?? ''} open={done !== null} />
 
+      <Section title={S.actionsTitle} />
+
       <div className="app__user-buttons">
-        <button type="button" className="app__button" onClick={() => open('permissions')}>
+        <Button variant="primary" onClick={() => open('permissions')}>
           {S.actions.permissions}
-        </button>
-        <button type="button" className="app__button" onClick={() => open('reset')}>
+        </Button>
+        <Button variant="primary" onClick={() => open('reset')}>
           {S.actions.resetPassword}
-        </button>
-        <button type="button" className="app__button app__button--link" onClick={() => open('partner')}>
+        </Button>
+        <Button variant="ghost" onClick={() => open('partner')}>
           {S.actions.linkPartner}
-        </button>
-        <button type="button" className="app__button app__button--link" onClick={() => open('member')}>
+        </Button>
+        <Button variant="ghost" onClick={() => open('member')}>
           {S.actions.linkMember}
-        </button>
-        <button type="button" className="app__button app__button--link" onClick={() => open('tabs')}>
-          {S.actions.tabs}
-        </button>
-        <button type="button" className="app__button app__button--link" onClick={() => open('shared')}>
+        </Button>
+        <Button variant="ghost" onClick={() => open('shared')}>
           {S.actions.shared}
-        </button>
+        </Button>
+        <Button variant="ghost" onClick={() => open('tabs')}>
+          {S.actions.tabs}
+        </Button>
       </div>
 
       {sheet === 'permissions' && (

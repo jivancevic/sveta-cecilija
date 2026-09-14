@@ -55,6 +55,23 @@ export function permissionChips(permissions: readonly Permission[]): PermissionC
   }))
 }
 
+/**
+ * The row's pills: the first few, and how many did not fit (#573, Q47).
+ *
+ * A superadmin holds eleven permissions, and eleven pills on a 72px row is a
+ * paragraph. Three and a "+8" is the same fact at a glance, and the detail
+ * behind the row is where the whole set is spelled out. The order is the
+ * vocabulary's, so the three that show are the same three on every account
+ * rather than whichever the database returned first.
+ */
+export function permissionPills(
+  permissions: readonly Permission[],
+  shown = 3,
+): { pills: PermissionChip[]; extra: number } {
+  const all = permissionChips(permissions)
+  return { pills: all.slice(0, shown), extra: Math.max(0, all.length - shown) }
+}
+
 /** Every permission there is, for the checkbox list. Never a re-typed list. */
 export function allPermissionChips(): PermissionChip[] {
   return permissionChips(PERMISSIONS)

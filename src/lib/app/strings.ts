@@ -28,6 +28,9 @@ import type { EnquiryType } from '@/lib/contact/enquiry-type'
 import type { PerformanceKind } from '@/lib/show-performance'
 import type { LineupRole } from '@/lib/moreskant-profile'
 import { LINEUP_ROLE_LABELS } from '@/lib/moreskant-profile'
+// A type, and therefore erased: `members-screen.ts` imports these strings back,
+// and a value import either way would be a cycle.
+import type { MemberFilter } from './members-screen'
 
 export const APP_STRINGS = {
   /** The product name: the manifest, the header and the browser tab all use it. */
@@ -918,12 +921,28 @@ export const APP_STRINGS = {
     hasLogin: 'ima prijavu',
     noLogin: 'bez prijave',
     retired: 'neaktivan',
+    /**
+     * The three chips over the list (#573). The keys are `MemberFilter`, and
+     * `satisfies` is what stops a fourth chip shipping without its Croatian.
+     */
+    filters: {
+      all: 'Svi',
+      active: 'Aktivni',
+      'no-login': 'Bez prijave',
+    } satisfies Record<MemberFilter, string>,
+    filtersLabel: 'Filtar popisa',
+    /** The header icon: everything about letting somebody in, in one sheet. */
+    invitations: 'Pozivnice',
+    invitationsBody:
+      'Kod za probu, zahtjevi koji čekaju odobrenje i pozivnica e-mailom za sve koji je još nemaju.',
+    invitationsClose: 'Zatvori',
     /** The per-row disclosure the two invitation channels sit behind. */
     invite: 'Pozivnica',
     /** The way back from a profile. */
     back: 'Članovi',
 
     /** The profile */
+    profileTitle: 'Podaci moreškanta',
     profileIntro: 'Nadimak, mobitel i uloge mijenja voditelj. Ime i bilješku mijenja blagajna.',
     nickname: 'Nadimak',
     name: 'Ime i prezime',
@@ -2068,6 +2087,10 @@ export const APP_STRINGS = {
     searchLabel: 'Traži po korisničkom imenu, imenu ili e-mailu',
     searchPlaceholder: 'Traži',
     clear: 'Svi računi',
+    /** The heading over the list, since the count moved beside it (#573). */
+    listTitle: 'Računi',
+    /** The heading over the six named actions on the detail. */
+    actionsTitle: 'Što se može s ovim računom',
     /** "1 račun", "7 računa": Croatian only splits at one for this noun. */
     found: (n: number) => (n === 1 ? '1 račun' : `${n} računa`),
     empty: 'Nema računa koji odgovaraju pretrazi.',

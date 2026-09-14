@@ -3059,6 +3059,47 @@ a.app__ob-link {
   white-space: nowrap;
 }
 
+/* A screen's own icon action, to the bell's left (#573). Same 44px square and
+   the same press, so the two read as one row of controls; the bell keeps the
+   corner, because it is on every screen and this one is not. */
+.app__header-icon {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: var(--rPill);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.app__header-icon:active {
+  background: var(--sunk);
+}
+
+/* The queue, counted on the icon: somebody is standing in a hall waiting to be
+   let in, and that is the only thing on Članovi that cannot wait. */
+.app__header-icon-badge {
+  position: absolute;
+  top: 7px;
+  right: 5px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: var(--rPill);
+  background: var(--gold);
+  color: var(--onGold);
+  font-size: 10px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  line-height: 16px;
+  text-align: center;
+}
+
 /* The bell sits in the header slot on every screen, so it is a fixed target a
    thumb learns. 44px square: the tap target, not the glyph. */
 .app__bell {
@@ -5168,111 +5209,38 @@ a.app__statrow-main:focus-visible {
    shell's own 640px column is the only width constraint they get. */
 
 /* ═══════════════════════════════════════════════════════════
-   Članovi (#511) — the voditelj's roster screen
+   Članovi (#511, redesigned by #573) — the voditelj's roster
    ═══════════════════════════════════════════════════════════
 
-   Phone first, and the phone case is a list of names being scanned for one
-   name. So a row is one line: what the dancer is called, with the real name and
-   the primary role small under it, and the two facts that matter to a voditelj
-   (is this person in yet, are they still dancing) as badges on the right. The
-   invitation lives under the row, behind a disclosure, because it is a write
-   and must not share a tap target with opening the profile.
+   The list IS the screen: a search field, three chips, and `ui-row` rows whose
+   mark is the dancer's own initials on their army's colour. Almost nothing is
+   left here, which is the point of T1 — a row, a chip and a disc are shapes the
+   whole app shares, and what remains below is the handful of facts that belong
+   to this screen alone: the army dot, the login mark, and the head of a
+   profile.
 
-   The join code, the pending claims and the invitation actions reuse the #463
-   classes above unchanged: they moved screen, not appearance. */
+   The join code and the pending claims kept their #463 classes: they moved into
+   a sheet, not into a new appearance. */
 
 .app__members-search {
   display: block;
-  margin: 0 0 10px;
+  margin: 4px 0 10px;
 }
 
-.app__members-search-label {
-  display: block;
-  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
-  font-size: 12px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--muted);
-  margin-bottom: 6px;
-}
-
-.app__members-search input {
-  width: 100%;
-  padding: 12px;
-  font-size: 16px; /* 16px keeps iOS Safari from zooming on focus */
-  font-family: inherit;
-  color: var(--ink);
-  background: var(--frame);
-  border: 1px solid var(--cardEdge);
-  border-radius: var(--radius);
-}
-
-.app__members-search input:focus-visible {
-  outline: none;
-  border-color: var(--gold);
-}
-
-.app__members-count {
-  margin: 0 0 12px;
-  font-size: 13px;
-  font-variant-numeric: tabular-nums;
-  color: var(--muted);
-}
-
-.app__members-bulk {
-  margin: 0 0 14px;
-}
-
-.app__members-done {
-  margin: 0 0 12px;
-  font-size: 14px;
-  color: var(--goldText);
+/* One search field, the shell's own input, full width: the phone case is a
+   voditelj scanning for one name in a hall. */
+.app__members-search .app__input {
+  margin-bottom: 0;
 }
 
 .app__members {
-  margin-top: 6px;
-}
-
-.app__member-row {
-  border-bottom: 1px solid var(--rule);
+  margin-top: 2px;
 }
 
 /* A retired dancer stays on the list, under everybody who still dances, and
    reads as filed away rather than as an error. */
 .app__member-row--retired {
   opacity: 0.65;
-}
-
-/* The tap target that OPENS the profile. It is the whole line except the
-   disclosure under it, so a thumb cannot miss it. */
-.app__member-open {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: var(--rowY) 0;
-  color: var(--ink);
-  text-decoration: none;
-}
-
-.app__member-name {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-  font-size: 16px;
-}
-
-.app__member-name strong {
-  font-weight: 600;
-}
-
-.app__member-name small {
-  font-size: 13px;
-  color: var(--muted);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .app__member-flags {
@@ -5283,35 +5251,103 @@ a.app__statrow-main:focus-visible {
   color: var(--muted);
 }
 
-/* In, and not in. Gold for a login that exists, muted for one that does not:
-   the same "visibly unfinished" reading `.app__badge--none` gives an evening
-   nobody has answered. */
-.app__badge--in {
-  border-color: var(--gold);
+/* The army, as a dot before the role. The disc beside it already carries the
+   same colour, so this is a second reading of one fact and not a second fact:
+   at a glance down the list it is the dot that separates the two armies. */
+.app__army-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-right: 6px;
+  border-radius: var(--rPill);
+  vertical-align: middle;
+}
+
+.app__army-dot--crni {
+  background: #1a140c;
+  /* The ring is what makes ink visible on ink, the same trick the crni disc
+     plays: without it the dot disappears into a dark background. */
+  box-shadow: inset 0 0 0 1px var(--markEdge);
+}
+
+.app__army-dot--bili {
+  background: var(--red);
+}
+
+.app__army-dot--bula {
+  background: var(--gold);
+}
+
+/* No role yet: an outline, because an empty dot and a missing dot would look
+   the same and only one of them is a fact. */
+.app__army-dot--none {
+  background: transparent;
+  box-shadow: inset 0 0 0 1.5px var(--rule);
+}
+
+/* The quiet login mark (Q37): this person can already get in. Nothing marks
+   the ones who cannot, because the "Bez prijave" chip filters the whole list
+   to exactly them. */
+.app__member-in {
   color: var(--goldText);
 }
 
-.app__badge--out {
-  border-style: solid;
+/* ── The profile's head ───────────────────────────────────
+   Who this is, before anything that can be changed about them: the disc, the
+   nickname, and the real name (or the role, when the nickname IS the name). */
+.app__member-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 10px 0 18px;
 }
 
-.app__member-invite {
-  padding: 0 0 10px;
+.app__member-head-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
 }
 
-.app__member-invite > summary {
-  cursor: pointer;
-  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
-  font-size: 12px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+.app__member-head-body b {
+  font-family: var(--serif);
+  font-size: 22px;
+  font-weight: 600;
+  line-height: 1.15;
+}
+
+.app__member-head-body span {
+  font-size: 13px;
   color: var(--muted);
-  padding: 4px 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.app__member-invite > summary:hover,
-.app__member-invite > summary:focus-visible {
-  color: var(--goldText);
+/* The invitation, as the profile's quick actions. */
+.app__member-invite {
+  display: block;
+  margin-top: 8px;
+}
+
+.app__member-invite .app__invite-actions {
+  margin-top: 10px;
+}
+
+/* The invitations sheet: three blocks under one title, each with its own
+   heading, divided by the same hairline a list draws between two rows. */
+.app__join-block + .app__join-block {
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--rule);
+}
+
+/* "Nothing here yet" inside a sheet is a line, not a panel: the sheet is
+   already the panel, and a second one around two words opens a hole in it. */
+.app__join-block .app__empty {
+  margin: 10px 0;
+  font-size: 14px;
+  color: var(--muted);
 }
 
 /* ── The profile, and Dodaj plesača ─────────────────────── */
@@ -5488,64 +5524,52 @@ a.app__statrow-main:focus-visible {
   color: var(--muted);
 }
 
-/* ── One account in the list ──────────────────────────────── */
-.app__user-row {
-  display: block;
-  padding: var(--rowY) 0;
-  border-top: 1px solid var(--rule);
-  color: inherit;
-  text-decoration: none;
-}
-
-.app__users-list .app__user-row:last-child {
-  border-bottom: 1px solid var(--rule);
-}
-
-.app__user-row:hover {
-  background: rgba(184, 136, 26, 0.07);
-}
-
-.app__user-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 12px;
-}
+/* ── One account in the list (#573) ───────────────────────
+   The row is T1's `ui-row`, so nothing here draws a line, a hover or a tap
+   target any more. What is left is the person's name on the first line, the
+   username under it, and the set as pills on the right. */
 
 /* The username, which is what the person types to sign in: monospaced, because
    it is an identifier and `lbrkic` next to `Luka Brkić` must not read as two
    spellings of a name. */
-.app__user-name {
+.app__users-list .ui-row__body span {
   font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
-  font-size: 15px;
-  font-weight: 600;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  letter-spacing: 0.01em;
+}
+
+/* The chips that share the first line with the name: a shared login and the
+   reader's own row. They sit inline, so the name still wraps before they do. */
+.app__users-list .ui-row__body b {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+/* The pills: at most three and a "+8", stacked two to a line on a phone and
+   right-aligned so the counts line up down the list. */
+.app__user-pills {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px;
+  max-width: 46%;
+  flex-shrink: 0;
+}
+
+/* Soft rather than outlined (Q47): a permission is a quality of the account,
+   not an alarm, and eleven outlined boxes on one screen is a grid. */
+.app__user-pill {
+  padding: 2px 8px;
+  border-radius: var(--rPill);
+  background: var(--sunk);
+  font-size: 11px;
+  color: var(--muted);
   white-space: nowrap;
 }
 
-.app__user-badges {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-/* A login several people hold (ADR-0022): a shape with somebody missing from
-   it, told by the muted edge rather than by a broken line (#562). */
-.app__badge--shared {
-  border-style: solid;
-  border-color: var(--gold);
-  color: var(--goldText);
-}
-
-.app__user-sub {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 10px;
-  margin-top: 3px;
-  font-size: 13px;
-  color: var(--muted);
+.app__user-pill--none {
+  font-style: italic;
 }
 
 /* An account with nowhere to send a password to. Not a warning: the shared door
