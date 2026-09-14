@@ -106,7 +106,6 @@ export default async function AppHomePage() {
                   performanceId={home.moreska.performanceId}
                   memberId={home.moreska.memberId}
                   current={home.moreska.answer}
-                  currentArmy={home.moreska.army}
                   disabled={!home.moreska.canAnswer}
                   lockNote={home.moreska.canAnswer ? null : APP_STRINGS.answer.locked}
                 />

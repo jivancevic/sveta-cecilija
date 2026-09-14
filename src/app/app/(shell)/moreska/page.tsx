@@ -3,7 +3,6 @@ import { getSeasonPerformances } from '@/lib/app/roster-data'
 import { groupByMonth, pickHeroPerformances } from '@/lib/app/roster-loaders'
 import {
   aheadLabel,
-  armyLabel,
   heroView,
   identityOf,
   monthSections,
@@ -104,7 +103,6 @@ export default async function MoreskaPage() {
                   performanceId={next.id}
                   memberId={me.id}
                   current={next.myAnswer}
-                  currentArmy={armyLabel(next.myArmy)}
                   disabled={!next.canAnswer}
                   lockNote={next.canAnswer ? null : APP_STRINGS.answer.locked}
                 />

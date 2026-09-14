@@ -50,7 +50,6 @@ export function HeroHalves({
                 performanceId={half.id}
                 memberId={memberId}
                 current={half.answer}
-                currentArmy={half.army}
                 disabled={!half.canAnswer}
                 lockNote={half.canAnswer ? null : APP_STRINGS.answer.locked}
               />
