@@ -173,10 +173,13 @@ describe('buildPerformanceDetail — who may edit', () => {
     expect(out.performance.canAnswer).toBe(false)
   })
 
-  it('a voditelj edits anybody, including after the performance', () => {
+  // #627: the two halves of the old voditelj bypass, pulled apart. Writing an
+  // evening down after it happened is a right over somebody ELSE's answer; the
+  // voditelj's own pair follows the same rule a dancer's does.
+  it('a voditelj edits anybody after the performance, but not their own answer', () => {
     const out = build({ performanceDoc: past, viewer: { memberId: '1', voditelj: true } })
     expect(out.canEditOthers).toBe(true)
-    expect(out.performance.canAnswer).toBe(true)
+    expect(out.performance.canAnswer).toBe(false)
   })
 
   it('a voditelj who does not dance has no own-answer buttons but still edits others', () => {
