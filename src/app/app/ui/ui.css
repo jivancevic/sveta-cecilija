@@ -290,9 +290,12 @@
   transform: scale(0.97);
 }
 
+/* The same pair the tab bar wears (`--thumb` behind, `--gold` on top): it is
+   the same "you are here" and it is the one pairing that survives the night
+   skin, where `--thumb` is a translucent gold rather than ink (#570). */
 .ui-filter--on {
   background: var(--thumb);
-  color: var(--bg);
+  color: var(--gold);
 }
 
 /* ── Note ─────────────────────────────────────────────────── */
