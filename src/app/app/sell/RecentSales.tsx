@@ -7,6 +7,7 @@ import { shortShowDay } from '@/lib/app/partner-screen'
 import { formatEur } from '@/lib/app/orders-view'
 import { APP_STRINGS, shortMonthLabel } from '@/lib/app/strings'
 import { DrainBanner } from '../DrainBanner'
+import { Button, Card, Section } from '../ui'
 
 // "Zadnje prodaje" (#505), ported from `PartnerRecentSales`.
 //
@@ -22,6 +23,10 @@ import { DrainBanner } from '../DrainBanner'
 // the Backoffice used, because a clerk who learned them is the same person.
 // The undo goes to `/api/partner/cancel/undo`, which re-takes the seats under
 // the sell lock and refuses with SEAT_TAKEN if they were resold meanwhile.
+//
+// T1's heading, card and buttons since #574. The sale row keeps its own markup:
+// it opens into its tickets and carries two icon actions, which is more than a
+// `ListRow` says by design.
 
 const COLLAPSED_SIZE = 3
 const PAGER_SIZE = 10
@@ -197,18 +202,15 @@ export function RecentSales({ initial }: { initial: RecentPage }) {
 
   return (
     <section className="app__partner-sales">
-      <h2 className="app__month-head">
-        <span>{APP_STRINGS.sell.recentTitle}</span>
-        <b>{APP_STRINGS.sell.recentNote}</b>
-      </h2>
+      <Section title={APP_STRINGS.sell.recentTitle} aside={APP_STRINGS.sell.recentNote} />
 
       {undo && (
         <DrainBanner key={`${undo.orderId}:${undo.ticketId ?? ''}`} ms={undo.ms} onDone={dismissUndo}>
           <div className="app__sell-done">
             <span>{undo.label}</span>
-            <button type="button" className="app__button app__button--link" onClick={doUndo}>
+            <Button variant="link" onClick={() => void doUndo()}>
               {APP_STRINGS.sell.undo}
-            </button>
+            </Button>
           </div>
         </DrainBanner>
       )}
@@ -216,7 +218,9 @@ export function RecentSales({ initial }: { initial: RecentPage }) {
       {error && <p className="app__error">{error}</p>}
 
       {sales.length === 0 ? (
-        <p className="app__empty">{APP_STRINGS.sell.recentEmpty}</p>
+        <Card className="app__empty">
+          <p>{APP_STRINGS.sell.recentEmpty}</p>
+        </Card>
       ) : (
         <ul className="app__sale-list">
           {sales.map((sale, i) => {
@@ -352,9 +356,9 @@ function Controls({
   if (view.mode === 'collapsed') {
     if (!view.hasMore) return null
     return (
-      <button type="button" className="app__button app__button--quiet" disabled={loading} onClick={onMore}>
+      <Button variant="ghost" disabled={loading} onClick={onMore}>
         {loading ? APP_STRINGS.sell.loading : APP_STRINGS.sell.showMore}
-      </button>
+      </Button>
     )
   }
   return (
@@ -378,9 +382,9 @@ function Controls({
       >
         ›
       </button>
-      <button type="button" className="app__button app__button--quiet" disabled={loading} onClick={onLess}>
+      <Button variant="link" disabled={loading} onClick={onLess}>
         {APP_STRINGS.sell.showLess}
-      </button>
+      </Button>
     </div>
   )
 }

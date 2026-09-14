@@ -5,6 +5,7 @@ import { APP_STRINGS } from '@/lib/app/strings'
 import { AppShell } from '../AppShell'
 import { PartnerNotice } from '../PartnerNotice'
 import { openScreen } from '../gate'
+import { Card, Section } from '../ui'
 import { MonthlyStatement } from './MonthlyStatement'
 
 // `/app/statement` — Obračun (#505), the reseller's statement screen.
@@ -19,6 +20,10 @@ import { MonthlyStatement } from './MonthlyStatement'
 // download a chart engine to read them. Every bar is scaled to this partner's
 // OWN busiest evening, never to venue capacity, so a small reseller's season
 // still has shape.
+//
+// T1's skin since #574, and the two halves stand side by side on a laptop
+// (Q51): the month a reseller is asked about on the left, the season they
+// actually had on the right. No route, no figure and no rule moved.
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -40,22 +45,28 @@ export default async function StatementPage() {
 
   return (
     <AppShell viewer={viewer} screen="statement" title={screen.state.partner.name}>
-      <MonthlyStatement
-        now={screen.now}
-        commissionPercent={screen.state.partner.commissionPercent}
-      />
+      <div className="app__cols">
+        <MonthlyStatement
+          now={screen.now}
+          commissionPercent={screen.state.partner.commissionPercent}
+        />
 
-      <section className="app__partner-season">
-        <h2 className="app__month-head">
-          <span>{APP_STRINGS.statement.seasonTitle}</span>
-          <b>{APP_STRINGS.statement.seasonSold(screen.totalActive)}</b>
-        </h2>
-        {screen.totalActive === 0 ? (
-          <p className="app__empty">{APP_STRINGS.statement.seasonEmpty}</p>
-        ) : (
-          <SeasonBars bars={screen.bars} />
-        )}
-      </section>
+        <section className="app__partner-season">
+          <Section
+            title={APP_STRINGS.statement.seasonTitle}
+            aside={APP_STRINGS.statement.seasonSold(screen.totalActive)}
+          />
+          {screen.totalActive === 0 ? (
+            <Card className="app__empty">
+              <p>{APP_STRINGS.statement.seasonEmpty}</p>
+            </Card>
+          ) : (
+            <Card>
+              <SeasonBars bars={screen.bars} />
+            </Card>
+          )}
+        </section>
+      </div>
     </AppShell>
   )
 }

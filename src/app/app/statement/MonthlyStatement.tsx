@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { formatEur } from '@/lib/app/orders-view'
 import { APP_STRINGS } from '@/lib/app/strings'
+import { Card, Note, Section } from '../ui'
 import {
   clampStatementMonth,
   statementMonths,
@@ -25,6 +26,9 @@ import {
 // any partnerId a caller might add, so the figures on screen and the figures in
 // the file are one query and cannot disagree. Nothing is recomputed here:
 // `statementSummary` only renames HGD's `netCents` into the partner's debt.
+//
+// T1's shapes since #574. The picker, the route it calls and the figures it
+// prints are the ones #505 shipped.
 
 /** What came back, and WHICH month it is about. */
 type Answer =
@@ -86,10 +90,8 @@ export function MonthlyStatement({
 
   return (
     <section className="app__statement">
-      <h2 className="app__month-head">
-        <span>{APP_STRINGS.statement.monthlyTitle}</span>
-      </h2>
-      <p className="app__partner-note">{APP_STRINGS.statement.monthlyIntro}</p>
+      <Section title={APP_STRINGS.statement.monthlyTitle} />
+      <Note>{APP_STRINGS.statement.monthlyIntro}</Note>
 
       <div className="app__statement-picker">
         <div>
@@ -128,7 +130,7 @@ export function MonthlyStatement({
         </div>
       </div>
 
-      {loading && <p className="app__empty">{APP_STRINGS.statement.loading}</p>}
+      {loading && <p className="app__statement-loading">{APP_STRINGS.statement.loading}</p>}
       {failed && <p className="app__error">{APP_STRINGS.statement.failed}</p>}
 
       {current && 'summary' in current && (
@@ -156,7 +158,7 @@ function Loaded({
   commissionPercent: number
 }) {
   return (
-    <>
+    <Card>
       <dl className="app__statement-figures">
         <Figure label={APP_STRINGS.statement.tickets} value={String(summary.ticketsSold)} />
         <Figure label={APP_STRINGS.statement.gross} value={formatEur(summary.grossCents)} />
@@ -171,7 +173,7 @@ function Loaded({
       </dl>
 
       {shows.length === 0 ? (
-        <p className="app__empty">{APP_STRINGS.statement.empty}</p>
+        <p className="app__statement-loading">{APP_STRINGS.statement.empty}</p>
       ) : (
         <ul className="app__statement-shows">
           <li className="app__statement-show app__statement-show--head">
@@ -189,10 +191,10 @@ function Loaded({
         </ul>
       )}
 
-      <a className="app__button app__button--link app__statement-csv" href={href}>
+      <a className="ui-btn ui-btn--ghost app__statement-csv" href={href}>
         {APP_STRINGS.statement.download}
       </a>
-    </>
+    </Card>
   )
 }
 
