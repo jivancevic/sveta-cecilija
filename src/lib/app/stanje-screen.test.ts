@@ -138,13 +138,20 @@ describe('stanjeView columns', () => {
     expect(crni!.people.map((p) => p.nickname)).toEqual(['Ćići', 'Dado'])
   })
 
-  it('draws one place per dancer still missing, numbered from the next one', () => {
+  // #627: both columns run to the same number of rows, one past the fullest
+  // thing on the evening, so the two sides of the pier stand at one height and
+  // there is always exactly one place left to drop somebody into. The fixture
+  // is crni 2 of 3 and bili 1 of 2, so both columns end at four.
+  it('draws both columns to the same height, one past the fullest of the two', () => {
     const [crni, bili] = stanjeView(detail()).columns
-    expect(crni!.slots).toEqual(['mjesto 3'])
-    expect(bili!.slots).toEqual(['mjesto 2'])
+    expect(crni!.slots).toEqual(['mjesto 3', 'mjesto 4'])
+    expect(bili!.slots).toEqual(['mjesto 2', 'mjesto 3', 'mjesto 4'])
+    expect(crni!.people.length + crni!.slots.length).toBe(
+      bili!.people.length + bili!.slots.length,
+    )
   })
 
-  it('draws no places once an army is at or over its threshold', () => {
+  it('draws one place past an army that is already at or over its threshold', () => {
     const d = detail()
     // The members and the count must agree, the way `countArmies` always makes
     // them: since #620 the column derives its number from the people it is
@@ -163,7 +170,10 @@ describe('stanjeView columns', () => {
         },
       },
     })
-    expect(out.columns[0]!.slots).toEqual([])
+    // A full column still shows one empty place (#627): eight of eight used to
+    // end at the last name with nowhere to add a ninth.
+    expect(out.columns[0]!.slots).toEqual(['mjesto 5'])
+    expect(out.columns[1]!.slots).toEqual(['mjesto 2', 'mjesto 3', 'mjesto 4', 'mjesto 5'])
   })
 
   it('offers the two crni titles in the crni column and the one bili title in the other', () => {
@@ -194,6 +204,24 @@ describe('stanjeView titles', () => {
     const out = stanjeView(detail())
     expect(out.bule[0]!.title).toBe('bula')
     expect(out.titlesGiven).toBe(1)
+  })
+
+  // #627: one bula and no second one. The row that would add her is gone the
+  // moment the first is in, and `validateLineupEntries` refuses the write as
+  // well, so this is the courtesy rather than the rule.
+  it('offers Dodaj bulu only while there is no bula', () => {
+    expect(stanjeView(detail()).buleAddRow).toBeNull()
+    const d = detail()
+    const out = stanjeView({
+      ...d,
+      count: { ...d.count, bula: [] },
+      lineup: {
+        ...d.lineup,
+        entries: d.lineup.entries.filter((e) => e.role !== 'bula'),
+        suggested: d.lineup.suggested.filter((e) => e.role !== 'bula'),
+      },
+    })
+    expect(out.buleAddRow).toBe('Dodaj bulu')
   })
 
   it('counts a title the moment it is stored, and puts it on the name', () => {
@@ -410,7 +438,7 @@ describe('stanjeView on a past nastup (#620)', () => {
     const out = stanjeView(detail())
     expect(out.past).toBe(false)
     expect(out.columns[0]!.head).toBe('2 od 3')
-    expect(out.columns[0]!.slots).toEqual(['mjesto 3'])
+    expect(out.columns[0]!.slots).toEqual(['mjesto 3', 'mjesto 4'])
     expect(out.columns[0]!.addRow).toBeNull()
   })
 })

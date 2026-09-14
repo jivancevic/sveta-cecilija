@@ -245,6 +245,15 @@ export interface StanjeView {
   columns: StanjeColumn[]
   bule: StanjePerson[]
   /**
+   * The "+ Dodaj bulu" row, or null when there is nothing left to add (#627).
+   *
+   * **An evening has exactly one bula.** She is one person in one dance, so a
+   * second is a mis-tap rather than a choice, and the row that would make one
+   * is gone the moment the first is in. `POST /api/app/lineup` refuses the
+   * second write as well: this null is the courtesy, the route is the rule.
+   */
+  buleAddRow: string | null
+  /**
    * The Experience's voditelj, and an empty list on every other kind (#620).
    *
    * A list rather than one person, because the postava is a list of rows and
@@ -536,21 +545,45 @@ export function stanjeView(detail: PerformanceDetail): StanjeView {
     return people.sort(byTitleThenName(army))
   }
 
-  function column(army: Army, tally: { threshold: number }): StanjeColumn {
-    const people = peopleOf(army)
-    // Before the postava is confirmed the number is the ANSWERS and nothing
-    // else, so the head and the ArmyBar can never disagree; a dictated row
-    // stands under the names with its own chip instead of moving it. Once it is
-    // confirmed the number IS the postava, which is what makes the chip
-    // unnecessary and the head equal to the names above it (#620).
-    const total = confirmed ? people.length : answeredIn(army).length
+  // Before the postava is confirmed the number is the ANSWERS and nothing else,
+  // so the head and the ArmyBar can never disagree; a dictated row stands under
+  // the names with its own chip instead of moving it. Once it is confirmed the
+  // number IS the postava, which is what makes the chip unnecessary and the
+  // head equal to the names above it (#620).
+  const totalOf = (army: Army, people: StanjePerson[]) =>
+    confirmed ? people.length : answeredIn(army).length
+
+  const peopleByArmy = { crni: peopleOf('crni'), bili: peopleOf('bili') } as const
+  const totalByArmy = {
+    crni: totalOf('crni', peopleByArmy.crni),
+    bili: totalOf('bili', peopleByArmy.bili),
+  }
+
+  /**
+   * How many rows a column draws, and it is the SAME number for both (#627).
+   *
+   * One more than the fullest thing on the evening, so there is always exactly
+   * one empty place to drop somebody into: a column at 8 of 8 used to end at
+   * its last name with nowhere to add a ninth, while the other at 3 of 8 showed
+   * five holes, and the two sides of the pier stood at different heights.
+   *
+   * Both thresholds and both counts are in the max because any of the four can
+   * be the tallest: a voditelj may put a tenth dancer in one army, and the two
+   * armies may carry different thresholds.
+   */
+  const rows =
+    Math.max(count.crni.threshold, count.bili.threshold, totalByArmy.crni, totalByArmy.bili) + 1
+
+  function column(army: 'crni' | 'bili', tally: { threshold: number }): StanjeColumn {
+    const people = peopleByArmy[army]
+    const total = totalByArmy[army]
     const threshold = tally.threshold
     const slots: string[] = []
     // Empty places are what a column is still SHORT of, which is a sentence
     // about an evening that has not happened yet. A past one has no places left
     // and a confirmed one may not change at all, so both end without them.
     if (!past && !confirmed) {
-      for (let n = total + 1; n <= threshold; n += 1) slots.push(S.slot(n))
+      for (let n = total + 1; n <= rows; n += 1) slots.push(S.slot(n))
     }
     return {
       army,
@@ -646,6 +679,7 @@ export function stanjeView(detail: PerformanceDetail): StanjeView {
     },
     columns,
     bule,
+    buleAddRow: !confirmed && bule.length === 0 ? S.addTo.bula : null,
     voditelji,
     // The two halves of "not coming", and they are disjoint: a name that
     // appears in `withdrawn` is taken out of `notComing` rather than repeated,

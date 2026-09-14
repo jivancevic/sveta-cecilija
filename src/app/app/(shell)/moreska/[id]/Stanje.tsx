@@ -278,7 +278,11 @@ export function Stanje({
             {view.bule.map((p) => (
               <Name key={p.memberId} person={p} onPick={tap} />
             ))}
-            {add && <AddRow label={S.addTo.bula} onClick={() => add('bula')} />}
+            {/* One bula and no second one (#627): the row is gone once she
+                is in, because a second bula is a mis-tap and not a choice. */}
+            {add && view.buleAddRow && (
+              <AddRow label={view.buleAddRow} onClick={() => add('bula')} />
+            )}
           </div>
         )}
       </Card>
@@ -908,7 +912,21 @@ function PersonSheet({
         </a>
       )}
 
-      {person.titles.length > 0 && !locked && (
+      {/* A bula chooses nothing (#627). `titlesForArmy('bula')` is a list of
+          one, so her sheet was a choice between "Bula" — which she already is,
+          the only thing she can be — and "Bez titule", which for her is not a
+          plainer role but leaving the postava altogether, because there is no
+          plain bula to fall back to. One row, named for what it does. */}
+      {person.army === 'bula' && !locked && person.title != null && (
+        <SheetOption
+          disabled={busy != null}
+          onClick={() => onTitle(person.memberId, null)}
+        >
+          {S.removeFromLineup}
+        </SheetOption>
+      )}
+
+      {person.army !== 'bula' && person.titles.length > 0 && !locked && (
         <>
           <Section title={S.titleFor} />
           {person.titles.map((title) => (

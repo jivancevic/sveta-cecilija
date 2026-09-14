@@ -7849,7 +7849,10 @@ a.app__statrow-main:focus-visible {
   display: flex;
   align-items: center;
   min-height: 36px;
-  padding-left: 36px;
+  /* The shorthand, not `padding-left` alone: a voditelj's place is a `<button>`
+     and would otherwise keep the platform's own padding on the other three
+     sides (#627). */
+  padding: 0 0 0 36px;
   color: var(--muted);
   font-size: 13px;
 }
@@ -7990,8 +7993,23 @@ a.app__statrow-main:focus-visible {
 /* An empty place is the way to FILL it (#620): the same 44px row, and the only
    thing that says it is a control is that it answers a press. Drawn for a
    voditelj only — for a dancer it stays the plain span it always was, because a
-   dancer has nobody to add. */
+   dancer has nobody to add.
+
+   **It is a `<button>`, so it needs the reset** (#627). Nothing in this sheet
+   resets a button globally, and a bare one carries the platform's own grey
+   fill, border and centred label — which is the grey pill Josip photographed
+   behind every empty place. An empty place has to look the same whether or not
+   the reader is able to press it: the same dashed circle, the same muted label
+   at the same x. */
 .app__slot--tap {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 100%;
+  margin: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: left;
   cursor: pointer;
   transition: box-shadow 0.2s, color 0.2s;
 }
