@@ -4193,11 +4193,12 @@ a.app__ob-link {
   accent-color: var(--gold);
 }
 
-/* ── Prodaja and Obračun: the partner screens (#505) ───────────────────────
+/* ── Prodaja and Obračun: the partner screens (#505, reskinned by #574) ────
    A port of the Backoffice partner dashboard, so the vocabulary is the shell's
-   already: `app__stepper*` for the counts, `app__tile2` for the month card,
-   `app__month-head` for every section heading. What is new here is the sale
-   row, the drain banner both screens share, and the season bars.
+   already: `app__stepper*` for the counts, `app__tile2` for the month card.
+   #574 put every heading in T1's `Section`, every panel in a `Card` and every
+   verb on a `Button`, and moved nothing else: the same picker, the same two
+   steppers, the same delete-then-undo, the same five routes.
 
    Money is `tabular-nums` everywhere it appears: a column of euros that shifts
    under its own digits is a column nobody can compare down. */
@@ -4295,10 +4296,34 @@ a.app__ob-link {
   color: var(--muted);
 }
 
-.app__sell-done .app__button--link {
+.app__sell-done .ui-btn--link {
   margin-left: auto;
+  height: auto;
   padding: 4px 10px;
   font-size: 12px;
+}
+
+/* The three lines a loaded month can answer with instead of figures: waiting,
+   and an empty month. Quiet text inside the card, never a panel of its own —
+   the card is already the panel (#574). */
+.app__statement-loading {
+  margin: 6px 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+/* The refusal both partner screens fall back to: one sentence, and no figure
+   of any kind (#505's rule, #574's card). */
+.app__partner-notice b {
+  font-family: var(--serif);
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.app__partner-notice p {
+  margin: 0;
+  font-size: 15px;
+  color: var(--muted);
 }
 
 /* ── Zadnje prodaje ─────────────────────────────────────────────────────── */

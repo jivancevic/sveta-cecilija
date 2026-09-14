@@ -7,6 +7,7 @@ import { formatEur } from '@/lib/app/orders-view'
 import { APP_STRINGS } from '@/lib/app/strings'
 import { Stepper } from '../Stepper'
 import { DrainBanner } from '../DrainBanner'
+import { Button, Card, Section } from '../ui'
 
 // The sell form of Prodaja (#505), ported from `PartnerSellForm`.
 //
@@ -15,6 +16,9 @@ import { DrainBanner } from '../DrainBanner'
 // ticket PDF is opened the moment the route answers so the clerk can print it
 // while the guest is still at the desk. The steppers' ceiling is the courtesy
 // half of the capacity rule, not the rule itself.
+//
+// T1's card and button since #574, and nothing else: a clerk who learned this
+// form at the Backoffice desk finds the same controls in the same order.
 //
 // The form does NOT unmount on success (that was the #241 revamp and it
 // stands): a banner appears above it, the counts reset, and the next sale can
@@ -88,30 +92,26 @@ export function SellForm({ shows }: { shows: SellOption[] }) {
 
   return (
     <section className="app__sell">
-      <h2 className="app__month-head">
-        <span>{APP_STRINGS.sell.formTitle}</span>
-      </h2>
+      <Section title={APP_STRINGS.sell.formTitle} />
 
       {done && (
         <DrainBanner ms={BANNER_MS} onDone={dismiss} tone="good">
           <div className="app__sell-done">
             <b>{APP_STRINGS.sell.doneTitle}</b>
             <span>{APP_STRINGS.sell.doneBody(done.ticketCount, done.code)}</span>
-            <button
-              type="button"
-              className="app__button app__button--link"
-              onClick={() => openPdf(done.orderId)}
-            >
+            <Button variant="link" onClick={() => openPdf(done.orderId)}>
               {APP_STRINGS.sell.openPdf}
-            </button>
+            </Button>
           </div>
         </DrainBanner>
       )}
 
       {shows.length === 0 ? (
-        <p className="app__empty">{APP_STRINGS.sell.noShows}</p>
+        <Card className="app__empty">
+          <p>{APP_STRINGS.sell.noShows}</p>
+        </Card>
       ) : (
-        <>
+        <Card>
           <label className="app__comp-name" htmlFor="sell-show">
             {APP_STRINGS.sell.show}
           </label>
@@ -156,10 +156,10 @@ export function SellForm({ shows }: { shows: SellOption[] }) {
 
           {error && <p className="app__error">{error}</p>}
 
-          <button type="button" className="app__button" disabled={!canSubmit} onClick={submit}>
+          <Button variant="primary" disabled={!canSubmit} onClick={() => void submit()}>
             {busy ? APP_STRINGS.sell.issuing : APP_STRINGS.sell.issue}
-          </button>
-        </>
+          </Button>
+        </Card>
       )}
     </section>
   )

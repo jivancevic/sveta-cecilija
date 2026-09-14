@@ -1,5 +1,6 @@
 import { APP_STRINGS } from '@/lib/app/strings'
 import type { PartnerScreenState } from '@/lib/app/partner-screen'
+import { Card } from './ui'
 
 // The fail-safe screen both partner screens fall back to (#505).
 //
@@ -11,16 +12,18 @@ import type { PartnerScreenState } from '@/lib/app/partner-screen'
 //
 // The deactivated partner IS reachable: the link resolves, the screen opens,
 // and `/api/partner/sell` would 403 every attempt. So it says so in one
-// sentence, names the account, and shows no figure of any kind.
+// sentence, names the account, and shows no figure of any kind. #574 put that
+// sentence in T1's card and changed nothing else about it: a screen that
+// refuses is still a screen, and it should look like one.
 export function PartnerNotice({ state }: { state: PartnerScreenState }) {
   if (state.kind === 'ok') return null
 
   const inactive = state.kind === 'inactive'
   return (
-    <section className="app__empty-state">
+    <Card className="app__col app__partner-notice">
       <b>{inactive ? APP_STRINGS.sell.inactiveTitle : APP_STRINGS.sell.unlinkedTitle}</b>
       {inactive && <p className="app__partner-name">{state.name}</p>}
       <p>{inactive ? APP_STRINGS.sell.inactiveBody : APP_STRINGS.sell.unlinkedBody}</p>
-    </section>
+    </Card>
   )
 }
