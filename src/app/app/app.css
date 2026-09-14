@@ -749,6 +749,45 @@ html:has(> .app) {
   box-shadow: var(--shadowBar);
 }
 
+/* ── The bar while a sheet is open (#624) ──────────────────
+   "Traka se vidi cijelo vrijeme" — Josip's own words, and the reason the bar is
+   the one thing an open sheet does not cover. The panel is `--card` and reaches
+   the bottom edge of the screen (it reserves `--tabH` inside its own padding,
+   so the last row rests above where the bar stands); the bar rises ABOVE it and
+   sits on that reserved strip.
+
+   Three things change together and all three are needed:
+
+   • The ZONE goes above the sheet panel (31). Only the zone can, because the
+     pill is its child and a child cannot leave its parent's stacking context.
+   • The blur layers go, because they are up to 132px tall and would frost the
+     bottom third of the sheet they are now in front of. There is nothing left
+     under them to blur anyway.
+   • The pill is dimmed and deaf. Both halves matter: white-on-white would have
+     made a `--card` pill invisible on a `--card` panel, and a live bar under a
+     thumb aiming at a name would take the voditelj off the screen mid-job.
+     The dim is the scrim's own colour and its own opacity, so the bar reads as
+     part of what the scrim did rather than as a fourth surface. */
+.app[data-sheet='open'] .app__tabbar {
+  z-index: 32;
+}
+
+.app[data-sheet='open'] .app__tabbar-blur {
+  display: none;
+}
+
+.app[data-sheet='open'] .app__tabbar-pill {
+  pointer-events: none;
+}
+
+.app[data-sheet='open'] .app__tabbar-pill::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: rgba(26, 20, 12, 0.45);
+}
+
 /* ── The three layers under the bar (#592) ─────────────────
    The "Revolut" bar: content scrolls to the very bottom edge of the screen and
    is blurred out from under the pill rather than stopping 40px short of it.
@@ -3713,7 +3752,10 @@ a.app__ob-link {
 .app__dot--no.app__dot--on {
   background: var(--warn);
   box-shadow: inset 0 0 0 1.5px var(--warn);
-  color: #fff;
+  /* `--card` and never a hex, the way every other thing that sits ON `--warn`
+     is written: the night island re-points both, and a hardcoded white would
+     survive the skin change while the surface under it did not. */
+  color: var(--card);
 }
 
 /* ── The reader's own answer on Stanje (#624) ──────────────

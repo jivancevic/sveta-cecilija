@@ -1280,8 +1280,10 @@ button.ui-army:active {
   /* The bar stays VISIBLE while a sheet is open — Josip's own call (#624) —
      so the panel reaches the bottom edge as a sheet must and reserves the
      bar's height inside itself. The last row then scrolls to rest ABOVE the
-     bar instead of under it, and the bar sits over the panel's own empty
-     bottom. `--tabH` is 0 on the laptop, where there is no bar to clear. */
+     bar instead of under it, and the bar — which rises above this panel while
+     a sheet is open, dimmed and deaf (`app.css`, `[data-sheet='open']`) —
+     stands on that reserved strip. `--tabH` is 0 on the laptop, where there is
+     no bar to clear. */
   padding: 12px 20px calc(var(--tabH, 0px) + env(safe-area-inset-bottom, 0px) + 24px);
   border-radius: 28px 28px 0 0;
   background: var(--card);

@@ -116,52 +116,58 @@ describe('resolveUndo: un-tapping your own circle (#624)', () => {
     })
 
   it('deletes the row when there was never an answer', () => {
-    expect(undo({ previousStatus: null })).toEqual({ op: 'delete' })
+    expect(undo({ previousStatus: null })).toBe('delete')
   })
 
   it('deletes the row when the answer was "ne dolazim"', () => {
     // Nothing to withdraw from: they were never in the postava, so the voditelj
     // lost nothing and there is no odustajanje to record (Q13).
-    expect(undo({ previousStatus: 'not_coming' })).toEqual({ op: 'delete' })
+    expect(
+      undo({
+        previousStatus: 'not_coming',
+        stamps: { confirmedAt: null, withdrewAt: null, withdrewOwn: null },
+      }),
+    ).toBe('delete')
+  })
+
+  it('keeps a "ne dolazim" that IS an odustajanje', () => {
+    // The hole from the other side (#624 review): this row got to `not_coming`
+    // by withdrawing, and deleting it would take the voditelj's Odustali entry
+    // with it one tap after it landed there. The way back out is Dolazim, which
+    // clears the trace on purpose.
+    expect(
+      undo({
+        previousStatus: 'not_coming',
+        stamps: {
+          confirmedAt: iso(T0 - 3600_000),
+          withdrewAt: iso(T0 - 60_000),
+          withdrewOwn: true,
+        },
+      }),
+    ).toBe('keep')
   })
 
   it('deletes the row when the "dolazim" is younger than the grace window', () => {
     // A mis-tap fixed three seconds later has withdrawn nothing.
     expect(
       undo({ stamps: { confirmedAt: iso(T0 - 1000), withdrewAt: null, withdrewOwn: null } }),
-    ).toEqual({ op: 'delete' })
+    ).toBe('delete')
   })
 
-  it('records an odustajanje when the promise STOOD, instead of deleting it', () => {
+  it('withdraws instead of deleting once the promise has STOOD', () => {
     // The whole point of the request existing (Q12): a `dolazim` somebody has
     // been counting on is taken back, not un-said. A delete here would erase
-    // the one thing the voditelj's Odustali list is built out of.
-    const out = undo({
-      stamps: {
-        confirmedAt: iso(T0 - WITHDRAWAL_GRACE_MS),
-        withdrewAt: null,
-        withdrewOwn: null,
-      },
-    })
-    expect(out).toEqual({
-      op: 'withdraw',
-      stamps: {
-        confirmedAt: iso(T0 - WITHDRAWAL_GRACE_MS),
-        withdrewAt: iso(T0),
-        withdrewOwn: true,
-      },
-    })
-  })
-
-  it('says a voditelj wrote it down when it was not the dancer\u2019s own tap', () => {
-    const out = undo({
-      ownAnswer: false,
-      stamps: {
-        confirmedAt: iso(T0 - WITHDRAWAL_GRACE_MS),
-        withdrewAt: null,
-        withdrewOwn: null,
-      },
-    })
-    expect(out).toMatchObject({ op: 'withdraw', stamps: { withdrewOwn: false } })
+    // the one thing the voditelj's Odustali list is built out of. What the
+    // stamps then say is `stampWithdrawal`'s, asserted above and again on the
+    // route, which is where the write actually happens.
+    expect(
+      undo({
+        stamps: {
+          confirmedAt: iso(T0 - WITHDRAWAL_GRACE_MS),
+          withdrewAt: null,
+          withdrewOwn: null,
+        },
+      }),
+    ).toBe('withdraw')
   })
 })

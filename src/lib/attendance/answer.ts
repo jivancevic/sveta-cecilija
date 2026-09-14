@@ -155,18 +155,29 @@ export async function handleAttendanceAnswer(
   }
 
   const nowMs = (deps.now?.() ?? new Date()).getTime()
+  const ownAnswer = deps.actor.memberId != null && String(deps.actor.memberId) === memberId
+
+  /**
+   * Un-tapping your own answer (#624), resolved into ONE of the two things this
+   * handler already does.
+   *
+   * It is not a delete by default: a `dolazim` that stood past the grace window
+   * is taken back rather than un-said, so the row survives as a `ne dolazim`
+   * and the voditelj's Odustali list keeps the place it just lost. What this
+   * branch decides is only WHICH of the two, because the withdrawal itself is
+   * an ordinary `not_coming` write — it falls through to the write below and
+   * gets its stamps from the same `stampWithdrawal` call every other answer
+   * does, rather than a second copy of the patch here (#624 review).
+   */
+  let write: { status: AttendanceStatus; army: Army | null } | null =
+    decision.op === 'write' ? { status: decision.status, army: decision.army } : null
 
   if (decision.op === 'undo') {
-    // Un-tapping your own answer (#624). Not a delete by default: a `dolazim`
-    // that stood past the grace window is taken back rather than un-said, and
-    // the row survives as a `ne dolazim` carrying the odustajanje stamps so the
-    // voditelj's list keeps the place it just lost. `resolveUndo` owns that
-    // rule; this branch only does what it says.
     if (!existing) return { status: 200, body: { ok: true, status: null, army: null } }
 
     const outcome = resolveUndo({
       previousStatus: existing.status ?? null,
-      ownAnswer: deps.actor.memberId != null && String(deps.actor.memberId) === memberId,
+      ownAnswer,
       nowMs,
       stamps: {
         confirmedAt: existing.stamps?.confirmedAt ?? null,
@@ -175,24 +186,23 @@ export async function handleAttendanceAnswer(
       },
     })
 
-    if (outcome.op === 'delete') {
+    if (outcome === 'delete') {
       await deps.remove(existing.id)
       return { status: 200, body: { ok: true, status: null, army: null } }
     }
 
-    await deps.update(existing.id, {
-      status: 'not_coming' as const,
-      army: existing.army ?? null,
-      answeredBy: deps.actor.user
-        ? ((deps.actor.user as { id?: string | number }).id ?? null)
-        : null,
-      answeredAt: new Date(nowMs).toISOString(),
-      ...outcome.stamps,
-    })
-    return {
-      status: 200,
-      body: { ok: true, status: 'not_coming' as const, army: existing.army ?? null },
+    // An odustajanje cannot be un-tapped away: the row stands exactly as it is
+    // and the answer comes back unchanged, so the red circle stays filled.
+    if (outcome === 'keep') {
+      return {
+        status: 200,
+        body: { ok: true, status: existing.status ?? null, army: existing.army ?? null },
+      }
     }
+
+    // The army is the one the row already carries: a withdrawal empties a place
+    // in a column, and which column that was is not a thing the dancer chose.
+    write = { status: 'not_coming', army: existing.army ?? null }
   }
 
   if (decision.op === 'clear') {
@@ -203,6 +213,10 @@ export async function handleAttendanceAnswer(
     if (existing) await deps.remove(existing.id)
     return { status: 200, body: { ok: true, status: null, army: null } }
   }
+
+  // Unreachable: `clear` and `undo` have both returned or filled `write` above,
+  // and every other decision is a write. Stated so the compiler knows it too.
+  if (!write) return { status: 200, body: { ok: true, status: null, army: null } }
 
   const answeredAt = new Date(nowMs).toISOString()
   const answeredBy = deps.actor.user
@@ -215,15 +229,15 @@ export async function handleAttendanceAnswer(
   // is a picture of who is missing, not of who did the typing (#612, Q18).
   const stamps = stampWithdrawal({
     previousStatus: existing?.status ?? null,
-    nextStatus: decision.status,
+    nextStatus: write.status,
     confirmedAt: existing?.stamps?.confirmedAt ?? null,
     withdrewAt: existing?.stamps?.withdrewAt ?? null,
     withdrewOwn: existing?.stamps?.withdrewOwn ?? null,
-    ownAnswer: deps.actor.memberId != null && String(deps.actor.memberId) === memberId,
+    ownAnswer,
     nowMs,
   })
 
-  const patch = { status: decision.status, army: decision.army, answeredBy, answeredAt, ...stamps }
+  const patch = { status: write.status, army: write.army, answeredBy, answeredAt, ...stamps }
 
   if (existing) {
     await deps.update(existing.id, patch)
@@ -243,7 +257,7 @@ export async function handleAttendanceAnswer(
     }
   }
 
-  return { status: 200, body: { ok: true, status: decision.status, army: decision.army } }
+  return { status: 200, body: { ok: true, status: write.status, army: write.army } }
 }
 
 /** Re-exported so the route file needs one import for the voditelj branch. */

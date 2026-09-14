@@ -364,6 +364,28 @@ describe('handleAttendanceAnswer \u2014 undo (#624)', () => {
     )
   })
 
+  it('will not un-tap an odustajanje away', async () => {
+    // The row got to `not_coming` by withdrawing. Deleting it here would take
+    // the voditelj's Odustali entry with it, which is exactly the hole this
+    // request was written not to open.
+    const d = deps({
+      findExisting: async () => ({
+        id: 55,
+        army: 'crni',
+        status: 'not_coming',
+        stamps: {
+          confirmedAt: iso(NOW.getTime() - 3600_000),
+          withdrewAt: iso(NOW.getTime() - 60_000),
+          withdrewOwn: true,
+        },
+      }),
+    })
+    const out = await handleAttendanceAnswer(body({ status: 'undo' }), d)
+    expect(out.body).toEqual({ ok: true, status: 'not_coming', army: 'crni' })
+    expect(d.remove).not.toHaveBeenCalled()
+    expect(d.update).not.toHaveBeenCalled()
+  })
+
   it('deletes a "ne dolazim" outright, because nothing was ever promised', async () => {
     const d = deps({
       findExisting: async () => ({

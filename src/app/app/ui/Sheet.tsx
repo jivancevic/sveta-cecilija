@@ -100,6 +100,32 @@ const subscribeToNothing = () => () => {}
 const onClient = () => true
 const onServer = () => false
 
+/**
+ * How many sheets are open, so the tab bar knows (#624).
+ *
+ * A counter and not a boolean: Stanje opens a person sheet FROM a list sheet,
+ * and for one frame both are mounted. With a boolean the closing one would tell
+ * the bar the coast is clear while the opening one still has the screen.
+ *
+ * The flag itself is an attribute on `.app` (the body) rather than a piece of
+ * React state, because the thing that has to react to it is the tab bar, which
+ * lives in the shell and shares no owner with any sheet. CSS is the only thing
+ * both of them can see.
+ */
+let openSheets = 0
+
+function markSheetOpen(): () => void {
+  openSheets += 1
+  document.body.dataset.sheet = 'open'
+  return () => {
+    openSheets -= 1
+    if (openSheets <= 0) {
+      openSheets = 0
+      delete document.body.dataset.sheet
+    }
+  }
+}
+
 export function Sheet({ open, title, onClose, footer, children }: SheetProps) {
   // The portal needs a DOM to aim at, and the server has none. Every sheet in
   // this app opens from a tap, so "not mounted yet" is never a state a reader
@@ -119,6 +145,14 @@ export function Sheet({ open, title, onClose, footer, children }: SheetProps) {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [open, onClose])
+
+  // The bar stays visible OVER the panel while a sheet is up, dimmed and deaf
+  // (#624). It is the one thing on the screen a sheet does not cover, because
+  // Josip asked for it in as many words: "traka se vidi cijelo vrijeme".
+  useEffect(() => {
+    if (!open) return
+    return markSheetOpen()
+  }, [open])
 
   if (!open || !mounted) return null
 

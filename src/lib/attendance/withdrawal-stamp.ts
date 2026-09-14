@@ -143,6 +143,13 @@ export function stampWithdrawal(input: StampInput): WithdrawalStamps {
  *   a promise that STOOD → the row becomes `ne dolazim` carrying the
  *     withdrawal stamps, and the dancer's screen fills the red circle, which is
  *     the truth about where they now stand.
+ *   a `ne dolazim` that IS an odustajanje → nothing moves (#624 review). This
+ *     is the same hole seen from the other side: un-tapping the red circle on a
+ *     row that got there by withdrawing would delete the stamps with it, and
+ *     the dancer would drop off the voditelj's Odustali list one tap after
+ *     landing on it. There is one way back out of an odustajanje and it is the
+ *     honest one — say Dolazim again, which clears the trace because coming
+ *     back is exactly what the trace was waiting for.
  *
  * `undo` is therefore NOT `clear`, and the two must not be merged. `clear` is
  * the voditelj's "obriši odgovor" on the person sheet (#612, Q2): a correction
@@ -153,9 +160,7 @@ export function stampWithdrawal(input: StampInput): WithdrawalStamps {
  * the move from `coming` to `not_coming` would stamp, and a row it declines to
  * mark is by definition a mis-tap.
  */
-export type UndoOutcome =
-  | { op: 'delete' }
-  | { op: 'withdraw'; stamps: WithdrawalStamps }
+export type UndoOutcome = 'delete' | 'withdraw' | 'keep'
 
 export function resolveUndo(input: {
   /** The answer standing before this write; null when there is no row. */
@@ -164,8 +169,15 @@ export function resolveUndo(input: {
   nowMs: number
   stamps: WithdrawalStamps
 }): UndoOutcome {
-  if (input.previousStatus !== 'coming') return { op: 'delete' }
+  if (input.previousStatus !== 'coming') {
+    return input.stamps.withdrewAt ? 'keep' : 'delete'
+  }
 
+  // Which of the two it is, and NOT the stamps that go with it. A withdrawal is
+  // an ordinary `not_coming` write, so the route falls through to the one it
+  // already makes and gets its stamps from the same `stampWithdrawal` call
+  // every other answer does. Asking the question here and answering it again
+  // there is cheap; two copies of the patch would not be.
   const stamps = stampWithdrawal({
     ...input.stamps,
     previousStatus: 'coming',
@@ -174,5 +186,5 @@ export function resolveUndo(input: {
     nowMs: input.nowMs,
   })
 
-  return stamps.withdrewAt ? { op: 'withdraw', stamps } : { op: 'delete' }
+  return stamps.withdrewAt ? 'withdraw' : 'delete'
 }

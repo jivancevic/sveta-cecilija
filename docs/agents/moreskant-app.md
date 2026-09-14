@@ -1206,11 +1206,16 @@ Four things worth knowing before you touch it:
 on Moreška carries two circles per future nastup, and pressing the filled one
 again takes the answer back. What that does is `resolveUndo`, in the same file
 as the stamps and tested beside them: the row is DELETED when there was no
-answer, when the answer was `not_coming` (nothing was ever promised, so nothing
-was lost), or when the `coming` is still inside the grace window; past the
-window the row is UPDATED to `not_coming` carrying the withdrawal stamps, and
-the route answers with that status so the browser fills the red circle rather
-than clearing both.
+answer, when the answer is a plain `not_coming` (nothing was ever promised, so
+nothing was lost), or when the `coming` is still inside the grace window; past
+the window the row falls through to the handler's ordinary `not_coming` write
+and picks up the withdrawal stamps from the same `stampWithdrawal` call every
+other answer does, and the route answers with that status so the browser fills
+the red circle rather than clearing both. The fourth case is a `not_coming` that
+IS an odustajanje — it is KEPT, untouched: deleting it would take the voditelj's
+Odustali entry with it one tap after it landed there, which is the same hole
+seen from the other side. The way back out of an odustajanje is Dolazim, which
+clears the trace on purpose.
 
 That split is the whole reason the request exists. Collapsing it into `clear`
 would have given a dancer a way out of a postava the voditelj never sees, which

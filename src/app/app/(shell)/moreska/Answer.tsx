@@ -65,6 +65,22 @@ function useAnswer({
   const [error, setError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
 
+  // **The same evening is on this screen TWICE** (#624 review): the hero is
+  // also the first row of the list under it, so a tap on the row's green circle
+  // left the hero's pair showing yesterday's answer, and the other way round.
+  // `router.refresh()` re-renders the server half and hands down a new
+  // `current`, but it cannot reach into a client island's `useState`.
+  //
+  // So the prop is re-read when the SERVER's answer changes, which is React's
+  // own way of adjusting state during render rather than an effect that would
+  // paint the stale value first. A write of our own settles this state itself
+  // and then refreshes into the same value, so the two never fight.
+  const [serverAnswer, setServerAnswer] = useState<AttendanceStatus | null>(current)
+  if (serverAnswer !== current) {
+    setServerAnswer(current)
+    setAnswer(current)
+  }
+
   async function send(next: AnswerWrite) {
     if (disabled || saving) return
     const previous = answer
