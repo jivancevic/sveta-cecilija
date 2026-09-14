@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { Card } from './Card'
 
 // The one card a screen is opened FOR (#562).
@@ -19,15 +20,44 @@ export interface HeroProps extends React.HTMLAttributes<HTMLDivElement> {
   month?: React.ReactNode
   /** "Sutra · 21:00 · Redovna" */
   meta?: React.ReactNode
+  /**
+   * Where the CARD leads, when the card as a whole is a way somewhere (#620).
+   *
+   * Josip's sentence: any tap on the next-nastup widget opens the Moreška tab,
+   * except the two answer buttons and the bar, which already do something. So
+   * it is a cover link stretched over the card rather than a `<Link>` wrapped
+   * around it: everything inside stays exactly the control it was, and the
+   * three things that ARE controls sit above the cover in `ui.css`. A wrapping
+   * anchor would put a button inside a link, which is invalid and which no
+   * phone gets right.
+   */
+  href?: string
+  /** What the cover link announces, since it has no text of its own. */
+  hrefLabel?: string
 }
 
-export function Hero({ eyebrow, day, month, meta, className, children, ...rest }: HeroProps) {
+export function Hero({
+  eyebrow,
+  day,
+  month,
+  meta,
+  href,
+  hrefLabel,
+  className,
+  children,
+  ...rest
+}: HeroProps) {
   return (
     <Card
       eyebrow={eyebrow}
       className={['ui-card--hero', className ?? ''].filter(Boolean).join(' ')}
       {...rest}
     >
+      {href && (
+        <Link className="ui-hero__cover" href={href} aria-label={hrefLabel}>
+          <span className="app__sr-only">{hrefLabel}</span>
+        </Link>
+      )}
       {day != null && (
         <div className="ui-hero__day">
           <b>{day}</b>

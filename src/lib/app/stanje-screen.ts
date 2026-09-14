@@ -485,9 +485,18 @@ export function stanjeView(detail: PerformanceDetail): StanjeView {
 
   const bule = peopleOf('bula')
 
-  function column(army: Army, threshold: number, below: boolean): StanjeColumn {
+  function column(
+    army: Army,
+    tally: { count: number; threshold: number; below: boolean },
+  ): StanjeColumn {
     const people = peopleOf(army)
-    const total = people.length
+    // Before the postava is confirmed the number is the ANSWERS and nothing
+    // else, so the head and the ArmyBar can never disagree; a dictated row
+    // stands under the names with its own chip instead of moving it. Once it is
+    // confirmed the number IS the postava, which is what makes the chip
+    // unnecessary and the head equal to the names above it (#620).
+    const total = confirmed ? people.length : tally.count
+    const threshold = tally.threshold
     const slots: string[] = []
     // Empty places are what a column is still SHORT of, which is a sentence
     // about an evening that has not happened yet. A past one has no places left
@@ -501,7 +510,7 @@ export function stanjeView(detail: PerformanceDetail): StanjeView {
       count: total,
       threshold,
       // Nothing is missing from an evening that has been danced.
-      below: !past && below,
+      below: !past && (confirmed ? total < threshold : tally.below),
       head: past ? String(total) : S.ofThreshold(total, threshold),
       people,
       slots,
@@ -509,10 +518,7 @@ export function stanjeView(detail: PerformanceDetail): StanjeView {
     }
   }
 
-  const columns = [
-    column('crni', count.crni.threshold, count.crni.below),
-    column('bili', count.bili.threshold, count.bili.below),
-  ]
+  const columns = [column('crni', count.crni), column('bili', count.bili)]
 
   const voditelji = experience
     ? lineup

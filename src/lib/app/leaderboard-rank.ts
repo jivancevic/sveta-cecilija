@@ -22,12 +22,7 @@
 //     make up a fact the lineups do not contain,
 //   - no streaks, ever.
 
-import {
-  ARMY_OF_ROLE,
-  isDanceRole,
-  type DanceRole,
-  type LineupRole,
-} from '@/lib/moreskant-profile'
+import { ARMY_OF_ROLE, isDanceRole, type LineupRole } from '@/lib/moreskant-profile'
 import { STAT_ROLES, type StatRole } from '@/lib/lineup/stats'
 import { PERFORMANCE_KINDS, type PerformanceKind } from '@/lib/show-performance'
 import type { DancerStats } from '@/lib/lineup/stats'

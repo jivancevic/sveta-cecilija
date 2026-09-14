@@ -7755,32 +7755,17 @@ a.app__statrow-main:focus-visible {
 .app__stanje {
   display: flex;
   flex-direction: column;
-  min-height: calc(100dvh - var(--tabH) - 190px);
 }
 
-/* The voditelj's bar: sticky, so it takes its own room in the flow and clears
-   the tab bar, exactly as the answer bar on the old detail does (#562). */
+/* Pozovi and Potvrdi, in the flow and under the Bule (#620).
+   They were a sticky bar at `z-index: 15` until Josip photographed the bottom
+   of it being read through the tab bar's blur zone, which sits at 20 and is up
+   to 132px tall: a lifted element BELOW that zone is blurred out by it, and no
+   amount of `bottom` clears something that follows the scroll. In the flow the
+   shell's own bottom padding clears the bar, and the two buttons stand at a
+   place on the screen rather than following the thumb up the page. */
 .app__stanje-actions {
-  margin-top: auto;
-  position: sticky;
-  bottom: calc(var(--tabH) + env(safe-area-inset-bottom, 0px) + 22px);
-  z-index: 15;
-  padding: 12px;
-  border-radius: var(--rCard);
-  background: var(--barBg);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  box-shadow: var(--shadowBar);
-}
-
-.app__stanje-tally {
-  margin: 0 0 8px;
-  font-size: 13px;
-  font-weight: 600;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  text-align: center;
-  color: var(--muted);
+  padding: 2px 0 4px;
 }
 
 .app__stanje-why {
@@ -7810,12 +7795,74 @@ a.app__statrow-main:focus-visible {
   gap: 12px;
 }
 
-@media (min-width: 1024px) {
-  /* No bar to clear on the laptop (`--tabH: 0`), and the column is narrower
-     than the window, so the actions sit at the foot of the content. */
-  .app__stanje-actions {
-    bottom: 22px;
-  }
+/* An empty place is the way to FILL it (#620): the same 44px row, and the only
+   thing that says it is a control is that it answers a press. Drawn for a
+   voditelj only — for a dancer it stays the plain span it always was, because a
+   dancer has nobody to add. */
+.app__slot--tap {
+  cursor: pointer;
+  transition: box-shadow 0.2s, color 0.2s;
+}
+
+.app__slot--tap:active {
+  transform: scale(0.98);
+}
+
+/* "+ Dodaj u crne": the one row that ends a list a voditelj may still fill.
+   A dashed edge rather than a filled button, so it reads as the empty place it
+   replaces rather than as a second primary action on the screen. */
+.app__add-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 44px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: var(--rCtl);
+  background: none;
+  box-shadow: inset 0 0 0 1.5px var(--ghostEdge);
+  color: var(--muted);
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.app__add-row:active {
+  transform: scale(0.98);
+}
+
+/* The other roles a candidate can dance, as small discs beside their name
+   (#620). The explicit `display` and `gap` are not decoration: `.ui-sheet__opt
+   span` styles every span inside a sheet option as that option's quiet second
+   line, and this one is a row of marks. */
+.ui-sheet__opt .app__role-discs,
+.app__stanje-sheet-name .app__role-discs {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: 8px;
+  font-size: inherit;
+  color: inherit;
+}
+
+/* The role filter, as a row of discs rather than a row of words (#620): six
+   Croatian role names wrap to three lines inside a sheet, and the disc is the
+   app's own way of saying "crni kralj" in 28px. */
+.app__role-filters {
+  margin: 2px 0 6px;
+}
+
+.app__role-filters .ui-filter {
+  padding: 4px 8px;
+}
+
+/* The Experience's voditelj (#620). A card rather than a column: he is in
+   neither army and counts towards no threshold, exactly like the bula. */
+.app__voditelji .app__stanje-names {
+  gap: 4px;
 }
 
 /* ─────────────────────────────────────────────────────────

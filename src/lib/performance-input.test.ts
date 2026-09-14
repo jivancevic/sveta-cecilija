@@ -143,6 +143,27 @@ describe('newPerformanceRow', () => {
       legacyReserved: 0,
     })
   })
+
+  // #620 — a Moreška Experience is danced by three pairs, so eight a side was
+  // wrong on every one ever created and the bar said "fale još 5 crnih" about
+  // a morning that was full.
+  it('starts a Moreška Experience at three a side', () => {
+    const parsed = parseNonPublicPerformance({ ...GOOD, kind: 'experience' })
+    if (!parsed.ok) throw new Error(parsed.error)
+    expect(newPerformanceRow(parsed.fields).data).toMatchObject({
+      thresholdCrni: 3,
+      thresholdBili: 3,
+    })
+  })
+
+  it('starts every other kind at eight a side', () => {
+    const parsed = parseNonPublicPerformance(GOOD)
+    if (!parsed.ok) throw new Error(parsed.error)
+    expect(newPerformanceRow(parsed.fields).data).toMatchObject({
+      thresholdCrni: 8,
+      thresholdBili: 8,
+    })
+  })
 })
 
 describe('performanceEditPatch', () => {

@@ -1,7 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import {
   assignTitle,
+  checkLineup,
   checkTitles,
+  lineupRequirements,
   countTitles,
   isDanceTitle,
   lineupWithTitles,
@@ -260,5 +262,45 @@ describe('checkTitles', () => {
     expect(out.ok).toBe(false)
     if (out.ok) return
     expect(out.message.split('Postava nema').length - 1).toBe(4)
+  })
+})
+
+describe('lineupRequirements and checkLineup (#620)', () => {
+  const ALL_FOUR = { crni_kralj: 1, otmanovic: 1, bili_kralj: 1, bula: 1 }
+  const NONE = { crni_kralj: 0, otmanovic: 0, bili_kralj: 0, bula: 0 }
+
+  it('asks a moreška for the four titles and for no voditelj', () => {
+    expect(lineupRequirements('redovna')).toEqual({ titles: true, voditelj: false })
+    expect(lineupRequirements('koncert')).toEqual({ titles: true, voditelj: false })
+  })
+
+  it('asks a Moreška Experience for a voditelj and for no titles', () => {
+    expect(lineupRequirements('experience')).toEqual({ titles: false, voditelj: true })
+  })
+
+  it('confirms an Experience with a voditelj and not one crown', () => {
+    expect(checkLineup({ kind: 'experience', titles: NONE, voditelji: 1 })).toEqual({ ok: true })
+  })
+
+  it('refuses an Experience nobody ran, and says so in Croatian', () => {
+    const out = checkLineup({ kind: 'experience', titles: ALL_FOUR, voditelji: 0 })
+    expect(out).toMatchObject({ ok: false, needed: 'voditelj' })
+    expect(out.ok ? '' : out.message).toBe('Postava nema voditelja.')
+  })
+
+  it('refuses an Experience two people claim to have run', () => {
+    const out = checkLineup({ kind: 'experience', titles: NONE, voditelji: 2 })
+    expect(out).toMatchObject({ ok: false, needed: 'voditelj' })
+    expect(out.ok ? '' : out.message).toContain('Dva')
+  })
+
+  it('never asks a moreška about a voditelj it cannot have', () => {
+    expect(checkLineup({ kind: 'redovna', titles: ALL_FOUR, voditelji: 0 })).toEqual({ ok: true })
+  })
+
+  it('still names the missing title on a moreška', () => {
+    const out = checkLineup({ kind: 'redovna', titles: { ...ALL_FOUR, bula: 0 }, voditelji: 0 })
+    expect(out).toMatchObject({ ok: false, needed: 'titles' })
+    expect(out.ok ? '' : out.message).toBe('Postava nema bulu.')
   })
 })

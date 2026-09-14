@@ -27,7 +27,31 @@
 
 /* The one card on a screen that is the reason the screen was opened. It is
    bigger, it sits deeper, and there is never a second one. */
+/* The hero's cover link (#620): the whole card is the way to the Moreška tab,
+   and the controls inside it are lifted over the cover rather than taken out of
+   it. A positioned element paints above its static siblings, so the three that
+   take a tap say `z-index: 1` here and everything else falls through to the
+   link underneath. */
+.ui-hero__cover {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  z-index: 0;
+}
+
+.ui-card--hero .ui-army,
+.ui-card--hero .app__ans,
+.ui-card--hero .app__answer-note,
+.ui-card--hero .app__answer-error,
+.ui-card--hero .app__hero-half-head,
+.ui-card--hero .app__hero-more {
+  position: relative;
+  z-index: 1;
+}
+
 .ui-card--hero {
+  /* The containing block for the cover link above (#620). */
+  position: relative;
   gap: 12px;
   padding: 20px;
   box-shadow: var(--shadowHero);
@@ -1286,6 +1310,14 @@ button.ui-army:active {
   font-weight: 400;
   font-size: 13px;
   color: var(--muted);
+}
+
+/* An option that is still offered but is an unusual choice (#620): somebody
+   who has already said "ne dolazim" and is being added to a column anyway. Dim
+   rather than hidden, because a voditelj doing it is correcting a record and
+   always means it. */
+.ui-sheet__opt--muted {
+  opacity: 0.55;
 }
 
 .ui-sheet__opt--on {

@@ -240,6 +240,7 @@ export default async function PerformanceDetailPage({
               roster={detail.lineup.roster}
               confirmed={detail.lineup.confirmed}
               confirmedAt={detail.lineup.confirmedAt}
+              experience={p.kind === 'experience'}
             />
           </Card>
         </>

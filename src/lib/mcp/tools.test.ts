@@ -224,6 +224,34 @@ describe('set_lineup', () => {
     ])
   })
 
+  // #620 — a `voditelj` line belongs to a Moreška Experience and to nothing
+  // else, and the same refusal is the app route's. A whole-call failure rather
+  // than a dropped row: a photograph Claude read wrong has to come back as a
+  // question, never as a postava missing a line nobody noticed.
+  it('refuses a voditelj line on an ordinary moreška', async () => {
+    const { store, replaced } = fakeStore()
+    const res = await setLineup(
+      { performanceId: '10', entries: [{ nickname: 'Ćići', role: 'voditelj' }] },
+      store,
+    )
+    expect(res).toEqual({ ok: false, error: 'Voditelja ima samo Moreška Experience.' })
+    expect(replaced).toEqual([])
+  })
+
+  it('writes the same line on a Moreška Experience', async () => {
+    const { store, replaced } = fakeStore({
+      performances: [performance({ kind: 'experience' })],
+    })
+    const res = await setLineup(
+      { performanceId: '10', entries: [{ nickname: 'Ćići', role: 'voditelj' }] },
+      store,
+    )
+    if (!res.ok) throw new Error(res.error)
+    expect(replaced).toEqual([
+      { performanceId: '10', entries: [{ memberId: '1', role: 'voditelj' }] },
+    ])
+  })
+
   // #566 — the four-title rule is the CONFIRM's, never the write's. This tool
   // records a photograph of the paper list as it reads it (story 62) and what
   // it writes is always unconfirmed, so a postava with no titles in it at all

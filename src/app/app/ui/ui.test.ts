@@ -59,6 +59,22 @@ describe('armyStatus', () => {
     expect(armyStatus(1, 8, { crni: 8, bili: 8 }).text).toBe('Fale još 7 crnih')
   })
 
+  // #620 — a nastup that has started has no shortfall to report.
+  it('states the two counts once the nastup has begun', () => {
+    expect(armyStatus(8, 7, { crni: 8, bili: 8 }, { past: true })).toEqual({
+      ok: true,
+      text: '8 crnih · 7 bilih',
+    })
+  })
+
+  it('counts the Croatian way afterwards: one, a few, many', () => {
+    expect(armyStatus(1, 3, { crni: 8, bili: 8 }, { past: true }).text).toBe('1 crni · 3 bila')
+  })
+
+  it('is never low afterwards, even with nobody in either army', () => {
+    expect(armyStatus(0, 0, { crni: 8, bili: 8 }, { past: true }).ok).toBe(true)
+  })
+
   it('reads the evening’s own thresholds, not a constant', () => {
     expect(armyStatus(6, 6, { crni: 6, bili: 6 }).ok).toBe(true)
     expect(armyStatus(6, 6, { crni: 10, bili: 6 }).ok).toBe(false)
@@ -140,6 +156,20 @@ describe('RoleMark', () => {
     expect(otman).toContain('>O</text>')
     const king = render(h(RoleMark, { army: 'crni', title: 'crni_kralj' }))
     expect(king).not.toContain('<text')
+  })
+
+  // #620 — the voditelj of a Moreška Experience: a microphone drawn wide
+  // enough to hold a serif E, on a disc that belongs to neither vojska.
+  it('draws the voditelj as a gold-ringed disc with an E in the microphone', () => {
+    const led = render(h(RoleMark, { army: null, role: 'voditelj' }))
+    expect(led).toContain('ui-mark--voditelj')
+    expect(led).toContain('>E</text>')
+  })
+
+  it('gives the voditelj no vojska colour, so the ring is the only mark on him', () => {
+    const led = render(h(RoleMark, { army: null, role: 'voditelj' }))
+    expect(led).not.toContain('ui-mark--crni')
+    expect(led).not.toContain('ui-mark--bili')
   })
 
   it('rings the bula of the night and no other bula', () => {

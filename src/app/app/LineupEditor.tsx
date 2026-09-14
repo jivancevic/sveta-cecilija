@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { APP_STRINGS, ROLE_LABELS } from '@/lib/app/strings'
-import { LINEUP_ROLES, type LineupRole } from '@/lib/moreskant-profile'
+import { DANCE_ROLES, LINEUP_ROLES, type LineupRole } from '@/lib/moreskant-profile'
 import { compareLineupRows, roleWarnings } from '@/lib/lineup/rules'
 import type { LineupPerson, LineupRow } from '@/lib/app/detail-loaders'
 
@@ -35,6 +35,7 @@ export function LineupEditor({
   roster,
   confirmed,
   confirmedAt,
+  experience,
 }: {
   performanceId: string
   initialEntries: LineupRow[]
@@ -42,6 +43,15 @@ export function LineupEditor({
   roster: LineupPerson[]
   confirmed: boolean
   confirmedAt: string | null
+  /**
+   * A Moreška Experience (#620): the one kind of evening that HAS a voditelj.
+   *
+   * Every other kind offers the six dance roles and nothing else, because the
+   * route refuses a `voditelj` line on them outright — a dropdown that offers a
+   * value the server will 400 is a trap, and this one had been offering it on
+   * every evening since the role existed.
+   */
+  experience: boolean
 }) {
   const router = useRouter()
   const [entries, setEntries] = useState<LineupRow[]>(initialEntries)
@@ -198,7 +208,7 @@ export function LineupEditor({
                   disabled={confirmed || busy !== null}
                   onChange={(e) => setRole(entry.memberId, e.target.value as LineupRole)}
                 >
-                  {LINEUP_ROLES.map((role) => (
+                  {(experience ? LINEUP_ROLES : DANCE_ROLES).map((role) => (
                     <option key={role} value={role}>
                       {ROLE_LABELS[role]}
                     </option>
