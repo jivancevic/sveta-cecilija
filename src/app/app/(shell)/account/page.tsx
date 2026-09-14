@@ -10,6 +10,8 @@ import { LinkSelfList } from './LinkSelfList'
 import { PushSwitch } from './PushSwitch'
 import { SetPasswordForm } from './SetPasswordForm'
 import { ThemeSwitch } from './ThemeSwitch'
+import { ViewportReadout } from './ViewportReadout'
+import { can } from '@/lib/access/permissions'
 
 // `/app/account` — Profil (#473, reskinned and renamed by #569).
 //
@@ -117,6 +119,18 @@ export default async function AccountPage() {
           <SetPasswordForm />
         </Card>
       </section>
+
+      {/* The dev strip's phone half (ADR-0016): viewport numbers for the
+          `dev` holder only, because the installed-app bar bug (#592) cannot be
+          measured from a desktop browser. */}
+      {can({ permissions: viewer.permissions }, 'dev') && (
+        <section className="app__more-group">
+          <Section title="Dijagnostika" />
+          <Card>
+            <ViewportReadout />
+          </Card>
+        </section>
+      )}
     </AppShell>
   )
 }
