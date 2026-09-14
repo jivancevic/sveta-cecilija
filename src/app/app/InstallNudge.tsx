@@ -1,12 +1,12 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
 import Link from 'next/link'
 import { Download } from 'lucide-react'
 import { decideInstallOffer } from '@/lib/app/install-nudge'
 import { APP_STRINGS } from '@/lib/app/strings'
 import { Button, Card } from './ui'
-import { isSnoozed, snooze, useInstallPrompt, usePlatform } from './use-install'
+import { snooze, useInstallPrompt, usePlatform, useSnoozed } from './use-install'
 
 // The install offer on Početna (#616).
 //
@@ -35,22 +35,16 @@ const S = APP_STRINGS.install
 export function InstallNudge() {
   const platform = usePlatform()
   const { canPrompt, install } = useInstallPrompt()
-  // Quiet until the browser has been read: localStorage is not a render-time
-  // fact, and starting at "not snoozed" would flash the card at somebody who
-  // said "Kasnije" an hour ago.
-  const [snoozed, setSnoozed] = useState(true)
+  const snoozed = useSnoozed()
   const [busy, setBusy] = useState(false)
   const [failed, setFailed] = useState(false)
   /** This tap installed it. `platform` is read once, so the card closes itself. */
   const [installed, setInstalled] = useState(false)
 
-  useEffect(() => {
-    setSnoozed(isSnoozed())
-  }, [])
-
+  // No local state for the snooze: `snooze()` writes localStorage and tells the
+  // store, and this component re-renders because it is reading that store.
   const later = useCallback(() => {
     snooze()
-    setSnoozed(true)
   }, [])
 
   const run = useCallback(async () => {

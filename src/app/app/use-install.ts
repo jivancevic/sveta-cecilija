@@ -84,6 +84,9 @@ export function isSnoozed(now = Date.now()): boolean {
   }
 }
 
+/** Whoever is rendering the snooze, so a "Kasnije" reaches them immediately. */
+const snoozeWatchers = new Set<() => void>()
+
 /**
  * "Kasnije" means tomorrow, not never (#455).
  *
@@ -97,7 +100,30 @@ export function snooze(now = Date.now()): void {
   } catch {
     // Not remembered this time; the banner simply comes back sooner.
   }
+  for (const watcher of snoozeWatchers) watcher()
 }
+
+function subscribeToSnooze(watcher: () => void): () => void {
+  snoozeWatchers.add(watcher)
+  return () => {
+    snoozeWatchers.delete(watcher)
+  }
+}
+
+/**
+ * The snooze as a render-time fact, the way `usePlatform` reads the platform.
+ *
+ * An effect that called `setSnoozed(isSnoozed())` on mount would be the same
+ * thing written as a cascading render, which is what it is: localStorage is an
+ * external store, not state React owns. The server snapshot is `true` — QUIET —
+ * rather than an honest `null`, because the one wrong answer here is showing an
+ * install card for a frame to somebody who said "Kasnije" an hour ago.
+ */
+export function useSnoozed(): boolean {
+  return useSyncExternalStore(subscribeToSnooze, isSnoozed, alwaysSnoozed)
+}
+
+const alwaysSnoozed = () => true
 
 /**
  * The `beforeinstallprompt` event the layout script parked on `window`.
