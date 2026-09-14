@@ -4,354 +4,72 @@ import { can } from '@/lib/access/permissions'
 import { getPerformanceDetail } from '@/lib/app/detail-data'
 import { loadPerformanceSales } from '@/lib/app/sales-data'
 import {
-  mayOpenPerformance,
+  channelSplit,
   partnerFaceNote,
   performanceNumbers,
-  salesBadges,
+  seatsSold,
   showsRosterHalf,
   ticketedSeats,
 } from '@/lib/app/sales-view'
+import { izvedbaHead } from '@/lib/app/izvedbe-screen'
 import {
-  compUnavailableReason,
-  formatConfirmedAt,
-  groupLineupByRole,
-  parseSegment,
-  type DetailSegment,
-} from '@/lib/app/detail-view'
-import { performancePlace } from '@/lib/app/performance-place'
-import {
-  APP_STRINGS,
-  KIND_LABELS,
-  ROLE_LABELS,
-  formatPerformanceDateLong,
-} from '@/lib/app/strings'
-import { SELF_COMP_CAP } from '@/lib/comp/self-comp'
+  mayCancelBooking,
+  mayWritePerformance,
+  performanceActionGates,
+} from '@/lib/app/performance-actions'
+import { APP_STRINGS } from '@/lib/app/strings'
+import { VENUE_CAPACITY } from '@/lib/venues'
 import type { NonPublicKind } from '@/lib/performance-input'
-import type { LineupView, PerformanceDetail } from '@/lib/app/detail-loaders'
-import type { ArmyTally, RosterPerson } from '@/lib/attendance/army-count'
-import type { Army } from '@/lib/attendance/rules'
-import { AlarmButton } from '../../AlarmButton'
+import { Card, Chip, Ring } from '../../ui'
 import { AppShell } from '../../AppShell'
 import { openScreen } from '../../gate'
 import { LineupEditor } from '../../LineupEditor'
-import { AttendanceButtons } from '../../AttendanceButtons'
 import { CompTickets } from '../../CompTickets'
-import { ArmyMoveButton } from '../../ArmyMoveButton'
 import { NoteEditor } from '../../NoteEditor'
 import { PerformanceEditor, PublicPerformanceEditor } from '../../PerformanceForm'
 import { ThresholdEditor } from '../../ThresholdEditor'
-import { DetailSegments } from './DetailSegments'
 import { PerformanceActions } from './PerformanceActions'
 
-// `/app/performances/[id]` — one evening, in three segments (#423, #457, ADR-0024).
+// `/app/performances/[id]` — one izvedba, as the box office reads it (#567).
 //
-// The old page stacked everything a performance has onto one scroll: the
-// headcounts, the postava, the free tickets, the voditelj's controls. That is
-// four questions in a column, and the one a dancer actually opens the page with
-// ("are we short, and am I dancing") was the one they had to scroll for. It is
-// now three segments — Dolaze, Postava, Ulaznice — with the answer buttons
-// pinned above the tab bar, so the tap the page exists for is always under the
-// thumb whichever segment is open.
+// **The title is the DATE** (Q32): a secretary on the phone refers to an
+// evening by the day it falls on, and "Redovna" named the category on
+// twenty-two rows of a season. The kind, the hour and the house are the line
+// under it, and the sticky answer bar is gone with everything else
+// dancer-facing — a dancer answers on Moreška (#565) and reads the evening's
+// two armies on Stanje (#566), and a `moreskant` login does not unlock this
+// screen at all.
 //
-// Everything below is server-rendered and handed to `DetailSegments` as
-// children; that component only chooses which of the three is on screen. The
-// voditelj's tools are one card at the bottom, because they are the rarer job
-// and they belong to the evening rather than to any one segment.
+// Four cards, in the order the reader needs them:
 //
-// A voditelj's answer buttons hang off EVERY name, not only the no-answer list:
-// the record has to be correctable in both directions (#419, story 13). Mobile
-// numbers are a `tel:` link on a round call button and nothing else is printed;
-// emails are not in the payload at all, by the shape of the loader.
+//   1. **Prodaja**, for a `tickets` holder on a public row: the ring, the split
+//      and the per-show numbers this evening is judged by (revenue only for
+//      `finance`, gated on the DATA in `sales-view.ts` rather than on a class).
+//   2. **Radnje**, the six named actions, each one greyed with the person to
+//      ask when this reader may not press it (Q53). The routes refuse the same
+//      requests in their own handlers: the caption is the courtesy half.
+//   3. **Izvedba**, where the evening itself is corrected — Uredi for either
+//      half since #567, plus Otkaži on a booking, which stays the voditelj's.
+//   4. **Postava** and the voditelj's own two tools (the note, the thresholds),
+//      for a `moreska` holder. The `LineupEditor` stays here until Stanje can
+//      record an unusual role or the voditelj line (#566); it is the tweezers
+//      for a row Stanje has no control for.
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-const PHONE_ICON = (
-  <svg className="app__call-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-    <path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2" />
-  </svg>
-)
-
-/** One name, with the call button when there is a number to call. */
-function PersonRow({
-  person,
-  isMe,
-  children,
-}: {
-  person: RosterPerson
-  isMe: boolean
-  /** The voditelj's controls, on their own line under the name. */
-  children?: React.ReactNode
-}) {
-  return (
-    <li className={`app__person${isMe ? ' app__person--me' : ''}`}>
-      <span className="app__person-line">
-        <span className="app__person-name">{person.nickname}</span>
-        {person.mobile && (
-          <a
-            className="app__call"
-            href={`tel:${person.mobile}`}
-            aria-label={APP_STRINGS.detail.callAria(person.nickname)}
-          >
-            {PHONE_ICON}
-          </a>
-        )}
-      </span>
-      {children && <span className="app__person-controls">{children}</span>}
-    </li>
-  )
-}
-
-/**
- * One group of the Dolaze panel.
- *
- * An army shows `count/threshold` and turns red below it; the other three show
- * a plain number, because there is no threshold for "who said no". An empty
- * group keeps its heading and says so in one muted word: the shape of the
- * evening is the five groups, and hiding the empty ones would make a screen
- * whose sections move around.
- */
-function Group({
-  title,
-  swatch,
-  tally,
-  people,
-  emptyLabel,
-  performanceId,
-  myMemberId,
-  canEditOthers,
-  moveTargets,
-  army,
-  current,
-}: {
-  title: string
-  swatch?: Army
-  /** Set for an army: the heading then reads "3/8" and can go red. */
-  tally?: ArmyTally
-  people: RosterPerson[]
-  emptyLabel: string
-  performanceId: string
-  myMemberId: string | null
-  canEditOthers: boolean
-  moveTargets: Record<string, Army[]>
-  /** The army these people are in, so the move button knows the other one. */
-  army?: Army
-  /** The answer they already gave, so the voditelj's buttons show it. */
-  current: 'coming' | 'not_coming' | null
-}) {
-  const other: Army | null = army ? (army === 'crni' ? 'bili' : 'crni') : null
-  return (
-    <section className="app__group">
-      <h2 className="app__group-head">
-        <span>
-          {swatch && <i className={`app__swatch app__swatch--${swatch}`} aria-hidden="true" />}
-          {title}
-        </span>
-        <span className={tally?.below ? 'app__group-count app__group-count--low' : 'app__group-count'}>
-          {tally ? `${tally.count}/${tally.threshold}` : people.length}
-        </span>
-      </h2>
-      {people.length === 0 ? (
-        <p className="app__group-empty">{emptyLabel}</p>
-      ) : (
-        <ul className="app__people">
-          {people.map((person) => (
-            <PersonRow
-              key={person.memberId}
-              person={person}
-              isMe={person.memberId === myMemberId}
-            >
-              {canEditOthers && (
-                <>
-                  {other && moveTargets[person.memberId]?.includes(other) && (
-                    <ArmyMoveButton
-                      performanceId={performanceId}
-                      memberId={person.memberId}
-                      target={other}
-                    />
-                  )}
-                  <AttendanceButtons
-                    performanceId={performanceId}
-                    memberId={person.memberId}
-                    current={current}
-                    scope="row"
-                    allowClear
-                  />
-                </>
-              )}
-            </PersonRow>
-          ))}
-        </ul>
-      )}
-    </section>
-  )
-}
-
-/** The Dolaze panel: the five groups, in the order a voditelj works through them. */
-function ComingPanel({ detail }: { detail: PerformanceDetail }) {
-  const { count } = detail
-  const shared = {
-    performanceId: detail.performance.id,
-    myMemberId: detail.myMemberId,
-    canEditOthers: detail.canEditOthers,
-    moveTargets: detail.moveTargets,
-  }
-  const nothing =
-    count.crni.count === 0 &&
-    count.bili.count === 0 &&
-    count.bula.length === 0 &&
-    count.notComing.length === 0
-
-  return (
-    <>
-      {/* Not "there is nobody": nobody has said anything yet, which is a thing
-          the first dancer to open the page can fix in one tap. */}
-      {nothing && (
-        <div className="app__empty-state">
-          <b>{APP_STRINGS.detail.noAnswersTitle}</b>
-          {APP_STRINGS.detail.noAnswersBody}
-        </div>
-      )}
-
-      <Group
-        {...shared}
-        title={APP_STRINGS.detail.crni}
-        swatch="crni"
-        army="crni"
-        tally={count.crni}
-        people={count.crni.members}
-        emptyLabel={APP_STRINGS.detail.nobody}
-        current="coming"
-      />
-      <Group
-        {...shared}
-        title={APP_STRINGS.detail.bili}
-        swatch="bili"
-        army="bili"
-        tally={count.bili}
-        people={count.bili.members}
-        emptyLabel={APP_STRINGS.detail.nobody}
-        current="coming"
-      />
-      <Group
-        {...shared}
-        title={APP_STRINGS.detail.bula}
-        people={count.bula}
-        emptyLabel={APP_STRINGS.detail.nobody}
-        current="coming"
-      />
-      <Group
-        {...shared}
-        title={APP_STRINGS.detail.notComing}
-        people={count.notComing}
-        emptyLabel={APP_STRINGS.detail.nobody}
-        current="not_coming"
-      />
-      <Group
-        {...shared}
-        title={APP_STRINGS.detail.noAnswer}
-        people={count.noAnswer}
-        emptyLabel={APP_STRINGS.detail.allAnswered}
-        current={null}
-      />
-    </>
-  )
-}
-
-/**
- * The Postava panel as a dancer sees it: a list by role, no controls (#432,
- * story 33).
- *
- * The loader empties a draft before it ever reaches this component, so an
- * unconfirmed evening cannot leak a name; the `confirmed` check here is about
- * WORDING, not about access.
- */
-function LineupPanel({ lineup, myMemberId }: { lineup: LineupView; myMemberId: string | null }) {
-  if (!lineup.confirmed) {
-    return (
-      <div className="app__empty-state">
-        <b>{APP_STRINGS.lineup.notConfirmedTitle}</b>
-        {APP_STRINGS.lineup.notConfirmedBody}
-      </div>
-    )
-  }
-
-  const when = formatConfirmedAt(lineup.confirmedAt)
-  return (
-    <>
-      {when && <p className="app__lineup-confirmed">{APP_STRINGS.lineup.confirmedAt(when)}</p>}
-      {groupLineupByRole(lineup.entries).map((group) => (
-        <section className="app__group" key={group.role}>
-          <h2 className="app__group-head">
-            <span>{ROLE_LABELS[group.role]}</span>
-            <span className="app__group-count">{group.entries.length}</span>
-          </h2>
-          {group.entries.length === 0 ? (
-            <p className="app__group-empty">{APP_STRINGS.lineup.unassigned}</p>
-          ) : (
-            <ul className="app__people">
-              {group.entries.map((entry) => (
-                <li
-                  key={entry.memberId}
-                  className={`app__person${entry.memberId === myMemberId ? ' app__person--me' : ''}`}
-                >
-                  <span className="app__person-line">
-                    <span className="app__person-name">{entry.nickname}</span>
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-      ))}
-    </>
-  )
-}
-
-/** The Ulaznice panel: the dancer's own four free seats, or why there are none. */
-function TicketsPanel({
-  detail,
-  nowMs,
-}: {
-  detail: PerformanceDetail
-  nowMs: number
-}) {
-  if (detail.comps.visible) {
-    return <CompTickets performanceId={detail.performance.id} comps={detail.comps} />
-  }
-
-  const reason = compUnavailableReason(detail.performance, detail.myMemberId, nowMs)
-  const sentence =
-    reason === 'private'
-      ? APP_STRINGS.comp.privateNoTickets
-      : reason === 'cancelled'
-        ? APP_STRINGS.answer.cancelled
-        : reason === 'past'
-          ? APP_STRINGS.comp.past
-          : APP_STRINGS.comp.noMemberShort
-
-  return (
-    <div className="app__empty-state">
-      <b>{APP_STRINGS.comp.title}</b>
-      {sentence}
-    </div>
-  )
-}
+const S = APP_STRINGS.izvedbe
 
 export default async function PerformanceDetailPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ id: string }>
-  searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   const { id } = await params
-  const { dio } = await searchParams
   // Izvedbe's own screen, and only Izvedbe's (#566). It answered to Moreška as
   // well while Stanje had no route of its own; now it has one
   // (`/app/moreska/[id]`), a dancer reads the evening there and the push deep
-  // links point at it, so a `moreskant` login has no reason to reach this page
-  // and the gate is back to one screen.
+  // links point at it.
   const { viewer, refusal } = await openScreen('performances')
   if (refusal) return refusal
 
@@ -363,133 +81,102 @@ export default async function PerformanceDetailPage({
 
   const p = detail.performance
 
-  // The blagajna's half (#502): this is where the old `/admin/stats/[id]`
-  // drill-down lands. Only for a public evening, because a booking sells
-  // nothing, and only for a `tickets` holder, because the numbers are seats and
-  // money rather than a headcount.
+  // The seats, for a `tickets` holder on a public evening: this is where the
+  // old `/admin/stats/[id]` drill-down lands. A booking sells nothing, so there
+  // is nothing to load for one.
   const sales = blagajna && p.isPublic ? await loadPerformanceSales(p.id) : null
   const canFinance = can({ permissions: viewer.permissions }, 'finance')
   // The one line under Prihod (#538). Null when the evening sold no partner
   // seats, and null without `finance`, because it is money: the sentence never
   // reaches the markup, so no condition here can leak it.
   const partnerFace = sales ? partnerFaceNote(sales, canFinance) : null
-  // Whether the roster half belongs on this screen at all. A blagajna account
-  // that neither leads nor dances would otherwise read three segments about a
-  // postava it has no part in, two of them empty (#476: one screen, content by
-  // `can()`). The list applies the same rule to decide which evenings it shows.
+
+  const head = izvedbaHead(p, sales)
+  // Who may press what, decided here from the caller's own set and handed down
+  // as data. The client island never re-derives it and never re-types a `can()`.
+  const gates = performanceActionGates(viewer.permissions)
+  const mayWrite = mayWritePerformance(viewer.permissions)
+  // Whether the roster half belongs on this screen at all: the postava is the
+  // one piece of the dance that has not moved to Stanje yet (#566).
   const roster = showsRosterHalf(voditelj, me != null)
 
-  // A blagajna account that neither leads nor dances is not shown a booking in
-  // the list, so it must not reach one by typing an id either (#502 review):
-  // this page prints the client and the voditelj's note, which are roster facts
-  // about an evening that sells nothing.
-  if (!mayOpenPerformance({ roster, isPublic: p.isPublic })) notFound()
-  const segment: DetailSegment = parseSegment(typeof dio === 'string' ? dio : undefined)
-  const place = performancePlace(p)
-  // A public evening is named by its kind; a booking is named by who booked it,
-  // because "Brod" alone is three different evenings in one season.
-  const title = !p.isPublic && p.client ? `${KIND_LABELS[p.kind]}, ${p.client}` : KIND_LABELS[p.kind]
-
-  const coming = detail.count.crni.count + detail.count.bili.count + detail.count.bula.length
-  const counts: Record<DetailSegment, string> = {
-    dolaze: String(coming),
-    // `visible` is "confirmed, or the voditelj's own draft": exactly the case
-    // where there is a list to count. A dancer waiting on the postava gets a
-    // dash, not a zero, because zero would read as "nobody is dancing".
-    postava: detail.lineup.visible
-      ? String(detail.lineup.entries.length)
-      : APP_STRINGS.detail.noCount,
-    ulaznice: detail.comps.visible
-      ? `${detail.comps.issued}/${SELF_COMP_CAP}`
-      : APP_STRINGS.detail.noCount,
-  }
-
-  const answerChip =
-    p.myAnswer === 'coming'
-      ? { cls: 'app__chip--yes', label: APP_STRINGS.home.answerYes }
-      : p.myAnswer === 'not_coming'
-        ? { cls: 'app__chip--no', label: APP_STRINGS.home.answerNo }
-        : { cls: 'app__chip--none', label: APP_STRINGS.home.answerNone }
-
-  // Back to the screen this reader actually holds. A `moreskant` login has no
-  // Izvedbe to go back to, and a link into the refusal page is worse than none.
-  const back = viewer.access.kind === 'ok' &&
-    viewer.access.screens.some((s) => s.key === 'performances')
-      ? { href: '/app/performances', label: APP_STRINGS.detail.back }
-      : { href: '/app/moreska', label: APP_STRINGS.screens.moreska }
-
   const intro = (
-    <header className="app__detail-head">
-      <Link className="app__back" href={back.href}>
-        ‹ {back.label}
+    <header className="app__izv-head">
+      <Link className="app__back" href="/app/performances">
+        ‹ {APP_STRINGS.screens.performances}
       </Link>
-      <p className="app__detail-when">
-        {formatPerformanceDateLong(p.date)}
-        {p.time && ` · ${p.time}`}
-      </p>
-      {place && <p className="app__detail-where">{place}</p>}
-
-      <div className="app__chips">
-        {me && <span className={`app__chip ${answerChip.cls}`}>{answerChip.label}</span>}
-        {p.myArmy && (
-          <span className="app__chip">
-            {p.myArmy === 'crni' ? APP_STRINGS.home.armyCrni : APP_STRINGS.home.armyBili}
-          </span>
-        )}
-        {p.cancelled && (
-          <span className="app__chip app__chip--cancelled">{APP_STRINGS.card.cancelled}</span>
-        )}
-        {detail.lineup.confirmed && (
-          <span className="app__chip app__chip--lineup">{APP_STRINGS.home.lineupConfirmed}</span>
-        )}
-        {/* Paused, moved, rescheduled: facts about the SALE, so they only ever
-            reach a `tickets` holder, and `Otkazano` is already a chip above. */}
-        {sales &&
-          salesBadges(sales)
-            .filter((b) => b.key !== 'cancelled')
-            .map((b) => (
-              <span className={`app__chip app__flag--${b.key}`} key={b.key}>
-                {b.label}
-              </span>
-            ))}
-      </div>
-
-      {p.voditeljNote && (
-        <p className="app__note app__note--detail">
-          <span className="app__note-label">{APP_STRINGS.detail.note}</span>
-          {p.voditeljNote}
-        </p>
+      <p className="app__izv-meta">{head.meta}</p>
+      {head.chips.length > 0 && (
+        <div className="app__chips">
+          {head.chips.map((chip) => (
+            <Chip key={chip.label} tone={chip.tone}>
+              {chip.label}
+            </Chip>
+          ))}
+        </div>
       )}
     </header>
   )
 
   return (
-    <AppShell viewer={viewer} screen="performances" title={title} intro={intro}>
-      {/* Prodaja, first, for a `tickets` holder (#502): the numbers this
-          evening is judged by, then Uredi, then the named actions. Above the
-          roster segments rather than inside them, because it belongs to the
-          evening as a whole and because it is the reason the blagajna opened
-          the page at all. */}
+    <AppShell viewer={viewer} screen="performances" title={head.title} intro={intro}>
       {sales && (
-        <section className="app__sales">
-          <h2 className="app__sales-head">{APP_STRINGS.sales.title}</h2>
-          <dl className="app__sales-numbers">
+        <Card eyebrow={S.salesCard} className="app__izv-sales-card">
+          <div className="app__izv-ring">
+            <Ring value={seatsSold(sales)} max={VENUE_CAPACITY[sales.venue]} />
+            <div>
+              <b>{`${seatsSold(sales)}/${VENUE_CAPACITY[sales.venue]}`}</b>
+              {/* Where the seats came from, one chip each, the empty ones
+                  dropped: the question a row is asked is "where did these
+                  hundred and thirty two come from". */}
+              <div className="app__izv-split">
+                {channelSplit(sales).map((c) => (
+                  <Chip key={c.key}>{`${c.label} ${c.value}`}</Chip>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <dl className="app__izv-numbers">
             {performanceNumbers(sales, canFinance).map((line) => (
-              <div className="app__sales-number" key={line.label}>
+              <div key={line.label}>
                 <dt>{line.label}</dt>
                 <dd>{line.value}</dd>
               </div>
             ))}
           </dl>
+
           {/* Under Prihod, and never inside it (#538): partner seats are face
               value the society has not collected, so they are named at face
               value rather than summed into the evening's take. Not the word
               *potraživanje*, which is Financije's net-of-commission figure. */}
-          {partnerFace && <p className="app__sales-partner-face">{partnerFace}</p>}
-          {!p.cancelled && (
+          {partnerFace && <p className="app__izv-partner-face">{partnerFace}</p>}
+        </Card>
+      )}
+
+      {/* The six actions belong to a PUBLIC evening: a booking sells no seat to
+          refund, no date a buyer was told and nothing to pause. */}
+      {p.isPublic && (
+        <PerformanceActions
+          performanceId={p.id}
+          paused={sales?.paused ?? false}
+          cancelled={p.cancelled}
+          atLjetno={(sales?.venue ?? p.venue) === 'ljetno-kino' && !(sales?.moved ?? false)}
+          gates={gates}
+        />
+      )}
+
+      {mayWrite && !p.cancelled && (
+        <Card eyebrow={S.performanceCard}>
+          {p.isPublic ? (
             <PublicPerformanceEditor
               performanceId={p.id}
-              venueLocked={ticketedSeats(sales) > 0}
+              // The house of a SOLD evening moves through *Preseli u zimsko*,
+              // which mails every buyer (#502 review). Without the sales read
+              // (a voditelj) the field is locked rather than guessed at: the
+              // route would refuse the change anyway, and a control that looks
+              // editable until the save is a control that lies.
+              venueLocked={sales ? ticketedSeats(sales) > 0 : true}
               initial={{
                 kind: p.kind,
                 date: p.date,
@@ -497,31 +184,67 @@ export default async function PerformanceDetailPage({
                 venue: p.venue ?? 'ljetno-kino',
               }}
             />
+          ) : (
+            <PerformanceEditor
+              performanceId={p.id}
+              cancelled={p.cancelled}
+              canCancel={mayCancelBooking(viewer.permissions)}
+              initial={{
+                kind: (p.kind === 'redovna' ? 'ostalo' : p.kind) as NonPublicKind,
+                date: p.date,
+                time: p.time,
+                location: p.location ?? '',
+                client: p.client ?? '',
+              }}
+            />
           )}
-          <PerformanceActions
-            performanceId={p.id}
-            paused={sales.paused}
-            cancelled={sales.cancelled}
-            atLjetno={sales.venue === 'ljetno-kino' && !sales.moved}
-            canRefund={can({ permissions: viewer.permissions }, 'refunds')}
-          />
-        </section>
+        </Card>
       )}
 
-      {blagajna && !p.isPublic && (
-        <p className="app__lead-note">{APP_STRINGS.sales.notPublic}</p>
+      {/* A cancelled evening keeps its record and loses its form: Uredi is a
+          409 (moving it would push "premještena" at a roster that has been told
+          it is off) and the ledger is still open in Radnje above. */}
+      {mayWrite && p.cancelled && (
+        <Card eyebrow={S.performanceCard}>
+          <p className="ui-small">{APP_STRINGS.performance.cancelledNotEditable}</p>
+        </Card>
       )}
 
-      {roster && (
-      <DetailSegments
-        initial={segment}
-        counts={counts}
-        dolaze={<ComingPanel detail={detail} />}
-        postava={
-          detail.voditelj ? (
-            // No hint above it (#457 review): the editor already prints
-            // `lineup.draftNote` for an unconfirmed postava, and a second line
-            // saying the same thing read as two different warnings.
+      {/* A booking's own two facts, for the reader who did not enter it. */}
+      {!p.isPublic && (p.location || p.client) && (
+        <Card eyebrow={S.performanceCard} className="app__izv-booking">
+          {p.location && (
+            <p>
+              <span className="ui-small">{S.place}</span>
+              {p.location}
+            </p>
+          )}
+          {p.client && (
+            <p>
+              <span className="ui-small">{S.client}</span>
+              {p.client}
+            </p>
+          )}
+        </Card>
+      )}
+
+      {voditelj && (
+        <>
+          <Card eyebrow={APP_STRINGS.lead.title}>
+            {/* The same note `/admin` edits (#436, story 25): saving goes
+                through the collection, so the roster is notified either way. */}
+            <NoteEditor performanceId={p.id} initialNote={p.voditeljNote} />
+            {/* The two army thresholds (#503). On EVERY row, public one
+                included: how many crni and bili an evening needs is a fact
+                about the dance, and the collection's own field access says the
+                same (`canEditRosterField` never asks about the row). */}
+            <ThresholdEditor performanceId={p.id} crni={p.thresholdCrni} bili={p.thresholdBili} />
+          </Card>
+
+          {/* The postava, until Stanje can do the whole of it (#566): Stanje
+              hands out the four titles, this hands out an unusual role and the
+              voditelj line, and #512 must not take it away before then. */}
+          <Card eyebrow={S.lineupCard}>
             <LineupEditor
               performanceId={p.id}
               initialEntries={detail.lineup.entries}
@@ -530,94 +253,17 @@ export default async function PerformanceDetailPage({
               confirmed={detail.lineup.confirmed}
               confirmedAt={detail.lineup.confirmedAt}
             />
-          ) : (
-            <LineupPanel lineup={detail.lineup} myMemberId={detail.myMemberId} />
-          )
-        }
-        ulaznice={<TicketsPanel detail={detail} nowMs={detail.nowMs} />}
-        tools={
-          detail.voditelj ? (
-            <>
-              {/* The same note `/admin` edits (#436, story 25): saving goes
-                  through the collection, so the roster is notified either way. */}
-              <NoteEditor performanceId={p.id} initialNote={p.voditeljNote} />
-              {/* The two army thresholds (#503). On EVERY row, public one
-                  included: how many crni and bili an evening needs is a fact
-                  about the dance, and the collection's own field access says
-                  the same (`canEditRosterField` never asks about the row). */}
-              <ThresholdEditor
-                performanceId={p.id}
-                crni={p.thresholdCrni}
-                bili={p.thresholdBili}
-              />
-              {/* Uredi and Otkaži, for a booking only (#503). A public evening
-                  gets the sentence instead of the controls: moving or
-                  cancelling one reaches ticket holders, and that is the
-                  blagajna's action (#497), not a harder version of this one.
-                  Unless the reader IS the blagajna (#502), in which case the
-                  controls are in the Prodaja card above and the sentence would
-                  point them at themselves. */}
-              {p.isPublic ? (
-                blagajna ? null : (
-                  <p className="app__lead-note">{APP_STRINGS.performance.publicRow}</p>
-                )
-              ) : (
-                <PerformanceEditor
-                  performanceId={p.id}
-                  cancelled={p.cancelled}
-                  initial={{
-                    kind: (p.kind === 'redovna' ? 'ostalo' : p.kind) as NonPublicKind,
-                    date: p.date,
-                    time: p.time,
-                    location: p.location ?? '',
-                    client: p.client ?? '',
-                  }}
-                />
-              )}
-              {/* The alarm is only ever about an evening still ahead (#430,
-                  story 20); the route refuses the other two cases anyway, so a
-                  hidden button is replaced by the reason it is hidden. */}
-              {detail.canAlarm ? (
-                <AlarmButton performanceId={p.id} />
-              ) : (
-                <p className="app__lead-note">
-                  {p.cancelled ? APP_STRINGS.alarm.cancelled : APP_STRINGS.alarm.started}
-                </p>
-              )}
-            </>
-          ) : undefined
-        }
-        lineupState={
-          detail.voditelj
-            ? detail.lineup.confirmed
-              ? APP_STRINGS.lead.lineupConfirmed(detail.lineup.entries.length)
-              : APP_STRINGS.lead.lineupDraft(coming, detail.count.noAnswer.length)
-            : null
-        }
-      />
+          </Card>
+        </>
       )}
 
-      {me && (
-        <>
-          {/* No spacer any more (#562): the bar is `position: sticky`, so it
-              takes its own room in the flow and nothing can end up under it. */}
-          <div className="app__sticky">
-            <AttendanceButtons
-              performanceId={p.id}
-              memberId={me.id}
-              current={p.myAnswer}
-              disabled={!p.canAnswer}
-              lockNote={
-                p.canAnswer
-                  ? null
-                  : p.cancelled
-                    ? APP_STRINGS.answer.cancelled
-                    : APP_STRINGS.answer.locked
-              }
-              allowClear={voditelj}
-            />
-          </div>
-        </>
+      {/* A voditelj who also dances still issues their own four free seats here
+          (#434); nobody else has a `comps.visible` at all, and the route caps
+          and refuses exactly as it did. */}
+      {roster && detail.comps.visible && (
+        <Card eyebrow={S.compCard}>
+          <CompTickets performanceId={p.id} comps={detail.comps} />
+        </Card>
       )}
     </AppShell>
   )

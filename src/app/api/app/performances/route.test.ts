@@ -169,6 +169,12 @@ describe.each(VODITELJ_ONLY)('%s is the voditelj’s alone', (_label, call) => {
   })
 })
 
+/** The document of the single row the shared writer was handed. */
+function createdRow(): Record<string, unknown> {
+  const rows = createPerformances.mock.calls[0]![0] as { data: Record<string, unknown> }[]
+  return rows[0]!.data
+}
+
 describe('POST /api/app/performances/[id]/pause', () => {
   it('401s without a session', async () => {
     signIn(null)
@@ -208,13 +214,41 @@ describe('the voditelj gets past the gate and reaches the seam', () => {
     expect(createPerformances.mock.calls[0]![0]).toHaveLength(1)
   })
 
-  it('refuses to edit a public performance even though the gate let it in', async () => {
+  // #567's acceptance, first half: a `moreska`-only login enters a PUBLIC
+  // evening through this route. The other half is that the same login cannot
+  // cancel it — `/api/shows/[id]/cancel` refuses, in its own test.
+  it('creates a PUBLIC evening too, since both halves write a season (#567)', async () => {
+    signIn(['moreska'])
+
+    const res = await createPost(
+      request('/api/app/performances', 'POST', {
+        date: '2027-07-19',
+        time: '21:00',
+        kind: 'redovna',
+        venue: 'ljetno-kino',
+        isPublic: true,
+      }),
+    )
+
+    expect(res.status).toBe(200)
+    expect(createdRow()).toMatchObject({ isPublic: true, venue: 'ljetno-kino' })
+  })
+
+  it('corrects a public evening’s hour, house and kind (#567)', async () => {
     signIn(['moreska'])
     performanceById.mockResolvedValue(REDOVNA)
 
-    const res = await editPatch(request('/api/app/performances/7', 'PATCH', BODY), { params })
-    expect(res.status).toBe(403)
-    expect(updatePerformance).not.toHaveBeenCalled()
+    const res = await editPatch(
+      request('/api/app/performances/9', 'PATCH', {
+        time: '21:30',
+        kind: 'redovna',
+        venue: 'zimsko-kino',
+      }),
+      { params },
+    )
+
+    expect(res.status).toBe(200)
+    expect(updatePerformance).toHaveBeenCalled()
   })
 
   it('still sets the thresholds of a public performance', async () => {
@@ -251,12 +285,12 @@ describe('the box office gets past the gate and reaches the seam (#502)', () => 
     expect(createPerformances.mock.calls[0]![0]).toHaveLength(1)
   })
 
-  it('refuses them a booking, which is the voditelj’s row', async () => {
+  it('enters a booking too: the schedule is one job (#567)', async () => {
     signIn(['tickets'])
     const res = await createPost(request('/api/app/performances', 'POST', BODY))
 
-    expect(res.status).toBe(403)
-    expect(createPerformances).not.toHaveBeenCalled()
+    expect(res.status).toBe(200)
+    expect(createdRow()).toMatchObject({ isPublic: false })
   })
 
   it('edits the hour, the house and the kind of a public evening', async () => {

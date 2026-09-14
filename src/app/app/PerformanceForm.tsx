@@ -6,6 +6,7 @@ import { APP_STRINGS, KIND_LABELS } from '@/lib/app/strings'
 import { MAX_PLACE_LENGTH, NON_PUBLIC_KINDS, VENUES, type NonPublicKind } from '@/lib/performance-input'
 import { PERFORMANCE_KINDS, type PerformanceKind } from '@/lib/show-performance'
 import { VENUE_LABEL, type Venue } from '@/lib/venues'
+import { Button } from './ui/Button'
 
 // Dodaj / Uredi / Otkaži an izvedba, from a phone (#503, #502).
 //
@@ -279,23 +280,27 @@ async function submit(
  * is the agenda, and a form permanently sitting above it would push the next
  * evening off the first screenful.
  *
- * The tick box appears only for somebody who may write BOTH kinds (#502) — the
- * secretary. For everyone else there is one form and no choice to make, which
- * is right: a voditelj offered a greyed-out "javna izvedba" would read it as
- * something they had done wrong.
+ * Since #567 both halves of Izvedbe may write BOTH kinds (Q53), so the tick box
+ * is what the form is now: a season's schedule is one job, and which SHAPE an
+ * evening has (a house and a capacity, or a place and a client) is a fact about
+ * the evening rather than about who is typing it. `defaultPublic` only decides
+ * which shape the form opens on — the one this reader enters most.
  */
 export function AddPerformance({
   canPublic,
   canBooking,
+  defaultPublic,
 }: {
-  /** Holds `tickets`: may add a public evening, which sells seats. */
+  /** May add a public evening, which sells seats. */
   canPublic: boolean
-  /** Holds `moreska`: may add a booking, which sells none. */
+  /** May add a booking, which sells none. */
   canBooking: boolean
+  /** Which shape the form opens on; the blagajna's is the public evening. */
+  defaultPublic?: boolean
 }) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
-  const [isPublic, setIsPublic] = useState(canPublic)
+  const [isPublic, setIsPublic] = useState((defaultPublic ?? canPublic) && canPublic)
   const [values, setValues] = useState<PerformanceFormValues>(EMPTY)
   const [publicValues, setPublicValues] = useState<PublicFormValues>(EMPTY_PUBLIC)
   const [busy, setBusy] = useState(false)
@@ -328,16 +333,15 @@ export function AddPerformance({
   if (!open) {
     return (
       <section className="app__perf-add">
-        <button
-          type="button"
-          className="app__button app__button--quiet"
+        <Button
+          variant="ghost"
           onClick={() => {
             setMessage(null)
             setOpen(true)
           }}
         >
           + {APP_STRINGS.performance.add}
-        </button>
+        </Button>
         {message && <p className="app__alarm-result">{message}</p>}
       </section>
     )
@@ -373,12 +377,11 @@ export function AddPerformance({
       )}
 
       <div className="app__perf-actions">
-        <button type="button" className="app__button" disabled={busy} onClick={save}>
+        <Button variant="primary" disabled={busy} onClick={save}>
           {busy ? APP_STRINGS.performance.adding : APP_STRINGS.performance.add}
-        </button>
-        <button
-          type="button"
-          className="app__button app__button--quiet"
+        </Button>
+        <Button
+          variant="link"
           disabled={busy}
           onClick={() => {
             setOpen(false)
@@ -386,7 +389,7 @@ export function AddPerformance({
           }}
         >
           {APP_STRINGS.performance.close}
-        </button>
+        </Button>
       </div>
       {error && <p className="app__answer-error">{error}</p>}
     </section>
@@ -452,12 +455,11 @@ export function PublicPerformanceEditor({
             venueLocked={venueLocked}
           />
           <div className="app__perf-actions">
-            <button type="button" className="app__button" disabled={busy} onClick={save}>
+            <Button variant="primary" disabled={busy} onClick={save}>
               {busy ? APP_STRINGS.performance.saving : APP_STRINGS.performance.save}
-            </button>
-            <button
-              type="button"
-              className="app__button app__button--quiet"
+            </Button>
+            <Button
+              variant="link"
               disabled={busy}
               onClick={() => {
                 setValues(initial)
@@ -466,7 +468,7 @@ export function PublicPerformanceEditor({
               }}
             >
               {APP_STRINGS.performance.close}
-            </button>
+            </Button>
           </div>
         </>
       ) : (
@@ -490,9 +492,15 @@ export function PublicPerformanceEditor({
 /**
  * "Uredi izvedbu" and "Otkaži izvedbu", in the voditelj's tools card.
  *
- * Rendered only for a NON-public performance, because that is the only kind
- * whose date, place and status are a voditelj's (the routes refuse the rest).
- * A public evening gets one quiet sentence instead, on the detail page.
+ * Rendered for a NON-public performance, whose five fields include its date.
+ * A public evening gets the three-field editor above, because moving its date
+ * mails every buyer and is its own named action (#379).
+ *
+ * **Uredi is either half's since #567; Otkaži here is still the voditelj's**
+ * (Q53). `POST …/[id]/cancel` flips a status and mails nobody, because a
+ * booking sells no ticket, and it stayed `moreska` when the two write routes
+ * were widened — so a `tickets` holder who enters a cruise call may correct it
+ * and hands the calling-off back to the voditelj, which is who the ship rings.
  *
  * Otkaži is two taps rather than a browser dialog: `confirm()` on a phone is a
  * wall of system chrome, and the second tap is the same decision made visibly.
@@ -501,10 +509,13 @@ export function PerformanceEditor({
   performanceId,
   initial,
   cancelled,
+  canCancel,
 }: {
   performanceId: string
   initial: PerformanceFormValues
   cancelled: boolean
+  /** `moreska`: the route refuses everybody else, so nobody else is offered it. */
+  canCancel: boolean
 }) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
@@ -575,12 +586,11 @@ export function PerformanceEditor({
           <h3 className="app__perf-head">{APP_STRINGS.performance.editTitle}</h3>
           <Fields idPrefix="edit" values={values} onChange={setValues} disabled={busy} />
           <div className="app__perf-actions">
-            <button type="button" className="app__button" disabled={busy} onClick={save}>
+            <Button variant="primary" disabled={busy} onClick={save}>
               {busy ? APP_STRINGS.performance.saving : APP_STRINGS.performance.save}
-            </button>
-            <button
-              type="button"
-              className="app__button app__button--quiet"
+            </Button>
+            <Button
+              variant="link"
               disabled={busy}
               onClick={() => {
                 setValues(initial)
@@ -589,7 +599,7 @@ export function PerformanceEditor({
               }}
             >
               {APP_STRINGS.performance.close}
-            </button>
+            </Button>
           </div>
         </>
       ) : (
@@ -605,26 +615,20 @@ export function PerformanceEditor({
         </button>
       )}
 
-      {arming ? (
+      {!canCancel ? null : arming ? (
         <div className="app__perf-confirm">
           <p>{APP_STRINGS.performance.cancelConfirm}</p>
           <div className="app__perf-actions">
-            <button
-              type="button"
-              className="app__button app__button--danger"
+            <Button
+              variant="destructive"
               disabled={busy}
               onClick={cancelShow}
             >
               {busy ? APP_STRINGS.performance.cancelling : APP_STRINGS.performance.cancelYes}
-            </button>
-            <button
-              type="button"
-              className="app__button app__button--quiet"
-              disabled={busy}
-              onClick={() => setArming(false)}
-            >
+            </Button>
+            <Button variant="link" disabled={busy} onClick={() => setArming(false)}>
               {APP_STRINGS.performance.cancelNo}
-            </button>
+            </Button>
           </div>
         </div>
       ) : (

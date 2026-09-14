@@ -2397,9 +2397,8 @@ export const APP_STRINGS = {
         'Izvedba je već otkazana. Ponovno pokretanje dovršava povrate i e-poštu koje raniji pokušaj nije stigao obaviti.',
       overLimit: (limit: number) =>
         `To je više od ${limit} poruka dnevno koliko Brevo dopušta, a dio današnje kvote je možda već potrošen. Poruke koje ne prođu broje se kao neuspjele: pokreni radnju ponovno sutra i poslat će se samo one koje su ostale.`,
-      needsRefunds:
-        'Otkazivanje vraća novac, pa traži dozvolu za povrate. Zamoli nekoga tko je ima (Tatjana, Josip).',
       confirm: 'Otkaži, vrati novac i obavijesti',
+      /** The way OUT of the cancel sheet: naming the outcome, not "Odustani". */
       keep: 'Zadrži izvedbu',
       done: (refunded: number, amount: string, voided: number, notified: number) =>
         `Otkazano. Povrat na ${refunded} narudžbi (${amount}), stornirano ${voided} ulaznica, obaviješteno ${notified} kupaca.`,
