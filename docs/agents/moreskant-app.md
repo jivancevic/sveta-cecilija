@@ -50,7 +50,7 @@ two fields apart for this reason.
 | 2 | Izvedbe (one screen, content by `can()`) | `/app/performances`, `/app/performances/[id]` | `tickets`, `moreska` (a `moreskant` reads the schedule on Moreška since #565 and one evening on Stanje since #566, so Izvedbe is not theirs at all) | **live, redesigned by #567**: the season as a register — every izvedba, public and non-public, for both halves — with the blagajna's sold-of-capacity, channel split and per-show numbers under the public rows (the old `/admin/stats/[id]` drill-down), and the detail **titled by the date** (Q32). **Dodaj and Uredi are either half's** since #567; the six named actions are gated one at a time and a refused one is greyed with *traži Blagajnu* rather than hidden (Q53), Otkaži asking for `tickets` **and** `refunds`. Since #538 the per-show *Prihod* is online money net of refunds plus the evening's ledger, with the partner seats named under it at face value, before commission | 308 from `/app/izvedba/[id]`; push messages now carry the new path |
 | 2.5 | Članovi (dancer profiles, invitations, join code; absorbs Pozivnice, added by #476) | `/app/members`, `/app/members/[id]` | `moreska` | **live** (#511): the rehearsal join code and its pending claims at the top, Dodaj plesača beside them, then the roster — a diacritic-insensitive search, active moreškanti first and retired ones under them, one row per dancer carrying the nickname, the real name, the primary role, whether a login exists, and the two invitation channels behind a disclosure (`POST /api/app/invite/link` for the SMS link, `POST /api/app/invite` for the letter), plus "Pošalji pozivnice svima"; the profile at `/app/members/[id]` writes nadimak, mobitel, e-mail, plesne uloge, glavna uloga and aktivan through `PATCH /api/app/members/[id]`, and Dodaj plesača through `POST /api/app/members` | `/app/invitations` and `/app/pozivnice` both 308 here; the Backoffice Members list stays for the attribution half |
 | 3 | Ljestvica (roster ranking + own season) | `/app/leaderboard?season=2026&part=all\|mine`, `/app/leaderboard/full?season=&kind=` | `moreskant`, `moreska` | **live** (#568): *Ljestvica* first and by default, *Moja sezona* second. The board is TWO lists, Moreška and Experience, each a podium of its top three, the rows to twenty, the reader's own row highlighted or pinned, and "Vidi cijeli popis" into the whole ranking. Everyone reads the same two lists: the voditelj's six-column scoreboard went with `StatsTable` | 308 from `/app/moje` (→ `part=mine`) and `/app/statistika` (→ `part=all`) |
-| 4 | Skener (camera, code entry, door list) | `/app/scan` | `door` | **live** (#504): the camera and the four result states, Pusti ostatak grupe (n), Poništi propuštanje, Pronađi ulaznicu and the "ušlo X od Y" ring, all on one screen | `/admin/scan` 308s here and the Backoffice view is deleted; the ticket QR stays `/scan/[token]`, whose staff buttons point at `/app/scan` |
+| 4 | Skener (camera, code entry, door list) | `/app/scan` | `door` | **live, redesigned by #572**: the camera and the four result states, Pusti ostatak grupe (n), Poništi propuštanje, Pronađi ulaznicu and the "ušlo X od Y" ring, all on one screen. Since the redesign the whole screen is dark whatever skin the reader chose (`data-theme` on its own root, not an island of its own), the ring is the `lg` one and its count runs up when somebody walks in, and Pronađi ulaznicu is a sheet rather than a form living open under the scanner. **The camera flow itself is untouched by all of it** — `scan-camera.ts`, the iOS WASM ponyfill, `startCamera` and `handleDecoded` are where the reliability work left them | `/admin/scan` 308s here and the Backoffice view is deleted; the ticket QR stays `/scan/[token]`, whose staff buttons point at `/app/scan` |
 | 5 | Prodaja | `/app/sell` | `partner` | **live** (#505): the izvedba picker with seats left, the two steppers, Izdaj ulaznice → the PDF, Zadnje prodaje with the delete-then-undo storno, and the live month card | the Backoffice partner dashboard stays until #512 |
 | 6 | Obračun | `/app/statement` | `partner` | **live** (#505): the season's per-izvedba bars, and a month/year picker that shows the statement on screen before offering its CSV | the Backoffice partner dashboard stays until #512 |
 | 7 | Upiti | `/app/inquiries`, `/app/inquiries/[id]` | `tickets` | **live** (#507): the inbox, ordered unanswered first with booking enquiries (`private-moreska`, `moreska-experience`) lifted above general ones, a `state=new\|handled` filter and a pager in the query string; the enquiry itself with the whole message, **Odgovori** as a `mailto:` carrying the subject and the quoted message (Tatjana sends from `info@` in Gmail, in-app sending is out of scope) and **Označi riješenim** in one tap, whose undo is the same button (`POST /api/app/inquiries/[id]/handled`, a switch rather than a toggle, so a retry is harmless) | the Backoffice keeps its list; the "Mark handled" edit-menu item there still writes the same column |
@@ -217,6 +217,10 @@ card and the whole Skener screen, which share one token block on
 colours, so everything inside it follows without knowing where it is. Skener
 adds four tokens of its own (`--ok`, `--seen`, `--void`, `--bad`): the four
 answers a scanned ticket gives are a role the paper palette never had.
+
+> Every paragraph above this line describes the look the redesign is replacing.
+> The islands are gone with #572: the palette has a night set of its own now,
+> and a screen that wants it asks for it by `data-theme`. See *The skin* below.
 
 **The redesign (#560, decided 2026-09-13) replaces this look screen by screen.**
 The design decision record for `/app` is the plan artifact
@@ -2393,11 +2397,22 @@ screen. T1 is the system; everything under it is a screen's own ticket.
 | `src/lib/app/screens.ts` | which screens exist, unchanged by the redesign |
 
 **Never hard-code a value a token names.** A theme re-points the token; a hex
-does not follow it. The same rule is why the two night islands (#490) re-point
-tokens rather than restating colours.
+does not follow it. The same rule is why Skener re-points tokens rather than
+restating colours, and why the four answers a scanned ticket can give are
+`--res-ok`, `--res-seen`, `--res-void` and `--res-bad` on that screen's root
+rather than four hexes in four rules (#572). They are `--res-*` and not `--ok`
+because the system already spends that name on an army that is strong enough
+tonight.
 
 **The night skin has a switch** (#569, T8). It is on Profil (`/app/account`),
-under *Izgled*, and it is the only thing in the app that writes `data-theme`.
+under *Izgled*, and it is **almost** the only thing in the app that writes
+`data-theme`. The other is Skener (#572, T11), which writes `dark` on its own
+root and keeps it there whatever the reader chose, because the door works after
+sunset and a white page is a lamp in the volunteer's face. That works because
+the night block answers a DESCENDANT as well as `.app` itself
+(`.app[data-theme='dark'], .app [data-theme='dark']`), which is what an island
+is now: #490's `.app__night` was the same idea before the tokens had a theme to
+belong to, and it is gone.
 
 | | |
 |---|---|
@@ -2446,7 +2461,11 @@ JavaScript still reads the count), and since #571 **Seasons** (the row of year
 pills, which was Ljestvica's own markup until Statistika and Financije needed
 the same control: it is links, because a season is a server navigation) and
 **Explain** (the "i" that keeps the rest of a caveat off the card and puts it in
-a sheet), and since #569 **Switch** (one thing this
+a sheet), and since #572 a `size` on `Ring` (the door reads its count at arm's
+length in the dark) and a `live` on `CountUp` (a number that changes while the
+screen is open counts from what is ON SCREEN to the new value, never from zero,
+and writes the value outright when the tab is hidden, because a hidden tab is
+given no frames at all), and since #569 **Switch** (one thing this
 device does or does not do; the whole 56px row is the target, and `aria-checked`
 carries the state so a reader hears the state rather than a label they have to
 interpret) and **ScreenIcon** (the icon map, which was `AppNav`'s private

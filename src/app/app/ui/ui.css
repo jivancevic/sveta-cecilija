@@ -460,6 +460,21 @@ button.ui-row:hover {
   font-style: normal;
 }
 
+/* The screen's subject rather than a figure in a card (#572): Skener's count
+   is read at arm's length, in the dark. It never grows past the narrowest
+   phone the app supports, so the ring is a square that fits rather than a
+   fixed 200px that would clip on a 320px screen. */
+.ui-ring--lg {
+  width: min(230px, 68vw);
+  height: min(230px, 68vw);
+}
+
+.ui-ring--lg .ui-ring__hole {
+  width: calc(100% - 22px);
+  height: calc(100% - 22px);
+  font-size: 22px;
+}
+
 /* ── Podium ───────────────────────────────────────────────── */
 .ui-podium {
   display: flex;
