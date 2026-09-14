@@ -344,12 +344,11 @@ export function UserActions({
         // paragraph are taller than a landscape phone (#563).
         footer={
           <>
-            {/* The reader's own row says why there is nothing to confirm, and
-                the refusal sits with the button it removed. */}
-            {self && <p className="app__sheet-warn">{S.tabs.notSelf}</p>}
+            {/* No self refusal here (#591): a `users` holder arranges any bar,
+                their own included. */}
             {error && <p className="app__error">{error}</p>}
             <div className="app__sheet-buttons">
-              {!self && tabOptions.length > 0 && (
+              {tabOptions.length > 0 && (
                 <Button variant="primary" disabled={busy} onClick={() => void saveTabs()}>
                   {busy ? S.actions.working : S.tabs.save}
                 </Button>

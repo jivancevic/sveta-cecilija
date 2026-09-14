@@ -2196,8 +2196,6 @@ export const APP_STRINGS = {
       tooMany: (max: number) => `Najviše ${max} taba.`,
       locked: (screen: string) =>
         `${screen} ovaj račun ne otvara. Prvo mu dodaj dozvolu u Dozvolama.`,
-      /** Q52: a bar is somebody else's decision about this account. */
-      notSelf: 'Vlastite tabove mijenja drugi korisnik s dozvolom Korisnici.',
     },
 
     create: {

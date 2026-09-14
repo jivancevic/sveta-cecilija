@@ -1,4 +1,5 @@
-// Korisnici's sixth action: the three screens an account opens on (#563, Q52).
+// Korisnici's sixth action: the three screens an account opens on (#563, Q52,
+// with the own-row refusal dropped by #591).
 //
 // A tab bar belongs to the ACCOUNT and not to the rank. Tatjana and Luka both
 // hold `tickets`, and one of them opens Cecilija on Narudžbe while the other
@@ -6,14 +7,18 @@
 // `users` holder picks up to three screens per account and the generic order in
 // `screens.ts` covers everybody nobody has picked for.
 //
-// Three things this write is NOT, each of them a refusal below:
+// Three things this write is NOT, the first and the third of them a refusal
+// below:
 //
 //  1. **Not access.** A tab is an order, never a permission: a key the account's
 //     set does not unlock is refused here (400) and dropped again on read, so a
 //     bar can never be the reason somebody sees a screen.
-//  2. **Not self-service.** Nobody arranges their own bar (Q52). It is somebody
-//     else's decision about this account, like the permission set it follows,
-//     and a `users` holder who wants their own changed asks the other one.
+//  2. **Not self-service, except for the one person who does this job.** A bar
+//     is somebody's decision ABOUT an account rather than a thing an account
+//     picks for itself, and a `users` holder is simply allowed to be that
+//     somebody for themselves (#591, reversing Q52's own-row refusal): asking
+//     the other `users` holder is not advice in a society that has one. Profil
+//     still carries no tab picker, so the decision stays where it lives.
 //  3. **Not the Backoffice's.** `Users.tabs` is field-locked to `users` and the
 //     seam writes with `overrideAccess: true`, so — as with `permissions` —
 //     `requirePermission(req, 'users')` in the route IS the lock.
@@ -83,15 +88,14 @@ export function parseTabKeys(input: unknown): { keys: AppScreenKey[] } | { error
 /**
  * PATCH /api/app/users/[id]/tabs `{ tabs }`.
  *
- * 403 cross-site or a shared login, 404 for an id that is nobody, 409 on the
- * caller's own row, 400 for a key that is not a screen, a fourth key, a
- * repeated one or a screen this account does not unlock, 200 otherwise. An
- * empty list is a valid answer and means "back to the generic order".
+ * 403 cross-site or a shared login, 404 for an id that is nobody, 400 for a key
+ * that is not a screen, a fourth key, a repeated one or a screen this account
+ * does not unlock, 200 otherwise. An empty list is a valid answer and means
+ * "back to the generic order".
  *
- * The self refusal is answered BEFORE the body is read, unlike the permission
- * set's lockout guard: there the reader's input decides whether the row is
- * still valid, here no input can make it valid, so validating first would only
- * delay the same 409.
+ * The caller's own row is NOT refused (#591): a `users` holder arranges any
+ * bar, their own included, and the unlock check below is what keeps a tab from
+ * ever becoming a permission.
  */
 export async function handleSetTabs(
   targetId: string,
@@ -110,8 +114,6 @@ export async function handleSetTabs(
     target = null
   }
   if (!target) return fail(404, S.missing)
-
-  if (target.id === deps.caller.id) return fail(409, S.tabs.notSelf)
 
   const parsed = parseTabKeys(input?.tabs)
   if ('error' in parsed) return fail(400, parsed.error)

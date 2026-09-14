@@ -168,13 +168,17 @@ Početna once T3/#564 lands), neither of which is ever stored. `MAX_TABS` is 3.
 
 - **Who chooses.** A `users` holder, on the Korisnici detail: the sixth named
   action "Tabovi", a sheet of the account's unlocked screens, tap to add or
-  remove in order. **Nobody arranges their own bar** (409) — a bar is somebody
-  else's decision about an account, like the permission set it follows.
+  remove in order. **A `users` holder may arrange any bar, their own included**
+  (#591, reversing Q52's own-row 409): a bar is somebody's decision ABOUT an
+  account, and in a society with one `users` holder "ask the other one" was an
+  instruction with nobody on the far end of it. Self-service from Profil is
+  still not a thing — there is no tab picker there.
 - **The write.** `PATCH /api/app/users/[id]/tabs`, behind
   `requirePermission(req, 'users')` like the other five, rules in
-  `src/lib/app/users-tabs.ts`: 409 on the caller's own row, 400 for a key that
-  is not a screen, a fourth key, a repeated one, or a screen the account's set
-  does not unlock. An empty list is a real answer and means the generic order.
+  `src/lib/app/users-tabs.ts`: 400 for a key that is not a screen, a fourth
+  key, a repeated one, or a screen the account's set does not unlock. An empty
+  list is a real answer and means the generic order. The caller's own row is
+  not refused.
 - **A tab is an order, never a permission.** A stored key the account stops
   unlocking is dropped on read (`tabKeysOf` is lenient, `appNav` filters), so a
   bar can never be the reason somebody reaches a screen.

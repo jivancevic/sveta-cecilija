@@ -6,9 +6,10 @@ import { handleSetTabs, parseTabKeys, type SetTabsDeps, type TabsTarget } from '
 // The sixth Korisnici write (#563): which three screens an account opens on.
 //
 // The three refusals worth a test each are the ones no other write on this
-// screen has: nobody arranges their own bar (409), a key the account does not
-// unlock is refused rather than stored (400), and a bar is still a real answer
-// when it is empty (200, back to the generic order).
+// screen has: a key the account does not unlock is refused rather than stored
+// (400), and a bar is still a real answer when it is empty (200, back to the
+// generic order). The own-row 409 Q52 asked for is gone since #591: a `users`
+// holder arranges any bar, their own included.
 
 const S = APP_STRINGS.users
 
@@ -82,25 +83,30 @@ describe('handleSetTabs', () => {
     expect(save).toHaveBeenCalledWith('7', [])
   })
 
-  it('refuses the caller arranging their own bar (409), whatever they chose', async () => {
+  it('lets a `users` holder arrange their OWN bar (#591)', async () => {
+    // Q52 refused this row with a 409. #591 reverses it for exactly this case:
+    // there is one `users` holder in this society, so "ask the other one" was
+    // an instruction with nobody on the far end of it. Everything else about
+    // the write is unchanged, which is what the refusals below still assert.
     const save = vi.fn(async () => {})
     const res = await handleSetTabs(
       '1',
       { tabs: ['orders'] },
       deps({ loadTarget: async () => target({ id: '1' }), save }),
     )
-    expect(res.status).toBe(409)
-    expect(res.body.error).toBe(S.tabs.notSelf)
-    expect(save).not.toHaveBeenCalled()
+    expect(res.status).toBe(200)
+    expect(save).toHaveBeenCalledWith('1', ['orders'])
   })
 
-  it('answers the self refusal even for a body that is not valid anyway', async () => {
+  it('still validates the caller\'s own body like anybody else\'s', async () => {
+    const save = vi.fn(async () => {})
     const res = await handleSetTabs(
       '1',
       { tabs: 'orders' },
-      deps({ loadTarget: async () => target({ id: '1' }) }),
+      deps({ loadTarget: async () => target({ id: '1' }), save }),
     )
-    expect(res.status).toBe(409)
+    expect(res.status).toBe(400)
+    expect(save).not.toHaveBeenCalled()
   })
 
   it('refuses a screen this account does not unlock (400), and names it', async () => {

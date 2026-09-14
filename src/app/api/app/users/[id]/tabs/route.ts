@@ -8,9 +8,9 @@ import { callerOf } from '@/lib/app/users-caller'
 // PATCH /api/app/users/[id]/tabs — "Tabovi" (#563).
 //
 // Wiring only; the rules are `handleSetTabs` in `src/lib/app/users-tabs.ts` and
-// unit-tested there: nobody arranges their own bar (409), and a key the account
-// does not unlock is refused rather than stored (400), because a tab is an
-// order and never a permission.
+// unit-tested there: a `users` holder arranges any bar, their own included
+// (#591), and a key the account does not unlock is refused rather than stored
+// (400), because a tab is an order and never a permission.
 //
 // `requirePermission(req, 'users')` FIRST, as on the other five. `Users.tabs` is
 // field-locked to a `users` holder and the seam writes with
