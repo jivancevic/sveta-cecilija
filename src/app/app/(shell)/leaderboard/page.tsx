@@ -1,12 +1,13 @@
 import { getMySeason } from '@/lib/app/my-season-data'
 import { getSeasonStats } from '@/lib/app/stats-data'
-import { buildLeaderboard, parseLeaderboardSegment } from '@/lib/app/leaderboard-loaders'
+import { parseLeaderboardSegment } from '@/lib/app/leaderboard-loaders'
 import {
   LEADERBOARD_KINDS,
   boardView,
   kindsOf,
   myStanding,
   rankDancers,
+  rankMovement,
 } from '@/lib/app/leaderboard-rank'
 import { APP_STRINGS } from '@/lib/app/strings'
 import { AppShell } from '../../AppShell'
@@ -59,28 +60,31 @@ export default async function LeaderboardPage({
 
   const lists: BoardList[] = LEADERBOARD_KINDS.map((kind) => {
     const confirmed = kindsOf(kind).reduce((sum, k) => sum + stats.confirmedByKind[k], 0)
-    const ranked = rankDancers({
-      rows: stats.rows,
+    const common = {
       kind,
       primaryRoles: stats.primaryRoles,
+      initials: stats.initials,
       myMemberId: me?.id ?? null,
       confirmed,
-    })
+    }
+    const ranked = rankDancers({ rows: stats.rows, ...common })
     return {
       kind,
       label: APP_STRINGS.board.lists[kind],
       view: boardView(ranked),
       standing: myStanding(ranked),
       confirmed,
+      // Only the Moreška list: the sentence beside it says "nakon zadnje
+      // moreške", and an Experience is not one. The comparison is the same
+      // season ranked without its most recent confirmed evening, which the
+      // loader hands over beside the rows rather than storing anywhere.
+      movement:
+        kind === 'moreska'
+          ? rankMovement(ranked, rankDancers({ rows: stats.rowsBeforeLast, ...common }))
+          : null,
     }
   })
 
-  // The prekretnice are read off the WHOLE season's count, not off one list:
-  // the glossary's milestones are 5, 10, 15 and 20 confirmed nastupa, and an
-  // Experience is one of those as much as a Redovna is. That is also why the
-  // board next door ranks them apart and this panel does not.
-  const board = buildLeaderboard({ stats, myMemberId: me?.id ?? null })
-  const myRow = board.rows.find((r) => r.me) ?? null
   const statsRow = me ? (stats.rows.find((r) => r.memberId === String(me.id)) ?? null) : null
 
   return (
@@ -90,20 +94,7 @@ export default async function LeaderboardPage({
         season={mine.season}
         seasons={mine.seasons}
         mine={
-          <MySeason
-            mine={mine}
-            hasMember={me != null}
-            milestones={
-              myRow
-                ? {
-                    reached: myRow.milestones,
-                    next: board.me?.nextMilestone ?? null,
-                    fullSeason: myRow.fullSeason,
-                  }
-                : null
-            }
-            byKind={statsRow?.byKind ?? null}
-          />
+          <MySeason mine={mine} hasMember={me != null} byKind={statsRow?.byKind ?? null} />
         }
         all={<Board lists={lists} season={mine.season} />}
       />

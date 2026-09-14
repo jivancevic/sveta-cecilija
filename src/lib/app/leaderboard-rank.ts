@@ -22,7 +22,8 @@
 //     make up a fact the lineups do not contain,
 //   - no streaks, ever.
 
-import { ARMY_OF_ROLE, isDanceRole } from '@/lib/moreskant-profile'
+import { ARMY_OF_ROLE, isDanceRole, type DanceRole } from '@/lib/moreskant-profile'
+import { STAT_ROLES, type StatRole } from '@/lib/lineup/stats'
 import { PERFORMANCE_KINDS, type PerformanceKind } from '@/lib/show-performance'
 import type { DancerStats } from '@/lib/lineup/stats'
 
@@ -66,6 +67,70 @@ export function kindsOf(kind: LeaderboardKind): PerformanceKind[] {
     : PERFORMANCE_KINDS.filter((k) => k !== 'experience')
 }
 
+/* ── The seven chips of the full list (#607, decision Q2) ────────────────
+   They do TWO different things, and the asymmetry is the decision rather
+   than an oversight.
+
+     crni / bili / bula      select PEOPLE, by the army of their profile's
+                             primary role, and keep counting every evening
+                             they danced.
+     crni kralj / bili kralj
+     / otmanovic             count how many times the title was GIVEN to them.
+
+   The first three answer "who is the most active crni", the second three
+   answer "who have we given the crown to", and collapsing them into one rule
+   breaks the first: a dancer whose primary role is crni fills in as bili when
+   that army is short, and under "crni" he must still rank on his whole season
+   rather than on the nights he happened to wear black. The society reads him
+   as a crni who turns up, which is what the chip is for.
+
+   A consequence, intended: summing the three army lists overshoots the
+   season's evenings. The two groups measure different things, so their totals
+   were never going to reconcile. */
+
+/** Every chip of the full list, in the order they are read. */
+export const BOARD_FILTERS = [
+  'svi',
+  'crni',
+  'bili',
+  'bula',
+  'crni_kralj',
+  'bili_kralj',
+  'otmanovic',
+] as const
+
+export type BoardFilter = (typeof BOARD_FILTERS)[number]
+
+/**
+ * Which chip `?role=` asks for, defaulting to everybody.
+ *
+ * Anything unrecognised opens on `svi` rather than erroring, the way a stale
+ * `?kind=` does: a link that has outlived a vocabulary is still a link to the
+ * screen.
+ */
+export function parseBoardFilter(raw: string | undefined | null): BoardFilter {
+  return BOARD_FILTERS.includes(raw as BoardFilter) ? (raw as BoardFilter) : 'svi'
+}
+
+/**
+ * True for the three chips that count a TITLE rather than select a person.
+ *
+ * `bula` is deliberately NOT one of them even though it is a title: a bula who
+ * is not in the postava has no lineup row at all (CONTEXT.md → *Title*), so her
+ * evenings danced and her evenings as bula are the same number and the two
+ * readings cannot disagree. Filing her with the armies keeps the screen's
+ * sentence true — "these three pick people" — instead of adding a fourth case
+ * that behaves like the first three anyway.
+ */
+export function filterCountsTitle(filter: BoardFilter): filter is StatRole {
+  return filter !== 'bula' && (STAT_ROLES as readonly string[]).includes(filter)
+}
+
+/** True for a chip that narrows the list to one army. */
+function filterSelectsArmy(filter: BoardFilter): filter is BoardArmy {
+  return filter === 'crni' || filter === 'bili' || filter === 'bula'
+}
+
 /** The three discs a `RoleMark` draws. A bula is in neither army, hence its own. */
 export type BoardArmy = 'crni' | 'bili' | 'bula'
 
@@ -88,10 +153,24 @@ export interface RankRow {
   rank: number
   memberId: string
   nickname: string
-  /** Confirmed nastupi of THIS list's kinds. */
+  /**
+   * What this row is ranked by: confirmed nastupi of this list's kinds, or —
+   * under one of the three title chips — how many times that title was given.
+   */
   performances: number
   /** The disc beside the name; null for a dancer with no primary role yet. */
   army: BoardArmy | null
+  /**
+   * Two letters of the dancer's real name, for the disc (#607).
+   *
+   * Without them every disc on this screen is a blank colour swatch: nobody
+   * wears a title in a season's counts, so the mark has nothing to draw. The
+   * letters come from the NAME rather than the nickname, because the nickname
+   * is already printed beside the disc and repeating it identifies nobody —
+   * "who is Cici" is exactly the question the initials answer. Empty when the
+   * roster has no name to take them from; `RoleMark` then draws a plain disc.
+   */
+  initials: string
   /**
    * Always null, and that is a decision rather than a gap: a titula is given
    * per nastup, so a season's counts contain no title anybody currently holds,
@@ -120,18 +199,37 @@ export function rankDancers(input: {
   kind: LeaderboardKind
   /** `memberId` → the profile's primary role; missing reads as "no role". */
   primaryRoles?: Record<string, string | null>
+  /** `memberId` → two letters of their name, for the disc. */
+  initials?: Record<string, string>
   myMemberId?: string | null
   /** Confirmed performances of this list's kinds, for "puna sezona". */
   confirmed?: number
+  /** Which chip is on; `svi` (everybody, every evening) by default. */
+  filter?: BoardFilter
 }): RankRow[] {
   const kinds = kindsOf(input.kind)
   const mine = input.myMemberId == null ? null : String(input.myMemberId)
   const confirmed = input.confirmed ?? 0
+  const filter = input.filter ?? 'svi'
+  const byTitle = filterCountsTitle(filter)
 
-  const counted = input.rows.map((row) => ({
+  let counted = input.rows.map((row) => ({
     row,
-    performances: kinds.reduce((sum, k) => sum + (row.byKind[k] ?? 0), 0),
+    army: armyOfPrimaryRole(input.primaryRoles?.[String(row.memberId)] ?? null),
+    performances: byTitle
+      ? kinds.reduce((sum, k) => sum + (row.rolesByKind[k]?.[filter] ?? 0), 0)
+      : kinds.reduce((sum, k) => sum + (row.byKind[k] ?? 0), 0),
   }))
+
+  // An army chip narrows the list to the people IN that army; a title chip
+  // narrows it to the people who wore it, which is the same as dropping zeros.
+  if (filterSelectsArmy(filter)) counted = counted.filter((e) => e.army === filter)
+
+  // "Every active moreškant is a row" is a rule about THE SEASON, so it holds
+  // where the season is what is on the screen. Under a chip it would fill the
+  // list with people the chip is not about: sixty zeros under "crni kralj" is
+  // not a ranking of anything.
+  if (filter !== 'svi') counted = counted.filter((e) => e.performances > 0)
 
   // The scoreboard's own tie-break, re-applied to this list's count: by count
   // descending, then by nickname in Croatian collation, so two dancers on the
@@ -156,10 +254,14 @@ export function rankDancers(input: {
       memberId,
       nickname: entry.row.nickname,
       performances: entry.performances,
-      army: armyOfPrimaryRole(input.primaryRoles?.[memberId] ?? null),
+      army: entry.army,
+      initials: input.initials?.[memberId] ?? '',
       title: null,
       me: mine !== null && memberId === mine,
-      fullSeason: confirmed > 0 && entry.performances === confirmed,
+      // Only where the count IS the season. Under a title chip the number is
+      // how many crowns somebody wore, and "wore the crown every evening of the
+      // season" is not the fact "puna sezona" names.
+      fullSeason: !byTitle && confirmed > 0 && entry.performances === confirmed,
     })
   })
 
@@ -245,4 +347,101 @@ export function boardView(ranked: readonly RankRow[], limit: number = TOP_ROWS):
     total: ranked.length,
     truncated: ranked.length > shown.length,
   }
+}
+
+/**
+ * How far the reader moved on the last evening (#607).
+ *
+ * Positive is up. Null when there is nothing to say: no row of the reader's own
+ * in one of the two rankings, or a rank that did not change — a zero is not a
+ * result and printing it turns a piece of news into furniture.
+ *
+ * DERIVED, never stored: `previous` is the same season ranked again with its
+ * most recent confirmed evening left out, which the loader can produce from the
+ * rows it already has. A stored snapshot would be one more thing to keep in
+ * step with a lineup a voditelj can still edit after the fact.
+ *
+ * A DROP is returned like a rise and the screen prints it the same way.
+ * Somebody passed the reader because the reader was not there; that is a fact
+ * about the season, and stating it plainly is the opposite of a reproach.
+ */
+export function rankMovement(
+  current: readonly RankRow[],
+  previous: readonly RankRow[],
+): number | null {
+  const now = current.find((r) => r.me)
+  const before = previous.find((r) => r.me)
+  if (!now || !before) return null
+  const moved = before.rank - now.rank
+  return moved === 0 ? null : moved
+}
+
+/* ── Drawing a role (#607) ────────────────────────────────────────────────
+   A `RoleMark` is two facts, and a tally needs both: the DISC is the army and
+   the GLYPH is the title. The mapping lives here, once, because three surfaces
+   draw it — the full list's chips, the tallies in its rows, and the season
+   profile (#608) — and three hand-written copies of "which army is an
+   otmanović in" is exactly the drift `ARMY_OF_ROLE` exists to prevent. */
+
+export interface RoleMarkSpec {
+  army: BoardArmy
+  /** The glyph, or null for a plain army disc. */
+  title: 'crni_kralj' | 'bili_kralj' | 'otmanovic' | null
+}
+
+/**
+ * What to draw for one dance role.
+ *
+ * The bula gets a plain gold disc rather than the titled one: `ui-mark--titled`
+ * is the white ring that marks the bula OF AN EVENING, and nothing in a season's
+ * counts is of an evening.
+ */
+export const MARK_OF_ROLE: Record<DanceRole, RoleMarkSpec> = {
+  crni: { army: 'crni', title: null },
+  crni_kralj: { army: 'crni', title: 'crni_kralj' },
+  otmanovic: { army: 'crni', title: 'otmanovic' },
+  bili: { army: 'bili', title: null },
+  bili_kralj: { army: 'bili', title: 'bili_kralj' },
+  bula: { army: 'bula', title: null },
+}
+
+/**
+ * The order a row's tallies are drawn in, and it is NOT `DANCE_ROLES`.
+ *
+ * Grouped by army — the crni three, then the bili two, then the bula — so the
+ * eye reads a row as "mostly black, a bit of red" before it reads any number.
+ * `DANCE_ROLES` interleaves the armies because that is the order the profile
+ * form needs, which is a different screen with a different question.
+ */
+export const TALLY_ORDER: DanceRole[] = [
+  'crni',
+  'crni_kralj',
+  'otmanovic',
+  'bili',
+  'bili_kralj',
+  'bula',
+]
+
+/** One line of a row's breakdown: which role, and how many evenings of it. */
+export interface RoleTally {
+  role: DanceRole
+  count: number
+}
+
+/**
+ * A dancer's roles in one list's kinds, in drawing order, zeros dropped.
+ *
+ * The counts sum to the number printed at the end of the row, which is the
+ * whole point of counting the plain roles as well: a reader can check the
+ * arithmetic, and a breakdown nobody can check is decoration.
+ */
+export function roleTallies(
+  row: Pick<DancerStats, 'rolesByKind'>,
+  kind: LeaderboardKind,
+): RoleTally[] {
+  const kinds = kindsOf(kind)
+  return TALLY_ORDER.map((role) => ({
+    role,
+    count: kinds.reduce((sum, k) => sum + (row.rolesByKind[k]?.[role] ?? 0), 0),
+  })).filter((t) => t.count > 0)
 }

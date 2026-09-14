@@ -1224,3 +1224,79 @@ button.ui-army:active {
   cursor: default;
   opacity: 0.55;
 }
+
+/* ── Trophy (#607) ────────────────────────────────────────────────────────
+   Three tones, one shape. Every fill is a token, so the night skin moves all
+   three together and nothing here knows which skin is on. */
+.ui-trophy {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 auto;
+}
+
+.ui-trophy--sm {
+  width: 26px;
+  height: 26px;
+}
+
+.ui-trophy svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.ui-trophy__bowl,
+.ui-trophy__base {
+  fill: var(--cup);
+  stroke: var(--cupDeep);
+  stroke-width: 1;
+}
+
+.ui-trophy__stem {
+  fill: var(--cupDeep);
+}
+
+.ui-trophy__handle {
+  fill: none;
+  stroke: var(--cupDeep);
+  stroke-width: 1.6;
+  stroke-linecap: round;
+}
+
+/* The digit reads ON the bowl, so it takes the deep tone rather than the ink:
+   a dark numeral on a light metal is the one pairing that holds at 26px. */
+.ui-trophy__place {
+  fill: var(--cupDeep);
+  font-family: var(--serif);
+  font-size: 9.5px;
+  font-weight: 700;
+}
+
+.ui-trophy--sm .ui-trophy__place {
+  font-size: 10.5px;
+}
+
+.ui-trophy--1 {
+  --cup: var(--tr1);
+  --cupDeep: var(--tr1Deep);
+}
+
+.ui-trophy--2 {
+  --cup: var(--tr2);
+  --cupDeep: var(--tr2Deep);
+}
+
+.ui-trophy--3 {
+  --cup: var(--tr3);
+  --cupDeep: var(--tr3Deep);
+}
+
+/* ── The podium's cup (#607) ───────────────────────────────────────────────
+   Above the mark rather than beside it: the three steps are narrow, and a cup
+   in the same row as a 28px disc leaves the nickname two lines. */
+.ui-podium__cup {
+  display: block;
+  margin-bottom: 2px;
+}

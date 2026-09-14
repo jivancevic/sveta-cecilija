@@ -25,6 +25,7 @@ import { Sheet, SheetOption } from './Sheet'
 import { Switch } from './Switch'
 import { Tile, Tiles } from './Tile'
 import { Toast } from './Toast'
+import { Trophy } from './Trophy'
 
 // The shared shapes, rendered (#562).
 //
@@ -147,6 +148,29 @@ describe('RoleMark', () => {
   })
 })
 
+describe('Trophy', () => {
+  it('draws one cup per place, each in its own metal', () => {
+    expect(render(h(Trophy, { place: 1 }))).toContain('ui-trophy--1')
+    expect(render(h(Trophy, { place: 2 }))).toContain('ui-trophy--2')
+    expect(render(h(Trophy, { place: 3 }))).toContain('ui-trophy--3')
+  })
+
+  it('puts the place INSIDE the cup, because gold and bronze are one hue at night', () => {
+    expect(render(h(Trophy, { place: 3 }))).toContain('>3<')
+    expect(render(h(Trophy, { place: 2 }))).toContain('2. mjesto')
+  })
+
+  it('draws nothing below third: a trophy for everybody is a bullet point', () => {
+    expect(render(h(Trophy, { place: 4 }))).toBe('')
+    expect(render(h(Trophy, { place: 0 }))).toBe('')
+  })
+
+  it('has a small size for a cup that stands in a list row', () => {
+    expect(render(h(Trophy, { place: 1, small: true }))).toContain('ui-trophy--sm')
+    expect(render(h(Trophy, { place: 1 }))).not.toContain('ui-trophy--sm')
+  })
+})
+
 describe('Ring', () => {
   it('turns a share into an arc, and refuses to pass the full circle', () => {
     expect(render(h(Ring, { value: 175, max: 350 }))).toContain('180deg')
@@ -186,6 +210,19 @@ describe('the rest of the shapes render', () => {
     expect(render(h(Podium, { entries: [{ label: 'Brko', value: 14 }] }))).toContain(
       'ui-podium__step--1',
     )
+    // The cup is its own slot above the mark (#607), and the large podium is
+    // the only place that draws either.
+    expect(
+      render(
+        h(Podium, {
+          large: true,
+          entries: [{ label: 'Brko', value: 14, cup: h(Trophy, { place: 1 }) }],
+        }),
+      ),
+    ).toContain('ui-trophy--1')
+    expect(
+      render(h(Podium, { entries: [{ label: 'Brko', value: 14, cup: h(Trophy, { place: 1 }) }] })),
+    ).not.toContain('ui-trophy')
   })
 
   it('renders the count at its final value on the server, so nothing reflows', () => {

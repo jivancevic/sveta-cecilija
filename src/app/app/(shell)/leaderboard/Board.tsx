@@ -2,9 +2,10 @@ import Link from 'next/link'
 import { APP_STRINGS } from '@/lib/app/strings'
 import { pluralize } from '@/lib/app/roster-loaders'
 import type { BoardView, LeaderboardKind, MyStanding, RankRow } from '@/lib/app/leaderboard-rank'
-import { Chip, CountUp, List, ListRow, Podium, RoleMark, Section } from '../../ui'
+import { Chip, CountUp, List, ListRow, Podium, RoleMark, Section, Trophy } from '../../ui'
 
-// The Ljestvica panel (#457, reskinned and split in #568; glossary: *Ljestvica*).
+// The Ljestvica panel (#457, split in two lists by #568, gamified by #607;
+// glossary: *Ljestvica*).
 //
 // A server component: a ranked list of forty nicknames is forty rows of HTML,
 // and nothing on it changes without a page load. The only two things the
@@ -16,11 +17,24 @@ import { Chip, CountUp, List, ListRow, Podium, RoleMark, Section } from '../../u
 // column told a dancer with twelve Redovne that they were behind somebody with
 // fifteen Experiences, which is not a comparison anybody in the society makes.
 //
+// **The three steps wear cups** (#607). The trophy carries the RANK, which is
+// what makes a tie legible without a sentence about ties: equal counts share a
+// rank and the next one skips, so two dancers on 21 both wear a gold cup with a
+// 1 in it and no silver is drawn at all.
+//
+// **Every disc carries initials** (#607). `RoleMark` has had them since #573
+// for exactly this case — a list of people out of an evening, where no disc has
+// a title to draw and every one would be a blank colour swatch. The letters are
+// of the NAME, because the nickname is already printed beside the disc and
+// "who is Cici" is the question they answer.
+//
 // What is deliberately NOT here, and has not been since #457: any treatment of
 // the bottom of the list. No red, no "zadnji", no "fali ti još". A dancer with
 // two evenings is on the same list as one with twenty because they are in the
 // same society, and a board that shames the bottom is a board people stop
-// opening.
+// opening. The rank movement obeys the same rule from the other side: it is on
+// the reader's own row and nobody else's, because a nudge on somebody else's
+// row is a comment on their effort.
 //
 // And no crown that was not given tonight: a *titula* belongs to one evening's
 // lineup and never to a person (CONTEXT.md → *Title*), so every mark here is an
@@ -36,6 +50,12 @@ export interface BoardList {
   standing: MyStanding | null
   /** Confirmed evenings of this list's kinds, for the empty case. */
   confirmed: number
+  /**
+   * How far the reader moved on the last confirmed evening, or null when there
+   * is nothing to say. Only the Moreška list carries one: "nakon zadnje
+   * moreške" is the sentence, and an Experience is not one.
+   */
+  movement?: number | null
 }
 
 /** The count on a row: the reader's own arrives, everybody else's is printed. */
@@ -45,6 +65,11 @@ function Count({ row }: { row: RankRow }) {
       {row.me ? <CountUp value={row.performances} /> : row.performances}
     </b>
   )
+}
+
+/** The disc beside a name: the army in colour, the person in two letters. */
+function Mark({ row }: { row: RankRow }) {
+  return <RoleMark army={row.army} title={row.title} initials={row.initials} small />
 }
 
 function Row({ row, pinned = false }: { row: RankRow; pinned?: boolean }) {
@@ -57,11 +82,10 @@ function Row({ row, pinned = false }: { row: RankRow; pinned?: boolean }) {
               column is left empty rather than printing 24 twice; it still holds
               its width, which is what keeps every mark on the screen in line. */}
           <i className="app__lb-rank">{pinned ? '' : S.rank(row.rank)}</i>
-          <RoleMark army={row.army} title={row.title} small />
+          <Mark row={row} />
         </span>
       }
       title={pinned ? S.pinned(row.rank) : row.nickname}
-      meta={row.fullSeason ? S.fullSeason : undefined}
       trail={<Count row={row} />}
     >
       {row.me && !pinned && <Chip tone="gold">{S.you}</Chip>}
@@ -69,8 +93,19 @@ function Row({ row, pinned = false }: { row: RankRow; pinned?: boolean }) {
   )
 }
 
-/** "Ti si 5. s 11 nastupa. Još 2 nastupa do 4. mjesta." */
-function Standing({ standing }: { standing: MyStanding }) {
+/** "▲2 nakon zadnje moreške" — the reader's own row and nobody else's. */
+function Movement({ places }: { places: number }) {
+  return (
+    <span className="app__lb-move" data-dir={places > 0 ? 'up' : 'down'}>
+      <b aria-hidden="true">{S.movement(places)}</b>
+      <span className="app__sr-only">{S.movementLabel(places)}</span>
+      <i aria-hidden="true">{S.movementSince}</i>
+    </span>
+  )
+}
+
+/** "Ti si 5. s 11 nastupa. Još 2 nastupa do 4. mjesta. ▲2 nakon zadnje moreške" */
+function Standing({ standing, movement }: { standing: MyStanding; movement?: number | null }) {
   const counted = (n: number) => pluralize(n, APP_STRINGS.moreska.count)
   return (
     <p className="app__lb-standing">
@@ -85,6 +120,9 @@ function Standing({ standing }: { standing: MyStanding }) {
           ? S.leading
           : S.toNextPlace(counted(standing.toNextPlace), standing.nextPlace)}
       </span>
+      {/* Null when the reader did not move: a zero is not news, and printing it
+          every week turns the one piece of news on the screen into furniture. */}
+      {movement != null && <Movement places={movement} />}
     </p>
   )
 }
@@ -109,13 +147,14 @@ function OneList({ list, season }: { list: BoardList; season: number }) {
               id: row.memberId,
               label: row.nickname,
               value: <CountUp value={row.performances} />,
-              mark: <RoleMark army={row.army} title={row.title} small />,
+              cup: <Trophy place={row.rank} className="ui-podium__cup" />,
+              mark: <Mark row={row} />,
               caption: S.place(row.rank),
               me: row.me,
             }))}
           />
 
-          {list.standing && <Standing standing={list.standing} />}
+          {list.standing && <Standing standing={list.standing} movement={list.movement} />}
 
           {view.rows.length > 0 && (
             <List>

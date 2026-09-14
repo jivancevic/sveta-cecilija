@@ -22,6 +22,7 @@ import { PERFORMANCE_KINDS, type PerformanceKind } from '@/lib/show-performance'
 import { toAttendanceMember } from '@/lib/attendance/rules'
 import { relationIdString } from '@/lib/payload-relation'
 import { isDanceRole } from '@/lib/moreskant-profile'
+import { initialsOf } from '@/lib/app/members-screen'
 import {
   aggregateDancerStats,
   resolveSeason,
@@ -53,6 +54,28 @@ export interface SeasonStats {
    * role and nothing derived from an evening.
    */
   primaryRoles: Record<string, string | null>
+  /**
+   * `memberId` → two letters of the dancer's real name, for the disc (#607).
+   *
+   * The INITIALS and not the name: the mark on Ljestvica has no title to draw,
+   * so without them every disc is a blank colour swatch, and the nickname
+   * printed beside it does not say who Cici is. Two letters answer that and
+   * carry nothing else, which keeps this payload what its neighbour's comment
+   * says it is — a leaderboard rather than a directory. The name itself reaches
+   * a dancer on the season profile (#608), not here.
+   */
+  initials: Record<string, string>
+  /**
+   * The same season ranked as it stood BEFORE its most recent confirmed
+   * evening, so the board can say how far the reader moved on it (#607).
+   *
+   * Derived rather than stored: a voditelj may still edit a lineup after the
+   * fact, and a snapshot taken the night of would drift away from the season it
+   * claims to describe. Identical to `rows` when the season has no confirmed
+   * evening yet, which makes the movement null rather than a number about
+   * nothing.
+   */
+  rowsBeforeLast: DancerStats[]
 }
 
 /** A Payload shows doc → the fact the aggregation needs about an evening. */
@@ -62,6 +85,30 @@ export function toStatsPerformance(doc: Record<string, unknown>): StatsPerforman
     kind: (doc.kind as PerformanceKind) ?? 'redovna',
     confirmed: doc.lineupConfirmed === true,
   }
+}
+
+/**
+ * The id of the season's most recent confirmed evening, by DATE (#607).
+ *
+ * By date rather than by the order the query returned, and by date rather than
+ * by "the newest row to be confirmed": the sentence the board prints is "nakon
+ * zadnje moreške", which is about an evening that was danced, not about the
+ * moment a voditelj got round to ticking it off.
+ *
+ * Ties break on the id, so two evenings on one day still pick one and pick the
+ * same one on every render.
+ */
+export function lastConfirmedPerformanceId(
+  docs: readonly Record<string, unknown>[],
+): string | null {
+  let best: { id: string; date: string } | null = null
+  for (const doc of docs) {
+    if (doc.lineupConfirmed !== true) continue
+    const id = String(doc.id)
+    const date = toIsoDate(doc.date)
+    if (!best || date > best.date || (date === best.date && id > best.id)) best = { id, date }
+  }
+  return best?.id ?? null
 }
 
 /** A Payload lineups doc → the flat row the aggregation counts. */
@@ -141,17 +188,36 @@ export async function loadSeasonStats(
   // payload is rendered to every moreškant on the roster, and the PII boundary
   // (ADR-0024) is what keeps it a leaderboard rather than a directory.
   const primaryRoles: Record<string, string | null> = {}
+  const initials: Record<string, string> = {}
   for (const member of roster) {
     primaryRoles[String(member.id)] = member.primaryRole ?? null
+    // The name when there is one, the nickname when there is not: two letters
+    // of a nickname identify nobody, but a blank disc identifies less.
+    const source = member.name?.trim() || member.nickname?.trim() || ''
+    initials[String(member.id)] = source === '' ? '' : initialsOf(source)
   }
+
+  // The season again, one evening short. Cheap: the rows are already in memory,
+  // so this is a second pass over the same lineups rather than a second query.
+  const lastId = lastConfirmedPerformanceId(performanceDocs)
+  const rowsBeforeLast =
+    lastId === null
+      ? aggregateDancerStats({ performances, lineups, roster })
+      : aggregateDancerStats({
+          performances: performances.filter((p) => p.id !== lastId),
+          lineups,
+          roster,
+        })
 
   return {
     season,
     seasons,
     rows: aggregateDancerStats({ performances, lineups, roster }),
+    rowsBeforeLast,
     confirmedPerformances: confirmedIds.length,
     confirmedByKind,
     primaryRoles,
+    initials,
   }
 }
 

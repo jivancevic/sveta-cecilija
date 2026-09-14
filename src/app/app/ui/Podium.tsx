@@ -22,6 +22,14 @@ export interface PodiumEntry {
   id?: string
   /** The 28px mark above the name on the large podium (a `RoleMark`). */
   mark?: React.ReactNode
+  /**
+   * The cup above the mark on the large podium (a `Trophy`), #607.
+   *
+   * Its own slot rather than part of `mark`, because the two say different
+   * things — the cup is the PLACE and the mark is the PERSON — and a caller
+   * that had to stack them itself would decide the order three times over.
+   */
+  cup?: React.ReactNode
   /** The line under the name: "1. mjesto". Large podium only. */
   caption?: React.ReactNode
   /** The reader's own step, marked the way their row in the list is. */
@@ -58,6 +66,7 @@ export function Podium({ entries, large = false, className }: PodiumProps) {
           .join(' ')
         return (
           <div key={entry.id ?? entry.label} className={step}>
+            {large && entry.cup}
             {large && entry.mark}
             <b>{entry.value}</b>
             <span className="ui-podium__name">{entry.label}</span>

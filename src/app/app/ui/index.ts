@@ -15,6 +15,9 @@
 // beside itself — that is exactly how the app ended up with five kinds of
 // button and no rule about which was primary (audit, pattern 2).
 //
+// `Trophy` is #607's: the podium said "1. mjesto" in a caption and drew
+// nothing, so the three steps read as three cards of different heights.
+//
 // `KindChip` is #592's: the hero had no disc to carry the kind's tone on, and
 // the word was the third item of a grey sentence.
 //
@@ -56,3 +59,4 @@ export { Sheet, SheetOption, type SheetProps } from './Sheet'
 export { Switch, type SwitchProps } from './Switch'
 export { Tile, Tiles, type TileProps } from './Tile'
 export { Toast, type ToastProps } from './Toast'
+export { Trophy, type TrophyProps } from './Trophy'
