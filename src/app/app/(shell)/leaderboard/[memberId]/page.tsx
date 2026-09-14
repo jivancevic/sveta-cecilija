@@ -1,6 +1,4 @@
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ChevronLeft } from 'lucide-react'
 import { getSeasonStats } from '@/lib/app/stats-data'
 import { getDancerProfile } from '@/lib/app/dancer-season-data'
 import { profileRings } from '@/lib/app/profile-rings'
@@ -55,15 +53,14 @@ export default async function DancerProfilePage({
       screen="leaderboard"
       title={APP_STRINGS.profile.title(profile.identity.nickname ?? profile.identity.name)}
       season={stats.season}
+      // In the header, where a thumb goes looking for it (#614, finding 12).
+      // It used to be a row of its own under the title, on a screen where
+      // every other row is an evening.
+      back={{
+        href: `/app/leaderboard?season=${stats.season}&part=all`,
+        label: APP_STRINGS.profile.back,
+      }}
     >
-      <Link
-        className="ui-btn ui-btn--link app__lb-back"
-        href={`/app/leaderboard?season=${stats.season}&part=all`}
-      >
-        <ChevronLeft size={16} strokeWidth={2} aria-hidden="true" />
-        {APP_STRINGS.profile.back}
-      </Link>
-
       <DancerProfileView
         profile={profile}
         rings={profileRings({ stats, memberId: profile.identity.memberId, mine })}
@@ -74,6 +71,7 @@ export default async function DancerProfilePage({
         mine={mine}
         standing={null}
         movement={null}
+        rival={null}
       />
     </AppShell>
   )

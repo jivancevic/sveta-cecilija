@@ -650,6 +650,106 @@ export const APP_STRINGS = {
     /** An Experience list in a season that has had none. */
     emptyExperience: 'Ove sezone još nema potvrđene postave za Moreška Experience.',
 
+    /* ── The reader's own card (#614, Q1) ─────────────────────────────────
+       The board's one motivating sentence used to be set as a grey caption
+       between the podium and the list. It is the most valuable thing on the
+       screen — where am I, and what is one evening worth — so it is now the
+       first card under the podium, and these are its four lines.
+
+       `mine` rather than `you`, which is taken by the one-word chip on the
+       reader's row. */
+    mine: {
+      /** Q6: the rank said the way a person hears it, beside the rank itself. */
+      betterThan: (percent: number) => `bolji si od ${percent}% moreškanata`,
+      /** The reader at the top, where there is no percentage to print. */
+      leading: 'vodiš ljestvicu',
+      /** The line under the track: how far the next place is, and who holds it. */
+      toNext: (count: string, place: number) => `Još ${count} do ${place}. mjesta`,
+      /** Q5, the neighbour: "ispred tebe je Ojda (12)". */
+      ahead: (nickname: string, count: number) => `ispred tebe je ${nickname} (${count})`,
+      /**
+       * A reader who has not danced one yet: a count of zero is not a place
+       * (#614), so the card is replaced by the plain fact.
+       */
+      none: {
+        moreska: 'Još nemaš nastup ove sezone.',
+        experience: 'Još nemaš Experience ove sezone.',
+      },
+    },
+
+    /* ── Who moved past whom on the last evening (#614, Q5) ───────────────
+       Both nicknames stay in the NOMINATIVE and neither sentence carries a
+       participle: a Croatian nickname declines in ways no template can guess,
+       and "prestigao / prestigla" would need a gender this screen does not
+       hold. The two read as a pair, which is also the point — a loss is
+       reported in exactly the same words as a win. */
+    rival: {
+      passed: (nickname: string) => `${nickname} je sad iza tebe.`,
+      overtaken: (nickname: string) => `${nickname} je sad ispred tebe.`,
+    },
+
+    /* ── The season's clock (#614, Q3) ────────────────────────────────────
+       Without a deadline a rank is a verdict; with one it is a thing to play
+       for. The number is the season's own remaining evenings, so it needs no
+       new data and cannot disagree with the ring on Moja sezona. */
+    remaining: (count: string) => `Ostalo još ${count} u sezoni.`,
+    remainingCount: {
+      moreska: { one: 'moreška', few: 'moreške', many: 'moreški' },
+      experience: { one: 'Experience', few: 'Experiencea', many: 'Experiencea' },
+    },
+    /** Nothing left on the calendar: the season is played out, not "0 left". */
+    remainingNone: 'Sezona je odigrana.',
+
+    /* ── What the next nastup is worth (#614, Q4) ─────────────────────────
+       The one piece of gamification here that no other app could copy: this
+       app knows what is coming and whether the reader has answered, so it can
+       say what one evening changes before the evening happens. */
+    next: {
+      ask: (day: string, place: number) => `Dođeš li u ${day}, ideš na ${place}. mjesto.`,
+      coming: (day: string, place: number) => `U ${day} ideš na ${place}. mjesto.`,
+      /**
+       * The reader who has not danced one yet (#614 review).
+       *
+       * They are exactly who this card is for, and they were the one reader it
+       * skipped: with no count they hold no place, so there was no rank for the
+       * projection to improve on. They are not climbing, they are STARTING, and
+       * the sentence says that instead of naming a place out of nowhere.
+       */
+      first: (day: string) => `Dođeš li u ${day}, ulaziš na ljestvicu.`,
+      firstComing: (day: string) => `U ${day} ulaziš na ljestvicu.`,
+    },
+
+    /* ── A list too small to rank (#614, finding 02) ──────────────────────
+       Two Experiences bought "3. mjesto od 70" and the same gold mark that
+       twenty-one moreške buys. Under the floor the list is COUNTED and not
+       placed: a leader line, and rows with no rank. */
+    leadersLine: (names: string, count: number, shared: boolean) =>
+      `Najviše nastupa: ${names} (${shared ? 'po ' : ''}${count}).`,
+    /** Two names read as "A i B"; more than three are cut with a count. */
+    leadersAnd: (names: string[], rest: number) =>
+      rest > 0 ? `${names.join(', ')} i još ${rest}` : names.join(' i '),
+    unranked: 'Premalo nastupa za rang, pa se ovdje samo broji.',
+
+    /* ── Kralj sezone (#614, Q8) ──────────────────────────────────────────
+       The only mechanic on this screen that belongs to this society rather
+       than to a fitness app. It does NOT put a crown on anybody: a titula
+       belongs to one evening's lineup (CONTEXT.md → *Title*), and this is a
+       season's counter exactly as a rank is. */
+    kings: {
+      title: 'Kralj sezone',
+      /** "Markan · 11×", with the title itself as the row's own label. */
+      line: (names: string, count: number) => `${names} · ${count}×`,
+      /**
+       * Under the heading, so nobody reads the tally as a standing title.
+       *
+       * It says WHO WORE IT MOST and not how many times the titula was given,
+       * because the row carries the first number and not the second — a label
+       * that promises a figure the renderer does not print is the #599 fault
+       * in miniature.
+       */
+      note: 'Tko je koju titulu nosio najviše puta ove sezone.',
+    },
+
     /* ── The full list (#568) ────────────────────────────────────────── */
     full: {
       title: 'Cijeli popis',
@@ -685,6 +785,13 @@ export const APP_STRINGS = {
     placeNone: 'bez nastupa',
     /** Inside a ring: "od 21". */
     ringOf: (total: number) => `od ${total}`,
+    /**
+     * The second list with nothing in it (#614, finding 11).
+     *
+     * A ring at "0 od 2" is a dead circle: it says nothing and invites nothing.
+     * Two words say the same thing and read as a sentence.
+     */
+    sideNone: 'još nijedan',
     /** The record, across every season including the one being read. */
     record: 'Najbolja sezona',
     recordValue: (count: number, season: number) => `${count} (${season}.)`,

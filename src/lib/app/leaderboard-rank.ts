@@ -149,10 +149,31 @@ export function armyOfPrimaryRole(primaryRole: string | null | undefined): Board
 }
 
 export interface RankRow {
-  /** Competition rank: equal counts share it, the next one skips. */
-  rank: number
+  /**
+   * Competition rank: equal counts share it, the next one skips.
+   *
+   * **Zero is not a rank, so a count of zero has none** (#614). The screen used
+   * to tell a dancer with no Experience at all that they were "12. s 0
+   * nastupa", which is arithmetically true and says nothing: everybody who has
+   * not danced shares that place, and the sentence reads as a result.
+   *
+   * NULL rather than a zero sentinel, so the four screens that draw a rank are
+   * made to say what they do about it by `tsc` rather than by this comment —
+   * and so it matches `ProfileRingData.rank`, which models the same "no place
+   * here" in the same feature.
+   */
+  rank: number | null
   memberId: string
   nickname: string
+  /**
+   * This row's count against the leader's, 0 to 1 (#614).
+   *
+   * The bar behind the row. The board's own numbers already contain how close
+   * the season is — 21, 20, 19, 18, 17, 17, 17 is the tightest race the season
+   * can have — and a column of digits shows none of it. No new data: the same
+   * count, given a length.
+   */
+  share: number
   /**
    * What this row is ranked by: confirmed nastupi of this list's kinds, or —
    * under one of the three title chips — how many times that title was given.
@@ -242,6 +263,9 @@ export function rankDancers(input: {
   const out: RankRow[] = []
   let rank = 0
   let previous: number | null = null
+  // The leader's count is what every bar is drawn against. Taken after the
+  // sort, so it is this list's own leader rather than the season's.
+  const top = counted[0]?.performances ?? 0
 
   counted.forEach((entry, index) => {
     if (previous === null || entry.performances !== previous) {
@@ -250,7 +274,10 @@ export function rankDancers(input: {
     }
     const memberId = String(entry.row.memberId)
     out.push({
-      rank,
+      // Zero is not a place (#614). The rows still sort where they sort and
+      // still count in `total`; they simply hold no rank to print.
+      rank: entry.performances === 0 ? null : rank,
+      share: top > 0 ? entry.performances / top : 0,
       memberId,
       nickname: entry.row.nickname,
       performances: entry.performances,
@@ -285,27 +312,230 @@ export interface MyStanding {
    * dancer at 3 reaches 1, never 2. Null whenever `toNextPlace` is.
    */
   nextPlace: number | null
+  /**
+   * What share of the rest of the roster the reader is ahead of, 0 to 100
+   * (#614, Q6).
+   *
+   * Beside the rank rather than instead of it: the rank is what gets talked
+   * about at a rehearsal, and "13. od 70" is the number a dancer says out loud.
+   * But it is also cold — thirteenth of what, and is that good — and a
+   * percentage answers that without asking anybody to divide. Null when nobody
+   * is behind the reader, because "bolji si od 0%" is a sentence that only
+   * exists to be unkind.
+   */
+  betterThan: number | null
+  /**
+   * The dancer immediately in front, for the line under the card (#614, Q5).
+   *
+   * One person, never a list: the point is the next step, and the reader
+   * already knows what the top of the board looks like. Null at the top.
+   */
+  ahead: { nickname: string; performances: number } | null
 }
 
-/** Where the reader stands on one list, or null when they have no row on it. */
+/**
+ * Where the reader stands on one list, or null when they have no row on it.
+ *
+ * Also null for a reader who has danced NOTHING of this list's kinds (#614):
+ * a zero shares its place with everybody else who has not started, so the
+ * sentence would be a rank in name only. The screens print "još nemaš" there,
+ * which is the same fact without the false result.
+ */
 export function myStanding(ranked: readonly RankRow[]): MyStanding | null {
   const mine = ranked.find((r) => r.me)
-  if (!mine) return null
+  if (!mine || mine.performances === 0) return null
 
   const higher = [...new Set(ranked.map((r) => r.performances))]
     .filter((count) => count > mine.performances)
     .sort((a, b) => a - b)
   const nextCount = mine.rank === 1 || higher.length === 0 ? null : higher[0]
-  const nextPlace =
-    nextCount === null ? null : (ranked.find((r) => r.performances === nextCount)?.rank ?? null)
+  const nextRow = nextCount === null ? null : (ranked.find((r) => r.performances === nextCount) ?? null)
+
+  const others = ranked.length - 1
+  const below = ranked.filter((r) => !r.me && r.performances < mine.performances).length
 
   return {
-    rank: mine.rank,
+    // Non-null by the guard above: a reader with a count has a place.
+    rank: mine.rank ?? 0,
     performances: mine.performances,
     total: ranked.length,
     toNextPlace: nextCount === null ? null : nextCount - mine.performances,
-    nextPlace,
+    nextPlace: nextRow?.rank ?? null,
+    betterThan: others > 0 && below > 0 ? Math.round((below / others) * 100) : null,
+    ahead: nextRow ? { nickname: nextRow.nickname, performances: nextRow.performances } : null,
   }
+}
+
+/**
+ * How big a list's leader has to be before the list is ranked at all (#614).
+ *
+ * The Experience is danced by three pairs a handful of times a year. In a
+ * season whose best score is 2, a single evening buys "3. mjesto od 70" and the
+ * same gold trophy that twenty-one moreške buys on the board next to it — every
+ * number true, the whole message false. Five is the point at which a place on
+ * that list is a season's worth of turning up rather than an accident of who
+ * was free one morning.
+ */
+export const RANKED_MIN_TOP = 5
+
+/**
+ * Whether this list is big enough to be ranked, or only counted.
+ *
+ * Moreška always is, and the floor is deliberately not applied to it: it is the
+ * list the society ranks and the one every other number on the screen is
+ * measured against, so blanking it through April — when the leader is on one —
+ * would empty the screen exactly when the season is most worth watching. The
+ * inflation the floor exists to stop is a SMALL list wearing a big list's
+ * medals, and Moreška is the big list.
+ *
+ * An unranked list gets a leader line and a plain list: a count, never a place.
+ */
+export function listIsRanked(kind: LeaderboardKind, ranked: readonly RankRow[]): boolean {
+  const top = ranked[0]?.performances ?? 0
+  // Nobody has danced one: there is no leader, so there is no ranking either.
+  // A podium of three zeros is three empty steps.
+  if (top <= 0) return false
+  return kind !== 'experience' || top >= RANKED_MIN_TOP
+}
+
+/** Everybody on the top count of a list, and what that count is. */
+export interface Leaders {
+  count: number
+  /** Every holder, in the list's own order. A tie is named, never broken. */
+  nicknames: string[]
+}
+
+/**
+ * Who leads a list, for a list too small to rank (#614).
+ *
+ * Null when nobody has danced one: a leader of nothing is not a leader, and the
+ * empty sentence the screen already has says it better.
+ */
+export function leaders(ranked: readonly RankRow[]): Leaders | null {
+  const count = ranked[0]?.performances ?? 0
+  if (count <= 0) return null
+  return {
+    count,
+    nicknames: ranked.filter((r) => r.performances === count).map((r) => r.nickname),
+  }
+}
+
+/**
+ * The place ONE more nastup would reach (#614, Q4).
+ *
+ * The board already knows what is coming and whether the reader has said they
+ * are coming to it, so it can say "dođeš li u srijedu, ideš na 11. mjesto"
+ * instead of waiting a week to report it. The arithmetic is the ranking's own:
+ * a rank is one plus the number of dancers strictly above, and a tie shares a
+ * rank, so reaching somebody's count reaches their place rather than the one
+ * under it.
+ *
+ * Null for a reader with no row on the list.
+ */
+export function projectedRank(ranked: readonly RankRow[], plus = 1): number | null {
+  const mine = ranked.find((r) => r.me)
+  if (!mine) return null
+  const value = mine.performances + plus
+  return 1 + ranked.filter((r) => !r.me && r.performances > value).length
+}
+
+/** What the last confirmed evening changed between the reader and one neighbour. */
+export interface RivalNews {
+  kind: 'passed' | 'overtaken'
+  nickname: string
+}
+
+/**
+ * Who the reader went past on the last evening, or who went past them (#614, Q5).
+ *
+ * Derived from the same two rankings the movement arrow is, so it costs no
+ * query and cannot disagree with the arrow beside it. Compared by COUNT rather
+ * than by rank: a dancer level with the reader shares their place and has not
+ * passed anybody.
+ *
+ * Good news first when the evening produced both, and a loss is said in exactly
+ * the same words as a win — "Cici te prestigao" is a fact about a season, and
+ * the reader was probably at work. Only ever rendered on the reader's own
+ * screen, never on the profile of the person named.
+ */
+export function rivalNews(
+  current: readonly RankRow[],
+  previous: readonly RankRow[],
+): RivalNews | null {
+  const now = current.find((r) => r.me)
+  const before = previous.find((r) => r.me)
+  if (!now || !before) return null
+
+  // BEFORE, by count, keyed for the lookup. A dancer LEVEL with the reader
+  // counts as "not behind": rising out of a tie is going past somebody, which
+  // is exactly what the rank does (1, 1 becomes 1, 2).
+  const then = new Map(previous.map((r) => [r.memberId, r.performances]))
+
+  const moved = current.filter((r) => {
+    if (r.me) return false
+    const was = then.get(r.memberId)
+    return was !== undefined
+  })
+
+  // `current` is sorted by count descending, so the first dancer the reader has
+  // gone past is the closest one below them, and the last dancer now ahead is
+  // the closest one above. The news is always about the neighbour.
+  const passed = moved.find((r) => {
+    const was = then.get(r.memberId) as number
+    return was >= before.performances && r.performances < now.performances
+  })
+  if (passed) return { kind: 'passed', nickname: passed.nickname }
+
+  const overtook = moved
+    .filter((r) => {
+      const was = then.get(r.memberId) as number
+      return was <= before.performances && r.performances > now.performances
+    })
+    .at(-1)
+  return overtook ? { kind: 'overtaken', nickname: overtook.nickname } : null
+}
+
+/**
+ * The three chips that count a title being given, in the order they are read.
+ *
+ * DERIVED from the chips and `filterCountsTitle`, never re-typed: the full list
+ * builds its second group of chips the same way, and a hand-written copy here
+ * would be a third spelling of a set that `STAT_ROLES` already owns.
+ */
+export const TITLE_FILTERS = BOARD_FILTERS.filter(filterCountsTitle)
+
+export type TitleFilter = (typeof TITLE_FILTERS)[number]
+
+/** One title, and who wore it most this season. */
+export interface SeasonKing {
+  role: TitleFilter
+  /** Every holder of the top count. Equal counts share the title. */
+  nicknames: string[]
+  count: number
+}
+
+/**
+ * Kralj sezone: who wore each title most often (#614, Q8).
+ *
+ * The one piece of gamification on this screen that is the society's own rather
+ * than borrowed from a fitness app — the titles are what a voditelj hands out
+ * every evening, and the season's tally of them is a thing people already
+ * argue about.
+ *
+ * It does NOT break the rule that a titula belongs to an evening and never to a
+ * person (CONTEXT.md → *Title*): this is a season COUNTER, exactly as a rank
+ * is, and nothing here puts a crown on anybody's profile or on their disc. It
+ * is the same number the title chips on the full list already show, said once
+ * at the foot of the board instead of only behind a filter.
+ */
+export function seasonKings(input: {
+  rows: readonly DancerStats[]
+  kind: LeaderboardKind
+}): SeasonKing[] {
+  return TITLE_FILTERS.map((role) => {
+    const top = leaders(rankDancers({ rows: input.rows, kind: input.kind, filter: role }))
+    return top ? { role, nicknames: top.nicknames, count: top.count } : null
+  }).filter((k): k is SeasonKing => k !== null)
 }
 
 export interface BoardView {
@@ -371,7 +601,9 @@ export function rankMovement(
 ): number | null {
   const now = current.find((r) => r.me)
   const before = previous.find((r) => r.me)
-  if (!now || !before) return null
+  // A reader who had no place then, or has none now, has not MOVED: they
+  // started. The card says so in words instead (#614).
+  if (!now || !before || now.rank === null || before.rank === null) return null
   const moved = before.rank - now.rank
   return moved === 0 ? null : moved
 }

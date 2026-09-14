@@ -49,6 +49,31 @@ export function dayOf(date: string): string {
   return date.length > 10 ? date.slice(0, 10) : date
 }
 
+const DAY = new Intl.DateTimeFormat('en-CA', {
+  timeZone: ZONE,
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+})
+
+/**
+ * Which calendar day an instant falls on, in Korčula: "2026-09-14" (#614).
+ *
+ * **Every new "what day is it here" goes through this one.** The codebase had
+ * six hand-rolled copies of the same `Intl.DateTimeFormat('en-CA', …)` by the
+ * time the season's clock needed a seventh, each building its formatter afresh
+ * and each one more place for the zone to be typed wrong. The old six stay
+ * where they are until something else makes them worth moving; nothing new
+ * writes a seventh.
+ *
+ * `en-CA` yields the ISO ordering natively, and `shows.date` is a `dayOnly`
+ * column already written in Zagreb, so the result compares directly against it
+ * as a string.
+ */
+export function zagrebDayOf(instant: Date): string {
+  return DAY.format(instant)
+}
+
 /**
  * Epoch ms of a Europe/Zagreb wall clock reading.
  *

@@ -1,54 +1,97 @@
 import Link from 'next/link'
-import { APP_STRINGS } from '@/lib/app/strings'
+import { ChevronRight } from 'lucide-react'
+import { APP_STRINGS, ROLE_LABELS } from '@/lib/app/strings'
 import { pluralize } from '@/lib/app/roster-loaders'
-import type { BoardView, LeaderboardKind, MyStanding, RankRow } from '@/lib/app/leaderboard-rank'
-import { Chip, CountUp, List, ListRow, Podium, RoleMark, Section, Trophy } from '../../ui'
+import { MARK_OF_ROLE } from '@/lib/app/leaderboard-rank'
+import type {
+  BoardView,
+  Leaders,
+  LeaderboardKind,
+  MyStanding,
+  RankRow,
+  RivalNews,
+  SeasonKing,
+} from '@/lib/app/leaderboard-rank'
+import type { AttendanceStatus } from '@/lib/attendance/rules'
+import { Answer } from '../moreska/Answer'
+import { Card, CountUp, List, ListRow, Podium, RoleMark, Section, Trophy } from '../../ui'
+import { BoardRow } from './BoardRow'
+import { StandingCard } from './StandingCard'
 
-// The Ljestvica panel (#457, split in two lists by #568, gamified by #607;
-// glossary: *Ljestvica*).
+// The Ljestvica panel (#457, split in two lists by #568, gamified by #607,
+// rebuilt from the phone by #614; glossary: *Ljestvica*).
 //
 // A server component: a ranked list of forty nicknames is forty rows of HTML,
-// and nothing on it changes without a page load. The only two things the
-// browser does are the podium's rise (CSS) and the count that runs up on the
-// reader's own row and on the three steps (`CountUp`).
+// and nothing on it changes without a page load. The two things the browser
+// does are the podium's rise (CSS) and the count that runs up on the reader's
+// own card; the one exception is the Dolazim pair on the projection card, which
+// is the same client island Moreška uses and the same single write.
 //
 // **One season is two lists** (#568, Q36): Moreška, which is every kind of
 // evening except the Experience, and Experience on its own. Ranking both in one
 // column told a dancer with twelve Redovne that they were behind somebody with
 // fifteen Experiences, which is not a comparison anybody in the society makes.
 //
-// **The three steps wear cups** (#607, redrawn in #611). The trophy carries the
-// RANK, which is what makes a tie legible without a sentence about ties: equal
-// counts share a rank and the next one skips, so two dancers on 21 both wear a
-// gold cup and no silver is drawn at all. The cup is a flat silhouette and the
-// place is printed under it in the same metal — the first version put the digit
-// inside the bowl, where at 34px it was four details fighting in the space of a
-// fingernail and the whole podium read as clip art.
+// #614 is what a phone showed, and it is mostly about TIME:
 //
-// The rows under it carry no cup. There the metal is on the RANK NUMERAL and as
-// a hairline around the disc, so the top three keep the initials that say who
-// they are: swapping a cup in for the disc took the identity away from exactly
-// the three people a reader is most likely to be looking for.
+//   - **The screen was an archive.** Every number looked backwards, and the one
+//     sentence that looked forward was set as a grey caption under the podium.
+//     It is now the first card, with the reader's own place in it (Q1).
+//   - **The season had no clock.** One line under each heading says how many
+//     evenings are left, because a rank with no deadline is a verdict (Q3).
+//   - **Nothing said what tonight is worth.** The app knows what is coming and
+//     whether the reader has answered, so it says what one evening would change
+//     and puts Dolazim beside it (Q4). No other scoreboard can do this, because
+//     no other scoreboard knows what its reader is about to be asked to do.
+//   - **The list had no shape.** 21, 20, 19, 18, 17, 17, 17 is the tightest race
+//     a season can have and it read exactly like 21, 12, 8, 4. A bar behind each
+//     row, drawn from the count that is already printed at the end of it (Q2).
+//   - **A list too small to rank was ranked anyway.** Two Experiences bought a
+//     third place and the same gold mark twenty-one moreške buys, which is how
+//     a reward gets devalued. Under the floor the list is counted, not placed.
 //
-// **Every disc carries initials** (#607). `RoleMark` has had them since #573
-// for exactly this case — a list of people out of an evening, where no disc has
-// a title to draw and every one would be a blank colour swatch. The letters are
-// of the NAME, because the nickname is already printed beside the disc and
-// "who is Cici" is the question they answer.
+// **The three steps wear the society's own blades** (#607, redrawn #611 and
+// #614). The mark carries the RANK, which is what makes a tie legible without a
+// sentence about ties: equal counts share a rank and the next one skips, so two
+// dancers on 21 both wear gold and no silver is drawn at all — and since #614
+// the steps themselves stand level in that case, because a staircase under two
+// equal firsts asserts an order the ranking denies.
+//
+// No crown on the winner, though every reference app puts one there: in this
+// app a crown means a *titula*, a titula belongs to one evening's lineup and
+// never to a person (CONTEXT.md → *Title*), and a crown on the season's leader
+// would say something the lineups do not contain.
+//
+// The rows under the podium carry no mark. There the metal is on the RANK
+// NUMERAL and as a hairline around the disc, so the top three keep the initials
+// that say who they are: swapping a mark in for the disc took the identity away
+// from exactly the three people a reader is most likely to be looking for.
 //
 // What is deliberately NOT here, and has not been since #457: any treatment of
 // the bottom of the list. No red, no "zadnji", no "fali ti još". A dancer with
 // two evenings is on the same list as one with twenty because they are in the
 // same society, and a board that shames the bottom is a board people stop
-// opening. The rank movement obeys the same rule from the other side: it is on
-// the reader's own row and nobody else's, because a nudge on somebody else's
-// row is a comment on their effort.
-//
-// And no crown that was not given tonight: a *titula* belongs to one evening's
-// lineup and never to a person (CONTEXT.md → *Title*), so every mark here is an
-// army and `title` is null. The season's counts contain no title to draw.
+// opening. The rank movement and the rival line obey the same rule from the
+// other side: both are on the reader's own card and nobody else's, because a
+// nudge on somebody else's row is a comment on their effort.
 
 const S = APP_STRINGS.board
+
+/** What the next nastup would be worth to the reader (#614, Q4). */
+export interface BoardProjection {
+  performanceId: string
+  memberId: string
+  /** The weekday as it reads after "u": "srijedu". */
+  day: string
+  /**
+   * The place that one evening would reach, or null for a reader who has not
+   * danced one yet: they are not climbing to a place, they are entering.
+   */
+  place: number | null
+  answer: AttendanceStatus | null
+  /** Whether the answer route would still take an answer from them. */
+  canAnswer: boolean
+}
 
 export interface BoardList {
   kind: LeaderboardKind
@@ -58,104 +101,128 @@ export interface BoardList {
   standing: MyStanding | null
   /** Confirmed evenings of this list's kinds, for the empty case. */
   confirmed: number
+  /** Evenings of this list's kinds still to come, for the clock (#614, Q3). */
+  remaining: number
+  /**
+   * Whether this list is big enough to be ranked at all (#614). An unranked
+   * list draws no podium and no places: a leader line, and a plain count.
+   */
+  ranked: boolean
+  /** Who leads an unranked list, and on how many. */
+  leaders: Leaders | null
   /**
    * How far the reader moved on the last confirmed evening, or null when there
    * is nothing to say. Only the Moreška list carries one: "nakon zadnje
    * moreške" is the sentence, and an Experience is not one.
    */
   movement?: number | null
+  /** Who the reader went past on that evening, or who went past them. */
+  rival?: RivalNews | null
+  /** What the next evening of this kind would change. Moreška only. */
+  projection?: BoardProjection | null
 }
 
-/** The count on a row: the reader's own arrives, everybody else's is printed. */
-function Count({ row }: { row: RankRow }) {
+/**
+ * What the next evening would be worth, with Dolazim beside it (#614, Q4).
+ *
+ * The write is Moreška's own `Answer`, unchanged: one component, one route, so
+ * an answer given here is the same answer given there and the army is still
+ * decided on the server. Only rendered when that evening would actually move
+ * the reader up — an invitation to dance for no change is not an invitation.
+ */
+function NextUp({ projection }: { projection: BoardProjection }) {
+  const coming = projection.answer === 'coming'
+  const { day, place } = projection
+  const line =
+    place === null
+      ? coming
+        ? S.next.firstComing(day)
+        : S.next.first(day)
+      : coming
+        ? S.next.coming(day, place)
+        : S.next.ask(day, place)
   return (
-    <b className="app__lb-count">
-      {row.me ? <CountUp value={row.performances} /> : row.performances}
-    </b>
+    <Card className="app__lb-next">
+      <p className="app__lb-next-line">{line}</p>
+      <Answer
+        performanceId={projection.performanceId}
+        memberId={projection.memberId}
+        current={projection.answer}
+        disabled={!projection.canAnswer}
+        small
+      />
+    </Card>
   )
 }
 
-/** The disc beside a name: the army in colour, the person in two letters. */
-function Mark({ row }: { row: RankRow }) {
-  return <RoleMark army={row.army} title={row.title} initials={row.initials} small />
-}
-
-function Row({
-  row,
-  season,
-  pinned = false,
-}: {
-  row: RankRow
-  season: number
-  pinned?: boolean
-}) {
+/** The leader line of a list too small to rank (#614, finding 02). */
+function LeaderLine({ leaders }: { leaders: Leaders }) {
+  const shown = leaders.nicknames.slice(0, 3)
+  const names = S.leadersAnd(shown, Math.max(0, leaders.nicknames.length - shown.length))
   return (
-    <ListRow
-      // Every row opens that dancer's season (#608). The screen stopped being a
-      // dead end here: seventy nicknames, each now a way in.
-      href={`/app/leaderboard/${row.memberId}?season=${season}`}
-      className={row.me ? 'app__lb-row--me' : undefined}
-      lead={
-        <span
-          className="app__lb-lead"
-          data-place={!pinned && row.rank <= 3 ? row.rank : undefined}
-        >
-          {/* The pinned row carries its place in its TITLE ("ti · 24."), so the
-              column is left empty rather than printing 24 twice; it still holds
-              its width, which is what keeps every mark on the screen in line. */}
-          <i className="app__lb-rank">{pinned ? '' : S.rank(row.rank)}</i>
-          <Mark row={row} />
-        </span>
-      }
-      title={pinned ? S.pinned(row.rank) : row.nickname}
-      trail={<Count row={row} />}
-    >
-      {row.me && !pinned && <Chip tone="gold">{S.you}</Chip>}
-    </ListRow>
-  )
-}
-
-/** "▲2 nakon zadnje moreške" — the reader's own row and nobody else's. */
-function Movement({ places }: { places: number }) {
-  return (
-    <span className="app__lb-move" data-dir={places > 0 ? 'up' : 'down'}>
-      <b aria-hidden="true">{S.movement(places)}</b>
-      <span className="app__sr-only">{S.movementLabel(places)}</span>
-      <i aria-hidden="true">{S.movementSince}</i>
-    </span>
-  )
-}
-
-/** "Ti si 5. s 11 nastupa. Još 2 nastupa do 4. mjesta. ▲2 nakon zadnje moreške" */
-function Standing({ standing, movement }: { standing: MyStanding; movement?: number | null }) {
-  const counted = (n: number) => pluralize(n, APP_STRINGS.moreska.count)
-  return (
-    <p className="app__lb-standing">
-      {/* The first half takes the instrumental ("s 1 nastupom"), the second the
-          nominative ("Još 1 nastup"). Two cases, two word sets, one sentence. */}
-      {S.standing(standing.rank, pluralize(standing.performances, S.withCount))}{' '}
-      {/* The place NAMED is the one those evenings actually reach: a tie shares
-          a rank, so from rank 3 behind two dancers at the top the sentence says
-          "do 1. mjesta", never "do 2." (#457 review). */}
-      <span>
-        {standing.toNextPlace === null || standing.nextPlace === null
-          ? S.leading
-          : S.toNextPlace(counted(standing.toNextPlace), standing.nextPlace)}
-      </span>
-      {/* Null when the reader did not move: a zero is not news, and printing it
-          every week turns the one piece of news on the screen into furniture. */}
-      {movement != null && <Movement places={movement} />}
+    <p className="app__lb-leaders">
+      <b>{S.leadersLine(names, leaders.count, leaders.nicknames.length > 1)}</b>
+      <span>{S.unranked}</span>
     </p>
+  )
+}
+
+/**
+ * Kralj sezone (#614, Q8): how many times each titula was given, and to whom.
+ *
+ * A season's COUNTER, exactly as a rank is — never a crown on a profile. The
+ * numbers are the ones the title chips on the full list already show, said once
+ * at the foot of the board instead of only behind a filter.
+ */
+/** The disc for one titula: the army in colour, the crown as the glyph. */
+function TitleMark({ role }: { role: SeasonKing['role'] }) {
+  const spec = MARK_OF_ROLE[role]
+  return <RoleMark army={spec.army} role={spec.role} />
+}
+
+function Kings({ kings, season }: { kings: SeasonKing[]; season: number }) {
+  return (
+    <section className="app__lb-group">
+      <Section title={S.kings.title} />
+      <p className="app__lb-hint">{S.kings.note}</p>
+      <List>
+        {kings.map((king) => (
+          <ListRow
+            key={king.role}
+            href={`/app/leaderboard/full?season=${season}&kind=moreska&role=${king.role}`}
+            // The TITLE's own disc, not the podium's gold blades (#614): three
+            // rows wearing the winner's mark would spend it three more times
+            // on the same screen, which is the reward inflation this ticket is
+            // partly about. The disc is the one the chips and the tallies draw
+            // for that role, so a reader recognises it from the full list.
+            lead={<TitleMark role={king.role} />}
+            title={ROLE_LABELS[king.role]}
+            meta={S.kings.line(king.nicknames.join(' i '), king.count)}
+            trail={<ChevronRight size={18} strokeWidth={2} aria-hidden="true" className="app__lb-chev" />}
+          />
+        ))}
+      </List>
+    </section>
   )
 }
 
 function OneList({ list, season }: { list: BoardList; season: number }) {
   const { view } = list
   const empty = view.podium.length === 0 || list.confirmed === 0
+  // A reader whose own row is on the list but at zero: no rank, and the card is
+  // replaced by the plain fact (#614, finding 03).
+  const notStarted = !empty && view.me != null && list.standing === null
 
   return (
     <section className="app__lb-list">
       <Section title={list.label} aside={empty ? undefined : pluralize(view.total, S.onList)} />
+
+      {/* The season's clock, under the heading of the list it counts (Q3). */}
+      <p className="app__lb-clock">
+        {list.remaining > 0
+          ? S.remaining(pluralize(list.remaining, S.remainingCount[list.kind]))
+          : S.remainingNone}
+      </p>
 
       {empty ? (
         <p className="app__empty">
@@ -163,33 +230,64 @@ function OneList({ list, season }: { list: BoardList; season: number }) {
         </p>
       ) : (
         <>
-          <Podium
-            large
-            entries={view.podium.map((row) => ({
-              id: row.memberId,
-              label: row.nickname,
-              value: <CountUp value={row.performances} />,
-              href: `/app/leaderboard/${row.memberId}?season=${season}`,
-              cup: <Trophy place={row.rank} className="ui-podium__cup" />,
-              mark: <Mark row={row} />,
-              // The cup carries no numeral any more (#611): a digit inside a
-              // 26px silhouette was unreadable, so the place is printed here,
-              // in the metal its cup is drawn in, where it can be read.
-              caption: (
-                <span className="app__lb-podium-place" data-place={row.rank}>
-                  {S.place(row.rank)}
-                </span>
-              ),
-              me: row.me,
-            }))}
-          />
+          {list.ranked ? (
+            <Podium
+              large
+              framed
+              entries={view.podium.map((row) => ({
+                id: row.memberId,
+                label: row.nickname,
+                value: <CountUp value={row.performances} />,
+                href: `/app/leaderboard/${row.memberId}?season=${season}`,
+                // The RANK, not the position: two dancers who share first both
+                // get gold blades and level steps (#614, finding 01). A step
+                // always has one — an unranked list draws no podium at all.
+                place: row.rank ?? undefined,
+                cup: <Trophy place={row.rank ?? 0} className="ui-podium__cup" />,
+                mark: (
+                  <RoleMark army={row.army} title={row.title} initials={row.initials} small />
+                ),
+                // The place stays, in words, under the step. The audit asked
+                // for it to go as a repetition of the cup and the position —
+                // and it would be, on a podium whose steps are 1, 2, 3. On
+                // this board a tie is ordinary (the season's own top is three
+                // dancers on 17), and there the metal is the only thing left
+                // saying which place a step is: two golds and a bronze, with
+                // no silver drawn at all. The word is what makes that legible
+                // without asking anybody to know the convention.
+                caption: (
+                  <span className="app__lb-podium-place" data-place={row.rank ?? undefined}>
+                    {S.place(row.rank ?? 0)}
+                  </span>
+                ),
+                me: row.me,
+              }))}
+            />
+          ) : (
+            list.leaders && <LeaderLine leaders={list.leaders} />
+          )}
 
-          {list.standing && <Standing standing={list.standing} movement={list.movement} />}
+          {list.standing && (
+            <StandingCard
+              standing={list.standing}
+              movement={list.movement}
+              rival={list.rival}
+            />
+          )}
+          {notStarted && <p className="app__lb-standing">{S.mine.none[list.kind]}</p>}
+
+          {list.projection && <NextUp projection={list.projection} />}
 
           {view.rows.length > 0 && (
             <List>
               {view.rows.map((row) => (
-                <Row key={row.memberId} row={row} season={season} />
+                <BoardRow
+                  key={row.memberId}
+                  row={row}
+                  season={season}
+                  ranked={list.ranked}
+                  animateMine
+                />
               ))}
             </List>
           )}
@@ -198,15 +296,24 @@ function OneList({ list, season }: { list: BoardList; season: number }) {
               dancer who is 34th opened this screen to see 34. */}
           {view.pinned && (
             <List className="app__lb-pinned">
-              <Row row={view.pinned} season={season} pinned />
+              <BoardRow
+                row={view.pinned}
+                season={season}
+                ranked={list.ranked}
+                animateMine
+                pinned
+              />
             </List>
           )}
 
+          {/* A button rather than a line of blue text (#614, finding 14): it
+              was the only way off this screen and it looked like a caption. */}
           <Link
-            className="ui-btn ui-btn--link app__lb-all"
+            className="ui-btn ui-btn--ghost app__lb-all"
             href={`/app/leaderboard/full?season=${season}&kind=${list.kind}`}
           >
             {S.seeAll}
+            <ChevronRight size={16} strokeWidth={2} aria-hidden="true" />
           </Link>
         </>
       )}
@@ -214,12 +321,23 @@ function OneList({ list, season }: { list: BoardList; season: number }) {
   )
 }
 
-export function Board({ lists, season }: { lists: BoardList[]; season: number }) {
+export function Board({
+  lists,
+  season,
+  kings = [],
+}: {
+  lists: BoardList[]
+  season: number
+  /** Q8, from the Moreška list's titles. Empty in a season with no postava. */
+  kings?: SeasonKing[]
+}) {
   return (
     <div className="app__lb">
       {lists.map((list) => (
         <OneList key={list.kind} list={list} season={season} />
       ))}
+
+      {kings.length > 0 && <Kings kings={kings} season={season} />}
 
       <p className="app__lb-footer">
         {S.footer(

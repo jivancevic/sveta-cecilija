@@ -29,6 +29,13 @@ export interface SeasonsProps {
 }
 
 export function Seasons({ seasons, season, href, label, className }: SeasonsProps) {
+  // One season is not a choice (#614, finding 14). A lone gold pill reads as a
+  // filter somebody switched on, and tapping it does nothing — so where there
+  // is nothing to pick, the year is a caption.
+  if (seasons.length <= 1) {
+    return <p className={['ui-seasons__one', className ?? ''].filter(Boolean).join(' ')}>{season}</p>
+  }
+
   return (
     <nav className={['ui-seasons', className ?? ''].filter(Boolean).join(' ')} aria-label={label}>
       {seasons.map((year) => {

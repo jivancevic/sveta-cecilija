@@ -1,9 +1,10 @@
 import Link from 'next/link'
-import { ChevronLeft } from 'lucide-react'
 import { getSeasonStats } from '@/lib/app/stats-data'
 import {
   BOARD_FILTERS,
   MARK_OF_ROLE,
+  TALLY_ORDER,
+  listIsRanked,
   filterCountsTitle,
   kindsOf,
   parseBoardFilter,
@@ -19,7 +20,8 @@ import { APP_STRINGS } from '@/lib/app/strings'
 import type { DancerStats } from '@/lib/lineup/stats'
 import { AppShell } from '../../../AppShell'
 import { openScreen } from '../../../gate'
-import { Chip, List, ListRow, RoleMark, Section } from '../../../ui'
+import { List, RoleMark, Section } from '../../../ui'
+import { BoardRow } from '../BoardRow'
 
 // `/app/leaderboard/full` — the whole ranking of one list (#568, filtered by
 // #607).
@@ -78,76 +80,72 @@ function Filters({
   kind: LeaderboardKind
   active: BoardFilter
 }) {
+  const chip = (filter: BoardFilter) => (
+    <Link
+      key={filter}
+      href={`/app/leaderboard/full?season=${season}&kind=${kind}&role=${filter}`}
+      className="app__lb-chip"
+      aria-current={filter === active ? 'true' : undefined}
+      // A link does not carry pressed state, so the current chip says so in
+      // words for a reader who cannot see which one is gold.
+      aria-label={filter === active ? `${S.filters[filter]} (uključeno)` : S.filters[filter]}
+    >
+      {filter !== 'svi' && <Mark role={filter} small />}
+      <span>{S.filters[filter]}</span>
+    </Link>
+  )
+
+  // The strip is cut at the right edge of a phone, so it needs to LOOK cut:
+  // the fade is a wrapper the stylesheet paints over the scroller's last few
+  // millimetres (#614, finding 04). Without it the fifth chip simply ended in
+  // mid-word and the screen read as broken rather than as scrollable, and two
+  // of the seven were effectively invisible.
   return (
-    <div className="app__lb-filters">
-      {BOARD_FILTERS.map((filter) => (
-        <Link
-          key={filter}
-          href={`/app/leaderboard/full?season=${season}&kind=${kind}&role=${filter}`}
-          className="app__lb-chip"
-          aria-current={filter === active ? 'true' : undefined}
-          // A link does not carry pressed state, so the current chip says so in
-          // words for a reader who cannot see which one is gold.
-          aria-label={filter === active ? `${S.filters[filter]} (uključeno)` : S.filters[filter]}
-        >
-          {filter !== 'svi' && <Mark role={filter} small />}
-          <span>{S.filters[filter]}</span>
-        </Link>
-      ))}
+    <div className="app__lb-strip">
+      <div className="app__lb-filters">
+        {BOARD_FILTERS.filter((f) => !filterCountsTitle(f)).map(chip)}
+        {/* The rule says the two groups count DIFFERENT things: left of it a
+            chip picks people and counts their whole season, right of it a chip
+            counts how often a title was given (Q2). Seven identical buttons in
+            one row said they were seven of the same thing. */}
+        <span className="app__lb-strip-div" aria-hidden="true" />
+        {BOARD_FILTERS.filter(filterCountsTitle).map(chip)}
+      </div>
     </div>
   )
 }
 
-/** "⚫12 ⚫♔3 🔴3" — the roles this dancer wore, in this list's evenings. */
+/**
+ * "⚫12 ⚫♔3 🔴3" — the roles this dancer wore, in this list's evenings.
+ *
+ * **One column per role, always the same six, in the same order** (#614,
+ * finding 09). Until now the block was the roles a dancer actually wore, packed
+ * left: somebody with four started their red count where somebody with one
+ * started their black one, so the column could only be read one row at a time.
+ * Now an unworn role leaves its slot empty and every count sits under the same
+ * count above it — the empty slot is information too, and reading down a column
+ * is how a reader finds "who else dances bili".
+ */
 function Tallies({ row, kind }: { row: DancerStats; kind: LeaderboardKind }) {
   const tallies = roleTallies(row, kind)
   if (tallies.length === 0) return null
+  const byRole = new Map(tallies.map((t) => [t.role, t.count]))
   return (
     <span className="app__lb-tallies">
-      {tallies.map(({ role, count }) => (
-        <span key={role} className="app__lb-tally">
-          <Mark role={role} small />
-          <b>{count}</b>
-        </span>
-      ))}
+      {TALLY_ORDER.map((role) => {
+        const count = byRole.get(role)
+        return (
+          <span key={role} className="app__lb-tally">
+            {count !== undefined && (
+              <>
+                <Mark role={role} small />
+                <b>{count}</b>
+              </>
+            )}
+          </span>
+        )
+      })}
     </span>
-  )
-}
-
-function Row({
-  row,
-  source,
-  kind,
-  season,
-}: {
-  row: RankRow
-  /** The scoreboard row behind it, for the breakdown; absent for nobody. */
-  source: DancerStats | undefined
-  kind: LeaderboardKind
-  season: number
-}) {
-  return (
-    <ListRow
-      href={`/app/leaderboard/${row.memberId}?season=${season}`}
-      className={row.me ? 'app__lb-row--me' : undefined}
-      lead={
-        // The medal is the RANK, and the disc stays the PERSON (#611). The
-        // first version swapped a cup in for the disc on rows 1-3, which took
-        // the initials away from exactly the three people a reader is most
-        // likely to be looking for. Now the numeral wears the metal and the
-        // disc keeps a hairline of it, so a row reads as "who" and "how they
-        // placed" at once — the cup stays on the podium, where it has room.
-        <span className="app__lb-lead" data-place={row.rank <= 3 ? row.rank : undefined}>
-          <i className="app__lb-rank">{S.rank(row.rank)}</i>
-          <RoleMark army={row.army} title={row.title} initials={row.initials} small />
-        </span>
-      }
-      title={row.nickname}
-      meta={source ? <Tallies row={source} kind={kind} /> : undefined}
-      trail={<b className="app__lb-count">{row.performances}</b>}
-    >
-      {row.me && <Chip tone="gold">{S.you}</Chip>}
-    </ListRow>
   )
 }
 
@@ -181,16 +179,21 @@ export default async function FullLeaderboardPage({
   })
   const byId = new Map(stats.rows.map((r) => [String(r.memberId), r]))
 
-  return (
-    <AppShell viewer={viewer} screen="leaderboard" title={S.full.title} season={stats.season}>
-      <Link
-        className="ui-btn ui-btn--link app__lb-back"
-        href={`/app/leaderboard?season=${stats.season}&part=all`}
-      >
-        <ChevronLeft size={16} strokeWidth={2} aria-hidden="true" />
-        {S.full.back}
-      </Link>
+  const ranked = listIsRanked(kind, rows)
 
+  return (
+    <AppShell
+      viewer={viewer}
+      screen="leaderboard"
+      title={S.full.title}
+      season={stats.season}
+      // In the header rather than as a row of its own (#614, finding 12): on a
+      // screen where every row is a person, the way back was costing one.
+      back={{
+        href: `/app/leaderboard?season=${stats.season}&part=all`,
+        label: S.full.back,
+      }}
+    >
       <Filters season={stats.season} kind={kind} active={filter} />
 
       <Section title={S.lists[kind]} aside={pluralize(rows.length, S.onList)} />
@@ -211,12 +214,15 @@ export default async function FullLeaderboardPage({
       ) : (
         <List>
           {rows.map((row) => (
-            <Row
+            <BoardRow
               key={row.memberId}
               row={row}
-              source={byId.get(row.memberId)}
-              kind={kind}
               season={stats.season}
+              ranked={ranked}
+              meta={(() => {
+                const source = byId.get(row.memberId)
+                return source ? <Tallies row={source} kind={kind} /> : undefined
+              })()}
             />
           ))}
         </List>

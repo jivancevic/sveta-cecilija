@@ -806,6 +806,34 @@ button.ui-row:hover {
   outline-offset: -1.5px;
 }
 
+/* ── The framed podium (#614, finding 07) ─────────────────────────────────
+   The top three used to be three cards on the same paper as the list under
+   them, with the middle one barely raised: nothing on the screen said "this is
+   the ceremonial part". The ground is what does it. The steps flip to `--card`
+   on it, because a sunk step on a sunk ground is no step at all. */
+.ui-podium--framed {
+  background: var(--sunk);
+  border-radius: var(--rCard);
+  padding: 14px 10px 10px;
+}
+
+.ui-podium--framed .ui-podium__step {
+  background: var(--card);
+}
+
+/* Level steps carry no staircase, so they carry none of its air either: the
+   rise is padding above the content, and three dancers standing level would
+   otherwise stand under a hand's width of empty step. */
+.ui-podium--lg.ui-podium--level .ui-podium__step {
+  padding-top: 12px;
+}
+
+/* The winner keeps the gold, and so does anybody tied with them. */
+.ui-podium--framed .ui-podium__step--1 {
+  background: linear-gradient(180deg, var(--goldSoft), var(--card) 78%);
+  box-shadow: inset 0 0 0 1px var(--goldSoft);
+}
+
 /* A step that carries text rises by sliding, not by stretching: `scaleY` on a
    172px block visibly squashes the nickname inside it on the way up. */
 @keyframes ui-rise-lg {
@@ -859,6 +887,16 @@ button.ui-row:hover {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+}
+
+/* The one season there is to read (#614). A caption, not a pill: a lone gold
+   pill reads as a filter somebody turned on, and there is nothing to turn off. */
+.ui-seasons__one {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
 }
 
 .ui-season {
@@ -1352,8 +1390,8 @@ button.ui-army:active {
   opacity: 0.55;
 }
 
-/* ── Trophy (#607) ────────────────────────────────────────────────────────
-   Three tones, one shape. Every fill is a token, so the night skin moves all
+/* ── Trophy (#607, the blades since #614) ─────────────────────────────────
+   Three tones, one shape. Every tone is a token, so the night skin moves all
    three together and nothing here knows which skin is on. */
 .ui-trophy {
   display: inline-grid;
@@ -1361,6 +1399,7 @@ button.ui-army:active {
   width: 26px;
   height: 26px;
   flex: 0 0 auto;
+  color: var(--cup);
 }
 
 .ui-trophy--sm {
@@ -1374,10 +1413,12 @@ button.ui-army:active {
   display: block;
 }
 
-/* One flat silhouette in one tone. No outline and no numeral inside it: the
-   place is printed beside the cup, in the same metal, where it is legible. */
+/* The crossed swords in one metal (#614). `currentColor` carries the tone
+   through a stroked drawing the way `fill` carried it through the old filled
+   one, so the three modifiers below did not have to change. No numeral inside
+   it: the place is printed beside the blades, in the same metal. */
 .ui-trophy svg path {
-  fill: var(--cup);
+  fill: none;
 }
 
 .ui-trophy--1 {
