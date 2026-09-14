@@ -1,0 +1,147 @@
+<title>Skill Redizajn</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+:root { --bg:#f7f8f8; --card:#ffffff; --ink:#151a1a; --muted:#5d6666; --rule:#e2e6e6; --acc:#2c6866; --accSoft:#e4efee; --warn:#8a4b1f; --warnSoft:#f6ebdf; --mono:"JetBrains Mono",ui-monospace,Menlo,monospace; --sans:"Instrument Sans",system-ui,sans-serif; --serif:"Instrument Serif",Georgia,serif; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg:#101414; --card:#181d1d; --ink:#eef1f1; --muted:#9aa5a5; --rule:#263030; --acc:#7fc1be; --accSoft:#1d2f2e; --warn:#e0a672; --warnSoft:#33271b; } }
+:root[data-theme="dark"] { --bg:#101414; --card:#181d1d; --ink:#eef1f1; --muted:#9aa5a5; --rule:#263030; --acc:#7fc1be; --accSoft:#1d2f2e; --warn:#e0a672; --warnSoft:#33271b; }
+body { margin:0; background:var(--bg); color:var(--ink); font-family:var(--sans); font-size:15px; line-height:1.55; }
+.wrap { max-width:860px; margin:0 auto; padding:40px 24px 80px; }
+h1 { font-family:var(--serif); font-weight:400; font-size:44px; line-height:1.05; margin:0 0 8px; letter-spacing:-0.01em; text-wrap:balance; }
+.lead { color:var(--muted); font-size:17px; max-width:62ch; margin:0 0 32px; }
+h2 { font-size:13px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:var(--acc); margin:40px 0 12px; }
+h3 { font-size:17px; font-weight:600; margin:0 0 4px; }
+p { margin:0 0 10px; max-width:70ch; }
+.card { background:var(--card); border:1px solid var(--rule); border-radius:10px; padding:16px 18px; margin:0 0 10px; }
+.grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:10px; }
+.phase { display:grid; grid-template-columns:56px 1fr; gap:14px; align-items:start; }
+.phase .n { font-family:var(--mono); font-size:13px; color:var(--acc); padding-top:3px; }
+.phase .out { color:var(--muted); font-size:14px; margin-top:4px; }
+.phase .out b { color:var(--ink); font-weight:600; }
+ul { margin:0 0 8px; padding-left:20px; } li { margin:0 0 4px; }
+.q { border-left:3px solid var(--acc); padding:4px 0 4px 14px; margin:0 0 18px; }
+.q .id { font-family:var(--mono); font-size:12px; color:var(--acc); }
+.q .rec { background:var(--accSoft); border-radius:8px; padding:8px 12px; margin-top:8px; font-size:14px; }
+.q .rec b { color:var(--acc); }
+pre { background:var(--card); border:1px solid var(--rule); border-radius:10px; padding:14px 16px; overflow-x:auto; font-family:var(--mono); font-size:12.5px; line-height:1.5; margin:0 0 10px; }
+.tag { display:inline-block; font-family:var(--mono); font-size:11.5px; background:var(--accSoft); color:var(--acc); padding:2px 8px; border-radius:999px; margin-right:6px; }
+.no { background:var(--warnSoft); border-color:transparent; }
+.no b { color:var(--warn); }
+table { border-collapse:collapse; width:100%; font-size:14px; } th,td { text-align:left; padding:8px 10px; border-top:1px solid var(--rule); vertical-align:top; } th { color:var(--muted); font-weight:600; font-size:12px; letter-spacing:0.06em; text-transform:uppercase; }
+.tbl { overflow-x:auto; }
+</style>
+<div class="wrap">
+<h1>Skill Redizajn</h1>
+<p class="lead">Kako proces iz sesije "Cec - visual redesign" pretvoriti u skill koji se može pozvati na bilo kojoj aplikaciji: što je nosilo proces, kako bi skill bio građen, što je parametar, što ostaje jednokratno. Pitanja su na dnu, Q68 do Q72.</p>
+
+<h2>1 · Što je stvarno nosilo proces</h2>
+<div class="grid">
+<div class="card"><h3>Grilling s preporukom pod svakim pitanjem</h3><p>Ti odgovaraš "sve kao preporuka, osim …". Odluke se broje (Q1 do Q67) i nikad se ne postavljaju dvaput. To je jezgra: bez toga svaki artefakt bi bio mišljenje, ovako je zapisnik.</p></div>
+<div class="card"><h3>Jedan artefakt po fazi, isti link</h3><p>Audit, mood board, ploča smjerova, prototip. Svaki se ponovno objavljuje na istu adresu, pa je povijest u verzijama, a ti uvijek gledaš zadnje.</p></div>
+<div class="card"><h3>Neutralna koža za sve što nije pod ocjenom</h3><p>Audit i mood board u tuđoj, hladnoj koži, da ne sudiš izgled dokumenta nego sadržaj. Ploča i prototip u pravim tokenima, jer su oni pod ocjenom.</p></div>
+<div class="card"><h3>Stvarni podaci, označen primjer</h3><p>Nastup 14. rujna, 70 aktivnih, tvoje ime. Sve što nije stvarno (napomena, ljestvica, 212 karata) rečeno je kao primjer. Na fiktivnim podacima ne bi vidio "Fale još 2 bila".</p></div>
+<div class="card"><h3>Jedna os po smjeru</h3><p>A mjera, B energija, C noć. Tri smjera koji se razlikuju po jednoj imenovanoj osi, ne pet nijansi istog. Drugi krug spaja odabrano s posudbama i nudi varijante samo za sporni element (pozadina hero kartice).</p></div>
+<div class="card"><h3>Glosar kao sudac</h3><p>"Nastup" protiv "izvedba" riješeno s dva registra, sheet za vojsku odbačen jer je glosar već rekao drukčije, titula dodana kad si izgovorio pravilo. Glosar se ažurira u trenutku, ne na kraju.</p></div>
+<div class="card"><h3>Prototip koji se drži u ruci</h3><p>Jedna HTML datoteka na telefonu, sa stanjem koje se mijenja i povratnom animacijom. Tek tu su izašli fiksna traka i osvježavanje, jer se to ne vidi na slici.</p></div>
+<div class="card"><h3>Memorija s "Next" retkom i kompaktiranje na prekretnici</h3><p>Sve odluke su u jednoj memorijskoj datoteci s redom "Next". Kompaktiranje smo napravili kad je frontier bio prazan, pa se nije izgubila nijedna odluka.</p></div>
+</div>
+
+<h2>2 · Oblik skilla</h2>
+<div class="card">
+<p><span class="tag">ime</span> <b>design-direction</b> (radno). Poziva se kad postojeća aplikacija ili stranica "ne izgleda kako želim" ili kad nova treba vizualni smjer prije koda. Nije zamjena za <span class="tag">redesign-existing-projects</span>, koji je checklist scan → diagnose → fix bez korisnika u petlji. Ovaj skill je proces s tobom u petlji i s artefaktima kao zapisnikom.</p>
+<p><span class="tag">poziva</span> <b>grilling</b> i <b>domain-modeling</b> kao i /grill-with-docs, plus <b>design</b> (canvas) i <b>prototype</b> u svojim fazama. Ne duplicira ih, samo kaže kada i s kojim ulazom.</p>
+<p><span class="tag">izlaz</span> plan kao HTML artefakt s numeriranim odlukama, glosar ažuriran, tiketi. Implementacija nije dio skilla: to je posao /implement s Opus agentima.</p>
+</div>
+
+<h2>3 · Faze, svaka s izlazom i uvjetom "gotovo"</h2>
+<div class="card"><div class="phase"><div class="n">0 brief</div><div><h3>Trijaža alata i metode</h3><p>Korisnik donese listu alata i frustraciju. Skill odgovara kao mentor: koji alati služe kojoj fazi, koji ne trebaju, koji je industrijski postupak. Bez izrade.</p><div class="out"><b>Gotovo kad</b> korisnik prihvati metodu i fazni plan.</div></div></div></div>
+<div class="card"><div class="phase"><div class="n">1 grill</div><div><h3>Reference, pritužbe, korisnik, uređaj, budžet</h3><p>Reference (Revolut, Airbnb, Clash Royale) se prevode u imenovana svojstva (zaobljeno, dubina, povratna informacija na dodir, dom koji dočeka). Pritužbe po ekranu postaju IA odluke. Primarni korisnik i uređaj, sekundarni, vremenski budžet.</p><div class="out"><b>Gotovo kad</b> je frontier prazan i memorija ima sve odluke s brojevima.</div></div></div></div>
+<div class="card"><div class="phase"><div class="n">2 audit</div><div><h3>Snimka svakog ekrana na stvarnom uređaju</h3><p>Prijava u pravom pregledniku, širina telefona i laptopa, PII pikselizirana prije ugradnje. Imenuju se ponavljajuće navike (šest "nedorečeno" uzoraka), pa nalaz po ekranu kao Q s preporukom. Neutralna koža.</p><div class="out"><b>Gotovo kad</b> su odgovorena pitanja po ekranu i bugovi zapisani kao tiketi.</div></div></div></div>
+<div class="card"><div class="phase"><div class="n">3 mood</div><div><h3>Mood board grupiran po našim ekranima</h3><p>Mobbin ili slično, ali svaki primjer stoji pod ekranom kojem služi i nosi "uzimamo / ne". Nikad galerija bez namjere.</p><div class="out"><b>Gotovo kad</b> svaki ekran ima barem jednu referencu s razlogom.</div></div></div></div>
+<div class="card"><div class="phase"><div class="n">4 smjer</div><div><h3>Ploča smjerova na canvasu</h3><p>Tri smjera, jedna os svaki, dva ekrana (dom + najvažniji), stvarni podaci, bilješke za i protiv. Drugi krug: odabrano + posudbe, varijante samo za sporni element, legenda za novi vizualni rječnik (oznake uloga). Prvi krug seli na drugu stranicu, ne briše se.</p><div class="out"><b>Gotovo kad</b> je jedan smjer odabran i sporni elementi riješeni s brojem pitanja.</div></div></div></div>
+<div class="card"><div class="phase"><div class="n">5 proto</div><div><h3>Prototip u ruci</h3><p>Jedna HTML datoteka, tokeni svijetlo + tamno, tri ekrana, stvarne interakcije sa stanjem i animacijom, prototipski gumbi vidljivo izvan dizajna. Provjera kroz Chrome MCP na širini telefona prije objave. Presuda kao Q, jedna iteracija.</p><div class="out"><b>Gotovo kad</b> korisnik kaže "premium" na svom telefonu i domenske ispravke su u glosaru.</div></div></div></div>
+<div class="card"><div class="phase"><div class="n">6 plan</div><div><h3>Plan i tiketi</h3><p>HTML artefakt s odlukama Q1 do Qn, ugovor sustava (tokeni, komponente, pokret) prepisan iz prototipa, tiketi po ekranu s kriterijima prihvaćanja. Glosar commit ide s planom. Hodnički testovi s tri stvarne osobe paralelno.</p><div class="out"><b>Gotovo kad</b> tiketi postoje i prvi (sustav + ljuska) može krenuti agentu.</div></div></div></div>
+
+<h2>4 · Pravila koja idu u skill</h2>
+<div class="card"><ul>
+<li>Svako pitanje ima broj koji se nastavlja kroz sve faze i preporuku ispod. Odgovoreno se ne pita ponovno.</li>
+<li>Prijedlozi, auditi i prototipi idu kao HTML artefakt na korisnikovu jeziku, jedan po fazi, isti link kroz iteracije.</li>
+<li>Što nije pod ocjenom nosi neutralnu kožu; što jest, nosi prave tokene. Kaže se koje je koje.</li>
+<li>Mockup stoji na stvarnim podacima iz sustava (MCP ili API), primjer je označen kao primjer, PII se pikselizira prije objave.</li>
+<li>Smjerovi se razlikuju po jednoj imenovanoj osi. Svaki ima motivaciju i glavni nedostatak, ne samo preporučeni.</li>
+<li>Glosar je sudac: sukob riječi se rješava odmah u CONTEXT.md, a mockup koji krši glosar se ispravlja, ne glosar.</li>
+<li>Prototip je throwaway: izvori se čuvaju izvan repozitorija do presude, pa na granu <code>prototype/&lt;ime&gt;</code>, nikad na main.</li>
+<li>Memorija ima jedan zapis s odlukama i redom "Next"; kompaktiranje se predlaže kad je frontier prazan.</li>
+<li>Skupi model radi odluke i pregled; izrada ekrana ide jeftinijem modelu po tiketu.</li>
+</ul></div>
+
+<h2>5 · Što je parametar za drugu aplikaciju</h2>
+<div class="tbl"><table>
+<tr><th>Parametar</th><th>Ovdje</th><th>Kako ga skill traži</th></tr>
+<tr><td>Izvor tokena brenda</td><td><code>app.css</code> linije 11–45, fontovi u <code>fonts.ts</code></td><td>Grep za tokene, pa pitanje potvrde</td></tr>
+<tr><td>Popis ekrana i pravo na svaki</td><td><code>screens.ts</code>, ADR-0023</td><td>Iz koda; ako ne postoji, faza 1 ga izvuče</td></tr>
+<tr><td>Primarni korisnik i uređaj</td><td>plesač na telefonu, Tatjana na laptopu</td><td>Q u fazi 1</td></tr>
+<tr><td>Izvor stvarnih podataka</td><td>MCP Moreškant (nastupi, roster)</td><td>MCP ili API u sesiji; bez toga označeni primjer</td></tr>
+<tr><td>Glosar</td><td><code>CONTEXT.md</code></td><td>domain-modeling kaže gdje je</td></tr>
+<tr><td>Jezik artefakata</td><td>hrvatski</td><td>iz globalnog CLAUDE.md</td></tr>
+<tr><td>Reference korisnika</td><td>Revolut, Airbnb, Clash Royale</td><td>Q1, prevedeno u svojstva</td></tr>
+</table></div>
+
+<h2>6 · Što ostaje jednokratno (ne ide u skill)</h2>
+<div class="card no"><ul>
+<li><b>Odluke o Ceciliji</b>: dva registra, titule, tabovi po korisniku, izgled trake. To je projekt, ne metoda.</li>
+<li><b>Konkretne datoteke</b>: gen.py, gen2.py, build.py. Skill može nositi generički predložak canvasa i prototipa, ne ove.</li>
+<li><b>Gotchas Chrome MCP-a</b> (cookie na /app, location.href): to je već memorija, ne skill.</li>
+</ul></div>
+
+<h2>7 · Nacrt SKILL.md</h2>
+<pre>---
+name: design-direction
+description: Settle the visual direction of an existing app or site WITH the user in the loop,
+  phase by phase (brief, grill, audit, mood, direction board, phone prototype, plan + tickets),
+  each phase an artifact with numbered questions and a recommendation. Use when "it works but
+  does not look how I want", or before coding a new surface. Not a fix-it checklist.
+---
+
+Call the Skill tool for "grilling" and "domain-modeling" first; call "design" in phase 4
+and "prototype" in phase 5.
+
+## Phases (each ends with numbered questions; numbering continues across phases)
+0. Brief: triage the user's tool list as a mentor; propose the method; no building.
+1. Grill: references -> named properties; per-screen complaints -> IA decisions;
+   primary user + device; time budget. Done when the frontier is empty.
+2. Audit: screenshot every screen on the real device sizes, logged in, PII pixelated;
+   name the repeated habits; per-screen findings as questions. Neutral skin.
+3. Mood: references grouped under OUR screens, each with take / leave.
+4. Direction board: three directions, one named axis each, two screens, real data,
+   for-and-against notes. Round two merges the pick, variants only for the disputed element,
+   a legend for any new visual vocabulary. Round one moves to page two.
+5. Prototype: one HTML file on the phone, light + dark tokens, three screens, real state
+   and feedback, prototype chrome visibly outside the design. Look once at phone width
+   before publishing. Verdict as a question, one iteration.
+6. Plan: artifact with decisions Q1..Qn, the system contract copied from the prototype,
+   tickets per screen with acceptance criteria; glossary commit ships with the plan;
+   hallway tests with three real people in parallel.
+
+## Rules
+- Every question carries a running number and a recommendation; answered ones are never re-asked.
+- One artifact per phase, republished to the same URL through its iterations.
+- What is not under judgement wears a neutral skin; what is wears the real tokens. Say which.
+- Mockups stand on real data (MCP/API); samples are labelled; PII is pixelated before embedding.
+- The glossary is the judge: a mockup that contradicts CONTEXT.md is fixed, not the glossary.
+- Prototype sources live outside the repo until the verdict, then on prototype/&lt;name&gt;, never main.
+- One memory file with every decision and a "Next" line; suggest compaction when the frontier is empty.
+- The expensive model decides and reviews; a cheaper model builds each ticket.
+
+## Files
+- SKILL.md (this), PHASES.md (what "done" means per phase, the artifact skeleton per phase),
+  templates/canvas-directions.py (three-direction board scaffold), templates/phone-proto.html
+  (scroll container, fixed bar, pull-to-refresh, sheet, toast, light/dark tokens as placeholders).
+</pre>
+
+<h2>8 · Pitanja</h2>
+<div class="q"><div class="id">Q68</div><b>Ime i granica.</b> <code>design-direction</code> kao proces s korisnikom u petlji, odvojen od <code>redesign-existing-projects</code> (checklist bez korisnika). Ili spojiti u jedan?<div class="rec"><b>Preporuka:</b> odvojeno. Checklist skill je "popravi što vidiš", ovaj je "odluči sa mnom što želimo". Različit posao, različit trenutak.</div></div>
+<div class="q"><div class="id">Q69</div><b>Gdje živi.</b> Korisnički (<code>~/.claude/skills/design-direction</code>), pa vrijedi za sve projekte, ili u repozitoriju?<div class="rec"><b>Preporuka:</b> korisnički. Ništa u njemu nije Cecilija; projektni dio (tokeni, ekrani, glosar) skill sam pronađe u repozitoriju.</div></div>
+<div class="q"><div class="id">Q70</div><b>Predlošci.</b> Nositi generički predložak canvasa (tri smjera) i telefonskog prototipa (spremnik, traka, osvježavanje, sheet, toast, tokeni kao placeholderi)? Skraćuje fazu 4 i 5 na sat, ali predložak treba održavati.<div class="rec"><b>Preporuka:</b> da, oba, očišćena od Cecilije. Ove dvije faze su najskuplje i najviše se ponavljaju.</div></div>
+<div class="q"><div class="id">Q71</div><b>Kraj skilla.</b> Skill završava planom i tiketima, a izrada ide kroz /implement s Opus agentima. Ili ubaciti i fazu izrade?<div class="rec"><b>Preporuka:</b> završava tiketima. Izrada već ima svoj skill i svoja pravila (pregled, CI, merge); dupliciranje bi ih razdvojilo.</div></div>
+<div class="q"><div class="id">Q72</div><b>Kada ga napisati.</b> Sada, dok je iskustvo svježe, ili nakon što prođe izrada Cecilije pa se vidi je li plan držao?<div class="rec"><b>Preporuka:</b> sada nacrt (SKILL.md + PHASES.md + dva predloška), a "Lessons" odjeljak dopuniti nakon izrade. Skill se najbolje piše iz svježeg zapisnika, a najbolje ispravlja iz drugog projekta.</div></div>
+</div>

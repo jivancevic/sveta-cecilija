@@ -1,0 +1,168 @@
+{
+  "pages": [
+    {
+      "id": "smjer-b",
+      "name": "Smjer B, drugi krug"
+    },
+    {
+      "id": "prvi-krug",
+      "name": "Prvi krug: A, B, C"
+    }
+  ],
+  "artboards": [
+    {
+      "file": "Main.dc.html",
+      "title": "Početna",
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "smjer-b"
+    },
+    {
+      "file": "MoreskaB.dc.html",
+      "title": "Moreška",
+      "x": 520,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "smjer-b"
+    },
+    {
+      "file": "OznakeUloga.dc.html",
+      "title": "Oznake uloga",
+      "x": 1040,
+      "y": 0,
+      "w": 390,
+      "h": 620,
+      "page": "smjer-b"
+    },
+    {
+      "file": "HeroBijela.dc.html",
+      "title": "Hero V1",
+      "x": 0,
+      "y": 1004,
+      "w": 390,
+      "h": 420,
+      "page": "smjer-b"
+    },
+    {
+      "file": "HeroPrsten.dc.html",
+      "title": "Hero V2",
+      "x": 520,
+      "y": 1004,
+      "w": 390,
+      "h": 420,
+      "page": "smjer-b"
+    },
+    {
+      "file": "HeroBjelokost.dc.html",
+      "title": "Hero V3",
+      "x": 1040,
+      "y": 1004,
+      "w": 390,
+      "h": 420,
+      "page": "smjer-b"
+    },
+    {
+      "file": "PapirPocetna.dc.html",
+      "title": "A · Papir · Početna",
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "prvi-krug"
+    },
+    {
+      "file": "PapirMoreska.dc.html",
+      "title": "A · Papir · Moreška",
+      "x": 0,
+      "y": 1004,
+      "w": 390,
+      "h": 844,
+      "page": "prvi-krug"
+    },
+    {
+      "file": "PodijPocetna.dc.html",
+      "title": "B · Podij · Početna",
+      "x": 520,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "prvi-krug"
+    },
+    {
+      "file": "PodijMoreska.dc.html",
+      "title": "B · Podij · Moreška",
+      "x": 520,
+      "y": 1004,
+      "w": 390,
+      "h": 844,
+      "page": "prvi-krug"
+    },
+    {
+      "file": "TintaPocetna.dc.html",
+      "title": "C · Tinta · Početna",
+      "x": 1040,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "page": "prvi-krug"
+    },
+    {
+      "file": "TintaMoreska.dc.html",
+      "title": "C · Tinta · Moreška",
+      "x": 1040,
+      "y": 1004,
+      "w": 390,
+      "h": 844,
+      "page": "prvi-krug"
+    }
+  ],
+  "annotations": [
+    {
+      "id": "krug2",
+      "x": -470,
+      "y": 0,
+      "w": 380,
+      "page": "smjer-b",
+      "text": "DRUGI KRUG · smjer B s tvojim izmjenama\n\n· Pozdrav iz A: 'Dobra večer, Josip.' + 'Sutra je nastup.'\n· Hero iz B, ali na bijeloj kartici; tri varijante pozadine su u redu ispod (Q62).\n· Umjesto '2 od 70': stanje crnih i bilih. Crni pune traku ulijevo od sredine (tinta), bili udesno (crvena), zlatna crtica je prag od 8. Broj ispod praga pocrveni i piše koliko fali (Q63).\n· Statistika: karte za sutrašnji nastup, prsten kao u B.\n· Ljestvica: podij iz B.\n· Moreška: gore tvoje ime i glavna uloga s oznakom (legenda desno, Q64). Stanje je red na koji se klikne i vodi u postavu koja se prijavila.\n· Vanredne se zovu 'Vanredna', bez naručitelja.\n\nBrojke 9 crnih / 6 bilih i 212 karata su primjer da se vide oba stanja."
+    },
+    {
+      "id": "hero-q",
+      "x": -470,
+      "y": 1004,
+      "w": 380,
+      "page": "smjer-b",
+      "text": "Q62 · POZADINA HERO KARTICE\n\nOdabrano 2026-09-13: V1 bijela. V2 i V3 ostaju ovdje samo kao zapis."
+    },
+    {
+      "id": "smjer-a",
+      "x": 0,
+      "y": -250,
+      "w": 390,
+      "page": "prvi-krug",
+      "text": "A · PAPIR\n\nMirno i uredno. Bijele kartice na papiru, jedan zlatni gumb po ekranu."
+    },
+    {
+      "id": "smjer-b",
+      "x": 520,
+      "y": -250,
+      "w": 390,
+      "page": "prvi-krug",
+      "text": "B · PODIJ (odabran 2026-09-13)\n\nEnergija: zlatni blok, golemi datum, prsten, postolje, tamna pilula u traci."
+    },
+    {
+      "id": "smjer-c",
+      "x": 1040,
+      "y": -250,
+      "w": 390,
+      "page": "prvi-krug",
+      "text": "C · TINTA\n\nIsti raspored kao A, noć zadana. Ostaje kao tamna tema preko tokena."
+    }
+  ],
+  "launch": {
+    "view": "canvas",
+    "page": "smjer-b"
+  }
+}

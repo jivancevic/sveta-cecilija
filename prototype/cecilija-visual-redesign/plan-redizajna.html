@@ -1,0 +1,147 @@
+<title>Plan redizajna Cecilije</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+:root { --bg:#f7f8f8; --card:#ffffff; --ink:#151a1a; --muted:#5d6666; --rule:#e2e6e6; --acc:#2c6866; --accSoft:#e4efee; --warn:#8a4b1f; --warnSoft:#f6ebdf; --mono:"JetBrains Mono",ui-monospace,Menlo,monospace; --sans:"Instrument Sans",system-ui,sans-serif; --serif:"Instrument Serif",Georgia,serif; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --bg:#101414; --card:#181d1d; --ink:#eef1f1; --muted:#9aa5a5; --rule:#263030; --acc:#7fc1be; --accSoft:#1d2f2e; --warn:#e0a672; --warnSoft:#33271b; } }
+:root[data-theme="dark"] { --bg:#101414; --card:#181d1d; --ink:#eef1f1; --muted:#9aa5a5; --rule:#263030; --acc:#7fc1be; --accSoft:#1d2f2e; --warn:#e0a672; --warnSoft:#33271b; }
+body { margin:0; background:var(--bg); color:var(--ink); font-family:var(--sans); font-size:15px; line-height:1.55; }
+.wrap { max-width:900px; margin:0 auto; padding:40px 24px 80px; }
+h1 { font-family:var(--serif); font-weight:400; font-size:44px; line-height:1.05; margin:0 0 8px; letter-spacing:-0.01em; text-wrap:balance; }
+.lead { color:var(--muted); font-size:17px; max-width:64ch; margin:0 0 28px; }
+h2 { font-size:13px; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; color:var(--acc); margin:40px 0 12px; }
+h3 { font-size:17px; font-weight:600; margin:0 0 4px; }
+p { margin:0 0 10px; max-width:72ch; }
+.card { background:var(--card); border:1px solid var(--rule); border-radius:10px; padding:16px 18px; margin:0 0 10px; }
+ul { margin:0 0 8px; padding-left:20px; } li { margin:0 0 4px; }
+.tbl { overflow-x:auto; margin:0 0 10px; }
+table { border-collapse:collapse; width:100%; font-size:14px; } th,td { text-align:left; padding:7px 10px; border-top:1px solid var(--rule); vertical-align:top; } th { color:var(--muted); font-weight:600; font-size:12px; letter-spacing:0.06em; text-transform:uppercase; border-top:0; }
+td.q { font-family:var(--mono); font-size:12.5px; color:var(--acc); white-space:nowrap; }
+code { font-family:var(--mono); font-size:12.5px; background:var(--accSoft); padding:1px 5px; border-radius:4px; }
+.sw { display:inline-block; width:14px; height:14px; border-radius:4px; vertical-align:-2px; margin-right:4px; border:1px solid rgba(0,0,0,.12); }
+.t { display:grid; grid-template-columns:52px 1fr; gap:14px; align-items:start; }
+.t .n { font-family:var(--mono); font-size:13px; color:var(--acc); padding-top:3px; }
+.t .meta { color:var(--muted); font-size:13px; margin:2px 0 6px; }
+.t ul { font-size:14px; }
+.links a { color:var(--acc); }
+.note { background:var(--warnSoft); border-radius:8px; padding:8px 12px; font-size:14px; }
+.note b { color:var(--warn); }
+</style>
+<div class="wrap">
+<h1>Plan redizajna Cecilije</h1>
+<p class="lead">Zapisnik odluka Q1 do Q67 iz sesije "Cec - visual redesign" (13. rujna 2026.), ugovor sustava prepisan iz prototipa, i tiketi po kojima Opus agenti grade ekrane. Artefakti: <span class="links"><a href="https://claude.ai/code/artifact/db933451-9b3d-45c3-8ada-71194325b296">audit</a> · <a href="https://claude.ai/code/artifact/21ed313b-7fa8-4347-9340-a87d79c7f33b">mood board</a> · <a href="https://claude.ai/code/artifact/60074106-c946-4103-85d2-6774ec80d3dd">ploča smjerova</a> · <a href="https://claude.ai/code/artifact/ecd3f32d-b14e-460a-b6be-421874d4cf03">prototip</a></span>. Tiketi: mapa <a href="https://github.com/jivancevic/sveta-cecilija/issues/560">#560</a>, T0 do T13 su #561 do #574.</p>
+
+<h2>1 · Cilj</h2>
+<div class="card"><p>Cecilija izgleda i ponaša se kao premium aplikacija koju plesač želi otvoriti svaki dan, a Tatjana s njom radi na laptopu bez napora. Vlastiti dizajnerski sustav izveden iz brenda (papir, tinta, zlato kao jedini naglasak), zaobljen, s dubinom i povratnom informacijom na dodir. Nova Početna, Moreška odvojena od Izvedbi, Stanje kao jedan ekran, tabovi po računu. Sve ostalo mijenja samo kožu.</p><p class="note"><b>Mjera uspjeha:</b> Josip na svom telefonu kaže "premium" za svaki spojeni ekran, tri hodnička testa (plesač, Tatjana, tehnika) prolaze bez pitanja "gdje je…", i nijedan buyer-facing tok se ne mijenja.</p></div>
+
+<h2>2 · Odluke</h2>
+<div class="tbl"><table>
+<tr><th>Q</th><th>Tema</th><th>Odluka</th></tr>
+<tr><td class="q">Q1</td><td>Reference</td><td>Revolut, Airbnb, Clash Royale → zaobljeno, dubina, povratna informacija na dodir, dom koji dočeka, radost u napretku.</td></tr>
+<tr><td class="q">Q2</td><td>Pritužbe</td><td>Previše ravnih linija, nema Početne, nema loga, prazan donji bar, crni hero, kuršlus u Stanju, prodaja ne treba plesaču, "nastup" interno, Više loše, bez Dobrodošlice i Instalacije kao tabova.</td></tr>
+<tr><td class="q">Q3</td><td>Dojam</td><td>Josipov dojam kao dizajnera je mjerilo; hodnički testovi ga provjeravaju.</td></tr>
+<tr><td class="q">Q4–Q6</td><td>Sustav</td><td>Vlastiti app sustav izveden iz brenda (B), ne kopija stranice, ne neovisan.</td></tr>
+<tr><td class="q">Q7</td><td>Metoda</td><td>Ploča smjerova prije prototipa; prototip prije koda.</td></tr>
+<tr><td class="q">Q8</td><td>Korisnici</td><td>Plesač na telefonu primarni, Tatjana na laptopu sekundarni.</td></tr>
+<tr><td class="q">Q9</td><td>Budžet</td><td>Dva vikenda, uz testove s ljudima.</td></tr>
+<tr><td class="q">Q10</td><td>Uglovi</td><td>Zaobljeno: kartica 22, kontrola 16, pilula. Oštrice (radius 0) napuštene.</td></tr>
+<tr><td class="q">Q11</td><td>Dubina</td><td>Slojevite kartice s mekom sjenom; iscrtkani rub ukinut (Q24).</td></tr>
+<tr><td class="q">Q12</td><td>Paleta</td><td>Papir + tinta, zlato jedini naglasak, semantički skup (warn, ok), crvena brenda za bile.</td></tr>
+<tr><td class="q">Q13</td><td>Pokret</td><td>Razina 2 od 5; odgovor na nastup i ljestvica na 4. Osvježavanje povlačenjem (Q65).</td></tr>
+<tr><td class="q">Q14</td><td>Tipografija</td><td>Sistemski sans za tekst, Labrada samo za naslove i wordmark.</td></tr>
+<tr><td class="q">Q15</td><td>Ikone</td><td>Lucide, stroke 1.75, mačevi za Morešku; bez emojija u navigaciji.</td></tr>
+<tr><td class="q">Q16</td><td>Početna</td><td>Nova kartica Početna; /app više ne preusmjerava na prvi tab.</td></tr>
+<tr><td class="q">Q17</td><td>Razdvajanje</td><td>Moreška (/app/moreska, plesački registar) i Izvedbe (blagajna).</td></tr>
+<tr><td class="q">Q18</td><td>Registri</td><td>"Nastup" plesački, "izvedba" prodajni; u CONTEXT.md (commit 15f13f8).</td></tr>
+<tr><td class="q">Q19</td><td>Stanje</td><td>Jedan ekran: crni lijevo, bili desno, bule, bez odgovora, voditeljeve radnje.</td></tr>
+<tr><td class="q">Q20</td><td>Više</td><td>Glava osobe, Profil · Obavijesti · Sigurnost · Podrška; dno "Cecilija · verzija (commit)" i vrlo malo "Created by: Josip Ivančević".</td></tr>
+<tr><td class="q">Q21</td><td>Noćni otoci</td><td>Crni hero ide; Skener ostaje taman preko tokena; tamna tema preko istih tokena.</td></tr>
+<tr><td class="q">Q22–Q23</td><td>Postupak</td><td>Audit svih ekrana, pa Mobbin mood board, pa ploča.</td></tr>
+<tr><td class="q">Q24</td><td>Rub</td><td>Iscrtkani rub se ukida u cijelosti.</td></tr>
+<tr><td class="q">Q25</td><td>Gumbi</td><td>Tri razine (primarni zlatni, ghost, link) + destruktivni; rečenični oblik.</td></tr>
+<tr><td class="q">Q26</td><td>Logo</td><td>Samo na Početnoj, uz wordmark.</td></tr>
+<tr><td class="q">Q27</td><td>Aktivni tab</td><td>Pilula; iz smjera B: tamna pilula sa zlatnom ikonom u lebdećoj traci.</td></tr>
+<tr><td class="q">Q28</td><td>Josipovi tabovi</td><td>Početna · Moreška · Statistika · Ljestvica · Više.</td></tr>
+<tr><td class="q">Q29</td><td>Red nastupa</td><td>Bez ikakve brojke prodaje na Moreški; odgovor kao pilula.</td></tr>
+<tr><td class="q">Q30</td><td>Hero</td><td>Nakon odgovora hero pokazuje stanje ("Dolaziš · crni", Promijeni).</td></tr>
+<tr><td class="q">Q31</td><td>Dodaj nastup</td><td>Ne na Moreški; svi nastupi se stvaraju i uređuju na Izvedbama.</td></tr>
+<tr><td class="q">Q32–Q33</td><td>Detalj</td><td>Naslov je datum; ljepljiva traka za odgovor se ukida.</td></tr>
+<tr><td class="q">Q34–Q35</td><td>Stanje</td><td>Raspored po Q19; pragovi i alarm u voditeljev sheet.</td></tr>
+<tr><td class="q">Q36</td><td>Ljestvica</td><td>Segment Ljestvica prvi, Moja sezona drugi; popis Moreška pa Experience; top 20 + "vidi cijeli popis"; podij, moj red, brojka koja se broji.</td></tr>
+<tr><td class="q">Q37–Q39</td><td>Članovi</td><td>Lista prva, pozivnice iza ikone; red s avatarom, nadimkom, točkom vojske; profil glava + brze radnje + obrazac.</td></tr>
+<tr><td class="q">Q40–Q41</td><td>Narudžbe</td><td>Pretraga dok tipkaš, chipovi, "Gratis" umjesto 0,00 €; Povrat zadnji i tih.</td></tr>
+<tr><td class="q">Q42, Q45, Q50</td><td>Samo koža</td><td>Upiti, Statistika, Prodaja/Obračun mijenjaju samo kožu; partnerski zadnji.</td></tr>
+<tr><td class="q">Q43</td><td>Skener</td><td>Tamna tema cijelog ekrana, veći prsten, brojka koja se broji.</td></tr>
+<tr><td class="q">Q44</td><td>Gratis</td><td>Tablica prva, obrazac u sheetu.</td></tr>
+<tr><td class="q">Q46</td><td>Financije</td><td>Prva rečenica objašnjenja ostaje, ostatak iza "i".</td></tr>
+<tr><td class="q">Q47</td><td>Korisnici</td><td>Ime prvo, korisničko ime drugo, dozvole kao mekane pilule s "+N".</td></tr>
+<tr><td class="q">Q48–Q49</td><td>Obavijesti, push</td><td>"Označi sve pročitanim" tiho desno; kalendar pod Obavijesti; push kao prekidač.</td></tr>
+<tr><td class="q">Q51</td><td>Laptop</td><td>Dva stupca za detalje, 760 px centrirano za liste, sidebar iz istog screens.ts.</td></tr>
+<tr><td class="q">Q52, Q56–Q57, Q60</td><td>Tabovi po računu</td><td>Novo polje <code>Users.tabs</code> (do 3 ključa; Početna i Više fiksni), postavlja ga samo <code>users</code> iz Korisnika ("Tabovi"); prazno = generički redoslijed iz screens.ts po dozvoli (moreskant → Moreška · Ljestvica; door → Skener; partner → Prodaja · Obračun; season_stats → Statistika; finance → Financije · Statistika; tickets → Narudžbe · Izvedbe · Upiti; moreska → Moreška · Članovi · Izvedbe; spoj: plesač → blagajna → ostalo). Imenovani: Josip, Tatjana (Narudžbe · Statistika · Upiti), Luka Brkić (Moreška · Skener · Ljestvica), Branimir (odrediti). Nitko ne uređuje vlastite.</td></tr>
+<tr><td class="q">Q53, Q58</td><td>Izvedbe</td><td>Otključavaju <code>moreska</code> i <code>tickets</code>, javne i nejavne; oboje stvaraju i uređuju. Otkaži (tickets+refunds), Premjesti termin, Pauziraj prodaju, Offline prodaja traže <code>tickets</code>; inače sivo s "traži Blagajnu". Gating po radnji, ne po retku.</td></tr>
+<tr><td class="q">Q54–Q55</td><td>Ostalo</td><td>Potvrđeno kako je predloženo u 4. krugu (tickets zadržava značenje blagajne; label Blagajna).</td></tr>
+<tr><td class="q">Q59</td><td>Početna</td><td>Jedna kartica po tabu u redoslijedu tabova + četvrta Obavijesti; najviše 4.</td></tr>
+<tr><td class="q">Q61</td><td>Smjer</td><td>B "Podij" s izmjenama: pozdrav iz A, hero na bijeloj kartici, stanje vojski umjesto "2 od 70", karte za sljedeći nastup na Statistici, podij na Ljestvici, ime i uloga na vrhu Moreške, "Vanredna" za nejavne.</td></tr>
+<tr><td class="q">Q62–Q64</td><td>Detalji</td><td>Hero V1 bijela; traka stanja (crni tinta ulijevo, bili crvena udesno, zlatni prag 8, broj ispod praga upozorava i piše koliko fali); oznake uloga: krug u boji vojske, siva kruna crni kralj, ista bez podnožja Otmanović, zlatna kruna bili kralj, zlatni krug bula.</td></tr>
+<tr><td class="q">Q65</td><td>Prototip</td><td>"Osjeća se premium." Traka fiksna, dokument ne skrola, povlačenje s vrha osvježava sa zlatnim prstenom. Plesač nikad ne bira vojsku. Titule daje voditelj.</td></tr>
+<tr><td class="q">Q66</td><td>Titule</td><td>Potvrda postave traži sve četiri titule (crni kralj, bili kralj, otmanović, bula), točno po jednu. U CONTEXT.md (commit 336362a).</td></tr>
+<tr><td class="q">Q67</td><td>Izrada</td><td>Plan i tiketi odmah; Opus agenti grade po tiketu, Fable odlučuje i pregledava; hodnički testovi paralelno.</td></tr>
+</table></div>
+
+<h2>3 · Ugovor sustava (iz prototipa)</h2>
+<div class="card">
+<h3>Tokeni</h3>
+<div class="tbl"><table>
+<tr><th>Token</th><th>Svijetlo</th><th>Tamno</th><th>Uloga</th></tr>
+<tr><td><code>--bg</code></td><td><span class="sw" style="background:#f5f2ec"></span>#f5f2ec</td><td><span class="sw" style="background:#17120c"></span>#17120c</td><td>papir, podloga ekrana</td></tr>
+<tr><td><code>--card</code></td><td><span class="sw" style="background:#fff"></span>#ffffff</td><td><span class="sw" style="background:#231c14"></span>#231c14</td><td>kartica, sheet, traka</td></tr>
+<tr><td><code>--sunk</code></td><td><span class="sw" style="background:#ede9e0"></span>#ede9e0</td><td><span class="sw" style="background:#100c08"></span>#100c08</td><td>površina ispod: stanje, napomena, datum bez zlata</td></tr>
+<tr><td><code>--ink</code> / <code>--muted</code></td><td>#1a140c / #6b6259</td><td>#f5f2ec / #a89e91</td><td>tekst / sekundarni tekst</td></tr>
+<tr><td><code>--gold</code> / <code>--goldText</code> / <code>--goldSoft</code></td><td>#b8881a / #8f6a10 / 12 %</td><td>#d9ab3c / #e3b94e / 14 %</td><td>primarni gumb, prag, aktivna ikona / tekst na svijetlom / meka podloga</td></tr>
+<tr><td><code>--red</code> / <code>--warn</code> / <code>--ok</code></td><td>#8b0000 / #a8321f / #8f6a10</td><td>#b3262f / #e07a5f / #e3b94e</td><td>bili / ispod praga / dovoljno</td></tr>
+<tr><td><code>--crni</code> / <code>--track</code></td><td>#1a140c / #ffffff</td><td>#050403 / #3b322a</td><td>crni u traci stanja / njezina staza</td></tr>
+<tr><td><code>--rule</code>, <code>--ghostEdge</code>, <code>--barBg</code></td><td>8 % tinte, 16 % tinte, bijela 92 %</td><td>8 % papira, 18 % papira, #1d1710 92 %</td><td>razdjelnik, ghost gumb, lebdeća traka</td></tr>
+<tr><td><code>--shadowCard</code> / <code>--shadowHero</code> / <code>--shadowBar</code></td><td colspan="2">0 2px 4px 5 %, 0 18px 36px −14px 26 % / 0 22px 44px −18px 32 % / 0 10px 30px −10px 35 %</td><td>tri dubine, nikad četvrta</td></tr>
+<tr><td><code>--rCard</code> / <code>--rCtl</code> / <code>--rPill</code></td><td colspan="2">22 px / 16 px / 999 px</td><td>kartica / kontrola / pilula i oznaka</td></tr>
+<tr><td><code>--serif</code> / <code>--sans</code></td><td colspan="2">Labrada / sistemski stog</td><td>naslovi, brojevi, wordmark / sve ostalo</td></tr>
+<tr><td><code>--ease</code> / <code>--spring</code></td><td colspan="2">cubic-bezier(.2,.8,.2,1) / (.34,1.4,.64,1)</td><td>prijelazi / povratak nakon povlačenja</td></tr>
+</table></div>
+<h3>Tipska ljestvica</h3><p>11 eyebrow (600, 0.08em, uppercase) · 13 small · 15 tekst · 16 gumb (600) · 22 wordmark (serif) · 26 ime (serif) · 34 naslov ekrana i pozdrav (serif) · 80 dan u heroju (serif, −0.03em). Brojevi u serifu s tabular-nums gdje stoje u stupcu.</p>
+<h3>Razmaci</h3><p>4 · 8 · 12 · 16 · 20 · 24. Kartica padding 18 (hero 20), razmak među karticama 12, rub ekrana 20. Dodirna meta najmanje 44 px, gumb 52 px, red popisa 72 px.</p>
+<h3>Komponente</h3><ul>
+<li><b>Ljuska</b>: dokument ne skrola; <code>.app</code> je spremnik (100dvh, overscroll none, bez klizača). Lebdeća pilula-traka 64 px, fiksna, 5 tabova, tamna pilula na aktivnom (u tamnoj temi goldSoft), safe area ispod. Laptop: sidebar iz istog screens.ts, 760 px za liste, dva stupca za detalje (Q51).</li>
+<li><b>Povlačenje za osvježavanje</b>: samo s vrha, elastično do 110 px, naoružano na 72 px, zlatni prsten koji se puni, vrti 900 ms, sadržaj se vrati sa springom, toast "Osvježeno · hh:mm". Reduced motion: bez animacije.</li>
+<li><b>Gumbi</b>: primarni (zlato, sjena u zlatu), ghost (unutarnji rub 1.5 px), link (muted), gotov (goldSoft + goldText), destruktivni (red). Pritisak: scale .97, 120 ms. Potvrda odgovora: pop + iscrtavanje kvačice.</li>
+<li><b>Kartica, hero, tile, red popisa, chip, datum-krug</b> (zlatni za Redovnu, sunk za Vanrednu), <b>napomena</b> (sunk), <b>sekcija</b> (eyebrow + brojka).</li>
+<li><b>Traka stanja vojski</b>: 12 px, crni pune ulijevo od sredine, bili udesno, skala 0–12 po polovici, zlatna crtica na pragu, broj ispod praga u warn + "Fale još N", iznad "Ima nas dovoljno". Dodirljiva vodi u Stanje.</li>
+<li><b>Oznaka uloge</b>: krug 44/28 px u boji vojske; glyph je titula za ovaj nastup (Q64). Bula s titulom: bijeli prsten u zlatnom krugu.</li>
+<li><b>Sheet</b> (28 px gornji radius, grab, opcije 60 px), <b>toast</b> (tinta, pilula, 1.6 s), <b>prsten</b> (conic, 72 px), <b>podij</b> (tri stupca, uspon 600 ms).</li>
+<li><b>Ikone</b>: Lucide stroke 1.75 (aktivna 1.9), 24 px u traci, 22 u zaglavlju, 18 u tekstu; mačevi, dom, graf, pehar, tri točke, zvono, kruna (s podnožjem i bez).</li>
+</ul>
+<h3>Tamna tema</h3><p>Isti tokeni, druge vrijednosti, prekidač u Više · Profil (kasnije), zadano svijetlo. Skener uvijek taman.</p>
+</div>
+
+<h2>4 · Tiketi</h2>
+<p>Redoslijed je ovisnost. T1 je jedini koji dira sve ekrane odjednom (samo ljusku i tokene); nakon njega svaki ekran je vlastiti tiket, jedan Opus agent, jedan worktree, jedan PR, CI zelen, pregled Fable, spajanje na main koji se sam deploya. Najviše dva agenta paralelno.</p>
+<div class="card"><div class="t"><div class="n">T0</div><div><h3>Glosar i plan na main</h3><div class="meta">grana worktree-cecilija-visual-redesign · PR</div><ul><li>Spaja dva commita glosara (dva registra, titula) i dodaje redak u docs/agents/moreskant-app.md koji pokazuje na ovaj plan.</li></ul></div></div></div>
+<div class="card"><div class="t"><div class="n">T1</div><div><h3>Sustav i ljuska</h3><div class="meta">app.css tokeni + komponente, AppNav, layout · sve ekrane dira samo kroz ljusku</div><ul><li>Tokeni iz ugovora zamjenjuju blok linija 11–45; radius 0 nestaje; iscrtkani rub nestaje; tri sjene; tipska ljestvica; sistemski sans za tekst.</li><li>Spremnik za skrolanje, fiksna pilula-traka s tamnom pilulom, povlačenje za osvježavanje (router.refresh), sheet, toast, gumbi, kartica, chip, datum-krug, prsten, podij, oznaka uloge, traka stanja kao dijeljene komponente pod <code>src/app/app/ui/</code>.</li><li>Lucide ikone (paket ili inline), mačevi custom; emoji iz navigacije van.</li><li>Tamna tema kao <code>data-theme</code> na .app; još bez prekidača u UI-ju.</li><li>Laptop: sidebar iz screens.ts, 760 px liste, dva stupca detalja pripremljeni kao layout klase.</li><li>Prihvaćanje: svih 13 postojećih ekrana radi bez promjene podataka; bug "ljepljiva traka preko sidebara" nestaje; bug "zvono pokazuje 1 na Obavijestima" popravljen; provjera na telefonu kroz Chrome MCP na 390 px i 1200 px.</li></ul></div></div></div>
+<div class="card"><div class="t"><div class="n">T2</div><div><h3>Tabovi po računu</h3><div class="meta">Users.tabs, screens.ts generička tablica, Korisnici "Tabovi" · blokira T1</div><ul><li>Polje <code>tabs</code> (do 3 ključa ekrana) na Users, zaključano na <code>users</code>; ruta <code>PATCH /api/app/users/[id]/tabs</code> s <code>requirePermission(req,'users')</code>.</li><li>Generički redoslijed po dozvoli u screens.ts (Q60) i spajanje za višestruke skupove; MAX_TABS 3 + Početna + Više; Više nosi sve ostalo.</li><li>Šesta radnja "Tabovi" u Korisnicima; imenovani skupovi za Josipa, Tatjanu, Luku Brkića postavljeni podacima, Branimir odlučuje Josip.</li><li>Prihvaćanje: testovi za generički redoslijed i spajanje; nitko ne može urediti vlastite tabove (409).</li></ul></div></div></div>
+<div class="card"><div class="t"><div class="n">T3</div><div><h3>Početna</h3><div class="meta">/app i nova kartica · blokira T2</div><ul><li>/app više ne preusmjerava; logo + wordmark + zvono; pozdrav po dobu dana i imenu (bez vokativa) + rečenica o sljedećem nastupu ili izvedbi.</li><li>Jedna kartica po tabu u redoslijedu tabova + Obavijesti (Q59): Moreška = hero sljedećeg nastupa s odgovorom i trakom stanja; Statistika = prsten karata sljedeće izvedbe; Ljestvica = podij + moj red; Narudžbe/Upiti/Skener/Prodaja = njihove sažete kartice (jedna brojka i jedna radnja).</li><li>Prihvaćanje: svaki korisnik iz Q52 vidi svoje četiri kartice; kartica bez dozvole se ne renderira.</li></ul></div></div></div>
+<div class="card"><div class="t"><div class="n">T4</div><div><h3>Moreška</h3><div class="meta">/app/moreska, plesački registar · blokira T1</div><ul><li>Vrh: puno ime, glavna uloga, oznaka uloge 44 px; "N nastupa pred tobom".</li><li>Hero sljedećeg nastupa: datum 80, napomena voditelja, Dolazim / Ne dolazim, nakon odgovora "Dolaziš · vojska" + Promijeni (Q30); traka stanja dodirljiva u Stanje.</li><li>Popis po mjesecima; nejavni nastupi pišu "Vanredna", nikad naručitelja; bez ijedne brojke prodaje (Q29); bez Dodaj (Q31).</li><li><code>POST /api/app/attendance</code>: plesač ne šalje vojsku; ako je šalje, ignorira se i broji se po glavnoj ulozi (glosar Attendance). Voditelj i dalje može odgovoriti u tuđe ime.</li><li>screens.ts: novi ključ <code>moreska</code> (moreskant, moreska), Izvedbe više ne služe moreskant.</li></ul></div></div></div>
+<div class="card"><div class="t"><div class="n">T5</div><div><h3>Stanje i postava</h3><div class="meta">/app/moreska/[id], jedan ekran · blokira T4</div><ul><li>Crni lijevo, bili desno, prazna mjesta do praga, bule, "Bez odgovora" s popisom; voditelj: Pozovi (sheet s porukom i pragovima, Q35), odgovor u tuđe ime, premještanje između vojski.</li><li>Titule: dodir na ime otvara sheet (crni: Crni kralj, Otmanović; bili: Bili kralj; bule: Bula; Bez titule); točno jedan nositelj, dodjela preuzima. "Titule N od 4".</li><li><code>POST /api/app/lineup</code> potvrda odbija postavu bez sve četiri titule (400 s porukom); MCP <code>set_lineup</code> nepotvrđeno i dalje prolazi. Glosar Title.</li><li>Plesač vidi isti ekran bez radnji; potvrđena postava pokazuje titule svima.</li></ul></div></div></div>
+<div class="card"><div class="t"><div class="n">T6</div><div><h3>Izvedbe (blagajna)</h3><div class="meta">/app/performances · blokira T1</div><ul><li>Otključavaju moreska i tickets (Q58); stvaranje i uređivanje za oboje; naslov detalja je datum (Q32); prodano od kapaciteta i kanali na javnom retku.</li><li>Radnje Otkaži (tickets+refunds), Premjesti termin, Pauziraj prodaju, Offline prodaja sivo s "traži Blagajnu" bez tickets; gating u ruti po radnji.</li><li>Nova koža po ugovoru; bez plesačkih dijelova (oni su na Moreški).</li></ul></div></div></div>
+<div class="card"><div class="t"><div class="n">T7</div><div><h3>Ljestvica</h3><div class="meta">/app/leaderboard · blokira T1</div><ul><li>Segment Ljestvica prvi, Moja sezona drugi; podij + moj red + brojka koja se broji; popis Moreška pa Experience, top 20 + "vidi cijeli popis" (<code>/app/leaderboard/full?season=&amp;kind=</code>); oznake uloga 28 px uz nadimak.</li></ul></div></div></div>
+<div class="card"><div class="t"><div class="n">T8</div><div><h3>Više, Profil, Obavijesti</h3><div class="meta">/app/more, /app/account, /app/notifications · blokira T1</div><ul><li>Više: glava osobe, Profil · Obavijesti · Sigurnost · Podrška, sve ostale ekrane kao redove; dno "Cecilija · verzija (commit)" i vrlo malo "Created by: Josip Ivančević".</li><li>Profil: prekidač tamne teme, push kao prekidač (Q49), veza na člana; Obavijesti: "Označi sve pročitanim" tiho desno, kalendar pod Obavijesti (Q48).</li></ul></div></div></div>
+<div class="card"><div class="t"><div class="n">T9</div><div><h3>Narudžbe, Upiti, Gratis</h3><div class="meta">blagajna, samo koža + Q40–Q42, Q44 · blokira T1</div><ul><li>Narudžbe: pretraga dok tipkaš, filteri kao chipovi, "Gratis" umjesto 0,00 €, Povrat zadnji i tih; Upiti samo koža; Gratis tablica prva, obrazac u sheetu.</li></ul></div></div></div>
+<div class="card"><div class="t"><div class="n">T10</div><div><h3>Statistika i Financije</h3><div class="meta">samo koža + Q45–Q46 · blokira T1</div><ul><li>Statistika: segmentirani birač sezone, grafovi u tokenima; Financije: prva rečenica objašnjenja ostaje, ostatak iza "i".</li></ul></div></div></div>
+<div class="card"><div class="t"><div class="n">T11</div><div><h3>Skener</h3><div class="meta">/app/scan · blokira T1</div><ul><li>Tamna tema cijelog ekrana preko tokena, veći prsten "ušlo X od Y", brojka koja se broji pri propuštanju; četiri stanja rezultata u semantičkim bojama.</li></ul></div></div></div>
+<div class="card"><div class="t"><div class="n">T12</div><div><h3>Članovi, Profil člana, Korisnici</h3><div class="meta">Q37–Q39, Q47 · blokira T1</div><ul><li>Članovi: lista prva, pozivnice iza ikone, red s avatarom, nadimkom, točkom vojske; profil glava + brze radnje + obrazac sa Spremi. Korisnici: ime prvo, pilule s "+N".</li></ul></div></div></div>
+<div class="card"><div class="t"><div name="n" class="n">T13</div><div><h3>Prodaja i Obračun</h3><div class="meta">partnerski, samo koža, zadnji (Q50) · blokira T1</div><ul><li>Koža po ugovoru na postojećih pet /api/partner/* ruta; laptop širine; bez promjene toka.</li></ul></div></div></div>
+
+<h2>5 · Proces izrade</h2>
+<div class="card"><ul>
+<li>Fable: tiketi, pregled PR-ova, odluke. Opus: izrada po tiketu u vlastitom worktreeu (<code>isolation: worktree</code>), tdd gdje ima logike, PR s "Closes #N".</li>
+<li>Najviše dva agenta paralelno (laptop). Spajanje tek na šest zelenih provjera, nikad bypass; main se sam deploya, pa Josip svaki spojeni ekran pogleda na produkciji na telefonu.</li>
+<li>Hodnički testovi paralelno s T1: jedan plesač, Tatjana, jedna tehnika na prototipu; nalaz mijenja tikete prije nego agent krene na taj ekran.</li>
+<li>Prototip nakon presude ide na granu <code>prototype/cecilija-visual-redesign</code>; izvori su u ~/Desktop/cecilija-redesign-prototip.</li>
+</ul></div>
+</div>

@@ -1,0 +1,479 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cecilija prototip</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Labrada:wght@400;500;600;700&display=swap">
+<style>
+/* ───────── Cecilija, nova koža · prototip (throwaway, 2026-09-13) ─────────
+   Pitanje: osjeća li se odabrani smjer B premium na telefonu, i rade li tri ekrana
+   (Početna, Moreška, Stanje) jednim palcem? Podaci su djelomično primjer. */
+:root {
+  --bg: #f5f2ec; --card: #ffffff; --ink: #1a140c; --muted: #6b6259; --sunk: #ede9e0;
+  --rule: rgba(26,20,12,0.08); --gold: #b8881a; --goldText: #8f6a10; --goldSoft: rgba(184,136,26,0.12);
+  --onGold: #14100a; --red: #8b0000; --warn: #a8321f; --ok: #8f6a10; --grey: #d9d4cc;
+  --ghostEdge: rgba(26,20,12,0.16); --barBg: rgba(255,255,255,0.92);
+  --shadowCard: 0 2px 4px rgba(26,20,12,0.05), 0 18px 36px -14px rgba(26,20,12,0.26);
+  --shadowHero: 0 2px 4px rgba(26,20,12,0.05), 0 22px 44px -18px rgba(26,20,12,0.32);
+  --shadowBar: 0 10px 30px -10px rgba(26,20,12,0.35);
+  --rCard: 22px; --rCtl: 16px; --rPill: 999px;
+  --serif: Labrada, "Iowan Old Style", Georgia, serif;
+  --sans: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", system-ui, sans-serif;
+  --tabH: 64px; --ease: cubic-bezier(.2,.8,.2,1); --spring: cubic-bezier(.34,1.4,.64,1);
+  --crni: #1a140c; --track: #ffffff; --markEdge: transparent; --thumb: #1a140c;
+  color-scheme: light;
+}
+.app[data-theme="dark"] {
+  --bg: #17120c; --card: #231c14; --ink: #f5f2ec; --muted: #a89e91; --sunk: #100c08;
+  --rule: rgba(245,242,236,0.08); --gold: #d9ab3c; --goldText: #e3b94e; --goldSoft: rgba(217,171,60,0.14);
+  --warn: #e07a5f; --ok: #e3b94e; --grey: #cfc8bd; --red: #b3262f;
+  --ghostEdge: rgba(245,242,236,0.18); --barBg: rgba(29,23,16,0.92);
+  --shadowCard: inset 0 1px 0 rgba(255,255,255,0.04), 0 14px 30px -12px rgba(0,0,0,0.7);
+  --shadowHero: inset 0 1px 0 rgba(255,255,255,0.05), 0 22px 44px -18px rgba(0,0,0,0.8);
+  --shadowBar: 0 10px 30px -10px rgba(0,0,0,0.8);
+  --crni: #050403; --track: #3b322a; --markEdge: rgba(217,212,204,0.4); --thumb: rgba(217,171,60,0.16);
+  color-scheme: dark;
+}
+/* The document never scrolls: the app is its own scroll container, so the bar and the
+   sheet stay put and the page cannot rubber-band under them. */
+html, body { margin: 0; height: 100%; overflow: hidden; background: #e6e1d7; overscroll-behavior: none; }
+* { box-sizing: border-box; }
+.app { position: relative; max-width: 430px; margin: 0 auto; height: 100dvh; overflow-y: auto; overscroll-behavior: none; -webkit-overflow-scrolling: touch;
+  background: var(--bg); color: var(--ink); font-family: var(--sans); font-size: 15px; line-height: 1.45; -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent;
+  transition: background .3s var(--ease), color .3s var(--ease); touch-action: pan-y; -webkit-user-select: none; user-select: none; scrollbar-width: none; }
+.app::-webkit-scrollbar { display: none; }
+button { font: inherit; color: inherit; border: 0; background: none; padding: 0; cursor: pointer; }
+.pull { will-change: transform; }
+.pull.settle { transition: transform .45s var(--spring); }
+.screen { display: none; padding: calc(env(safe-area-inset-top, 0px) + 14px) 20px calc(var(--tabH) + env(safe-area-inset-bottom, 0px) + 40px); flex-direction: column; gap: 12px; animation: in .28s var(--ease); }
+.screen.on { display: flex; }
+@keyframes in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+
+/* pull to refresh */
+.ptr { position: absolute; left: 50%; top: calc(env(safe-area-inset-top, 0px) + 6px); width: 40px; height: 40px; margin-left: -20px; border-radius: var(--rPill); background: var(--card); box-shadow: var(--shadowCard); display: grid; place-items: center; opacity: 0; transform: translateY(-48px) scale(.6); z-index: 5; pointer-events: none; }
+.ptr.settle { transition: transform .45s var(--spring), opacity .3s; }
+.ptr svg { width: 22px; height: 22px; transform: rotate(-90deg); }
+.ptr circle { fill: none; stroke: var(--gold); stroke-width: 2.5; stroke-linecap: round; stroke-dasharray: 56.5; stroke-dashoffset: 56.5; }
+.ptr.armed { box-shadow: var(--shadowCard), 0 0 0 4px var(--goldSoft); }
+.ptr.spin svg { animation: spin .8s linear infinite; }
+.ptr.spin circle { stroke-dashoffset: 40; }
+@keyframes spin { to { transform: rotate(270deg); } }
+
+/* header */
+.top { display: flex; align-items: center; gap: 10px; height: 44px; }
+.logo { width: 32px; height: 40px; object-fit: contain; }
+.wordmark { font-family: var(--serif); font-weight: 600; font-size: 22px; flex: 1; }
+.iconbtn { position: relative; width: 44px; height: 44px; display: grid; place-items: center; border-radius: var(--rPill); transition: background .15s; }
+.iconbtn:active { background: var(--sunk); }
+.iconbtn .dot { position: absolute; top: 7px; right: 7px; min-width: 16px; height: 16px; padding: 0 4px; border-radius: var(--rPill); background: var(--gold); color: var(--onGold); font-size: 10px; font-weight: 700; line-height: 16px; text-align: center; }
+.greet { margin: 0 0 4px; }
+.greet b { display: block; font-family: var(--serif); font-weight: 600; font-size: 34px; line-height: 1.12; letter-spacing: -0.01em; }
+.greet span { color: var(--muted); }
+.me { display: flex; align-items: center; gap: 12px; margin-top: 6px; }
+.me h1 { margin: 0; font-family: var(--serif); font-weight: 600; font-size: 26px; line-height: 1.1; }
+.me .role { color: var(--muted); }
+.grow { flex: 1; min-width: 0; }
+.eyebrow { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.small { font-size: 13px; color: var(--muted); }
+.sec { display: flex; align-items: baseline; justify-content: space-between; margin-top: 6px; }
+.sec h3 { margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+
+/* cards */
+.card { background: var(--card); border-radius: var(--rCard); padding: 18px; box-shadow: var(--shadowCard); display: flex; flex-direction: column; gap: 10px; transition: background .3s var(--ease); }
+.hero { box-shadow: var(--shadowHero); padding: 20px; gap: 12px; }
+.day { display: flex; align-items: baseline; gap: 12px; line-height: 0.9; }
+.day b { font-family: var(--serif); font-weight: 600; font-size: 80px; letter-spacing: -0.03em; }
+.day span { font-family: var(--serif); font-weight: 600; font-size: 28px; }
+.meta { color: var(--muted); font-weight: 500; }
+.note { display: flex; gap: 10px; padding: 10px 12px; border-radius: var(--rCtl); background: var(--sunk); font-size: 14px; }
+.note svg { flex: none; color: var(--goldText); }
+.btns { display: flex; gap: 10px; margin-top: 2px; }
+.btn { flex: 1; height: 52px; border-radius: var(--rCtl); font-weight: 600; font-size: 16px; display: inline-flex; align-items: center; justify-content: center; gap: 8px; transition: transform .12s var(--ease), box-shadow .2s, background .2s, color .2s, opacity .2s; }
+.btn:active { transform: scale(0.97); }
+.btn--primary { background: var(--gold); color: var(--onGold); box-shadow: 0 8px 18px -8px var(--gold); }
+.btn--ghost { color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--ghostEdge); }
+.btn--done { background: var(--goldSoft); color: var(--goldText); box-shadow: none; flex: 2; }
+.btn--link { flex: 1; color: var(--muted); font-weight: 500; font-size: 15px; }
+.btn.off { opacity: .45; box-shadow: none; }
+.pop { animation: pop .45s var(--ease); }
+@keyframes pop { 0% { transform: scale(.94); } 55% { transform: scale(1.04); } 100% { transform: scale(1); } }
+.chk { stroke-dasharray: 24; stroke-dashoffset: 0; }
+.pop .chk { animation: draw .5s var(--ease) .05s both; }
+@keyframes draw { from { stroke-dashoffset: 24; } to { stroke-dashoffset: 0; } }
+
+/* army state */
+.state { display: flex; flex-direction: column; gap: 8px; padding: 12px; margin: 0 -4px; border-radius: var(--rCtl); background: var(--sunk); text-align: left; width: calc(100% + 8px); transition: transform .12s var(--ease); }
+.state--tap:active { transform: scale(0.985); }
+.heads { display: flex; align-items: baseline; justify-content: space-between; }
+.army { display: flex; align-items: baseline; gap: 6px; }
+.army .k { font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.army .v { font-family: var(--serif); font-weight: 600; font-size: 26px; line-height: 1; transition: color .3s; }
+.army .v.low { color: var(--warn); }
+.split { position: relative; height: 12px; border-radius: var(--rPill); background: var(--track); overflow: hidden; }
+.split i { position: absolute; top: 0; bottom: 0; transition: width .6s var(--ease); }
+.split .crni { right: 50%; background: var(--crni); border-radius: var(--rPill) 0 0 var(--rPill); }
+.split .bili { left: 50%; background: var(--red); border-radius: 0 var(--rPill) var(--rPill) 0; }
+.split .mid { left: 50%; width: 2px; margin-left: -1px; background: var(--bg); z-index: 2; }
+.split .tick { top: 2px; bottom: 2px; width: 2px; background: var(--gold); z-index: 3; border-radius: 2px; }
+.status { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: var(--ok); }
+.status.low { color: var(--warn); }
+.status .dot { width: 8px; height: 8px; border-radius: var(--rPill); background: currentColor; }
+.status .chev { margin-left: auto; color: var(--muted); display: flex; }
+
+/* tiles */
+.tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.tile { background: var(--card); border-radius: var(--rCard); padding: 16px; box-shadow: var(--shadowCard); display: flex; flex-direction: column; gap: 8px; min-height: 150px; text-align: left; transition: transform .12s var(--ease), background .3s; }
+.tile:active { transform: scale(0.98); }
+.ring { width: 72px; height: 72px; border-radius: var(--rPill); display: grid; place-items: center; background: conic-gradient(var(--gold) 0 var(--deg, 0deg), var(--sunk) var(--deg, 0deg) 360deg); }
+.ring i { width: 56px; height: 56px; border-radius: var(--rPill); background: var(--card); display: grid; place-items: center; font-family: var(--serif); font-weight: 600; font-size: 18px; font-style: normal; }
+.podium { display: flex; align-items: flex-end; gap: 6px; height: 72px; }
+.podium div { flex: 1; border-radius: 8px 8px 4px 4px; background: var(--sunk); display: flex; flex-direction: column; align-items: center; justify-content: flex-end; padding-bottom: 4px; font-size: 11px; font-weight: 600; color: var(--muted); transform-origin: bottom; animation: rise .6s var(--ease) both; }
+.podium div b { font-family: var(--serif); font-size: 16px; color: var(--ink); }
+.podium .p1 { height: 100%; background: var(--goldSoft); animation-delay: .1s; } .podium .p2 { height: 78%; } .podium .p3 { height: 60%; animation-delay: .2s; }
+@keyframes rise { from { transform: scaleY(.2); opacity: 0; } to { transform: none; opacity: 1; } }
+.line { display: flex; align-items: center; gap: 12px; }
+.ico { width: 40px; height: 40px; border-radius: 12px; background: var(--goldSoft); color: var(--goldText); display: grid; place-items: center; flex: none; }
+.chip { display: inline-flex; align-items: center; gap: 4px; height: 24px; padding: 0 10px; border-radius: var(--rPill); font-size: 12px; font-weight: 600; background: var(--sunk); color: var(--muted); white-space: nowrap; }
+.chip--gold { background: var(--goldSoft); color: var(--goldText); }
+
+/* list */
+.list { background: var(--card); border-radius: var(--rCard); box-shadow: var(--shadowCard); display: flex; flex-direction: column; overflow: hidden; transition: background .3s; }
+.row { display: flex; align-items: center; gap: 12px; min-height: 72px; padding: 10px 16px; border-top: 1px solid var(--rule); width: 100%; text-align: left; transition: background .15s; }
+.row:first-child { border-top: 0; }
+.row:active { background: var(--sunk); }
+.date { width: 48px; height: 48px; border-radius: var(--rPill); display: flex; flex-direction: column; align-items: center; justify-content: center; line-height: 1; flex: none; background: var(--sunk); }
+.date b { font-family: var(--serif); font-weight: 600; font-size: 18px; }
+.date span { font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin-top: 3px; }
+.date--gold { background: var(--gold); color: var(--onGold); } .date--gold span { color: rgba(20,16,10,0.7); }
+.row .grow b { display: block; font-weight: 600; } .row .grow span { color: var(--muted); font-size: 13px; }
+
+/* role marks: the disc is the army, the glyph is a title the voditelj gave for THIS nastup */
+.mark { width: 44px; height: 44px; border-radius: var(--rPill); display: grid; place-items: center; flex: none; color: var(--gold); transition: box-shadow .2s; }
+.mark--crni { background: #1a140c; color: var(--grey); box-shadow: 0 0 0 1.5px var(--markEdge); }
+.mark--bili { background: var(--red); color: #f1d27a; }
+.mark--bula { background: var(--gold); color: #fff; }
+.mark--bula.titled { box-shadow: inset 0 0 0 3px #fff, inset 0 0 0 5px var(--gold); }
+.mark svg { width: 22px; height: 22px; }
+.mark--sm { width: 28px; height: 28px; } .mark--sm svg { width: 14px; height: 14px; }
+.mark--sm.mark--bula.titled { box-shadow: inset 0 0 0 2px #fff, inset 0 0 0 3.5px var(--gold); }
+
+/* Stanje */
+.back { display: flex; align-items: center; gap: 6px; height: 44px; margin-left: -12px; padding: 0 12px; border-radius: var(--rPill); color: var(--goldText); font-weight: 600; }
+.title { margin: 0; font-family: var(--serif); font-weight: 600; font-size: 34px; line-height: 1.1; letter-spacing: -0.01em; }
+.cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.col { background: var(--card); border-radius: var(--rCard); box-shadow: var(--shadowCard); padding: 14px 12px; display: flex; flex-direction: column; gap: 4px; transition: background .3s; }
+.col .head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 6px; padding: 0 4px; }
+.col .head .k { font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+.col .head .v { font-family: var(--serif); font-weight: 600; font-size: 28px; line-height: 1; }
+.col .head .v.low { color: var(--warn); }
+.col .head .t { margin-left: auto; font-size: 12px; color: var(--muted); }
+.p { display: flex; align-items: center; gap: 8px; min-height: 40px; padding: 4px; border-radius: 12px; font-weight: 500; width: 100%; text-align: left; transition: background .15s; }
+button.p:active { background: var(--sunk); }
+.p.me { background: var(--goldSoft); font-weight: 600; }
+.p.ghost { color: var(--muted); font-weight: 400; border: 1.5px dashed var(--ghostEdge); justify-content: center; font-size: 13px; }
+.p .role { font-size: 11px; color: var(--goldText); font-weight: 600; margin-left: auto; white-space: nowrap; }
+.bule .ps { display: flex; flex-wrap: wrap; gap: 4px; }
+.bule .p { width: auto; display: inline-flex; padding-right: 10px; }
+.noans { justify-content: space-between; }
+.noans .chev { color: var(--muted); display: flex; }
+.actions { position: sticky; bottom: calc(var(--tabH) + env(safe-area-inset-bottom, 0px) + 22px); display: flex; flex-direction: column; gap: 8px; padding: 12px; border-radius: var(--rCard); background: var(--barBg); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); box-shadow: var(--shadowBar); margin-top: 4px; }
+.actions .row2 { display: flex; gap: 10px; }
+.actions .hint { display: flex; align-items: center; justify-content: space-between; font-size: 13px; color: var(--muted); padding: 0 4px; }
+
+/* tab bar: fixed to the viewport, and the viewport never scrolls */
+.tabs { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom, 0px) + 10px); width: min(430px, 100%); padding: 0 12px; z-index: 20; pointer-events: none; }
+.tabs .pillbar { pointer-events: auto; height: var(--tabH); border-radius: var(--rPill); background: var(--barBg); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); box-shadow: var(--shadowBar); display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); padding: 6px; position: relative; }
+.tab { position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; color: var(--muted); font-size: 11px; font-weight: 500; border-radius: var(--rPill); z-index: 1; transition: color .25s; }
+.tab.on { color: var(--gold); font-weight: 600; }
+.tabs .thumb { position: absolute; top: 6px; bottom: 6px; left: 6px; width: calc((100% - 12px) / 5); border-radius: var(--rPill); background: var(--thumb); transition: transform .35s var(--ease); }
+.tab svg { transition: transform .25s var(--ease); } .tab.on svg { transform: translateY(-1px); }
+
+/* sheet */
+.sheet-bg { position: fixed; inset: 0; background: rgba(26,20,12,0.45); z-index: 30; display: none; animation: fade .2s; }
+.sheet-bg.on { display: block; }
+@keyframes fade { from { opacity: 0; } }
+.sheet { position: fixed; left: 50%; transform: translateX(-50%); bottom: 0; width: min(430px, 100%); background: var(--card); color: var(--ink); border-radius: 28px 28px 0 0; padding: 12px 20px calc(env(safe-area-inset-bottom, 0px) + 24px); z-index: 31; display: flex; flex-direction: column; gap: 10px; animation: up .3s var(--ease); box-shadow: 0 -10px 40px rgba(0,0,0,.2); }
+@keyframes up { from { transform: translate(-50%, 40px); opacity: 0; } }
+.sheet .grab { width: 40px; height: 4px; border-radius: 2px; background: var(--rule); margin: 0 auto 4px; }
+.sheet h2 { margin: 0; font-family: var(--serif); font-weight: 600; font-size: 24px; }
+.sheet .opt { display: flex; align-items: center; gap: 12px; min-height: 60px; padding: 8px 12px; border-radius: var(--rCtl); box-shadow: inset 0 0 0 1.5px var(--ghostEdge); text-align: left; width: 100%; font-weight: 600; font-size: 16px; }
+.sheet .opt:active { background: var(--sunk); }
+.sheet .opt span { font-weight: 400; color: var(--muted); font-size: 13px; display: block; }
+.sheet .opt.on { box-shadow: inset 0 0 0 2px var(--gold); }
+
+/* toast */
+.toast { position: fixed; left: 50%; bottom: calc(var(--tabH) + env(safe-area-inset-bottom, 0px) + 28px); transform: translateX(-50%) translateY(10px); background: #1a140c; color: #f5f2ec; padding: 10px 16px; border-radius: var(--rPill); font-size: 14px; font-weight: 500; opacity: 0; pointer-events: none; transition: opacity .25s, transform .25s var(--ease); z-index: 40; white-space: nowrap; }
+.toast.on { opacity: 1; transform: translateX(-50%); }
+
+/* prototype chrome: deliberately NOT part of the design */
+.proto { position: fixed; top: calc(env(safe-area-inset-top, 0px) + 8px); right: 8px; z-index: 50; display: flex; gap: 4px; font-family: ui-monospace, Menlo, monospace; font-size: 11px; }
+.proto button { background: #2c6866; color: #fff; padding: 4px 8px; border-radius: 6px; font: inherit; }
+</style>
+
+<div class="app" id="app" data-theme="light">
+  <div class="ptr" id="ptr"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle></svg></div>
+  <div class="pull" id="pull">
+
+  <!-- ───────── Početna ───────── -->
+  <section class="screen on" id="s-home">
+    <header class="top"><img class="logo" src="{{logo}}" alt=""><span class="wordmark">Cecilija</span>
+      <button class="iconbtn" type="button" data-toast="Obavijesti nisu u prototipu">{{bell}}<span class="dot">2</span></button></header>
+    <p class="greet"><b>Dobra večer, Josip.</b><span>Sutra je nastup.</span></p>
+
+    <section class="card hero">
+      <div class="eyebrow">Sljedeći nastup · Ljetno kino</div>
+      <div class="day"><b>14</b><span>rujna</span></div>
+      <div class="meta">Sutra · 21:00 · Redovna</div>
+      <div class="btns" data-answer></div>
+      <button class="state state--tap" type="button" data-go="stanje" data-state></button>
+    </section>
+
+    <div class="tiles">
+      <button class="tile" type="button" data-toast="Statistika nije u prototipu">
+        <div class="eyebrow">Statistika</div>
+        <div class="ring" id="ring"><i>212</i></div>
+        <div class="small">karata za sutra, od 350</div>
+      </button>
+      <button class="tile" type="button" data-toast="Ljestvica nije u prototipu">
+        <div class="eyebrow">Ljestvica</div>
+        <div class="podium"><div class="p2"><b>13</b>Cici</div><div class="p1"><b>14</b>Brko</div><div class="p3"><b>12</b>Baro</div></div>
+        <div class="small">ti si 4. s 11</div>
+      </button>
+    </div>
+
+    <button class="card" type="button" data-toast="Obavijesti nisu u prototipu" style="text-align:left">
+      <div class="line"><div class="ico">{{bell}}</div>
+        <div class="grow"><b>Nova postava za 2. rujna</b><div class="small">Plešeš kao crni kralj · prije 2 h</div></div>
+        <span class="chip chip--gold">2 nove</span></div>
+    </button>
+  </section>
+
+  <!-- ───────── Moreška ───────── -->
+  <section class="screen" id="s-moreska">
+    <div class="me"><div class="mark mark--crni">{{crown}}</div>
+      <div class="grow"><h1>Josip Ivančević</h1><div class="role">Crni kralj · 9 nastupa pred tobom</div></div></div>
+
+    <section class="card hero">
+      <div class="eyebrow">Sljedeći nastup · Ljetno kino</div>
+      <div class="day"><b>14</b><span>rujna</span></div>
+      <div class="meta">Ponedjeljak · 21:00 · Redovna</div>
+      <div class="note">{{note}}<span>Skup u 20:15 iza pozornice, kostimi su već u kinu.</span></div>
+      <div class="btns" data-answer></div>
+      <button class="state state--tap" type="button" data-go="stanje" data-state></button>
+    </section>
+
+    <div class="sec"><h3>Rujan</h3><span class="small">5 nastupa</span></div>
+    <div class="list">
+      <button class="row" type="button" data-toast="Detalj nastupa nije u prototipu"><div class="date"><b>15</b><span>uto</span></div><div class="grow"><b>Vanredna</b><span>10:00 · Zimsko kino</span></div><span class="chip">bez odgovora</span></button>
+      <button class="row" type="button" data-toast="Detalj nastupa nije u prototipu"><div class="date date--gold"><b>16</b><span>sri</span></div><div class="grow"><b>Redovna</b><span>21:00 · Ljetno kino</span></div><span class="chip">bez odgovora</span></button>
+      <button class="row" type="button" data-toast="Detalj nastupa nije u prototipu"><div class="date"><b>22</b><span>uto</span></div><div class="grow"><b>Vanredna</b><span>10:00 · Zimsko kino</span></div><span class="chip">bez odgovora</span></button>
+      <button class="row" type="button" data-toast="Detalj nastupa nije u prototipu"><div class="date date--gold"><b>28</b><span>pon</span></div><div class="grow"><b>Redovna</b><span>21:00 · Ljetno kino</span></div><span class="chip">bez odgovora</span></button>
+      <button class="row" type="button" data-toast="Detalj nastupa nije u prototipu"><div class="date date--gold"><b>30</b><span>sri</span></div><div class="grow"><b>Redovna</b><span>21:00 · Ljetno kino</span></div><span class="chip">bez odgovora</span></button>
+    </div>
+    <div class="sec"><h3>Listopad</h3><span class="small">3 nastupa</span></div>
+    <div class="list">
+      <button class="row" type="button" data-toast="Detalj nastupa nije u prototipu"><div class="date date--gold"><b>12</b><span>pon</span></div><div class="grow"><b>Redovna</b><span>21:00 · Ljetno kino</span></div><span class="chip">bez odgovora</span></button>
+      <button class="row" type="button" data-toast="Detalj nastupa nije u prototipu"><div class="date date--gold"><b>14</b><span>sri</span></div><div class="grow"><b>Redovna</b><span>21:00 · Ljetno kino</span></div><span class="chip">bez odgovora</span></button>
+      <button class="row" type="button" data-toast="Detalj nastupa nije u prototipu"><div class="date"><b>15</b><span>čet</span></div><div class="grow"><b>Vanredna</b><span>18:00 · Zimsko kino</span></div><span class="chip">bez odgovora</span></button>
+    </div>
+  </section>
+
+  <!-- ───────── Stanje ───────── -->
+  <section class="screen" id="s-stanje">
+    <button class="back" type="button" data-go="moreska">{{chevl}}Moreška</button>
+    <h1 class="title">Stanje</h1>
+    <p class="small" style="margin:-6px 0 0">Ponedjeljak, 14. rujna · 21:00 · Ljetno kino</p>
+    <div class="state" data-state style="margin:0;width:100%"></div>
+    <div class="cols">
+      <div class="col" id="col-crni"></div>
+      <div class="col" id="col-bili"></div>
+    </div>
+    <div class="col bule" id="col-bule"></div>
+    <button class="col" type="button" data-toast="Popis bez odgovora nije u prototipu" style="text-align:left"><div class="p noans"><span><b>Bez odgovora</b> <span class="small">· 52</span></span><span class="chev">{{chev}}</span></div></button>
+    <div class="actions" id="actions"></div>
+    <p class="small">Voditeljev pogled: dodirni ime da mu daš titulu za ovaj nastup. Plesač vidi isto bez radnji. Titule su po nastupu, ne po profilu.</p>
+  </section>
+
+  </div>
+
+  <!-- ───────── tab bar ───────── -->
+  <nav class="tabs"><div class="pillbar"><div class="thumb" id="thumb"></div>
+    <button class="tab on" type="button" data-tab="home">{{home}}<span>Početna</span></button>
+    <button class="tab" type="button" data-tab="moreska">{{swords}}<span>Moreška</span></button>
+    <button class="tab" type="button" data-toast="Statistika nije u prototipu">{{chart}}<span>Statistika</span></button>
+    <button class="tab" type="button" data-toast="Ljestvica nije u prototipu">{{trophy}}<span>Ljestvica</span></button>
+    <button class="tab" type="button" data-toast="Više nije u prototipu">{{more}}<span>Više</span></button>
+  </div></nav>
+
+  <div class="sheet-bg" id="sheet-bg"></div>
+  <div class="toast" id="toast"></div>
+</div>
+
+<div class="proto"><button type="button" id="p-theme">tema</button><button type="button" id="p-reset">reset</button></div>
+
+<script>
+(function () {
+  var THR = 8;
+  var ICON = { check: '{{check}}', chev: '{{chev}}', crown: '{{crown}}', crownnb: '{{crownnb}}', bell: '{{bell}}' };
+  // Josip: primary role crni_kralj, so "dolazim" lands in crni with no question asked (glossary: Attendance).
+  var ME = { nick: 'Josip I.', army: 'crni' };
+  var CRNI = ['Brko', 'Cici', 'Baro', 'Bavo', 'Bokšić', 'Brano', 'Čurkec', 'El Fare', 'Granić'];
+  var BILI = ['Roke', 'Beris', 'Blitva', 'Batak', 'Dino', 'Fran'];
+  var BULE = ['Ana P.', 'Eva D.'];
+  var TITLES = { crni_kralj: 'Crni kralj', otmanovic: 'Otmanović', bili_kralj: 'Bili kralj', bula: 'Bula' };
+  var state = { answer: null, screen: 'home', titles: { crni_kralj: null, otmanovic: null, bili_kralj: null, bula: null } };
+  var app = document.getElementById('app'), pull = document.getElementById('pull'), ptr = document.getElementById('ptr');
+
+  function titleOf(name) { for (var k in state.titles) if (state.titles[k] === name) return k; return null; }
+  function glyph(t) { return t === 'crni_kralj' || t === 'bili_kralj' ? ICON.crown : t === 'otmanovic' ? ICON.crownnb : ''; }
+  function mark(army, t) {
+    return '<div class="mark mark--sm mark--' + army + (t === 'bula' ? ' titled' : '') + '">' + glyph(t) + '</div>';
+  }
+  function counts() {
+    var c = CRNI.length, b = BILI.length;
+    if (state.answer && state.answer.status === 'coming') { if (state.answer.army === 'crni') c++; else b++; }
+    return { c: c, b: b };
+  }
+  function statusText(n) {
+    var low = [];
+    if (n.c < THR) low.push((THR - n.c === 1 ? 'fali još 1 crni' : 'fale još ' + (THR - n.c) + (THR - n.c < 5 ? ' crna' : ' crnih')));
+    if (n.b < THR) low.push((THR - n.b === 1 ? 'fali još 1 bili' : 'fale još ' + (THR - n.b) + (THR - n.b < 5 ? ' bila' : ' bilih')));
+    if (!low.length) return { ok: true, t: 'Ima nas dovoljno' };
+    var t = low.join(' · '); return { ok: false, t: t.charAt(0).toUpperCase() + t.slice(1) };
+  }
+  function renderState() {
+    var n = counts(), s = statusText(n), half = 50, tick = THR / 12 * half;
+    var html = '<div class="heads"><div class="army"><span class="k">Crni</span><span class="v' + (n.c < THR ? ' low' : '') + '">' + n.c + '</span></div>' +
+      '<div class="army"><span class="v' + (n.b < THR ? ' low' : '') + '">' + n.b + '</span><span class="k">Bili</span></div></div>' +
+      '<div class="split"><i class="crni" style="width:' + Math.min(n.c / 12, 1) * half + '%"></i><i class="bili" style="width:' + Math.min(n.b / 12, 1) * half + '%"></i><i class="mid"></i><i class="tick" style="left:' + (half - tick) + '%"></i><i class="tick" style="left:' + (half + tick) + '%"></i></div>';
+    document.querySelectorAll('[data-state]').forEach(function (el) {
+      var tap = el.hasAttribute('data-go');
+      el.innerHTML = html + '<div class="status' + (s.ok ? '' : ' low') + '"><span class="dot"></span>' + s.t + (tap ? '<span class="chev">' + ICON.chev + '</span>' : '') + '</div>';
+    });
+    var cc = CRNI.slice(), bb = BILI.slice();
+    if (state.answer && state.answer.status === 'coming') (state.answer.army === 'crni' ? cc : bb).unshift(ME.nick);
+    function person(army, name) {
+      var t = titleOf(name);
+      return '<button class="p' + (name === ME.nick ? ' me' : '') + '" type="button" data-title-for="' + name + '" data-army="' + army + '">' + mark(army, t) + '<span>' + name + '</span>' + (t ? '<span class="role">' + TITLES[t] + '</span>' : '') + '</button>';
+    }
+    function col(label, army, arr) {
+      var low = arr.length < THR;
+      var h = '<div class="head"><span class="k">' + label + '</span><span class="v' + (low ? ' low' : '') + '">' + arr.length + '</span><span class="t">' + (low ? 'fali ' + (THR - arr.length) : 'prag 8') + '</span></div>';
+      h += arr.map(function (p) { return person(army, p); }).join('');
+      for (var i = arr.length; i < THR; i++) h += '<div class="p ghost">mjesto ' + (i + 1) + '</div>';
+      return h;
+    }
+    document.getElementById('col-crni').innerHTML = col('Crni', 'crni', cc);
+    document.getElementById('col-bili').innerHTML = col('Bili', 'bili', bb);
+    document.getElementById('col-bule').innerHTML = '<div class="head"><span class="k">Bule</span><span class="v">' + BULE.length + '</span><span class="t">' + (state.titles.bula ? 'pleše ' + state.titles.bula : 'odaberi jednu') + '</span></div><div class="ps">' + BULE.map(function (p) { return person('bula', p); }).join('') + '</div>';
+    var given = Object.keys(state.titles).filter(function (k) { return state.titles[k]; }).length;
+    var missing = Object.keys(state.titles).filter(function (k) { return !state.titles[k]; }).map(function (k) { return TITLES[k].toLowerCase(); });
+    document.getElementById('actions').innerHTML = '<div class="hint"><span>Titule · ' + given + ' od 4</span><span>' + (missing.length ? 'fali: ' + missing.join(', ') : 'sve dodijeljene') + '</span></div>' +
+      '<div class="row2"><button class="btn btn--ghost" type="button" data-toast="Pozovi: sheet s porukom, nije u prototipu">' + ICON.bell + 'Pozovi</button>' +
+      '<button class="btn btn--primary' + (given < 4 ? ' off' : '') + '" type="button" data-confirm>' + ICON.check + 'Potvrdi postavu</button></div>';
+  }
+  function renderAnswer(pop) {
+    document.querySelectorAll('[data-answer]').forEach(function (el) {
+      if (!state.answer) {
+        el.innerHTML = '<button class="btn btn--primary" type="button" data-ans="coming">' + ICON.check + 'Dolazim</button><button class="btn btn--ghost" type="button" data-ans="not">Ne dolazim</button>';
+      } else if (state.answer.status === 'coming') {
+        el.innerHTML = '<button class="btn btn--done' + (pop ? ' pop' : '') + '" type="button" data-ans="change">' + ICON.check + 'Dolaziš · ' + state.answer.army + '</button><button class="btn btn--link" type="button" data-ans="change">Promijeni</button>';
+      } else {
+        el.innerHTML = '<button class="btn btn--ghost' + (pop ? ' pop' : '') + '" type="button" data-ans="change" style="flex:2">Ne dolaziš</button><button class="btn btn--link" type="button" data-ans="change">Promijeni</button>';
+      }
+    });
+  }
+  function toast(t) {
+    var el = document.getElementById('toast'); el.textContent = t; el.classList.add('on');
+    clearTimeout(toast.h); toast.h = setTimeout(function () { el.classList.remove('on'); }, 1600);
+  }
+  function go(name) {
+    state.screen = name;
+    document.querySelectorAll('.screen').forEach(function (s) { s.classList.remove('on'); });
+    var s = document.getElementById('s-' + name); s.classList.remove('on'); void s.offsetWidth; s.classList.add('on');
+    var tab = name === 'home' ? 0 : 1;
+    document.querySelectorAll('.tab').forEach(function (t, i) { t.classList.toggle('on', i === tab); });
+    document.getElementById('thumb').style.transform = 'translateX(' + (tab * 100) + '%)';
+    app.scrollTo({ top: 0 });
+    if (name === 'home') requestAnimationFrame(function () { document.getElementById('ring').style.setProperty('--deg', '218deg'); });
+  }
+  function sheet(html, onpick) {
+    var bg = document.getElementById('sheet-bg'); bg.classList.add('on');
+    var s = document.createElement('div'); s.className = 'sheet'; s.innerHTML = '<div class="grab"></div>' + html; app.appendChild(s);
+    function close() { bg.classList.remove('on'); s.remove(); }
+    bg.onclick = close;
+    s.querySelectorAll('[data-pick]').forEach(function (b) { b.onclick = function () { close(); onpick(b.getAttribute('data-pick')); }; });
+  }
+  function titleSheet(name, army) {
+    var opts = army === 'crni' ? ['crni_kralj', 'otmanovic'] : army === 'bili' ? ['bili_kralj'] : ['bula'];
+    var cur = titleOf(name);
+    var h = '<h2>' + name + '</h2><p class="small" style="margin:0">Titula vrijedi za ovaj nastup. Svaka ide točno jednoj osobi.</p>';
+    opts.forEach(function (k) {
+      var holder = state.titles[k];
+      h += '<button class="opt' + (cur === k ? ' on' : '') + '" type="button" data-pick="' + k + '">' + mark(army, k) + '<div>' + TITLES[k] + '<span>' + (holder && holder !== name ? 'sada ' + holder + ', preuzima ' + name : holder === name ? 'ima ' + name : 'nitko još') + '</span></div></button>';
+    });
+    h += '<button class="opt" type="button" data-pick="none"><div class="mark mark--sm" style="background:var(--sunk)"></div><div>Bez titule<span>' + (army === 'bula' ? 'ne pleše bulu ovaj put' : 'obični ' + army) + '</span></div></button>';
+    sheet(h, function (k) {
+      for (var t in state.titles) if (state.titles[t] === name) state.titles[t] = null;
+      if (k !== 'none') { state.titles[k] = name; toast(name + ' · ' + TITLES[k]); } else toast(name + ' · bez titule');
+      renderState();
+    });
+  }
+  app.addEventListener('click', function (e) {
+    var t = e.target.closest('[data-ans],[data-go],[data-tab],[data-toast],[data-title-for],[data-confirm]'); if (!t) return;
+    if (t.hasAttribute('data-ans')) {
+      var a = t.getAttribute('data-ans');
+      if (a === 'coming') { state.answer = { status: 'coming', army: ME.army }; renderAnswer(true); renderState(); toast('Zapisano: dolaziš, ' + ME.army); }
+      else if (a === 'not') { state.answer = { status: 'not' }; renderAnswer(true); renderState(); toast('Zapisano: ne dolaziš'); }
+      else { state.answer = null; renderAnswer(false); renderState(); }
+      return;
+    }
+    if (t.hasAttribute('data-title-for')) { titleSheet(t.getAttribute('data-title-for'), t.getAttribute('data-army')); return; }
+    if (t.hasAttribute('data-confirm')) { toast(t.classList.contains('off') ? 'Prvo dodijeli sve četiri titule' : 'Potvrdi postavu nije u prototipu'); return; }
+    if (t.hasAttribute('data-go')) { go(t.getAttribute('data-go')); return; }
+    if (t.hasAttribute('data-tab')) { go(t.getAttribute('data-tab')); return; }
+    toast(t.getAttribute('data-toast'));
+  });
+
+  /* pull to refresh: only from the very top, only downwards; the page never leaves its frame */
+  var MAX = 110, ARM = 72, y0 = null, dy = 0, busy = false;
+  function start(y) { if (busy || app.scrollTop > 0) return; y0 = y; dy = 0; pull.classList.remove('settle'); ptr.classList.remove('settle'); }
+  function move(y, ev) {
+    if (y0 === null || busy) return false;
+    dy = y - y0;
+    if (dy <= 0 || app.scrollTop > 0) { if (dy <= 0) y0 = y; else y0 = null; return false; }
+    if (ev && ev.cancelable) ev.preventDefault();
+    var d = MAX * (1 - Math.exp(-dy / 160));           /* elastic: never past MAX */
+    var p = Math.min(dy / ARM, 1);
+    pull.style.transform = 'translateY(' + d + 'px)';
+    ptr.style.opacity = Math.min(p * 1.4, 1);
+    ptr.style.transform = 'translateY(' + (d - 48) + 'px) scale(' + (0.6 + 0.4 * p) + ')';
+    ptr.querySelector('circle').style.strokeDashoffset = 56.5 * (1 - p);
+    ptr.classList.toggle('armed', p >= 1);
+    return true;
+  }
+  function end() {
+    if (y0 === null) return; var armed = dy >= ARM; y0 = null;
+    pull.classList.add('settle'); ptr.classList.add('settle');
+    if (!armed) { pull.style.transform = ''; ptr.style.opacity = 0; ptr.style.transform = 'translateY(-48px) scale(.6)'; ptr.classList.remove('armed'); return; }
+    busy = true; pull.style.transform = 'translateY(56px)'; ptr.style.transform = 'translateY(8px) scale(1)'; ptr.classList.add('spin');
+    setTimeout(function () {
+      ptr.classList.remove('spin', 'armed'); pull.style.transform = ''; ptr.style.opacity = 0; ptr.style.transform = 'translateY(-48px) scale(.6)';
+      var s = document.querySelector('.screen.on'); s.classList.remove('on'); void s.offsetWidth; s.classList.add('on');
+      renderState(); renderAnswer(false);
+      var t = new Date(); toast('Osvježeno · ' + t.getHours() + ':' + ('0' + t.getMinutes()).slice(-2));
+      busy = false;
+    }, 900);
+  }
+  app.addEventListener('touchstart', function (e) { start(e.touches[0].clientY); }, { passive: true });
+  app.addEventListener('touchmove', function (e) { move(e.touches[0].clientY, e); }, { passive: false });
+  app.addEventListener('touchend', end); app.addEventListener('touchcancel', end);
+  var mouse = false;
+  app.addEventListener('mousedown', function (e) { if (e.button === 0) { mouse = true; start(e.clientY); } });
+  window.addEventListener('mousemove', function (e) { if (mouse) move(e.clientY, null); });
+  window.addEventListener('mouseup', function () { if (mouse) { mouse = false; end(); } });
+
+  document.getElementById('p-theme').onclick = function () { app.dataset.theme = app.dataset.theme === 'dark' ? 'light' : 'dark'; };
+  document.getElementById('p-reset').onclick = function () { state.answer = null; for (var k in state.titles) state.titles[k] = null; renderAnswer(false); renderState(); go('home'); };
+  renderAnswer(false); renderState(); go('home');
+})();
+</script>
