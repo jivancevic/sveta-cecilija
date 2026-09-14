@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { APP_STRINGS } from '@/lib/app/strings'
 import { Button, Note } from '../ui'
 import { normalizeMobile, smsHref, whatsappHref } from '@/lib/app/invite-link'
@@ -49,6 +50,7 @@ export function InviteActions({
   nickname: string
   mobile: string | null
 }) {
+  const router = useRouter()
   const [busy, setBusy] = useState<'link' | 'mail' | null>(null)
   const [minted, setMinted] = useState<Minted | null>(null)
   const [notice, setNotice] = useState<string | null>(null)
@@ -76,6 +78,9 @@ export function InviteActions({
       } else {
         setMinted({ link: body.link, message: body.message, mobile: body.mobile ?? mobile })
         setCopied(false)
+        // Minting opens a login where there was none, which changes the roster
+        // and the bulk-invitation count on the cached Članovi tab (#593).
+        router.refresh()
       }
     } catch {
       setNotice(APP_STRINGS.inviteLink.failed)
@@ -97,6 +102,7 @@ export function InviteActions({
         | { error?: string; message?: string }
         | null
       setNotice(body?.message ?? body?.error ?? APP_STRINGS.invite.unexpected)
+      if (res.ok) router.refresh()
     } catch {
       setNotice(APP_STRINGS.invite.unexpected)
     }

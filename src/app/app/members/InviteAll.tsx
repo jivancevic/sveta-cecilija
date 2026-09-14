@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { APP_STRINGS } from '@/lib/app/strings'
 import { Button, Note, Section } from '../ui'
 
@@ -16,6 +17,7 @@ import { Button, Note, Section } from '../ui'
 // keeping that half in the middle of a list of names.
 
 export function InviteAll({ missing }: { missing: number }) {
+  const router = useRouter()
   const [state, setState] = useState<{ busy: boolean; message: string | null }>({
     busy: false,
     message: null,
@@ -39,6 +41,10 @@ export function InviteAll({ missing }: { missing: number }) {
         busy: false,
         message: body?.message ?? body?.error ?? APP_STRINGS.inviteAll.unexpected,
       })
+      // A login was minted for every dancer who had none, so the roster's
+      // "missing" count and this very button are now stale (#593). The tabs are
+      // prefetched, so nothing re-reads the server unless it is asked to.
+      if (res.ok) router.refresh()
     } catch {
       setState({ busy: false, message: APP_STRINGS.inviteAll.unexpected })
     }

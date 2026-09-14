@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { APP_STRINGS } from '@/lib/app/strings'
 import { Button, Note } from '../ui'
 
@@ -15,6 +16,7 @@ import { Button, Note } from '../ui'
 // The server owns every rule; this component owns the spinner and the sentence
 // it is handed.
 export function SetPasswordForm() {
+  const router = useRouter()
   const [password, setPassword] = useState('')
   const [repeat, setRepeat] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -36,6 +38,9 @@ export function SetPasswordForm() {
         setRepeat('')
         setDone(true)
         setBusy(false)
+        // Nothing on this screen changes, but Početna and Više may be carrying
+        // a "set a password" prompt in the router cache (#593).
+        router.refresh()
         return
       }
       const body = (await res.json().catch(() => null)) as { error?: string } | null
