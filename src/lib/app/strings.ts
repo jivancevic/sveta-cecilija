@@ -1566,6 +1566,12 @@ export const APP_STRINGS = {
     title: 'Dodaj Ceciliju na ekran',
     why: 'S ikonom na ekranu dobivaš obavijesti o izvedbama i raspored u jednom dodiru.',
     snooze: 'Kasnije',
+    /**
+     * The Početna offer's way on (#616), where the browser gives no one-tap
+     * install to run: an iPhone, or a webview that has to be left first. It
+     * opens the same full-screen guide the rehearsal QR points at.
+     */
+    nudgeGuide: 'Upute za instalaciju',
     /** The full-screen guide at `/app/install`, also the QR target. */
     guideTitle: 'Instalacija',
     guideIntro: 'Tri koraka i Cecilija je na ekranu kao svaka druga aplikacija.',

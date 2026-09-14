@@ -9,6 +9,7 @@ import { resolveAppViewer } from '@/lib/app/viewer'
 import { Card, Chip, Hero, List, ListRow, Podium, Ring, Tile, Tiles, Trophy } from '../ui'
 import { AppShell } from '../AppShell'
 import { deniedFor } from '../DeniedPage'
+import { InstallNudge } from '../InstallNudge'
 import { Answer } from './moreska/Answer'
 import { StateBar } from './moreska/StateBar'
 import { HeroHalves } from '../HeroHalves'
@@ -148,6 +149,14 @@ export default async function AppHomePage() {
           )}
         </Hero>
       )}
+
+      {/* The install offer (#616), under the reader's job and above the rest.
+          It renders nothing at all on a phone that already runs the app from
+          its home screen, and it decides that from the browser rather than from
+          a flag, so it can never be wrong about it. Placed here and on no other
+          screen: Početna is the front door, and an offer on top of a screen
+          somebody opened to do something is noise. */}
+      <InstallNudge />
 
       {tiles.length > 0 && <Tiles>{tiles.map(renderTile)}</Tiles>}
 

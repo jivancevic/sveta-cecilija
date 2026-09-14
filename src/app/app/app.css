@@ -609,6 +609,53 @@ html:has(> .app) {
   color: var(--muted);
 }
 
+/* The install offer (#616): a card, because it asks the reader to do something,
+   and a Note is by definition the thing they are only told. Deliberately quiet
+   next to the hero above it — no gold fill, no eyebrow — since it is an offer
+   about the app rather than about the evening, and it must not compete with the
+   one control the reader came for. */
+.app__install-nudge {
+  margin: 14px 0 0;
+}
+
+.app__install-nudge-head {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.app__install-nudge-head b {
+  display: block;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.app__install-nudge-head p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+/* The glyph sits on its own disc so the card reads as an object with a subject,
+   the way every other leading icon in Cecilija does. */
+.app__install-nudge-icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  background: var(--sunk);
+  color: var(--ink);
+}
+
+.app__install-nudge-failed {
+  margin: 0;
+  color: var(--warn);
+  font-size: 13px;
+}
+
 /* A card's one number. Big enough to be the thing you see, well short of the
    hero's 80px day, which stays the biggest thing the app draws.
 

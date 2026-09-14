@@ -8,7 +8,13 @@ import { ONBOARDING_STORAGE_KEY } from '@/lib/app/onboarding'
 import type { AppPlatform } from '@/lib/app/platform'
 import { subscribeToPush } from '../push-client'
 import { InstallSteps, type StepPlatform } from '../InstallSteps'
-import { pushSupported, readPlatform, useInstallPrompt, webviewHostIsIos } from '../use-install'
+import {
+  pushSupported,
+  readPlatform,
+  snooze,
+  useInstallPrompt,
+  webviewHostIsIos,
+} from '../use-install'
 
 // The Dobrodošlica (#457, glossary: *Dobrodošlica*).
 //
@@ -178,6 +184,12 @@ export function Onboarding({
     } catch {
       // Not remembered here; the cookie below is the record anyway.
     }
+    // Početna carries the install offer now (#616), and it reads the browser
+    // rather than this cookie — so without a snooze a dancer who has just been
+    // asked about installing would land on the same question again, one screen
+    // later. It goes quiet for a day and then keeps asking, which is the point:
+    // "Kasnije" here no longer means the app never mentions it again.
+    snooze()
     void rememberOnDevice().then(() => {
       router.replace('/app')
       router.refresh()
