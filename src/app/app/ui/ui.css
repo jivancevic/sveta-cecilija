@@ -107,6 +107,9 @@
   height: 52px;
   padding: 0 16px;
   border-radius: var(--rCtl);
+  /* An anchor wears this shape too (a mailto, a way out of an empty season),
+     and a button that is underlined reads as a link inside a button. */
+  text-decoration: none;
   font-family: inherit;
   font-weight: 600;
   font-size: 16px;
