@@ -5350,6 +5350,9 @@ a.app__statrow-main:focus-visible {
 
 .app__army-dot--crni {
   background: #1a140c;
+  /* The ring is what makes ink visible on ink, the same trick the crni disc
+     plays: without it the dot disappears into a dark background. */
+  box-shadow: inset 0 0 0 1px var(--markEdge);
 }
 
 .app__army-dot--bili {
@@ -5381,7 +5384,7 @@ a.app__statrow-main:focus-visible {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin: 10px 0 4px;
+  margin: 10px 0 18px;
 }
 
 .app__member-head-body {
@@ -5422,6 +5425,14 @@ a.app__statrow-main:focus-visible {
   margin-top: 8px;
   padding-top: 8px;
   border-top: 1px solid var(--rule);
+}
+
+/* "Nothing here yet" inside a sheet is a line, not a panel: the sheet is
+   already the panel, and a second one around two words opens a hole in it. */
+.app__join-block .app__empty {
+  margin: 10px 0;
+  font-size: 14px;
+  color: var(--muted);
 }
 
 /* ── The profile, and Dodaj plesača ─────────────────────── */
