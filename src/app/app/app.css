@@ -4292,7 +4292,12 @@ a.app__ob-link {
   letter-spacing: -0.02em;
 }
 
-.app__hero-half-head span {
+/* `:where()` on the parent, so this rule weighs 0,0,1 and the KindChip inside
+   it keeps the colour its own class gives it (#592). A plain
+   `.app__hero-half-head span` also matches the chip — it IS a span — and at
+   0,2,0 it painted REDOVNA gold on gold. Never `!important`: the chip owns its
+   colour, the line around it does not. */
+:where(.app__hero-half-head) span {
   display: flex;
   align-items: center;
   gap: 8px;

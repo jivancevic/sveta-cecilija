@@ -398,7 +398,10 @@ button.ui-row:hover {
   font-weight: 600;
 }
 
-.ui-row__body span {
+/* `:where()` so the row's sub-line weighs 0,0,1: a chip in a row body is a
+   span too, and at 0,2,0 this rule would repaint it muted over its own tone
+   (#592). The row says what its quiet text looks like, never what a chip does. */
+:where(.ui-row__body) span {
   color: var(--muted);
   font-size: 13px;
 }
