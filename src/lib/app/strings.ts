@@ -621,6 +621,44 @@ export const APP_STRINGS = {
     },
   },
 
+  /**
+   * A moreškant's season profile (#608), and Moja sezona, which is the same
+   * screen with the reader in it.
+   *
+   * Croatian throughout, like every `/app` screen. The two rings are named by
+   * the lists they belong to (`board.lists`) rather than re-worded here.
+   */
+  profile: {
+    /** Under the name: the roles this person is able to dance. */
+    canDance: 'Pleše',
+    /** A dancer whose profile carries no role yet. */
+    canDanceNone: 'Uloge još nisu upisane.',
+    /** Under a ring: "4. mjesto od 70". */
+    place: (rank: number, total: number) => `${rank}. mjesto od ${total}`,
+    /** A dancer with no evening of this kind: a rank would be a rank of nothing. */
+    placeNone: 'bez nastupa',
+    /** Inside a ring: "od 21". */
+    ringOf: (total: number) => `od ${total}`,
+    /** The record, across every season including the one being read. */
+    record: 'Najbolja sezona',
+    recordValue: (count: number, season: number) => `${count} (${season}.)`,
+    /** When the record IS the season on the screen. */
+    recordCurrent: 'Ovo ti je najbolja sezona.',
+    recordCurrentOther: 'Ovo mu je najbolja sezona.',
+    recordNone: 'još nema',
+    /** The list of evenings danced. */
+    evenings: 'Nastupi',
+    eveningsCount: { one: 'nastup', few: 'nastupa', many: 'nastupa' },
+    /** A dancer who has danced nothing this season. */
+    eveningsEmpty: 'Ove sezone još nema potvrđene postave.',
+    /** The chart at the bottom, on somebody else's profile. */
+    legendOther: 'Zlatno: u potvrđenoj postavi. Sivo: svi potvrđeni nastupi sezone.',
+    /** The back link of the profile, which is always reached from a list. */
+    back: 'Natrag',
+    /** The screen title in the header: the person, not the word "profil". */
+    title: (nickname: string) => nickname,
+  },
+
   /** The "Više" tab: everything that is not an evening (#457). */
   more: {
     stats: 'Statistika sezone',

@@ -74,8 +74,8 @@ export const ALLOW_LIST: Record<string, string> = {
     'Issues a dancer login (creates the Users row and mints the reset token, #424/#463), and since #511 also holds ensureJoinLogin, the same job for an approved rehearsal claim. Članovi moved every LIST it used to share behind repo.members; what is left is the account half, which is repo.users plus repo.auth and waits for both (#475).',
 
   // ── Finished screens with no ticket left: phase B ────────────────────────
-  'src/lib/app/my-season-data.ts':
-    'A dancer’s own season on Ljestvica (#457). That screen is finished and no v1 ticket rebuilds it, so it waits for phase B (seam research 6.4).',
+  'src/lib/app/dancer-season-data.ts':
+    'A moreškant’s season profile (#608), which replaced my-season-data.ts: the identity already comes through repo.members.byId, and what is left is the season’s shows and one dancer’s lineups. It waits for phase B with stats-data.ts beside it, because both need the same lineups reader on the seam (seam research 6.4).',
   'src/lib/app/stats-data.ts':
     'The roster scoreboard on Ljestvica (#437). Finished screen, no v1 ticket rebuilds it; waits for phase B. Note Statistika (#508) is the SALES screen and does not touch this loader.',
 }

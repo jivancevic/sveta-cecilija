@@ -555,8 +555,14 @@ The top three of a list wear a **cup** carrying their rank, so a tie reads as tw
 
 The full list is filtered by **seven chips, and they mean two different things on purpose** (#607): `crni`, `bili` and `bula` select PEOPLE by the army of their profile's *Primary role* and keep counting every evening they danced, while `crni kralj`, `bili kralj` and `otmanović` count how many times that title was GIVEN. The first answers "who is the most active crni" — a crni who fills in as bili when that army is short is still a crni who turns up — and the second answers "who have we given the crown to". Summing the army lists therefore overshoots the season's evenings, which is not double counting: the two groups measure different things. Under any chip but "svi" only dancers above zero are listed, and the rank restarts at 1.
 
-**No milestones and no "puna sezona"** since #607: 5, 10, 15 and 20 were a ladder the app invented, and both were deleted rather than replaced. No streaks, ever. Past seasons selectable.
+Every row, and every step of a podium, opens that dancer's **season profile** (see below). **No milestones and no "puna sezona"** since #607: 5, 10, 15 and 20 were a ladder the app invented, and both were deleted rather than replaced. No streaks, ever. Past seasons selectable.
 _Avoid_: points, streak, prekretnica, ranking by answers, "Moje", statistika (that word is the sales screen).
+
+### Season profile (profil moreškanta)
+One moreškant's year on one screen, at `/app/leaderboard/[memberId]`, behind the same permission as *Ljestvica* (#608). Their name and nickname, the roles they are able to dance, a ring for each of the two lists with its count, place and role breakdown, their best season ever, the evenings they danced with the role worn in each, and the season month by month. **Moja sezona is the same screen with the reader in it**, and the only difference is one block: the standing sentence and the rank movement, which are a message to the reader and belong on nobody else's profile.
+
+It is the one dancer-facing surface that shows **ime i prezime** (ADR-0019, amended by #608): seventy people who all know each other, and a nickname with nothing behind it identifies nobody who has not met them. The **mobile and the e-mail never appear**, on anybody's profile including the reader's own — those stay the voditelj's on *Članovi*, which is also where every write about a dancer stays. A *vanredna* in the list of evenings is named "Vanredna" and carries no venue and no client, because that is the register a dancer reads.
+_Avoid_: dosje, kartoton, "moj profil" (that is *Profil*, the account screen).
 
 ### Dobrodošlica (onboarding)
 The three-step walkthrough a moreškant sees once per device after signing in: add to the home screen (left out when the app is already opened as an installed app), turn on notifications, subscribe to the calendar feed. Every step can be skipped and skipping counts as seen. Remembered on the device only, so a new phone shows it again.

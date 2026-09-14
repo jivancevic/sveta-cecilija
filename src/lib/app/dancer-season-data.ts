@@ -1,0 +1,194 @@
+import { getPayload } from 'payload'
+import config from '@payload-config'
+import { getRepo } from '@/lib/repo'
+import { seasonYear } from '@/lib/member/season'
+import { toIsoDate } from '@/lib/to-iso-date'
+import { relationIdString } from '@/lib/payload-relation'
+import { isDanceRole } from '@/lib/moreskant-profile'
+import { VENUE_LABEL, type Venue } from '@/lib/venues'
+import type { PerformanceKind } from '@/lib/show-performance'
+import { buildMySeason, type MySeason } from './my-season-loaders'
+import { initialsOf } from './members-screen'
+import {
+  bestSeason,
+  dancerEvenings,
+  seasonCounts,
+  toDancerIdentity,
+  type DancerEvening,
+  type DancerIdentity,
+  type DancerSeasonLineupRow,
+  type DancerSeasonPerformance,
+} from './dancer-season'
+
+// The IO wiring behind the season profile (#608) — the `my-season-data.ts`
+// shape: the Payload calls and nothing else, so every rule about what a profile
+// shows stays in the pure, unit-tested `dancer-season.ts`.
+//
+// **One pair of season queries feeds two things.** The month chart and the list
+// of evenings are the same shows and the same lineups read twice, so the loader
+// asks once and hands the rows to `buildMySeason` and to `dancerEvenings`. The
+// alternative — calling `getMySeason` and then querying the season again for
+// the list — was two round trips for one season on a phone.
+//
+// The local API runs with `overrideAccess: true`, so collection access scopes
+// none of these reads; the caller has already established through the `/app`
+// access decision that the viewer is on the roster. Who may be READ here is
+// therefore decided by the projection in `dancer-season.ts`, not by Payload.
+
+/** Everything the profile draws about one dancer in one season. */
+export interface DancerProfile {
+  identity: DancerIdentity
+  /** The chart, the totals and the role split: `buildMySeason`, for this person. */
+  season: MySeason
+  /** The evenings they danced, newest first. */
+  evenings: DancerEvening[]
+  /** Their best Moreška season ever, current season included; null for none. */
+  record: { season: number; count: number; isCurrent: boolean } | null
+}
+
+/** Croatian, because every `/app` screen is. The venue names buyers read. */
+const venueLabel = (value: unknown): string | null =>
+  typeof value === 'string' && value in VENUE_LABEL.hr ? VENUE_LABEL.hr[value as Venue] : null
+
+function toPerformance(doc: Record<string, unknown>): DancerSeasonPerformance {
+  return {
+    id: String(doc.id),
+    date: toIsoDate(doc.date),
+    kind: (doc.kind as PerformanceKind) ?? 'redovna',
+    place: venueLabel(doc.venue),
+    confirmed: doc.lineupConfirmed === true,
+    cancelled: doc.status === 'cancelled',
+    isPublic: doc.isPublic === true,
+  }
+}
+
+function toLineupRow(doc: Record<string, unknown>): DancerSeasonLineupRow | null {
+  const performanceId = relationIdString(doc.performance)
+  const memberId = relationIdString(doc.member)
+  if (!performanceId || !memberId) return null
+  // A `voditelj` line is not a dance role: running an evening is not dancing it,
+  // so it reaches neither the chart nor the list (CONTEXT.md → *Voditelj (u
+  // postavi)*).
+  if (!isDanceRole(doc.role)) return null
+  return { performanceId, memberId, role: doc.role }
+}
+
+/**
+ * One dancer's profile, or null when the id is not an active moreškant's.
+ *
+ * The identity comes through the repository seam (`repo.members.byId`), which
+ * is what an `/app` screen is supposed to use; everything with a season in it
+ * still reads Payload directly, the way `my-season-data.ts` and
+ * `stats-data.ts` do, until the seam grows a lineups reader.
+ */
+export async function getDancerProfile(
+  memberId: string,
+  season: number,
+  seasons: readonly number[],
+): Promise<DancerProfile | null> {
+  const row = await getRepo().members.byId(memberId)
+  const identity = toDancerIdentity(row, row ? initialsOf(row.name) : '')
+  if (!identity) return null
+
+  const payload = await getPayload({ config })
+
+  const showDocs = (
+    await payload.find({
+      collection: 'shows',
+      where: {
+        and: [
+          { date: { greater_than_equal: `${season}-01-01T00:00:00.000Z` } },
+          { date: { less_than: `${season + 1}-01-01T00:00:00.000Z` } },
+        ],
+      },
+      sort: 'date',
+      limit: 1000,
+      depth: 0,
+      overrideAccess: true,
+    })
+  ).docs as unknown as Record<string, unknown>[]
+
+  const performances = showDocs.map(toPerformance)
+  const confirmedIds = performances.filter((p) => p.confirmed && !p.cancelled).map((p) => p.id)
+
+  // Scoped to this one dancer, like Moja sezona's: the profile is about one
+  // person, so it reads one person's rows rather than the season's.
+  const lineupDocs =
+    confirmedIds.length > 0
+      ? ((
+          await payload.find({
+            collection: 'lineups',
+            where: {
+              and: [{ performance: { in: confirmedIds } }, { member: { equals: identity.memberId } }],
+            },
+            limit: 5000,
+            depth: 0,
+            overrideAccess: true,
+          })
+        ).docs as unknown as Record<string, unknown>[])
+      : []
+
+  const lineups = lineupDocs
+    .map(toLineupRow)
+    .filter((r): r is DancerSeasonLineupRow => r !== null)
+
+  // ── The record: every season, not this one ───────────────────────────────
+  // Two queries rather than a join, and they stay small because both are
+  // scoped to one dancer: their lineup rows, then the evenings behind them.
+  const allLineupDocs = (
+    await payload.find({
+      collection: 'lineups',
+      where: { member: { equals: identity.memberId } },
+      limit: 5000,
+      depth: 0,
+      overrideAccess: true,
+    })
+  ).docs as unknown as Record<string, unknown>[]
+
+  const allIds = [
+    ...new Set(
+      allLineupDocs
+        .map((doc) => relationIdString(doc.performance))
+        .filter((id): id is string => id !== null),
+    ),
+  ]
+
+  const allShowDocs =
+    allIds.length > 0
+      ? ((
+          await payload.find({
+            collection: 'shows',
+            where: { id: { in: allIds } },
+            limit: 5000,
+            depth: 0,
+            overrideAccess: true,
+          })
+        ).docs as unknown as Record<string, unknown>[])
+      : []
+
+  const everEvenings = dancerEvenings({
+    performances: allShowDocs.map(toPerformance),
+    lineups: allLineupDocs
+      .map(toLineupRow)
+      .filter((r): r is DancerSeasonLineupRow => r !== null),
+    memberId: identity.memberId,
+  })
+
+  return {
+    identity,
+    season: buildMySeason({
+      season,
+      seasons,
+      performances: performances.map((p) => ({
+        id: p.id,
+        date: p.date,
+        confirmed: p.confirmed,
+        cancelled: p.cancelled,
+      })),
+      lineups,
+      memberId: identity.memberId,
+    }),
+    evenings: dancerEvenings({ performances, lineups, memberId: identity.memberId }),
+    record: bestSeason(seasonCounts(everEvenings), seasonYear(new Date())),
+  }
+}
