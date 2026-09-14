@@ -4593,6 +4593,7 @@ span.app__sale-head {
   --ch-partner: #8c5a3c; /* terracotta bronze */
   --ch-comp: #6a5a7d; /* muted plum */
   --ch-cancelled: var(--rule);
+  --ch-track: var(--sunk); /* the ceiling a bar fills up to */
 }
 
 /* The same four, lifted for a dark card: the hue is kept so the legend still
@@ -4604,6 +4605,10 @@ span.app__sale-head {
   --ch-partner: #d4936a;
   --ch-comp: #a795c4;
   --ch-cancelled: var(--track);
+  /* On paper the ceiling is a surface below the card; at night `--sunk` is
+     almost black and twenty of them read as holes cut in the card, so the
+     ceiling goes the other way and lifts. */
+  --ch-track: var(--track);
 }
 
 /* The screen: one column of cards and section lines, like every other (#571). */
@@ -4636,7 +4641,9 @@ span.app__sale-head {
   line-height: 1.1;
 }
 
-.app__st-fig span {
+/* The direct child only: the figure itself may be a `CountUp`, which renders a
+   span of its own inside the number and would otherwise be shrunk to a caption. */
+.app__st-fig > span {
   color: var(--muted);
   font-size: 13px;
 }
@@ -4711,7 +4718,8 @@ span.app__sale-head {
   flex-direction: column-reverse;
   width: 100%;
   margin: 4px 0 6px;
-  background: var(--sunk);
+  border-radius: 3px;
+  background: var(--ch-track);
   overflow: hidden;
 }
 
@@ -4758,7 +4766,8 @@ span.app__sale-head {
 .app__mix-track {
   display: flex;
   height: 14px;
-  background: var(--sunk);
+  border-radius: var(--rPill);
+  background: var(--ch-track);
   overflow: hidden;
 }
 
@@ -4840,7 +4849,8 @@ a.app__statrow-main:focus-visible {
   display: block;
   height: 6px;
   margin: 6px 0 5px;
-  background: var(--sunk);
+  border-radius: var(--rPill);
+  background: var(--ch-track);
   overflow: hidden;
 }
 
