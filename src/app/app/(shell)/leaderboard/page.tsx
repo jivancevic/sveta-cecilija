@@ -1,5 +1,6 @@
-import { getMySeason } from '@/lib/app/my-season-data'
 import { getSeasonStats } from '@/lib/app/stats-data'
+import { getDancerProfile } from '@/lib/app/dancer-season-data'
+import { profileRings } from '@/lib/app/profile-rings'
 import { parseLeaderboardSegment } from '@/lib/app/leaderboard-loaders'
 import {
   LEADERBOARD_KINDS,
@@ -12,17 +13,24 @@ import {
 import { APP_STRINGS } from '@/lib/app/strings'
 import { AppShell } from '../../AppShell'
 import { openScreen } from '../../gate'
+import { Card } from '../../ui'
 import { Board, type BoardList } from './Board'
+import { DancerProfileView } from './DancerProfileView'
 import { LeaderboardSegments } from './LeaderboardSegments'
-import { MySeason } from './MySeason'
 
 // `/app/leaderboard` — the Ljestvica screen (#457, #437; merged by #495,
-// reskinned by #568).
+// reskinned by #568, gamified by #607 and #608).
 //
 // Two panels: "Ljestvica" is the roster ranked and "Moja sezona" is the
 // dancer's own year. **Ljestvica is first and opens by default** since #568
 // (Q36): the screen is called Ljestvica, and a tab that opens on something
 // other than its own name asks the reader to go looking for it.
+//
+// **Moja sezona is now a profile** (#608): the same `DancerProfileView` another
+// dancer's `/app/leaderboard/[memberId]` renders, with one block more — the
+// standing sentence and the rank movement, which are a message to the reader
+// and belong on nobody else's screen. One component, so the two can never drift
+// into two different accounts of one season.
 //
 // Both panels are read on the server whichever the URL opens on, so the toggle
 // costs no request, and `?season=` means the same year in either. The board is
@@ -50,13 +58,14 @@ export default async function LeaderboardPage({
   const requested = Array.isArray(params.season) ? params.season[0] : params.season
   const segment = parseLeaderboardSegment(Array.isArray(params.part) ? params.part[0] : params.part)
 
-  // Both panels are read and rendered on the server, whichever one the URL
-  // opens on: the toggle is then free, and the season link below it means the
-  // same thing in either panel.
-  const [mine, stats] = await Promise.all([
-    getMySeason(requested, me?.id ?? null),
-    getSeasonStats(requested),
-  ])
+  // The season's scoreboard is what BOTH panels are built from: the board ranks
+  // it and the profile takes its rings off the same ranking, so the two can
+  // never print two places for one dancer.
+  const stats = await getSeasonStats(requested)
+
+  // A voditelj with no Member row has no dancer to show. The panel then says so
+  // and prints the SEASON's numbers, which are facts they can still use.
+  const profile = me ? await getDancerProfile(String(me.id), stats.season, stats.seasons) : null
 
   const lists: BoardList[] = LEADERBOARD_KINDS.map((kind) => {
     const confirmed = kindsOf(kind).reduce((sum, k) => sum + stats.confirmedByKind[k], 0)
@@ -85,18 +94,35 @@ export default async function LeaderboardPage({
     }
   })
 
-  const statsRow = me ? (stats.rows.find((r) => r.memberId === String(me.id)) ?? null) : null
+  const moreska = lists.find((l) => l.kind === 'moreska') ?? null
 
   return (
-    <AppShell viewer={viewer} screen="leaderboard" season={mine.season}>
+    <AppShell viewer={viewer} screen="leaderboard" season={stats.season}>
       <LeaderboardSegments
         initial={segment}
-        season={mine.season}
-        seasons={mine.seasons}
+        season={stats.season}
+        seasons={stats.seasons}
         mine={
-          <MySeason mine={mine} hasMember={me != null} byKind={statsRow?.byKind ?? null} />
+          profile ? (
+            <DancerProfileView
+              profile={profile}
+              rings={profileRings({
+                stats,
+                memberId: profile.identity.memberId,
+                mine: true,
+              })}
+              mine
+              standing={moreska?.standing ?? null}
+              movement={moreska?.movement ?? null}
+            />
+          ) : (
+            <Card className="app__lb-nomember">
+              <b>{APP_STRINGS.mySeason.noMember}</b>
+              <p>{APP_STRINGS.mySeason.noMemberBody}</p>
+            </Card>
+          )
         }
-        all={<Board lists={lists} season={mine.season} />}
+        all={<Board lists={lists} season={stats.season} />}
       />
     </AppShell>
   )

@@ -72,9 +72,20 @@ function Mark({ row }: { row: RankRow }) {
   return <RoleMark army={row.army} title={row.title} initials={row.initials} small />
 }
 
-function Row({ row, pinned = false }: { row: RankRow; pinned?: boolean }) {
+function Row({
+  row,
+  season,
+  pinned = false,
+}: {
+  row: RankRow
+  season: number
+  pinned?: boolean
+}) {
   return (
     <ListRow
+      // Every row opens that dancer's season (#608). The screen stopped being a
+      // dead end here: seventy nicknames, each now a way in.
+      href={`/app/leaderboard/${row.memberId}?season=${season}`}
       className={row.me ? 'app__lb-row--me' : undefined}
       lead={
         <span className="app__lb-lead">
@@ -147,6 +158,7 @@ function OneList({ list, season }: { list: BoardList; season: number }) {
               id: row.memberId,
               label: row.nickname,
               value: <CountUp value={row.performances} />,
+              href: `/app/leaderboard/${row.memberId}?season=${season}`,
               cup: <Trophy place={row.rank} className="ui-podium__cup" />,
               mark: <Mark row={row} />,
               caption: S.place(row.rank),
@@ -159,7 +171,7 @@ function OneList({ list, season }: { list: BoardList; season: number }) {
           {view.rows.length > 0 && (
             <List>
               {view.rows.map((row) => (
-                <Row key={row.memberId} row={row} />
+                <Row key={row.memberId} row={row} season={season} />
               ))}
             </List>
           )}
@@ -168,7 +180,7 @@ function OneList({ list, season }: { list: BoardList; season: number }) {
               dancer who is 34th opened this screen to see 34. */}
           {view.pinned && (
             <List className="app__lb-pinned">
-              <Row row={view.pinned} pinned />
+              <Row row={view.pinned} season={season} pinned />
             </List>
           )}
 

@@ -1,3 +1,5 @@
+import Link from 'next/link'
+
 // The top three of Ljestvica, as three steps (#562, grown up in #568).
 //
 // Second, first, third, left to right, the way a podium actually stands, with
@@ -11,6 +13,12 @@
 // there the podium IS the screen's first sentence rather than a preview of it.
 
 export interface PodiumEntry {
+  /**
+   * Where this step leads (#608). A podium that cannot be tapped was the
+   * biggest hole in Ljestvica: the three people the screen is loudest about
+   * were the three you could learn least about.
+   */
+  href?: string
   /** A nickname: "Brko". */
   label: string
   /** The count that put them there; a node, so a screen can count it up. */
@@ -64,8 +72,8 @@ export function Podium({ entries, large = false, className }: PodiumProps) {
         ]
           .filter(Boolean)
           .join(' ')
-        return (
-          <div key={entry.id ?? entry.label} className={step}>
+        const body = (
+          <>
             {large && entry.cup}
             {large && entry.mark}
             <b>{entry.value}</b>
@@ -73,6 +81,15 @@ export function Podium({ entries, large = false, className }: PodiumProps) {
             {large && entry.caption != null && (
               <small className="ui-podium__place">{entry.caption}</small>
             )}
+          </>
+        )
+        return entry.href ? (
+          <Link key={entry.id ?? entry.label} href={entry.href} className={step}>
+            {body}
+          </Link>
+        ) : (
+          <div key={entry.id ?? entry.label} className={step}>
+            {body}
           </div>
         )
       })}

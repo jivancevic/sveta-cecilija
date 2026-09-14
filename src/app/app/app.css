@@ -3473,6 +3473,152 @@ a.app__ob-link {
   color: var(--muted);
 }
 
+/* ── The season profile (#608) ─────────────────────────────
+   One layout, two entry points: another dancer's /app/leaderboard/[memberId]
+   and the reader's own Moja sezona. Only one block differs, so there is only
+   one set of rules here. */
+
+/* The person, before any number. A 44px disc and two lines. */
+.app__pf-id {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.app__pf-id h2 {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.12;
+}
+
+.app__pf-id p {
+  margin: 2px 0 0;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+/* What they are able to dance: discs with no numbers on them, because this is
+   the profile's answer and not the season's. */
+.app__pf-can {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.app__pf-can-label {
+  margin-right: 2px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.app__pf-can-none {
+  font-size: 14px;
+  color: var(--muted);
+}
+
+/* Two rings side by side, always both: a missing Experience card would read as
+   a screen that failed rather than as a season with none in it. */
+.app__pf-rings {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+}
+
+.ui-card.app__pf-ring {
+  align-items: center;
+  gap: 8px;
+  padding: 16px 12px;
+  text-align: center;
+}
+
+.app__pf-ring-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* Inside the ring: the count over what it is out of. */
+.app__pf-ring-in {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1;
+}
+
+.app__pf-ring-in b {
+  font-family: var(--serif);
+  font-size: 30px;
+  font-weight: 700;
+}
+
+.app__pf-ring-in small {
+  margin-top: 3px;
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.app__pf-place {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.app__pf-split {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 4px 10px;
+}
+
+/* The record: a label and a figure on one line, not a tile. It is one number
+   about the past and does not compete with the rings above it. */
+.ui-card.app__pf-record {
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 13px 16px;
+}
+
+.app__pf-record span {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.app__pf-record b {
+  font-family: var(--serif);
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.app__pf-record-now {
+  margin: 0;
+  font-size: 13px;
+  color: var(--goldText);
+}
+
+/* The kind of evening, at the end of a row of the performance list. */
+.app__pf-kind {
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+@media (max-width: 360px) {
+  /* Two rings do not fit a small phone side by side once the split under them
+     wraps to two lines; they stack rather than shrink the numerals. */
+  .app__pf-rings {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 /* ── Poveži svoj račun s članom (#462) ──────────────────── */
 /* The rows ARE .app__more-row: one tap, a chevron, a hairline under it. Only
    the button reset and the two-line name are new. */

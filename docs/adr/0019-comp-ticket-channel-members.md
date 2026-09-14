@@ -45,6 +45,14 @@ Three distinct things:
 
 Comps get a **visible per-show count** in the admin show list next to online/in-person so the seat math reconciles (`online + in-person + comp + remaining + legacyReserved = capacity`) — otherwise the consumed seats read as a bug. Season-level: a **count only** ("Comps issued: N"), never in Revenue collected. At the door, comps count in "X / Y ušlo" (real people) with no revenue exposure and are findable by the existing name/code lookup. A **single flat "comps per member" table** (season count + adult/child split) covers the reporting need — no per-member drill-down page for now.
 
+### Amendment, 2026-09-14 (#608): `Members.name` is visible to a dancer, on one screen
+
+This ADR introduced `Members.name` as an **attribution** field — whom a comp was given to — and it has stayed a `tickets` field ever since: every `/app` surface a dancer reads shows nicknames only, and `PATCH /api/app/members/[id]` refuses `name` outright because it belongs to the attribution half rather than to the moreškant half (#511).
+
+The **season profile** (#608) is the one deliberate exception. It prints ime i prezime to any moreškant who opens it, because seventy people who all know each other cannot use a nickname with nothing behind it, and a dancer new to the roster reading "Cici" learns nothing at all. The field is still written where it always was — the Backoffice and Članovi, both `tickets` or `moreska` — so this widens who may READ it and nothing else.
+
+The boundary that did **not** move: `mobile` and `email` reach no profile, the reader's own included. Those are the voditelj's, they stay on Članovi, and ADR-0024's PII rule (a mobile may cross into `/app`, an e-mail may not) is unchanged. What enforces both is a projection rather than a convention — `toDancerIdentity` in `src/lib/app/dancer-season.ts` names the six fields a profile may carry and is never a spread — with a source scan (`dancer-season-no-pii.test.ts`) over the loader and the two renderers, because the leak this guards against is a field being added, and a field nobody renders yet would pass any runtime check.
+
 ## Alternatives considered
 
 1. **€0 `online` order (no new channel).** Rejected: silently pollutes revenue math, the online channel-mix chart, and the "last Stripe webhook" health signal; every money/stats query would need a `total > 0` guard bolted on. A distinct channel keeps comps out by construction.

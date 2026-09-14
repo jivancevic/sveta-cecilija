@@ -118,14 +118,17 @@ function Row({
   row,
   source,
   kind,
+  season,
 }: {
   row: RankRow
   /** The scoreboard row behind it, for the breakdown; absent for nobody. */
   source: DancerStats | undefined
   kind: LeaderboardKind
+  season: number
 }) {
   return (
     <ListRow
+      href={`/app/leaderboard/${row.memberId}?season=${season}`}
       className={row.me ? 'app__lb-row--me' : undefined}
       lead={
         <span className="app__lb-lead">
@@ -209,7 +212,13 @@ export default async function FullLeaderboardPage({
       ) : (
         <List>
           {rows.map((row) => (
-            <Row key={row.memberId} row={row} source={byId.get(row.memberId)} kind={kind} />
+            <Row
+              key={row.memberId}
+              row={row}
+              source={byId.get(row.memberId)}
+              kind={kind}
+              season={stats.season}
+            />
           ))}
         </List>
       )}
