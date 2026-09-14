@@ -47,7 +47,7 @@ two fields apart for this reason.
 | 0 | Početna (the landing screen) | `/app` | any screen | **live** (#564): the logo and the wordmark (the only screen with them), a greeting by time of day with the reader's first name and no vocative, one sentence about the next nastup or izvedba in the reader's own register, and then one card per tab in the account's own order plus Obavijesti — **four at most**. The Moreška card is the hero of the next nastup with Dolazim / Ne dolazim in it and the ArmyBar under it (T4's own `heroView` / `Answer` / `StateBar`, never a copy); Statistika is a Ring of the next public izvedba over the venue's capacity; Ljestvica is the Podium of the top three plus "ti si N. s M"; every other screen is one figure and one action. **A card whose screen the account does not unlock is never built**, because the cards come off `nav.tabs` and there is no second list. Rules in `src/lib/app/home-screen.ts` (pure), loads in `home-data.ts` (only the cards this reader gets, each from the loader its own screen already uses). Početna is the FIRST tab, never storable on `Users.tabs`, never in Više | it used to 307 to the person's first tab (#495) |
 | 1 | Narudžbe | `/app/orders`, `/app/orders/[id]` | `tickets` | **live** (#501): the list with search (name, e-mail or code), a performance filter, a state filter (`active\|refunded\|partner\|comp`) and a pager, all in the query string; the detail with the order's facts, its tickets and four named actions — Povrat (`refunds` only, and only on a paid, unrefunded order), Pošalji ulaznice ponovno, Otvori PDF, Uredi kupca | none, the Backoffice keeps its list |
 | 1.5 | Moreška (the dancer's register screen) | `/app/moreska` | `moreskant`, `moreska` | **live** (#565): the 44px RoleMark with the name and "N nastupa pred tobom"; the hero of the next nastup (the day at 80px, weekday · time · Redovna, the voditelj's note, Dolazim / Ne dolazim, and after an answer "Dolaziš · Crni" or "Ne dolaziš" with Promijeni); the ArmyBar under it, which taps through to Stanje; then the season by month, a gold DateDisc for every Redovna and one chip per row. **A non-regular evening reads "Vanredna" and never names its client or its kind**, there is no seat count or revenue anywhere on it (Q29) and no Dodaj (Q31). What it says is `src/lib/app/moreska-screen.ts`, pure and tested without a database. **`/app/moreska/[id]` is Stanje** (#566), one nastup with its two armies and its four titles | new; nothing 308s here |
-| 2 | Izvedbe (one screen, content by `can()`) | `/app/performances`, `/app/performances/[id]` | `tickets`, `moreska` (a `moreskant` reads the schedule on Moreška since #565 and one evening on Stanje since #566, so Izvedbe is not theirs at all) | **live** (#495): the voditelj's Dodaj / Uredi / Otkaži / Pragovi (#503), and the blagajna's sold-of-capacity, channel split, per-show numbers and six named actions (#502), which is where the old `/admin/stats/[id]` drill-down now lives. Since #538 the per-show *Prihod* is online money net of refunds plus the evening's ledger, with the partner seats named under it at face value, before commission | 308 from `/app/izvedba/[id]`; push messages now carry the new path |
+| 2 | Izvedbe (one screen, content by `can()`) | `/app/performances`, `/app/performances/[id]` | `tickets`, `moreska` (a `moreskant` reads the schedule on Moreška since #565 and one evening on Stanje since #566, so Izvedbe is not theirs at all) | **live, redesigned by #567**: the season as a register — every izvedba, public and non-public, for both halves — with the blagajna's sold-of-capacity, channel split and per-show numbers under the public rows (the old `/admin/stats/[id]` drill-down), and the detail **titled by the date** (Q32). **Dodaj and Uredi are either half's** since #567; the six named actions are gated one at a time and a refused one is greyed with *traži Blagajnu* rather than hidden (Q53), Otkaži asking for `tickets` **and** `refunds`. Since #538 the per-show *Prihod* is online money net of refunds plus the evening's ledger, with the partner seats named under it at face value, before commission | 308 from `/app/izvedba/[id]`; push messages now carry the new path |
 | 2.5 | Članovi (dancer profiles, invitations, join code; absorbs Pozivnice, added by #476) | `/app/members`, `/app/members/[id]` | `moreska` | **live** (#511): the rehearsal join code and its pending claims at the top, Dodaj plesača beside them, then the roster — a diacritic-insensitive search, active moreškanti first and retired ones under them, one row per dancer carrying the nickname, the real name, the primary role, whether a login exists, and the two invitation channels behind a disclosure (`POST /api/app/invite/link` for the SMS link, `POST /api/app/invite` for the letter), plus "Pošalji pozivnice svima"; the profile at `/app/members/[id]` writes nadimak, mobitel, e-mail, plesne uloge, glavna uloga and aktivan through `PATCH /api/app/members/[id]`, and Dodaj plesača through `POST /api/app/members` | `/app/invitations` and `/app/pozivnice` both 308 here; the Backoffice Members list stays for the attribution half |
 | 3 | Ljestvica (roster ranking + own season) | `/app/leaderboard?season=2026&part=all\|mine`, `/app/leaderboard/full?season=&kind=` | `moreskant`, `moreska` | **live** (#568): *Ljestvica* first and by default, *Moja sezona* second. The board is TWO lists, Moreška and Experience, each a podium of its top three, the rows to twenty, the reader's own row highlighted or pinned, and "Vidi cijeli popis" into the whole ranking. Everyone reads the same two lists: the voditelj's six-column scoreboard went with `StatsTable` | 308 from `/app/moje` (→ `part=mine`) and `/app/statistika` (→ `part=all`) |
 | 4 | Skener (camera, code entry, door list) | `/app/scan` | `door` | **live** (#504): the camera and the four result states, Pusti ostatak grupe (n), Poništi propuštanje, Pronađi ulaznicu and the "ušlo X od Y" ring, all on one screen | `/admin/scan` 308s here and the Backoffice view is deleted; the ticket QR stays `/scan/[token]`, whose staff buttons point at `/app/scan` |
@@ -1101,36 +1101,44 @@ with its Spremi button is `NoteEditor.tsx` on `/app/performances/[id]`, rendered
 voditelj only (the route refuses everyone else anyway). It never auto-saves:
 pressing the button is the moment a voditelj decides to tell the roster.
 
-## The voditelj's own izvedbe: Dodaj, Uredi, Otkaži, Pragovi (#503)
+## The voditelj's own izvedbe: Dodaj, Uredi, Otkaži, Pragovi (#503, widened by #567)
 
-Branimir keeps next month's cruise calls in the Backoffice today, which means a
-raw collection form with a venue, sales counters and a public flag on it. #503
-is those four jobs as named actions on the Izvedbe screen, and one sentence
-from the collections table in `CLAUDE.md` shapes all of them: **`moreska` owns
-non-public rows, and on a public row it owns the roster fields and nothing
-else.**
+Branimir kept next month's cruise calls in the Backoffice, which meant a raw
+collection form with a venue, sales counters and a public flag on it. #503 was
+those four jobs as named actions on the Izvedbe screen, split by the sentence
+from the collections table in `CLAUDE.md`: `moreska` owned non-public rows, and
+on a public row it owned the roster fields and nothing else.
+
+**#567 (Q53) moved that line.** Both halves of Izvedbe — `tickets` and
+`moreska` — now create and edit BOTH kinds of row, because a season's schedule
+is one job and the two shapes of the form differ by what an evening IS (a house
+and a capacity, or a place and a client) rather than by who is typing it. What
+the halves do not share is the money and the buyers, and that is gated per
+ACTION: see [the six named actions](#the-blagajnas-half-of-izvedbe-numbers-and-named-actions-502) below and
+`src/lib/app/performance-actions.ts`, the pure map from a permission set to
+`{action, enabled, reason}` that the screen renders from and never re-types.
 
 | Route | Guard | Does |
 |---|---|---|
-| `POST /api/app/performances` | `requirePermission(['moreska','tickets'])` + `/app` guard | one performance. `isPublic: false` in the body is the voditelj's booking (kind, date, time, location, client, optional note) and needs `moreska`; `isPublic: true` is the blagajna's public evening (#502) and needs `tickets` |
-| `PATCH /api/app/performances/[id]` | same | a BOOKING: the same five fields, `moreska`, **409 on a cancelled one**. A PUBLIC row (#502): time, venue, kind, `tickets`, never the date. Each half **403s** the other's row |
+| `POST /api/app/performances` | `requirePermission(['moreska','tickets'])` + `/app` guard | one performance, of either kind, for either half (#567). `isPublic` in the body picks the SHAPE the validator applies: a booking is kind, date, time, location, client and an optional note; a public evening is kind, date, time and a venue. The handler re-checks the set (`mayWritePerformance`) rather than trusting the gate, because the local API bypasses field access |
+| `PATCH /api/app/performances/[id]` | same | a BOOKING: the same five fields, **409 on a cancelled one**. A PUBLIC row: time, venue, kind, never the date, and **409** on a house change once a ticket is sold. Either half may write either row since #567; what differs is decided by the ROW |
 | `POST /api/app/performances/[id]/cancel` | `requirePermission('moreska')` | `status = 'cancelled'` and nothing else; **403 on a public row**; a row that is already cancelled is a 200 with no write |
 | `POST /api/app/performances/[id]/thresholds` | same | `{ crni, bili }`, both or neither, 0 to `MAX_THRESHOLD` (40). The one voditelj write that DOES reach a public row |
 | `POST /api/app/performances/[id]/pause` | `requirePermission('tickets')` | `{ paused }` → `onlineSalesPaused` (#502). **400 on a non-public row**, which sells nothing to pause. The one action on the blagajna's half whose route did not already exist |
 
-- **Which half may touch a row is decided by the ROW, never by the URL.** Dodaj
-  and Uredi are one route each and the gate lets either half knock; the handler
-  then reads `isPublic` (off the body on a create, off the stored row on an
-  edit) and asks the caller's own permission set. That is why
-  `PerformanceFormDeps` carries `permissions`: the local API runs
-  `overrideAccess: true`, so `canEditScheduleField` does not gate these writes
-  and the collection cannot be the one to say no.
-- **A public row is refused in the handler, never by the collection**, and the
-  refusal is a **403** rather than a 404, because the voditelj can see the
-  evening and simply may not do this to it. Cancelling a Redovna refunds every
-  buyer and mails them and is `POST /api/shows/[id]/cancel` (#497), not a
-  harder version of this. The mirror holds too: a `tickets` holder is refused a
-  booking, which is nobody's ticket.
+- **What may change is decided by the ROW, never by the URL and, since #567,
+  never by the caller.** Dodaj and Uredi are one route each; the handler reads
+  `isPublic` (off the body on a create, off the stored row on an edit) and
+  applies that kind's validator. `PerformanceFormDeps` still carries
+  `permissions`, because the local API runs `overrideAccess: true` and
+  `canEditScheduleField` does not gate these writes — but what it now checks is
+  one sentence, "is this reader on Izvedbe at all".
+- **The money half did not move.** Cancelling a Redovna refunds every buyer and
+  mails them and is `POST /api/shows/[id]/cancel` (#497), which since #567 asks
+  for `tickets` **and** `refunds` and re-checks the second word in its own
+  handler. A voditelj reading the evening sees that button greyed with *traži
+  Blagajnu* under it (never hidden, Q53) and the route refuses the request
+  anyway: the caption is the courtesy half of a refusal, the 403 is the rule.
 - **Uredi on a public row carries no date, and no HOUSE once a ticket is sold.**
   Moving a public evening's date mails every buyer and reissues every ticket
   (#379), so it is *Pomakni datum* with a preview and a test send, not a field
@@ -1173,11 +1181,14 @@ else.**
   edit does: a change from the phone must ring the same bells as the same change
   from the Backoffice.
 - The screen: `AddPerformance` on `/app/performances` (closed until asked for,
-  under the hero), and `PerformanceEditor` + `ThresholdEditor` in the tools card
-  of `/app/performances/[id]`, next to the note, the postava and the alarm.
+  under the hero; since #567 it is offered to either half and the tick box
+  opens on the shape that reader enters most), and `PerformanceEditor` /
+  `PublicPerformanceEditor` in the **Izvedba** card of `/app/performances/[id]`,
+  with `ThresholdEditor` and the note in the voditelj's card under it.
   Thresholds are a **stepper**, never a native number input — on a phone that is
-  a pair of tiny arrows next to a keyboard that covers the page. Otkaži is two
-  visible taps rather than `confirm()`.
+  a pair of tiny arrows next to a keyboard that covers the page. Otkaži on a
+  booking is two visible taps rather than `confirm()`, and it is offered only to
+  `moreska`, because that route did not widen with the other two.
 
 ## The blagajna's half of Izvedbe: numbers and named actions (#502)
 
@@ -1260,11 +1271,72 @@ behaviour, the idempotency and the audit writes stay where they are:
 | Preseli u zimsko | `GET`/`POST /api/shows/[id]/move-to-indoor` | preview → confirm; offered only on a Ljetno row that has not already moved (#94) |
 | Prodaja na vratima | `GET`/`POST /api/shows/[id]/offline-sales` | door and legacy lines, negative corrections, a discount label required below face value; **allowed on a past evening**, because a season is backfilled after the fact (ADR-0025). The GET's existing lines are shown while a correction is typed, which is the safety half: a correction from memory can land the right seats and the wrong money. Its refusals are **translated by code**, not by message: the route answers a stable `OfflineSaleValidationError` code and `ledgerErrorMessage()` turns it into the Croatian sentence naming what to change, because these are the refusals a cashier at the entrance can fix. The mapping is typed `Record<OfflineSaleErrorCode, string>`, so a new code fails `tsc` rather than reaching them as "pokušaj ponovno" |
 | Narudžbe za ovu izvedbu | link to `/app/orders?show=<id>` | #501's filter, in the query string |
-| Otkaži izvedbu | `GET`/`POST /api/shows/[id]/cancel` | `refunds` for the confirm, `tickets` or `refunds` for the preview. The sheet prints the money, the seats and the buyers, warns about Brevo's daily ceiling, and on a partial run says the thing #497 designed for: **press it again**, it skips what is done |
+| Otkaži izvedbu | `GET`/`POST /api/shows/[id]/cancel` | **`tickets` AND `refunds` for the confirm** since #567 (the guard takes `refunds`, the handler re-checks `tickets`), `tickets` or `refunds` for the preview. The sheet prints the money, the seats and the buyers, warns about Brevo's daily ceiling, and on a partial run says the thing #497 designed for: **press it again**, it skips what is done |
 
 Each is a button with a sheet under it that names the consequence, never a
 `confirm()` and never a modal. Uredi on a public row is time, venue and kind and
 **not the date** — moving a public evening is *Pomakni datum*, with a preview.
+
+## Izvedbe in the redesign: one register, gated per action (#567)
+
+T6 of the redesign (#560). What changed is the SKIN and the line between the
+two halves; what an evening sold, who may refund it and which route writes it
+are all where #502 and #503 left them.
+
+**The screens.** The list is the season as a register: the next evening as a
+`Hero` (with a `Ring` of sold-of-capacity for a reader who sells seats), the
+months under it as `Section` + `List`, one `ListRow` per izvedba — **public and
+non-public alike, for both halves** — and the past behind a disclosure. A public
+row carries a second line under the hour and the house: *prodano 132 od 350*
+and the channel split, absent rather than zeroed on a row with no seats. The
+detail's **title is the DATE** (Q32, glossary *Title*): "Subota, 19. rujna",
+with *Redovna · 21:00 · Ljetno kino* under it. The sticky answer bar is gone,
+and so is everything else dancer-facing — a dancer answers on Moreška (#565)
+and reads the two armies on Stanje (#566), so `AttendanceButtons`,
+`ArmyMoveButton`, `AlarmButton`, `DetailSegments` and `lib/app/detail-view.ts`
+went with this ticket. **The `LineupEditor` stays**, in a card of its own, for
+exactly the reason #566 gave: it is the tweezers for a row Stanje has no
+control for (an unusual role, the voditelj line), and #512 must not take it
+away before Stanje can do that.
+
+**The words.** The screen speaks the box office's register throughout —
+*izvedba*, never *nastup* — and it is the one screen that NAMES a booking's
+client ("Brod, Le Ponant"), which is the exact mirror of Moreška's Q30 rule that
+a dancer reads only "Vanredna". Both rules live in pure modules beside each
+other (`izvedbe-screen.ts`, `moreska-screen.ts`) and are tested as values
+rather than as markup.
+
+**The gate is per ACTION, and a refusal is visible.**
+`src/lib/app/performance-actions.ts` maps a permission set to
+`{action, enabled, reason}` for the six named actions, and the screen renders
+from it — never a `can()` re-typed in JSX, and the client island is handed the
+answers as a prop rather than a set to re-derive.
+
+| Action | Needs | Greyed caption |
+|---|---|---|
+| Pauziraj / Nastavi, Pomakni datum, Preseli u zimsko, Prodaja na vratima, Narudžbe | `tickets` | *traži Blagajnu* |
+| Otkaži izvedbu | `tickets` **and** `refunds` | *traži Blagajnu* without the first, *traži dozvolu za povrate* without the second |
+
+A button a reader may not press is **greyed and still there** (Q53), because a
+control that disappears with a permission teaches nobody that it exists or who
+to ask. It is `off` rather than `disabled` so a keyboard still reaches the
+caption. **The caption is never the refusal**: each of those routes re-checks
+its permission in its own handler, which is why #567 added the `tickets` check
+to `POST /api/shows/[id]/cancel` — a voditelj who can now see the button had to
+be refused by the server as well as by the screen.
+
+**Both halves write the season** (also Q53): Dodaj and Uredi are open to
+`tickets` and `moreska` alike, for public rows and bookings, through the two
+shared routes whose validator and writer the MCP `create_performances` tool
+uses. The one write that did NOT widen is `POST …/[id]/cancel`, the booking's
+own: it stays `moreska`, because calling off a ship call is the voditelj's
+conversation with the ship.
+
+**What a `moreska`-only login can and cannot do** is the ticket's acceptance and
+it is asserted three ways: it creates a public evening
+(`api/app/performances/route.test.ts`), it is refused the cancellation
+(`api/shows/[id]/cancel/route.test.ts`), and every one of its six buttons is
+greyed with *traži Blagajnu* (`performance-actions.test.ts`).
 
 ## Sandučić obavijesti: the inbox behind the bell (#496)
 
