@@ -3230,7 +3230,14 @@ a.app__ob-link {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  margin-top: 16px;
+  /* The island is the screen, so it bleeds to both edges and paints its own
+     ground: the shell's 20px is given back as a negative margin and taken
+     again as padding. Without the ground, a ghost button inside it would be
+     the island's light ink on the app's paper page and invisible. */
+  margin: 16px -20px calc(var(--tabH) * -1 - 40px);
+  padding: 16px 20px calc(var(--tabH) + 40px);
+  min-height: 60vh;
+  background: var(--bg);
   color: var(--ink);
 }
 
@@ -3423,9 +3430,12 @@ a.app__ob-link {
 .app__scan-result {
   width: 100%;
   max-width: 420px;
-  margin-top: 16px;
+  /* The island is a flex column, so a card narrower than it would sit against
+     the left edge while the two buttons above it run the full width. */
+  align-self: center;
+  margin-top: 4px;
   padding: 18px 16px 16px;
-  border-radius: var(--radius);
+  border-radius: var(--rCard);
   color: #fff;
   text-align: center;
 }
@@ -3494,11 +3504,12 @@ a.app__ob-link {
 .app__scan-action {
   display: block;
   width: 100%;
+  min-height: 48px;
   padding: 14px 16px;
   background: #fff;
   color: #111;
   border: 1px solid #fff;
-  border-radius: var(--radius);
+  border-radius: var(--rCtl);
   font-family: var(--font-inter), system-ui, sans-serif;
   font-size: 16px;
   font-weight: 700;
@@ -3513,6 +3524,10 @@ a.app__ob-link {
   border-color: rgba(255, 255, 255, 0.7);
   font-weight: 600;
 }
+
+/* The result card is the one place a hex is still right: it is white on a
+   colour that IS the answer, in either skin, and a token would follow a theme
+   the card deliberately does not have. */
 
 .app__scan-action[disabled] {
   opacity: 0.7;

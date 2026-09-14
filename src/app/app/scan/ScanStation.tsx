@@ -469,7 +469,10 @@ export function ScanStation({
           {S.lookupTitle}
         </Button>
       )}
-      {showId && (
+      {/* Mounted only while it is open, so every search starts empty: a sheet
+          that reopened on the previous answer would offer to admit somebody who
+          already walked in. */}
+      {showId && lookupOpen && (
         <LookupPanel
           open={lookupOpen}
           onClose={() => setLookupOpen(false)}

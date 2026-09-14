@@ -53,10 +53,17 @@ export function CountUp({ value, duration = 800, live = false, className }: Coun
     const reduced =
       typeof window.matchMedia === 'function' &&
       window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    // **A hidden tab gets no frames at all**, so a live counter that only ever
+    // arrived through `requestAnimationFrame` would sit on a stale number until
+    // something else re-rendered it. That is not a corner case at the door: the
+    // phone locks between rushes and comes back with people already admitted.
+    // Found in a real browser (#572), where the count refused to move in a
+    // backgrounded tab while the ring beside it had already turned.
+    const unseen = typeof document !== 'undefined' && document.visibilityState === 'hidden'
     // Zero has nowhere to count from, and a single evening counts itself. The
-    // value is still written out: a live counter that skipped the animation
-    // must not also skip the number.
-    if (reduced || value <= 1 || start === value) {
+    // value is still written out: a run that skips the animation must never
+    // also skip the number.
+    if (reduced || unseen || value <= 1 || start === value) {
       from.current = value
       setShown(value)
       return
