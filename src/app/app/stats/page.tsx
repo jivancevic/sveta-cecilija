@@ -9,9 +9,10 @@ import { TRAJECTORY_CHANNELS, type TrajectoryBar } from '@/lib/dashboard/traject
 import type { ChannelMix } from '@/lib/dashboard/channel-mix'
 import { AppShell } from '../AppShell'
 import { openScreen } from '../gate'
-import { SeasonPicker } from './SeasonPicker'
+import { Card, CountUp, Seasons, Section } from '../ui'
 
-// `/app/stats` — Statistika (#508), the season in counts.
+// `/app/stats` — Statistika (#508), the season in counts, in the system skin
+// since #571.
 //
 // Three Backoffice surfaces became one screen: the secretary dashboard's season
 // band, its two charts, and the shared `member` login's season table (ADR-0022,
@@ -21,14 +22,21 @@ import { SeasonPicker } from './SeasonPicker'
 //
 // **Counts, never money, for everybody.** `tickets`, `season_stats` and
 // `finance` all read exactly the same figures; the euro question is Financije
-// (#509), decided in #500. The one thing the permission set changes is the
-// "gratis po članu" table, which names members and so is `tickets` only, and
-// whether a row is a link at all: the shared `member` login unlocks this screen
-// and nothing else, so a link into Izvedbe would refuse itself on tap.
+// (#509), decided in #500. `stats-screen.test.ts` scans this file for a euro,
+// a cent and a formatter, because the rule is one careless import away from
+// being broken and nothing else would notice. The one thing the permission set
+// changes is the "gratis po članu" table, which names members and so is
+// `tickets` only, and whether a row is a link at all: the shared `member` login
+// unlocks this screen and nothing else, so a link into Izvedbe would refuse
+// itself on tap.
 //
 // Server-rendered throughout, charts included: a season is twenty-odd bars and
-// a `<div>` each is cheaper than a chart engine on a phone. The only client
-// island is the season `<select>`, because it navigates.
+// a `<div>` each is cheaper than a chart engine on a phone. **Every colour on
+// those charts is a token** (#571): the four channels are `--ch-*`, declared
+// beside the rest of the system in `app.css` and re-pointed under
+// `[data-theme="dark"]`, so the bars follow the skin instead of holding four
+// hexes that only work on paper. The one client island left is the count that
+// runs up in the band, and the screen renders its final value on the server.
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -67,26 +75,38 @@ export default async function StatsPage({
 
   const screen = await getStatsScreen(requested, { canOpenPerformances, canSeeComps })
 
-  // No `season` on the shell: the picker under the header IS the season, and a
-  // header line naming the same year one row above a control naming it again
-  // reads as two different facts.
+  // No `season` on the shell: the row of years under the header IS the season,
+  // and a header line naming the same year one row above a control naming it
+  // again reads as two different facts.
   return (
     <AppShell viewer={viewer} screen="stats">
-      <SeasonPicker season={screen.season} seasons={screen.seasons} />
+      <div className="app__st">
+        <Seasons
+          seasons={screen.seasons}
+          season={screen.season}
+          href={(year) => `/app/stats?season=${year}`}
+          label={S.season}
+        />
 
-      <SeasonBand screen={screen} />
+        <SeasonBand screen={screen} />
 
-      {screen.rows.length === 0 ? (
-        <p className="app__empty">{S.empty}</p>
-      ) : (
-        <>
-          <Trajectory bars={screen.trajectory.bars} maxCapacity={screen.trajectory.maxCapacity} />
-          <Performances rows={screen.rows} />
-          <ChannelMix mix={screen.mix} />
-        </>
-      )}
+        {screen.rows.length === 0 ? (
+          <Card className="app__empty">{S.empty}</Card>
+        ) : (
+          <>
+            <Section title={S.trajectory} />
+            <Trajectory bars={screen.trajectory.bars} maxCapacity={screen.trajectory.maxCapacity} />
 
-      {screen.comps && <CompsByMember rows={screen.comps} />}
+            <Section title={S.performances} aside={screen.rows.length} />
+            <Performances rows={screen.rows} />
+
+            <Section title={S.mix} />
+            <ChannelMix mix={screen.mix} />
+          </>
+        )}
+
+        {screen.comps && <CompsByMember rows={screen.comps} />}
+      </div>
     </AppShell>
   )
 }
@@ -95,28 +115,19 @@ export default async function StatsPage({
 function SeasonBand({ screen }: { screen: StatsScreen }) {
   const { band } = screen
   return (
-    <section className="app__statband">
-      <div className="app__tiles">
-        <div className="app__tile2">
-          <b>{band.sold}</b>
-          <span>{S.sold}</span>
-        </div>
-        <div className="app__tile2">
-          <b>{band.comps}</b>
-          <span>{S.comps}</span>
-        </div>
-        <div className="app__tile2">
-          <b>{band.capacity}</b>
-          <span>{S.capacity}</span>
-        </div>
-        <div className="app__tile2">
-          <b>{band.percent}%</b>
-          <span>{S.fill}</span>
-        </div>
+    <Card className="app__st-band">
+      <div className="app__st-figs">
+        {/* The one number that runs up: what the season sold. The others are
+            the frame it is read against, and four counters racing at once is a
+            slot machine rather than a report. */}
+        <Fig label={S.sold} value={<CountUp value={band.sold} />} />
+        <Fig label={S.comps} value={band.comps} />
+        <Fig label={S.capacity} value={band.capacity} />
+        <Fig label={S.fill} value={`${band.percent}%`} />
       </div>
 
       <div
-        className="app__statband-track"
+        className="app__st-track"
         role="progressbar"
         aria-label={S.fill}
         aria-valuenow={band.percent}
@@ -126,8 +137,17 @@ function SeasonBand({ screen }: { screen: StatsScreen }) {
         <i style={{ width: `${band.percent}%` }} />
       </div>
 
-      <p className="app__statnote">{S.cancelledNote}</p>
-    </section>
+      <p className="app__st-note">{S.cancelledNote}</p>
+    </Card>
+  )
+}
+
+function Fig({ label, value }: { label: string; value: React.ReactNode }) {
+  return (
+    <div className="app__st-fig">
+      <b>{value}</b>
+      <span>{label}</span>
+    </div>
   )
 }
 
@@ -141,11 +161,7 @@ function SeasonBand({ screen }: { screen: StatsScreen }) {
  */
 function Trajectory({ bars, maxCapacity }: { bars: TrajectoryBar[]; maxCapacity: number }) {
   return (
-    <section className="app__traj">
-      <h2 className="app__month-head">
-        <span>{S.trajectory}</span>
-      </h2>
-
+    <Card className="app__st-chart">
       <div className="app__traj-scroll">
         {bars.map((bar) => {
           // Pixels, not percentages: the column also carries a count above the
@@ -155,7 +171,8 @@ function Trajectory({ bars, maxCapacity }: { bars: TrajectoryBar[]; maxCapacity:
           // Capped at the venue's own ceiling, so an oversold evening never
           // pokes above its capacity line; the segments are then measured per
           // seat against the capped stack and still add up to it.
-          const stack = maxCapacity > 0 ? (Math.min(bar.sold, bar.capacity) / maxCapacity) * CHART_HEIGHT : 0
+          const stack =
+            maxCapacity > 0 ? (Math.min(bar.sold, bar.capacity) / maxCapacity) * CHART_HEIGHT : 0
           const perSeat = bar.sold > 0 ? stack / bar.sold : 0
 
           return (
@@ -187,18 +204,14 @@ function Trajectory({ bars, maxCapacity }: { bars: TrajectoryBar[]; maxCapacity:
       </div>
 
       <Legend keys={[...TRAJECTORY_CHANNELS]} />
-    </section>
+    </Card>
   )
 }
 
 /** One row per evening: what it sold, of what, in what shape. */
 function Performances({ rows }: { rows: StatsRow[] }) {
   return (
-    <section className="app__statrows">
-      <h2 className="app__month-head">
-        <span>{S.performances}</span>
-      </h2>
-
+    <Card className="app__st-rows">
       <ul>
         {rows.map((row) => {
           const body = (
@@ -228,7 +241,9 @@ function Performances({ rows }: { rows: StatsRow[] }) {
 
               <span className="app__statrow-track">
                 <i
-                  className={row.cancelled ? 'app__statrow-fill app__statrow-fill--off' : 'app__statrow-fill'}
+                  className={
+                    row.cancelled ? 'app__statrow-fill app__statrow-fill--off' : 'app__statrow-fill'
+                  }
                   style={{ width: `${row.percent}%` }}
                 />
               </span>
@@ -246,8 +261,8 @@ function Performances({ rows }: { rows: StatsRow[] }) {
         })}
       </ul>
 
-      <p className="app__statnote">{S.doorNote}</p>
-    </section>
+      <p className="app__st-note">{S.doorNote}</p>
+    </Card>
   )
 }
 
@@ -259,11 +274,7 @@ function Performances({ rows }: { rows: StatsRow[] }) {
  */
 function ChannelMix({ mix }: { mix: ChannelMix }) {
   return (
-    <section className="app__mix">
-      <h2 className="app__month-head">
-        <span>{S.mix}</span>
-      </h2>
-
+    <Card className="app__st-chart">
       {mix.total === 0 ? (
         <p className="app__empty">{S.noSales}</p>
       ) : (
@@ -290,7 +301,7 @@ function ChannelMix({ mix }: { mix: ChannelMix }) {
           </ul>
         </>
       )}
-    </section>
+    </Card>
   )
 }
 
@@ -303,39 +314,38 @@ function ChannelMix({ mix }: { mix: ChannelMix }) {
  */
 function CompsByMember({ rows }: { rows: CompMemberTally[] }) {
   return (
-    <section className="app__comptable">
-      <h2 className="app__month-head">
-        <span>{S.compsByMember}</span>
-      </h2>
-
-      {rows.length === 0 ? (
-        <p className="app__empty">{S.noComps}</p>
-      ) : (
-        <>
-          <p className="app__statnote">{S.compsHint}</p>
-          <table className="app__stats-table">
-            <thead>
-              <tr>
-                <th scope="col">{S.member}</th>
-                <th scope="col">{S.adults}</th>
-                <th scope="col">{S.children}</th>
-                <th scope="col">{S.total}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map((row) => (
-                <tr key={row.memberId}>
-                  <th scope="row">{row.memberName || '-'}</th>
-                  <td>{row.adults}</td>
-                  <td>{row.children}</td>
-                  <td>{row.issued}</td>
+    <>
+      <Section title={S.compsByMember} aside={rows.length > 0 ? rows.length : undefined} />
+      <Card className="app__st-comps">
+        {rows.length === 0 ? (
+          <p className="app__empty">{S.noComps}</p>
+        ) : (
+          <>
+            <p className="app__st-note">{S.compsHint}</p>
+            <table className="app__stats-table">
+              <thead>
+                <tr>
+                  <th scope="col">{S.member}</th>
+                  <th scope="col">{S.adults}</th>
+                  <th scope="col">{S.children}</th>
+                  <th scope="col">{S.total}</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </>
-      )}
-    </section>
+              </thead>
+              <tbody>
+                {rows.map((row) => (
+                  <tr key={row.memberId}>
+                    <th scope="row">{row.memberName || '-'}</th>
+                    <td>{row.adults}</td>
+                    <td>{row.children}</td>
+                    <td>{row.issued}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </>
+        )}
+      </Card>
+    </>
   )
 }
 

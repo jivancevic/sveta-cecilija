@@ -9,6 +9,7 @@ import { Card } from './Card'
 import { Chip } from './Chip'
 import { DateDisc } from './DateDisc'
 import { FilterChips } from './FilterChips'
+import { Seasons } from './Seasons'
 import { Hero } from './Hero'
 import { List, ListRow } from './ListRow'
 import { Note } from './Note'
@@ -284,5 +285,23 @@ describe('the rest of the shapes render', () => {
     // since #563: the scrim, the panel, and the half that scrolls inside it.
     const open = render(h(Sheet, { open: true, onClose: () => {}, children: 'x' }))
     expect(open.match(/data-no-pull/g)).toHaveLength(3)
+  })
+})
+
+describe('Seasons', () => {
+  it('marks the year being read and links the others', () => {
+    const html = render(
+      h(Seasons, {
+        seasons: [2026, 2025],
+        season: 2026,
+        href: (year: number) => `/app/stats?season=${year}`,
+        label: 'Sezona',
+      }),
+    )
+    expect(html).toContain('ui-season--on')
+    // One current year, whatever the row is long: `aria-current` is how a
+    // screen reader hears which of six pills is the one being read.
+    expect(html.match(/aria-current="page"/g)).toHaveLength(1)
+    expect(html).toContain('/app/stats?season=2025')
   })
 })

@@ -66,6 +66,12 @@ export const APP_STRINGS = {
       n === 1 ? 'fali još 1 bili' : `fale još ${n} ${n < 5 ? 'bila' : 'bilih'}`,
     /** The sheet's way out, for a screen reader; the scrim is the visible one. */
     sheetClose: 'Zatvori',
+    /**
+     * The "i" beside a heading (#571): what the control IS, since the glyph
+     * alone is a shape and not a name. The card's own title is the sheet's
+     * heading, so this never has to say which explanation it opens.
+     */
+    explain: 'Objašnjenje',
   },
 
   login: {
@@ -1720,28 +1726,44 @@ export const APP_STRINGS = {
     season: 'Sezona',
     collectedTitle: 'Prikupljeni prihod',
     /**
+     * Every explanation on this screen is TWO parts since #571 (Q46): the
+     * `lead` says what the figure is and stays under it, and `rest` is the
+     * caveat, behind the "i" in the card's heading. Printed in full the caveats
+     * were longer than the figures they explained and the screen read as a
+     * disclaimer with numbers in it; none of them is dropped, and a reader who
+     * wants to know why a number is what it is is one tap away from the answer.
+     *
      * Three channels sell a seat and only two of them put money in the
      * society's account on the spot: online checkout and the ulaz. A partner
      * sale is money the reseller holds until the monthly obračun, so it is
      * *Potraživanje od partnera* and never this figure (ADR-0008, ADR-0015).
      */
-    collectedNote:
-      'Naplaćeno online i na ulazu, umanjeno za povrate. Partnerska prodaja nije ovdje nego u potraživanju. Nije dobit: društvo ovdje ne vodi troškove.',
+    collectedNote: {
+      lead: 'Naplaćeno online i na ulazu, umanjeno za povrate.',
+      rest: 'Partnerska prodaja nije u ovom iznosu nego u potraživanju od partnera, jer taj novac društvo još nije naplatilo. Nije dobit: društvo ovdje ne vodi troškove.',
+    },
     online: 'Online narudžbe',
     offline: 'Na ulazu i sa stare stranice',
     refundsTitle: 'Povrati',
     /** Three Croatian plural forms, from the one rule in `roster-loaders.ts`. */
     refundsCount: { one: 'narudžba', few: 'narudžbe', many: 'narudžbi' },
-    refundsNote:
-      'Uključuje izgubljene prigovore na naplatu, jer i tada novac ode natrag.',
+    refundsNote: {
+      lead: 'Novac vraćen kupcima u ovoj sezoni.',
+      rest: 'Uključuje izgubljene prigovore na naplatu, jer i tada novac ode natrag. Iznos je već odbijen od prikupljenog prihoda, pa se ne oduzima drugi put.',
+    },
     receivableTitle: 'Potraživanje od partnera',
-    receivableNote:
-      'Ovaj iznos društvo još nije naplatilo, pa se ne zbraja s prikupljenim prihodom.',
+    receivableNote: {
+      lead: 'Iznos koji partneri duguju za prodane ulaznice.',
+      rest: 'Ovaj iznos društvo još nije naplatilo, pa se ne zbraja s prikupljenim prihodom. Partner zadržava proviziju, a ostatak uplaćuje po mjesečnom obračunu.',
+    },
     seasonReceivable: 'Ukupno za sezonu',
     /** A partner that can no longer sell but still owes for what it sold. */
     inactivePartner: 'neaktivan',
     promoTitle: 'Promo kodovi',
-    promoNote: 'Dio prikupljenog prihoda, ne dodatni iznos.',
+    promoNote: {
+      lead: 'Dio prikupljenog prihoda, ne dodatni iznos.',
+      rest: 'Promo kod člana snižava cijenu odrasle ulaznice u online prodaji, pa je taj novac već uračunat u prikupljeni prihod. Ovdje se vidi samo koliko ga je došlo preko kodova.',
+    },
     promoTickets: { one: 'ulaznica', few: 'ulaznice', many: 'ulaznica' },
     promoEmpty: 'Ove sezone nijedan promo kod nije iskorišten.',
     monthTitle: 'Obračun po partnerima',
@@ -1762,7 +1784,10 @@ export const APP_STRINGS = {
      * explicable a year later.
      */
     ledgerTitle: 'Prodaja na ulazu',
-    ledgerNote: 'Svaka stavka po cijeni po kojoj je naplaćena. Negativna količina je ispravak.',
+    ledgerNote: {
+      lead: 'Svaka stavka po cijeni po kojoj je naplaćena.',
+      rest: 'Negativna količina je ispravak ranijeg unosa. Uz sniženu cijenu stoji razlog, da se godinu dana kasnije zna zašto je mjesto prodano ispod cijene.',
+    },
     ledgerEmpty: 'Ove sezone nema zabilježene prodaje izvan sustava narudžbi.',
     ledgerSubtotal: 'Ukupno',
     ledgerSeats: (n: number) => `${n} mjesta`,

@@ -1,10 +1,9 @@
 'use client'
 
-import Link from 'next/link'
 import { useState } from 'react'
 import { APP_STRINGS } from '@/lib/app/strings'
 import { LEADERBOARD_SEGMENTS, type LeaderboardSegment } from '@/lib/app/leaderboard-loaders'
-import { Segmented } from '../ui'
+import { Seasons, Segmented } from '../ui'
 
 // The two panels of the Ljestvica screen (#457, #495, reskinned in #568):
 // "Ljestvica" and "Moja sezona", in that order since Q36.
@@ -59,19 +58,15 @@ export function LeaderboardSegments({
 
       {/* A row of pills rather than the bordered box the old nav drew, which
           framed a single year in a full-width rectangle. The links stay links:
-          a season is a server navigation and carries `?part=` with it. */}
-      <nav className="app__lb-seasons" aria-label={APP_STRINGS.mySeason.season}>
-        {seasons.map((year) => (
-          <Link
-            key={year}
-            href={`/app/leaderboard?season=${year}&part=${segment}`}
-            className={`app__lb-season${year === season ? ' app__lb-season--on' : ''}`}
-            aria-current={year === season ? 'page' : undefined}
-          >
-            {year}
-          </Link>
-        ))}
-      </nav>
+          a season is a server navigation and carries `?part=` with it. The
+          pills themselves moved into `ui/` with #571, when Statistika and
+          Financije needed the same row. */}
+      <Seasons
+        seasons={seasons}
+        season={season}
+        href={(year) => `/app/leaderboard?season=${year}&part=${segment}`}
+        label={APP_STRINGS.mySeason.season}
+      />
 
       <div id={PANEL} role="tabpanel" aria-labelledby={`${PANEL}-${segment}`}>
         {segment === 'mine' ? mine : all}
