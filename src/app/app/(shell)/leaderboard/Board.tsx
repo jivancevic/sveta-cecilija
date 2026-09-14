@@ -183,8 +183,7 @@ function TitleMark({ role }: { role: SeasonKing['role'] }) {
 function Kings({ kings, season }: { kings: SeasonKing[]; season: number }) {
   return (
     <section className="app__lb-group">
-      <Section title={S.kings.title} />
-      <p className="app__lb-hint">{S.kings.note}</p>
+      <Section title={S.kings.title} note={S.kings.note} />
       <List>
         {kings.map((king) => (
           <ListRow
@@ -215,14 +214,17 @@ function OneList({ list, season }: { list: BoardList; season: number }) {
 
   return (
     <section className="app__lb-list">
-      <Section title={list.label} aside={empty ? undefined : pluralize(view.total, S.onList)} />
-
-      {/* The season's clock, under the heading of the list it counts (Q3). */}
-      <p className="app__lb-clock">
-        {list.remaining > 0
-          ? S.remaining(pluralize(list.remaining, S.remainingCount[list.kind]))
-          : S.remainingNone}
-      </p>
+      {/* The season's clock is the heading's own caption (Q3, #627), so it
+          rides in `note` rather than as a block the group would space out. */}
+      <Section
+        title={list.label}
+        aside={empty ? undefined : pluralize(view.total, S.onList)}
+        note={
+          list.remaining > 0
+            ? S.remaining(pluralize(list.remaining, S.remainingCount[list.kind]))
+            : S.remainingNone
+        }
+      />
 
       {empty ? (
         <p className="app__empty">

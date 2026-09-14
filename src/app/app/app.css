@@ -86,6 +86,17 @@
   --rCtl: 16px;
   --rPill: 999px;
 
+  /* Space, as two tokens rather than as a floor (#627).
+     `.app__shell > * + *` below is a FLOOR written as a weak selector, so every
+     screen that wanted more hand-spaced itself past it and the rhythm drifted
+     apart card by card. These two are the rhythm: `--gap` between two widgets,
+     `--gapTight` between the blocks inside one. 20 and not 16, because the
+     distance between two cards is what reads as cramped on a phone — 16 is
+     close enough to a card's own 18px padding that two cards read as one
+     surface with a seam in it. */
+  --gap: 20px;
+  --gapTight: 12px;
+
   /* Labrada carries titles and numbers ONLY. Everything a thumb reads at 13 or
      15 px is the platform's own face, which is what makes the screen read as an
      app rather than as a printed page (audit, pattern 3). */
@@ -331,17 +342,19 @@ html:has(> .app) {
      rather than adding to it. A screen that was already spaced is left exactly
      as it was, and a screen that was not gets the floor.
 
-   **The floor is 16px since #612**, up from the 12px it shipped at. 12 was the
-   design system's gap token and it was the right number for two things INSIDE
-   one card; between two whole widgets on Početna it still read as one block
-   with seams in it. 16 is the next step of the same scale, so nothing else in
-   the sheet has to move, and the tiles moved with it (`.ui-tiles`) so the
-   vertical and horizontal rhythm of that screen stay one number.
+   **The floor is `--gap` since #627**, which is 20px: it was 12 at first, 16
+   from #612, and both were still close enough to a card's own 18px padding
+   that two cards read as one surface with a seam in it ("ponekad su skuceni
+   widgeti"). It is a token now rather than a number, so the screens that space
+   themselves INSIDE a container (Stanje, the board) can say the same distance
+   instead of re-measuring it, and `--gapTight` names the other one, between two
+   blocks of one widget. The tiles follow it (`.ui-tiles`) so the vertical and
+   horizontal rhythm of Početna stay one number.
 
    The header is never a second child, so it is untouched, and the greeting sets
    its own margins right below and keeps them. */
 .app__shell > * + * {
-  margin-top: 16px;
+  margin-top: var(--gap);
 }
 
 /* ── Between two screens (#593) ────────────────────────────
@@ -3405,11 +3418,16 @@ a.app__ob-link {
   gap: 28px;
 }
 
+/* The board is one div, so the shell's floor never reaches these children and
+   the podium, the standing card and the list were 12px apart inside a screen
+   whose widgets are 20 apart everywhere else (#627). The heading's caption is
+   no longer one of them: it belongs to the heading and rides along inside
+   `Section`'s own `note`. */
 .app__lb-list,
 .app__lb-group {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--gap);
 }
 
 /* The rank and the mark travel together in the row's 48px lead slot, so every
@@ -3534,12 +3552,6 @@ a.app__ob-link {
 /* Which number the column is showing. Sits under the heading because it
    changes with the chip, and a caption that moves has to be next to what moves
    it. */
-.app__lb-hint {
-  margin: -4px 0 0;
-  font-size: 13px;
-  color: var(--muted);
-}
-
 /* The roles a dancer wore, under the nickname. They sum to the count at the end
    of the row, which is what makes them checkable rather than decorative.
    Deliberately QUIET (#611): four 28px discs each with a bold number beside it
@@ -3809,10 +3821,6 @@ a.app__ob-link {
    Under the date, above the bar. It is the hero's pair, full width, on a screen
    that has no hero: a dancer who tapped the ArmyBar to get here can answer
    without going back. */
-.app__stanje-mine {
-  margin-bottom: 2px;
-}
-
 /* The ordinal's full stop (#624): on the baseline, a little smaller than the
    digits and a hair of air before it, because "15." is one word and the dot is
    the half of it that says "fifteenTH". */
@@ -3906,12 +3914,6 @@ a.app__ob-link {
 /* ── The season's clock (Q3) ──────────────────────────────────────────────
    Under the heading of the list it counts. One line, and without it a rank is
    a verdict rather than something left to play for. */
-.app__lb-clock {
-  margin: -6px 0 0;
-  font-size: 13px;
-  color: var(--muted);
-}
-
 /* ── A list too small to rank (finding 02) ────────────────────────────────
    No podium, no places: who leads, and the reason there is no ranking. */
 .app__lb-leaders {
@@ -4069,10 +4071,6 @@ a.app__ob-link {
   flex-direction: column;
   align-items: flex-start;
   gap: 8px;
-  /* Air of its own (#614): it used to sit wedged between the name above and
-     the card below with nothing between them, so three unrelated things read
-     as one block. */
-  margin: 4px 0 8px;
 }
 
 .app__pf-can-roles {
@@ -4115,7 +4113,7 @@ a.app__ob-link {
 .app__pf-rings {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: var(--gapTight);
 }
 
 .ui-card.app__pf-ring {
@@ -7592,7 +7590,6 @@ a.app__statrow-main:focus-visible {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin: 2px 0 18px;
 }
 
 .app__me-body {
@@ -7636,7 +7633,7 @@ a.app__statrow-main:focus-visible {
 /* A voditelj who does not dance. One quiet line, never a warning: having no
    Member row is a valid state (#419, story 15). */
 .app__me-none {
-  margin: 2px 0 18px;
+  margin: 0;
   font-size: 14px;
   color: var(--muted);
 }
@@ -7689,7 +7686,6 @@ a.app__statrow-main:focus-visible {
    and a centre. A card that is empty and a paragraph that says so are two
    different shapes. */
 .ui-card.app__empty {
-  margin-top: 4px;
   align-items: center;
   gap: 8px;
   padding: 26px 18px;
@@ -7743,22 +7739,20 @@ a.app__statrow-main:focus-visible {
   color: var(--muted);
 }
 
-.app__stanje-bar {
-  margin-bottom: 12px;
-}
-
 /* Crni left, bili right: the two lines as they stand on the pier. They stay
    two columns at every width, because one above the other would be a list of
    sixteen names and the whole point is reading them against each other. */
 .app__armies {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 12px;
+  gap: var(--gapTight);
 }
 
 .app__army {
   gap: 8px;
-  padding: 14px 12px;
+  /* A card's own padding (#627). 14/12 was a squeeze that made the two columns
+     read as tighter than everything around them. */
+  padding: 18px;
 }
 
 .app__army-head {
@@ -7870,18 +7864,10 @@ a.app__statrow-main:focus-visible {
   border-radius: var(--rPill);
 }
 
-.app__bule {
-  margin-top: 12px;
-}
-
 /* Odustali (#612): the one roster list on Stanje that is open rather than
    behind a chevron, because it is the list a voditelj is looking for. Each
    name carries the hour under it, so a row is two lines and cannot use the
    single-line `.app__name` layout unchanged. */
-.app__withdrawn {
-  margin-top: 12px;
-}
-
 .app__withdrawn-name {
   align-items: center;
 }
@@ -7909,7 +7895,6 @@ a.app__statrow-main:focus-visible {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin-top: 12px;
 }
 
 /* "Bez odgovora · 4": a row that opens a list, not a screen. */
@@ -7951,6 +7936,7 @@ a.app__statrow-main:focus-visible {
 .app__stanje {
   display: flex;
   flex-direction: column;
+  gap: var(--gap);
 }
 
 /* Pozovi and Potvrdi, in the flow and under the Bule (#620).
@@ -7960,10 +7946,6 @@ a.app__statrow-main:focus-visible {
    amount of `bottom` clears something that follows the scroll. In the flow the
    shell's own bottom padding clears the bar, and the two buttons stand at a
    place on the screen rather than following the thumb up the page. */
-.app__stanje-actions {
-  padding: 2px 0 4px;
-}
-
 .app__stanje-why {
   margin: 8px 0 0;
   font-size: 13px;

@@ -196,12 +196,14 @@ export default async function FullLeaderboardPage({
     >
       <Filters season={stats.season} kind={kind} active={filter} />
 
-      <Section title={S.lists[kind]} aside={pluralize(rows.length, S.onList)} />
-      {/* Which number the column is showing. One line, and it changes with the
-          chip, because the two meanings are indistinguishable as digits. */}
-      <p className="app__lb-hint">
-        {filterCountsTitle(filter) ? S.countsTitle : S.countsEvenings}
-      </p>
+      {/* Which number the column is showing: the heading's own caption (#627),
+          and it changes with the chip, because the two meanings are
+          indistinguishable as digits. */}
+      <Section
+        title={S.lists[kind]}
+        aside={pluralize(rows.length, S.onList)}
+        note={filterCountsTitle(filter) ? S.countsTitle : S.countsEvenings}
+      />
 
       {rows.length === 0 ? (
         <p className="app__empty">

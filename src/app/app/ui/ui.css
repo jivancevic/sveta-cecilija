@@ -123,6 +123,20 @@
   color: var(--muted);
 }
 
+/* A heading with a caption under it (#627). The caption is the heading's, not
+   the group's, so it sits 4px under it whatever the gap around the block. */
+.ui-section-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ui-section__note {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
 .ui-small {
   font-size: 13px;
   color: var(--muted);
@@ -590,7 +604,9 @@ button.ui-row:hover {
 .ui-tiles {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 16px;
+  /* The shell's own rhythm, so Početna's vertical and horizontal gaps are one
+     number (#627). */
+  gap: var(--gap);
 }
 
 .ui-tile {
