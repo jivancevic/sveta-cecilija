@@ -10,7 +10,10 @@
 // points at arrives with them, and everything the screen shows is derived here
 // so the page is a renderer and the rules are a table in the test file.
 
-import { DANCE_ROLE_LABELS, type DanceRole } from '@/lib/moreskant-profile'
+import { ARMY_OF_ROLE, DANCE_ROLE_LABELS, type DanceRole } from '@/lib/moreskant-profile'
+// The type only, from the component's own file rather than through the barrel:
+// a type import is erased, so this costs the seam nothing at runtime.
+import type { Army } from '@/app/app/ui/RoleMark'
 import { pluralize } from './roster-loaders'
 import { normaliseNickname } from './username'
 import { APP_STRINGS } from './strings'
@@ -81,6 +84,13 @@ export interface MemberListRow {
   name: string
   /** The primary role in Croatian, or "bez uloge". */
   roleLabel: string
+  /**
+   * The army the primary role belongs to, for the row's disc and its dot
+   * (#573). Null for a dancer with no role yet, which draws the empty disc.
+   */
+  army: Army | null
+  /** One or two letters for the disc, from the real name. */
+  initials: string
   /** Does some login already point at this Member (`repo.members.idsWithLogin`)? */
   hasLogin: boolean
   active: boolean
@@ -143,6 +153,58 @@ export function shownName(member: Pick<MemberRosterRow, 'name' | 'nickname'>): s
 }
 
 /**
+ * The army of a primary role, in the vocabulary the disc draws (#573).
+ *
+ * `ARMY_OF_ROLE` is the one table that knows an otmanović is a crni, and a bula
+ * is in neither army there — which is right for a headcount and wrong for a
+ * disc, where "bula" is a colour of its own. So the null is read back into the
+ * mark's third value here, and nowhere else.
+ */
+export function armyOfRole(role: string | null | undefined): Army | null {
+  if (typeof role !== 'string' || role === '') return null
+  if (role === 'bula') return 'bula'
+  return ARMY_OF_ROLE[role as DanceRole] ?? null
+}
+
+/**
+ * One or two letters for the disc: the first of the first two words of the
+ * name, uppercased.
+ *
+ * The real name rather than the nickname, because the nickname is already the
+ * bold line beside it and two marks saying the same thing say nothing. A name
+ * with one word gives one letter, which is what a disc should then show.
+ */
+export function initialsOf(name: string): string {
+  return name
+    .split(/\s+/)
+    .filter((part) => part !== '')
+    .slice(0, 2)
+    .map((part) => part[0]!.toLocaleUpperCase('hr'))
+    .join('')
+}
+
+/**
+ * The three chips over the list (#573, Q37).
+ *
+ * A voditelj asks the roster three questions and no more: show me everyone,
+ * show me who still dances, show me who cannot get in yet. "Bez prijave" is the
+ * one that leads somewhere — every row under it is an invitation waiting to be
+ * sent.
+ */
+export const MEMBER_FILTERS = ['all', 'active', 'no-login'] as const
+export type MemberFilter = (typeof MEMBER_FILTERS)[number]
+
+/** Does this row survive the chip that is on? */
+export function memberMatchesFilter(
+  row: Pick<MemberListRow, 'active' | 'hasLogin'>,
+  filter: MemberFilter,
+): boolean {
+  if (filter === 'active') return row.active
+  if (filter === 'no-login') return !row.hasLogin
+  return true
+}
+
+/**
  * The list the screen renders: the search applied, active moreškanti first,
  * each half alphabetical by the name the row is shown under.
  *
@@ -157,6 +219,7 @@ export function memberListRows(
   members: readonly MemberListInput[],
   idsWithLogin: ReadonlySet<string>,
   query: string | null | undefined,
+  filter: MemberFilter = 'all',
 ): MemberListRow[] {
   return members
     .filter((m) => memberMatchesSearch(m, query))
@@ -167,12 +230,15 @@ export function memberListRows(
         nickname: shown,
         name: m.name === shown ? '' : m.name,
         roleLabel: roleLabel(m.primaryRole),
+        army: armyOfRole(m.primaryRole),
+        initials: initialsOf(m.name || shown),
         hasLogin: idsWithLogin.has(m.id),
         active: m.active,
         mobile: m.mobile,
         href: `/app/members/${m.id}`,
       }
     })
+    .filter((row) => memberMatchesFilter(row, filter))
     .sort(
       (a, b) =>
         Number(b.active) - Number(a.active) ||

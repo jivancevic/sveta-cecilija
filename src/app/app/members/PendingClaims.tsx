@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { APP_STRINGS } from '@/lib/app/strings'
+import { Button, Chip, Section } from '../ui'
 
 export interface PendingClaimRow {
   id: string
@@ -55,15 +56,13 @@ export function PendingClaims({ claims }: { claims: PendingClaimRow[] }) {
   }
 
   return (
-    <section className="app__more-block">
-      <h2 className="app__month-head">
-        <span>{APP_STRINGS.join.pendingTitle}</span>
-      </h2>
+    <section className="app__join-block">
+      <Section title={APP_STRINGS.join.pendingTitle} />
 
       {error && <p className="app__answer-error">{error}</p>}
 
       {claims.length === 0 ? (
-        <div className="app__empty-state">{APP_STRINGS.join.pendingNone}</div>
+        <p className="app__empty">{APP_STRINGS.join.pendingNone}</p>
       ) : (
         <>
           <p className="app__invite-hint">{APP_STRINGS.join.pairingHint}</p>
@@ -73,28 +72,24 @@ export function PendingClaims({ claims }: { claims: PendingClaimRow[] }) {
                 <strong>{claim.nickname || claim.name}</strong>
                 {claim.nickname && <span> · {claim.name}</span>}
                 {claim.pairing && (
-                  <span className="app__join-pairing-chip">
-                    {APP_STRINGS.join.pairingCheck(claim.pairing)}
-                  </span>
+                  <Chip tone="gold">{APP_STRINGS.join.pairingCheck(claim.pairing)}</Chip>
                 )}
               </p>
               <div className="app__invite-actions">
-                <button
-                  className="app__button"
-                  type="button"
+                <Button
+                  variant="primary"
                   disabled={busyId !== null}
-                  onClick={() => decide(claim.id, 'approve')}
+                  onClick={() => void decide(claim.id, 'approve')}
                 >
                   {busyId === claim.id ? APP_STRINGS.join.deciding : APP_STRINGS.join.approve}
-                </button>
-                <button
-                  className="app__button app__button--quiet"
-                  type="button"
+                </Button>
+                <Button
+                  variant="ghost"
                   disabled={busyId !== null}
-                  onClick={() => decide(claim.id, 'reject')}
+                  onClick={() => void decide(claim.id, 'reject')}
                 >
                   {APP_STRINGS.join.reject}
-                </button>
+                </Button>
               </div>
             </div>
           ))}

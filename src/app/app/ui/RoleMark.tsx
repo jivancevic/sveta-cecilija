@@ -25,6 +25,17 @@ export interface RoleMarkProps {
   army: Army | null
   /** The title for THIS evening, or null for a dancer without one. */
   title?: DanceTitle | null
+  /**
+   * Two letters, when the disc stands for a PERSON rather than for a title
+   * (#573).
+   *
+   * Članovi lists the roster out of an evening, so no row has a title and every
+   * disc would be a blank colour swatch. The initials give the row a mark that
+   * is this dancer's and nobody else's, while the colour keeps saying which
+   * army they dance for. A title always wins: an evening's crown is the more
+   * specific fact, and the two would collide in the same 44px.
+   */
+  initials?: string | null
   /** 28px instead of 44px, for a name inside a column. */
   small?: boolean
   className?: string
@@ -53,7 +64,13 @@ function Crown({ base }: { base: boolean }) {
   )
 }
 
-export function RoleMark({ army, title = null, small = false, className }: RoleMarkProps) {
+export function RoleMark({
+  army,
+  title = null,
+  initials = null,
+  small = false,
+  className,
+}: RoleMarkProps) {
   const classes = [
     'ui-mark',
     army ? `ui-mark--${army}` : 'ui-mark--none',
@@ -71,9 +88,11 @@ export function RoleMark({ army, title = null, small = false, className }: RoleM
       <Crown base={false} />
     ) : null
 
+  const shown = initials?.trim() ?? ''
+
   return (
     <span className={classes} data-title={title ?? 'none'}>
-      {glyph}
+      {glyph ?? (shown !== '' ? <i aria-hidden="true">{shown}</i> : null)}
     </span>
   )
 }

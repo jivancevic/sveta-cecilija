@@ -6,6 +6,7 @@ import {
   emailLabel,
   filterAccounts,
   permissionChips,
+  permissionPills,
   sortAccounts,
   type UserAccount,
 } from './users-view'
@@ -123,5 +124,25 @@ describe('sortAccounts', () => {
     const rows = [account({ username: 'vele' }), account({ username: 'ana' })]
     sortAccounts(rows)
     expect(rows[0].username).toBe('vele')
+  })
+})
+
+// The row's pills (#573): three of them and a count of what did not fit.
+
+describe('permissionPills', () => {
+  it('shows the first three in the vocabulary order and counts the rest', () => {
+    const { pills, extra } = permissionPills(['dev', 'tickets', 'refunds', 'door', 'users'])
+    expect(pills.map((p) => p.key)).toEqual(['users', 'tickets', 'refunds'])
+    expect(extra).toBe(2)
+  })
+
+  it('counts nothing when the whole set fits', () => {
+    const { pills, extra } = permissionPills(['tickets'])
+    expect(pills).toHaveLength(1)
+    expect(extra).toBe(0)
+  })
+
+  it('is empty for an account that reaches nothing', () => {
+    expect(permissionPills([])).toEqual({ pills: [], extra: 0 })
   })
 })

@@ -4,6 +4,7 @@ import Image from 'next/image'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { APP_STRINGS } from '@/lib/app/strings'
+import { Button, Note, Section } from '../ui'
 
 // The rehearsal code, on the voditelj's screen (#463; on Članovi since #511).
 //
@@ -56,11 +57,9 @@ export function JoinCodeCard({
   }
 
   return (
-    <section className="app__more-block">
-      <h2 className="app__month-head">
-        <span>{APP_STRINGS.join.codeTitle}</span>
-      </h2>
-      <p className="app__comp-intro">{APP_STRINGS.join.codeIntro}</p>
+    <section className="app__join-block">
+      <Section title={APP_STRINGS.join.codeTitle} />
+      <Note>{APP_STRINGS.join.codeIntro}</Note>
 
       {error && <p className="app__answer-error">{error}</p>}
 
@@ -81,17 +80,17 @@ export function JoinCodeCard({
           {validUntil && <p className="app__join-code-valid">{APP_STRINGS.join.codeValid(validUntil)}</p>}
         </div>
       ) : (
-        <div className="app__empty-state">{APP_STRINGS.join.codeNone}</div>
+        <p className="app__empty">{APP_STRINGS.join.codeNone}</p>
       )}
 
       <p className="app__invite-hint">{APP_STRINGS.join.rotateHint}</p>
-      <button className="app__button app__button--quiet" type="button" onClick={rotate} disabled={busy}>
+      <Button variant="ghost" onClick={() => void rotate()} disabled={busy}>
         {busy
           ? APP_STRINGS.join.codeWorking
           : code
             ? APP_STRINGS.join.codeRotate
             : APP_STRINGS.join.codeCreate}
-      </button>
+      </Button>
     </section>
   )
 }

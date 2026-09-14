@@ -21,7 +21,8 @@ export interface FilterChipItem {
   /** Matches `active`; the unfiltered chip's key is the empty string. */
   key: string
   label: React.ReactNode
-  href: string
+  /** Where this chip leads. Omitted when the row narrows a list in the page. */
+  href?: string
 }
 
 export interface FilterChipsProps {
@@ -30,10 +31,20 @@ export interface FilterChipsProps {
   active: string
   /** What this row filters, for a screen reader. */
   label: string
+  /**
+   * The other kind of list (#573).
+   *
+   * Članovi is the whole society, already in the page, and its search narrows
+   * it on the keystroke rather than through the URL. A chip row there is a
+   * choice, not an address, so it is a row of buttons. Hand in `onSelect` and
+   * leave `href` off the items; hand in neither and every chip is a link, which
+   * is what Narudžbe and Upiti want and what keeps working with no JavaScript.
+   */
+  onSelect?: (key: string) => void
   className?: string
 }
 
-export function FilterChips({ items, active, label, className }: FilterChipsProps) {
+export function FilterChips({ items, active, label, onSelect, className }: FilterChipsProps) {
   return (
     <nav
       className={['ui-filters', className ?? ''].filter(Boolean).join(' ')}
@@ -41,6 +52,19 @@ export function FilterChips({ items, active, label, className }: FilterChipsProp
     >
       {items.map((item) => {
         const on = item.key === active
+        if (!item.href) {
+          return (
+            <button
+              key={item.key}
+              type="button"
+              className={`ui-filter${on ? ' ui-filter--on' : ''}`}
+              aria-pressed={on}
+              onClick={() => onSelect?.(item.key)}
+            >
+              {item.label}
+            </button>
+          )
+        }
         return (
           <Link
             key={item.key}

@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import type { MemberRosterRow } from '@/lib/app/members-screen'
 import { APP_STRINGS } from '@/lib/app/strings'
+import { Button, Note, Section, Switch, Toast } from '../../ui'
 import { RolePicker } from '../RolePicker'
 
 // The profile form of Članovi (#511): the six fields a voditelj owns.
@@ -19,6 +20,11 @@ import { RolePicker } from '../RolePicker'
 // and the route refuses it. Showing it disabled rather than hidden is the
 // honest version — the voditelj needs to see WHO this is, and a disabled input
 // would invite a tap that goes nowhere.
+//
+// One Spremi at the foot and no per-field save (#573): the six fields are one
+// answer to "who is this dancer now", and a form with two ways to commit is a
+// form where half the changes are lost. The two flags are T1's `Switch`, which
+// is the same control the account screen uses for the push toggle.
 //
 // Every refusal is whatever the server said, verbatim: the rules are
 // `validateAndNormaliseMoreskant`, shared with the collection hook, so the
@@ -79,8 +85,12 @@ export function MemberProfileForm({ member }: { member: MemberRosterRow }) {
 
   return (
     <form className="app__member-form" onSubmit={submit}>
+      <Toast message={S.saved} open={saved} />
+
+      <Section title={S.profileTitle} />
+      <Note>{S.profileIntro}</Note>
+
       {error && <p className="app__answer-error">{error}</p>}
-      {saved && <p className="app__members-done">{S.saved}</p>}
 
       <p className="app__member-fact">
         <span>{S.name}</span>
@@ -131,31 +141,25 @@ export function MemberProfileForm({ member }: { member: MemberRosterRow }) {
         disabled={busy}
       />
 
-      <label className="app__field app__field--check">
-        <input
-          type="checkbox"
-          checked={active}
-          disabled={busy}
-          onChange={(e) => setActive(e.target.checked)}
-        />
-        <span>{S.active}</span>
-      </label>
-      <p className="app__invite-hint">{S.activeHint}</p>
+      <Switch
+        checked={active}
+        onChange={setActive}
+        disabled={busy}
+        label={S.active}
+        note={S.activeHint}
+      />
 
-      <label className="app__field app__field--check">
-        <input
-          type="checkbox"
-          checked={yearRound}
-          disabled={busy}
-          onChange={(e) => setYearRound(e.target.checked)}
-        />
-        <span>{S.yearRound}</span>
-      </label>
-      <p className="app__invite-hint">{S.yearRoundHint}</p>
+      <Switch
+        checked={yearRound}
+        onChange={setYearRound}
+        disabled={busy}
+        label={S.yearRound}
+        note={S.yearRoundHint}
+      />
 
-      <button type="submit" className="app__button" disabled={busy}>
+      <Button type="submit" variant="primary" disabled={busy} check pop={saved}>
         {busy ? S.saving : S.save}
-      </button>
+      </Button>
     </form>
   )
 }

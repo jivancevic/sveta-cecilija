@@ -10,14 +10,16 @@ import {
 import { displayName, emailLabel, permissionChips } from '@/lib/app/users-view'
 import { AppShell } from '../../AppShell'
 import { openScreen } from '../../gate'
+import { Card, Chip } from '../../ui'
 import { UserActions } from './UserActions'
 
 // `/app/users/[id]` — one account (#510).
 //
-// The facts first, then the six named actions. The facts are the ones that
-// decide access: the permission set as Croatian chips, the address (or its
-// absence, which is what decides how a password is handed over), the shared
-// flag and the two links by name.
+// The facts first, then the six named actions, and on a laptop the two side by
+// side (#573, Q51): what this account IS on the left, what can be done to it on
+// the right. The facts are the ones that decide access: the permission set as
+// Croatian chips, the address (or its absence, which is what decides how a
+// password is handed over), the shared flag and the two links by name.
 //
 // Deleting stays in the Backoffice and the page says so at the foot, with no
 // link unless the reader holds `dev`: telling somebody a capability exists
@@ -71,52 +73,58 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
   const self = account.id === viewer.userId
 
   return (
-    <AppShell viewer={viewer} screen="users" title={account.username ?? account.id}>
+    <AppShell viewer={viewer} screen="users" title={name || account.username || account.id}>
       <Link className="app__user-back" href="/app/users">
         ‹ {S.back}
       </Link>
 
-      <section className="app__user-facts">
-        {name && <Fact label={S.create.name}>{name}</Fact>}
-        <Fact label={S.create.email}>
-          <span className={account.email ? undefined : 'app__user-noemail'}>
-            {emailLabel(account.email)}
-          </span>
-        </Fact>
-        <Fact label={S.permissions.title}>
-          <span className="app__user-chips">
-            {permissionChips(account.permissions).map((chip) => (
-              <span key={chip.key} className="app__user-chip">
-                {chip.label}
-              </span>
-            ))}
-            {account.permissions.length === 0 && (
-              <span className="app__user-chip app__user-chip--none">{S.noPermissions}</span>
-            )}
-          </span>
-        </Fact>
-        <Fact label={S.shared.title}>
-          {account.shared ? S.shared.isShared : S.shared.isPersonal}
-        </Fact>
-        <Fact label={S.tabs.title}>
-          {account.tabs.length === 0
-            ? S.tabs.none
-            : account.tabs.map((key) => screenByKey(key).label).join(' · ')}
-        </Fact>
-        <Fact label={S.partnerLabel}>{account.partnerName ?? S.link.partnerNone}</Fact>
-        <Fact label={S.memberLabel}>{account.memberName ?? S.link.memberNone}</Fact>
-      </section>
+      <div className="app__cols">
+        <Card className="app__user-facts">
+          <Fact label={S.create.username}>
+            {account.username ?? account.id}
+            {self && <Chip tone="gold">{S.selfBadge}</Chip>}
+          </Fact>
+          {name && <Fact label={S.create.name}>{name}</Fact>}
+          <Fact label={S.create.email}>
+            <span className={account.email ? undefined : 'app__user-noemail'}>
+              {emailLabel(account.email)}
+            </span>
+          </Fact>
+          <Fact label={S.permissions.title}>
+            <span className="app__user-chips">
+              {permissionChips(account.permissions).map((chip) => (
+                <span key={chip.key} className="app__user-chip">
+                  {chip.label}
+                </span>
+              ))}
+              {account.permissions.length === 0 && (
+                <span className="app__user-chip app__user-chip--none">{S.noPermissions}</span>
+              )}
+            </span>
+          </Fact>
+          <Fact label={S.shared.title}>
+            {account.shared ? S.shared.isShared : S.shared.isPersonal}
+          </Fact>
+          <Fact label={S.tabs.title}>
+            {account.tabs.length === 0
+              ? S.tabs.none
+              : account.tabs.map((key) => screenByKey(key).label).join(' · ')}
+          </Fact>
+          <Fact label={S.partnerLabel}>{account.partnerName ?? S.link.partnerNone}</Fact>
+          <Fact label={S.memberLabel}>{account.memberName ?? S.link.memberNone}</Fact>
+        </Card>
 
-      <UserActions
-        account={account}
-        self={self}
-        partners={partners.map((p) => ({ id: p.id, label: p.name }))}
-        candidates={candidates.map((c) => ({
-          id: c.id,
-          label: c.nickname ? `${c.nickname} (${c.name})` : c.name,
-        }))}
-        tabOptions={tabOptions}
-      />
+        <UserActions
+          account={account}
+          self={self}
+          partners={partners.map((p) => ({ id: p.id, label: p.name }))}
+          candidates={candidates.map((c) => ({
+            id: c.id,
+            label: c.nickname ? `${c.nickname} (${c.name})` : c.name,
+          }))}
+          tabOptions={tabOptions}
+        />
+      </div>
 
       <p className="app__user-note">{S.deleteNote}</p>
       {viewer.permissions.includes('dev') && (

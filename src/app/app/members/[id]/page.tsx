@@ -2,18 +2,27 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { loadMember } from '@/lib/app/members-data'
-import { shownName } from '@/lib/app/members-screen'
+import { armyOfRole, initialsOf, roleLabel, shownName } from '@/lib/app/members-screen'
 import { APP_STRINGS } from '@/lib/app/strings'
 import { AppShell } from '../../AppShell'
 import { openScreen } from '../../gate'
+import { Chip, RoleMark, Section } from '../../ui'
+import { InviteActions } from '../InviteActions'
 import { MemberProfileForm } from './MemberProfileForm'
 
-// `/app/members/[id]` — one dancer's profile (#511).
+// `/app/members/[id]` — one dancer's profile (#511, in the redesign's skin
+// since #573).
 //
 // The Backoffice's Members edit form has eleven fields, six of which a voditelj
 // cannot see and two of which they cannot write. This is the six that are
 // theirs, on a phone, with the name they may not change shown as a fact rather
 // than as a disabled input.
+//
+// Three parts and always these three (Q37): the head says who this is (the
+// army disc with their initials, the nickname, the real name under it), the
+// quick actions are the two invitation channels — which moved here off the list
+// row, because sending somebody their way in is something you do while looking
+// at THAT person — and then the form, which ends in one Spremi.
 //
 // A Member that is only a comp-attribution name (ADR-0019) is a 404 here, the
 // same answer an unknown id gets: as far as Članovi is concerned it does not
@@ -28,6 +37,8 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 }
 
+const S = APP_STRINGS.members
+
 export default async function MemberProfilePage({
   params,
 }: {
@@ -40,15 +51,33 @@ export default async function MemberProfilePage({
   const member = await loadMember(id)
   if (!member || !member.isMoreskant) notFound()
 
+  const shown = shownName(member)
+
   return (
-    <AppShell viewer={viewer} screen="members" title={shownName(member)}>
+    <AppShell viewer={viewer} screen="members" title={shown}>
       <Link className="app__back" href="/app/members">
-        ‹ {APP_STRINGS.members.back}
+        ‹ {S.back}
       </Link>
 
-      <p className="app__comp-intro">{APP_STRINGS.members.profileIntro}</p>
+      <div className="app__cols">
+        <div>
+          <header className="app__member-head">
+            <RoleMark army={armyOfRole(member.primaryRole)} initials={initialsOf(member.name)} />
+            <div className="app__member-head-body">
+              <b>{shown}</b>
+              <span>{member.name === shown ? roleLabel(member.primaryRole) : member.name}</span>
+            </div>
+            {!member.active && <Chip>{S.retired}</Chip>}
+          </header>
 
-      <MemberProfileForm member={member} />
+          <MemberProfileForm member={member} />
+        </div>
+
+        <div>
+          <Section title={S.invite} />
+          <InviteActions id={member.id} nickname={shown} mobile={member.mobile} />
+        </div>
+      </div>
     </AppShell>
   )
 }

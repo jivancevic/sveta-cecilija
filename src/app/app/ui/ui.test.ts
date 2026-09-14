@@ -117,6 +117,20 @@ describe('RoleMark', () => {
     expect(plain).not.toContain('<svg')
   })
 
+  // Članovi lists the roster out of an evening, so no row has a title and
+  // every disc would otherwise be a blank colour swatch (#573).
+  it('wears a person’s initials when there is no title to draw', () => {
+    const ciro = render(h(RoleMark, { army: 'crni', initials: 'ĆŠ' }))
+    expect(ciro).toContain('ĆŠ')
+    expect(ciro).toContain('ui-mark--crni')
+  })
+
+  it('lets the evening’s title win over the initials, never both', () => {
+    const king = render(h(RoleMark, { army: 'bili', title: 'bili_kralj', initials: 'IM' }))
+    expect(king).toContain('<svg')
+    expect(king).not.toContain('IM')
+  })
+
   it('rings the bula of the night and no other bula', () => {
     expect(render(h(RoleMark, { army: 'bula', title: 'bula' }))).toContain('ui-mark--titled')
     expect(render(h(RoleMark, { army: 'bula' }))).not.toContain('ui-mark--titled')
@@ -231,6 +245,24 @@ describe('the rest of the shapes render', () => {
     // Every chip is an address, so the control works with no JavaScript and a
     // filtered list can be sent to somebody in a message.
     expect(filters).toContain('href="/app/orders?state=refunded"')
+  })
+
+  // The other kind of list (#573): Članovi is already in the page and narrows
+  // on the keystroke, so its chips are buttons rather than addresses.
+  it('a chip with nowhere to go is a button that says whether it is on', () => {
+    const chips = render(
+      h(FilterChips, {
+        items: [
+          { key: 'all', label: 'Svi' },
+          { key: 'no-login', label: 'Bez prijave' },
+        ],
+        active: 'no-login',
+        label: 'Filtar popisa',
+      }),
+    )
+    expect(chips).toContain('<button')
+    expect(chips).not.toContain('href=')
+    expect(chips).toContain('aria-pressed="true"')
   })
 
   it('a large podium carries a mark, a place and the reader own step', () => {
