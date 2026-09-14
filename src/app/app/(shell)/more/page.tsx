@@ -183,26 +183,43 @@ export default async function MorePage() {
         <SupportRow />
       </List>
 
-      {viewer.nav.overflow.length > 0 && (
-        <section className="app__more-group">
-          <Section title={S.screensTitle} />
-          <List>
-            {viewer.nav.overflow.map((screen) => (
-              <ListRow
-                key={screen.key}
-                href={screen.route}
-                lead={
-                  <RowIcon>
-                    <ScreenIcon screen={screen.key} size={22} />
-                  </RowIcon>
-                }
-                title={screen.label}
-                trail={<Chev />}
-              />
-            ))}
-          </List>
-        </section>
-      )}
+      {/* The overflow BY WORKSPACE, the way the laptop sidebar already draws it
+          (#627, Q22). `nav.groups` is the division and nothing here re-types
+          it: a screen lands in the first group its holder holds, so a reader
+          who is only a moreškant sees one heading and a reader who is both
+          blagajna and uprava sees the two lists apart instead of ten rows under
+          one word.
+
+          Each group is filtered to the OVERFLOW, so a screen that is already a
+          tab is not repeated two centimetres above its own bar, and a group
+          left with nothing is not drawn at all. The old "Ekrani" heading goes
+          with them: the group names say more than it did. */}
+      {viewer.nav.groups.map((group) => {
+        const screens = group.screens.filter((screen) =>
+          viewer.nav.overflow.some((other) => other.key === screen.key),
+        )
+        if (screens.length === 0) return null
+        return (
+          <section className="app__more-group" key={group.group}>
+            <Section title={group.label} />
+            <List>
+              {screens.map((screen) => (
+                <ListRow
+                  key={screen.key}
+                  href={screen.route}
+                  lead={
+                    <RowIcon>
+                      <ScreenIcon screen={screen.key} size={22} />
+                    </RowIcon>
+                  }
+                  title={screen.label}
+                  trail={<Chev />}
+                />
+              ))}
+            </List>
+          </section>
+        )
+      })}
 
       <section className="app__more-group">
         <Section title={S.appTitle} />

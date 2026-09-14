@@ -889,8 +889,12 @@ export const APP_STRINGS = {
     support: 'Podrška',
     /** A login several people hold, said on the header rather than implied. */
     shared: 'Dijeljeni račun',
-    /** The two groups under the person: their screens, then the app itself. */
-    screensTitle: 'Ekrani',
+    /**
+     * The groups under the person: their screens by workspace, then the app
+     * itself. The screens' own headings are `GROUP_LABEL` (`app/screens.ts`),
+     * the same words the laptop sidebar uses, so "Ekrani" no longer names
+     * anything (#627, Q22).
+     */
     appTitle: 'Aplikacija',
     /** The install guide as a row; the guide's own title names the platform. */
     install: 'Instalacija',
