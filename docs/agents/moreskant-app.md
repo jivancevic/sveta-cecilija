@@ -2454,8 +2454,23 @@ screen. T1 is the system; everything under it is a screen's own ticket.
 | `src/app/app/ui/` | the shared shapes, fifteen of them, plus `ui.css` |
 | `src/lib/app/screens.ts` | which screens exist, unchanged by the redesign |
 
+### The follow-ups Josip found on his phone (#592)
+
+Five skin decisions, every one of them settled on the prototype branch
+(`prototype/cecilija-post-redesign`) before the ticket started, and every one of
+them a port rather than a new design.
+
+| | |
+|---|---|
+| **Dark palette A** | the night paper is one step lighter: `--bg #1f1913`, `--card #2c2419`, `--sunk #17120c`, `--track #43392f`. The old ground sat so close to the card that a card had nowhere to sit. Gold, ink and every accent untouched; the light skin untouched entirely |
+| **The bar blurs the page** | `.app__tabbar` is a full-width fixed ZONE with the pill centred in it and three layers under it (a `--bg` gradient to 85 %, `blur(6px)` over 132px, `blur(18px)` over 84px, each masked out at its own top). Content scrolls to the bottom EDGE and goes out of focus there; `.app__shell` clears `tabH + safe + 12px` rather than `+ 40px`, which was the hole under the last card. **The zone must never carry a `transform`**: in WebKit a transformed ancestor is what a `backdrop-filter` descendant resolves against, and the blur silently does nothing. The header stays non-sticky |
+| **The answer pair** | `src/app/app/AnswerPair.tsx`, one client component for the hero, a hero half and any row. Both buttons are ALWAYS on screen — the chosen one filled, the other outlined at .55 — and the words are always *Dolazim* / *Ne dolazim*, never the army (a dancer does not choose it, a voditelj can change it for one evening, and a label that moves under the thumb is not a label). The tap is the prototype's variant A: the blades redraw from opposite corners, the green (`--yes`, olive) expands from THEIR CROSSING rather than from the finger, a white ring and six sparks fire on the clash, the pressed button springs and the other eases back. *Ne dolazim* is the same shape without the sparks. `prefers-reduced-motion` drops all of it to a colour swap. The write, the optimistic update and the revert stay in `moreska/Answer.tsx`; `S.comingIn` and *Promijeni* are gone with the collapsed single button |
+| **Copper on the hero too** | `ui/KindChip` is the DateDisc's three tones as a pill, for the places a hero has no disc: the hero meta on Početna and Moreška (through the shared `HeroMeta`, since both read one `heroView()`), each half of a two-nastup day, and beside the date on Stanje. `--onCopper` is white on both skins |
+| **The crown carries an O** | and the dark-skin bug under it was NOT the crown: Više draws the reader's mark with no title by design (#569) and never passed the `initials` #573 added for exactly that case, while `.ui-mark--crni` hard-coded `#1a140c` instead of `--crni`, which at night is a shade off the page ground. An empty disc with no body of its own reads as a ring around nothing |
+
 **Never hard-code a value a token names.** A theme re-points the token; a hex
-does not follow it. The same rule is why Skener re-points tokens rather than
+does not follow it. `.ui-mark--crni` is what it costs when a rule does not: it
+held `#1a140c` from T1 until #592 and the night skin could not follow it. The same rule is why Skener re-points tokens rather than
 restating colours, and why the four answers a scanned ticket can give are
 `--res-ok`, `--res-seen`, `--res-void` and `--res-bad` on that screen's root
 rather than four hexes in four rules (#572). They are `--res-*` and not `--ok`
