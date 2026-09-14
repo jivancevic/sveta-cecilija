@@ -129,6 +129,13 @@ describe('Ring', () => {
     expect(render(h(Ring, { value: 400, max: 350 }))).toContain('360deg')
     expect(render(h(Ring, { value: 1, max: 0 }))).toContain('0deg')
   })
+
+  it('grows on the one screen it is the subject of', () => {
+    // Skener's ring is read at arm's length in the dark (#572), and the size
+    // is a prop rather than a screen-side override — the rule the folder is for.
+    expect(render(h(Ring, { value: 1, max: 2, size: 'lg' }))).toContain('ui-ring--lg')
+    expect(render(h(Ring, { value: 1, max: 2 }))).not.toContain('ui-ring--lg')
+  })
 })
 
 describe('the rest of the shapes render', () => {

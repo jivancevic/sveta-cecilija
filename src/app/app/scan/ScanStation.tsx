@@ -13,6 +13,7 @@ import { APP_STRINGS } from '@/lib/app/strings'
 import type { LookupMode, OrderLookupView } from '@/lib/order-lookup'
 import type { ScanResult } from '@/lib/scan-token'
 import { VENUE_LABEL, type Venue } from '@/lib/venues'
+import { Button, Card, CountUp, Ring, Segmented, Sheet } from '../ui'
 
 // Skener's one client island (#504): the camera, the result card and the
 // manual-admit search. Ported from `ScanStationClient.tsx` and
@@ -22,9 +23,22 @@ import { VENUE_LABEL, type Venue } from '@/lib/venues'
 // and a guest admitted by QR are the same event and were being reported in two
 // different visual languages.
 //
-// The scanning logic itself is untouched: the same `html5-qrcode` load with the
-// iOS WASM ponyfill, the same `buildScanStartArgs` contract (a multi-key first
-// argument makes html5-qrcode reject with a bare string), the same three routes.
+// **The scanning logic is untouched, twice over** (#504, then #572). The same
+// `html5-qrcode` load with the iOS WASM ponyfill, the same `buildScanStartArgs`
+// contract (a multi-key first argument makes html5-qrcode reject with a bare
+// string), the same `startCamera` / `handleDecoded` pair and the same three
+// routes. The redesign changed the markup around all of it and nothing inside
+// it: every fix from the scanner-reliability work stays exactly where it was.
+//
+// Two things #572 added, both of them state ABOUT the screen rather than about
+// the camera:
+//
+//   - the ring lives here now, seeded with the server's count, so "ušlo X od Y"
+//     can move when somebody walks in instead of waiting for a reload. It is
+//     kept by an effect that watches the RESULT, never by a line inside the
+//     decode path — the camera flow has to stay readable as the one thing it is.
+//   - the manual search is a sheet, opened by a button, rather than a block of
+//     form living under the scanner button forever.
 //
 // The card is ENGLISH and everything around it is Croatian (#476): the
 // volunteer is Croatian, the guest reading over their shoulder is usually not.
@@ -122,11 +136,17 @@ function partyLabel(adult: number, child: number): string {
 export function ScanStation({
   showId,
   canOpenOrder,
+  when,
+  progress,
 }: {
   /** Tonight's public performance, or null: the search has nothing to search. */
   showId: string | null
   /** The viewer holds `refunds`, so the card offers one link into the order. */
   canOpenOrder: boolean
+  /** "Utorak, 15. rujna · 21:00 · Ljetno kino", formatted on the server. */
+  when: string | null
+  /** The count as the server read it, or null on an evening with no izvedba. */
+  progress: { admitted: number; sold: number } | null
 }) {
   const [phase, setPhase] = useState<Phase>('closed')
   const [cameraError, setCameraError] = useState<string | null>(null)
@@ -137,6 +157,7 @@ export function ScanStation({
   const [actionError, setActionError] = useState<string | null>(null)
   /** How many of the party were still outside when this one was admitted. */
   const [partyRemaining, setPartyRemaining] = useState(0)
+  const [lookupOpen, setLookupOpen] = useState(false)
 
   const scannerRef = useRef<{ stop: () => Promise<void> } | null>(null)
   const elementId = 'cecilija-scan-region'
@@ -359,6 +380,37 @@ export function ScanStation({
     }
   }, [])
 
+  // ── The ring's count ────────────────────────────────────────────────────
+  //
+  // Three things move it: a QR that came back VALID, the rest of a party let in
+  // together, and an undo taking one back out. It is worked out from what the
+  // door ANSWERED rather than incremented where the answer arrives, and that is
+  // deliberate: `handleDecoded` and `startCamera` are the camera flow, every
+  // fix in them was paid for in a real venue, and they do not grow a line of
+  // bookkeeping (#572).
+  //
+  // React's own "adjust state when something it derives from changed" pattern
+  // (react.dev, *You Might Not Need an Effect*), not an effect: a setState in
+  // an effect is a second render after the paint, and this project's lint
+  // refuses it. Each source is remembered by identity — a result object is new
+  // every time — so one admission is counted exactly once even when the same
+  // number arrives twice in a row.
+  const [tally, setTally] = useState<{
+    admitted: number
+    scan: ScanResponse | null
+    party: number | null
+    undo: UndoState
+  }>({ admitted: progress?.admitted ?? 0, scan: null, party: null, undo: 'idle' })
+
+  if (tally.scan !== scan || tally.party !== partyAdmitted || tally.undo !== undoState) {
+    let n = tally.admitted
+    if (tally.scan !== scan && scan?.result.status === 'VALID') n += 1
+    if (tally.party !== partyAdmitted && partyAdmitted !== null) n += partyAdmitted
+    if (tally.undo !== undoState && undoState === 'done') n = Math.max(0, n - 1)
+    setTally({ admitted: n, scan, party: partyAdmitted, undo: undoState })
+  }
+  const admitted = tally.admitted
+
   const card = scan ? (
     <ResultCard
       scan={scan}
@@ -377,18 +429,56 @@ export function ScanStation({
 
   return (
     <>
-      <button type="button" className="app__scan-open" onClick={openScanner}>
-        {S.open}
-      </button>
+      {/* The one number that matters at the door, and the button under it. The
+          ring is `lg` because it is read at arm's length in the dark, and the
+          count is `live` because it moves while the screen is open (#572). */}
+      {progress ? (
+        <Card className="app__scan-hero" aria-live="polite">
+          {when && <p className="app__scan-when">{when}</p>}
+          <Ring
+            value={admitted}
+            max={progress.sold}
+            size="lg"
+            label={
+              <span className="app__scan-figure">
+                <b>
+                  <CountUp value={admitted} live />
+                </b>
+                <i>
+                  {S.of} {progress.sold} {S.admitted}
+                </i>
+              </span>
+            }
+          />
+        </Card>
+      ) : (
+        <Card className="app__scan-empty">
+          <p className="app__scan-none">{S.noShow}</p>
+          <p className="app__scan-none-body">{S.noShowBody}</p>
+        </Card>
+      )}
 
-      {/* On the page: the card of a manual admit, and the search itself. */}
+      <Button variant="primary" className="app__scan-open" onClick={openScanner}>
+        {S.open}
+      </Button>
+
+      {/* On the page: the card of a manual admit, and the way into the search. */}
       {phase === 'closed' && card}
-      {phase === 'closed' && showId && (
+      {phase === 'closed' && showId && scan === null && (
+        <Button variant="ghost" onClick={() => setLookupOpen(true)}>
+          {S.lookupTitle}
+        </Button>
+      )}
+      {showId && (
         <LookupPanel
+          open={lookupOpen}
+          onClose={() => setLookupOpen(false)}
           showId={showId}
           admitting={admitting}
-          onAdmit={admitFromLookup}
-          hasResult={scan !== null}
+          onAdmit={(order) => {
+            setLookupOpen(false)
+            admitFromLookup(order)
+          }}
         />
       )}
 
@@ -574,16 +664,28 @@ function ResultCard({
   )
 }
 
+/**
+ * Pronađi ulaznicu, the manual admit when a QR will not scan (#504), in a sheet
+ * since #572.
+ *
+ * It used to live open on the page under the scanner button, which meant the
+ * screen's first fold was half taken by a form for the rarer of its two jobs.
+ * A sheet is the shape Cecilija already uses for a short closed question, it
+ * comes back to the ring when it is answered, and `Sheet` carries the
+ * `data-no-pull` the pull gesture needs on every half of it.
+ */
 function LookupPanel({
+  open,
+  onClose,
   showId,
   admitting,
   onAdmit,
-  hasResult,
 }: {
+  open: boolean
+  onClose: () => void
   showId: string
   admitting: boolean
   onAdmit: (order: OrderLookupView) => void
-  hasResult: boolean
 }) {
   const [mode, setMode] = useState<LookupMode>('code')
   const [query, setQuery] = useState('')
@@ -636,30 +738,43 @@ function LookupPanel({
     [mode, query, showId],
   )
 
-  // A result card is on the page: the search that produced it stays out of the
-  // way until the volunteer dismisses it.
-  if (hasResult) return null
-
   return (
-    <section className="app__scan-lookup">
-      <h2>{S.lookupTitle}</h2>
-      <p className="app__scan-lookup-intro">{S.lookupIntro}</p>
-
-      {!match && (
-        <form onSubmit={submit}>
-          <div className="app__scan-modes" role="group" aria-label={S.lookupTitle}>
-            {(['code', 'email', 'name'] as LookupMode[]).map((m) => (
-              <button
-                key={m}
-                type="button"
-                className={`app__scan-mode${mode === m ? ' app__scan-mode--on' : ''}`}
-                aria-pressed={mode === m}
-                onClick={() => setMode(m)}
-              >
-                {MODE_LABEL[m]}
-              </button>
-            ))}
+    <Sheet
+      open={open}
+      title={S.lookupTitle}
+      onClose={onClose}
+      footer={
+        match ? (
+          <div className="ui-btns">
+            <Button variant="primary" onClick={() => onAdmit(match)} disabled={admitting}>
+              {admitting ? S.admitting : S.admit}
+            </Button>
+            <Button variant="ghost" onClick={reset}>
+              {S.back}
+            </Button>
           </div>
+        ) : (
+          <Button variant="ghost" onClick={onClose}>
+            {S.close}
+          </Button>
+        )
+      }
+    >
+      {!match && (
+        <form onSubmit={submit} className="app__scan-lookup">
+          <p className="app__scan-lookup-intro">{S.lookupIntro}</p>
+          {/* A setting, not a pair of panels: `options` is the same control as
+              a radiogroup, which is what three ways of searching one list is. */}
+          <Segmented
+            items={(['code', 'email', 'name'] as LookupMode[]).map((m) => ({
+              key: m,
+              label: MODE_LABEL[m],
+            }))}
+            value={mode}
+            onSelect={setMode}
+            label={S.lookupTitle}
+            mode="options"
+          />
           <div className="app__scan-search">
             <input
               type={mode === 'email' ? 'email' : 'text'}
@@ -675,10 +790,9 @@ function LookupPanel({
               {pending ? S.searching : S.search}
             </button>
           </div>
+          {info && <p className="app__scan-info">{info}</p>}
         </form>
       )}
-
-      {info && !match && <p className="app__scan-info">{info}</p>}
 
       {match && (
         <div className="app__scan-match">
@@ -695,25 +809,8 @@ function LookupPanel({
               ? S.allAdmitted
               : S.admittedOf(match.scannedCount, match.partySize)}
           </p>
-          <div className="app__scan-actions">
-            <button
-              type="button"
-              className="app__scan-action"
-              onClick={() => onAdmit(match)}
-              disabled={admitting}
-            >
-              {admitting ? S.admitting : S.admit}
-            </button>
-            <button
-              type="button"
-              className="app__scan-action app__scan-action--ghost"
-              onClick={reset}
-            >
-              {S.back}
-            </button>
-          </div>
         </div>
       )}
-    </section>
+    </Sheet>
   )
 }
