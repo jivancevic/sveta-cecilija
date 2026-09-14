@@ -105,6 +105,16 @@ interface RoleMarkBase {
   label?: string | null
   /** 28px instead of 44px, for a name inside a column. */
   small?: boolean
+  /**
+   * 16px: the roles a person ALSO dances, listed beside their name (#624).
+   *
+   * Its own size rather than a smaller `small`, because it answers a different
+   * question. The lead disc says who this person is and has to survive being
+   * the only thing on the row; these are an aside to it, and at 28px a row of
+   * them out-shouted the name they belong to. `small` wins if both are passed,
+   * which is the safe way round: too big is read, too small is not.
+   */
+  tiny?: boolean
   className?: string
 }
 
@@ -219,7 +229,7 @@ function Crown({ base }: { base: boolean }) {
 }
 
 export function RoleMark(props: RoleMarkProps) {
-  const { army, initials = null, label = null, small = false, className } = props
+  const { army, initials = null, label = null, small = false, tiny = false, className } = props
 
   // The two contexts collapse to ONE drawing decision here, and only here: a
   // caller has already said which question it is asking, and everything below
@@ -232,7 +242,7 @@ export function RoleMark(props: RoleMarkProps) {
   const classes = [
     'ui-mark',
     army ? `ui-mark--${army}` : 'ui-mark--none',
-    small ? 'ui-mark--sm' : '',
+    small ? 'ui-mark--sm' : tiny ? 'ui-mark--xs' : '',
     // The white ring is the bula OF THE NIGHT and nothing else, which is why it
     // reads `drawn` rather than `props.role`: a bula by trade maps to no glyph
     // above, so she never picks the ring up from her profile.

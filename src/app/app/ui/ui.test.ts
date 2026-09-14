@@ -21,7 +21,7 @@ import { RoleMark } from './RoleMark'
 import { Section } from './Section'
 import { SWORDS_PATHS, ScreenIcon } from './ScreenIcon'
 import { Segmented } from './Segmented'
-import { Sheet, SheetOption } from './Sheet'
+import { Sheet, SheetOption, SheetPanel } from './Sheet'
 import { Switch } from './Switch'
 import { Tile, Tiles } from './Tile'
 import { Toast } from './Toast'
@@ -321,12 +321,14 @@ describe('the rest of the shapes render', () => {
     ).not.toContain('ui-mark')
   })
 
-  it('gives equal ranks equal steps, and keeps them in finishing order (#614)', () => {
+  it('gives equal ranks equal steps, and puts a first place in the middle (#624)', () => {
     // Ranks 1, 1, 3 are ordinary on this board, and the staircase used to put
     // the second of two dancers who both read "1. mjesto" on a lower step —
     // the geometry asserting an order the ranking denies, on the loudest part
-    // of the screen. Two firsts now share the top step's class, and the three
-    // steps come out left to right in the order they finished.
+    // of the screen (#614). Two firsts still share the top step's class; what
+    // #624 changed is where they stand: the FIRST place is always the middle
+    // step, so with two of them they take the middle and the left and the
+    // second-listed one is drawn first.
     const tied = render(
       h(Podium, {
         large: true,
@@ -339,10 +341,12 @@ describe('the rest of the shapes render', () => {
     )
     expect((tied.match(/ui-podium__step--1/g) ?? []).length).toBe(2)
     expect(tied).not.toContain('ui-podium__step--2')
-    expect(tied.indexOf('Šain')).toBeLessThan(tied.indexOf('Risto'))
+    expect(tied.indexOf('Risto')).toBeLessThan(tied.indexOf('Šain'))
 
     // An outright winner over two seconds keeps their step: only a podium
-    // where NOBODY stands higher is flattened (#614 review).
+    // where NOBODY stands higher is flattened (#614 review). This is the case
+    // on Josip's own screen — 26, 25, 25 — and it is where the winner used to
+    // stand on the LEFT, which is what #624 moved: the two seconds flank him.
     const oneAndTwoSeconds = render(
       h(Podium, {
         large: true,
@@ -355,7 +359,8 @@ describe('the rest of the shapes render', () => {
     )
     expect(oneAndTwoSeconds).not.toContain('ui-podium--level')
     expect((oneAndTwoSeconds.match(/ui-podium__step--2/g) ?? []).length).toBe(2)
-    expect(oneAndTwoSeconds.indexOf('Brane')).toBeLessThan(oneAndTwoSeconds.indexOf('Markan'))
+    expect(oneAndTwoSeconds.indexOf('Markan')).toBeLessThan(oneAndTwoSeconds.indexOf('Brane'))
+    expect(oneAndTwoSeconds.indexOf('Brane')).toBeLessThan(oneAndTwoSeconds.indexOf('Ratko'))
 
     // Three on the same count: nobody stands higher, so nobody stands on air.
     const allLevel = render(
@@ -504,10 +509,14 @@ describe('the rest of the shapes render', () => {
   })
 
   it('a sheet is nothing at all until it is open', () => {
+    // `Sheet` itself renders nothing on a server at all since #624 — it is a
+    // portal into the body, and a portal has no string form — so the shape is
+    // asserted on `SheetPanel` below and this is the closed case, which is the
+    // half `Sheet` decides.
     expect(render(h(Sheet, { open: false, onClose: () => {}, children: 'x' }))).toBe('')
+
     const open = render(
-      h(Sheet, {
-        open: true,
+      h(SheetPanel, {
         title: 'Brko',
         onClose: () => {},
         children: h(SheetOption, { on: true }, 'Crni kralj'),
@@ -522,8 +531,7 @@ describe('the rest of the shapes render', () => {
     // (#563): the handle, the title and the buttons stay put, or a landscape
     // phone loses the title off the top with nothing to scroll back to.
     const open = render(
-      h(Sheet, {
-        open: true,
+      h(SheetPanel, {
         title: 'Brko',
         onClose: () => {},
         footer: h('button', {}, 'Spremi'),
@@ -538,7 +546,7 @@ describe('the rest of the shapes render', () => {
     // Without this the wrapper's transform drags the sheet down with the page
     // and then refreshes it away underneath the reader (#562 review). Three
     // since #563: the scrim, the panel, and the half that scrolls inside it.
-    const open = render(h(Sheet, { open: true, onClose: () => {}, children: 'x' }))
+    const open = render(h(SheetPanel, { onClose: () => {}, children: 'x' }))
     expect(open.match(/data-no-pull/g)).toHaveLength(3)
   })
 })

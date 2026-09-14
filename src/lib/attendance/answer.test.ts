@@ -315,3 +315,84 @@ describe('handleAttendanceAnswer — clear', () => {
     expect(d.remove).toHaveBeenCalledWith(55)
   })
 })
+
+describe('handleAttendanceAnswer \u2014 undo (#624)', () => {
+  const iso = (ms: number) => new Date(ms).toISOString()
+  const GRACE = 10 * 60 * 1000
+
+  it('deletes the row when the dolazim is still a mis-tap', async () => {
+    const d = deps({
+      findExisting: async () => ({
+        id: 55,
+        army: 'crni',
+        status: 'coming',
+        stamps: { confirmedAt: iso(NOW.getTime() - 1000), withdrewAt: null, withdrewOwn: null },
+      }),
+    })
+    const out = await handleAttendanceAnswer(body({ status: 'undo' }), d)
+    expect(out).toEqual({ status: 200, body: { ok: true, status: null, army: null } })
+    expect(d.remove).toHaveBeenCalledWith(55)
+    expect(d.update).not.toHaveBeenCalled()
+  })
+
+  it('records an odustajanje instead of deleting, once the promise has stood', async () => {
+    // The circle is un-tapped, and what comes back is "ne dolazim" rather than
+    // "bez odgovora": a place the voditelj was counting on has emptied, and the
+    // screen tells the dancer the truth about where they now stand.
+    const d = deps({
+      findExisting: async () => ({
+        id: 55,
+        army: 'crni',
+        status: 'coming',
+        stamps: { confirmedAt: iso(NOW.getTime() - GRACE), withdrewAt: null, withdrewOwn: null },
+      }),
+    })
+    const out = await handleAttendanceAnswer(body({ status: 'undo' }), d)
+    expect(out).toEqual({
+      status: 200,
+      body: { ok: true, status: 'not_coming', army: 'crni' },
+    })
+    expect(d.remove).not.toHaveBeenCalled()
+    expect(d.update).toHaveBeenCalledWith(
+      55,
+      expect.objectContaining({
+        status: 'not_coming',
+        army: 'crni',
+        withdrewAt: iso(NOW.getTime()),
+        withdrewOwn: true,
+      }),
+    )
+  })
+
+  it('deletes a "ne dolazim" outright, because nothing was ever promised', async () => {
+    const d = deps({
+      findExisting: async () => ({
+        id: 55,
+        army: null,
+        status: 'not_coming',
+        stamps: { confirmedAt: null, withdrewAt: null, withdrewOwn: null },
+      }),
+    })
+    const out = await handleAttendanceAnswer(body({ status: 'undo' }), d)
+    expect(out.body).toEqual({ ok: true, status: null, army: null })
+    expect(d.remove).toHaveBeenCalledWith(55)
+  })
+
+  it('is a no-op when there is no row to take back', async () => {
+    const d = deps()
+    const out = await handleAttendanceAnswer(body({ status: 'undo' }), d)
+    expect(out.status).toBe(200)
+    expect(d.remove).not.toHaveBeenCalled()
+    expect(d.update).not.toHaveBeenCalled()
+  })
+
+  it('a moreškant may not take one back once the nastup has started', async () => {
+    const out = await handleAttendanceAnswer(
+      body({ status: 'undo' }),
+      deps({
+        loadPerformance: async () => ({ id: '10', startMs: NOW.getTime() - 1, cancelled: false }),
+      }),
+    )
+    expect(out).toMatchObject({ status: 403 })
+  })
+})

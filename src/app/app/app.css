@@ -358,8 +358,17 @@ html:has(> .app) {
 
    Reduced motion drops it entirely: the screen appears, which is the honest
    still version of the same thing. */
+/* `backwards`, not `both` (#624). The `to` frame is `opacity: 1; transform:
+   none`, which is what the element has anyway, so forwards bought nothing —
+   and it cost the app every fixed descendant of a screen. An animation whose
+   effect is still being applied makes its element a stacking context, and
+   `both` keeps the effect applied for as long as the screen is on the page, so
+   the wrapper never stopped being one: every sheet in the app, at z-index 31,
+   was sealed under a tab bar at 20. The sheet is portalled out of here too
+   (`ui/Sheet.tsx`), which is the real fix; this is the trap itself, removed so
+   the next fixed thing inside a screen does not fall into it. */
 .app__screen {
-  animation: app-screen-in 0.2s var(--ease) both;
+  animation: app-screen-in 0.2s var(--ease) backwards;
 }
 
 .app__screen[data-slide='left'] {
@@ -3326,13 +3335,33 @@ a.app__ob-link {
   gap: 10px;
 }
 
+/* The place, in Labrada (#624). A ranked row is the one place in this app
+   where a number IS the content, and the sans-serif column read like a table of
+   ids — "izgleda malo tupo", which is exactly what a figure set in the utility
+   face looks like next to the same figure set in the brand's own.
+
+   NOT `tabular-nums`, for the reason the count beside it is not either:
+   Labrada's tabular figures are a third wider than its proportional ones and
+   put a hole in the middle of "18". The column is right-aligned, which is what
+   tabular was wanted for. */
 .app__lb-rank {
   min-width: 26px;
+  font-family: var(--serif);
   font-style: normal;
-  font-size: 14px;
-  font-variant-numeric: tabular-nums;
+  font-size: 15px;
+  font-weight: 600;
   color: var(--muted);
   text-align: right;
+}
+
+/* And the nickname with it. The two together are what a reader's eye actually
+   lands on — "tko je 4." — so they are set in the face the rest of the app
+   reserves for its figures and its headings, while the count on the right keeps
+   its own. */
+.app__lb-race .ui-row__body b {
+  font-family: var(--serif);
+  font-size: 16px;
+  font-weight: 600;
 }
 
 /* The serif carries the count, as it carries every figure in this app. NOT
@@ -3627,9 +3656,81 @@ a.app__ob-link {
   font-variant-numeric: tabular-nums;
 }
 
-.app__lb-you-rank sup {
-  font-size: 19px;
-  top: -0.75em;
+/* ── The row's answer: two circles (#624) ──────────────────
+   Where "bez odgovora" used to be printed fifteen times down a month. Both
+   circles are always drawn and the FILL is the answer, so the control says the
+   same thing at a glance from a metre away that the hero's pair says in words.
+
+   The green is `--yes`, the one green in the app and already the colour of
+   Dolazim; the red is `--warn` rather than `--red`, because `--red` is the bili
+   army and a dancer's refusal has nothing to do with a vojska. */
+.app__dots {
+  flex: none;
+  display: flex;
+  gap: 8px;
+}
+
+.app__dot {
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--rPill);
+  display: grid;
+  place-items: center;
+  background: none;
+  /* Unanswered: an outline and nothing else, so a month nobody has replied to
+     reads as twelve quiet rings rather than as a wall of colour. */
+  box-shadow: inset 0 0 0 1.5px var(--rule);
+  color: var(--muted);
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  transition: background 0.2s var(--ease), color 0.2s var(--ease),
+    box-shadow 0.2s var(--ease), transform 0.2s var(--spring);
+}
+
+.app__dot svg {
+  width: 17px;
+  height: 17px;
+}
+
+.app__dot:active {
+  transform: scale(0.92);
+}
+
+.app__dot:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.app__dot--yes.app__dot--on {
+  background: var(--yes);
+  box-shadow: inset 0 0 0 1.5px var(--yes);
+  color: var(--onYes);
+}
+
+.app__dot--no.app__dot--on {
+  background: var(--warn);
+  box-shadow: inset 0 0 0 1.5px var(--warn);
+  color: #fff;
+}
+
+/* ── The reader's own answer on Stanje (#624) ──────────────
+   Under the date, above the bar. It is the hero's pair, full width, on a screen
+   that has no hero: a dancer who tapped the ArmyBar to get here can answer
+   without going back. */
+.app__stanje-mine {
+  margin-bottom: 2px;
+}
+
+/* The ordinal's full stop (#624): on the baseline, a little smaller than the
+   digits and a hair of air before it, because "15." is one word and the dot is
+   the half of it that says "fifteenTH". */
+.app__lb-you-rank i {
+  font-style: normal;
+  font-size: 30px;
+  margin-left: 1px;
 }
 
 .app__lb-you-txt {
@@ -7854,13 +7955,29 @@ a.app__statrow-main:focus-visible {
   transform: scale(0.98);
 }
 
-/* The other roles a candidate can dance, as small discs beside their name
-   (#620). */
-.app__role-discs {
+/* The other roles a candidate can dance, beside their name (#620, resized and
+   straightened in #624).
+
+   The selector carries `.ui-sheet__opt` on purpose. Inside a sheet option this
+   container is a direct child span of the option's body div, which is where
+   the option's quiet second line is styled: at (0,1,1) that rule set it
+   `display: block`, and a row of `display: grid` marks inside a block stacked
+   into a column — Ratko wore his two extra roles one above the other, pushing
+   his own name off the top of the row. Two classes beat it, and the row is
+   stated once for both places it is drawn. */
+.ui-sheet__opt .app__role-discs,
+.app__stanje-sheet-name .app__role-discs {
   display: inline-flex;
   align-items: center;
   gap: 4px;
   margin-left: 8px;
+  /* The lead disc is 28px and says who this person IS; these are 16px and say
+     what else they can dance. Written here as well as on the mark, because the
+     quiet-second-line rule above also hands down a 13px font and `--muted`,
+     and a mark must never inherit either. */
+  font-size: inherit;
+  color: inherit;
+  vertical-align: middle;
 }
 
 /* The role filter, as a row of discs rather than a row of words (#620): six

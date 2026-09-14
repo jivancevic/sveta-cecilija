@@ -429,10 +429,17 @@ export const APP_STRINGS = {
      * word is short and green because it is an aside, not news.
      */
     lineupList: 'POPIS',
-    /** The chip on a row: the reader's own answer, or its absence. */
-    chipNone: 'bez odgovora',
-    chipYes: 'dolaziš',
-    chipNo: 'ne dolaziš',
+    /**
+     * The two circles on a future row (#624), which is what a row's answer is
+     * now: a green one with the crossed swords and a red one with an X, both
+     * always drawn, the chosen one filled.
+     *
+     * The buttons themselves say "Dolazim" / "Ne dolazim" to a screen reader
+     * (`APP_STRINGS.answer`, the same two words the hero's pair carries), so
+     * only the un-tap needs its own sentence. The three chip words that used to
+     * live here — "bez odgovora", "dolaziš", "ne dolaziš" — went with the chip:
+     * a state drawn as a colour does not also need a label beside it.
+     */
     /**
      * The hero once an answer has landed, in the third person, for a sentence
      * ABOUT the answer rather than for the buttons.
@@ -951,6 +958,17 @@ export const APP_STRINGS = {
     coming: 'Dolazim',
     notComing: 'Ne dolazim',
     clear: 'Poništi',
+    /**
+     * What an already-filled circle on the month list does when it is tapped
+     * again (#624): it is only ever read out loud, because the control is two
+     * circles and the un-tap is the same circle a second time.
+     *
+     * Not the same word as `clear` above, and the difference is the point.
+     * `clear` is the voditelj's "obriši odgovor" on the person sheet: this
+     * answer was never given. This is the dancer taking their own answer back,
+     * which after ten minutes is an odustajanje the voditelj sees.
+     */
+    undo: 'Poništi odgovor',
     locked: 'Nastup je počeo, odgovori se više ne mijenjaju.',
     cancelled: 'Nastup je otkazan.',
     failed: 'Odgovor nije spremljen. Pokušaj ponovno.',

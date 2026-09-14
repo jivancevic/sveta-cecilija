@@ -25,7 +25,7 @@ import {
   type AttendancePerformance,
   type AttendanceStatus,
 } from './rules'
-import { stampWithdrawal, type WithdrawalStamps } from './withdrawal-stamp'
+import { resolveUndo, stampWithdrawal, type WithdrawalStamps } from './withdrawal-stamp'
 import { rejectAppRequest, type AppRequestMeta } from '@/lib/app/request-guard'
 
 export interface AnswerBody {
@@ -155,6 +155,45 @@ export async function handleAttendanceAnswer(
   }
 
   const nowMs = (deps.now?.() ?? new Date()).getTime()
+
+  if (decision.op === 'undo') {
+    // Un-tapping your own answer (#624). Not a delete by default: a `dolazim`
+    // that stood past the grace window is taken back rather than un-said, and
+    // the row survives as a `ne dolazim` carrying the odustajanje stamps so the
+    // voditelj's list keeps the place it just lost. `resolveUndo` owns that
+    // rule; this branch only does what it says.
+    if (!existing) return { status: 200, body: { ok: true, status: null, army: null } }
+
+    const outcome = resolveUndo({
+      previousStatus: existing.status ?? null,
+      ownAnswer: deps.actor.memberId != null && String(deps.actor.memberId) === memberId,
+      nowMs,
+      stamps: {
+        confirmedAt: existing.stamps?.confirmedAt ?? null,
+        withdrewAt: existing.stamps?.withdrewAt ?? null,
+        withdrewOwn: existing.stamps?.withdrewOwn ?? null,
+      },
+    })
+
+    if (outcome.op === 'delete') {
+      await deps.remove(existing.id)
+      return { status: 200, body: { ok: true, status: null, army: null } }
+    }
+
+    await deps.update(existing.id, {
+      status: 'not_coming' as const,
+      army: existing.army ?? null,
+      answeredBy: deps.actor.user
+        ? ((deps.actor.user as { id?: string | number }).id ?? null)
+        : null,
+      answeredAt: new Date(nowMs).toISOString(),
+      ...outcome.stamps,
+    })
+    return {
+      status: 200,
+      body: { ok: true, status: 'not_coming' as const, army: existing.army ?? null },
+    }
+  }
 
   if (decision.op === 'clear') {
     // Clearing deletes the row, and the odustajanje stamps go with it. That is

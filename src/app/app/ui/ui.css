@@ -347,6 +347,14 @@
   display: none;
 }
 
+/* Inside a sheet the row has no screen edge to reach: the panel's own padding
+   is the edge, and the -20px bleed is what put the horizontal scroll on the
+   sheet body (#624). */
+.ui-sheet__body .ui-filters {
+  margin: 0;
+  padding: 2px 0;
+}
+
 .ui-filter {
   display: inline-flex;
   align-items: center;
@@ -438,6 +446,32 @@ button.ui-filter {
 a.ui-row:hover,
 button.ui-row:hover {
   background: var(--sunk);
+}
+
+/* A row plus a control that is NOT part of the link (#624; `ListRow`'s
+   `after`). The hairline moves up to the wrapper, because the row inside it is
+   an only child and would otherwise draw the list's separator in the wrong
+   place — and because the separator belongs to the ROW as the list sees it,
+   which is now this. */
+.ui-row__wrap {
+  display: flex;
+  align-items: center;
+  border-top: 1px solid var(--rule);
+}
+
+.ui-row__wrap:first-child {
+  border-top: 0;
+}
+
+.ui-row__wrap .ui-row {
+  flex: 1;
+  min-width: 0;
+  border-top: 0;
+}
+
+.ui-row__after {
+  flex: none;
+  padding-right: 16px;
 }
 
 .ui-row__body {
@@ -1194,6 +1228,24 @@ button.ui-army:active {
   height: 14px;
 }
 
+/* The smallest mark, and it says something the other two do not (#624): these
+   are the roles a person ALSO dances, listed beside their name, and they must
+   read as an aside to the lead disc rather than as five more discs. Half the
+   small one, so the difference is a size and not a nuance. */
+.ui-mark--xs {
+  width: 16px;
+  height: 16px;
+}
+
+.ui-mark--xs svg {
+  width: 9px;
+  height: 9px;
+}
+
+.ui-mark--xs i {
+  font-size: 8px;
+}
+
 .ui-mark--sm.ui-mark--titled.ui-mark--bula {
   box-shadow: inset 0 0 0 2px #fff, inset 0 0 0 3.5px var(--gold);
 }
@@ -1225,7 +1277,12 @@ button.ui-army:active {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding: 12px 20px calc(env(safe-area-inset-bottom, 0px) + 24px);
+  /* The bar stays VISIBLE while a sheet is open — Josip's own call (#624) —
+     so the panel reaches the bottom edge as a sheet must and reserves the
+     bar's height inside itself. The last row then scrolls to rest ABOVE the
+     bar instead of under it, and the bar sits over the panel's own empty
+     bottom. `--tabH` is 0 on the laptop, where there is no bar to clear. */
+  padding: 12px 20px calc(var(--tabH, 0px) + env(safe-area-inset-bottom, 0px) + 24px);
   border-radius: 28px 28px 0 0;
   background: var(--card);
   color: var(--ink);
@@ -1246,8 +1303,25 @@ button.ui-army:active {
      scroll never appears — the sheet grows off the top of the screen instead. */
   min-height: 0;
   overflow-y: auto;
+  /* Sideways, NEVER (#624). `overflow-y: auto` alone leaves overflow-x at
+     `auto` too, and one child with a negative margin then gave the whole sheet
+     a horizontal scroll: Josip's Bez odgovora was scrolled right, with "Traži
+     moreškanta" cut off at the left edge. A sheet is one column wide by
+     definition, so the floor is stated here once rather than defended in every
+     element that might be put inside one. */
+  overflow-x: hidden;
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
+}
+
+/* A column flex container shrinks its children to fit before it agrees to
+   scroll, and that is exactly wrong for a scroller: with 22 people in the list
+   the role filters were squeezed to a few pixels and only the tops of the
+   pills showed, while the same row looked perfect in a sheet holding five
+   (#624 — the reason Josip could not use the filters). Every child keeps its
+   own height and the body scrolls past them. */
+.ui-sheet__body > * {
+  flex: none;
 }
 
 .ui-sheet__foot {
@@ -1298,6 +1372,12 @@ button.ui-army:active {
   font-size: 16px;
   text-align: left;
   cursor: pointer;
+}
+
+/* The one option that is a LINK and not a button: Nazovi, which hands the
+   number to the phone (#624). A row, not an anchor's default underline. */
+a.ui-sheet__opt {
+  text-decoration: none;
 }
 
 .ui-sheet__opt:active {

@@ -95,15 +95,17 @@ export function Podium({ entries, large = false, framed = false, className }: Po
   // The rank each step stands for; its position when the caller has no ties to
   // tell it about.
   const ranks = entries.map((entry, index) => entry.place ?? index + 1)
-  // A staircase only where there is an order to draw. With 1, 1, 3 the three
-  // steps stay in finishing order left to right and the two firsts stand level:
-  // swapping them into the 2-1-3 arrangement would put one of two equal dancers
-  // on a lower step, which is the fault this exists to fix (#614).
-  const staircase = new Set(ranks).size === ranks.length
-  // Only where there is NO staircase at all. With 1, 2, 2 the winner still
-  // stands above the two seconds — the rise comes off the rank class, so it
-  // survives on its own; flattening every step there would have put an outright
-  // winner level with the pair behind them (#614 review).
+  // **First place is ALWAYS the middle step** (#624). It is the one thing a
+  // podium is for, and on a tie for second the winner was standing on the left
+  // like any other row. The 2-1-3 arrangement therefore applies whenever there
+  // is a first place to put there, ties below it included: with 1, 2, 2 the two
+  // seconds flank the winner, and with 1, 1, 3 the two firsts take the middle
+  // and the left and stand level, because the height comes off the RANK and not
+  // off the position (#614 — two dancers who both read "1. mjesto" must never
+  // stand on steps of different heights).
+  //
+  // The one case with no middle to give is three equal counts: nobody is ahead,
+  // so the three stand in a level line in finishing order.
   const level = new Set(ranks).size === 1
   const classes = [
     'ui-podium',
@@ -120,7 +122,7 @@ export function Podium({ entries, large = false, framed = false, className }: Po
 
   return (
     <div className={classes}>
-      {(staircase ? PLACES : entries.map((_, i) => i)).map((index) => {
+      {(level ? entries.map((_, i) => i) : PLACES).map((index) => {
         const entry = entries[index]
         if (!entry) return null
         const step = [

@@ -32,8 +32,18 @@ export type Army = 'crni' | 'bili'
 /** What a stored answer says. "No answer" is the absence of a row, not a value. */
 export type AttendanceStatus = 'coming' | 'not_coming'
 
-/** What the route accepts: an answer, or "forget my answer". */
-export type AnswerRequest = AttendanceStatus | 'clear'
+/**
+ * What the route accepts: an answer, the voditelj's erase, or the person's own
+ * take-back.
+ *
+ * `clear` and `undo` are deliberately two words (#624). `clear` is a correction
+ * of the RECORD — the voditelj's "obriši odgovor" — and deletes the row whole.
+ * `undo` is an act by the person un-tapping their own circle, and whether it
+ * deletes or records an odustajanje depends on how long the promise stood
+ * (`resolveUndo` in `./withdrawal-stamp.ts`). Collapsing them would give a
+ * dancer a way out of the postava that the voditelj never sees.
+ */
+export type AnswerRequest = AttendanceStatus | 'clear' | 'undo'
 
 export function isArmy(value: unknown): value is Army {
   return value === 'crni' || value === 'bili'
@@ -173,6 +183,7 @@ export function isVoditelj(actor: AttendanceActor): boolean {
 
 export type AnswerDecision =
   | { ok: true; op: 'clear' }
+  | { ok: true; op: 'undo' }
   | { ok: true; op: 'write'; status: AttendanceStatus; army: Army | null }
   | { ok: false; status: 400 | 403; error: string }
 
@@ -258,6 +269,7 @@ export function decideAttendanceAnswer(input: {
 
   const request = input.request
   if (request === 'clear') return { ok: true, op: 'clear' }
+  if (request === 'undo') return { ok: true, op: 'undo' }
   if (!isAttendanceStatus(request)) {
     return { ok: false, status: 400, error: ANSWER_ERRORS.unknownStatus }
   }
