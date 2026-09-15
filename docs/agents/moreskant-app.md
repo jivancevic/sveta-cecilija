@@ -396,7 +396,7 @@ Access follows the **roster, not the login table**: unticking `active` or `isMor
 
 - The season is the calendar year (`seasonYear`, ADR-0022), the same definition the phase 2 stats use.
 - The roster deliberately sees **every** performance of the season, public and non-public alike: a ship call is an evening a dancer has to turn up for. So the loader does not *filter* on `isPublicPerformance` but does *use* it, to decide how a row renders (public → `VENUE_LABEL.hr`; non-public → free-text `location` + `client`). That reference is what keeps `show-performance-guard.test.ts` green without an allow-list entry.
-- The upcoming/past split is at the performance's own start instant in Europe/Zagreb (`showStartMs`), **with no grace window** — unlike the buyer path's `SHOW_GRACE_MS`, a dancer's evening is past the moment it begins.
+- The upcoming/past split is at the performance's own start instant in Europe/Zagreb (`showStartMs`) **plus `SHOW_GRACE_MS`, one hour** (#633). It had no grace window until then, on the reasoning that a dancer's evening is past the moment it begins — which is wrong about the screen a dancer actually holds: the moreška is being danced at that moment, and the widget answering "where am I next" went blank on the evening it was about, at the hour it was about it. It is the BUYER path's own constant rather than a second number, because the two answer the same question about the same evening.
 - Cancelled performances survive only within ±7 days of now (`CANCELLED_WINDOW_MS`), struck through; outside that they disappear.
 - The local API runs `overrideAccess: true`, so collection access does not scope these reads. The caller has already established through the access decision that the viewer is on the roster, and roster visibility is society-wide by decision.
 
@@ -2758,7 +2758,7 @@ belong to, and it is gone.
 
 | | |
 |---|---|
-| three states | **Svijetla** · **Tamna** · **Kao sustav**, the last one the default |
+| three states | **Svijetla** (the default since #633) · **Tamna** · **Kao sustav** |
 | stored | `localStorage`, key `cecilija.theme`, one value per device |
 | applied | `data-theme="dark"` or `"light"` on `.app` (the `<body>`), always written out rather than removed, so the state can be read back off the element |
 | no flash | `THEME_BOOT_SCRIPT`, inline in `src/app/app/layout.tsx` ABOVE everything it renders |
@@ -2777,11 +2777,15 @@ its brightness, where it is being read — and a shared login (`tehnika` on a
 wall, `member` in an office) has no single answer at all. So there is no column
 on `Users` and there must not be one.
 
-**"Kao sustav" is the default, and it is the one `prefers-color-scheme` in the
-app.** T1 shipped without it on purpose: a phone's system setting does not know
-whether its owner is at a rehearsal or at the door. What changed is that the
-other two states now exist, so the system setting is a starting point a person
-can override rather than a decision made for them. The Skener stays dark through
+**"Svijetla" is the default since #633, and "Kao sustav" is the one
+`prefers-color-scheme` in the app.** The default was the system setting until
+Josip read the app on his own phone: a dancer whose phone is on dark at nine in
+the evening met a screen nobody had designed for him, and the app should open
+in the skin it was drawn in. The system setting stays as a state a person
+CHOOSES, and choosing it survived the change — a stored `system` still follows
+the phone, which is the half the ticket's own one-line fix (`p || 'light'`)
+would have silently taken away from everybody who had picked it, because `p` is
+null for a preference that is not a resolved skin. The Skener stays dark through
 the tokens, not through this switch (T10).
 
 **Four token names and two font variables are aliases, and they are meant to
