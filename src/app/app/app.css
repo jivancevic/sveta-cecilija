@@ -639,10 +639,10 @@ html:has(> .app) {
    next to the hero above it — no gold fill, no eyebrow — since it is an offer
    about the app rather than about the evening, and it must not compete with the
    one control the reader came for. */
-.app__install-nudge {
-  margin: 14px 0 0;
-}
-
+/* No margin of its own: the shell's `> * + *` floor is the distance (#627), and
+   the 14px this used to carry undercut it — one class, further down the sheet,
+   so it won the cascade and the card sat tighter than every other block on
+   Početna. #616 landed before #627 and nothing brought the two together. */
 .app__install-nudge-head {
   display: flex;
   align-items: flex-start;
