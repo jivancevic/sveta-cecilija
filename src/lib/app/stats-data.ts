@@ -1,6 +1,7 @@
 import { getPayload } from 'payload'
 import config from '@payload-config'
 import { loadSeasonStats, seasonOfDate, type SeasonStats } from './stats-loaders'
+import { SHOWN_PERFORMANCE_WHERE } from '@/lib/show-performance'
 
 // The IO wiring behind `/app/leaderboard` (#437) — the `detail-data.ts` shape:
 // the Payload calls and nothing else, so every rule about what the scoreboard
@@ -24,6 +25,12 @@ export async function getSeasonStats(requested: unknown): Promise<SeasonStats> {
           and: [
             { date: { greater_than_equal: `${season}-01-01T00:00:00.000Z` } },
             { date: { less_than: `${season + 1}-01-01T00:00:00.000Z` } },
+            // Not a koncert (#635). Ljestvica's own counts are already safe
+            // downstream through `kindsOf`, but `lastConfirmedPerformanceId`
+            // is not: it takes the season's most recent confirmed evening to
+            // work out who MOVED on the board, and a confirmed koncert would
+            // be an evening nobody's rank could have moved on.
+            SHOWN_PERFORMANCE_WHERE,
           ],
         },
         sort: 'date',

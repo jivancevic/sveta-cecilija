@@ -86,12 +86,17 @@ export const SHOWN_KINDS = PERFORMANCE_KINDS.filter(
  * same day because it left this list, rather than through three predicates
  * that would have had to be found one at a time.
  */
-export const MORESKA_KINDS = SHOWN_KINDS.filter((k) => k !== 'experience')
+export const MORESKA_KINDS = SHOWN_KINDS.filter(
+  (k): k is MoreskaKind => k !== 'experience',
+)
+
+/** A kind that IS a moreška. */
+export type MoreskaKind = Exclude<ShownKind, 'experience'>
 
 const MORESKA = new Set<string>(MORESKA_KINDS)
 
 /** True when an evening of this kind counts as a moreška (#635). */
-export function isMoreskaKind(kind: unknown): boolean {
+export function isMoreskaKind(kind: unknown): kind is MoreskaKind {
   return typeof kind === 'string' && MORESKA.has(kind)
 }
 

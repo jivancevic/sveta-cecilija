@@ -1389,8 +1389,15 @@ html:has(> .app) {
 
 /* Past evenings: present, but behind one tap, because this app is read
    forwards. The rule above it is its own; the space above the rule is the
-   shell floor's (#636, was `margin: 30px 0 0`). */
+   shell floor's (#636, was `margin: 30px 0 0`).
+
+   It is a column with the season's own gap because of what it OPENS onto: a
+   run of month groups, which the shell floor cannot reach — a `details` is ONE
+   child of the shell however many months are folded inside it. */
 .app__past {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
   border-top: 1px solid var(--rule);
 }
 
@@ -5139,7 +5146,15 @@ a.app__ob-link {
   -webkit-overflow-scrolling: touch;
 }
 
+/* The result card is a column with one inner rhythm since #636: the heading,
+   the name, the party, the evening, any note and the two buttons each carried
+   a margin of their own (12, 6, 6, 10, 16), which is five rhythms in a card
+   four lines tall. 10px is the app's card gap and the middle of what they
+   were. */
 .app__scan-result {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
   width: 100%;
   max-width: 420px;
   /* The island is a flex column, so a card narrower than it would sit against
@@ -5182,7 +5197,7 @@ a.app__ob-link {
 }
 
 .app__scan-name {
-  margin: 12px 0 0;
+  margin: 0;
   font-family: var(--font-bodoni), Georgia, serif;
   font-size: 28px;
   font-weight: 600;
@@ -5190,18 +5205,18 @@ a.app__ob-link {
 }
 
 .app__scan-party {
-  margin: 6px 0 0;
+  margin: 0;
   font-size: 16px;
 }
 
 .app__scan-meta {
-  margin: 6px 0 0;
+  margin: 0;
   font-size: 14px;
   opacity: 0.9;
 }
 
 .app__scan-note {
-  margin: 10px 0 0;
+  margin: 0;
   font-size: 15px;
   font-weight: 600;
 }
@@ -5566,9 +5581,15 @@ a.app__ob-link {
   margin: 0;
 }
 
+/* The three bordered boxes that hold a form. Each is a column of its own
+   blocks (#636): there is no `Card` under them to supply a gap, so without
+   this the Spremi button sits against the last field. */
 .app__perf-add--open,
 .app__thresholds,
 .app__perf-edit {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gapTight);
   padding: 14px;
   border: 1px solid var(--cardEdge);
   border-radius: var(--radius);
@@ -6799,7 +6820,15 @@ a.app__statrow-main:focus-visible {
    picker on a phone, and the one thing the secretary knows is the name.
 
    The three blocks are direct children of the shell, so the floor spaces them
-   and the `margin: 26px 0 0` they carried until #636 is gone. */
+   and the `margin: 26px 0 0` they carried until #636 is gone — and each of
+   them is a column of its own blocks: a heading, a season picker, a table. */
+.app__comp-issue,
+.app__comp-recent,
+.app__comp-permember {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gapTight);
+}
 
 .app__comp-hint {
   margin: -4px 0 12px;
