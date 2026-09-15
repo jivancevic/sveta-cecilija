@@ -1614,3 +1614,71 @@ a.ui-sheet__opt {
   display: block;
   margin-bottom: 2px;
 }
+
+
+/* ── Flame: the niz (#628) ───────────────────────
+   Two drawings of one thing, and the size decides which. In a list row the
+   number sits BESIDE the glyph inside a small ember pill, because at 16px a
+   digit inside the flame is a smudge; on the profile it sits INSIDE it, which
+   is the shape that was asked for and the one Quizlet, Mimo and Numo all use
+   at that size.
+
+   Ember (`--ember`) is this component's alone in the whole app: gold is spent
+   on the reader's own row and on the podium, and red is the bili army. */
+.ui-flame {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  /* It follows a nickname, so it needs air in front of it and none behind. */
+  margin-left: 7px;
+  padding: 1px 6px 1px 5px;
+  border-radius: 999px;
+  background: var(--emberSoft);
+  color: var(--ember);
+  /* The row's title is Labrada; the pill is not part of the name, so it states
+     its own face rather than inheriting one (#611: a Labrada figure never
+     takes tabular figures, and the surest way to keep this one out of that
+     trap is to keep it out of Labrada). */
+  font-family: var(--sans);
+  vertical-align: middle;
+}
+
+.ui-flame svg {
+  display: block;
+  width: 10px;
+  height: 12px;
+}
+
+.ui-flame b {
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* The profile's drawing: the number inside the glyph. */
+.ui-flame--lg {
+  position: relative;
+  margin-left: 0;
+  padding: 0;
+  border-radius: 0;
+  background: none;
+  width: 46px;
+  height: 54px;
+}
+
+.ui-flame--lg svg {
+  width: 46px;
+  height: 54px;
+}
+
+/* Low in the flame rather than centred in its box: the glyph's mass is in its
+   bottom two thirds and the number has to sit in the mass, not in the tip. */
+.ui-flame--lg b {
+  position: absolute;
+  inset: auto 0 9px;
+  font-family: var(--serif);
+  font-size: 19px;
+  line-height: 1;
+  text-align: center;
+  color: var(--onEmber);
+}

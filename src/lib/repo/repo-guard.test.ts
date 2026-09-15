@@ -76,6 +76,8 @@ export const ALLOW_LIST: Record<string, string> = {
   // ── Finished screens with no ticket left: phase B ────────────────────────
   'src/lib/app/dancer-season-data.ts':
     'A moreškant’s season profile (#608), which replaced my-season-data.ts: the identity already comes through repo.members.byId, and what is left is the season’s shows and one dancer’s lineups. It waits for phase B with stats-data.ts beside it, because both need the same lineups reader on the seam (seam research 6.4).',
+  'src/lib/app/niz-data.ts':
+    'The niz behind the flame on Ljestvica (#628): the society’s chain of confirmed moreške and the lineups along it. Waits for phase B with stats-data.ts and dancer-season-data.ts, because all three need the same lineups reader on the seam (seam research 6.4).',
   'src/lib/app/stats-data.ts':
     'The roster scoreboard on Ljestvica (#437). Finished screen, no v1 ticket rebuilds it; waits for phase B. Note Statistika (#508) is the SALES screen and does not touch this loader.',
 }

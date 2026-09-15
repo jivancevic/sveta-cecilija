@@ -1,7 +1,6 @@
 import { getPayload } from 'payload'
 import config from '@payload-config'
 import { getRepo } from '@/lib/repo'
-import { seasonYear } from '@/lib/member/season'
 import { toIsoDate } from '@/lib/to-iso-date'
 import { relationIdString } from '@/lib/payload-relation'
 import { isDanceRole } from '@/lib/moreskant-profile'
@@ -9,10 +8,10 @@ import { VENUE_LABEL, type Venue } from '@/lib/venues'
 import type { PerformanceKind } from '@/lib/show-performance'
 import { buildMySeason, type MySeason } from './my-season-loaders'
 import { initialsOf } from './members-screen'
+import { longestNiz, type LongestNiz } from './niz'
+import { loadNizChain } from './niz-data'
 import {
-  bestSeason,
   dancerEvenings,
-  seasonCounts,
   toDancerIdentity,
   type DancerEvening,
   type DancerIdentity,
@@ -42,8 +41,14 @@ export interface DancerProfile {
   season: MySeason
   /** The evenings they danced, newest first. */
   evenings: DancerEvening[]
-  /** Their best Moreška season ever, current season included; null for none. */
-  record: { season: number; count: number; isCurrent: boolean } | null
+  /**
+   * Their longest niz ever (#628), and whether it is the one still going.
+   *
+   * A record across ALL seasons, because it is taking a record's place. Length
+   * zero for a dancer who has never been in a confirmed postava; the screen
+   * says so in words rather than drawing a flame with a nought in it.
+   */
+  niz: LongestNiz
 }
 
 /** Croatian, because every `/app` screen is. The venue names buyers read. */
@@ -135,6 +140,10 @@ export async function getDancerProfile(
   // ── The record: every season, not this one ───────────────────────────────
   // Two queries rather than a join, and they stay small because both are
   // scoped to one dancer: their lineup rows, then the evenings behind them.
+  // Since #628 the record is a NIZ, so a third read joins them: the society's
+  // whole chain of confirmed moreške, which is what a run is counted along.
+  // The dancer's own rows cannot produce it — a niz is broken by an evening
+  // they were NOT in, and an evening they were not in leaves them no row.
   const allLineupDocs = (
     await payload.find({
       collection: 'lineups',
@@ -166,6 +175,11 @@ export async function getDancerProfile(
         ).docs as unknown as Record<string, unknown>[])
       : []
 
+  // Unbounded on purpose, unlike the list's window: this is one dancer and one
+  // small read, and a record that stopped at sixty evenings would be a record
+  // with a ceiling in it.
+  const chain = await loadNizChain(2000)
+
   const everEvenings = dancerEvenings({
     performances: allShowDocs.map(toPerformance),
     lineups: allLineupDocs
@@ -189,6 +203,6 @@ export async function getDancerProfile(
       memberId: identity.memberId,
     }),
     evenings: dancerEvenings({ performances, lineups, memberId: identity.memberId }),
-    record: bestSeason(seasonCounts(everEvenings), seasonYear(new Date())),
+    niz: longestNiz(chain, new Set(everEvenings.map((e) => e.performanceId))),
   }
 }

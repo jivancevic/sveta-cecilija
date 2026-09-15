@@ -12,8 +12,14 @@
 //
 // Pure, the shape of `members-screen.ts`: no Payload, no fetch. What this
 // module owns is the PROJECTION — what of a Member reaches a dancer's screen —
-// and the two derivations the profile needs that nothing else had: a season's
-// evenings for one person, and their best season.
+// and the one derivation the profile needs that nothing else had: a season's
+// evenings for one person.
+//
+// The record beside them used to be "Najbolja sezona" (`bestSeason`, with
+// `seasonCounts` under it); **#628 replaced it with Najduži niz**, which is a
+// different shape entirely — it is a run through the society's whole chain of
+// confirmed moreške rather than a tally of one person's years — so it lives in
+// `niz.ts` with the rest of the niz and not here.
 //
 // **The PII boundary is this file's job** (ADR-0024, amended by #608). A
 // `MemberRosterRow` carries a mobile and an e-mail because Članovi needs the
@@ -24,7 +30,7 @@
 
 import { isDanceRole, type DanceRole } from '@/lib/moreskant-profile'
 import type { PerformanceKind } from '@/lib/show-performance'
-import { armyOfPrimaryRole, kindsOf, type BoardArmy, type LeaderboardKind } from './leaderboard-rank'
+import { armyOfPrimaryRole, type BoardArmy, type LeaderboardKind } from './leaderboard-rank'
 
 /**
  * Who the profile is about.
@@ -154,58 +160,6 @@ export function dancerEvenings(input: {
   }
 
   return out.sort((a, b) => b.date.localeCompare(a.date) || b.performanceId.localeCompare(a.performanceId))
-}
-
-/** A dancer's count in one season, for the record. */
-export interface SeasonCount {
-  season: number
-  count: number
-}
-
-/**
- * One count per season from a dancer's confirmed evenings, newest first.
- *
- * Scoped to the Moreška list's kinds, because the record the profile prints is
- * one number and the Experience is a different thing to be good at.
- */
-export function seasonCounts(
-  evenings: readonly { date: string; kind: PerformanceKind }[],
-  kind: LeaderboardKind = 'moreska',
-): SeasonCount[] {
-  const kinds = new Set<string>(kindsOf(kind))
-  const counts = new Map<number, number>()
-  for (const evening of evenings) {
-    if (!kinds.has(evening.kind)) continue
-    const season = Number(evening.date.slice(0, 4))
-    if (!Number.isInteger(season)) continue
-    counts.set(season, (counts.get(season) ?? 0) + 1)
-  }
-  return [...counts.entries()]
-    .map(([season, count]) => ({ season, count }))
-    .sort((a, b) => b.season - a.season)
-}
-
-/**
- * The best season a dancer has had, ties going to the most recent.
- *
- * **The current season counts.** If this is somebody's best year the screen
- * should say so now: waiting for January to admit it would make the one thing
- * the record can tell a dancer arrive after it stopped mattering. `isCurrent`
- * is what lets the screen say "ovo ti je najbolja sezona" rather than printing
- * the year back at a reader who is living in it.
- */
-export function bestSeason(
-  counts: readonly SeasonCount[],
-  currentSeason: number,
-): { season: number; count: number; isCurrent: boolean } | null {
-  let best: SeasonCount | null = null
-  for (const entry of counts) {
-    if (entry.count === 0) continue
-    // `counts` is newest first, so a strict `>` already keeps the most recent
-    // of a tie — spelled out because the sort and this comparison have to agree.
-    if (!best || entry.count > best.count) best = entry
-  }
-  return best ? { ...best, isCurrent: best.season === currentSeason } : null
 }
 
 /** A dancer's standing on one of the two lists. */

@@ -1,9 +1,10 @@
 import Link from 'next/link'
 import { getSeasonStats } from '@/lib/app/stats-data'
+import { getRunningNiz } from '@/lib/app/niz-data'
+import { flameNiz } from '@/lib/app/niz'
 import {
   BOARD_FILTERS,
   MARK_OF_ROLE,
-  TALLY_ORDER,
   listIsRanked,
   filterCountsTitle,
   kindsOf,
@@ -118,33 +119,28 @@ function Filters({
 /**
  * "⚫12 ⚫♔3 🔴3" — the roles this dancer wore, in this list's evenings.
  *
- * **One column per role, always the same six, in the same order** (#614,
- * finding 09). Until now the block was the roles a dancer actually wore, packed
- * left: somebody with four started their red count where somebody with one
- * started their black one, so the column could only be read one row at a time.
- * Now an unworn role leaves its slot empty and every count sits under the same
- * count above it — the empty slot is information too, and reading down a column
- * is how a reader finds "who else dances bili".
+ * **Packed left, in a fixed role order** (#628, variant A), which reverses
+ * #614's fixed six-column grid. The grid existed so a reader could compare one
+ * role down the list; most moreškanti hold one or two roles, so five of the six
+ * cells were empty on most rows and a lone disc floated in the third column.
+ * That scatter is the "cijeli popis mi je konfuzan" of the phone round.
+ * Column alignment is given up deliberately — it was not paying for itself —
+ * and the ORDER is still fixed, so a row still reads "mostly black, a bit of
+ * red" before it reads any number.
  */
 function Tallies({ row, kind }: { row: DancerStats; kind: LeaderboardKind }) {
+  // `roleTallies` is already in `TALLY_ORDER` with the zeros dropped, which is
+  // exactly what a packed row needs; the order is not re-applied here.
   const tallies = roleTallies(row, kind)
   if (tallies.length === 0) return null
-  const byRole = new Map(tallies.map((t) => [t.role, t.count]))
   return (
     <span className="app__lb-tallies">
-      {TALLY_ORDER.map((role) => {
-        const count = byRole.get(role)
-        return (
-          <span key={role} className="app__lb-tally">
-            {count !== undefined && (
-              <>
-                <Mark role={role} small />
-                <b>{count}</b>
-              </>
-            )}
-          </span>
-        )
-      })}
+      {tallies.map((tally) => (
+        <span key={tally.role} className="app__lb-tally">
+          <Mark role={tally.role} small />
+          <b>{tally.count}</b>
+        </span>
+      ))}
     </span>
   )
 }
@@ -166,7 +162,8 @@ export default async function FullLeaderboardPage({
   const kind = parseLeaderboardKind(one(params.kind))
   const filter = parseBoardFilter(one(params.role))
 
-  const stats = await getSeasonStats(one(params.season))
+  // Side by side: a season and a niz are two different reads (#628).
+  const [stats, niz] = await Promise.all([getSeasonStats(one(params.season)), getRunningNiz()])
   const confirmed = kindsOf(kind).reduce((sum, k) => sum + stats.confirmedByKind[k], 0)
   const rows = rankDancers({
     rows: stats.rows,
@@ -176,6 +173,7 @@ export default async function FullLeaderboardPage({
     initials: stats.initials,
     myMemberId: viewer.me?.id ?? null,
     confirmed,
+    niz,
   })
   const byId = new Map(stats.rows.map((r) => [String(r.memberId), r]))
 
@@ -228,6 +226,13 @@ export default async function FullLeaderboardPage({
             />
           ))}
         </List>
+      )}
+
+      {/* What the flame means, said once under the list rather than on seventy
+          rows (#628). Only where one can actually appear: the Experience list
+          has no niz, because an Experience is not a link in the chain. */}
+      {kind === 'moreska' && rows.some((r) => flameNiz(r.niz) !== null) && (
+        <p className="app__lb-footer">{APP_STRINGS.profile.nizLegend}</p>
       )}
 
       <p className="app__lb-footer">{S.footer(pluralize(confirmed, S.confirmedCount))}</p>

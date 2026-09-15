@@ -37,6 +37,13 @@
   --onGold: #14100a; /* text ON gold */
   --copper: #b5642a; /* the Moreška Experience, the third kind (#591) */
   --onCopper: #ffffff; /* text ON copper */
+  /* The niz, and NOTHING else in this app (#628). Gold is already spent on the
+     reader's own row and on the podium, so a gold flame vanishes into its own
+     background, and red is the bili army. A flame that is not orange does not
+     read as a flame. */
+  --ember: #c25a15;
+  --emberSoft: rgba(194, 90, 21, 0.12);
+  --onEmber: #ffffff; /* the number INSIDE the big flame */
   /* "Dolazim" (#592). The one green in an otherwise gold app, and it earns its
      place: gold already means "the society's evening", so a gold Dolazim was
      saying the same thing twice while the answer itself said nothing. Olive
@@ -249,6 +256,11 @@ html:has(> .app) {
   /* White on copper on both skins (#592): the glyph on an Experience disc is a
      weekday at 10px, and ink on copper at night is not a reading. */
   --onCopper: #ffffff;
+  /* Lifted, like every other hue on this skin: #c25a15 on a #1f1913 ground is
+     a brown smudge at 14px (#628). */
+  --ember: #f0893c;
+  --emberSoft: rgba(240, 137, 60, 0.16);
+  --onEmber: #1f1913;
   --yes: #6fae4a;
   --onYes: #14100a;
   --red: #b3262f;
@@ -3538,8 +3550,15 @@ a.app__ob-link {
 }
 
 /* The reader's own row: a gold wash and a gold count, the same gold the podium
-   step they are not on is wearing. */
-.app__lb-row--me {
+   step they are not on is wearing.
+
+   **`.ui-row` is in the selector on purpose** (#628). `.ui-row` sets
+   `background: none` and `ui.css` loads AFTER this sheet, so at one class this
+   rule lost the tie and painted nothing: what actually made the reader's row
+   gold until now was the share bar's `::before` at 16% opacity, which #628
+   replaced with a 2px rule along the edge. The wash had to become real, or the
+   one row the screen is opened for would have stopped being findable. */
+.ui-row.app__lb-row--me {
   background: var(--goldSoft);
 }
 
@@ -3605,18 +3624,20 @@ a.app__ob-link {
    turned every row into a second row, and the nickname stopped being the thing
    the eye lands on. The discs shrink to 18px and the counts drop to the muted
    tone — the breakdown is there to be checked, not to be read first. */
-/* ONE COLUMN PER ROLE, always the same six, in the same order (#614, finding
-   09). Until now the block was only the roles a dancer actually wore, packed
-   left, so a dancer with four started their red count where a dancer with one
-   started their black one and the column could be read one row at a time and
-   no other way. A grid fixes the slots: an unworn role leaves its cell empty,
-   and reading down a column is how a reader finds who else dances bili. */
+/* PACKED LEFT, in a fixed role order (#628, variant A) — which reverses #614's
+   fixed six-column grid, and the reversal is the decision rather than a
+   regression. The grid existed so a reader could compare one role down the
+   list; most moreškanti hold one or two roles, so five of the six cells were
+   empty on most rows and a lone disc floated in the third column. The block
+   read as scatter, which is the "cijeli popis mi je konfuzan" of the phone
+   round. Column alignment is given up deliberately: it was not paying for
+   itself, and the order is still fixed, so a row still reads "mostly black, a
+   bit of red" before it reads any number. */
 .app__lb-tallies {
-  display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 3px 2px;
-  max-width: 230px;
+  gap: 4px 10px;
   margin-top: 4px;
 }
 
@@ -3756,29 +3777,44 @@ a.app__ob-link {
   overflow: hidden;
 }
 
-.app__lb-race::before {
+/* ── The share, as a RULE along the bottom edge (#628, variant A) ──────────
+   It used to be a gold FILL behind the whole row at 7% — the heaviest way to
+   draw a share, and a list of them read as a bar chart somebody had written
+   names on. Two elements, both 2px on the row's own bottom edge: the track is
+   the full width and the fill is `--share` of it, so a reader sees the length
+   against something rather than against nothing. Inset by the row's own
+   padding so it starts under the mark and ends under the count, which is what
+   makes it read as belonging to the row rather than to the list.
+
+   The fill is `--gold` at full strength BECAUSE it is 2px: at 7% a hairline is
+   invisible, and the weight that was too much across a whole row is exactly
+   right along an edge. */
+.app__lb-race::before,
+.app__lb-race::after {
   content: '';
   position: absolute;
-  inset: 0 auto 0 0;
-  width: calc(var(--share, 0) * 100%);
-  background: var(--gold);
-  /* Very low on purpose. At `--goldSoft` the bar and the bare end of the row
-     read as two blocks with a hard edge between them, and the row stopped
-     being a row; at this weight the eye picks up the SHAPE of the column
-     while still reading the nicknames as the content. */
-  opacity: 0.07;
+  left: 16px;
+  bottom: 0;
+  height: 2px;
+  border-radius: 2px;
   pointer-events: none;
+}
+
+.app__lb-race::before {
+  right: 16px;
+  background: var(--sunk);
+}
+
+.app__lb-race::after {
+  width: calc(var(--share, 0) * (100% - 32px));
+  background: var(--gold);
 }
 
 .app__lb-race > * {
   position: relative;
 }
 
-/* The reader's own row keeps its wash ON TOP of its bar: the two golds stack,
-   which is what makes their own row the one that reads first. */
-.app__lb-race.app__lb-row--me::before {
-  opacity: 0.16;
-}
+
 
 /* ── The reader's own card (Q1) ────────────────────────────────────────────
    This replaced a grey sentence. The rank is the biggest figure on the screen
@@ -4245,26 +4281,37 @@ a.app__ob-link {
    screen used to be a full-width surface of the same weight — the sentence,
    two rings, the record, its footnote — and when everything is lifted nothing
    is. A card is now reserved for the two things a season is measured in. */
-.app__pf-record {
+/* Najduži niz (#628), where "Najbolja sezona" was. Still a LINE and not a card
+   (#614, finding 10), with one thing added: the big flame, which is the one
+   place in the app with room for the number INSIDE the glyph. The flame is the
+   only item aligned to the centre, because a 52px drawing on a baseline drags
+   the whole line down with it. */
+.app__pf-niz {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   flex-wrap: wrap;
-  gap: 4px 8px;
+  gap: 4px 10px;
   margin: 0;
   font-size: 13px;
   color: var(--muted);
 }
 
-.app__pf-record b {
+.app__pf-niz b {
   font-family: var(--serif);
   font-size: 17px;
   font-weight: 700;
   color: var(--ink);
 }
 
-.app__pf-record i {
+.app__pf-niz i {
   font-style: normal;
   color: var(--goldText);
+}
+
+/* The label and the value stay together when the line wraps on a narrow phone:
+   the flame takes the left, the words take the rest. */
+.app__pf-niz > span {
+  margin-left: 2px;
 }
 
 /* The kind of evening, at the end of a row of the performance list. */

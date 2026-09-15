@@ -2346,8 +2346,31 @@ falling out of both, and `SeasonStats.confirmedByKind` is what each list is
   `lineupWithTitles` is one evening's draft and is not this screen's to read.
 - `fullSeason` means the reader danced every confirmed evening of THAT list;
   milestones are 5, 10, 15, 20 read off the whole season's count and live on
-  *Moja sezona* since #568, beside the split by kind. **No streaks**, which is a
-  decision rather than an omission.
+  *Moja sezona* since #568, beside the split by kind. **No streaks as a season's
+  number**, which is a decision rather than an omission — and #628's *niz* is
+  not one: it is a run through the society's whole chain of confirmed moreške,
+  it crosses seasons, nothing is ranked by it, and it rides on a row rather
+  than being one of the figures the row is made of.
+- **The niz and its flame** (#628, CONTEXT.md → *Niz*). The rules are
+  `src/lib/app/niz.ts`, pure and tested without a database, and the whole
+  decision is in the CHAIN: confirmed, non-cancelled, non-Experience evenings
+  that have already happened, newest first. A niz is then the run of chain
+  entries the dancer is in, counted from the front, and it is **zero the moment
+  they miss the last one** — a broken run is not a shorter run. Three reads it
+  where two screens would have had to agree: `niz-data.ts` loads the chain
+  (capped at `NIZ_WINDOW`, about two seasons, because the number it caps has
+  never existed) and its lineups, and hands `rankDancers` a `memberId → length`
+  map; the screens draw `flameNiz(row.niz)`, which is the only place the
+  threshold of 3 is spelled. The **profile's chain is uncapped**, because
+  *Najduži niz* is a record and a record with a ceiling in it is not one; that
+  read is one dancer's and small.
+  Two things the drawing is careful about. **One state**: ember, filled, and
+  only for a run still going, because a hollow "broken" flame was designed and
+  dropped — against the real season it would have made six of ten flames a
+  record of somebody who stopped in May, which is the profile's job. And **two
+  sizes are two drawings**: the number sits BESIDE the glyph in a 16px row and
+  INSIDE it at 46px on the profile, which is what every app in the survey does
+  at those two sizes.
 - The bottom of the list gets **no** treatment: no red, no "zadnji". A season
   with no confirmed postava of a kind says so once, in one line.
 - `/app/leaderboard/full?season=&kind=` is the whole ranking of one list, same

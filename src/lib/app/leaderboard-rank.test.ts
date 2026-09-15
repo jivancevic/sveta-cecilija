@@ -110,6 +110,23 @@ describe('armyOfPrimaryRole', () => {
 })
 
 describe('rankDancers', () => {
+  it('carries the niz it is handed, and zero for a dancer with none (#628)', () => {
+    // The niz is computed elsewhere and crosses seasons; this module only has
+    // to put the right number on the right row, and to default rather than to
+    // leave a hole, so no screen has to guard for `undefined`.
+    const rows = rankDancers({
+      rows: [dancer('1', 'Ante', { redovna: 12 }), dancer('2', 'Bepo', { redovna: 7 })],
+      kind: 'moreska',
+      niz: { '1': 6 },
+    })
+    expect(rows.map((r) => [r.nickname, r.niz])).toEqual([
+      ['Ante', 6],
+      ['Bepo', 0],
+    ])
+    // No list is ever ORDERED by it: Bepo stays second on his count.
+    expect(rows.map((r) => r.rank)).toEqual([1, 2])
+  })
+
   it('shares a rank between equal counts and skips the next one', () => {
     const rows = rankDancers({
       rows: [
