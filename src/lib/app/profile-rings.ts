@@ -18,6 +18,7 @@ import {
   type LeaderboardKind,
 } from './leaderboard-rank'
 import type { SeasonStats } from './stats-loaders'
+import type { PerformanceKind } from '@/lib/show-performance'
 import type { MARK_OF_ROLE } from './leaderboard-rank'
 
 export interface ProfileRingData {
@@ -39,6 +40,25 @@ export interface ProfileRingData {
    * place at all.
    */
   ranked: boolean
+  /**
+   * The Moreška ring, split in two: redovne and vanredne (#634).
+   *
+   * Two smaller rings beside the big one, each in the same "X od Y" shape, so
+   * the two add up to it. It answers the question the one ring could not: a
+   * dancer at 17 of 32 does not know whether he was at the redovne and missed
+   * the ship groups or the other way round.
+   *
+   * Empty for the Experience list, which has no such split: an Experience is
+   * one kind and a ring of it against itself is a full circle saying nothing.
+   */
+  parts: ProfileRingPart[]
+}
+
+/** One half of the Moreška split. `key` is what names it on the screen. */
+export interface ProfileRingPart {
+  key: 'redovna' | 'vanredna'
+  count: number
+  of: number
 }
 
 /**
@@ -79,6 +99,35 @@ export function profileRings(input: {
       total: ranked.length,
       tallies: source ? roleTallies(source, kind) : [],
       animate: input.mine,
+      parts: kind === 'moreska' ? moreskaParts(input.stats, source) : [],
     }
   })
+}
+
+/**
+ * Redovne and vanredne, for the Moreška ring's two smaller companions (#634).
+ *
+ * *Vanredna* is defined once, in `kindsOf('moreska')` minus `redovna`, so a
+ * kind that leaves that list leaves this split with it and the two halves keep
+ * summing to the whole.
+ */
+function moreskaParts(
+  stats: SeasonStats,
+  source: SeasonStats['rows'][number] | undefined,
+): ProfileRingPart[] {
+  const extra = kindsOf('moreska').filter((k) => k !== 'redovna')
+  const sum = (kinds: readonly PerformanceKind[], of: Record<string, number>) =>
+    kinds.reduce((total, k) => total + (of[k] ?? 0), 0)
+  return [
+    {
+      key: 'redovna',
+      count: source ? (source.byKind.redovna ?? 0) : 0,
+      of: stats.confirmedByKind.redovna ?? 0,
+    },
+    {
+      key: 'vanredna',
+      count: source ? sum(extra, source.byKind) : 0,
+      of: sum(extra, stats.confirmedByKind),
+    },
+  ]
 }

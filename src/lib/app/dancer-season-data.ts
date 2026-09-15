@@ -49,6 +49,15 @@ export interface DancerProfile {
    * says so in words rather than drawing a flame with a nought in it.
    */
   niz: LongestNiz
+  /**
+   * The run's two ends as dates, YYYY-MM-DD (#634).
+   *
+   * `LongestNiz` names them by performance id, which is what the pure function
+   * has; the screen prints "Od 14.7. do 19.8." and needs the days. Null for a
+   * dancer with no run at all. Both are evenings this dancer DANCED, never the
+   * one they missed.
+   */
+  nizRange: { from: string; to: string } | null
 }
 
 /** Croatian, because every `/app` screen is. The venue names buyers read. */
@@ -188,6 +197,13 @@ export async function getDancerProfile(
     memberId: identity.memberId,
   })
 
+  const longest = longestNiz(chain, new Set(everEvenings.map((e) => e.performanceId)))
+  // Both ends are evenings this dancer was in, by construction, so their dates
+  // are in the evenings just built rather than needing a read of their own.
+  const dateOf = new Map(everEvenings.map((e) => [e.performanceId, e.date]))
+  const from = longest.from ? (dateOf.get(longest.from) ?? null) : null
+  const to = longest.to ? (dateOf.get(longest.to) ?? null) : null
+
   return {
     identity,
     season: buildMySeason({
@@ -203,6 +219,7 @@ export async function getDancerProfile(
       memberId: identity.memberId,
     }),
     evenings: dancerEvenings({ performances, lineups, memberId: identity.memberId }),
-    niz: longestNiz(chain, new Set(everEvenings.map((e) => e.performanceId))),
+    niz: longest,
+    nizRange: from && to ? { from, to } : null,
   }
 }

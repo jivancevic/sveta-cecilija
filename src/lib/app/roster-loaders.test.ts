@@ -10,6 +10,7 @@ import {
   loadSeasonPerformances,
   pickHeroPerformances,
   pickNextPerformance,
+  attachPostavaCounts,
   splitSeasonPerformances,
   toRosterPerformance,
 } from './roster-loaders'
@@ -670,5 +671,65 @@ describe('countLabel', () => {
     expect(countLabel(21)).toBe('21 izvedba')
     expect(countLabel(22)).toBe('22 izvedbe')
     expect(countLabel(25)).toBe('25 izvedbi')
+  })
+})
+
+describe('attachPostavaCounts — who danced, per army (#634)', () => {
+  const evening = (id: string, confirmed: boolean) =>
+    toRosterPerformance(doc({ id, date: '2026-07-14', lineupConfirmed: confirmed }))
+
+  it('counts the two armies off the confirmed postava', () => {
+    const [row] = attachPostavaCounts(
+      [evening('1', true)],
+      [
+        { performanceId: '1', role: 'crni' },
+        { performanceId: '1', role: 'crni_kralj' },
+        { performanceId: '1', role: 'otmanovic' },
+        { performanceId: '1', role: 'bili' },
+        { performanceId: '1', role: 'bili_kralj' },
+      ],
+    )
+    expect(row!.postava).toEqual({ crni: 3, bili: 2 })
+  })
+
+  it('leaves the bula and a voditelj out of both numbers', () => {
+    const [row] = attachPostavaCounts(
+      [evening('1', true)],
+      [
+        { performanceId: '1', role: 'crni' },
+        { performanceId: '1', role: 'bula' },
+        { performanceId: '1', role: 'voditelj' },
+      ],
+    )
+    expect(row!.postava).toEqual({ crni: 1, bili: 0 })
+  })
+
+  it('says nothing at all about an evening nobody confirmed', () => {
+    // A draft is not a record of who danced (story 34), so the row carries no
+    // number and the screen draws "Nema popisa" instead.
+    const [row] = attachPostavaCounts(
+      [evening('1', false)],
+      [{ performanceId: '1', role: 'crni' }],
+    )
+    expect(row!.postava).toBeNull()
+  })
+
+  it('gives a confirmed evening with an empty army a zero, not a hole', () => {
+    const [row] = attachPostavaCounts([evening('1', true)], [])
+    expect(row!.postava).toEqual({ crni: 0, bili: 0 })
+  })
+
+  it('never lets one evening\'s rows reach another', () => {
+    const rows = attachPostavaCounts(
+      [evening('1', true), evening('2', true)],
+      [
+        { performanceId: '1', role: 'crni' },
+        { performanceId: '2', role: 'bili' },
+      ],
+    )
+    expect(rows.map((r) => r.postava)).toEqual([
+      { crni: 1, bili: 0 },
+      { crni: 0, bili: 1 },
+    ])
   })
 })

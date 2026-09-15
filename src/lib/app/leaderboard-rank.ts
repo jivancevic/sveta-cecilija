@@ -100,6 +100,7 @@ export const BOARD_FILTERS = [
   'crni_kralj',
   'bili_kralj',
   'otmanovic',
+  'niz',
 ] as const
 
 export type BoardFilter = (typeof BOARD_FILTERS)[number]
@@ -127,6 +128,23 @@ export function parseBoardFilter(raw: string | undefined | null): BoardFilter {
  */
 export function filterCountsTitle(filter: BoardFilter): filter is StatRole {
   return filter !== 'bula' && (STAT_ROLES as readonly string[]).includes(filter)
+}
+
+/**
+ * The one chip that ranks by a RUN rather than by a count (#634).
+ *
+ * A third group behind a second divider, because it is a third meaning: the
+ * army chips pick people, the title chips count how often a title was given,
+ * and this one measures the longest stretch of evenings nobody missed. The
+ * number at the end of a row IS the niz under it, which is also why the flame
+ * beside the nickname is suppressed there: one row may not carry two different
+ * niz numbers, one at each end.
+ *
+ * Moreška only. An Experience is not a link in the chain (CONTEXT.md → *Niz*),
+ * so the chip is not offered on that list at all.
+ */
+export function filterRanksNiz(filter: BoardFilter): filter is 'niz' {
+  return filter === 'niz'
 }
 
 /** True for a chip that narrows the list to one army. */
@@ -249,19 +267,34 @@ export function rankDancers(input: {
    * this function reading rows its own caller deliberately scoped to a year.
    */
   niz?: Record<string, number>
+  /**
+   * `memberId` → their LONGEST run inside the season on display (#634).
+   *
+   * What the Najduži niz chip ranks by, and handed in for the same reason the
+   * running niz is: a run is read off a chain of evenings, which is not a shape
+   * this module has. Ignored under every other chip.
+   */
+  seasonNiz?: Record<string, number>
 }): RankRow[] {
   const kinds = kindsOf(input.kind)
   const mine = input.myMemberId == null ? null : String(input.myMemberId)
   const confirmed = input.confirmed ?? 0
   const filter = input.filter ?? 'svi'
   const byTitle = filterCountsTitle(filter)
+  const byNiz = filterRanksNiz(filter)
 
   let counted = input.rows.map((row) => ({
     row,
     army: armyOfPrimaryRole(input.primaryRoles?.[String(row.memberId)] ?? null),
-    performances: byTitle
-      ? kinds.reduce((sum, k) => sum + (row.rolesByKind[k]?.[filter] ?? 0), 0)
-      : kinds.reduce((sum, k) => sum + (row.byKind[k] ?? 0), 0),
+    // Three different numbers behind one column (#634): evenings danced, times
+    // a title was given, or the longest run of evenings in a row. Which one it
+    // is, is said in words under the heading, because they are indistinguishable
+    // as digits.
+    performances: byNiz
+      ? (input.seasonNiz?.[String(row.memberId)] ?? 0)
+      : byTitle
+        ? kinds.reduce((sum, k) => sum + (row.rolesByKind[k]?.[filter] ?? 0), 0)
+        : kinds.reduce((sum, k) => sum + (row.byKind[k] ?? 0), 0),
   }))
 
   // An army chip narrows the list to the people IN that army; a title chip
@@ -308,10 +341,9 @@ export function rankDancers(input: {
       title: null,
       niz: input.niz?.[memberId] ?? 0,
       me: mine !== null && memberId === mine,
-      // Only where the count IS the season. Under a title chip the number is
-      // how many crowns somebody wore, and "wore the crown every evening of the
-      // season" is not the fact "puna sezona" names.
-      fullSeason: !byTitle && confirmed > 0 && entry.performances === confirmed,
+      // Only where the count IS the season: under a title chip the number is
+      // how many crowns somebody wore, and under the niz chip it is a run.
+      fullSeason: !byTitle && !byNiz && confirmed > 0 && entry.performances === confirmed,
     })
   })
 

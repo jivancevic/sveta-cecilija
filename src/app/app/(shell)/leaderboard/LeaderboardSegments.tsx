@@ -68,7 +68,18 @@ export function LeaderboardSegments({
         label={APP_STRINGS.mySeason.season}
       />
 
-      <div id={PANEL} role="tabpanel" aria-labelledby={`${PANEL}-${segment}`}>
+      {/* The panel carries the rhythm (#634). Moja sezona renders a bare
+          fragment into it, so until this class there was no `gap` anywhere
+          between its blocks and the space between two widgets was whatever
+          margins each happened to have — several of them `0`. That is the
+          "prestisnuto" Josip reported twice: vertical space comes from the
+          parent's gap, never from a child's margin. */}
+      <div
+        id={PANEL}
+        className="app__lb-panel"
+        role="tabpanel"
+        aria-labelledby={`${PANEL}-${segment}`}
+      >
         {segment === 'mine' ? mine : all}
       </div>
     </>

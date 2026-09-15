@@ -658,3 +658,49 @@ describe('seasonKings', () => {
     expect(seasonKings({ rows, kind: 'experience' })).toEqual([])
   })
 })
+
+describe('rankDancers under the Najduži niz chip (#634)', () => {
+  const rows = [
+    dancer('1', 'Ante', { redovna: 12 }),
+    dancer('2', 'Bepo', { redovna: 9 }),
+    dancer('3', 'Cico', { redovna: 7 }),
+    dancer('4', 'Dujo', { redovna: 2 }),
+  ]
+  const ranked = (seasonNiz: Record<string, number>) =>
+    rankDancers({ rows, kind: 'moreska', filter: 'niz', seasonNiz })
+
+  it('ranks by the run and not by the season count', () => {
+    // Ante danced the most evenings; Cico never missed four in a row.
+    const out = ranked({ '1': 2, '2': 3, '3': 4 })
+    expect(out.map((r) => [r.nickname, r.performances, r.rank])).toEqual([
+      ['Cico', 4, 1],
+      ['Bepo', 3, 2],
+      ['Ante', 2, 3],
+    ])
+  })
+
+  it('renumbers the places, sharing a rank on a tie and skipping the next', () => {
+    // Expect many ties, deliberately: there is no hidden tie-breaker.
+    const out = ranked({ '1': 3, '2': 3, '3': 1 })
+    expect(out.map((r) => [r.nickname, r.rank])).toEqual([
+      ['Ante', 1],
+      ['Bepo', 1],
+      ['Cico', 3],
+    ])
+  })
+
+  it('drops a dancer with no run at all rather than listing a column of zeros', () => {
+    expect(ranked({ '1': 2 }).map((r) => r.nickname)).toEqual(['Ante'])
+  })
+
+  it('never calls a run a full season', () => {
+    const out = rankDancers({
+      rows,
+      kind: 'moreska',
+      filter: 'niz',
+      seasonNiz: { '1': 12 },
+      confirmed: 12,
+    })
+    expect(out[0]!.fullSeason).toBe(false)
+  })
+})

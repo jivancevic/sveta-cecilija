@@ -4209,6 +4209,17 @@ a.app__ob-link {
    second one was a dead circle that said nothing and invited nothing. The main
    list keeps its ring and the other becomes a line under it. Both are still
    always drawn: a missing card reads as a screen that failed to load. */
+/* The tabpanel behind the two segments of Ljestvica (#634).
+   Ljestvica's own `.app__lb` and Stanje got `gap: var(--gap)` in #627 and Moja
+   sezona was missed, because it renders a bare fragment into this element and
+   nothing reached it. The gap belongs HERE and not on the blocks: a child's
+   margin is a rhythm one screen owns, and the next screen forgets. */
+.app__lb-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+}
+
 .app__pf-rings {
   display: flex;
   flex-direction: column;
@@ -4216,10 +4227,40 @@ a.app__ob-link {
 }
 
 .ui-card.app__pf-ring {
+  gap: var(--gapTight);
+  padding: 16px;
+}
+
+/* The ring and what it means, side by side; the split sits under them (#634). */
+.app__pf-ring-main {
+  display: flex;
   flex-direction: row;
   align-items: center;
   gap: 16px;
-  padding: 16px;
+}
+
+/* The two halves of the season (#634): same shape as the ring above them, at
+   72px, with the word underneath because it does not fit inside. A rule over
+   them so they read as a breakdown of the ring and not as two more figures. */
+.app__pf-parts {
+  display: flex;
+  gap: var(--gap);
+  padding-top: var(--gapTight);
+  border-top: 1px solid var(--rule);
+}
+
+.app__pf-part {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.app__pf-part-label {
+  color: var(--muted);
+  font-size: 12px;
 }
 
 /* Beside the ring rather than under it: the ring is the figure and this is
@@ -4277,6 +4318,17 @@ a.app__ob-link {
   margin-top: 3px;
   font-size: 11px;
   color: var(--muted);
+}
+
+/* Inside a 56px hole rather than a 132px one (#634): the same shape at the
+   size it actually has. */
+.app__pf-part .app__pf-ring-in b {
+  font-size: 20px;
+}
+
+.app__pf-part .app__pf-ring-in small {
+  margin-top: 1px;
+  font-size: 10px;
 }
 
 .app__pf-place {
@@ -8078,6 +8130,34 @@ a.app__statrow-main:focus-visible {
    offers the crni too, at the bottom, and this is the line that says so. A
    rule above it rather than a border on the first row, which would follow the
    row if the search reordered the list. */
+/* "7/9" at the end of a past nastup (#634): who danced, in the two armies'
+   own tokens. Labrada carries the figures, and deliberately WITHOUT
+   `tabular-nums` (#611, #627): the face has no tabular set, so asking for one
+   substitutes a fallback mid-row. Nothing lines up in a column here anyway —
+   the pair sits at the end of a row, not in one. */
+.app__postava {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 1px;
+  font-family: var(--serif);
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.app__postava b[data-army='crni'] {
+  color: var(--crni);
+}
+
+.app__postava b[data-army='bili'] {
+  color: var(--red);
+}
+
+.app__postava i {
+  color: var(--muted);
+  font-style: normal;
+  font-weight: 400;
+}
+
 .app__stanje-sheet-group {
   margin: 10px 0 2px;
   padding-top: 10px;

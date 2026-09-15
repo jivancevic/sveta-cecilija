@@ -467,6 +467,17 @@ export const APP_STRINGS = {
      */
     lineupList: 'POPIS',
     /**
+     * A past evening whose postava nobody ever confirmed (#634).
+     *
+     * The same shape POPIS had and the opposite colour, because it is the same
+     * kind of statement about the same evening: this one has no record of who
+     * danced it. Red rather than grey on purpose — it is something a voditelj
+     * can still put right, and the season list is where he would notice.
+     */
+    noLineup: 'Nema popisa',
+    /** What "7/9" means, for a reader who cannot see the two colours. */
+    postavaLabel: (crni: number, bili: number) => `${crni} crnih, ${bili} bilih`,
+    /**
      * The two circles on a future row (#624), which is what a row's answer is
      * now: a green one with the crossed swords and a red one with an X, both
      * always drawn, the chosen one filled.
@@ -731,10 +742,17 @@ export const APP_STRINGS = {
       crni_kralj: 'Crni kralj',
       bili_kralj: 'Bili kralj',
       otmanovic: 'Otmanović',
+      /** The third group (#634): a run of evenings, not a count of them. */
+      niz: 'Najduži niz',
     },
     /** What the number in the row means, under the heading, for each group. */
     countsEvenings: 'Broj je ukupan broj nastupa u sezoni.',
     countsTitle: 'Broj je koliko je puta uloga podijeljena.',
+    /**
+     * The niz chip's own caption (#634). It says two things, because both are
+     * surprising: the number is a RUN, and it is this season's run only.
+     */
+    countsNiz: 'Broj je najduži niz uzastopnih moreški u sezoni.',
     /** Nobody wore this title in this season's evenings of this kind. */
     emptyFilter: 'Nitko ove sezone nije igrao ovu ulogu.',
 
@@ -888,6 +906,12 @@ export const APP_STRINGS = {
     /** Inside a ring: "od 21". */
     ringOf: (total: number) => `od ${total}`,
     /**
+     * The two small rings beside the big one (#634): which half of the season
+     * each is. The word goes UNDER the ring, because at that size it will not
+     * fit inside it.
+     */
+    partLabel: { redovna: 'Redovne', vanredna: 'Vanredne' } as const,
+    /**
      * The second list with nothing in it (#614, finding 11).
      *
      * A ring at "0 od 2" is a dead circle: it says nothing and invites nothing.
@@ -907,6 +931,19 @@ export const APP_STRINGS = {
       `${croatianPlural(count, { one: 'moreška', few: 'moreške', many: 'moreški' })} zaredom`,
     /** When the record IS the run still going. */
     nizCurrent: 'I još traje.',
+    /**
+     * Which evenings the record was (#634): a RANGE, and deliberately no verb.
+     *
+     * "Ugasio se" was the word Josip reached for and asked to be replaced,
+     * because it is ambiguous in exactly the wrong place: it reads as either
+     * the last evening danced in the run or the first one missed. Two dates
+     * with "od" and "do" cannot be read two ways, and both of them are the
+     * dancer's own evenings. "Do" is never the evening they missed: the run is
+     * theirs and not the gap's.
+     */
+    nizRange: (from: string, to: string) => `Od ${from} do ${to}.`,
+    /** The run that is still going has one end only. */
+    nizSince: (from: string) => `Traje od ${from}.`,
     nizNone: 'još nema',
     /** What the flame means, said once under the list rather than on every row. */
     nizLegend: 'Vatrica uz nadimak: niz od barem 3 moreške koji još traje.',

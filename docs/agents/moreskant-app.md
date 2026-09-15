@@ -2622,6 +2622,35 @@ screen. T1 is the system; everything under it is a screen's own ticket.
 | `src/app/app/ui/` | the shared shapes, fifteen of them, plus `ui.css` |
 | `src/lib/app/screens.ts` | which screens exist, unchanged by the redesign |
 
+### Vertical space: the parent's gap, never a child's margin (#627, #634)
+
+**The rule, and it holds on every `/app` screen.** The distance between two
+things comes from a `gap` on the element that CONTAINS them. A block never
+composes the space above or below itself with its own `margin`.
+
+Two tokens, both on `.app` (`src/app/app/app.css`):
+
+| | |
+|---|---|
+| `--gap: 20px` | between two widgets: card to card, section to section |
+| `--gapTight: 12px` | between the blocks inside one widget |
+
+20 and not 16, because the distance between two cards is what reads as cramped
+on a phone: 16 is close enough to a card's own 18px padding that two cards read
+as one surface with a seam in it.
+
+**Why it is a rule and not a preference.** Josip has reported cramped widgets
+twice, a few commits apart, on two different screens, and both times the cause
+was the same: a screen whose container had no gap, spacing itself with whatever
+margins its blocks happened to carry, several of which are `0`. A margin is a
+rhythm one screen owns and the next screen forgets; a gap is a rhythm the
+container keeps for anything ever put inside it. #627 gave the gap to the shell
+floor, to Ljestvica and to Stanje; #634 gave it to the Ljestvica tabpanel, which
+is what Moja sezona renders into.
+
+Where a screen's own container has no class to hang a gap on, give it one
+rather than reaching back into the children.
+
 ### The follow-ups Josip found on his phone (#592)
 
 Five skin decisions, every one of them settled on the prototype branch

@@ -340,6 +340,16 @@
   color: var(--yes);
 }
 
+/* "Nema popisa" on a past nastup (#634): the same shape POPIS had, in the
+   opposite colour. Outlined for the same reason the green one is — a past
+   evening is never a thing to press — and red rather than grey because it is
+   something a voditelj can still put right. */
+.ui-chip--red {
+  background: none;
+  border: 1px solid var(--red);
+  color: var(--red);
+}
+
 /* ── FilterChips (#570) ───────────────────────────────────
    A row of addresses, one of them filled. It scrolls sideways and hides its
    scrollbar, because a season's performances are twenty chips and a control
@@ -1656,6 +1666,15 @@ a.ui-sheet__opt {
   font-size: 12px;
   font-weight: 700;
   line-height: 1;
+}
+
+/* A chip's mark (#634): the glyph alone, in front of a word rather than after
+   a nickname, so it gives up the pill and the left margin and keeps only the
+   colour. The chip it sits in draws the background. */
+.ui-flame--bare {
+  margin-left: 0;
+  padding: 0;
+  background: none;
 }
 
 /* The profile's drawing: the number inside the glyph. */

@@ -36,6 +36,7 @@ const performance = (over: Partial<RosterPerformance> = {}): RosterPerformance =
   lineupConfirmed: false,
   canAnswer: true,
   chip: null,
+  postava: null,
   ...over,
 })
 

@@ -102,13 +102,17 @@ describe('longestNiz', () => {
   it('finds the longest run anywhere in the chain', () => {
     // Danced e4, e3, e2 - three in a row, ended two evenings ago.
     const best = longestNiz(chain, new Set(['e4', 'e3', 'e2']))
-    expect(best).toEqual({ length: 3, running: false })
+    // The ends are the dancer's OWN evenings (#634): oldest first, newest
+    // last, and never the evening they missed.
+    expect(best).toEqual({ length: 3, running: false, from: 'e2', to: 'e4' })
   })
 
   it('says so when the longest run is the one still going', () => {
     expect(longestNiz(chain, new Set(['e6', 'e5', 'e4', 'e3']))).toEqual({
       length: 4,
       running: true,
+      from: 'e3',
+      to: 'e6',
     })
   })
 
@@ -117,6 +121,8 @@ describe('longestNiz', () => {
     expect(longestNiz(chain, new Set(['e6', 'e5', 'e3', 'e2']))).toEqual({
       length: 2,
       running: true,
+      from: 'e5',
+      to: 'e6',
     })
   })
 
@@ -124,11 +130,18 @@ describe('longestNiz', () => {
     expect(longestNiz(chain, new Set(['e6', 'e4', 'e3', 'e2']))).toEqual({
       length: 3,
       running: false,
+      from: 'e2',
+      to: 'e4',
     })
   })
 
   it('is zero and not running for a dancer who has danced nothing', () => {
-    expect(longestNiz(chain, new Set())).toEqual({ length: 0, running: false })
+    expect(longestNiz(chain, new Set())).toEqual({
+      length: 0,
+      running: false,
+      from: null,
+      to: null,
+    })
   })
 })
 

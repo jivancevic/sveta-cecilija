@@ -2,6 +2,7 @@ import { pluralize } from '@/lib/app/roster-loaders'
 import { APP_STRINGS, KIND_LABELS, ROLE_LABELS, dayAndMonth, weekdayLabel } from '@/lib/app/strings'
 import { MARK_OF_ROLE, type MyStanding, type RivalNews } from '@/lib/app/leaderboard-rank'
 import type { DancerProfile } from '@/lib/app/dancer-season-data'
+import type { ProfileRingPart } from '@/lib/app/profile-rings'
 import type { MySeasonMonth } from '@/lib/app/my-season-loaders'
 import { flameNiz } from '@/lib/app/niz'
 import { Card, CountUp, Flame, List, ListRow, Ring, RoleMark, Section } from '../../ui'
@@ -113,6 +114,8 @@ export interface ProfileRing {
   animate: boolean
   /** Whether this list is ranked at all this season (#614). */
   ranked: boolean
+  /** Redovne and vanredne, for the Moreška ring's two companions (#634). */
+  parts: ProfileRingPart[]
 }
 
 /** The roles a dancer wore in one list's evenings, as discs with counts. */
@@ -140,24 +143,54 @@ function Split({ tallies }: { tallies: ProfileRing['tallies'] }) {
 function RingCard({ ring }: { ring: ProfileRing }) {
   return (
     <Card className="app__pf-ring">
-      <Ring
-        value={ring.count}
-        max={Math.max(1, ring.of)}
-        size="card"
-        label={
-          <span className="app__pf-ring-in">
-            <b>{ring.animate ? <CountUp value={ring.count} /> : ring.count}</b>
-            <small>{S.ringOf(ring.of)}</small>
+      <div className="app__pf-ring-main">
+        <Ring
+          value={ring.count}
+          max={Math.max(1, ring.of)}
+          size="card"
+          label={
+            <span className="app__pf-ring-in">
+              <b>{ring.animate ? <CountUp value={ring.count} /> : ring.count}</b>
+              <small>{S.ringOf(ring.of)}</small>
+            </span>
+          }
+        />
+        <div className="app__pf-ring-side">
+          <span className="app__pf-ring-label">{B.lists[ring.kind]}</span>
+          <span className="app__pf-place">
+            {ring.rank === null ? S.placeNone : S.place(ring.rank, ring.total)}
           </span>
-        }
-      />
-      <div className="app__pf-ring-side">
-        <span className="app__pf-ring-label">{B.lists[ring.kind]}</span>
-        <span className="app__pf-place">
-          {ring.rank === null ? S.placeNone : S.place(ring.rank, ring.total)}
-        </span>
-        <Split tallies={ring.tallies} />
+          <Split tallies={ring.tallies} />
+        </div>
       </div>
+
+      {/* The same season, split in two (#634). "17 od 32" does not say whether
+          a dancer was at the redovne and missed the ship groups or the other
+          way round, and that is the question a moreškant actually asks himself
+          in September. Two smaller rings in the same shape, so they read as
+          halves of the one above and not as two more facts.
+
+          The word goes UNDER each ring rather than inside it: at 72px the hole
+          holds a figure and "od 12", and a third line would be a smudge. */}
+      {ring.parts.length > 0 && (
+        <div className="app__pf-parts">
+          {ring.parts.map((part) => (
+            <div className="app__pf-part" key={part.key}>
+              <Ring
+                value={part.count}
+                max={Math.max(1, part.of)}
+                label={
+                  <span className="app__pf-ring-in">
+                    <b>{part.count}</b>
+                    <small>{S.ringOf(part.of)}</small>
+                  </span>
+                }
+              />
+              <span className="app__pf-part-label">{S.partLabel[part.key]}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </Card>
   )
 }
@@ -208,7 +241,7 @@ export function DancerProfileView({
   /** Who they went past on it, or who went past them; the reader's own only. */
   rival?: RivalNews | null
 }) {
-  const { identity, season, evenings, niz } = profile
+  const { identity, season, evenings, niz, nizRange } = profile
   // The main list is the one the screen is built around; the other is a line.
   const main = rings.find((r) => r.kind === 'moreska') ?? rings[0]
   const side = rings.filter((r) => r !== main)
@@ -280,7 +313,18 @@ export function DancerProfileView({
         {flameNiz(niz.length) !== null && <Flame count={niz.length} large />}
         <span>{S.niz}</span>
         <b>{niz.length > 0 ? S.nizValue(niz.length) : S.nizNone}</b>
-        {niz.running && <i>{S.nizCurrent}</i>}
+        {/* WHICH evenings it was (#634). A range and no verb: "ugasio se" reads
+            as either the last evening of the run or the first one missed, and
+            two dates cannot be read two ways. A run still going has one end,
+            so it says "Traje od" and drops "I još traje." rather than saying
+            the same thing twice on two lines. */}
+        {nizRange &&
+          (niz.running ? (
+            <i>{S.nizSince(dayAndMonth(nizRange.from))}</i>
+          ) : (
+            <i>{S.nizRange(dayAndMonth(nizRange.from), dayAndMonth(nizRange.to))}</i>
+          ))}
+        {niz.running && !nizRange && <i>{S.nizCurrent}</i>}
       </p>
 
       <Section title={S.evenings} aside={pluralize(evenings.length, S.eveningsCount)} />

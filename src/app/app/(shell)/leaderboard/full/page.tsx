@@ -1,12 +1,13 @@
 import Link from 'next/link'
 import { getSeasonStats } from '@/lib/app/stats-data'
-import { getRunningNiz } from '@/lib/app/niz-data'
+import { getRunningNiz, getSeasonLongestNiz } from '@/lib/app/niz-data'
 import { flameNiz } from '@/lib/app/niz'
 import {
   BOARD_FILTERS,
   MARK_OF_ROLE,
   listIsRanked,
   filterCountsTitle,
+  filterRanksNiz,
   kindsOf,
   parseBoardFilter,
   parseLeaderboardKind,
@@ -21,7 +22,7 @@ import { APP_STRINGS } from '@/lib/app/strings'
 import type { DancerStats } from '@/lib/lineup/stats'
 import { AppShell } from '../../../AppShell'
 import { openScreen } from '../../../gate'
-import { List, RoleMark, Section } from '../../../ui'
+import { FlameMark, List, RoleMark, Section } from '../../../ui'
 import { BoardRow } from '../BoardRow'
 
 // `/app/leaderboard/full` — the whole ranking of one list (#568, filtered by
@@ -71,6 +72,19 @@ function Mark({ role, small = false }: { role: keyof typeof MARK_OF_ROLE; small?
   return <RoleMark army={spec.army} role={spec.role} small={small} />
 }
 
+/**
+ * The mark in front of a chip: a role's disc, or the flame for Najduži niz.
+ *
+ * The niz chip has no role to draw, and a flame is what a niz looks like
+ * everywhere else in the app. It is the mark WITHOUT a number, because the
+ * numbers are in the list under it.
+ */
+function ChipMark({ filter }: { filter: BoardFilter }) {
+  if (filter === 'svi') return null
+  if (filterRanksNiz(filter)) return <FlameMark />
+  return <Mark role={filter} small />
+}
+
 /** The row of seven chips: which slice of the season is being ranked. */
 function Filters({
   season,
@@ -91,7 +105,7 @@ function Filters({
       // words for a reader who cannot see which one is gold.
       aria-label={filter === active ? `${S.filters[filter]} (uključeno)` : S.filters[filter]}
     >
-      {filter !== 'svi' && <Mark role={filter} small />}
+      <ChipMark filter={filter} />
       <span>{S.filters[filter]}</span>
     </Link>
   )
@@ -105,13 +119,22 @@ function Filters({
     <div className="app__lb-strip">
       {/* `data-no-pull`: pull-to-refresh keeps off a sideways scroller (#633). */}
       <div className="app__lb-filters" data-no-pull="">
-        {BOARD_FILTERS.filter((f) => !filterCountsTitle(f)).map(chip)}
-        {/* The rule says the two groups count DIFFERENT things: left of it a
-            chip picks people and counts their whole season, right of it a chip
-            counts how often a title was given (Q2). Seven identical buttons in
-            one row said they were seven of the same thing. */}
+        {BOARD_FILTERS.filter((f) => !filterCountsTitle(f) && !filterRanksNiz(f)).map(chip)}
+        {/* The rule says the groups count DIFFERENT things: left of the first
+            divider a chip picks people and counts their whole season, right of
+            it a chip counts how often a title was given (Q2). Seven identical
+            buttons in one row said they were seven of the same thing. */}
         <span className="app__lb-strip-div" aria-hidden="true" />
         {BOARD_FILTERS.filter(filterCountsTitle).map(chip)}
+        {/* A third meaning behind a second divider (#634): a RUN of evenings
+            rather than a count of them. Moreška only, because an Experience is
+            not a link in the chain. */}
+        {kind === 'moreska' && (
+          <>
+            <span className="app__lb-strip-div" aria-hidden="true" />
+            {BOARD_FILTERS.filter(filterRanksNiz).map(chip)}
+          </>
+        )}
       </div>
     </div>
   )
@@ -161,10 +184,19 @@ export default async function FullLeaderboardPage({
   const params = await searchParams
   const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v)
   const kind = parseLeaderboardKind(one(params.kind))
-  const filter = parseBoardFilter(one(params.role))
+  const asked = parseBoardFilter(one(params.role))
+  // The niz chip is not offered on the Experience list, so a `?role=niz` that
+  // arrives there (an old link, a hand-typed URL) opens on everybody rather
+  // than on a ranking of a chain that list is not in (#634).
+  const filter = filterRanksNiz(asked) && kind !== 'moreska' ? 'svi' : asked
+  const byNiz = filterRanksNiz(filter)
 
   // Side by side: a season and a niz are two different reads (#628).
   const [stats, niz] = await Promise.all([getSeasonStats(one(params.season)), getRunningNiz()])
+  // One more read, and only under the chip that ranks by it (#634): the whole
+  // season's chain rather than the sixty-evening window, because a season is
+  // its own bound.
+  const seasonNiz = byNiz ? await getSeasonLongestNiz(stats.season) : {}
   const confirmed = kindsOf(kind).reduce((sum, k) => sum + stats.confirmedByKind[k], 0)
   const rows = rankDancers({
     rows: stats.rows,
@@ -176,7 +208,13 @@ export default async function FullLeaderboardPage({
     confirmed,
     // The Moreška list only: an Experience is not a link in the chain, so the
     // Experience ranking carries no flame (CONTEXT.md → *Niz*).
-    niz: kind === 'moreska' ? niz : {},
+    //
+    // And NOTHING under the niz chip itself: there the number at the end of the
+    // row is already a niz, and a flame beside the nickname would put a second,
+    // different one at the other end of the same row (#634). The chip's own
+    // mark is the flame instead.
+    niz: kind === 'moreska' && !byNiz ? niz : {},
+    seasonNiz,
   })
   const byId = new Map(stats.rows.map((r) => [String(r.memberId), r]))
 
@@ -203,7 +241,9 @@ export default async function FullLeaderboardPage({
       <Section
         title={S.lists[kind]}
         aside={pluralize(rows.length, S.onList)}
-        note={filterCountsTitle(filter) ? S.countsTitle : S.countsEvenings}
+        note={
+          byNiz ? S.countsNiz : filterCountsTitle(filter) ? S.countsTitle : S.countsEvenings
+        }
       />
 
       {rows.length === 0 ? (

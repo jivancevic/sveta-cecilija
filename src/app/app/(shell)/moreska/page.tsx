@@ -64,6 +64,9 @@ export default async function MoreskaPage() {
     // The hero's ArmyBar: "are we enough tonight" is a question the whole
     // roster reads, not only its lead (ADR-0024, visibility is society-wide).
     armyCounts: true,
+    // The past list says who danced ("7/9", #634), which comes off the
+    // confirmed postave and not off the attendance chip above.
+    lineupCounts: true,
   })
 
   // ONE clock for the whole screen, and it is the LOADER's (`season.nowMs`, the
@@ -250,15 +253,12 @@ export default async function MoreskaPage() {
                     lead={<DateDisc day={row.day} weekday={row.weekday} tone={row.tone} />}
                     title={row.title}
                     meta={row.meta}
-                    // POPIS, not "Postava potvrđena" (#612). The old gold chip
-                    // named a step in the voditelj's workflow on a screen a
-                    // dancer reads backwards; what the dancer wants to know is
-                    // that there IS a list, and that the row opens it. Green
-                    // and outlined so it is an aside about a finished evening
-                    // rather than a state anybody can still change.
-                    trail={
-                      row.lineupConfirmed ? <Chip tone="green">{S.lineupList}</Chip> : null
-                    }
+                    // Who danced, not that a list exists (#634). The green
+                    // POPIS pill said somebody had typed the evening up, which
+                    // is a step in the voditelj's workflow; a dancer reading
+                    // the season backwards wants the evening's SIZE. Where
+                    // there is no confirmed postava the same shape goes red.
+                    trail={<Postava row={row} />}
                   />
                 ))}
               </List>
@@ -267,6 +267,29 @@ export default async function MoreskaPage() {
         </details>
       )}
     </AppShell>
+  )
+}
+
+/**
+ * "7/9" at the end of a past row: seven crni, nine bili (#634).
+ *
+ * The two numbers wear their armies' own tokens and the slash is muted, so the
+ * pair reads as two colours before it reads as arithmetic. There is no "od" and
+ * no threshold: this is who danced, and the evening is over.
+ *
+ * A past evening with no confirmed postava carries the red pill instead, in the
+ * shape the green POPIS had. A future row carries neither, because it already
+ * has the two answer circles.
+ */
+function Postava({ row }: { row: NastupRow }) {
+  if (!row.postava) return <Chip tone="red">{S.noLineup}</Chip>
+  const { crni, bili } = row.postava
+  return (
+    <span className="app__postava" aria-label={S.postavaLabel(crni, bili)}>
+      <b data-army="crni">{crni}</b>
+      <i aria-hidden="true">/</i>
+      <b data-army="bili">{bili}</b>
+    </span>
   )
 }
 

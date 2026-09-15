@@ -24,6 +24,7 @@ import { toIsoDate } from '@/lib/to-iso-date'
 import { isPublicPerformance, type PerformanceKind } from '@/lib/show-performance'
 import { SHOW_GRACE_MS, showStartMs } from '@/lib/show-time'
 import type { ShowsFind } from '@/lib/show-loaders'
+import { isLineupRole, type LineupRole } from '@/lib/moreskant-profile'
 import {
   moreskantMayAnswer,
   toAttendanceMember,
@@ -32,7 +33,7 @@ import {
   type AttendanceStatus,
 } from '@/lib/attendance/rules'
 import { countArmies, type AttendanceRow } from '@/lib/attendance/army-count'
-import { isDanceTitle, type DanceTitle } from '@/lib/lineup/titles'
+import { armyOfLineupRole, isDanceTitle, type DanceTitle } from '@/lib/lineup/titles'
 import { relationIdString } from '@/lib/payload-relation'
 import { APP_STRINGS, monthLabel } from '@/lib/app/strings'
 import type { Venue } from '@/lib/venues'
@@ -89,6 +90,26 @@ export interface RosterPerformance {
    * a moreškant, who gets the numbers on the detail page instead.
    */
   chip: ArmyChip | null
+  /**
+   * The composition of the CONFIRMED postava: "7/9" on a past row (#634).
+   *
+   * Seven crni and nine bili, who actually danced. Deliberately a second field
+   * rather than a reading of `chip`: the chip is an ATTENDANCE headcount, which
+   * is who said they were coming, and the two numbers differ on most evenings.
+   * A past row that says who danced must come off the postava or it is a
+   * plausible lie.
+   *
+   * Null on every evening without a confirmed postava, past or future, which is
+   * what makes the red "Nema popisa" a property of the row rather than a second
+   * condition on the screen.
+   */
+  postava: PostavaCount | null
+}
+
+/** Who danced, per army. The bula and an Experience's voditelj are in neither. */
+export interface PostavaCount {
+  crni: number
+  bili: number
 }
 
 /** The card chip: two headcounts against two thresholds, nothing else. */
@@ -156,6 +177,7 @@ export function toRosterPerformance(row: Record<string, unknown>): RosterPerform
     myTitle: null,
     canAnswer: false,
     chip: null,
+    postava: null,
   }
 }
 
@@ -240,6 +262,45 @@ export function attachOwnTitles(
       myTitle: p.lineupConfirmed && isDanceTitle(role) ? role : null,
     }
   })
+}
+
+/** One postava row, flattened to what a count needs. */
+export interface PostavaRoleRow {
+  performanceId: string
+  role: LineupRole
+}
+
+/**
+ * Fold the confirmed postava's composition into the rows (#634).
+ *
+ * One pass over every lineup row of the season, keyed by performance, rather
+ * than a query per evening: the season list draws forty rows and a read per row
+ * is forty round trips for two digits each.
+ *
+ * **Only a confirmed evening gets a count.** An unconfirmed lineup is a draft
+ * (story 34) and saying "7/9" off one would put a number nobody has stood
+ * behind on a screen every dancer reads. A confirmed postava with nobody in an
+ * army counts zero there, which is a fact and not a missing list.
+ *
+ * The bula is in neither number, and neither is an Experience's voditelj:
+ * `armyOfLineupRole` answers 'bula' and null for those, and "7/9" is the two
+ * armies (Josip: "7 crnih i 9 bilih").
+ */
+export function attachPostavaCounts(
+  rows: RosterPerformance[],
+  lineups: readonly PostavaRoleRow[],
+): RosterPerformance[] {
+  const counts = new Map<string, PostavaCount>()
+  for (const row of lineups) {
+    const army = armyOfLineupRole(row.role)
+    if (army !== 'crni' && army !== 'bili') continue
+    const at = counts.get(row.performanceId) ?? { crni: 0, bili: 0 }
+    at[army] += 1
+    counts.set(row.performanceId, at)
+  }
+  return rows.map((p) =>
+    p.lineupConfirmed ? { ...p, postava: counts.get(p.id) ?? { crni: 0, bili: 0 } } : p,
+  )
 }
 
 /**
@@ -436,6 +497,14 @@ export interface SeasonPerformancesDeps {
    * Izvedbe must not start showing headcount chips to the blagajna.
    */
   armyCounts?: boolean
+  /**
+   * Whether to read the confirmed postave's composition ("7/9", #634).
+   *
+   * One more query, and only for the screen that draws it: Moreška's past list.
+   * Off everywhere else for the same reason `armyCounts` is a flag — Izvedbe
+   * has no use for it and must not start paying for it.
+   */
+  lineupCounts?: boolean
 }
 
 /**
@@ -547,6 +616,29 @@ export async function loadSeasonPerformances(
     const members: AttendanceMember[] = roster.docs.map(toAttendanceMember)
 
     rows = attachArmyChips(rows, attendance, members)
+  }
+
+  // The composition of a confirmed postava (#634): one query for the whole
+  // season, scoped to the evenings that HAVE one, so an unconfirmed draft is
+  // never read at all rather than read and then discarded.
+  if (deps.lineupCounts) {
+    const confirmedIds = rows.filter((p) => p.lineupConfirmed).map((p) => p.id)
+    if (confirmedIds.length > 0) {
+      const postave = await deps.find({
+        collection: 'lineups',
+        where: { performance: { in: confirmedIds } },
+        limit: 5000,
+        depth: 0,
+      })
+      const lineupRows: PostavaRoleRow[] = []
+      for (const row of postave.docs) {
+        const performanceId = relationIdString(row.performance)
+        if (performanceId && isLineupRole(row.role)) {
+          lineupRows.push({ performanceId, role: row.role })
+        }
+      }
+      rows = attachPostavaCounts(rows, lineupRows)
+    }
   }
 
   return { year, nowMs: now.getTime(), ...splitSeasonPerformances(rows, now.getTime()) }

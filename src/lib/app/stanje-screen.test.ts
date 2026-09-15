@@ -42,6 +42,7 @@ function detail(over: Partial<PerformanceDetail> = {}): PerformanceDetail {
       lineupConfirmed: false,
       canAnswer: true,
       chip: null,
+      postava: null,
     },
     count: {
       crni: { count: 2, threshold: 3, below: true, nicknames: [], members: [CICI, DADO] },

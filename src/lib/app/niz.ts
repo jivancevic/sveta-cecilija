@@ -113,6 +113,16 @@ export interface LongestNiz {
   length: number
   /** The run reaches the front of the chain: it has not been broken. */
   running: boolean
+  /**
+   * The OLDEST evening of the run, and the NEWEST one in it, as chain ids
+   * (#634). Both null for a dancer with no run at all.
+   *
+   * "Do" is the newest evening the dancer actually DANCED, never the one they
+   * missed: the run is theirs and not the gap's. The profile turns the two into
+   * "Od 14.7. do 19.8.", or "Traje od 14.7." while it is still going.
+   */
+  from: string | null
+  to: string | null
 }
 
 /**
@@ -129,6 +139,7 @@ export interface LongestNiz {
 export function longestNiz(chain: readonly string[], danced: ReadonlySet<string>): LongestNiz {
   let best = 0
   let bestRunning = false
+  let bestEnd = -1
   let run = 0
   // **The tie rule is the ORDER, not a comparison.** The chain is newest first,
   // so a run that is still going is the first one this loop meets; every older
@@ -145,9 +156,16 @@ export function longestNiz(chain: readonly string[], danced: ReadonlySet<string>
       // The run occupies [index - run + 1 .. index]; it is still going when it
       // starts at the front of the chain.
       bestRunning = index - run + 1 === 0
+      bestEnd = index
     }
   })
-  return { length: best, running: best > 0 && bestRunning }
+  // The chain is NEWEST first, so the run's last index is its oldest evening
+  // and the index `best - 1` above it is its newest. Both are evenings this
+  // dancer danced, by construction: the loop only ever extends a run over ids
+  // in `danced`.
+  const from = best > 0 ? (chain[bestEnd] ?? null) : null
+  const to = best > 0 ? (chain[bestEnd - best + 1] ?? null) : null
+  return { length: best, running: best > 0 && bestRunning, from, to }
 }
 
 /**
@@ -167,16 +185,45 @@ export interface NizLineupRow {
   memberId: string
 }
 
-/**
- * Every dancer's running niz, keyed by member id.
- *
- * What a LIST needs: one pass over the chain's lineups rather than one pass per
- * dancer. A member with no run at all is absent from the map, and every reader
- * of it treats a missing key as zero.
- */
+/** Every dancer's RUNNING niz, keyed by member id; a dancer with none is absent. */
 export function currentNizByMember(
   chain: readonly string[],
   lineups: readonly NizLineupRow[],
+): Record<string, number> {
+  return nizByMember(chain, lineups, currentNiz)
+}
+
+/**
+ * Every dancer's LONGEST run inside one chain, keyed by member id (#634).
+ *
+ * The chip that ranks Ljestvica by the niz. It is the same shape as the one
+ * above and deliberately not the same number: a list ranked by the running niz
+ * would be mostly zeros, because a run is broken the moment somebody misses an
+ * evening and most of the roster has missed one.
+ *
+ * **What makes it a SEASON's number is the CHAIN handed in**, not anything
+ * here: give it the season's evenings and a run that crossed New Year counts
+ * only the part inside the year on display, which is what every other number on
+ * that screen is. The function itself knows nothing about years.
+ */
+export function longestNizByMember(
+  chain: readonly string[],
+  lineups: readonly NizLineupRow[],
+): Record<string, number> {
+  return nizByMember(chain, lineups, (c, danced) => longestNiz(c, danced).length)
+}
+
+/**
+ * One pass over the chain's lineups, folded per dancer.
+ *
+ * What a LIST needs: a pass per screen rather than a pass per dancer. A member
+ * with no run at all is absent from the map, and every reader of one treats a
+ * missing key as zero.
+ */
+function nizByMember(
+  chain: readonly string[],
+  lineups: readonly NizLineupRow[],
+  run: (chain: readonly string[], danced: ReadonlySet<string>) => number,
 ): Record<string, number> {
   const inChain = new Set(chain)
   const danced = new Map<string, Set<string>>()
@@ -193,8 +240,8 @@ export function currentNizByMember(
 
   const out: Record<string, number> = {}
   for (const [memberId, set] of danced) {
-    const run = currentNiz(chain, set)
-    if (run > 0) out[memberId] = run
+    const length = run(chain, set)
+    if (length > 0) out[memberId] = length
   }
   return out
 }
