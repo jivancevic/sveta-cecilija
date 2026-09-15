@@ -452,7 +452,8 @@
     <p class="eyebrow">Prototip · #628 · odlučeno 15.9.2026.</p>
     <h1>Red na Ljestvici, i vatrica uz nadimak</h1>
     <p>
-      <b>Odabrana je varijanta A</b>, a prag vatrice je spušten na 3. B i C ostaju ovdje kao zapis. Tri strukturno različite izvedbe istog reda. Prebacuj ih dolje, strelicama
+      <b>Odabrana je varijanta A.</b> Vatrica se crta od niza 3 naviše i samo dok
+      niz traje; prekinut niz se ne crta uopće. B i C ostaju ovdje kao zapis. Tri strukturno različite izvedbe istog reda. Prebacuj ih dolje, strelicama
       ← → ili klikom. Ista imena, isti brojevi, ista širina telefona u sve tri,
       tako da se razlikuje samo ono o čemu odlučuješ.
     </p>
@@ -477,14 +478,12 @@
           <span id="pfSub">I dalje traje.</span>
         </div>
       </div>
-      <p class="eyebrow" style="color: var(--muted); margin: 8px 0 0">Vatrica, oba stanja</p>
+      <p class="eyebrow" style="color: var(--muted); margin: 8px 0 0">Vatrica, jedino stanje</p>
       <div class="states">
         <span class="state">
           <span class="flame" id="fOn"></span> niz traje
         </span>
-        <span class="state">
-          <span class="flame flame--off" id="fOff"></span> niz je prekinut
-        </span>
+        <span class="state">prekinut niz se ne crta uopće</span>
         <span class="state">ispod 3 se ne crta</span>
       </div>
     </div>
@@ -498,12 +497,15 @@
   </div>
 
   <div class="foot">
-    <h2>Što mi treba od tebe</h2>
+    <h2>Odlučeno 15.9.2026.</h2>
     <ol>
-      <li><b>Koja varijanta reda</b> (A, B ili C), ili koji dio koje.</li>
-      <li><b>Je li vatrica dovoljno vidljiva</b> uz nadimak na tvom iPhoneu, i je li prazna vatrica (prekinut niz) previše tiha ili taman.</li>
-      <li><b>Prag 3</b>, kako si odlučio 15.9. Vatrica se crta od 3 naviše.</li>
-      <li><b>Velika vatrica na profilu:</b> broj unutar plamena, kao ovdje, ili broj pored njega kao u redu.</li>
+      <li><b>Red je varijanta A.</b> B i C ostaju kao zapis onoga što je odbijeno.</li>
+      <li><b>Vatrica ide od niza 3 naviše i samo dok niz traje.</b> Na današnjim
+        podacima to su četiri čovjeka: Martin B. 7, Markan 6, Brane 5, Risto 3.</li>
+      <li><b>Prekinut niz se ne crta.</b> Prazna vatrica je bila nacrtana pa
+        odbačena: šest od deset vatrica bile bi mrtve, dvije od njih iz svibnja i srpnja.</li>
+      <li><b>Na profilu ostaje Najduži niz</b>, s brojem unutar velikog plamena.
+        To je rekord kroz sve sezone i tu završen niz i pripada.</li>
     </ol>
   </div>
 </div>
@@ -518,6 +520,8 @@
 
 <script>
   const FLAME = '<svg viewBox="0 0 24 28" aria-hidden="true"><path fill="currentColor" d="M12 0c1 5-3 6.5-5.2 9.6C4.6 12.4 4 15 4 17c0 5.5 3.9 9 8 9s8-3.5 8-9c0-3.2-1.4-6-3.6-8.4-.8 1.5-1.8 2.3-2.8 2.5C14.4 7.5 14 3.2 12 0Z"/></svg>';
+  // Prazna vatrica: nacrtana pa odbačena 15.9. Ostaje ovdje jer je ovo zapis
+  // onoga što je razmotreno, a ne čista verzija pobjednika.
   const FLAME_OUT = '<svg viewBox="0 0 24 28" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" d="M12 1.8c.6 4.3-3 5.9-5 8.7C5.2 13 4.9 15.2 4.9 17c0 5 3.4 8.1 7.1 8.1s7.1-3.1 7.1-8.1c0-2.9-1.2-5.4-3.2-7.5-.8 1.4-1.7 2.1-2.6 2.3"/></svg>';
 
   const ROLES = {
@@ -530,28 +534,29 @@
   };
   const ORDER = ['crni', 'crni_kralj', 'otmanovic', 'bili', 'bili_kralj', 'bula'];
 
+  // Nadimci i nizovi su PRAVI, s produkcije 15.9.2026.; poredak i podjela po
+  // ulogama su izmišljeni, jer je ovo prototip crteža reda, a ne izvještaj.
   const DANCERS = [
-    { r: 1, n: 'Marin', i: 'MR', a: 'crni', t: { crni: 14, crni_kralj: 7 }, s: 9, alive: true },
-    { r: 2, n: 'Tonči', i: 'TŠ', a: 'bili', t: { bili: 16, bili_kralj: 4 }, s: 6, alive: true },
-    { r: 3, n: 'Duje', i: 'DR', a: 'crni', t: { crni: 12, otmanovic: 6 }, s: 0, alive: false },
-    { r: 4, n: 'Nikša', i: 'NB', a: 'bili', t: { bili: 17 }, s: 5, alive: false },
+    { r: 1, n: 'Martin B.', i: 'MB', a: 'crni', t: { crni: 14, crni_kralj: 7 }, s: 7, alive: true },
+    { r: 2, n: 'Markan', i: 'MK', a: 'bili', t: { bili: 16, bili_kralj: 4 }, s: 6, alive: true },
+    { r: 3, n: 'Blitva', i: 'BL', a: 'crni', t: { crni: 12, otmanovic: 6 }, s: 9, alive: false },
+    { r: 4, n: 'Brko', i: 'BR', a: 'bili', t: { bili: 17 }, s: 6, alive: false },
     { r: 5, n: 'Ti', i: 'JI', a: 'crni', t: { crni: 11, crni_kralj: 3, bili: 3 }, s: 4, alive: true, me: true },
-    { r: 6, n: 'Frane', i: 'FP', a: 'crni', t: { crni: 17 }, s: 0, alive: false },
-    { r: 6, n: 'Ivo', i: 'IV', a: 'bili', t: { bili: 14, bili_kralj: 3 }, s: 0, alive: false },
-    { r: 8, n: 'Mare', i: 'MB', a: 'bula', t: { bula: 15 }, s: 8, alive: true },
-    { r: 9, n: 'Jakov', i: 'JK', a: 'crni', t: { crni: 9, otmanovic: 4 }, s: 3, alive: true },
-    { r: 10, n: 'Šime', i: 'ŠV', a: 'bili', t: { bili: 8, bili_kralj: 2 }, s: 3, alive: false },
-    { r: 11, n: 'Luka', i: 'LT', a: 'crni', t: { crni: 6 }, s: 0, alive: false },
-    { r: 12, n: 'Pero', i: 'PM', a: 'bili', t: { bili: 2 }, s: 0, alive: false },
+    { r: 6, n: 'Cici', i: 'CC', a: 'crni', t: { crni: 17 }, s: 6, alive: false },
+    { r: 6, n: 'Brane', i: 'BN', a: 'bili', t: { bili: 14, bili_kralj: 3 }, s: 5, alive: true },
+    { r: 8, n: 'Mare', i: 'MR', a: 'bula', t: { bula: 15 }, s: 0, alive: false },
+    { r: 9, n: 'Risto', i: 'RS', a: 'crni', t: { crni: 9, otmanovic: 4 }, s: 3, alive: true },
+    { r: 10, n: 'Skeleta', i: 'SK', a: 'bili', t: { bili: 8, bili_kralj: 2 }, s: 3, alive: false },
+    { r: 11, n: 'Penjo', i: 'PN', a: 'crni', t: { crni: 6 }, s: 4, alive: false },
+    { r: 12, n: 'Dino', i: 'DN', a: 'bili', t: { bili: 2 }, s: 3, alive: false },
   ];
   const TOP = 21;
   const total = (d) => Object.values(d.t).reduce((a, b) => a + b, 0);
 
   function flame(d) {
-    if (d.s < 3) return '';
-    return d.alive
-      ? '<span class="flame">' + FLAME + d.s + '</span>'
-      : '<span class="flame flame--off">' + FLAME_OUT + d.s + '</span>';
+    // Jedno stanje (odluka 15.9.): crta se samo niz koji traje.
+    if (d.s < 3 || !d.alive) return '';
+    return '<span class="flame">' + FLAME + d.s + '</span>';
   }
 
   function tallies(d) {
@@ -721,7 +726,6 @@
     document.getElementById('pfBig').innerHTML =
       '<svg viewBox="0 0 24 28" aria-hidden="true"><path fill="var(--ember)" d="M12 0c1 5-3 6.5-5.2 9.6C4.6 12.4 4 15 4 17c0 5.5 3.9 9 8 9s8-3.5 8-9c0-3.2-1.4-6-3.6-8.4-.8 1.5-1.8 2.3-2.8 2.5C14.4 7.5 14 3.2 12 0Z"/></svg><b>7</b>';
     document.getElementById('fOn').innerHTML = FLAME + '5';
-    document.getElementById('fOff').innerHTML = FLAME_OUT + '5';
   }
 
   let cur = new URL(location.href).searchParams.get('variant');
