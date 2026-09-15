@@ -738,7 +738,14 @@ button.ui-row:hover {
   animation: ui-rise 0.6s var(--ease) both;
 }
 
-.ui-podium__step b {
+/* The step's OWN count, and only it: a direct child, never a descendant (#641).
+   A `badge` slot (#634) is a hole in this component for arbitrary markup, and
+   the niz flame that lands in it carries a `<b>` of its own inside
+   `.ui-podium__name`. Written as a descendant, this rule and the two `--lg`
+   ones below also selected that digit — and at three classes plus a type they
+   outranked `.ui-flame b`, so the flame beside the winner's nickname was drawn
+   at 32px in a pill twice the height of the one a list row wears. */
+.ui-podium__step > b {
   font-family: var(--serif);
   font-size: 16px;
   color: var(--ink);
@@ -862,12 +869,12 @@ button.ui-row:hover {
   animation-name: ui-rise-lg;
 }
 
-.ui-podium--lg .ui-podium__step b {
+.ui-podium--lg .ui-podium__step > b {
   font-size: 26px;
   line-height: 1;
 }
 
-.ui-podium--lg .ui-podium__step--1 b {
+.ui-podium--lg .ui-podium__step--1 > b {
   font-size: 32px;
 }
 
