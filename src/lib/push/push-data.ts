@@ -26,6 +26,7 @@ import type { AttendanceRow } from '@/lib/attendance/army-count'
 import { toAttendanceMember, type AttendanceMember } from '@/lib/attendance/rules'
 import { toAttendanceRow } from '@/lib/app/detail-loaders'
 import { toIsoDate } from '@/lib/to-iso-date'
+import { isShownKind, shownPerformanceSql } from '@/lib/show-performance'
 import type { AlarmPerformance } from './alarm'
 import type { DuePerformance } from './roster-notifications'
 import { LOOKAHEAD_MS, type ScheduledNotificationType } from './schedule'
@@ -88,7 +89,11 @@ export async function loadPerformanceForAlarm(
       depth: 0,
       overrideAccess: true,
     })) as Record<string, unknown> | null
-    return doc ? toAlarmPerformance(doc) : null
+    // A kind Cecilija does not show has no alarm either (#635): the message
+    // deep-links into Stanje, which answers 404 for one. The route reads this
+    // as "no such performance", which is what it is as far as the app goes.
+    if (!doc || !isShownKind(doc.kind ?? 'redovna')) return null
+    return toAlarmPerformance(doc)
   } catch {
     // A bad id is a 400 from the handler, never a 500 from here.
     return null
@@ -141,6 +146,7 @@ export async function loadDuePerformances(
     `SELECT id, date, time, status, threshold_crni, threshold_bili
        FROM shows
       WHERE status IS DISTINCT FROM 'cancelled'
+        AND ${shownPerformanceSql()}
         AND time IS NOT NULL
         AND ((date::date)::text || ' ' || time)::timestamp AT TIME ZONE 'Europe/Zagreb'
               BETWEEN $1 AND $2`,

@@ -110,6 +110,19 @@ export function isShownKind(kind: unknown): kind is ShownKind {
  */
 export const SHOWN_PERFORMANCE_WHERE = { kind: { not_in: [...HIDDEN_KINDS] } } as const
 
+/**
+ * The same rule, raw-SQL form, for a `pool.query` caller (the push cron).
+ *
+ * The list is interpolated rather than parameterised, and safely: these are
+ * this module's own literals, never anything a request carried.
+ *
+ * @param alias optional table alias or name to qualify the column with.
+ */
+export function shownPerformanceSql(alias?: string): string {
+  const column = `${alias ? `${alias}.` : ''}kind`
+  return `${column} NOT IN (${HIDDEN_KINDS.map((k) => `'${k}'`).join(', ')})`
+}
+
 const KNOWN_KINDS = new Set<string>(PERFORMANCE_KINDS)
 
 /**

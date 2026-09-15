@@ -2291,7 +2291,6 @@ html:has(> .app) {
 /* The voditelj note, edited from the phone (#436). The same card frame as the
    alarm: both are controls that reach other people's phones. */
 .app__note-edit {
-  margin: 20px 0 4px;
   padding: 14px;
   border: 1px solid var(--cardEdge);
   border-radius: var(--radius);
@@ -2344,7 +2343,6 @@ html:has(> .app) {
    The lineup reuses the army-section frame (.app__army-head, .app__people): it
    is the same kind of list, so it should not look like a different feature. */
 .app__lineup {
-  margin: 28px 0 8px;
   padding: 14px;
   border: 1px solid var(--cardEdge);
   border-radius: var(--radius);
@@ -5565,7 +5563,7 @@ a.app__ob-link {
    there together and reading "4.5. u 10:30" as one line is how the evening is
    said out loud. */
 .app__perf-add {
-  margin: 20px 0 4px;
+  margin: 0;
 }
 
 .app__perf-add--open,
@@ -5946,7 +5944,6 @@ a.app__ob-link {
    seats and the wrong amount of money (ADR-0025), so the lines are on screen
    while the correction is entered. */
 .app__ledger {
-  margin-bottom: 12px;
   padding: 10px;
   background: var(--card);
   border: 1px solid var(--rule);
@@ -6004,7 +6001,15 @@ a.app__ob-link {
    These five blocks carried `margin: 26px 0 0` until #636 — one child margin
    doing the whole of two screens' vertical rhythm, because the `app__cols`
    around them did not exist on a phone. It does now, so the space between them
-   is its gap and this rule is gone. */
+   is its gap, and each of them is a column of its OWN blocks: a heading, the
+   card or list under it, and on two of them a pager. */
+.app__sell,
+.app__partner-sales,
+.app__partner-month {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gapTight);
+}
 
 .app__partner-note {
   margin: 6px 0 0;
@@ -6032,7 +6037,7 @@ a.app__ob-link {
   align-items: baseline;
   justify-content: space-between;
   gap: 12px;
-  margin: 14px 0;
+  margin: 0;
   font-variant-numeric: tabular-nums;
 }
 
@@ -6248,7 +6253,6 @@ span.app__sale-head {
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-top: 14px;
 }
 
 .app__pager-page {
@@ -7666,7 +7670,7 @@ a.app__statrow-main:focus-visible {
 }
 
 .app__user-actions {
-  margin-top: 18px;
+  margin: 0;
 }
 
 .app__user-buttons {
@@ -8405,7 +8409,7 @@ a.app__statrow-main:focus-visible {
 /* The title is the DATE and the header draws it (Q32); this is the line under
    it, which is what kind of evening it is and where. */
 .app__izv-head {
-  margin-bottom: 16px;
+  margin: 0;
 }
 
 .app__izv-meta {

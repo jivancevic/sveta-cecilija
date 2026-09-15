@@ -123,6 +123,20 @@ describe('decidePerformanceNotification', () => {
     )
   })
 
+  it('rings nobody about a koncert, whose deep link is a 404 (#635)', () => {
+    const koncert = snapshot({ kind: 'koncert', isPublic: false, venue: null, location: 'Sv. Justina' })
+    expect(
+      decidePerformanceNotification({ previous: null, next: koncert, nowMs: AHEAD }).kind,
+    ).toBe('none')
+    expect(
+      decidePerformanceNotification({
+        previous: koncert,
+        next: { ...koncert, time: '20:30' },
+        nowMs: AHEAD,
+      }).kind,
+    ).toBe('none')
+  })
+
   it('sends nothing for a save that changed nothing watched', () => {
     expect(
       decidePerformanceNotification({ previous: snapshot(), next: snapshot(), nowMs: AHEAD })
