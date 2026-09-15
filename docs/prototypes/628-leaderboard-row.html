@@ -449,10 +449,10 @@
 
 <div class="wrap">
   <header>
-    <p class="eyebrow">Prototip · #628</p>
+    <p class="eyebrow">Prototip · #628 · odlučeno 15.9.2026.</p>
     <h1>Red na Ljestvici, i vatrica uz nadimak</h1>
     <p>
-      Tri strukturno različite izvedbe istog reda. Prebacuj ih dolje, strelicama
+      <b>Odabrana je varijanta A</b>, a prag vatrice je spušten na 3. B i C ostaju ovdje kao zapis. Tri strukturno različite izvedbe istog reda. Prebacuj ih dolje, strelicama
       ← → ili klikom. Ista imena, isti brojevi, ista širina telefona u sve tri,
       tako da se razlikuje samo ono o čemu odlučuješ.
     </p>
@@ -485,7 +485,7 @@
         <span class="state">
           <span class="flame flame--off" id="fOff"></span> niz je prekinut
         </span>
-        <span class="state">ispod 4 se ne crta</span>
+        <span class="state">ispod 3 se ne crta</span>
       </div>
     </div>
 
@@ -502,7 +502,7 @@
     <ol>
       <li><b>Koja varijanta reda</b> (A, B ili C), ili koji dio koje.</li>
       <li><b>Je li vatrica dovoljno vidljiva</b> uz nadimak na tvom iPhoneu, i je li prazna vatrica (prekinut niz) previše tiha ili taman.</li>
-      <li><b>Prag 4.</b> Sad se crta od 4 naviše, kako si rekao. Ako se na popisu pokaže da je previše ljudi s vatricom, dižemo na 5.</li>
+      <li><b>Prag 3</b>, kako si odlučio 15.9. Vatrica se crta od 3 naviše.</li>
       <li><b>Velika vatrica na profilu:</b> broj unutar plamena, kao ovdje, ili broj pored njega kao u redu.</li>
     </ol>
   </div>
@@ -539,8 +539,8 @@
     { r: 6, n: 'Frane', i: 'FP', a: 'crni', t: { crni: 17 }, s: 0, alive: false },
     { r: 6, n: 'Ivo', i: 'IV', a: 'bili', t: { bili: 14, bili_kralj: 3 }, s: 0, alive: false },
     { r: 8, n: 'Mare', i: 'MB', a: 'bula', t: { bula: 15 }, s: 8, alive: true },
-    { r: 9, n: 'Jakov', i: 'JK', a: 'crni', t: { crni: 9, otmanovic: 4 }, s: 0, alive: false },
-    { r: 10, n: 'Šime', i: 'ŠV', a: 'bili', t: { bili: 8, bili_kralj: 2 }, s: 0, alive: false },
+    { r: 9, n: 'Jakov', i: 'JK', a: 'crni', t: { crni: 9, otmanovic: 4 }, s: 3, alive: true },
+    { r: 10, n: 'Šime', i: 'ŠV', a: 'bili', t: { bili: 8, bili_kralj: 2 }, s: 3, alive: false },
     { r: 11, n: 'Luka', i: 'LT', a: 'crni', t: { crni: 6 }, s: 0, alive: false },
     { r: 12, n: 'Pero', i: 'PM', a: 'bili', t: { bili: 2 }, s: 0, alive: false },
   ];
@@ -548,7 +548,7 @@
   const total = (d) => Object.values(d.t).reduce((a, b) => a + b, 0);
 
   function flame(d) {
-    if (d.s < 4) return '';
+    if (d.s < 3) return '';
     return d.alive
       ? '<span class="flame">' + FLAME + d.s + '</span>'
       : '<span class="flame flame--off">' + FLAME_OUT + d.s + '</span>';
