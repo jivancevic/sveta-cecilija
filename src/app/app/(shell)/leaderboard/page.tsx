@@ -1,4 +1,5 @@
 import { getSeasonStats } from '@/lib/app/stats-data'
+import { getRunningNiz } from '@/lib/app/niz-data'
 import { getDancerProfile } from '@/lib/app/dancer-season-data'
 import { getSeasonPerformances } from '@/lib/app/roster-data'
 import { profileRings } from '@/lib/app/profile-rings'
@@ -77,7 +78,10 @@ export default async function LeaderboardPage({
   // The season's scoreboard is what BOTH panels are built from: the board ranks
   // it and the profile takes its rings off the same ranking, so the two can
   // never print two places for one dancer.
-  const stats = await getSeasonStats(requested)
+  // The season's scoreboard and the niz are read side by side: one is scoped to
+  // a year and the other crosses seasons by definition (#628), so they are two
+  // reads rather than one, and there is no reason for the second to wait.
+  const [stats, niz] = await Promise.all([getSeasonStats(requested), getRunningNiz()])
 
   // A voditelj with no Member row has no dancer to show. The panel then says so
   // and prints the SEASON's numbers, which are facts they can still use.
@@ -95,6 +99,10 @@ export default async function LeaderboardPage({
       initials: stats.initials,
       myMemberId: me?.id ?? null,
       confirmed,
+      // **The Moreška list only.** An Experience is not a link in the chain
+      // (CONTEXT.md → *Niz*), so a flame beside a nickname on the Experience
+      // ranking would be a number from the list next door.
+      niz: kind === 'moreska' ? niz : {},
     }
     const ranked = rankDancers({ rows: stats.rows, ...common })
     rankings.set(kind, ranked)

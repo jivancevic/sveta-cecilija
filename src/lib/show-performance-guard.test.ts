@@ -73,6 +73,8 @@ export const ALLOW_LIST: Record<string, string> = {
     'Roster read + write path (#438): the MCP tools cover EVERY performance of the season, public or not (ADR-0024) — a voditelj dictates a postava for a ship call exactly as for a Redovna, and filtering on the predicate would hide those evenings from the connector. Both reads are behind an OAuth token whose user is re-checked for `moreska` on every call, and the answers carry no capacity, no sales and no buyer.',
   'src/lib/app/stats-data.ts':
     'Roster read (#437): the season scoreboard counts EVERY confirmed performance, public or not (ADR-0024) — a dancer who danced eight ship calls danced eight performances. Scoped to one calendar year, behind the /app access decision, and it surfaces nothing to a buyer.',
+  'src/lib/app/niz-data.ts':
+    'Roster read (#628): the niz is a run of confirmed performances, public or not (ADR-0024) — a dancer who was in the postava of a ship call did not miss that evening, and filtering on the predicate would break every niz that crosses one. Behind the /app access decision; it returns ids and counts, never a venue, a seat or a buyer.',
   'src/lib/app/dancer-season-data.ts':
     'Roster read (#608): a season profile counts one dancer\'s own confirmed performances, public or not (ADR-0024) — a ship call they were in the postava for is an evening they danced. Behind the /app access decision, and it surfaces nothing to a buyer: a non-public evening reaches the screen as the word "Vanredna" with no venue and no client, which is the register a dancer reads (CONTEXT.md).',
   'src/app/api/shows/[id]/move-to-indoor/route.ts':

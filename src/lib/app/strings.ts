@@ -32,6 +32,24 @@ import { LINEUP_ROLE_LABELS } from '@/lib/moreskant-profile'
 // and a value import either way would be a cycle.
 import type { MemberFilter } from './members-screen'
 
+/**
+ * "7 moreški": a count and the Croatian form that follows it (#628).
+ *
+ * The same three forms `pluralize` in `roster-loaders.ts` picks between, and a
+ * deliberate second copy of that ONE line rather than an import: that module
+ * imports this file, so a value import back would be a cycle. Two callers here
+ * needed it and each had grown its own four-branch cascade, which is a worse
+ * copy than this one.
+ */
+function croatianPlural(n: number, forms: { one: string; few: string; many: string }): string {
+  const mod100 = Math.abs(n) % 100
+  const mod10 = Math.abs(n) % 10
+  if (mod100 >= 11 && mod100 <= 14) return `${n} ${forms.many}`
+  if (mod10 === 1) return `${n} ${forms.one}`
+  if (mod10 >= 2 && mod10 <= 4) return `${n} ${forms.few}`
+  return `${n} ${forms.many}`
+}
+
 export const APP_STRINGS = {
   /** The product name: the manifest, the header and the browser tab all use it. */
   name: 'Cecilija',
@@ -80,6 +98,15 @@ export const APP_STRINGS = {
       n === 1 ? 'fali još 1 crni' : `fale još ${n} ${n < 5 ? 'crna' : 'crnih'}`,
     shortBili: (n: number) =>
       n === 1 ? 'fali još 1 bili' : `fale još ${n} ${n < 5 ? 'bila' : 'bilih'}`,
+    /**
+     * The niz, said out loud (#628).
+     *
+     * A flame means nothing to a screen reader, and "vatrica 7" means less. The
+     * glyph and the digits are both `aria-hidden` so this is read once. The
+     * forms are GENITIVE, because they follow "od".
+     */
+    flame: (n: number) =>
+      `niz od ${croatianPlural(n, { one: 'moreške', few: 'moreške', many: 'moreški' })}`,
     /** The sheet's way out, for a screen reader; the scrim is the visible one. */
     sheetClose: 'Zatvori',
     /**
@@ -858,13 +885,22 @@ export const APP_STRINGS = {
      * Two words say the same thing and read as a sentence.
      */
     sideNone: 'još nijedan',
-    /** The record, across every season including the one being read. */
-    record: 'Najbolja sezona',
-    recordValue: (count: number, season: number) => `${count} (${season}.)`,
-    /** When the record IS the season on the screen. */
-    recordCurrent: 'Ovo ti je najbolja sezona.',
-    recordCurrentOther: 'Ovo mu je najbolja sezona.',
-    recordNone: 'još nema',
+    /**
+     * The record (#628), across every season: the longest niz.
+     *
+     * It took "Najbolja sezona"'s place, and the swap is the point. A best
+     * season is a number that can only be beaten once a year and is settled by
+     * August; a longest niz is a record somebody can break next Wednesday,
+     * which is what a record on a dancer's own profile is for.
+     */
+    niz: 'Najduži niz',
+    nizValue: (count: number) =>
+      `${croatianPlural(count, { one: 'moreška', few: 'moreške', many: 'moreški' })} zaredom`,
+    /** When the record IS the run still going. */
+    nizCurrent: 'I još traje.',
+    nizNone: 'još nema',
+    /** What the flame means, said once under the list rather than on every row. */
+    nizLegend: 'Vatrica uz nadimak: niz od barem 3 moreške koji još traje.',
     /** The list of evenings danced. */
     evenings: 'Nastupi',
     eveningsCount: { one: 'nastup', few: 'nastupa', many: 'nastupa' },

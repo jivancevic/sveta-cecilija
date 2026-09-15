@@ -9,6 +9,7 @@ import { Card } from './Card'
 import { Chip } from './Chip'
 import { DateDisc } from './DateDisc'
 import { FilterChips } from './FilterChips'
+import { Flame } from './Flame'
 import { KindChip } from './KindChip'
 import { Seasons } from './Seasons'
 import { Hero } from './Hero'
@@ -211,6 +212,23 @@ describe('RoleMark', () => {
       // A mark beside a name needs none: the name is already saying it.
       expect(render(h(RoleMark, { army: 'crni', role: 'crni' }))).not.toContain('aria-label')
     })
+  })
+})
+
+describe('Flame', () => {
+  it('draws the number beside the glyph in a row and inside it on the profile', () => {
+    const row = render(h(Flame, { count: 5 }))
+    expect(row).toContain('ui-flame')
+    expect(row).not.toContain('ui-flame--lg')
+    expect(row).toContain('>5<')
+    expect(render(h(Flame, { count: 5, large: true }))).toContain('ui-flame--lg')
+  })
+
+  it('says the niz out loud once, because a flame says nothing', () => {
+    const row = render(h(Flame, { count: 7 }))
+    expect(row).toContain(APP_STRINGS.ui.flame(7))
+    // The glyph and the digits are both hidden, so it is not read twice.
+    expect(row.match(/aria-hidden/g)?.length).toBe(2)
   })
 })
 

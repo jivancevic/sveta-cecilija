@@ -1,8 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  bestSeason,
   dancerEvenings,
-  seasonCounts,
   toDancerIdentity,
   type DancerSeasonLineupRow,
   type DancerSeasonPerformance,
@@ -116,56 +114,5 @@ describe('dancerEvenings', () => {
         memberId: 'm1',
       }),
     ).toHaveLength(1)
-  })
-})
-
-describe('seasonCounts', () => {
-  const evenings = [
-    { date: '2026-07-04', kind: 'redovna' as const },
-    { date: '2026-08-11', kind: 'dmc' as const },
-    { date: '2026-08-12', kind: 'experience' as const },
-    { date: '2024-07-04', kind: 'redovna' as const },
-  ]
-
-  it('counts the Moreška list’s kinds and leaves the Experience out', () => {
-    expect(seasonCounts(evenings)).toEqual([
-      { season: 2026, count: 2 },
-      { season: 2024, count: 1 },
-    ])
-  })
-
-  it('counts the Experience list on its own when asked', () => {
-    expect(seasonCounts(evenings, 'experience')).toEqual([{ season: 2026, count: 1 }])
-  })
-})
-
-describe('bestSeason', () => {
-  it('is the highest count, with the year it belongs to', () => {
-    expect(bestSeason([{ season: 2026, count: 13 }, { season: 2024, count: 18 }], 2026)).toEqual({
-      season: 2024,
-      count: 18,
-      isCurrent: false,
-    })
-  })
-
-  it('counts the CURRENT season, and says so', () => {
-    // Waiting for January to admit this is somebody's best year would make the
-    // one thing the record can tell a dancer arrive after it stopped mattering.
-    expect(bestSeason([{ season: 2026, count: 21 }, { season: 2024, count: 18 }], 2026)).toEqual({
-      season: 2026,
-      count: 21,
-      isCurrent: true,
-    })
-  })
-
-  it('gives a tie to the most recent season', () => {
-    expect(
-      bestSeason([{ season: 2026, count: 18 }, { season: 2024, count: 18 }], 2026)?.season,
-    ).toBe(2026)
-  })
-
-  it('is null for a dancer who has never danced', () => {
-    expect(bestSeason([], 2026)).toBeNull()
-    expect(bestSeason([{ season: 2026, count: 0 }], 2026)).toBeNull()
   })
 })

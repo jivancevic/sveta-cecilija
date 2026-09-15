@@ -3,7 +3,8 @@ import { APP_STRINGS, KIND_LABELS, ROLE_LABELS, dayAndMonth, weekdayLabel } from
 import { MARK_OF_ROLE, type MyStanding, type RivalNews } from '@/lib/app/leaderboard-rank'
 import type { DancerProfile } from '@/lib/app/dancer-season-data'
 import type { MySeasonMonth } from '@/lib/app/my-season-loaders'
-import { Card, CountUp, List, ListRow, Ring, RoleMark, Section } from '../../ui'
+import { flameNiz } from '@/lib/app/niz'
+import { Card, CountUp, Flame, List, ListRow, Ring, RoleMark, Section } from '../../ui'
 import { StandingCard } from './StandingCard'
 
 // One moreškant's season, and Moja sezona, which is this same screen with the
@@ -207,7 +208,7 @@ export function DancerProfileView({
   /** Who they went past on it, or who went past them; the reader's own only. */
   rival?: RivalNews | null
 }) {
-  const { identity, season, evenings, record } = profile
+  const { identity, season, evenings, niz } = profile
   // The main list is the one the screen is built around; the other is a line.
   const main = rings.find((r) => r.kind === 'moreska') ?? rings[0]
   const side = rings.filter((r) => r !== main)
@@ -262,13 +263,24 @@ export function DancerProfileView({
           this screen used to be a full-width surface of the same weight — the
           sentence, two rings, the record, its footnote — and when everything is
           lifted nothing is. The cards are now the two things a season is
-          measured in; the record is a fact under them. */}
-      <p className="app__pf-record">
-        <span>{S.record}</span>
-        <b>{record ? S.recordValue(record.count, record.season) : S.recordNone}</b>
-        {record?.isCurrent && (
-          <i>{mine ? S.recordCurrent : S.recordCurrentOther}</i>
-        )}
+          measured in; the record is a fact under them.
+
+          Since #628 the record is the longest NIZ, and this is the one place
+          in the app with room for the big flame: the number sits INSIDE the
+          glyph here and beside it in a list row, which is the same decision
+          Quizlet, Mimo and Numo all made at these two sizes. A dancer who has
+          never been in a confirmed postava gets the line and no flame — a
+          flame with a nought in it is not a record. */}
+      <p className="app__pf-niz">
+        {/* The same threshold the list applies (`flameNiz`), so a record of one
+            or two is a line of words rather than a 46px flame with a "1" in
+            it. Unlike the list, the profile draws it for a FINISHED record too:
+            this is the one place a run that is over is still the fact on the
+            screen, and "I još traje." under it is what separates the two. */}
+        {flameNiz(niz.length) !== null && <Flame count={niz.length} large />}
+        <span>{S.niz}</span>
+        <b>{niz.length > 0 ? S.nizValue(niz.length) : S.nizNone}</b>
+        {niz.running && <i>{S.nizCurrent}</i>}
       </p>
 
       <Section title={S.evenings} aside={pluralize(evenings.length, S.eveningsCount)} />

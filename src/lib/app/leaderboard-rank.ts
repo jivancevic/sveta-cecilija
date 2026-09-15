@@ -20,7 +20,10 @@
 //   - equal counts SHARE a rank and the next rank skips (1, 1, 3): a season is
 //     not a race with a photo finish, and inventing an order inside a tie would
 //     make up a fact the lineups do not contain,
-//   - no streaks, ever.
+//   - a streak is NOT one of the season's numbers. `niz` arrives here from its
+//     own module (`niz.ts`) and its own read, because it crosses seasons and
+//     everything else in here is one season's; it rides on a row rather than
+//     being ranked by, and no list is ever ordered by it (#628).
 
 import { ARMY_OF_ROLE, isDanceRole, type LineupRole } from '@/lib/moreskant-profile'
 import { STAT_ROLES, type StatRole } from '@/lib/lineup/stats'
@@ -198,6 +201,17 @@ export interface RankRow {
    * and a crown drawn from a profile would be a crown nobody was given.
    */
   title: null
+  /**
+   * The niz that is still running: confirmed moreške in a row, counted back
+   * from the most recent one (#628, CONTEXT.md → *Niz*).
+   *
+   * **Zero for a broken run, not its old length.** A flame is a statement about
+   * form and it is only ever drawn while the run is going, so what a dancer did
+   * before a gap is the profile's business and never the list's. The threshold
+   * is `flameNiz`'s; this row carries the raw number so the two screens cannot
+   * disagree about where it is.
+   */
+  niz: number
   /** The viewer's own row. */
   me: boolean
   /** Danced every confirmed evening of this list's kinds (and there was one). */
@@ -227,6 +241,14 @@ export function rankDancers(input: {
   confirmed?: number
   /** Which chip is on; `svi` (everybody, every evening) by default. */
   filter?: BoardFilter
+  /**
+   * `memberId` → their running niz; a missing key reads as none (#628).
+   *
+   * Handed in rather than derived, because a niz crosses seasons and every
+   * other number in this module is one season's: deriving it here would mean
+   * this function reading rows its own caller deliberately scoped to a year.
+   */
+  niz?: Record<string, number>
 }): RankRow[] {
   const kinds = kindsOf(input.kind)
   const mine = input.myMemberId == null ? null : String(input.myMemberId)
@@ -284,6 +306,7 @@ export function rankDancers(input: {
       army: entry.army,
       initials: input.initials?.[memberId] ?? '',
       title: null,
+      niz: input.niz?.[memberId] ?? 0,
       me: mine !== null && memberId === mine,
       // Only where the count IS the season. Under a title chip the number is
       // how many crowns somebody wore, and "wore the crown every evening of the
