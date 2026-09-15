@@ -36,6 +36,12 @@ export interface RosterViewer {
    * headcounts it has no part in. Defaults to `voditelj`.
    */
   armyCounts?: boolean
+  /**
+   * Read the confirmed postave's composition ("7/9", #634). Moreška's past list
+   * is the one screen that draws it, and it is one more query, so it is asked
+   * for rather than always on.
+   */
+  lineupCounts?: boolean
 }
 
 export interface RosterRepo {

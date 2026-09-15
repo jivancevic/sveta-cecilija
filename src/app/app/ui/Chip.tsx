@@ -16,7 +16,7 @@
 // is `green` rather than `yes`-filled — a filled green in this app is the
 // Dolazim button, and a chip that wears a button's skin is read as one.
 
-export type ChipTone = 'plain' | 'gold' | 'warn' | 'outline' | 'green'
+export type ChipTone = 'plain' | 'gold' | 'warn' | 'outline' | 'green' | 'red'
 
 export interface ChipProps extends React.HTMLAttributes<HTMLSpanElement> {
   tone?: ChipTone

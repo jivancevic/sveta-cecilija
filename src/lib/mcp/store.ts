@@ -30,6 +30,7 @@ import {
   payloadBulkDeps,
   type BulkCreatePayload,
 } from '@/lib/performance-bulk-create'
+import { SHOWN_PERFORMANCE_WHERE, isShownKind } from '@/lib/show-performance'
 import type { Venue } from '@/lib/venues'
 import type {
   McpAttendanceRow,
@@ -101,10 +102,14 @@ export function toMcpMoreskant(
 }
 
 export function createMcpStore(payload: McpPayload, user?: unknown): McpStore {
+  // Every read here carries the shown-kind rule (#635): the connector is a
+  // roster surface (ADR-0024), so a kind Cecilija does not show is one it does
+  // not dictate a postava into either — and `set_lineup` reaches a performance
+  // through `getPerformance`, so refusing it there refuses the write too.
   const shows = async (where: Record<string, unknown>) => {
     const res = await payload.find({
       collection: 'shows',
-      where,
+      where: { and: [where, SHOWN_PERFORMANCE_WHERE] },
       sort: 'date',
       limit: 1000,
       depth: 0,
@@ -130,7 +135,7 @@ export function createMcpStore(payload: McpPayload, user?: unknown): McpStore {
           depth: 0,
           overrideAccess: true,
         })
-        return doc ? toMcpPerformance(doc) : null
+        return doc && isShownKind(doc.kind ?? 'redovna') ? toMcpPerformance(doc) : null
       } catch {
         // A bad id from a tool call is "that izvedba does not exist", not a 500.
         return null

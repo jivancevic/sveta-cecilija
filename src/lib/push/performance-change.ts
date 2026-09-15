@@ -25,6 +25,7 @@ import { KIND_LABELS, PUSH_MESSAGES } from '@/lib/app/strings'
 import { performancePlace } from '@/lib/app/performance-place'
 import type { PerformanceFacts } from '@/lib/app/performance-facts'
 import { showStartMs } from '@/lib/show-time'
+import { isShownKind } from '@/lib/show-performance'
 import { performanceUrl, untilStartTtlSeconds } from './recipients'
 import type { PushMessage } from './send'
 
@@ -138,6 +139,13 @@ export function decidePerformanceNotification(input: {
   const { previous, next, nowMs } = input
   const changed = previous ? diffPerformance(previous, next) : []
   const moved = startMoved(changed)
+
+  // An evening of a kind Cecilija does not show notifies nobody either (#635),
+  // and this one is not only tidiness: every one of these messages carries a
+  // deep link into Stanje, and Stanje answers 404 for a koncert. A push whose
+  // link is a dead end is worse than no push. Decided here rather than in the
+  // hook so both messages are covered by one rule and a test can reach it.
+  if (!isShownKind(next.kind)) return { kind: 'none', changed, startMoved: moved }
 
   // Story 20, the rule above every other rule here: an evening that has already
   // begun (or begun and finished) notifies nobody, create or update alike.

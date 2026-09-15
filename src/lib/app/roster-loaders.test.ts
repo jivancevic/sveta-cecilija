@@ -10,10 +10,11 @@ import {
   loadSeasonPerformances,
   pickHeroPerformances,
   pickNextPerformance,
+  attachPostavaCounts,
   splitSeasonPerformances,
   toRosterPerformance,
 } from './roster-loaders'
-import { showStartMs } from '@/lib/show-time'
+import { SHOW_GRACE_MS, showStartMs } from '@/lib/show-time'
 
 /** A raw Payload doc, the shape `payload.find({collection:'shows'})` returns. */
 function doc(over: Record<string, unknown> = {}) {
@@ -114,13 +115,14 @@ describe('splitSeasonPerformances — the Zagreb boundary', () => {
     expect(past.map((p) => p.id)).toEqual(['2'])
   })
 
-  it('moves a performance to past the moment it starts (no grace window)', () => {
+  it('keeps a performance next for an hour after it starts (#633)', () => {
     const exactly = at('2026-08-05', '21:00')
     expect(splitSeasonPerformances([evening], exactly).upcoming).toHaveLength(1)
-    expect(splitSeasonPerformances([evening], exactly + 1).past).toHaveLength(1)
-    // The buyer path keeps a show listed for an hour (SHOW_GRACE_MS); the
-    // roster deliberately does not.
-    expect(splitSeasonPerformances([evening], exactly + 60 * 60 * 1000).upcoming).toHaveLength(0)
+    expect(splitSeasonPerformances([evening], exactly + 1).upcoming).toHaveLength(1)
+    // The last millisecond of the grace, and the first one after it. The roster
+    // borrows the buyer path's window rather than spelling an hour again.
+    expect(splitSeasonPerformances([evening], exactly + SHOW_GRACE_MS).upcoming).toHaveLength(1)
+    expect(splitSeasonPerformances([evening], exactly + SHOW_GRACE_MS + 1).past).toHaveLength(1)
   })
 
   it('splits at the real Zagreb offset on either side of the DST switch', () => {
@@ -132,10 +134,9 @@ describe('splitSeasonPerformances — the Zagreb boundary', () => {
     expect(summer.startMs).toBe(Date.parse('2026-07-15T18:00:00Z'))
     expect(winter.startMs).toBe(Date.parse('2026-11-07T19:00:00Z'))
     for (const row of [summer, winter]) {
-      // Same boundary as above: still upcoming at the start instant, past one
-      // millisecond later.
+      // Same boundary as above: upcoming through the grace, past after it.
       expect(splitSeasonPerformances([row], row.startMs).upcoming).toHaveLength(1)
-      expect(splitSeasonPerformances([row], row.startMs + 1).past).toHaveLength(1)
+      expect(splitSeasonPerformances([row], row.startMs + SHOW_GRACE_MS + 1).past).toHaveLength(1)
     }
     // The switch day itself (2026-10-25) is already CET.
     const switchDay = toRosterPerformance(doc({ id: 'x', date: '2026-10-25', time: '20:00' }))
@@ -219,7 +220,7 @@ describe('splitSeasonPerformances — the ±7-day cancelled window', () => {
 describe('loadSeasonPerformances', () => {
   const find = (docs: Record<string, unknown>[]) => vi.fn().mockResolvedValue({ docs })
 
-  it('asks for the whole calendar year of the current season, every kind', async () => {
+  it('asks for the whole calendar year of the current season, every kind it shows', async () => {
     const f = find([])
     await loadSeasonPerformances({ find: f, now: () => new Date('2026-08-05T10:00:00.000Z') })
     const args = f.mock.calls[0][0]
@@ -228,10 +229,23 @@ describe('loadSeasonPerformances', () => {
       and: [
         { date: { greater_than_equal: '2026-01-01T00:00:00.000Z' } },
         { date: { less_than: '2027-01-01T00:00:00.000Z' } },
+        { kind: { not_in: ['koncert'] } },
       ],
     })
     // No public filter: the roster covers a ship call as much as a Redovna.
     expect(JSON.stringify(args.where)).not.toContain('isPublic')
+  })
+
+  it('drops a koncert from the season even when the query hands one back (#635)', async () => {
+    const f = find([
+      { id: '1', date: '2026-07-01T12:00:00.000Z', time: '21:30', kind: 'redovna', isPublic: true, venue: 'ljetno-kino' },
+      { id: '2', date: '2026-07-02T12:00:00.000Z', time: '20:30', kind: 'koncert', isPublic: false, location: 'Sv. Justina' },
+    ])
+    const result = await loadSeasonPerformances({
+      find: f,
+      now: () => new Date('2026-06-01T10:00:00.000Z'),
+    })
+    expect([...result.upcoming, ...result.past].map((p) => p.id)).toEqual(['1'])
   })
 
   it('returns the season year alongside the two halves', async () => {
@@ -670,5 +684,65 @@ describe('countLabel', () => {
     expect(countLabel(21)).toBe('21 izvedba')
     expect(countLabel(22)).toBe('22 izvedbe')
     expect(countLabel(25)).toBe('25 izvedbi')
+  })
+})
+
+describe('attachPostavaCounts — who danced, per army (#634)', () => {
+  const evening = (id: string, confirmed: boolean) =>
+    toRosterPerformance(doc({ id, date: '2026-07-14', lineupConfirmed: confirmed }))
+
+  it('counts the two armies off the confirmed postava', () => {
+    const [row] = attachPostavaCounts(
+      [evening('1', true)],
+      [
+        { performanceId: '1', role: 'crni' },
+        { performanceId: '1', role: 'crni_kralj' },
+        { performanceId: '1', role: 'otmanovic' },
+        { performanceId: '1', role: 'bili' },
+        { performanceId: '1', role: 'bili_kralj' },
+      ],
+    )
+    expect(row!.postava).toEqual({ crni: 3, bili: 2 })
+  })
+
+  it('leaves the bula and a voditelj out of both numbers', () => {
+    const [row] = attachPostavaCounts(
+      [evening('1', true)],
+      [
+        { performanceId: '1', role: 'crni' },
+        { performanceId: '1', role: 'bula' },
+        { performanceId: '1', role: 'voditelj' },
+      ],
+    )
+    expect(row!.postava).toEqual({ crni: 1, bili: 0 })
+  })
+
+  it('says nothing at all about an evening nobody confirmed', () => {
+    // A draft is not a record of who danced (story 34), so the row carries no
+    // number and the screen draws "Nema popisa" instead.
+    const [row] = attachPostavaCounts(
+      [evening('1', false)],
+      [{ performanceId: '1', role: 'crni' }],
+    )
+    expect(row!.postava).toBeNull()
+  })
+
+  it('gives a confirmed evening with an empty army a zero, not a hole', () => {
+    const [row] = attachPostavaCounts([evening('1', true)], [])
+    expect(row!.postava).toEqual({ crni: 0, bili: 0 })
+  })
+
+  it('never lets one evening\'s rows reach another', () => {
+    const rows = attachPostavaCounts(
+      [evening('1', true), evening('2', true)],
+      [
+        { performanceId: '1', role: 'crni' },
+        { performanceId: '2', role: 'bili' },
+      ],
+    )
+    expect(rows.map((r) => r.postava)).toEqual([
+      { crni: 1, bili: 0 },
+      { crni: 0, bili: 1 },
+    ])
   })
 })

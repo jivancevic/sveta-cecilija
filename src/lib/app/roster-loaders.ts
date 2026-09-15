@@ -21,9 +21,15 @@
 
 import { seasonYear } from '@/lib/member/season'
 import { toIsoDate } from '@/lib/to-iso-date'
-import { isPublicPerformance, type PerformanceKind } from '@/lib/show-performance'
-import { showStartMs } from '@/lib/show-time'
+import {
+  SHOWN_PERFORMANCE_WHERE,
+  isPublicPerformance,
+  isShownKind,
+  type PerformanceKind,
+} from '@/lib/show-performance'
+import { SHOW_GRACE_MS, showStartMs } from '@/lib/show-time'
 import type { ShowsFind } from '@/lib/show-loaders'
+import { isLineupRole, type LineupRole } from '@/lib/moreskant-profile'
 import {
   moreskantMayAnswer,
   toAttendanceMember,
@@ -32,7 +38,7 @@ import {
   type AttendanceStatus,
 } from '@/lib/attendance/rules'
 import { countArmies, type AttendanceRow } from '@/lib/attendance/army-count'
-import { isDanceTitle, type DanceTitle } from '@/lib/lineup/titles'
+import { armyOfLineupRole, isDanceTitle, type DanceTitle } from '@/lib/lineup/titles'
 import { relationIdString } from '@/lib/payload-relation'
 import { APP_STRINGS, monthLabel } from '@/lib/app/strings'
 import type { Venue } from '@/lib/venues'
@@ -89,6 +95,26 @@ export interface RosterPerformance {
    * a moreškant, who gets the numbers on the detail page instead.
    */
   chip: ArmyChip | null
+  /**
+   * The composition of the CONFIRMED postava: "7/9" on a past row (#634).
+   *
+   * Seven crni and nine bili, who actually danced. Deliberately a second field
+   * rather than a reading of `chip`: the chip is an ATTENDANCE headcount, which
+   * is who said they were coming, and the two numbers differ on most evenings.
+   * A past row that says who danced must come off the postava or it is a
+   * plausible lie.
+   *
+   * Null on every evening without a confirmed postava, past or future, which is
+   * what makes the red "Nema popisa" a property of the row rather than a second
+   * condition on the screen.
+   */
+  postava: PostavaCount | null
+}
+
+/** Who danced, per army. The bula and an Experience's voditelj are in neither. */
+export interface PostavaCount {
+  crni: number
+  bili: number
 }
 
 /** The card chip: two headcounts against two thresholds, nothing else. */
@@ -156,6 +182,7 @@ export function toRosterPerformance(row: Record<string, unknown>): RosterPerform
     myTitle: null,
     canAnswer: false,
     chip: null,
+    postava: null,
   }
 }
 
@@ -164,8 +191,15 @@ export function toRosterPerformance(row: Record<string, unknown>): RosterPerform
  *
  * The boundary is the performance's own start instant in Europe/Zagreb (date +
  * `HH:MM`), not its calendar day: tonight's 21:00 show is upcoming all
- * afternoon. There is no grace window here — unlike the buyer path
- * (`SHOW_GRACE_MS`), a dancer's evening is "past" the moment it begins.
+ * afternoon. It then stays upcoming for {@link SHOW_GRACE_MS} past that start
+ * (#633), the same hour the buyer path holds a show open for, and for the same
+ * kind of reason: the evening a dancer is standing at is the one evening the
+ * hero is looked at, and at 21:00 sharp it used to go blank on them. The
+ * constant is imported rather than re-typed so the two windows cannot drift.
+ *
+ * It changes only WHERE the row is drawn. Whether a dancer may still answer is
+ * `moreskantMayAnswer`, which closes at the start instant with no grace, so
+ * inside the hour the circles are drawn and refused rather than silently live.
  *
  * A cancelled performance survives only within {@link CANCELLED_WINDOW_MS} of
  * now, and stays in whichever half its start time puts it, struck through.
@@ -179,12 +213,9 @@ export function splitSeasonPerformances(
   const visible = rows.filter(
     (p) => !p.cancelled || Math.abs(p.startMs - nowMs) <= CANCELLED_WINDOW_MS,
   )
-  const upcoming = visible
-    .filter((p) => p.startMs >= nowMs)
-    .sort((a, b) => a.startMs - b.startMs)
-  const past = visible
-    .filter((p) => p.startMs < nowMs)
-    .sort((a, b) => b.startMs - a.startMs)
+  const stillNext = (p: RosterPerformance) => p.startMs + SHOW_GRACE_MS >= nowMs
+  const upcoming = visible.filter(stillNext).sort((a, b) => a.startMs - b.startMs)
+  const past = visible.filter((p) => !stillNext(p)).sort((a, b) => b.startMs - a.startMs)
   return { upcoming, past }
 }
 
@@ -236,6 +267,45 @@ export function attachOwnTitles(
       myTitle: p.lineupConfirmed && isDanceTitle(role) ? role : null,
     }
   })
+}
+
+/** One postava row, flattened to what a count needs. */
+export interface PostavaRoleRow {
+  performanceId: string
+  role: LineupRole
+}
+
+/**
+ * Fold the confirmed postava's composition into the rows (#634).
+ *
+ * One pass over every lineup row of the season, keyed by performance, rather
+ * than a query per evening: the season list draws forty rows and a read per row
+ * is forty round trips for two digits each.
+ *
+ * **Only a confirmed evening gets a count.** An unconfirmed lineup is a draft
+ * (story 34) and saying "7/9" off one would put a number nobody has stood
+ * behind on a screen every dancer reads. A confirmed postava with nobody in an
+ * army counts zero there, which is a fact and not a missing list.
+ *
+ * The bula is in neither number, and neither is an Experience's voditelj:
+ * `armyOfLineupRole` answers 'bula' and null for those, and "7/9" is the two
+ * armies (Josip: "7 crnih i 9 bilih").
+ */
+export function attachPostavaCounts(
+  rows: RosterPerformance[],
+  lineups: readonly PostavaRoleRow[],
+): RosterPerformance[] {
+  const counts = new Map<string, PostavaCount>()
+  for (const row of lineups) {
+    const army = armyOfLineupRole(row.role)
+    if (army !== 'crni' && army !== 'bili') continue
+    const at = counts.get(row.performanceId) ?? { crni: 0, bili: 0 }
+    at[army] += 1
+    counts.set(row.performanceId, at)
+  }
+  return rows.map((p) =>
+    p.lineupConfirmed ? { ...p, postava: counts.get(p.id) ?? { crni: 0, bili: 0 } } : p,
+  )
 }
 
 /**
@@ -432,6 +502,14 @@ export interface SeasonPerformancesDeps {
    * Izvedbe must not start showing headcount chips to the blagajna.
    */
   armyCounts?: boolean
+  /**
+   * Whether to read the confirmed postave's composition ("7/9", #634).
+   *
+   * One more query, and only for the screen that draws it: Moreška's past list.
+   * Off everywhere else for the same reason `armyCounts` is a flag — Izvedbe
+   * has no use for it and must not start paying for it.
+   */
+  lineupCounts?: boolean
 }
 
 /**
@@ -450,6 +528,9 @@ export async function loadSeasonPerformances(
       and: [
         { date: { greater_than_equal: `${year}-01-01T00:00:00.000Z` } },
         { date: { less_than: `${year + 1}-01-01T00:00:00.000Z` } },
+        // A kind Cecilija does not show is not in the season at all (#635):
+        // this one read is Moreška, Izvedbe and Početna's hero card.
+        SHOWN_PERFORMANCE_WHERE,
       ],
     },
     sort: 'date',
@@ -457,7 +538,11 @@ export async function loadSeasonPerformances(
     depth: 0,
   })
 
-  let rows = result.docs.map(toRosterPerformance)
+  // The `where` above already asks for it; this is the same rule where a test
+  // can reach it, in the niz-data.ts pattern — the query is what makes the read
+  // small and the predicate is what makes it right, and a rule that only ever
+  // exists in SQL is a rule nothing asserts.
+  let rows = result.docs.map(toRosterPerformance).filter((p) => isShownKind(p.kind))
 
   // The viewer's own answers, one query for the whole season. A voditelj with no
   // Member link (a non-dancing voditelj, story 15) skips it entirely.
@@ -543,6 +628,29 @@ export async function loadSeasonPerformances(
     const members: AttendanceMember[] = roster.docs.map(toAttendanceMember)
 
     rows = attachArmyChips(rows, attendance, members)
+  }
+
+  // The composition of a confirmed postava (#634): one query for the whole
+  // season, scoped to the evenings that HAVE one, so an unconfirmed draft is
+  // never read at all rather than read and then discarded.
+  if (deps.lineupCounts) {
+    const confirmedIds = rows.filter((p) => p.lineupConfirmed).map((p) => p.id)
+    if (confirmedIds.length > 0) {
+      const postave = await deps.find({
+        collection: 'lineups',
+        where: { performance: { in: confirmedIds } },
+        limit: 5000,
+        depth: 0,
+      })
+      const lineupRows: PostavaRoleRow[] = []
+      for (const row of postave.docs) {
+        const performanceId = relationIdString(row.performance)
+        if (performanceId && isLineupRole(row.role)) {
+          lineupRows.push({ performanceId, role: row.role })
+        }
+      }
+      rows = attachPostavaCounts(rows, lineupRows)
+    }
   }
 
   return { year, nowMs: now.getTime(), ...splitSeasonPerformances(rows, now.getTime()) }

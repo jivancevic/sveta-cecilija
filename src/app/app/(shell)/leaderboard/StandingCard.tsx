@@ -47,13 +47,17 @@ export function StandingCard({
   animate?: boolean
 }) {
   const counted = (n: number) => pluralize(n, APP_STRINGS.moreska.count)
-  // The track fills towards the next place. At the top it is full, which reads
-  // as "there is nothing above this" rather than as a bar that failed to load.
-  const goal =
-    standing.toNextPlace === null
-      ? standing.performances
-      : standing.performances + standing.toNextPlace
-  const filled = goal > 0 ? Math.min(1, standing.performances / goal) : 1
+  // **The track IS the sentence above it** (#633). It used to fill towards the
+  // next PLACE while the line over it talked about a percentile, so two
+  // different numbers were stacked on top of each other and Josip asked what
+  // the bar meant. It is the percentile now, and the "još 1 nastup do 14.
+  // mjesta" line below keeps its own words and gets no bar of its own.
+  //
+  // `betterThan` is deliberately null rather than 0 for a reader nobody is
+  // behind, so the empty track is the whole of what that reader is told. The
+  // leader is the other null and fills it.
+  const leader = standing.rank === 1
+  const filled = standing.betterThan !== null ? standing.betterThan / 100 : leader ? 1 : 0
 
   return (
     <Card className="app__lb-you">
@@ -72,9 +76,15 @@ export function StandingCard({
           {/* Q6: the same rank, said the way a person hears it. Beside the
               number and never instead of it — the rank is what gets talked
               about at a rehearsal. */}
-          <span>
-            {standing.betterThan === null ? S.mine.leading : S.mine.betterThan(standing.betterThan)}
-          </span>
+          {/* Null and last is not null and first (#633): "vodiš ljestvicu"
+              belongs to the dancer at the top, and the one at the bottom, whom
+              `betterThan` spares a "bolji si od 0%", is told nothing rather
+              than told they are winning. */}
+          {standing.betterThan !== null ? (
+            <span>{S.mine.betterThan(standing.betterThan)}</span>
+          ) : (
+            leader && <span>{S.mine.leading}</span>
+          )}
         </span>
         {/* Null when the reader did not move: a zero is not news, and printing
             it every week turns the one piece of news on the screen into

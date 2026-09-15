@@ -93,8 +93,8 @@ describe('parseNonPublicPerformance', () => {
     for (const kind of NON_PUBLIC_KINDS) expect(res.error).toContain(kind)
   })
 
-  it('never offers redovna as a kind', () => {
-    expect(NON_PUBLIC_KINDS).toEqual(['dmc', 'gulliver', 'koncert', 'experience', 'ostalo'])
+  it('never offers redovna as a kind, nor a koncert (#635)', () => {
+    expect(NON_PUBLIC_KINDS).toEqual(['dmc', 'gulliver', 'experience', 'ostalo'])
   })
 
   it('refuses a booking with no place, in Croatian', () => {
@@ -283,8 +283,13 @@ describe('parsePublicPerformanceEdit', () => {
   })
 
   it('needs no date at all, because Uredi does not send one', () => {
-    const parsed = parsePublicPerformanceEdit({ time: '21:00', kind: 'koncert', venue: 'zimsko-kino' })
+    const parsed = parsePublicPerformanceEdit({ time: '21:00', kind: 'ostalo', venue: 'zimsko-kino' })
     expect(parsed.ok).toBe(true)
+  })
+
+  it('refuses a kind Cecilija hides, so a saved row cannot vanish (#635)', () => {
+    const parsed = parsePublicPerformanceEdit({ time: '21:00', kind: 'koncert', venue: 'zimsko-kino' })
+    expect(parsed.ok).toBe(false)
   })
 
   it('still refuses a bad time, a bad kind and a bad venue', () => {

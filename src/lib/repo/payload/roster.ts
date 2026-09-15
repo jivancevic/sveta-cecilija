@@ -39,6 +39,7 @@ export function createRosterRepo(load: () => Promise<PayloadClient> = payloadCli
         memberId: viewer.memberId ?? null,
         voditelj: viewer.voditelj === true,
         armyCounts: viewer.armyCounts,
+        lineupCounts: viewer.lineupCounts,
       })
     },
 

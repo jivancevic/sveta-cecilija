@@ -2654,6 +2654,75 @@ screen. T1 is the system; everything under it is a screen's own ticket.
 | `src/app/app/ui/` | the shared shapes, fifteen of them, plus `ui.css` |
 | `src/lib/app/screens.ts` | which screens exist, unchanged by the redesign |
 
+### Vertical space: the parent's gap, never a child's margin (#627, #634, #636)
+
+**The rule, and it holds on every `/app` screen.** The distance between two
+things comes from a `gap` on the element that CONTAINS them. A block never
+composes the space above or below itself with its own `margin`.
+
+Two tokens, both on `.app` (`src/app/app/app.css`):
+
+| | |
+|---|---|
+| `--gap: 20px` | between two widgets: card to card, section to section |
+| `--gapTight: 12px` | between the blocks inside one widget |
+
+20 and not 16, because the distance between two cards is what reads as cramped
+on a phone: 16 is close enough to a card's own 18px padding that two cards read
+as one surface with a seam in it.
+
+**Why it is a rule and not a preference.** Josip has reported cramped widgets
+twice, a few commits apart, on two different screens, and both times the cause
+was the same: a screen whose container had no gap, spacing itself with whatever
+margins its blocks happened to carry, several of which are `0`. A margin is a
+rhythm one screen owns and the next screen forgets; a gap is a rhythm the
+container keeps for anything ever put inside it. #627 gave the gap to the shell
+floor, to Ljestvica and to Stanje; #634 gave it to the Ljestvica tabpanel, which
+is what Moja sezona renders into.
+
+Where a screen's own container has no class to hang a gap on, give it one
+rather than reaching back into the children.
+
+**#636 is the sweep that made it true everywhere**, and the bug it found is
+worth keeping written down, because it is the reason the rule kept being broken
+by screens whose CSS looked finished. `app__col` and `app__cols` — the two
+laptop layouts — were declared **inside `@media (min-width: 1024px)` only**,
+with a comment saying the two-column one "collapses to one column below this
+width by simply not existing there". It did not collapse to one column: below
+1024px both were inert `div`s with no display and no gap, so Prodaja, Obračun,
+Članovi, Korisnici and the two detail screens under them had no rhythm of their
+own at all, and each of their blocks pushed itself down with a margin. A
+container that only exists on a laptop is a container that does not exist,
+because the phone is where this app is read. Both now declare
+`display: flex; flex-direction: column; gap: var(--gap)` at every width, and the
+1024px block adds only the width of one and the second column of the other.
+
+What the sweep converted, and the shape each screen ended up in:
+
+| Container | Was | Is |
+|---|---|---|
+| `.app__col`, `.app__cols` | desktop-only, no gap on a phone | flex column, `--gap`, at every width |
+| `.app__st`, `.app__fin` | `gap: 12px` + `margin-top: 16px` on the wrapper | `gap: var(--gap)`; the floor spaces the wrapper |
+| `.app__lb` | `gap: 28px` | `gap: var(--gap)` |
+| `.app__scan` | `gap: 12px` + a `16px` top inside the bleed shorthand | `gap: var(--gapTight)` |
+| `.app__more-group`, `.app__month-group` | `gap: 10px` + `margin-top: 22px` | `gap: var(--gapTight)`; the floor spaces the groups |
+| `.app__statement`, `.app__partner-season` | eleven child `margin-top`s | flex column, `--gap` |
+| `.app__filters`, `.app__inbox` | `gap: 10px` + a top margin | `gap: var(--gapTight)` |
+| `.app__fin-partners`, `.app__fin-lines` | every item's own `margin-top: 10px` | the list is a column with a gap |
+
+Two exceptions, both deliberate and neither of them rhythm:
+
+- **`.ui-podium:not(.ui-podium--lg)` keeps its `margin-top: 26px`.** That is the
+  clearance the cup standing ABOVE the winner's step needs, so it belongs to the
+  component and would break if a container took it over.
+- **Text-level offsets inside one card stay** — a caption lifted 2px under its
+  figure, a note 6px under a sentence. They are typography, not the distance
+  between two blocks, and a single `gap` cannot express them without flattening
+  the card. The rule is about the rhythm of a screen and of a widget's blocks.
+
+Acceptance for this one is Josip's own iPhone: it is CSS with no behaviour to
+assert, so the suite and the build say only that nothing broke.
+
 ### The follow-ups Josip found on his phone (#592)
 
 Five skin decisions, every one of them settled on the prototype branch

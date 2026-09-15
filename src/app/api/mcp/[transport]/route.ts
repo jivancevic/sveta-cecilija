@@ -151,7 +151,7 @@ const handler = createMcpHandler(
       {
         title: 'Unesi izvedbe',
         description:
-          'Unosi više NEJAVNIH izvedbi odjednom (brodovi, koncerti, ostalo). Redovne izvedbe se ovdje ne unose: one prodaju karte i unose se u administraciji. Ako je i jedan redak neispravan, ne upisuje se nijedan. Moreškanti dobiju jednu skupnu obavijest.',
+          'Unosi više NEJAVNIH izvedbi odjednom (brodovi, Gulliver, ostalo). Redovne izvedbe se ovdje ne unose: one prodaju karte i unose se u administraciji. Ako je i jedan redak neispravan, ne upisuje se nijedan. Moreškanti dobiju jednu skupnu obavijest.',
         inputSchema: {
           rows: z
             .array(

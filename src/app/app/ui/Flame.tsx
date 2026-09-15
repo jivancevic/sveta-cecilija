@@ -37,6 +37,22 @@ function Glyph() {
   )
 }
 
+/**
+ * The flame with no number: a chip's mark (#634).
+ *
+ * The Najduži niz chip on Ljestvica has no role disc to draw and every number
+ * it is about is in the list under it, so the glyph carries the meaning alone.
+ * A separate export rather than an optional `count`, because everywhere else a
+ * flame without its number would be a bug.
+ */
+export function FlameMark({ className }: { className?: string }) {
+  return (
+    <span className={['ui-flame', 'ui-flame--bare', className ?? ''].filter(Boolean).join(' ')}>
+      <Glyph />
+    </span>
+  )
+}
+
 export function Flame({ count, large = false, className }: FlameProps) {
   const classes = ['ui-flame', large ? 'ui-flame--lg' : '', className ?? '']
     .filter(Boolean)

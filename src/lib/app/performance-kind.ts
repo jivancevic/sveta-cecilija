@@ -15,6 +15,14 @@
 // So `experience` reads "Experience" and everything else that is not a redovna
 // still reads "Vanredna" (glossary: *Vanredna izvedba*, *Moreška Experience*).
 //
+// Since #635 *Vanredna* is `dmc`, `gulliver` and `ostalo`: the koncert left it
+// with every other Cecilija surface. The fallback below still catches one, and
+// deliberately — no screen can reach a koncert any more (`SHOWN_PERFORMANCE_WHERE`
+// keeps it out of every read and the detail loader refuses it by id), so this
+// is a total function with an unreachable branch rather than a second opinion
+// about what a koncert is. When the musicians get their screen the branch is
+// where their word goes.
+//
 // The word is the English one on purpose: "Experience" is what the society
 // calls the product, in Croatian conversation included, and *Moreška iskustvo*
 // is the public site's copy rather than the notebook's word.

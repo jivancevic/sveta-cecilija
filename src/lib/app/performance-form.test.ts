@@ -406,13 +406,13 @@ describe('Uredi, on a PUBLIC performance', () => {
     const { deps: d, updated } = deps(REDOVNA, OK_REQUEST, ['tickets'], 40)
     const res = await handleEditPerformance(
       '9',
-      { time: '21:30', kind: 'koncert', venue: 'ljetno-kino' },
+      { time: '21:30', kind: 'ostalo', venue: 'ljetno-kino' },
       d,
     )
 
     expect(res.status).toBe(200)
     expect(updated).toEqual([
-      { id: '9', patch: { time: '21:30', kind: 'koncert', venue: 'ljetno-kino' } },
+      { id: '9', patch: { time: '21:30', kind: 'ostalo', venue: 'ljetno-kino' } },
     ])
   })
 

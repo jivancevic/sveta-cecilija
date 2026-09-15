@@ -31,7 +31,7 @@ export const THEME_STORAGE_KEY = 'cecilija.theme'
 /** The attribute the tokens key off, on `.app` (the `<body>`). */
 export const THEME_ATTRIBUTE = 'data-theme'
 
-/** What a person chooses. `system` is the default and follows the phone. */
+/** What a person chooses. `system` follows the phone; `light` is the default. */
 export type ThemePreference = 'system' | 'light' | 'dark'
 
 /** What the attribute ends up saying. `system` is resolved away before that. */
@@ -51,9 +51,16 @@ export function isThemePreference(value: unknown): value is ThemePreference {
  * version wrote or a person typed into their own devtools, and the honest
  * answer to a word we do not know is the default rather than a crash on the way
  * into the app.
+ *
+ * **The default is `light`, not `system`** (#633). Cecilija is read at a
+ * rehearsal and on a stage at night, and the dark palette was never the one the
+ * screens were drawn against, so a phone left on dark was handing most of the
+ * society a skin nobody designed for. A stored choice still wins, `system` very
+ * much included: the fallback is what an account that has never opened Profil
+ * gets, and nothing else.
  */
 export function readThemePreference(raw: string | null | undefined): ThemePreference {
-  return isThemePreference(raw) ? raw : 'system'
+  return isThemePreference(raw) ? raw : 'light'
 }
 
 /**
@@ -82,5 +89,13 @@ export const DARK_MEDIA_QUERY = '(prefers-color-scheme: dark)'
  * It runs inside `<body>`, so `document.body` exists by the time it executes,
  * which is what lets it write the attribute on the element the tokens live on
  * rather than on `<html>`.
+ *
+ * **It reads three cases, not two** (#633): `light` and `dark` are the choice
+ * itself, the word `system` is the one value that still asks the phone, and
+ * anything else (an empty key, a word from an older version) is the default,
+ * which is `light`. Collapsing the last two would take "Kao sustav" away from
+ * everybody who had chosen it, which is the opposite of what the default change
+ * was for. `readThemePreference` and `resolveTheme` compose to the same answer;
+ * this is those two rules written once more in ES5 for the first paint.
  */
-export const THEME_BOOT_SCRIPT = `(function(){try{var v=localStorage.getItem('${THEME_STORAGE_KEY}');var p=(v==='light'||v==='dark')?v:null;var d=window.matchMedia&&window.matchMedia('${DARK_MEDIA_QUERY}').matches;var t=p||(d?'dark':'light');document.body.setAttribute('${THEME_ATTRIBUTE}',t)}catch(e){}})()`
+export const THEME_BOOT_SCRIPT = `(function(){try{var v=localStorage.getItem('${THEME_STORAGE_KEY}');var d=window.matchMedia&&window.matchMedia('${DARK_MEDIA_QUERY}').matches;var t=(v==='light'||v==='dark')?v:(v==='system'?(d?'dark':'light'):'light');document.body.setAttribute('${THEME_ATTRIBUTE}',t)}catch(e){}})()`

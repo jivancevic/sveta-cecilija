@@ -2,10 +2,11 @@ import { getPayload } from 'payload'
 import config from '@payload-config'
 import { toIsoDate } from '@/lib/to-iso-date'
 import { relationIdString } from '@/lib/payload-relation'
-import type { PerformanceKind } from '@/lib/show-performance'
+import { MORESKA_KINDS, type PerformanceKind } from '@/lib/show-performance'
 import {
   NIZ_WINDOW,
   currentNizByMember,
+  longestNizByMember,
   nizChain,
   type NizLineupRow,
   type NizPerformance,
@@ -47,8 +48,8 @@ function toNizPerformance(doc: Record<string, unknown>): NizPerformance {
  * The `where` and `nizChain` apply the same rules, deliberately: the query is
  * what makes the read small and the pure function is what makes it right, and
  * a predicate that only exists in SQL is a rule nothing tests. The two are not
- * quite identical in their tolerance of a NULL — `not_equals` drops a NULL
- * `kind` or `status` in SQL, while `toNizPerformance` below reads one as
+ * quite identical in their tolerance of a NULL — `in` / `not_equals` drop a
+ * NULL `kind` or `status` in SQL, while `toNizPerformance` below reads one as
  * `redovna` and "not cancelled" — and that gap is unreachable rather than
  * intended: both columns are `required` with a default (`src/collections/
  * Shows.ts`). The looser reading is the safe one either way.
@@ -63,7 +64,7 @@ export async function loadNizChain(limit: number = NIZ_WINDOW): Promise<string[]
       where: {
         and: [
           { lineupConfirmed: { equals: true } },
-          { kind: { not_equals: 'experience' } },
+          { kind: { in: [...MORESKA_KINDS] } },
           { status: { not_equals: 'cancelled' } },
           // The end of TODAY, so an evening danced tonight joins the chain the
           // moment its postava is confirmed rather than the next morning.
@@ -83,25 +84,20 @@ export async function loadNizChain(limit: number = NIZ_WINDOW): Promise<string[]
 }
 
 /**
- * Every dancer's running niz, keyed by member id; a dancer with none is absent.
+ * One chain's lineup rows, flattened to (performance, member).
  *
- * What the two list screens hang their flame off. One read of the chain's
- * lineups rather than one per dancer, because Ljestvica draws seventy rows.
+ * Provably enough rather than hopefully enough: a chain is capped (60 for the
+ * running niz, a season for the longest) and a postava is a couple of dozen
+ * rows at the very most, so this read cannot reach its own limit. A truncated
+ * read would SHORTEN somebody's niz and take their flame away with no error to
+ * notice, which is why the bound is argued rather than guessed.
  */
-export async function getRunningNiz(): Promise<Record<string, number>> {
-  const chain = await loadNizChain()
-  if (chain.length === 0) return {}
-
+async function loadChainLineups(chain: readonly string[]): Promise<NizLineupRow[]> {
   const payload = await getPayload({ config })
   const docs = (
     await payload.find({
       collection: 'lineups',
-      where: { performance: { in: chain } },
-      // Provably enough rather than hopefully enough: the chain is capped at
-      // `NIZ_WINDOW` (60) and a postava is a couple of dozen rows at the very
-      // most, so this read cannot reach its own limit. A truncated read would
-      // SHORTEN somebody's niz and take their flame away with no error to
-      // notice, which is why the bound is argued rather than guessed.
+      where: { performance: { in: [...chain] } },
       limit: 5000,
       depth: 0,
       overrideAccess: true,
@@ -114,9 +110,60 @@ export async function getRunningNiz(): Promise<Record<string, number>> {
     const memberId = relationIdString(doc.member)
     // A `voditelj` line is NOT excluded here and does not need to be: he can
     // only ever appear on an Experience (the lineup routes refuse the role
-    // anywhere else), and no Experience is in the chain.
+    // anywhere else), and no Experience is in any chain.
     if (performanceId && memberId) rows.push({ performanceId, memberId })
   }
+  return rows
+}
 
-  return currentNizByMember(chain, rows)
+/**
+ * Every dancer's running niz, keyed by member id; a dancer with none is absent.
+ *
+ * What the two list screens hang their flame off. One read of the chain's
+ * lineups rather than one per dancer, because Ljestvica draws seventy rows.
+ */
+export async function getRunningNiz(): Promise<Record<string, number>> {
+  const chain = await loadNizChain()
+  if (chain.length === 0) return {}
+  return currentNizByMember(chain, await loadChainLineups(chain))
+}
+
+/**
+ * Every dancer's LONGEST niz inside one season, keyed by member id (#634).
+ *
+ * The Najduži niz chip on `/app/leaderboard/full`. Scoped to the season on
+ * display for the same reason every other number on that screen is: a run that
+ * crossed New Year counts only the part inside the year being ranked, and a
+ * column of digits where one number meant something else would be unreadable.
+ *
+ * The chain is the season's confirmed moreške and is deliberately NOT capped at
+ * `NIZ_WINDOW`: a year is its own bound, and forty evenings is smaller than the
+ * window anyway.
+ */
+export async function getSeasonLongestNiz(year: number): Promise<Record<string, number>> {
+  const payload = await getPayload({ config })
+  const today = todayInZagreb()
+
+  const docs = (
+    await payload.find({
+      collection: 'shows',
+      where: {
+        and: [
+          { lineupConfirmed: { equals: true } },
+          { kind: { in: [...MORESKA_KINDS] } },
+          { status: { not_equals: 'cancelled' } },
+          { date: { greater_than_equal: `${year}-01-01T00:00:00.000Z` } },
+          { date: { less_than: `${year + 1}-01-01T00:00:00.000Z` } },
+        ],
+      },
+      sort: '-date',
+      limit: 1000,
+      depth: 0,
+      overrideAccess: true,
+    })
+  ).docs as unknown as Record<string, unknown>[]
+
+  const chain = nizChain(docs.map(toNizPerformance), today)
+  if (chain.length === 0) return {}
+  return longestNizByMember(chain, await loadChainLineups(chain))
 }

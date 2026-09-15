@@ -45,6 +45,7 @@ import {
   pluralize,
   type HeroPick,
   type MonthGroup,
+  type PostavaCount,
   type RosterPerformance,
 } from './roster-loaders'
 // Borrowed rather than re-derived: `daysBetween` is the one whole-calendar-day
@@ -133,11 +134,20 @@ export interface NastupRow {
   /**
    * Whether this evening's postava was confirmed (#432).
    *
-   * Carried on the row so the PAST list can put its POPIS chip on it without
-   * reaching back into the performance the row was built from: a page that
-   * reads two shapes to draw one row is a page where the two can disagree.
+   * Carried on the row so the PAST list can say what happened without reaching
+   * back into the performance the row was built from: a page that reads two
+   * shapes to draw one row is a page where the two can disagree.
    */
   lineupConfirmed: boolean
+  /**
+   * Who danced: "7/9", seven crni and nine bili (#634).
+   *
+   * It replaced the green POPIS pill, which said that a list EXISTS. A dancer
+   * reading the season backwards is not asking whether somebody typed the
+   * evening up; they are asking how big it was. Null wherever there is no
+   * confirmed postava, which the past list draws as a red "Nema popisa".
+   */
+  postava: PostavaCount | null
   /**
    * "danas" / "sutra" / "za 3 dana", beside the kind word, or null (#612).
    *
@@ -185,6 +195,7 @@ export function nastupRow(performance: RosterPerformance, opts: NastupRowOptions
     // this option is what says "this is the half nobody answers".
     canAnswer: opts.showAnswer && performance.canAnswer,
     lineupConfirmed: performance.lineupConfirmed,
+    postava: performance.postava,
     // A cancelled evening gets no countdown: "za 2 dana" under "otkazano" reads
     // as a thing still coming, which is the one thing that row must not say.
     soon:

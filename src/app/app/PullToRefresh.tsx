@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { APP_STRINGS } from '@/lib/app/strings'
+import { dragAxis } from '@/lib/app/pull-axis'
 // Straight from the file, not through `./ui`: this is a client island, and the
 // barrel would pull all fifteen shapes into its bundle to use one of them.
 import { Toast } from './ui/Toast'
@@ -96,6 +97,9 @@ export function PullToRefresh({ children }: { children: React.ReactNode }) {
     if (!block || !ring || !circle) return
 
     let origin: number | null = null
+    let originX = 0
+    /** The axis lock (#633): decided once per gesture, never revisited. */
+    let axis: ReturnType<typeof dragAxis> = 'undecided'
     let delta = 0
     let busy = false
 
@@ -107,10 +111,12 @@ export function PullToRefresh({ children }: { children: React.ReactNode }) {
       ring.classList.remove('app__ptr--armed')
     }
 
-    function start(y: number, target: EventTarget | null) {
+    function start(y: number, x: number, target: EventTarget | null) {
       if (busy || scroller.scrollTop > 0) return
       if (isShielded(target)) return
       origin = y
+      originX = x
+      axis = 'undecided'
       delta = 0
       block?.classList.remove('app__pull--settle')
       ring?.classList.remove('app__ptr--settle')
@@ -118,8 +124,26 @@ export function PullToRefresh({ children }: { children: React.ReactNode }) {
       arm()
     }
 
-    function move(y: number, event: TouchEvent) {
+    function move(y: number, x: number, event: TouchEvent) {
       if (origin === null || busy || !block || !ring || !circle) return
+
+      // **What is this finger doing?** (#633) Until the drag has travelled far
+      // enough to say, nothing is moved and nothing is prevented; the moment it
+      // says "sideways" the pull hands the touch back for good, which is what
+      // lets a filter strip at the top of a screen scroll at all. `origin` is
+      // cleared rather than a flag kept, so every early return below already
+      // covers the abandoned gesture.
+      if (axis === 'undecided') {
+        axis = dragAxis(x - originX, y - origin)
+        if (axis === 'horizontal') {
+          origin = null
+          rest()
+          block.classList.remove('app__pull--pulling')
+          return
+        }
+        if (axis === 'undecided') return
+      }
+
       delta = y - origin
       // Upwards, or the list has scrolled under the finger: this is a scroll,
       // not a pull, and the gesture hands it back rather than fighting it.
@@ -188,11 +212,13 @@ export function PullToRefresh({ children }: { children: React.ReactNode }) {
     }
 
     function onStart(event: TouchEvent) {
-      start(event.touches[0]?.clientY ?? 0, event.target)
+      const touch = event.touches[0]
+      start(touch?.clientY ?? 0, touch?.clientX ?? 0, event.target)
     }
 
     function onMove(event: TouchEvent) {
-      move(event.touches[0]?.clientY ?? 0, event)
+      const touch = event.touches[0]
+      move(touch?.clientY ?? 0, touch?.clientX ?? 0, event)
     }
 
     // `touchmove` has to be non-passive, because the pull's whole job is to

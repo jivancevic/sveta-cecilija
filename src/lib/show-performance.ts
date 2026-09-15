@@ -44,6 +44,90 @@ export const DEFAULT_THRESHOLD: Record<PerformanceKind, { crni: number; bili: nu
   ostalo: { crni: 8, bili: 8 },
 }
 
+/**
+ * The kinds Cecilija does not show AT ALL (#635).
+ *
+ * A *koncert* is the society singing and playing. It is not a sword dance, and
+ * counting one as a moreška inflates a dancer's season and, worse, extends or
+ * breaks their *niz* on an evening they never danced: today a dancer who skips
+ * a concert loses a run of twenty moreške.
+ *
+ * Hidden rather than dropped. The value stays in the `shows` enum and in the
+ * Backoffice, because the wind orchestra and the klapa will get a screen of
+ * their own and the kind comes back with them — a migration removing it would
+ * only have to be undone. Until then no Cecilija surface offers it, counts it
+ * or opens it.
+ */
+export const HIDDEN_KINDS = ['koncert'] as const satisfies readonly PerformanceKind[]
+
+/** A kind Cecilija hides (#635). */
+export type HiddenKind = (typeof HIDDEN_KINDS)[number]
+
+/** A kind Cecilija shows: everything else. */
+export type ShownKind = Exclude<PerformanceKind, HiddenKind>
+
+const HIDDEN = new Set<string>(HIDDEN_KINDS)
+
+/**
+ * The kinds every Cecilija screen, picker and count works from.
+ *
+ * Derived rather than typed out, so hiding a seventh kind is one line in
+ * {@link HIDDEN_KINDS} and never a list that drifts out of step with it.
+ */
+export const SHOWN_KINDS = PERFORMANCE_KINDS.filter(
+  (k): k is ShownKind => !HIDDEN.has(k),
+)
+
+/**
+ * The kinds that ARE a moreška: everything Cecilija shows but the Experience.
+ *
+ * One definition, read by the Ljestvica list (`kindsOf`), the split of the
+ * profile's rings and the *niz* chain (#635). A koncert left all three on the
+ * same day because it left this list, rather than through three predicates
+ * that would have had to be found one at a time.
+ */
+export const MORESKA_KINDS = SHOWN_KINDS.filter(
+  (k): k is MoreskaKind => k !== 'experience',
+)
+
+/** A kind that IS a moreška. */
+export type MoreskaKind = Exclude<ShownKind, 'experience'>
+
+const MORESKA = new Set<string>(MORESKA_KINDS)
+
+/** True when an evening of this kind counts as a moreška (#635). */
+export function isMoreskaKind(kind: unknown): kind is MoreskaKind {
+  return typeof kind === 'string' && MORESKA.has(kind)
+}
+
+/** True when Cecilija shows an evening of this kind at all (#635). */
+export function isShownKind(kind: unknown): kind is ShownKind {
+  return isPerformanceKind(kind) && !HIDDEN.has(kind)
+}
+
+/**
+ * The same rule, Payload `Where` form, for a query on `shows`.
+ *
+ * Usually inside an `and: [...]` beside the caller's own bounds. A row whose
+ * `kind` were NULL would be dropped by `not_in`, which is unreachable rather
+ * than intended: the column is `required` with a default
+ * (`src/collections/Shows.ts`).
+ */
+export const SHOWN_PERFORMANCE_WHERE = { kind: { not_in: [...HIDDEN_KINDS] } } as const
+
+/**
+ * The same rule, raw-SQL form, for a `pool.query` caller (the push cron).
+ *
+ * The list is interpolated rather than parameterised, and safely: these are
+ * this module's own literals, never anything a request carried.
+ *
+ * @param alias optional table alias or name to qualify the column with.
+ */
+export function shownPerformanceSql(alias?: string): string {
+  const column = `${alias ? `${alias}.` : ''}kind`
+  return `${column} NOT IN (${HIDDEN_KINDS.map((k) => `'${k}'`).join(', ')})`
+}
+
 const KNOWN_KINDS = new Set<string>(PERFORMANCE_KINDS)
 
 /**

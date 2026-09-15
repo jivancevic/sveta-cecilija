@@ -5,7 +5,7 @@ import { toIsoDate } from '@/lib/to-iso-date'
 import { relationIdString } from '@/lib/payload-relation'
 import { isDanceRole } from '@/lib/moreskant-profile'
 import { VENUE_LABEL, type Venue } from '@/lib/venues'
-import type { PerformanceKind } from '@/lib/show-performance'
+import { SHOWN_PERFORMANCE_WHERE, type PerformanceKind } from '@/lib/show-performance'
 import { buildMySeason, type MySeason } from './my-season-loaders'
 import { initialsOf } from './members-screen'
 import { longestNiz, type LongestNiz } from './niz'
@@ -49,6 +49,15 @@ export interface DancerProfile {
    * says so in words rather than drawing a flame with a nought in it.
    */
   niz: LongestNiz
+  /**
+   * The run's two ends as dates, YYYY-MM-DD (#634).
+   *
+   * `LongestNiz` names them by performance id, which is what the pure function
+   * has; the screen prints "Od 14.7. do 19.8." and needs the days. Null for a
+   * dancer with no run at all. Both are evenings this dancer DANCED, never the
+   * one they missed.
+   */
+  nizRange: { from: string; to: string } | null
 }
 
 /** Croatian, because every `/app` screen is. The venue names buyers read. */
@@ -104,6 +113,8 @@ export async function getDancerProfile(
         and: [
           { date: { greater_than_equal: `${season}-01-01T00:00:00.000Z` } },
           { date: { less_than: `${season + 1}-01-01T00:00:00.000Z` } },
+          // The profile counts what Ljestvica counts (#635).
+          SHOWN_PERFORMANCE_WHERE,
         ],
       },
       sort: 'date',
@@ -167,7 +178,7 @@ export async function getDancerProfile(
       ? ((
           await payload.find({
             collection: 'shows',
-            where: { id: { in: allIds } },
+            where: { and: [{ id: { in: allIds } }, SHOWN_PERFORMANCE_WHERE] },
             limit: 5000,
             depth: 0,
             overrideAccess: true,
@@ -188,6 +199,13 @@ export async function getDancerProfile(
     memberId: identity.memberId,
   })
 
+  const longest = longestNiz(chain, new Set(everEvenings.map((e) => e.performanceId)))
+  // Both ends are evenings this dancer was in, by construction, so their dates
+  // are in the evenings just built rather than needing a read of their own.
+  const dateOf = new Map(everEvenings.map((e) => [e.performanceId, e.date]))
+  const from = longest.from ? (dateOf.get(longest.from) ?? null) : null
+  const to = longest.to ? (dateOf.get(longest.to) ?? null) : null
+
   return {
     identity,
     season: buildMySeason({
@@ -203,6 +221,7 @@ export async function getDancerProfile(
       memberId: identity.memberId,
     }),
     evenings: dancerEvenings({ performances, lineups, memberId: identity.memberId }),
-    niz: longestNiz(chain, new Set(everEvenings.map((e) => e.performanceId))),
+    niz: longest,
+    nizRange: from && to ? { from, to } : null,
   }
 }

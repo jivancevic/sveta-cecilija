@@ -49,6 +49,10 @@ export function FilterChips({ items, active, label, onSelect, className }: Filte
     <nav
       className={['ui-filters', className ?? ''].filter(Boolean).join(' ')}
       aria-label={label}
+      // The strip scrolls sideways, so pull-to-refresh must not arm on it
+      // (#633): the pull's own axis lock would hand the touch back after a few
+      // millimetres, and this hands it back before the first one.
+      data-no-pull=""
     >
       {items.map((item) => {
         const on = item.key === active

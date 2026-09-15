@@ -162,7 +162,8 @@ function Fig({ label, value }: { label: string; value: React.ReactNode }) {
 function Trajectory({ bars, maxCapacity }: { bars: TrajectoryBar[]; maxCapacity: number }) {
   return (
     <Card className="app__st-chart">
-      <div className="app__traj-scroll">
+      {/* `data-no-pull`: pull-to-refresh keeps off a sideways scroller (#633). */}
+      <div className="app__traj-scroll" data-no-pull="">
         {bars.map((bar) => {
           // Pixels, not percentages: the column also carries a count above the
           // bar and a date under it, so a percentage of the column's own height

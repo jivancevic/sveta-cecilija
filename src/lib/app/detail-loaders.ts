@@ -39,6 +39,7 @@ import {
   type RoleWarning,
 } from '@/lib/lineup/rules'
 import { selfCompRemaining } from '@/lib/comp/self-comp'
+import { isShownKind } from '@/lib/show-performance'
 import { toRosterPerformance, type RosterPerformance } from './roster-loaders'
 
 /** One line of the postava, already labelled for the screen. */
@@ -52,6 +53,18 @@ export interface LineupRow {
 export interface LineupPerson {
   memberId: string
   nickname: string
+  /**
+   * Their real name, for the search box and nothing else (#633).
+   *
+   * A voditelj looking for somebody types whichever of the two comes to mind
+   * first, and half the roster is known to him by a surname the app was not
+   * matching. Nothing DRAWS it — the rows stay nicknames, which is the register
+   * the whole screen is written in — so this is a match key, not a column.
+   * Null where the member row has none.
+   *
+   * It rides the voditelj-only roster, so no dancer's browser receives it.
+   */
+  name: string | null
   /** The roles their profile lists, so the select can mark the unusual ones. */
   roles: DanceRole[]
   /**
@@ -298,6 +311,7 @@ export function buildLineupView(input: {
       ? roster.map((m) => ({
           memberId: String(m.id),
           nickname: label.get(String(m.id)) ?? String(m.id),
+          name: typeof m.name === 'string' && m.name.trim() !== '' ? m.name.trim() : null,
           roles: (m.roles ?? []).filter(isDanceRole),
           primaryRole: isDanceRole(m.primaryRole) ? m.primaryRole : null,
         }))
@@ -429,6 +443,10 @@ export async function loadPerformanceDetail(
 ): Promise<PerformanceDetail | null> {
   const performanceDoc = await deps.loadPerformance(performanceId)
   if (!performanceDoc) return null
+  // A kind Cecilija does not show has no detail either (#635): Stanje, the
+  // Izvedbe detail and every roster push deep link go through here, and a row
+  // reachable by URL after it left every list is the worst of both.
+  if (!isShownKind(performanceDoc.kind ?? 'redovna')) return null
 
   const memberId = deps.viewer.memberId
   const [attendanceDocs, memberDocs, lineupDocs, ownComps, seatsRemaining] = await Promise.all([

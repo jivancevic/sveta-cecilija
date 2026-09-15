@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { PERFORMANCE_KINDS, type PerformanceKind } from '@/lib/show-performance'
+import { PERFORMANCE_KINDS, SHOWN_KINDS, type PerformanceKind } from '@/lib/show-performance'
 import { type DancerStats } from '@/lib/lineup/stats'
 import { LINEUP_ROLES, type LineupRole } from '@/lib/moreskant-profile'
 import { pluralize } from './roster-loaders'
@@ -82,17 +82,22 @@ describe('parseLeaderboardKind', () => {
 })
 
 describe('kindsOf', () => {
-  it('counts every kind except experience as Moreška', () => {
-    expect(kindsOf('moreska')).toEqual(PERFORMANCE_KINDS.filter((k) => k !== 'experience'))
+  it('counts every SHOWN kind except experience as Moreška', () => {
+    expect(kindsOf('moreska')).toEqual(['redovna', 'dmc', 'gulliver', 'ostalo'])
+  })
+
+  it('leaves the koncert out of the Moreška list (#635)', () => {
+    expect(kindsOf('moreska')).not.toContain('koncert')
+    expect(kindsOf('experience')).not.toContain('koncert')
   })
 
   it('counts the Experience on its own', () => {
     expect(kindsOf('experience')).toEqual(['experience'])
   })
 
-  it('leaves no kind out of both lists', () => {
+  it('leaves no SHOWN kind out of both lists', () => {
     const covered = [...kindsOf('moreska'), ...kindsOf('experience')].sort()
-    expect(covered).toEqual([...PERFORMANCE_KINDS].sort())
+    expect(covered).toEqual([...SHOWN_KINDS].sort())
   })
 })
 
@@ -157,12 +162,20 @@ describe('rankDancers', () => {
     ])
   })
 
-  it('counts every kind except experience into the Moreška list', () => {
+  it('counts every shown kind except experience into the Moreška list', () => {
     const rows = rankDancers({
-      rows: [dancer('1', 'Ante', { redovna: 8, dmc: 2, koncert: 1, experience: 5 })],
+      rows: [dancer('1', 'Ante', { redovna: 8, dmc: 2, ostalo: 1, experience: 5 })],
       kind: 'moreska',
     })
     expect(rows[0].performances).toBe(11)
+  })
+
+  it('counts a koncert into neither list (#635)', () => {
+    const rows = rankDancers({
+      rows: [dancer('1', 'Ante', { redovna: 8, koncert: 4 })],
+      kind: 'moreska',
+    })
+    expect(rows[0].performances).toBe(8)
   })
 
   it('keeps a moreškant who danced nothing on the list, at no place (#614)', () => {
@@ -656,5 +669,51 @@ describe('seasonKings', () => {
 
   it('counts the Experience list on its own, where no crown was given', () => {
     expect(seasonKings({ rows, kind: 'experience' })).toEqual([])
+  })
+})
+
+describe('rankDancers under the Najduži niz chip (#634)', () => {
+  const rows = [
+    dancer('1', 'Ante', { redovna: 12 }),
+    dancer('2', 'Bepo', { redovna: 9 }),
+    dancer('3', 'Cico', { redovna: 7 }),
+    dancer('4', 'Dujo', { redovna: 2 }),
+  ]
+  const ranked = (seasonNiz: Record<string, number>) =>
+    rankDancers({ rows, kind: 'moreska', filter: 'niz', seasonNiz })
+
+  it('ranks by the run and not by the season count', () => {
+    // Ante danced the most evenings; Cico never missed four in a row.
+    const out = ranked({ '1': 2, '2': 3, '3': 4 })
+    expect(out.map((r) => [r.nickname, r.performances, r.rank])).toEqual([
+      ['Cico', 4, 1],
+      ['Bepo', 3, 2],
+      ['Ante', 2, 3],
+    ])
+  })
+
+  it('renumbers the places, sharing a rank on a tie and skipping the next', () => {
+    // Expect many ties, deliberately: there is no hidden tie-breaker.
+    const out = ranked({ '1': 3, '2': 3, '3': 1 })
+    expect(out.map((r) => [r.nickname, r.rank])).toEqual([
+      ['Ante', 1],
+      ['Bepo', 1],
+      ['Cico', 3],
+    ])
+  })
+
+  it('drops a dancer with no run at all rather than listing a column of zeros', () => {
+    expect(ranked({ '1': 2 }).map((r) => r.nickname)).toEqual(['Ante'])
+  })
+
+  it('never calls a run a full season', () => {
+    const out = rankDancers({
+      rows,
+      kind: 'moreska',
+      filter: 'niz',
+      seasonNiz: { '1': 12 },
+      confirmed: 12,
+    })
+    expect(out[0]!.fullSeason).toBe(false)
   })
 })
