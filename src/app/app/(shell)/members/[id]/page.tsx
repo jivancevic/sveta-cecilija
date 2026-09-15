@@ -60,7 +60,10 @@ export default async function MemberProfilePage({
       </Link>
 
       <div className="app__cols">
-        <div>
+        {/* `app__col` on the inner halves too (#636): the grid spaces the two
+            columns, and each column spaces its own blocks. A bare div spaced
+            neither. */}
+        <div className="app__col">
           <header className="app__member-head">
             <RoleMark army={armyOfRole(member.primaryRole)} initials={initialsOf(member.name)} />
             <div className="app__member-head-body">
@@ -73,7 +76,7 @@ export default async function MemberProfilePage({
           <MemberProfileForm member={member} />
         </div>
 
-        <div>
+        <div className="app__col">
           <Section title={S.invite} />
           <InviteActions id={member.id} nickname={shown} mobile={member.mobile} />
         </div>

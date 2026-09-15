@@ -379,6 +379,27 @@ html:has(> .app) {
   margin-top: var(--gap);
 }
 
+/* ── The two layout containers, at EVERY width (#636) ──────
+   `app__col` and `app__cols` were declared inside the 1024px block only, with
+   the comment "it collapses to one column below this width by simply not
+   existing there". It did not collapse to one column: it collapsed to nothing.
+   A wrapper with no display and no gap is an inert div, so on a phone its
+   children sat on top of each other and five screens — Prodaja, Obračun,
+   Članovi and both detail screens plus Korisnici — hung their whole vertical
+   rhythm off whatever margin each block happened to carry. That is the pattern
+   this ticket exists to remove, and it was hiding behind a media query.
+
+   So the containers are a flex column with the standard gap first, and the
+   laptop's two-column grid is the override. Below 1024px they now do exactly
+   what the shell floor does one level up, which is why every child margin
+   under them could be deleted rather than re-tuned. */
+.app__col,
+.app__cols {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+}
+
 /* ── Between two screens (#593) ────────────────────────────
    The chrome is in the layout now, so a tab tap changes only this block — and
    a block that simply swaps reads as a jump cut. 200 ms and 24 px is the
@@ -628,7 +649,7 @@ html:has(> .app) {
    as the chrome and then the welcome. 14px is what separates them without
    pushing the first card off a short phone. */
 .app__home-greet {
-  margin: 14px 0 6px;
+  margin: 0;
 }
 
 .app__home-greet b {
@@ -1367,9 +1388,9 @@ html:has(> .app) {
 }
 
 /* Past evenings: present, but behind one tap, because this app is read
-   forwards. */
+   forwards. The rule above it is its own; the space above the rule is the
+   shell floor's (#636, was `margin: 30px 0 0`). */
 .app__past {
-  margin: 30px 0 0;
   border-top: 1px solid var(--rule);
 }
 
@@ -1516,7 +1537,7 @@ html:has(> .app) {
 /* ── Add to home screen hint ────────────────────────────── */
 .app__hint {
   position: relative;
-  margin: 20px 0 0;
+  margin: 0;
   padding: 12px 40px 12px 14px;
   border: 1px solid var(--rule);
   border-radius: var(--radius);
@@ -2392,7 +2413,6 @@ html:has(> .app) {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin: 16px 0 8px;
 }
 
 .app__stats-label {
@@ -2457,7 +2477,6 @@ html:has(> .app) {
    allowance chip sits in the heading, where the army counts sit on the sections
    above, so "još 2 od 4" reads as a headcount rather than as a warning. */
 .app__comp {
-  margin: 20px 0 4px;
   padding: 14px;
   border: 1px solid var(--cardEdge);
   border-radius: var(--radius);
@@ -2500,7 +2519,6 @@ html:has(> .app) {
   display: flex;
   flex-direction: column;
   gap: 10px;
-  margin-bottom: 12px;
 }
 
 .app__stepper {
@@ -2591,7 +2609,6 @@ html:has(> .app) {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
-  margin-top: 14px;
 }
 
 .app__tile2 {
@@ -2677,32 +2694,35 @@ html:has(> .app) {
 
 /* The old group wrapper, still worn by the four Članovi panels (#511) and by
    any screen the redesign has not reached. `.app__more-group` below is its
-   successor on the two screens T8 rebuilt. */
-.app__more-block {
-  margin-top: 28px;
-}
+   successor on the two screens T8 rebuilt. Its `margin-top: 28px` went with
+   #636: every screen that wears it now sits in a gapped column. */
 
-/* One group: its uppercase heading and the list or card under it. */
+/* One group: its uppercase heading and the list or card under it.
+   The heading and its list are the blocks of ONE widget, so the distance
+   between them is `--gapTight`; the distance to the NEXT group is the shell
+   floor's, which is why the `margin-top: 22px` this rule carried until #636 is
+   gone. Three screens are made of nothing but these groups — Više, Profil and
+   Obavijesti — so that margin was the whole of their rhythm. */
 .app__more-group {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  margin-top: 22px;
+  gap: var(--gapTight);
 }
 
 /* The person's own four rows sit right under the header, with no heading of
-   their own: what they are about is the name above them. */
-.app__more-list {
-  margin-top: 4px;
-}
+   their own: what they are about is the name above them. The floor is what
+   puts them there. */
 
 /* The chips under a name: what this login may do, or that several people hold
    it. Only ever on Više, and only for a reader who is not a dancer. */
+/* The chips under a name. Until #636 they pulled themselves UP with a negative
+   margin to cancel the shell floor and pushed the list back down with an 18px
+   one: two margins fighting the container's own rhythm. Both are gone and the
+   floor carries them. */
 .app__me-chips {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  margin: -10px 0 18px;
 }
 
 /* A row's first line when something sits beside the title: the kind word and
@@ -2773,7 +2793,7 @@ html:has(> .app) {
 }
 
 .app__more-logout {
-  margin: 28px 0 4px;
+  margin: 0;
   display: flex;
   justify-content: center;
 }
@@ -2787,7 +2807,7 @@ html:has(> .app) {
    the line is readable rather than decorative: it is what a voditelj reads out
    over the phone. The credit under it is a signature, not a sentence. */
 .app__build {
-  margin: 22px 0 6px;
+  margin: 0;
   text-align: center;
 }
 
@@ -3476,10 +3496,14 @@ a.app__ob-link {
    Nothing in this block treats the bottom of a list: no red, no "zadnji". A
    dancer with two nastupa is on the same list as one with twenty because they
    are in the same society. */
+/* The board: the filters, the podium and the rows, on the app's own gap since
+   #636 (it read a hand-measured 28px). The podium's `margin-top: 26px` in
+   `ui.css` stays and is NOT rhythm: it is the clearance the cup standing above
+   the winner's step needs, which is why it belongs to the component. */
 .app__lb {
   display: flex;
   flex-direction: column;
-  gap: 28px;
+  gap: var(--gap);
 }
 
 /* The board is one div, so the shell's floor never reaches these children and
@@ -4094,7 +4118,7 @@ a.app__ob-link {
 }
 
 .app__lb-footer {
-  margin: 4px 0 0;
+  margin: 0;
   font-size: 13px;
   color: var(--muted);
 }
@@ -4872,12 +4896,14 @@ a.app__ob-link {
   }
 
   /* The two laptop layouts (Q51), stated here so no screen invents its own.
-     A screen opts in when its own ticket rebuilds it; nothing reads them yet.
 
        `app__col`   one column, 760px, for a list or a form.
        `app__cols`  a detail: what happened on the left, what you can do on
-                    the right. It collapses to one column below this width by
-                    simply not existing there. */
+                    the right.
+
+     Both are a gapped flex column at every width since #636 (see the base rule
+     up by the shell floor); what this block adds is the WIDTH of one and the
+     second column of the other. */
   .app__col {
     max-width: 760px;
   }
@@ -4885,7 +4911,7 @@ a.app__ob-link {
   .app__cols {
     display: grid;
     grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
-    gap: 20px;
+    gap: var(--gap);
     align-items: start;
   }
 }
@@ -4909,7 +4935,7 @@ a.app__ob-link {
 
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: var(--gapTight);
   /* The island is the screen, so it bleeds to both edges and paints its own
      ground: the shell's 20px is given back as a negative margin and taken
      again as padding. Without the ground, a ghost button inside it would be
@@ -4917,7 +4943,7 @@ a.app__ob-link {
   /* The bottom half cancels the shell's own bottom padding exactly (#592
      shortened it to `tabH + safe + 12`), so the island reaches the foot of the
      page and the blurred bar sits on it rather than on a band of paper. */
-  margin: 16px -20px calc(var(--tabH) * -1 - env(safe-area-inset-bottom, 0px) - 12px);
+  margin: 0 -20px calc(var(--tabH) * -1 - env(safe-area-inset-bottom, 0px) - 12px);
   padding: 16px 20px calc(var(--tabH) + env(safe-area-inset-bottom, 0px) + 12px);
   min-height: 60vh;
   background: var(--bg);
@@ -5186,7 +5212,6 @@ a.app__ob-link {
   display: flex;
   flex-direction: column;
   gap: 8px;
-  margin-top: 16px;
 }
 
 .app__scan-action {
@@ -5974,14 +5999,12 @@ a.app__ob-link {
    steppers, the same delete-then-undo, the same five routes.
 
    Money is `tabular-nums` everywhere it appears: a column of euros that shifts
-   under its own digits is a column nobody can compare down. */
-.app__sell,
-.app__partner-sales,
-.app__partner-month,
-.app__partner-season,
-.app__statement {
-  margin: 26px 0 0;
-}
+   under its own digits is a column nobody can compare down.
+
+   These five blocks carried `margin: 26px 0 0` until #636 — one child margin
+   doing the whole of two screens' vertical rhythm, because the `app__cols`
+   around them did not exist on a phone. It does now, so the space between them
+   is its gap and this rule is gone. */
 
 .app__partner-note {
   margin: 6px 0 0;
@@ -6080,7 +6103,7 @@ a.app__ob-link {
    and an empty month. Quiet text inside the card, never a panel of its own —
    the card is already the panel (#574). */
 .app__statement-loading {
-  margin: 6px 0;
+  margin: 0;
   font-size: 14px;
   color: var(--muted);
 }
@@ -6244,11 +6267,21 @@ span.app__sale-head {
   font-variant-numeric: tabular-nums;
 }
 
-/* ── Obračun: the month's figures, its izvedbe and the season bars ───────── */
+/* ── Obračun: the month's figures, its izvedbe and the season bars ─────────
+   This screen was the densest concentration of child margins in the file
+   before #636: eleven blocks, each pushing itself down with a `margin-top` of
+   its own, inside a `section` that had no rhythm at all. The section is the
+   column now and every one of those margins is gone. */
+.app__statement,
+.app__partner-season {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+}
+
 .app__statement-picker {
   display: flex;
   gap: 12px;
-  margin-top: 14px;
 }
 
 .app__statement-picker > div {
@@ -6257,7 +6290,7 @@ span.app__sale-head {
 }
 
 .app__statement-figures {
-  margin: 16px 0 0;
+  margin: 0;
 }
 
 .app__figure {
@@ -6305,12 +6338,11 @@ span.app__sale-head {
   color: var(--muted);
 }
 
-.app__statement-shows {
-  margin-top: 16px;
-}
-
+/* Both sit inside a card, which is already a column with a gap: the
+   `margin-top: 16px` each carried was added to it rather than replacing it
+   (#636). */
 .app__statement-csv {
-  margin-top: 16px;
+  margin: 0;
 }
 
 /* The picker grew a third field for the secretary (#599), so it wraps rather
@@ -6332,7 +6364,7 @@ span.app__sale-head {
   align-items: baseline;
   justify-content: space-between;
   gap: 12px;
-  margin: 0 0 4px;
+  margin: 0;
   font-size: 14px;
   color: var(--muted);
 }
@@ -6344,7 +6376,6 @@ span.app__sale-head {
 /* Storno: under the total, never in it. Quiet on purpose — it is context for a
    reader reconciling their own book, not a figure anybody is billed for. */
 .app__statement-cancelled {
-  margin: 14px 0 0;
   padding-top: 12px;
   border-top: 1px solid var(--rule);
   font-size: 13px;
@@ -6360,19 +6391,17 @@ span.app__sale-head {
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  margin-top: 16px;
 }
 
+/* Oznaci poslanim and the mailto under it: one widget's blocks, so one gap
+   here rather than a margin on each of the three (#636). */
 .app__statement-send {
-  margin-top: 24px;
-}
-
-.app__statement-frozen {
-  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gapTight);
 }
 
 .app__statement-mail {
-  margin-top: 16px;
   padding-top: 16px;
   border-top: 1px solid var(--rule);
 }
@@ -6384,7 +6413,7 @@ span.app__sale-head {
 }
 
 .app__statbars {
-  margin-top: 10px;
+  margin: 0;
 }
 
 .app__statbar {
@@ -6479,17 +6508,21 @@ span.app__sale-head {
   --ch-track: var(--track);
 }
 
-/* The screen: one column of cards and section lines, like every other (#571). */
+/* The screen: one column of cards and section lines, like every other (#571).
+   The screen wraps itself, so the shell floor never reaches its cards and the
+   gap here IS the rhythm — `--gap`, the same distance every other screen has
+   between two widgets, rather than the 12px it read until #636. The
+   `margin-top: 16px` it carried under the header went with it: the wrapper is
+   a shell child and the floor spaces it. */
 .app__st {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-top: 16px;
+  gap: var(--gap);
 }
 
 /* ── The season band ─────────────────────────────────────── */
 .app__st-band {
-  gap: 12px;
+  gap: var(--gapTight);
 }
 
 /* Four figures, two by two on a phone: a 4-up row of 34px numbers is four
@@ -6759,12 +6792,10 @@ a.app__statrow-main:focus-visible {
    season table, `app__confirm` for the confirmation (#570). What is new is the
    member picker, which is a search box over a scrollable list of names rather
    than a `<select>`: a roster of a hundred members is unreadable in a native
-   picker on a phone, and the one thing the secretary knows is the name. */
-.app__comp-issue,
-.app__comp-recent,
-.app__comp-permember {
-  margin: 26px 0 0;
-}
+   picker on a phone, and the one thing the secretary knows is the name.
+
+   The three blocks are direct children of the shell, so the floor spaces them
+   and the `margin: 26px 0 0` they carried until #636 is gone. */
 
 .app__comp-hint {
   margin: -4px 0 12px;
@@ -6774,7 +6805,6 @@ a.app__statrow-main:focus-visible {
 
 /* The last line on the screen: where promo codes actually live (#476). */
 .app__comp-codes {
-  margin-top: 22px;
   padding-top: 12px;
   border-top: 1px solid var(--rule);
 }
@@ -6901,12 +6931,14 @@ a.app__statrow-main:focus-visible {
    `ui/`; nothing here restyles them, and there is no hex in the block.
    ───────────────────────────────────────────────────────────── */
 
-/* The screen is one column of cards and section lines, on the shell's gap. */
+/* The screen is one column of cards and section lines, on the shell's gap —
+   literally so since #636: it wraps itself, so the floor cannot reach its
+   cards and this gap is the one that has to say `--gap`. It read 12px, with a
+   `margin-top: 16px` on the wrapper that the floor already provides. */
 .app__fin {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  margin-top: 16px;
+  gap: var(--gap);
 }
 
 /* ── The statement picker ────────────────────────────────── */
@@ -6933,9 +6965,10 @@ a.app__statrow-main:focus-visible {
 }
 
 /* The receivable: money the society has not collected, and the one card on the
-   screen that is deliberately set apart from the two above it. */
+   screen that is deliberately set apart from the two above it. The gold edge
+   is what says so; the extra `margin-top: 10px` it also carried was added to
+   the column's gap rather than replacing it, which is the shape #636 removes. */
 .app__fin-card--apart {
-  margin-top: 10px;
   border-left: 3px solid var(--gold);
 }
 
@@ -7004,12 +7037,25 @@ a.app__statrow-main:focus-visible {
   gap: 4px;
 }
 
+/* The three lists, and since #636 they are what spaces their own items: a
+   column with a gap, rather than every item pushing itself down with a
+   `margin-top` of its own. */
 .app__fin-rows,
 .app__fin-partners,
 .app__fin-lines {
-  margin: 6px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
   padding: 0;
   list-style: none;
+}
+
+/* `.app__fin-row` is a bordered row rather than a card: its own rule draws the
+   hairline between two of them, so the list's gap would double the separation.
+   It is the one of the three that opts out. */
+.app__fin-rows {
+  gap: 0;
 }
 
 .app__fin-row {
@@ -7042,7 +7088,6 @@ a.app__statrow-main:focus-visible {
 /* ── One partner's month, and one evening of the ledger ──── */
 .app__fin-partner,
 .app__fin-evening {
-  margin-top: 10px;
   padding: 12px 14px;
   border-radius: var(--rCtl);
   background: var(--sunk);
@@ -7144,7 +7189,6 @@ a.app__statrow-main:focus-visible {
 
 .app__members-search {
   display: block;
-  margin: 4px 0 10px;
 }
 
 /* One search field, the shell's own input, full width: the phone case is a
@@ -7154,7 +7198,7 @@ a.app__statrow-main:focus-visible {
 }
 
 .app__members {
-  margin-top: 2px;
+  margin: 0;
 }
 
 /* A retired dancer stays on the list, under everybody who still dances, and
@@ -7219,7 +7263,6 @@ a.app__statrow-main:focus-visible {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin: 10px 0 18px;
 }
 
 .app__member-head-body {
@@ -7273,7 +7316,7 @@ a.app__statrow-main:focus-visible {
 /* ── The profile, and Dodaj plesača ─────────────────────── */
 
 .app__member-form {
-  margin-top: 4px;
+  margin: 0;
 }
 
 /* `name` is a fact, not a field: it reaches comp reporting and the promo-code
@@ -7412,7 +7455,6 @@ a.app__statrow-main:focus-visible {
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-  margin-top: 16px;
 }
 
 .app__users-search-field {
@@ -7529,7 +7571,6 @@ a.app__statrow-main:focus-visible {
 }
 
 .app__users-new {
-  margin-top: 22px;
   padding-top: 14px;
   border-top: 1px solid var(--rule);
 }
@@ -7589,14 +7630,13 @@ a.app__statrow-main:focus-visible {
 /* ── One account ──────────────────────────────────────────── */
 .app__user-back {
   display: inline-block;
-  margin: 14px 0 4px;
+  margin: 0;
   font-size: 13px;
   color: var(--muted);
   text-decoration: none;
 }
 
 .app__user-facts {
-  margin-top: 10px;
   border-top: 1px solid var(--rule);
 }
 
@@ -7668,7 +7708,7 @@ a.app__statrow-main:focus-visible {
 }
 
 .app__user-note {
-  margin: 18px 0 0;
+  margin: 0;
   font-size: 12px;
   color: var(--muted);
 }
@@ -7798,11 +7838,14 @@ a.app__statrow-main:focus-visible {
   color: var(--muted);
 }
 
+/* One month of the season: its sticky heading and that month's rows. The
+   heading and the rows are one widget's blocks (`--gapTight`); the distance to
+   the next month is the shell floor's, so the `margin-top: 22px` this rule
+   carried until #636 is gone. Moreška and Izvedbe are both made of these. */
 .app__month-group {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  margin-top: 22px;
+  gap: var(--gapTight);
 }
 
 /* The month heading stays on screen while its own rows scroll past (#612).
@@ -7875,7 +7918,7 @@ a.app__statrow-main:focus-visible {
    ───────────────────────────────────────────────────────── */
 
 .app__stanje-head {
-  margin-bottom: 16px;
+  margin: 0;
 }
 
 .app__stanje-when {
@@ -8539,12 +8582,14 @@ a.app__statrow-main:focus-visible {
    so the night skin follows (#562).
    ───────────────────────────────────────────────────────────── */
 
-/* ── The controls above a list ──────────────────────────── */
+/* ── The controls above a list ────────────────────────────
+   The search box and the chip row are one widget's two blocks; the distance to
+   the list under them is the shell floor's, which is why the `margin-top: 16px`
+   this rule carried until #636 is gone. */
 .app__filters {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  margin-top: 16px;
+  gap: var(--gapTight);
 }
 
 .app__search {
@@ -8623,14 +8668,12 @@ a.app__statrow-main:focus-visible {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  margin-top: 16px;
   color: var(--muted);
 }
 
 /* ── The facts of one record ────────────────────────────── */
 .app__facts {
   gap: 0;
-  margin-top: 12px;
 }
 
 .app__fact {
@@ -8677,7 +8720,7 @@ a.app__statrow-main:focus-visible {
 
 /* ── The named actions under the facts ──────────────────── */
 .app__actions {
-  margin-top: 16px;
+  margin: 0;
 }
 
 /* Four verbs of very different lengths, so they are content-sized and wrap
@@ -8731,8 +8774,7 @@ a.app__statrow-main:focus-visible {
 .app__inbox {
   display: flex;
   flex-direction: column;
-  gap: 10px;
-  margin-top: 4px;
+  gap: var(--gapTight);
 }
 
 /* Three lines and a whole tap target: who wrote, what kind of enquiry it is,
@@ -8785,7 +8827,7 @@ a.app__statrow-main:focus-visible {
 
 /* The whole message, and the paragraphs the person typed. */
 .app__message {
-  margin-top: 12px;
+  margin: 0;
 }
 
 .app__message p {
@@ -8797,7 +8839,7 @@ a.app__statrow-main:focus-visible {
 
 /* ── Gratis: the one button the form is behind ──────────── */
 .app__comp-open {
-  margin-top: 16px;
+  margin: 0;
 }
 
 /* The laptop: the facts in two columns and the actions in a row, from the same
