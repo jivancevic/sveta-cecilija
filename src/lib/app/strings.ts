@@ -284,6 +284,16 @@ export const APP_STRINGS = {
         few: 'javne izvedbe do kraja sezone',
         many: 'javnih izvedbi do kraja sezone',
       },
+      /**
+       * The dancer's register (CONTEXT.md): "nastup", never "izvedba". Only
+       * ever read on a Moreška TILE, which is what an account that unlocks
+       * Moreška without carrying it as a tab gets instead of the hero.
+       */
+      moreska: {
+        one: 'nastup do kraja sezone',
+        few: 'nastupa do kraja sezone',
+        many: 'nastupa do kraja sezone',
+      },
       members: {
         one: 'aktivan moreškant',
         few: 'aktivna moreškanta',
@@ -510,6 +520,15 @@ export const APP_STRINGS = {
     /** The tally over the voditelj's two actions: "Titule 3 od 4". */
     titles: (given: number, all: number) => `Titule ${given} od ${all}`,
     noTitle: 'Bez titule',
+    /**
+     * The bula's one row, where every other column has a list of titles (#627).
+     *
+     * `titlesForArmy('bula')` is a list of one, so her sheet offered a choice
+     * between "Bula" and "Bez titule" — and "Bez titule" for a bula IS taking
+     * her out of the postava, because there is no plain bula to fall back to
+     * (`lineup/titles.ts`). This says what the tap does.
+     */
+    removeFromLineup: 'Makni iz postave',
     /** The person sheet's two halves. */
     answerFor: 'Odgovor',
     titleFor: 'Titula',
@@ -880,8 +899,12 @@ export const APP_STRINGS = {
     support: 'Podrška',
     /** A login several people hold, said on the header rather than implied. */
     shared: 'Dijeljeni račun',
-    /** The two groups under the person: their screens, then the app itself. */
-    screensTitle: 'Ekrani',
+    /**
+     * The groups under the person: their screens by workspace, then the app
+     * itself. The screens' own headings are `GROUP_LABEL` (`app/screens.ts`),
+     * the same words the laptop sidebar uses, so "Ekrani" no longer names
+     * anything (#627, Q22).
+     */
     appTitle: 'Aplikacija',
     /** The install guide as a row; the guide's own title names the platform. */
     install: 'Instalacija',

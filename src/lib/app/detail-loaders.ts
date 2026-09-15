@@ -357,9 +357,13 @@ export function buildPerformanceDetail(input: {
   const myArmy =
     myRow?.status === 'coming' ? (myRow.army ?? (me ? defaultArmyOf(me) : null)) : null
 
+  // The reader's OWN answer, and only that. There is no voditelj bypass here
+  // (#627): a voditelj writing an evening down afterwards does it through the
+  // person sheet, which `canEditOthers` opens, and that is somebody else's
+  // answer. Their own pair follows the same rule everybody else's does, because
+  // a nastup that has already happened is not one anybody is coming to.
   const canAnswer =
-    input.viewer.memberId != null &&
-    (input.viewer.voditelj || moreskantMayAnswer(performance, input.nowMs))
+    input.viewer.memberId != null && moreskantMayAnswer(performance, input.nowMs)
 
   // Only a dancer who holds BOTH armies can be moved, which is the whole point
   // of the control (#419, story 12).

@@ -1,4 +1,3 @@
-import Link from 'next/link'
 import { pluralize } from '@/lib/app/roster-loaders'
 import { APP_STRINGS, KIND_LABELS, ROLE_LABELS, dayAndMonth, weekdayLabel } from '@/lib/app/strings'
 import { MARK_OF_ROLE, type MyStanding, type RivalNews } from '@/lib/app/leaderboard-rank'
@@ -310,14 +309,6 @@ export function DancerProfileView({
             </p>
           </Card>
         </section>
-      )}
-
-      {/* The profile is read-only. Every write about a dancer stays on Članovi,
-          which is a voditelj's screen and a different audience. */}
-      {mine && (
-        <Link className="ui-btn ui-btn--link" href="/app/account">
-          {APP_STRINGS.more.accountRow}
-        </Link>
       )}
     </>
   )

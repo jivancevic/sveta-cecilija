@@ -278,30 +278,23 @@ describe('attachOwnAnswers', () => {
 
   it('folds an answer onto its own performance and leaves the rest at null', () => {
     const out = attachOwnAnswers([upcoming, started], new Map([['1', 'coming']]), now, {
-      voditelj: false,
       hasMember: true,
     })
     expect(out.map((p) => p.myAnswer)).toEqual(['coming', null])
   })
 
-  it('lets a moreškant answer an upcoming performance only', () => {
+  // Everybody, a voditelj included (#627): a voditelj used to be able to answer
+  // anything here, started or cancelled. Writing an evening down afterwards is
+  // a right over somebody ELSE's answer and it lives on the person sheet.
+  it('answers an upcoming performance only, whoever is reading', () => {
     const out = attachOwnAnswers([upcoming, started, cancelled], new Map(), now, {
-      voditelj: false,
       hasMember: true,
     })
     expect(out.map((p) => p.canAnswer)).toEqual([true, false, false])
   })
 
-  it('lets a voditelj answer anything, started or cancelled', () => {
-    const out = attachOwnAnswers([upcoming, started, cancelled], new Map(), now, {
-      voditelj: true,
-      hasMember: true,
-    })
-    expect(out.every((p) => p.canAnswer)).toBe(true)
-  })
-
   it('a viewer with no Member answers nothing', () => {
-    const out = attachOwnAnswers([upcoming], new Map(), now, { voditelj: true, hasMember: false })
+    const out = attachOwnAnswers([upcoming], new Map(), now, { hasMember: false })
     expect(out[0].canAnswer).toBe(false)
   })
 })
@@ -521,7 +514,7 @@ describe('myArmy', () => {
       rows,
       new Map([['1', 'coming' as const]]),
       at('2026-08-01', '12:00'),
-      { voditelj: false, hasMember: true },
+      { hasMember: true },
       new Map(),
     )
     expect(out.map((p) => p.myArmy)).toEqual([null, null])

@@ -25,9 +25,10 @@
 //   2. roleWarnings — a role outside the member's profile is a WARNING and
 //      never a block (story 29): a bula danced by a crni in an emergency has to
 //      be recordable as it happened.
-//   3. validateLineupEntries — the two things that are nonsense rather than
-//      unusual: a role outside the vocabulary, and a member listed twice
-//      (story 30, "statistics never double count").
+//   3. validateLineupEntries — the things that are nonsense rather than
+//      unusual: a role outside the vocabulary, a member listed twice (story 30,
+//      "statistics never double count"), and since #627 a SECOND bula, which is
+//      the one doubled title refused before the evening is confirmed.
 //
 // No IO, no Payload, no dates.
 
@@ -198,6 +199,7 @@ export const LINEUP_ERRORS = {
   unknownRole: 'Nepoznata plesna uloga u postavi.',
   duplicateMember: 'Isti moreškant je u postavi dva puta.',
   unknownMember: 'Netko iz postave nije aktivan moreškant.',
+  twoBule: 'Postava može imati samo jednu bulu.',
 } as const
 
 /**
@@ -234,6 +236,18 @@ export function validateLineupEntries(
     if (!known.has(memberId)) return { ok: false, error: LINEUP_ERRORS.unknownMember }
     seen.add(memberId)
     entries.push({ memberId, role: row.role })
+  }
+
+  // **One bula, and it is refused here rather than only at Potvrdi** (#627).
+  //
+  // Every other doubled title is left to the confirmation check, because a
+  // voditelj arranging an evening may genuinely hold two candidates for the
+  // crni kralj in the list for a moment. A second bula is not that: she is one
+  // woman in one dance, the picker that offers her filters on a primary role
+  // only she holds, and a second row is a mis-tap. Stanje also stops drawing
+  // "Dodaj bulu" once the first is in; this is the rule behind that courtesy.
+  if (entries.filter((entry) => entry.role === 'bula').length > 1) {
+    return { ok: false, error: LINEUP_ERRORS.twoBule }
   }
 
   return { ok: true, entries }

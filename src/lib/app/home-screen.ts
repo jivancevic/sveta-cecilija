@@ -4,10 +4,18 @@
 // `/app` stopped redirecting and became a screen. It is the one surface in
 // Cecilija that is not about a job: it is the reader's own front door, so it
 // says who they are, when the next evening is, and then hands them one card per
-// screen their bar carries. Four cards at most, and a card whose screen this
-// account does not unlock is never built — which is the whole of the rule,
-// because the bar is already the permission table's answer (`screens.ts`) and
+// screen THEY UNLOCK — not per tab. A card whose screen this account does not
+// unlock is never built, which is the whole of the rule, because the set of
+// unlocked screens is already the permission table's answer (`screens.ts`) and
 // nothing here re-derives it.
+//
+// **Two weights, not a cap** (#627, Q23-Q26). It was four cards at most until
+// this ticket, on the grounds that a fifth is how a landing page becomes a
+// dashboard nobody reads — and that is still true of a flat list of thirteen.
+// So the list is not flat: the three tabs keep their rings, their podium and
+// their large figures, and everything else is a short two-up tile carrying the
+// screen's name and one number. A reader still has a top to read in a glance;
+// they simply also have the rest of their app under it.
 //
 // Three rules live here rather than in the page:
 //
@@ -33,32 +41,73 @@ import { pluralForm } from './roster-loaders'
 
 const S = APP_STRINGS.landing
 
-/** The four cards, and the one that is not a screen. */
+/** Every card, and the one that is not a screen. */
 export type HomeCardKey = AppScreenKey | 'notifications'
 
 /**
- * How many cards Početna carries (Q26).
+ * A key that actually gets a card.
  *
- * Three chosen tabs plus Obavijesti is exactly four, so the cap is the bar's
- * cap restated rather than a second opinion — but it is stated, because a
- * screen that grew a fifth card by accident is how a landing page becomes a
- * dashboard nobody reads.
+ * Početna is this screen and Više is a menu, so neither is ever drawn. Stating
+ * it as a TYPE rather than as a runtime check is what lets `loadHomeCard`
+ * return a card rather than `HomeCard | null`: a tile that could turn out to be
+ * nothing is a tile that can appear as a placeholder and then vanish, which is
+ * the one thing a streamed second half must not do.
  */
-export const MAX_HOME_CARDS = 4
+export type HomeCardable = Exclude<HomeCardKey, 'home' | 'more'>
+
+/** Which cards Početna draws, and at which of the two weights (#627). */
+export interface HomeCardPlan {
+  /**
+   * The tab screens, in the account's own order. Drawn at full weight, and the
+   * only half the page WAITS for.
+   */
+  primary: HomeCardable[]
+  /**
+   * Obavijesti, then every other screen the account unlocks, in the order Više
+   * groups them. Drawn short and two to a row, and streamed in behind the
+   * primary half.
+   */
+  secondary: HomeCardable[]
+}
+
+/** Početna and Više never get a card: one is this screen and the other a menu. */
+const cardable = (key: AppScreenKey): key is HomeCardable & AppScreenKey =>
+  key !== 'home' && key !== 'more'
 
 /**
- * One card per tab, in the account's own tab order, then Obavijesti.
+ * The plan, off `nav` and off nothing else.
  *
- * Početna and Više are dropped: a card back to the screen you are on says
- * nothing, and Više is a menu rather than a place. Everything else comes
- * straight off `nav.tabs`, so a `users` holder rearranging somebody's bar
- * rearranges their Početna with it and there is no second list to keep in step.
+ * The primary half is `nav.tabs`, so a `users` holder rearranging somebody's
+ * bar rearranges their Početna with it. The secondary half is every OTHER
+ * unlocked screen in `nav.groups` order — the same Moreškant · Blagajna ·
+ * Partner · Vrata · Uprava division Više draws, minus its headings, because a
+ * heading over two tiles is a section that says less than the tiles do.
+ *
+ * Obavijesti opens the second half: it is the only card whose content is a
+ * sentence somebody wrote, so it reads as the hinge between "your screens" and
+ * "everything else" rather than as one more number.
  */
-export function homeCardKeys(nav: AppNav): HomeCardKey[] {
-  const screens = nav.tabs
-    .map((tab) => tab.key)
-    .filter((key): key is AppScreenKey => key !== 'home' && key !== 'more')
-  return [...screens, 'notifications' as const].slice(0, MAX_HOME_CARDS)
+export function homeCardPlan(nav: AppNav): HomeCardPlan {
+  const primary = nav.tabs.map((tab) => tab.key).filter(cardable)
+  const taken = new Set<AppScreenKey>(primary)
+  const secondary: HomeCardable[] = ['notifications']
+  for (const group of nav.groups) {
+    for (const screen of group.screens) {
+      if (!cardable(screen.key) || taken.has(screen.key)) continue
+      taken.add(screen.key)
+      secondary.push(screen.key)
+    }
+  }
+  // `nav.groups` is built from the same unlocked set as `nav.overflow`, so this
+  // catches nothing today. It is here because the two are built by different
+  // rules, and a screen silently missing from Početna is the kind of bug that
+  // is only ever noticed by the one person who holds that permission.
+  for (const screen of nav.overflow) {
+    if (!cardable(screen.key) || taken.has(screen.key)) continue
+    taken.add(screen.key)
+    secondary.push(screen.key)
+  }
+  return { primary, secondary }
 }
 
 // ── The greeting ───────────────────────────────────────────────────────────
@@ -270,13 +319,24 @@ const NOTIFICATIONS_ROUTE = '/app/notifications'
  * source (CLAUDE.md), so a screen that is renamed or re-routed moves its card
  * with it and no second table can drift.
  */
-function base(key: Exclude<HomeCardKey, 'home' | 'more'>): CardBase {
+function base(key: HomeCardable): CardBase {
   const screen = key === 'notifications' ? null : screenByKey(key)
   return {
     eyebrow: screen ? screen.label : S.notifications,
     href: screen ? screen.route : NOTIFICATIONS_ROUTE,
     action: S.open[key],
   }
+}
+
+/**
+ * A card's name, known WITHOUT loading it (#627).
+ *
+ * The placeholder a streaming tile shows while its screen answers needs the
+ * name and nothing else, and reading it off `base` here is what stops the page
+ * from re-typing the "notifications" special case beside the screen table.
+ */
+export function homeCardLabel(key: HomeCardable): string {
+  return base(key).eyebrow
 }
 
 /** `${count} ${the noun in the form that count takes}`, split in two. */
@@ -353,6 +413,19 @@ export function membersCard(input: { active: number; pending: number }): FigureC
  * je završila" and "sezona još nije počela" are not the same sentence to
  * somebody looking for their next evening.
  */
+/**
+ * Moreška as a TILE rather than as the hero (#627).
+ *
+ * Only ever drawn when the account unlocks Moreška but does not carry it as a
+ * tab: the hero is the primary half's, a screen has one hero or none (T1), and
+ * a dancer whose bar was arranged around Blagajna still deserves to see how
+ * many evenings are left.
+ */
+export function moreskaCard(upcoming: number): FigureCard {
+  const { figure, caption } = counted(upcoming, S.captions.moreska)
+  return { kind: 'figure', key: 'moreska', ...base('moreska'), figure, caption }
+}
+
 export function moreskaEmptyCard(hasPast: boolean): FigureCard {
   return {
     kind: 'figure',

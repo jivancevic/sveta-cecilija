@@ -238,6 +238,27 @@ describe('set_lineup', () => {
     expect(replaced).toEqual([])
   })
 
+  // #627, found in review: this writer builds its entries from NICKNAMES and
+  // reaches `replaceLineup` directly, so it never passes through
+  // `validateLineupEntries` where the app route's one-bula rule lives. A
+  // photographed paper list with two bule has to come back as a question from
+  // the connector too, not as a postava the phone would refuse.
+  it('refuses a second bula', async () => {
+    const { store, replaced } = fakeStore()
+    const res = await setLineup(
+      {
+        performanceId: '10',
+        entries: [
+          { nickname: 'Ćići', role: 'bula' },
+          { nickname: 'Bepo', role: 'bula' },
+        ],
+      },
+      store,
+    )
+    expect(res).toEqual({ ok: false, error: 'Postava može imati samo jednu bulu.' })
+    expect(replaced).toEqual([])
+  })
+
   it('writes the same line on a Moreška Experience', async () => {
     const { store, replaced } = fakeStore({
       performances: [performance({ kind: 'experience' })],

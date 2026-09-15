@@ -194,21 +194,26 @@ export function splitSeasonPerformances(
  * `answers` is keyed by performance id; a missing key is "no answer", the
  * absence of a row (glossary: *Attendance*). `canAnswer` is the same sentence
  * the answer route enforces (`moreskantMayAnswer`), so the buttons a dancer sees
- * disabled are exactly the ones the server would refuse. A voditelj may answer
- * at any time, cancelled or long past (#419, story 13).
+ * disabled are exactly the ones the server would refuse.
+ *
+ * **A voditelj gets no bypass on their OWN row** (#627). They had one until
+ * this ticket, inherited from the right to write an evening down after it
+ * happened — but that right is over somebody ELSE's answer and it lives on the
+ * person sheet. On their own pair a voditelj is a dancer, and a past nastup is
+ * one nobody is coming to.
  */
 export function attachOwnAnswers(
   rows: RosterPerformance[],
   answers: Map<string, AttendanceStatus>,
   nowMs: number,
-  opts: { voditelj: boolean; hasMember: boolean },
+  opts: { hasMember: boolean },
   armies?: Map<string, Army>,
 ): RosterPerformance[] {
   return rows.map((p) => ({
     ...p,
     myAnswer: answers.get(p.id) ?? null,
     myArmy: armies?.get(p.id) ?? null,
-    canAnswer: opts.hasMember && (opts.voditelj || moreskantMayAnswer(p, nowMs)),
+    canAnswer: opts.hasMember && moreskantMayAnswer(p, nowMs),
   }))
 }
 
@@ -493,10 +498,7 @@ export async function loadSeasonPerformances(
     rows,
     answers,
     now.getTime(),
-    {
-      voditelj: deps.voditelj === true,
-      hasMember: deps.memberId != null,
-    },
+    { hasMember: deps.memberId != null },
     armies,
   )
   rows = attachOwnTitles(rows, titles)

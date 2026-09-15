@@ -209,6 +209,33 @@ describe('validateLineupEntries', () => {
     ).toEqual({ ok: false, error: LINEUP_ERRORS.duplicateMember })
   })
 
+  // #627: the one doubled title refused before Potvrdi. A voditelj may hold two
+  // candidates for the crni kralj in the list for a moment; a second bula is a
+  // mis-tap, because she is one woman in one dance.
+  it('refuses a second bula', () => {
+    expect(
+      validateLineupEntries(
+        [
+          { memberId: '4', role: 'bula' },
+          { memberId: '3', role: 'bula' },
+        ],
+        roster,
+      ),
+    ).toEqual({ ok: false, error: LINEUP_ERRORS.twoBule })
+  })
+
+  it('leaves every other doubled title to the confirmation check', () => {
+    expect(
+      validateLineupEntries(
+        [
+          { memberId: '1', role: 'crni_kralj' },
+          { memberId: '3', role: 'crni_kralj' },
+        ],
+        roster,
+      ).ok,
+    ).toBe(true)
+  })
+
   it('refuses somebody who is not an active moreškant', () => {
     expect(validateLineupEntries([{ memberId: '404', role: 'crni' }], roster)).toEqual({
       ok: false,

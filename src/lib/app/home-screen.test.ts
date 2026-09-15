@@ -3,14 +3,13 @@ import type { Permission } from '@/lib/access/permissions'
 import { appNav, type AppNav } from './screens'
 import { APP_STRINGS } from './strings'
 import {
-  MAX_HOME_CARDS,
   compCard,
   dayPart,
   daysBetween,
   financeCard,
   firstNameOf,
   greetingLine,
-  homeCardKeys,
+  homeCardPlan,
   inboxCard,
   inquiriesCard,
   leaderboardCard,
@@ -33,7 +32,8 @@ import {
 //
 // The three that are decisions rather than formatting:
 //
-//   - the cards ARE the bar, minus its two fixed ends, plus Obavijesti;
+//   - the primary cards ARE the bar minus its two fixed ends, and the secondary
+//     half is every other unlocked screen, Obavijesti first (#627);
 //   - the greeting names a person or says nothing at all;
 //   - the sentence is in the reader's own register (CONTEXT.md).
 
@@ -48,65 +48,86 @@ const EVENING = Date.parse('2026-09-13T19:00:00.000Z')
 /** 08:15 Zagreb the same day. */
 const MORNING = Date.parse('2026-09-13T06:15:00.000Z')
 
-describe('homeCardKeys', () => {
-  it('is the account’s bar without its two fixed ends, then Obavijesti', () => {
+describe('homeCardPlan', () => {
+  it('draws the bar at full weight, without its two fixed ends', () => {
     const nav = appNav(user('tickets'), ctx(), ['orders', 'stats', 'inquiries'])
     expect(nav.tabs.map((t) => t.key)).toEqual(['home', 'orders', 'stats', 'inquiries', 'more'])
-    expect(homeCardKeys(nav)).toEqual(['orders', 'stats', 'inquiries', 'notifications'])
+    expect(homeCardPlan(nav).primary).toEqual(['orders', 'stats', 'inquiries'])
+  })
+
+  it('opens the second half with Obavijesti, then every other unlocked screen', () => {
+    // #627 reverses #564's cap: a card for every screen the account unlocks,
+    // the tabs at full weight and the rest short and two to a row. The order is
+    // Više's own workspace order, so the two screens describe one app.
+    const nav = appNav(user('tickets'), ctx(), ['orders', 'stats', 'inquiries'])
+    expect(homeCardPlan(nav).secondary[0]).toBe('notifications')
+    expect(homeCardPlan(nav).secondary).toContain('performances')
+    expect(homeCardPlan(nav).secondary).toContain('comp')
+    expect(homeCardPlan(nav).secondary).not.toContain('orders')
   })
 
   it('never draws a card for a screen the account does not unlock', () => {
     // A partner holds two screens and nothing else, so there is no orders card
-    // to leave out: the bar already answered the access question (#563).
+    // to leave out: the nav already answered the access question (#563).
     const nav = appNav(user('partner'), { hasMember: false, hasPartner: true })
-    expect(homeCardKeys(nav)).toEqual(['sell', 'statement', 'notifications'])
+    expect(homeCardPlan(nav)).toEqual({
+      primary: ['sell', 'statement'],
+      secondary: ['notifications'],
+    })
   })
 
   it('gives a dancer the dance first, as their bar does (#565)', () => {
     const nav = appNav(user('moreskant'), ctx({ hasMember: true }))
-    expect(homeCardKeys(nav)).toEqual(['moreska', 'leaderboard', 'notifications'])
+    expect(homeCardPlan(nav)).toEqual({
+      primary: ['moreska', 'leaderboard'],
+      secondary: ['notifications'],
+    })
   })
 
-  it('caps at four, so Obavijesti can never push a fifth card on', () => {
-    const nav = appNav(user('tickets'), ctx(), ['orders', 'stats', 'inquiries'])
-    expect(homeCardKeys(nav).length).toBe(MAX_HOME_CARDS)
+  it('names no screen twice', () => {
+    const nav = appNav(user('tickets', 'moreska', 'finance', 'users'), ctx())
+    const plan = homeCardPlan(nav)
+    const all = [...plan.primary, ...plan.secondary]
+    expect(new Set(all).size).toBe(all.length)
   })
 
   it('gives the two shared logins the one screen each of them holds', () => {
     // `tehnika` is the door's phone (ADR-0022) and `member` the society's
     // season. Their passwords are on a wall and in a WhatsApp group, so this is
     // where their card set is asserted rather than in a browser.
-    expect(homeCardKeys(appNav(user('door'), ctx()))).toEqual(['scan', 'notifications'])
-    expect(homeCardKeys(appNav(user('season_stats'), ctx()))).toEqual([
-      'stats',
-      'notifications',
-    ])
+    expect(homeCardPlan(appNav(user('door'), ctx()))).toEqual({
+      primary: ['scan'],
+      secondary: ['notifications'],
+    })
+    expect(homeCardPlan(appNav(user('season_stats'), ctx()))).toEqual({
+      primary: ['stats'],
+      secondary: ['notifications'],
+    })
   })
 
   it('gives a voditelj the dance, the roster and the schedule', () => {
-    expect(homeCardKeys(appNav(user('moreska'), ctx()))).toEqual([
+    expect(homeCardPlan(appNav(user('moreska'), ctx())).primary).toEqual([
       'moreska',
       'members',
       'performances',
-      'notifications',
     ])
   })
 
   it('gives a finance holder the euros, the counts and the partner statement', () => {
     // Obračun joined the secretary's bar with #599, so it joins her Početna by
-    // the same rule: the cards come off `nav.tabs` and never off a second list.
-    expect(homeCardKeys(appNav(user('finance'), ctx()))).toEqual([
+    // the same rule: the primary cards come off `nav.tabs` and never off a
+    // second list.
+    expect(homeCardPlan(appNav(user('finance'), ctx())).primary).toEqual([
       'finance',
       'stats',
       'statement',
-      'notifications',
     ])
   })
 
-  it('is only Obavijesti for an account with no bar at all', () => {
-    expect(homeCardKeys({ tabs: [], overflow: [], landing: null, groups: [] } as AppNav)).toEqual([
-      'notifications',
-    ])
+  it('is only Obavijesti for an account with no nav at all', () => {
+    expect(
+      homeCardPlan({ tabs: [], overflow: [], landing: null, groups: [] } as AppNav),
+    ).toEqual({ primary: [], secondary: ['notifications'] })
   })
 })
 

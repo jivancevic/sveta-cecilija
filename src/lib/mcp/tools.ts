@@ -24,8 +24,7 @@
 import { countArmies, type AttendanceRow } from '@/lib/attendance/army-count'
 import type { AttendanceMember } from '@/lib/attendance/rules'
 import { normaliseNickname } from '@/lib/app/username'
-import { compareLineupRows, type LineupEntry } from '@/lib/lineup/rules'
-import { roleWarnings } from '@/lib/lineup/rules'
+import { LINEUP_ERRORS, compareLineupRows, roleWarnings, type LineupEntry } from '@/lib/lineup/rules'
 import type { LineupWriteOutcome } from '@/lib/lineup/write-tx'
 import { lineupRequirements } from '@/lib/lineup/titles'
 import { performanceKindOf } from '@/lib/show-performance'
@@ -422,6 +421,16 @@ export async function setLineup(
   if (entries.length === 0) {
     const named = [...unmatched, ...ambiguous].join(', ')
     return fail(`Nijedan nadimak nije prepoznat (${named}). Postava nije promijenjena.`)
+  }
+
+  // One bula (#627), refused here as well as in `validateLineupEntries`, which
+  // this writer does not pass through: it builds its entries from nicknames
+  // rather than from ids, so it reaches `replaceLineup` directly. The app route
+  // and the connector have to refuse the same postava, and the `voditelj` rule
+  // above is re-typed for exactly the same reason. The sentence is the shared
+  // one, so the two writers cannot drift apart in their wording either.
+  if (entries.filter((entry) => entry.role === 'bula').length > 1) {
+    return fail(LINEUP_ERRORS.twoBule)
   }
 
   const outcome = await store.replaceLineup(performanceId, entries)
