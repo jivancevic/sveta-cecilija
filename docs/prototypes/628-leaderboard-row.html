@@ -1,0 +1,754 @@
+<title>Red na Ljestvici</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Labrada:wght@400;500;600;700&display=swap">
+<style>
+  :root {
+    --bg: #f5f2ec;
+    --card: #ffffff;
+    --sunk: #ede9e0;
+    --ink: #1a140c;
+    --muted: #6b6259;
+    --gold: #b8881a;
+    --goldText: #8f6a10;
+    --goldSoft: rgba(184, 136, 26, 0.12);
+    --crni: #1a140c;
+    --grey: #d9d4cc;
+    --red: #8b0000;
+    --rule: rgba(26, 20, 12, 0.08);
+    --track: rgba(26, 20, 12, 0.07);
+    --markEdge: transparent;
+    /* Nova boja ovog tiketa i jedina: žeravica. */
+    --ember: #c25a15;
+    --emberSoft: rgba(194, 90, 21, 0.12);
+    --tr1: #c9992f;
+    --tr2: #a8a49b;
+    --tr3: #b0713c;
+    --shadowCard: 0 2px 4px rgba(26, 20, 12, 0.05), 0 18px 24px -14px rgba(26, 20, 12, 0.26);
+    --serif: Labrada, 'Iowan Old Style', Georgia, serif;
+    --sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', system-ui, sans-serif;
+    --rCard: 22px;
+    --rPill: 999px;
+    --page: #e7e2d8;
+    --pageInk: #2b241b;
+    --pageMuted: #6f6559;
+    --pageEdge: rgba(26, 20, 12, 0.12);
+  }
+
+  :root:not([data-skin='light']) {
+    color-scheme: light;
+  }
+
+  [data-skin='dark'] {
+    --bg: #1f1913;
+    --card: #2c2419;
+    --sunk: #17120c;
+    --ink: #f5f2ec;
+    --muted: #a89e91;
+    --gold: #d9ab3c;
+    --goldText: #e3b94e;
+    --goldSoft: rgba(217, 171, 60, 0.14);
+    --crni: #050403;
+    --grey: #cfc8bd;
+    --red: #b3262f;
+    --rule: rgba(245, 242, 236, 0.08);
+    --track: rgba(245, 242, 236, 0.09);
+    --markEdge: rgba(217, 212, 204, 0.4);
+    --ember: #f0893c;
+    --emberSoft: rgba(240, 137, 60, 0.16);
+    --tr1: #e5b84b;
+    --tr2: #cfcabf;
+    --tr3: #c98a4e;
+    --shadowCard: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 14px 24px -12px rgba(0, 0, 0, 0.7);
+    --page: #141109;
+    --pageInk: #efe9df;
+    --pageMuted: #a89e91;
+    --pageEdge: rgba(245, 242, 236, 0.14);
+    color-scheme: dark;
+  }
+
+  body {
+    margin: 0;
+    background: var(--page);
+    color: var(--pageInk);
+    font-family: var(--sans);
+    font-size: 15px;
+    line-height: 1.5;
+    padding: 0 0 128px;
+  }
+
+  * { box-sizing: border-box; }
+
+  .wrap {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 32px 20px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+  }
+
+  header h1 {
+    font-family: var(--serif);
+    font-size: clamp(28px, 6vw, 38px);
+    font-weight: 700;
+    line-height: 1.12;
+    margin: 0 0 8px;
+    text-wrap: balance;
+  }
+
+  header p { margin: 0 0 8px; max-width: 62ch; color: var(--pageMuted); }
+
+  .eyebrow {
+    font-size: 11px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: var(--pageMuted);
+    margin: 0 0 6px;
+  }
+
+  .callout {
+    border-left: 3px solid var(--gold);
+    padding: 2px 0 2px 14px;
+    max-width: 62ch;
+    color: var(--pageInk);
+  }
+
+  .callout b { font-weight: 700; }
+
+  /* ── Telefon ─────────────────────────────────────────── */
+  .stage {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 28px;
+    align-items: flex-start;
+  }
+
+  .phone {
+    flex: 0 0 402px;
+    max-width: 100%;
+    background: var(--bg);
+    color: var(--ink);
+    border-radius: 28px;
+    border: 1px solid var(--pageEdge);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    overflow: hidden;
+  }
+
+  .phone__title {
+    font-family: var(--serif);
+    font-size: 30px;
+    font-weight: 700;
+    margin: 4px 0 0;
+  }
+
+  .note {
+    flex: 1 1 260px;
+    min-width: 240px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .note h2 {
+    font-family: var(--serif);
+    font-size: 22px;
+    margin: 0;
+  }
+
+  .note p { margin: 0; color: var(--pageMuted); max-width: 46ch; }
+  .note ul { margin: 0; padding-left: 18px; color: var(--pageMuted); }
+  .note li { margin-bottom: 6px; }
+  .note strong { color: var(--pageInk); }
+
+  /* ── Lista ───────────────────────────────────────────── */
+  .list {
+    display: flex;
+    flex-direction: column;
+    border-radius: var(--rCard);
+    background: var(--card);
+    box-shadow: var(--shadowCard);
+    overflow: hidden;
+  }
+
+  .row {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-height: 72px;
+    padding: 10px 16px;
+    border-top: 1px solid var(--rule);
+    text-decoration: none;
+    color: inherit;
+  }
+
+  .row:first-child { border-top: 0; }
+  .row--me { background: var(--goldSoft); }
+
+  .lead { flex: none; display: flex; align-items: center; gap: 10px; }
+
+  .rank {
+    min-width: 26px;
+    font-family: var(--sans);
+    font-style: normal;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--muted);
+    text-align: right;
+  }
+
+  .row--me .rank, .row--me .count { color: var(--goldText); }
+  .rank[data-place='1'] { color: var(--tr1); font-weight: 700; }
+  .rank[data-place='2'] { color: var(--tr2); font-weight: 700; }
+  .rank[data-place='3'] { color: var(--tr3); font-weight: 700; }
+
+  .mark {
+    flex: none;
+    width: 44px;
+    height: 44px;
+    border-radius: var(--rPill);
+    display: grid;
+    place-items: center;
+    font-family: var(--serif);
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+  }
+
+  .mark--crni { background: var(--crni); color: var(--grey); box-shadow: 0 0 0 1.5px var(--markEdge); }
+  .mark--bili { background: var(--red); color: #f1d27a; }
+  .mark--bula { background: var(--gold); color: #fff; }
+  .row[data-place='1'] .mark { box-shadow: 0 0 0 1.5px var(--tr1); }
+  .row[data-place='2'] .mark { box-shadow: 0 0 0 1.5px var(--tr2); }
+  .row[data-place='3'] .mark { box-shadow: 0 0 0 1.5px var(--tr3); }
+
+  .body { flex: 1; min-width: 0; }
+
+  .name {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--serif);
+    font-size: 16px;
+    font-weight: 600;
+  }
+
+  .count {
+    font-family: var(--serif);
+    font-size: 20px;
+    line-height: 1;
+    min-width: 2.1ch;
+    text-align: right;
+    font-weight: 600;
+  }
+
+  /* Uloge, pakirane lijevo (A i C) */
+  .tallies {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 3px 10px;
+    margin-top: 5px;
+  }
+
+  .tally { display: inline-flex; align-items: center; gap: 4px; }
+
+  .disc {
+    width: 18px;
+    height: 18px;
+    border-radius: var(--rPill);
+    display: grid;
+    place-items: center;
+    font-size: 10px;
+    line-height: 1;
+  }
+
+  .disc--crni { background: var(--crni); color: var(--grey); box-shadow: 0 0 0 1px var(--markEdge); }
+  .disc--bili { background: var(--red); color: #f1d27a; }
+  .disc--bula { background: var(--gold); color: #fff; }
+
+  .tally b {
+    font-family: var(--sans);
+    font-size: 12px;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--muted);
+  }
+
+  /* A: pravilo po donjem rubu */
+  .edge {
+    position: absolute;
+    left: 16px;
+    right: 16px;
+    bottom: 0;
+    height: 2px;
+    border-radius: 2px;
+    background: var(--track);
+    overflow: hidden;
+  }
+
+  .edge i {
+    display: block;
+    height: 100%;
+    width: calc(var(--share) * 100%);
+    background: var(--gold);
+    border-radius: 2px;
+  }
+
+  /* B: uloge riječima, bez trake */
+  .words {
+    margin-top: 4px;
+    font-size: 13px;
+    color: var(--muted);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .words span + span::before { content: ' · '; color: var(--rule); }
+
+  .countB {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    line-height: 1;
+    gap: 3px;
+  }
+
+  .countB small { font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+
+  /* C: traka JE sastav */
+  .seg {
+    display: flex;
+    height: 14px;
+    margin-top: 8px;
+    border-radius: var(--rPill);
+    background: var(--track);
+    overflow: hidden;
+    width: calc(var(--share) * 100%);
+    min-width: 34px;
+  }
+
+  .seg i {
+    display: grid;
+    place-items: center;
+    font-family: var(--sans);
+    font-size: 10px;
+    font-weight: 700;
+    font-style: normal;
+    color: #fff;
+    overflow: hidden;
+  }
+
+  .seg .s--crni { background: var(--crni); color: var(--grey); }
+  .seg .s--bili { background: var(--red); color: #f1d27a; }
+  .seg .s--bula { background: var(--gold); color: #fff; }
+
+  /* ── Vatrica ─────────────────────────────────────────── */
+  .flame {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 1px 7px 1px 5px;
+    border-radius: var(--rPill);
+    background: var(--emberSoft);
+    color: var(--ember);
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    line-height: 1.5;
+  }
+
+  .flame svg { width: 11px; height: 13px; display: block; }
+  .flame--off { background: none; color: var(--muted); padding-left: 0; }
+
+  .pf {
+    background: var(--card);
+    border-radius: var(--rCard);
+    box-shadow: var(--shadowCard);
+    padding: 18px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .pf__big { position: relative; flex: none; width: 76px; height: 86px; display: grid; place-items: center; }
+  .pf__big svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+  .pf__big b {
+    position: relative;
+    font-family: var(--serif);
+    font-size: 30px;
+    font-weight: 700;
+    color: #fff;
+    margin-top: 12px;
+  }
+
+  .pf__txt { min-width: 0; }
+  .pf__txt .eyebrow2 {
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    font-weight: 700;
+    color: var(--muted);
+    margin: 0 0 4px;
+  }
+  .pf__txt b { font-family: var(--serif); font-size: 22px; font-weight: 700; display: block; }
+  .pf__txt span { font-size: 13px; color: var(--muted); }
+
+  .states { display: flex; flex-wrap: wrap; gap: 10px 20px; align-items: center; }
+
+  .state { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+
+  /* ── Donja traka ─────────────────────────────────────── */
+  .bar {
+    position: fixed;
+    left: 50%;
+    bottom: 18px;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px;
+    border-radius: var(--rPill);
+    background: #12100d;
+    color: #f5f2ec;
+    box-shadow: 0 12px 30px -8px rgba(0, 0, 0, 0.6);
+    z-index: 20;
+    max-width: calc(100% - 24px);
+  }
+
+  .bar button {
+    appearance: none;
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    font-size: 13px;
+    padding: 8px 12px;
+    border-radius: var(--rPill);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+
+  .bar button:hover { background: rgba(255, 255, 255, 0.12); }
+  .bar .cur { font-weight: 700; padding: 8px 4px; font-size: 13px; }
+  .bar .sep { width: 1px; align-self: stretch; background: rgba(255, 255, 255, 0.18); margin: 4px 2px; }
+  .bar :focus-visible { outline: 2px solid var(--gold); outline-offset: 1px; }
+
+  .foot { max-width: 62ch; color: var(--pageMuted); font-size: 14px; }
+  .foot h2 { font-family: var(--serif); font-size: 20px; color: var(--pageInk); margin: 0 0 8px; }
+  .foot ol { padding-left: 20px; margin: 0; }
+  .foot li { margin-bottom: 8px; }
+
+  @media (max-width: 720px) {
+    .phone { flex-basis: 100%; border-radius: 22px; padding: 16px; }
+  }
+</style>
+
+<div class="wrap">
+  <header>
+    <p class="eyebrow">Prototip · #628</p>
+    <h1>Red na Ljestvici, i vatrica uz nadimak</h1>
+    <p>
+      Tri strukturno različite izvedbe istog reda. Prebacuj ih dolje, strelicama
+      ← → ili klikom. Ista imena, isti brojevi, ista širina telefona u sve tri,
+      tako da se razlikuje samo ono o čemu odlučuješ.
+    </p>
+    <p class="callout">
+      <b>Nije predmet ovog prototipa:</b> fontovi, boje i medalje. To je već
+      odlučeno i pušteno u #627. Novo je ovdje samo jedna boja, žeravica, i ona
+      je isključivo za vatricu.
+    </p>
+  </header>
+
+  <div class="stage">
+    <div class="phone" id="phone">
+      <p class="eyebrow" style="color: var(--muted); margin: 0">Ljestvica · 2026 · moreška</p>
+      <h2 class="phone__title">Poredak</h2>
+      <div class="list" id="list"></div>
+      <p class="eyebrow" style="color: var(--muted); margin: 8px 0 0">Profil · najduži niz</p>
+      <div class="pf">
+        <div class="pf__big" id="pfBig"></div>
+        <div class="pf__txt">
+          <p class="eyebrow2">Najduži niz</p>
+          <b id="pfLabel">7 moreški</b>
+          <span id="pfSub">I dalje traje.</span>
+        </div>
+      </div>
+      <p class="eyebrow" style="color: var(--muted); margin: 8px 0 0">Vatrica, oba stanja</p>
+      <div class="states">
+        <span class="state">
+          <span class="flame" id="fOn"></span> niz traje
+        </span>
+        <span class="state">
+          <span class="flame flame--off" id="fOff"></span> niz je prekinut
+        </span>
+        <span class="state">ispod 4 se ne crta</span>
+      </div>
+    </div>
+
+    <div class="note">
+      <p class="eyebrow">Varijanta <span id="vKey">A</span></p>
+      <h2 id="vName">Pravilo po donjem rubu</h2>
+      <p id="vDesc"></p>
+      <ul id="vList"></ul>
+    </div>
+  </div>
+
+  <div class="foot">
+    <h2>Što mi treba od tebe</h2>
+    <ol>
+      <li><b>Koja varijanta reda</b> (A, B ili C), ili koji dio koje.</li>
+      <li><b>Je li vatrica dovoljno vidljiva</b> uz nadimak na tvom iPhoneu, i je li prazna vatrica (prekinut niz) previše tiha ili taman.</li>
+      <li><b>Prag 4.</b> Sad se crta od 4 naviše, kako si rekao. Ako se na popisu pokaže da je previše ljudi s vatricom, dižemo na 5.</li>
+      <li><b>Velika vatrica na profilu:</b> broj unutar plamena, kao ovdje, ili broj pored njega kao u redu.</li>
+    </ol>
+  </div>
+</div>
+
+<div class="bar" role="group" aria-label="Varijante">
+  <button type="button" id="prev" aria-label="Prethodna varijanta">←</button>
+  <span class="cur" id="cur">A · Pravilo po rubu</span>
+  <button type="button" id="next" aria-label="Sljedeća varijanta">→</button>
+  <span class="sep"></span>
+  <button type="button" id="skin">Tamna</button>
+</div>
+
+<script>
+  const FLAME = '<svg viewBox="0 0 24 28" aria-hidden="true"><path fill="currentColor" d="M12 0c1 5-3 6.5-5.2 9.6C4.6 12.4 4 15 4 17c0 5.5 3.9 9 8 9s8-3.5 8-9c0-3.2-1.4-6-3.6-8.4-.8 1.5-1.8 2.3-2.8 2.5C14.4 7.5 14 3.2 12 0Z"/></svg>';
+  const FLAME_OUT = '<svg viewBox="0 0 24 28" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="1.8" d="M12 1.8c.6 4.3-3 5.9-5 8.7C5.2 13 4.9 15.2 4.9 17c0 5 3.4 8.1 7.1 8.1s7.1-3.1 7.1-8.1c0-2.9-1.2-5.4-3.2-7.5-.8 1.4-1.7 2.1-2.6 2.3"/></svg>';
+
+  const ROLES = {
+    crni: { cls: 'crni', g: '⚔', w: 'crni' },
+    crni_kralj: { cls: 'crni', g: '♚', w: 'crni kralj' },
+    otmanovic: { cls: 'crni', g: '✦', w: 'otmanović' },
+    bili: { cls: 'bili', g: '⚔', w: 'bili' },
+    bili_kralj: { cls: 'bili', g: '♚', w: 'bili kralj' },
+    bula: { cls: 'bula', g: '✿', w: 'bula' },
+  };
+  const ORDER = ['crni', 'crni_kralj', 'otmanovic', 'bili', 'bili_kralj', 'bula'];
+
+  const DANCERS = [
+    { r: 1, n: 'Marin', i: 'MR', a: 'crni', t: { crni: 14, crni_kralj: 7 }, s: 9, alive: true },
+    { r: 2, n: 'Tonči', i: 'TŠ', a: 'bili', t: { bili: 16, bili_kralj: 4 }, s: 6, alive: true },
+    { r: 3, n: 'Duje', i: 'DR', a: 'crni', t: { crni: 12, otmanovic: 6 }, s: 0, alive: false },
+    { r: 4, n: 'Nikša', i: 'NB', a: 'bili', t: { bili: 17 }, s: 5, alive: false },
+    { r: 5, n: 'Ti', i: 'JI', a: 'crni', t: { crni: 11, crni_kralj: 3, bili: 3 }, s: 4, alive: true, me: true },
+    { r: 6, n: 'Frane', i: 'FP', a: 'crni', t: { crni: 17 }, s: 0, alive: false },
+    { r: 6, n: 'Ivo', i: 'IV', a: 'bili', t: { bili: 14, bili_kralj: 3 }, s: 0, alive: false },
+    { r: 8, n: 'Mare', i: 'MB', a: 'bula', t: { bula: 15 }, s: 8, alive: true },
+    { r: 9, n: 'Jakov', i: 'JK', a: 'crni', t: { crni: 9, otmanovic: 4 }, s: 0, alive: false },
+    { r: 10, n: 'Šime', i: 'ŠV', a: 'bili', t: { bili: 8, bili_kralj: 2 }, s: 0, alive: false },
+    { r: 11, n: 'Luka', i: 'LT', a: 'crni', t: { crni: 6 }, s: 0, alive: false },
+    { r: 12, n: 'Pero', i: 'PM', a: 'bili', t: { bili: 2 }, s: 0, alive: false },
+  ];
+  const TOP = 21;
+  const total = (d) => Object.values(d.t).reduce((a, b) => a + b, 0);
+
+  function flame(d) {
+    if (d.s < 4) return '';
+    return d.alive
+      ? '<span class="flame">' + FLAME + d.s + '</span>'
+      : '<span class="flame flame--off">' + FLAME_OUT + d.s + '</span>';
+  }
+
+  function tallies(d) {
+    return (
+      '<span class="tallies">' +
+      ORDER.filter((r) => d.t[r])
+        .map(
+          (r) =>
+            '<span class="tally"><span class="disc disc--' +
+            ROLES[r].cls +
+            '">' +
+            ROLES[r].g +
+            '</span><b>' +
+            d.t[r] +
+            '</b></span>',
+        )
+        .join('') +
+      '</span>'
+    );
+  }
+
+  function words(d) {
+    return (
+      '<span class="words">' +
+      ORDER.filter((r) => d.t[r])
+        .map((r) => '<span>' + ROLES[r].w + ' ' + d.t[r] + '</span>')
+        .join('') +
+      '</span>'
+    );
+  }
+
+  function seg(d) {
+    const sum = total(d);
+    return (
+      '<span class="seg" style="--share:' +
+      (sum / TOP).toFixed(3) +
+      '">' +
+      ORDER.filter((r) => d.t[r])
+        .map(
+          (r) =>
+            '<i class="s--' +
+            ROLES[r].cls +
+            '" style="flex:' +
+            d.t[r] +
+            '">' +
+            (d.t[r] >= 4 ? d.t[r] : '') +
+            '</i>',
+        )
+        .join('') +
+      '</span>'
+    );
+  }
+
+  function lead(d) {
+    return (
+      '<span class="lead"><i class="rank"' +
+      (d.r <= 3 ? ' data-place="' + d.r + '"' : '') +
+      '>' +
+      d.r +
+      '.</i><span class="mark mark--' +
+      d.a +
+      '">' +
+      d.i +
+      '</span></span>'
+    );
+  }
+
+  const VARIANTS = {
+    A: {
+      name: 'Pravilo po donjem rubu',
+      desc:
+        'Prijedlog iz tiketa. Uloge se pakiraju lijevo u jedan red ispod nadimka, a utrka je tanka zlatna crta po donjem rubu reda, duga koliko je taj moreškant blizu prvome. Pozadina reda je opet čista.',
+      points: [
+        '<strong>Uloge lijevo, bez mreže.</strong> Gubi se poravnanje stupaca niz popis, ali se dobiva red koji se čita slijeva nadesno kao rečenica.',
+        '<strong>Crta umjesto ispune.</strong> Ispunjena pozadina je bila najteži način da se nacrta isti podatak.',
+        '<strong>Broj desno ostaje najteža stvar u redu</strong>, a redni broj je tih.',
+        'Tvoj red zadržava zlatnu podlogu, jer je to jedino po čemu se nalazi u skrolu.',
+      ],
+      row: (d) =>
+        '<a class="row' +
+        (d.me ? ' row--me' : '') +
+        '"' +
+        (d.r <= 3 ? ' data-place="' + d.r + '"' : '') +
+        '>' +
+        lead(d) +
+        '<span class="body"><span class="name">' +
+        d.n +
+        flame(d) +
+        '</span>' +
+        tallies(d) +
+        '</span><b class="count">' +
+        total(d) +
+        '</b><span class="edge"><i style="--share:' +
+        (total(d) / TOP).toFixed(3) +
+        '"></i></span></a>',
+    },
+    B: {
+      name: 'Uloge riječima, bez trake',
+      desc:
+        'Bez ikakve utrke. Druga linija su uloge napisane riječima, a ne krugovima, pa red ima samo tekst i jedan broj. Broj desno dobiva potpis "nastupa", jer bez trake ništa drugo ne govori što je taj broj.',
+      points: [
+        '<strong>Najtiša varijanta.</strong> Nema grafike koju treba dešifrirati; "crni 11 · crni kralj 3 · bili 3" se pročita odmah.',
+        '<strong>Gubi se usporedba.</strong> Bez trake ne vidiš na prvi pogled koliko zaostaješ za prvim, nego moraš usporediti dva broja.',
+        'Riječi zauzimaju više širine od krugova, pa kod nekoga s tri uloge druga linija prelazi u dva reda.',
+        'Krugovi uloga ostaju samo na profilu, gdje ih ima mjesta.',
+      ],
+      row: (d) =>
+        '<a class="row' +
+        (d.me ? ' row--me' : '') +
+        '"' +
+        (d.r <= 3 ? ' data-place="' + d.r + '"' : '') +
+        '>' +
+        lead(d) +
+        '<span class="body"><span class="name">' +
+        d.n +
+        flame(d) +
+        '</span>' +
+        words(d) +
+        '</span><span class="countB"><b class="count">' +
+        total(d) +
+        '</b><small>nastupa</small></span></a>',
+    },
+    C: {
+      name: 'Traka JE sastav',
+      desc:
+        'Jedan crtež umjesto dva. Druga linija je traka duga koliko i u varijanti A, ali je iznutra podijeljena po ulogama, u bojama vojski, s brojem unutar segmenta kad ima mjesta. Utrka i podjela po ulogama su ista stvar.',
+      points: [
+        '<strong>Jedan objekt, dva podatka.</strong> Duljina je utrka, a podjela su uloge; zbroj segmenata je broj desno.',
+        '<strong>Vojska se vidi izdaleka.</strong> Niz popis se odmah vidi tko je uglavnom crni, a tko bili.',
+        '<strong>Mali brojevi nestaju.</strong> Segment od 2 ili 3 nastupa je preuzak za broj, pa se za takve mora ići na profil.',
+        'Najhrabrija varijanta i najviše odstupa od onoga što aplikacija sad radi.',
+      ],
+      row: (d) =>
+        '<a class="row' +
+        (d.me ? ' row--me' : '') +
+        '"' +
+        (d.r <= 3 ? ' data-place="' + d.r + '"' : '') +
+        '>' +
+        lead(d) +
+        '<span class="body"><span class="name">' +
+        d.n +
+        flame(d) +
+        '</span>' +
+        seg(d) +
+        '</span><b class="count">' +
+        total(d) +
+        '</b></a>',
+    },
+  };
+
+  const KEYS = Object.keys(VARIANTS);
+
+  function render(key) {
+    const v = VARIANTS[key];
+    document.getElementById('list').innerHTML = DANCERS.map(v.row).join('');
+    document.getElementById('vKey').textContent = key;
+    document.getElementById('vName').textContent = v.name;
+    document.getElementById('vDesc').textContent = v.desc;
+    document.getElementById('vList').innerHTML = v.points.map((p) => '<li>' + p + '</li>').join('');
+    document.getElementById('cur').textContent = key + ' · ' + v.name;
+    const u = new URL(location.href);
+    u.searchParams.set('variant', key);
+    history.replaceState(null, '', u);
+  }
+
+  function boot() {
+    document.getElementById('pfBig').innerHTML =
+      '<svg viewBox="0 0 24 28" aria-hidden="true"><path fill="var(--ember)" d="M12 0c1 5-3 6.5-5.2 9.6C4.6 12.4 4 15 4 17c0 5.5 3.9 9 8 9s8-3.5 8-9c0-3.2-1.4-6-3.6-8.4-.8 1.5-1.8 2.3-2.8 2.5C14.4 7.5 14 3.2 12 0Z"/></svg><b>7</b>';
+    document.getElementById('fOn').innerHTML = FLAME + '5';
+    document.getElementById('fOff').innerHTML = FLAME_OUT + '5';
+  }
+
+  let cur = new URL(location.href).searchParams.get('variant');
+  if (!KEYS.includes(cur)) cur = 'A';
+
+  const step = (d) => {
+    cur = KEYS[(KEYS.indexOf(cur) + d + KEYS.length) % KEYS.length];
+    render(cur);
+  };
+
+  document.getElementById('prev').addEventListener('click', () => step(-1));
+  document.getElementById('next').addEventListener('click', () => step(1));
+  document.addEventListener('keydown', (e) => {
+    const t = e.target;
+    if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+    if (e.key === 'ArrowLeft') step(-1);
+    if (e.key === 'ArrowRight') step(1);
+  });
+
+  const skinBtn = document.getElementById('skin');
+  skinBtn.addEventListener('click', () => {
+    const dark = document.documentElement.getAttribute('data-skin') === 'dark';
+    document.documentElement.setAttribute('data-skin', dark ? 'light' : 'dark');
+    skinBtn.textContent = dark ? 'Tamna' : 'Svijetla';
+  });
+  document.documentElement.setAttribute('data-skin', 'light');
+
+  boot();
+  render(cur);
+</script>
