@@ -3,9 +3,8 @@ import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { Bell } from 'lucide-react'
 import { loadHomeCard, loadHomeScreen } from '@/lib/app/home-data'
-import type { HomeCard, HomeCardKey } from '@/lib/app/home-screen'
+import { homeCardLabel, type HomeCard, type HomeCardable } from '@/lib/app/home-screen'
 import { ONBOARDING_COOKIE, needsOnboarding } from '@/lib/app/onboarding'
-import { screenByKey } from '@/lib/app/screens'
 import { APP_STRINGS } from '@/lib/app/strings'
 import { resolveAppViewer, type AppViewer } from '@/lib/app/viewer'
 import { Card, Chip, Hero, List, ListRow, Podium, Ring, Tile, Tiles, Trophy } from '../ui'
@@ -180,7 +179,7 @@ export default async function AppHomePage() {
           never a zero, which a reader would take for a figure. */}
       {hasInbox && (
         <Suspense fallback={<InboxWaiting />}>
-          <InboxCard viewer={viewer} />
+          <InboxCard viewer={viewer} nowMs={home.nowMs} />
         </Suspense>
       )}
 
@@ -188,7 +187,7 @@ export default async function AppHomePage() {
         <Tiles className="app__home-rest">
           {rest.map((key) => (
             <Suspense key={key} fallback={<TileWaiting cardKey={key} />}>
-              <RestTile viewer={viewer} cardKey={key} />
+              <RestTile viewer={viewer} cardKey={key} nowMs={home.nowMs} />
             </Suspense>
           ))}
         </Tiles>
@@ -298,20 +297,27 @@ function figureSize(figure: string): string {
  * muted rule where its figure will be. A zero would be read as a figure, and a
  * spinner would be four spinners spinning at different speeds.
  */
-function TileWaiting({ cardKey }: { cardKey: HomeCardKey }) {
-  const label = cardKey === 'notifications' ? S.notifications : screenByKey(cardKey).label
+function TileWaiting({ cardKey }: { cardKey: HomeCardable }) {
   return (
     <div className="ui-tile ui-tile--sm app__home-wait" aria-hidden="true">
-      <div className="ui-card__eyebrow">{label}</div>
+      <div className="ui-card__eyebrow">{homeCardLabel(cardKey)}</div>
       <span className="app__home-wait-rule" />
     </div>
   )
 }
 
+/**
+ * Obavijesti, waiting.
+ *
+ * `--inbox` gives it the height of the list row it becomes, because this card
+ * is the FIRST thing in the second half and everything else is under it: a card
+ * that grew when it landed would push four tiles down while a thumb was already
+ * reaching for one.
+ */
 function InboxWaiting() {
   return (
-    <Card className="app__home-wait" aria-hidden="true">
-      <div className="ui-card__eyebrow">{S.notifications}</div>
+    <Card className="app__home-wait app__home-wait--inbox" aria-hidden="true">
+      <div className="ui-card__eyebrow">{homeCardLabel('notifications')}</div>
       <span className="app__home-wait-rule" />
     </Card>
   )
@@ -325,9 +331,17 @@ function InboxWaiting() {
  * (Obračun, Gratis, Ljestvica) prints its sentence instead, so no tile is ever
  * just a name.
  */
-async function RestTile({ viewer, cardKey }: { viewer: AppViewer; cardKey: HomeCardKey }) {
-  const card = await loadHomeCard(viewer, cardKey)
-  if (!card || card.kind === 'inbox') return null
+async function RestTile({
+  viewer,
+  cardKey,
+  nowMs,
+}: {
+  viewer: AppViewer
+  cardKey: HomeCardable
+  nowMs: number
+}) {
+  const card = await loadHomeCard(viewer, cardKey, nowMs)
+  if (card.kind === 'inbox') return null
   const figure = shortFigure(card)
   return (
     <Tile
@@ -351,9 +365,9 @@ function shortFigure(card: HomeCard): string | null {
   return null
 }
 
-async function InboxCard({ viewer }: { viewer: AppViewer }) {
-  const card = await loadHomeCard(viewer, 'notifications')
-  return card && card.kind === 'inbox' ? <Inbox card={card} /> : null
+async function InboxCard({ viewer, nowMs }: { viewer: AppViewer; nowMs: number }) {
+  const card = await loadHomeCard(viewer, 'notifications', nowMs)
+  return card.kind === 'inbox' ? <Inbox card={card} /> : null
 }
 
 /**

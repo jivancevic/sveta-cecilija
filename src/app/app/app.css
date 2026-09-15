@@ -726,6 +726,13 @@ html:has(> .app) {
   justify-content: flex-start;
 }
 
+/* Obavijesti is a `Card` rather than a tile, so `--sm`'s floor never reaches
+   it and it would otherwise be a third the height of the list row it becomes.
+   72px is `ui-row`'s own touch height, which is what this card lands as. */
+.app__home-wait--inbox {
+  min-height: 72px;
+}
+
 .app__home-wait-rule {
   display: block;
   width: 56px;
@@ -3592,9 +3599,6 @@ a.app__ob-link {
   color: var(--goldText);
 }
 
-/* Which number the column is showing. Sits under the heading because it
-   changes with the chip, and a caption that moves has to be next to what moves
-   it. */
 /* The roles a dancer wore, under the nickname. They sum to the count at the end
    of the row, which is what makes them checkable rather than decorative.
    Deliberately QUIET (#611): four 28px discs each with a bold number beside it
@@ -3790,10 +3794,14 @@ a.app__ob-link {
   gap: 12px;
 }
 
-  /* No `tabular-nums` on a Labrada figure (#611, swept in #627): its tabular
-     digits are a third wider than its proportional ones, so a two-digit number
-     comes out with a hole in the middle of it. This figure stands alone rather
-     than in a scrolling column, so nothing is lost by dropping it. */
+/* **A Labrada figure never takes `tabular-nums`** (#611, swept in #627). Its
+   tabular digits are a third wider than its proportional ones, so a two-digit
+   number comes out with a hole in the middle of it — the "1 7" Josip
+   photographed. The rule is stated here and applies to every serif figure in
+   this sheet: the big rank below, Skener's, Statistika's, Financije's and
+   Stanje's army count all had the pairing and all lost it. Where a column of
+   figures really has to line up, the fix is a fixed box (`.app__lb-count`'s
+   `min-width`), never the tabular set. */
 .app__lb-you-rank {
   flex: none;
   font-family: var(--serif);
@@ -3866,10 +3874,6 @@ a.app__ob-link {
   color: var(--card);
 }
 
-/* ── The reader's own answer on Stanje (#624) ──────────────
-   Under the date, above the bar. It is the hero's pair, full width, on a screen
-   that has no hero: a dancer who tapped the ArmyBar to get here can answer
-   without going back. */
 /* The ordinal's full stop (#624): on the baseline, a little smaller than the
    digits and a hair of air before it, because "15." is one word and the dot is
    the half of it that says "fifteenTH". */
@@ -3960,9 +3964,6 @@ a.app__ob-link {
   font-weight: 600;
 }
 
-/* ── The season's clock (Q3) ──────────────────────────────────────────────
-   Under the heading of the list it counts. One line, and without it a rank is
-   a verdict rather than something left to play for. */
 /* ── A list too small to rank (finding 02) ────────────────────────────────
    No podium, no places: who leads, and the reason there is no ranking. */
 .app__lb-leaders {
@@ -7987,13 +7988,18 @@ a.app__statrow-main:focus-visible {
   gap: var(--gap);
 }
 
-/* Pozovi and Potvrdi, in the flow and under the Bule (#620).
-   They were a sticky bar at `z-index: 15` until Josip photographed the bottom
-   of it being read through the tab bar's blur zone, which sits at 20 and is up
-   to 132px tall: a lifted element BELOW that zone is blurred out by it, and no
-   amount of `bottom` clears something that follows the scroll. In the flow the
-   shell's own bottom padding clears the bar, and the two buttons stand at a
-   place on the screen rather than following the thumb up the page. */
+/* ── Pozovi and Potvrdi (#620) ─────────────────────────────
+   In the flow and under the Bule. They were a sticky bar at `z-index: 15`
+   until Josip photographed the bottom of it being read through the tab bar's
+   blur zone, which sits at 20 and is up to 132px tall: a lifted element BELOW
+   that zone is blurred out by it, and no amount of `bottom` clears something
+   that follows the scroll. In the flow the shell's own bottom padding clears
+   the bar, and the two buttons stand at a place on the screen rather than
+   following the thumb up the page.
+
+   `.app__stanje-actions` carries no rule of its own any more (#627): the
+   screen's own `gap` spaces it, as it spaces every other block on Stanje.
+   The line under the buttons is all that is left to style. */
 .app__stanje-why {
   margin: 8px 0 0;
   font-size: 13px;

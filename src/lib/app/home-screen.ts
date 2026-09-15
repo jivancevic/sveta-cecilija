@@ -41,8 +41,19 @@ import { pluralForm } from './roster-loaders'
 
 const S = APP_STRINGS.landing
 
-/** The four cards, and the one that is not a screen. */
+/** Every card, and the one that is not a screen. */
 export type HomeCardKey = AppScreenKey | 'notifications'
+
+/**
+ * A key that actually gets a card.
+ *
+ * Početna is this screen and Više is a menu, so neither is ever drawn. Stating
+ * it as a TYPE rather than as a runtime check is what lets `loadHomeCard`
+ * return a card rather than `HomeCard | null`: a tile that could turn out to be
+ * nothing is a tile that can appear as a placeholder and then vanish, which is
+ * the one thing a streamed second half must not do.
+ */
+export type HomeCardable = Exclude<HomeCardKey, 'home' | 'more'>
 
 /** Which cards Početna draws, and at which of the two weights (#627). */
 export interface HomeCardPlan {
@@ -50,17 +61,18 @@ export interface HomeCardPlan {
    * The tab screens, in the account's own order. Drawn at full weight, and the
    * only half the page WAITS for.
    */
-  primary: AppScreenKey[]
+  primary: HomeCardable[]
   /**
    * Obavijesti, then every other screen the account unlocks, in the order Više
    * groups them. Drawn short and two to a row, and streamed in behind the
    * primary half.
    */
-  secondary: HomeCardKey[]
+  secondary: HomeCardable[]
 }
 
 /** Početna and Više never get a card: one is this screen and the other a menu. */
-const cardable = (key: AppScreenKey) => key !== 'home' && key !== 'more'
+const cardable = (key: AppScreenKey): key is HomeCardable & AppScreenKey =>
+  key !== 'home' && key !== 'more'
 
 /**
  * The plan, off `nav` and off nothing else.
@@ -78,7 +90,7 @@ const cardable = (key: AppScreenKey) => key !== 'home' && key !== 'more'
 export function homeCardPlan(nav: AppNav): HomeCardPlan {
   const primary = nav.tabs.map((tab) => tab.key).filter(cardable)
   const taken = new Set<AppScreenKey>(primary)
-  const secondary: HomeCardKey[] = ['notifications']
+  const secondary: HomeCardable[] = ['notifications']
   for (const group of nav.groups) {
     for (const screen of group.screens) {
       if (!cardable(screen.key) || taken.has(screen.key)) continue
@@ -307,13 +319,24 @@ const NOTIFICATIONS_ROUTE = '/app/notifications'
  * source (CLAUDE.md), so a screen that is renamed or re-routed moves its card
  * with it and no second table can drift.
  */
-function base(key: Exclude<HomeCardKey, 'home' | 'more'>): CardBase {
+function base(key: HomeCardable): CardBase {
   const screen = key === 'notifications' ? null : screenByKey(key)
   return {
     eyebrow: screen ? screen.label : S.notifications,
     href: screen ? screen.route : NOTIFICATIONS_ROUTE,
     action: S.open[key],
   }
+}
+
+/**
+ * A card's name, known WITHOUT loading it (#627).
+ *
+ * The placeholder a streaming tile shows while its screen answers needs the
+ * name and nothing else, and reading it off `base` here is what stops the page
+ * from re-typing the "notifications" special case beside the screen table.
+ */
+export function homeCardLabel(key: HomeCardable): string {
+  return base(key).eyebrow
 }
 
 /** `${count} ${the noun in the form that count takes}`, split in two. */

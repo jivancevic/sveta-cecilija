@@ -151,6 +151,27 @@ describe('stanjeView columns', () => {
     )
   })
 
+  // #627, found in review: a dictated row is drawn in its column but is not in
+  // the ANSWER count, so measuring the height by the count let one column stand
+  // taller than the other — the very thing the equal heights are here to stop.
+  it('counts a dictated row towards the height, and numbers the places past it', () => {
+    const d = detail()
+    const out = stanjeView({
+      ...d,
+      lineup: {
+        ...d.lineup,
+        entries: [{ memberId: '5', nickname: 'Grgo', role: 'bili' }],
+      },
+    })
+    const [crni, bili] = out.columns
+    expect(bili!.people.map((p) => p.nickname)).toContain('Grgo')
+    expect(crni!.people.length + crni!.slots.length).toBe(
+      bili!.people.length + bili!.slots.length,
+    )
+    // Grgo stands second in the bili column, so the next empty place is third.
+    expect(bili!.slots[0]).toBe('mjesto 3')
+  })
+
   it('draws one place past an army that is already at or over its threshold', () => {
     const d = detail()
     // The members and the count must agree, the way `countArmies` always makes

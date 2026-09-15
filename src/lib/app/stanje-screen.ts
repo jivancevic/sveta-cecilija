@@ -567,12 +567,23 @@ export function stanjeView(detail: PerformanceDetail): StanjeView {
    * its last name with nowhere to add a ninth, while the other at 3 of 8 showed
    * five holes, and the two sides of the pier stood at different heights.
    *
-   * Both thresholds and both counts are in the max because any of the four can
-   * be the tallest: a voditelj may put a tenth dancer in one army, and the two
-   * armies may carry different thresholds.
+   * Both thresholds and both column LENGTHS are in the max, because any of the
+   * four can be the tallest: a voditelj may put a tenth dancer in one army, and
+   * the two armies may carry different thresholds.
+   *
+   * **The lengths, not the counts.** They are different numbers on an
+   * unconfirmed evening: the count is the ANSWERS (#620), and a column also
+   * draws the postava rows nobody answered for. Measuring the height by the
+   * count would let a dictated row push one column past the other, which is the
+   * very thing this is here to stop.
    */
   const rows =
-    Math.max(count.crni.threshold, count.bili.threshold, totalByArmy.crni, totalByArmy.bili) + 1
+    Math.max(
+      count.crni.threshold,
+      count.bili.threshold,
+      peopleByArmy.crni.length,
+      peopleByArmy.bili.length,
+    ) + 1
 
   function column(army: 'crni' | 'bili', tally: { threshold: number }): StanjeColumn {
     const people = peopleByArmy[army]
@@ -583,7 +594,10 @@ export function stanjeView(detail: PerformanceDetail): StanjeView {
     // about an evening that has not happened yet. A past one has no places left
     // and a confirmed one may not change at all, so both end without them.
     if (!past && !confirmed) {
-      for (let n = total + 1; n <= rows; n += 1) slots.push(S.slot(n))
+      // From the length of the column, for the same reason `rows` is measured
+      // by it: a place is numbered by where it STANDS, and a dictated row above
+      // it occupies one.
+      for (let n = people.length + 1; n <= rows; n += 1) slots.push(S.slot(n))
     }
     return {
       army,

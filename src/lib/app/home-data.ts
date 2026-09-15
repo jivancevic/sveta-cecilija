@@ -79,7 +79,7 @@ import {
   zagrebToday,
   firstNameOf,
   type HomeCard,
-  type HomeCardKey,
+  type HomeCardable,
 } from './home-screen'
 
 /**
@@ -115,7 +115,16 @@ export interface HomeScreen {
    * `<Suspense>` and calls {@link loadHomeCard} inside it, so one slow screen
    * delays only its own tile (#627).
    */
-  secondary: HomeCardKey[]
+  secondary: HomeCardable[]
+  /**
+   * The screen's ONE clock, handed to every streamed card (#627).
+   *
+   * The greeting, the sentence and "karata za sutra" have to agree, and a
+   * streamed tile that read `Date.now()` for itself could land on the other
+   * side of midnight from the sentence above it — a second or two later, on a
+   * phone opened at 23:59:59.
+   */
+  nowMs: number
 }
 
 /** The next public evening, as the two cards that need one read it. */
@@ -177,9 +186,9 @@ const pendingClaims = cache(() => getPendingJoinClaims())
  */
 export async function loadHomeCard(
   viewer: AppViewer,
-  key: HomeCardKey,
-): Promise<HomeCard | null> {
-  const nowMs = Date.now()
+  key: HomeCardable,
+  nowMs: number,
+): Promise<HomeCard> {
   const today = zagrebToday(nowMs)
 
   switch (key) {
@@ -271,8 +280,6 @@ export async function loadHomeCard(
         unread: viewer.unreadNotifications,
       })
     }
-    default:
-      return null
   }
 }
 
@@ -301,7 +308,7 @@ export async function loadHomeScreen(viewer: AppViewer): Promise<HomeScreen> {
       : Promise.resolve(null),
     register === 'izvedba' ? nextPublic() : Promise.resolve(null),
     // The primary half in parallel, each card loading only its own inputs.
-    Promise.all(plan.primary.map((key) => loadHomeCard(viewer, key))),
+    Promise.all(plan.primary.map((key) => loadHomeCard(viewer, key, nowMs))),
   ])
 
   // The hero is the DAY rather than one evening (#591): two nastupa on the same
@@ -343,9 +350,8 @@ export async function loadHomeScreen(viewer: AppViewer): Promise<HomeScreen> {
     }),
     // The Moreška hero replaces its own tile, so a primary `moreska` card is
     // drawn only when there is no evening left to be the hero of.
-    cards: cards.filter(
-      (card): card is HomeCard => card != null && !(card.key === 'moreska' && moreska != null),
-    ),
+    cards: cards.filter((card) => !(card.key === 'moreska' && moreska != null)),
     secondary: plan.secondary,
+    nowMs,
   }
 }
