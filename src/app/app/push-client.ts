@@ -1,7 +1,7 @@
 // The browser half of push, in one module (#431, extracted in #457).
 //
-// Two screens now ask this phone the same question — the Više switch
-// (`InstallHint`) and step 2 of the Dobrodošlica — and the question has a lot
+// Two screens now ask this phone the same question — the Profil switch
+// (`PushSwitch`, #569) and step 2 of the Dobrodošlica — and the question has a lot
 // of edges: an iPhone outside a home-screen app exposes no `PushManager` at
 // all, `register()` resolving is not the worker being active, and a
 // subscription the server never heard about looks "on" here and rings never.
