@@ -45,6 +45,13 @@ export interface PodiumEntry {
   /** The 28px mark above the name on the large podium (a `RoleMark`). */
   mark?: React.ReactNode
   /**
+   * A small thing beside the name: the niz flame on Ljestvica (#633).
+   *
+   * Its own slot rather than a richer `label`, because `label` is also the
+   * fallback React key and has to stay a string.
+   */
+  badge?: React.ReactNode
+  /**
    * The cup above the mark (a `Trophy`), #607, at either size since #612.
    *
    * Its own slot rather than part of `mark`, because the two say different
@@ -137,7 +144,10 @@ export function Podium({ entries, large = false, framed = false, className }: Po
             {entry.cup}
             {large && entry.mark}
             <b>{entry.value}</b>
-            <span className="ui-podium__name">{entry.label}</span>
+            <span className="ui-podium__name">
+              {entry.label}
+              {entry.badge}
+            </span>
             {large && entry.caption != null && (
               <small className="ui-podium__place">{entry.caption}</small>
             )}

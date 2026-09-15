@@ -15,7 +15,7 @@ import type {
 } from '@/lib/app/leaderboard-rank'
 import type { AttendanceStatus } from '@/lib/attendance/rules'
 import { Answer } from '../moreska/Answer'
-import { Card, CountUp, List, ListRow, Podium, RoleMark, Section, Trophy } from '../../ui'
+import { Card, CountUp, Flame, List, ListRow, Podium, RoleMark, Section, Trophy } from '../../ui'
 import { BoardRow } from './BoardRow'
 import { StandingCard } from './StandingCard'
 
@@ -250,6 +250,15 @@ function OneList({ list, season }: { list: BoardList; season: number }) {
                 mark: (
                   <RoleMark army={row.army} title={row.title} initials={row.initials} small />
                 ),
+                // The niz belongs on the podium too (#633). It was already on
+                // every row of the list below and on nobody's step, so the
+                // three dancers a reader looks at FIRST were the three the
+                // screen said nothing about. Same rule as a row: three or
+                // more, and only while it is still running.
+                badge: (() => {
+                  const niz = flameNiz(row.niz)
+                  return niz === null ? undefined : <Flame count={niz} />
+                })(),
                 // The place stays, in words, under the step. The audit asked
                 // for it to go as a repetition of the cup and the position —
                 // and it would be, on a podium whose steps are 1, 2, 3. On
@@ -344,14 +353,16 @@ export function Board({
 
       {/* What the flame means, said once under the board rather than on twenty
           rows (#628), and only where one can actually be seen: the Moreška
-          list's ROWS. The podium draws none, and the Experience list has no
-          niz because an Experience is not a link in the chain. */}
+          list, podium included since #633. The Experience list has no niz,
+          because an Experience is not a link in the chain. */}
       {lists.some(
         (list) =>
           list.kind === 'moreska' &&
-          [...list.view.rows, ...(list.view.pinned ? [list.view.pinned] : [])].some(
-            (row) => flameNiz(row.niz) !== null,
-          ),
+          [
+            ...list.view.podium,
+            ...list.view.rows,
+            ...(list.view.pinned ? [list.view.pinned] : []),
+          ].some((row) => flameNiz(row.niz) !== null),
       ) && <p className="app__lb-footer">{APP_STRINGS.profile.nizLegend}</p>}
 
       <p className="app__lb-footer">

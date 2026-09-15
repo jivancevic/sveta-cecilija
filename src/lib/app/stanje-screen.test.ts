@@ -142,13 +142,54 @@ describe('stanjeView columns', () => {
   // thing on the evening, so the two sides of the pier stand at one height and
   // there is always exactly one place left to drop somebody into. The fixture
   // is crni 2 of 3 and bili 1 of 2, so both columns end at four.
-  it('draws both columns to the same height, one past the fullest of the two', () => {
+  // #633: the height is the THRESHOLD until an army reaches it. Three of three
+  // draws three places and not four, so a voditelj counting holes counts the
+  // ones the evening actually wants.
+  it('draws both columns to the threshold, at the same height', () => {
     const [crni, bili] = stanjeView(detail()).columns
-    expect(crni!.slots).toEqual(['mjesto 3', 'mjesto 4'])
-    expect(bili!.slots).toEqual(['mjesto 2', 'mjesto 3', 'mjesto 4'])
+    expect(crni!.slots).toEqual(['mjesto 3'])
+    expect(bili!.slots).toEqual(['mjesto 2', 'mjesto 3'])
     expect(crni!.people.length + crni!.slots.length).toBe(
       bili!.people.length + bili!.slots.length,
     )
+  })
+
+  // #633 — the threshold IS the height, and the eleventh place opens only once
+  // some army has filled the tenth. Josip: "kada je prag 10, onda prikaži 10
+  // mjesta, sve do momenta u kojem se u nekoj vojci ne popuni 10. mjesto".
+  it('draws exactly the threshold while both armies are short of it', () => {
+    const d = detail()
+    const out = stanjeView({
+      ...d,
+      count: {
+        ...d.count,
+        crni: { ...d.count.crni, threshold: 10, members: [CICI, DADO] },
+        bili: { ...d.count.bili, threshold: 10, members: [BEPO] },
+      },
+    })
+    const [crni, bili] = out.columns
+    expect(crni!.people.length + crni!.slots.length).toBe(10)
+    expect(bili!.people.length + bili!.slots.length).toBe(10)
+    expect(crni!.slots.at(-1)).toBe('mjesto 10')
+  })
+
+  it('opens one more place the moment an army fills the last one', () => {
+    const d = detail()
+    // The two the suggested postava names are in it, so nobody is a dictated
+    // row standing above the places and pushing the column taller.
+    const ten = [CICI, DADO, ...Array.from({ length: 8 }, (_, i) => person(`c${i}`, `Crni ${i}`))]
+    const out = stanjeView({
+      ...d,
+      count: {
+        ...d.count,
+        crni: { ...d.count.crni, count: 10, threshold: 10, members: ten },
+        bili: { ...d.count.bili, threshold: 10, members: [BEPO] },
+      },
+    })
+    const [crni, bili] = out.columns
+    expect(crni!.slots).toEqual(['mjesto 11'])
+    // The other column keeps up, because both sides stand at one height.
+    expect(bili!.people.length + bili!.slots.length).toBe(11)
   })
 
   // #627, found in review: a dictated row is drawn in its column but is not in
@@ -412,11 +453,23 @@ const started = (over: Partial<PerformanceDetail> = {}) =>
 
 /** A roster with profiles on it, which is what the pickers read. */
 const ROSTER = [
-  { memberId: '1', nickname: 'Ćići', roles: ['crni', 'crni_kralj'], primaryRole: 'crni_kralj' },
-  { memberId: '2', nickname: 'Dado', roles: ['crni', 'bili'], primaryRole: 'crni' },
-  { memberId: '3', nickname: 'Bepo', roles: ['bili'], primaryRole: 'bili' },
-  { memberId: '4', nickname: 'Mare', roles: ['bula'], primaryRole: 'bula' },
-  { memberId: '5', nickname: 'Grgo', roles: ['bili', 'bili_kralj'], primaryRole: 'bili_kralj' },
+  {
+    memberId: '1',
+    nickname: 'Ćići',
+    name: 'Ivan Marić',
+    roles: ['crni', 'crni_kralj'],
+    primaryRole: 'crni_kralj',
+  },
+  { memberId: '2', nickname: 'Dado', name: 'Damir Foretić', roles: ['crni', 'bili'], primaryRole: 'crni' },
+  { memberId: '3', nickname: 'Bepo', name: 'Josip Depolo', roles: ['bili'], primaryRole: 'bili' },
+  { memberId: '4', nickname: 'Mare', name: 'Marija Šeparović', roles: ['bula'], primaryRole: 'bula' },
+  {
+    memberId: '5',
+    nickname: 'Grgo',
+    name: 'Grgur Ivančević',
+    roles: ['bili', 'bili_kralj'],
+    primaryRole: 'bili_kralj',
+  },
 ] as const
 
 function withRoster(over: Partial<PerformanceDetail> = {}): PerformanceDetail {
@@ -428,6 +481,7 @@ function withRoster(over: Partial<PerformanceDetail> = {}): PerformanceDetail {
       roster: ROSTER.map((r) => ({
         memberId: r.memberId,
         nickname: r.nickname,
+        name: r.name,
         roles: [...r.roles],
         primaryRole: r.primaryRole,
       })),
@@ -459,7 +513,7 @@ describe('stanjeView on a past nastup (#620)', () => {
     const out = stanjeView(detail())
     expect(out.past).toBe(false)
     expect(out.columns[0]!.head).toBe('2 od 3')
-    expect(out.columns[0]!.slots).toEqual(['mjesto 3', 'mjesto 4'])
+    expect(out.columns[0]!.slots).toEqual(['mjesto 3'])
     expect(out.columns[0]!.addRow).toBeNull()
   })
 })
@@ -509,19 +563,33 @@ describe('stanjeView on a confirmed postava (#620)', () => {
   })
 })
 
-describe('stanjeView pickers (#620)', () => {
-  it('offers only the people whose profile covers that army', () => {
+describe('stanjeView pickers (#620, widened by #633)', () => {
+  it('offers everybody but the bula, that army first (#633)', () => {
     const out = stanjeView(withRoster())
-    // Ćići and Dado are already in the crni column, and nobody else dances it.
-    expect(out.pickers.crni.people.map((p) => p.nickname)).toEqual([])
-    // Bepo is already in the bili column, so only the other two who may dance it.
-    expect(out.pickers.bili.people.map((p) => p.nickname)).toEqual(['Dado', 'Grgo'])
+    // Ćići and Dado stand in the crni column already; the picker still offers
+    // the rest of the roster, because anybody may dance any role if the evening
+    // needs it. Mare is the bula and is the one person left out.
+    expect(out.pickers.crni.people.map((p) => p.nickname)).toEqual(['Bepo', 'Grgo'])
+    expect(out.pickers.crni.people.every((p) => p.outsider)).toBe(true)
+
+    // Bepo stands in the bili column. Dado and Grgo dance the bili, so they
+    // come first; Ćići is the crni kralj and stands under the caption.
+    expect(out.pickers.bili.people.map((p) => p.nickname)).toEqual(['Dado', 'Grgo', 'Ćići'])
+    expect(out.pickers.bili.people.map((p) => p.outsider)).toEqual([false, false, true])
   })
 
-  it('offers a bula only to somebody whose PRIMARY role is bula', () => {
+  it('never offers a bula to an army, and never anybody else to the bula', () => {
     const out = stanjeView(withRoster())
+    for (const key of ['crni', 'bili'] as const) {
+      expect(out.pickers[key].people.map((p) => p.nickname)).not.toContain('Mare')
+    }
     // Mare is the only bula and she is already in the card.
     expect(out.pickers.bula.people).toEqual([])
+  })
+
+  it('carries the real name for the search box and draws nothing with it (#633)', () => {
+    const out = stanjeView(withRoster())
+    expect(out.pickers.bili.people.find((p) => p.nickname === 'Dado')?.name).toBe('Damir Foretić')
   })
 
   it('offers any active moreškant as the voditelj, and hides nobody', () => {
@@ -545,9 +613,11 @@ describe('stanjeView pickers (#620)', () => {
       ...d,
       count: { ...d.count, bili: { ...d.count.bili, count: 0, members: [] }, notComing: [BEPO] },
     })
-    const names = out.pickers.bili.people.map((p) => p.nickname)
-    expect(names[names.length - 1]).toBe('Bepo')
-    expect(out.pickers.bili.people.at(-1)!.answer).toBe('not_coming')
+    // Last of his own half, not of the whole list: the caption's group is
+    // below him either way (#633).
+    const own = out.pickers.bili.people.filter((p) => !p.outsider)
+    expect(own.at(-1)!.nickname).toBe('Bepo')
+    expect(own.at(-1)!.answer).toBe('not_coming')
   })
 
   it('names the role every row holds by definition, so it is not repeated', () => {
@@ -558,7 +628,13 @@ describe('stanjeView pickers (#620)', () => {
 
   it('offers only the roles somebody in front of you actually holds', () => {
     const out = stanjeView(withRoster())
-    expect(rolesPresent(out.pickers.bili.people)).toEqual(['crni', 'bili', 'bili_kralj'])
+    // Ćići is in this list since #633, so his crni_kralj is a filter now too.
+    expect(rolesPresent(out.pickers.bili.people)).toEqual([
+      'crni',
+      'bili',
+      'crni_kralj',
+      'bili_kralj',
+    ])
   })
 })
 

@@ -596,6 +596,15 @@ export const APP_STRINGS = {
     nobodyToAdd: 'Nema nikoga za dodati.',
     /** Beside a name at the bottom of a picker: they have already said no. */
     notComingChip: 'ne dolazi',
+    /**
+     * The caption over the second half of an army picker (#633).
+     *
+     * Anybody may dance any role if the evening needs it, so "Dodaj u bile"
+     * offers the crni too. They stand under this line rather than mixed into
+     * the names, because the list is read from the top and the first half is
+     * who the voditelj is actually looking for.
+     */
+    otherArmy: 'Ostali moreškanti',
 
     /* Voditelj (#620).
        A Moreška Experience is run by somebody who does not dance it, and the

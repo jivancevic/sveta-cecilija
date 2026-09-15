@@ -103,7 +103,8 @@ function Filters({
   // of the seven were effectively invisible.
   return (
     <div className="app__lb-strip">
-      <div className="app__lb-filters">
+      {/* `data-no-pull`: pull-to-refresh keeps off a sideways scroller (#633). */}
+      <div className="app__lb-filters" data-no-pull="">
         {BOARD_FILTERS.filter((f) => !filterCountsTitle(f)).map(chip)}
         {/* The rule says the two groups count DIFFERENT things: left of it a
             chip picks people and counts their whole season, right of it a chip

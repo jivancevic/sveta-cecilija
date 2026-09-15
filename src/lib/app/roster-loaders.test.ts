@@ -13,7 +13,7 @@ import {
   splitSeasonPerformances,
   toRosterPerformance,
 } from './roster-loaders'
-import { showStartMs } from '@/lib/show-time'
+import { SHOW_GRACE_MS, showStartMs } from '@/lib/show-time'
 
 /** A raw Payload doc, the shape `payload.find({collection:'shows'})` returns. */
 function doc(over: Record<string, unknown> = {}) {
@@ -114,13 +114,14 @@ describe('splitSeasonPerformances — the Zagreb boundary', () => {
     expect(past.map((p) => p.id)).toEqual(['2'])
   })
 
-  it('moves a performance to past the moment it starts (no grace window)', () => {
+  it('keeps a performance next for an hour after it starts (#633)', () => {
     const exactly = at('2026-08-05', '21:00')
     expect(splitSeasonPerformances([evening], exactly).upcoming).toHaveLength(1)
-    expect(splitSeasonPerformances([evening], exactly + 1).past).toHaveLength(1)
-    // The buyer path keeps a show listed for an hour (SHOW_GRACE_MS); the
-    // roster deliberately does not.
-    expect(splitSeasonPerformances([evening], exactly + 60 * 60 * 1000).upcoming).toHaveLength(0)
+    expect(splitSeasonPerformances([evening], exactly + 1).upcoming).toHaveLength(1)
+    // The last millisecond of the grace, and the first one after it. The roster
+    // borrows the buyer path's window rather than spelling an hour again.
+    expect(splitSeasonPerformances([evening], exactly + SHOW_GRACE_MS).upcoming).toHaveLength(1)
+    expect(splitSeasonPerformances([evening], exactly + SHOW_GRACE_MS + 1).past).toHaveLength(1)
   })
 
   it('splits at the real Zagreb offset on either side of the DST switch', () => {
@@ -132,10 +133,9 @@ describe('splitSeasonPerformances — the Zagreb boundary', () => {
     expect(summer.startMs).toBe(Date.parse('2026-07-15T18:00:00Z'))
     expect(winter.startMs).toBe(Date.parse('2026-11-07T19:00:00Z'))
     for (const row of [summer, winter]) {
-      // Same boundary as above: still upcoming at the start instant, past one
-      // millisecond later.
+      // Same boundary as above: upcoming through the grace, past after it.
       expect(splitSeasonPerformances([row], row.startMs).upcoming).toHaveLength(1)
-      expect(splitSeasonPerformances([row], row.startMs + 1).past).toHaveLength(1)
+      expect(splitSeasonPerformances([row], row.startMs + SHOW_GRACE_MS + 1).past).toHaveLength(1)
     }
     // The switch day itself (2026-10-25) is already CET.
     const switchDay = toRosterPerformance(doc({ id: 'x', date: '2026-10-25', time: '20:00' }))

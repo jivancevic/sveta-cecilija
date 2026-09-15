@@ -353,6 +353,9 @@
   padding: 2px 20px;
   overflow-x: auto;
   overscroll-behavior-x: contain;
+  /* Sideways is this box's own gesture (#633); `data-no-pull` in the markup
+     keeps pull-to-refresh from arming on top of it. */
+  touch-action: pan-x;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
 }

@@ -86,7 +86,10 @@ function snapshot(): string {
 }
 
 function serverSnapshot(): string {
-  return 'system|light'
+  // The default, spelled the way `readThemePreference` spells it (#633): light,
+  // chosen by nobody. The markup the server sends is the same either way, but
+  // the highlighted word has to be the one the boot script is about to apply.
+  return 'light|light'
 }
 
 export function ThemeSwitch() {

@@ -15,11 +15,11 @@ describe('readThemePreference', () => {
     expect(readThemePreference('system')).toBe('system')
   })
 
-  it('falls back to the phone rather than crashing on anything else', () => {
-    expect(readThemePreference(null)).toBe('system')
-    expect(readThemePreference(undefined)).toBe('system')
-    expect(readThemePreference('')).toBe('system')
-    expect(readThemePreference('nocturne')).toBe('system')
+  it('falls back to light rather than crashing on anything else (#633)', () => {
+    expect(readThemePreference(null)).toBe('light')
+    expect(readThemePreference(undefined)).toBe('light')
+    expect(readThemePreference('')).toBe('light')
+    expect(readThemePreference('nocturne')).toBe('light')
   })
 })
 
@@ -73,8 +73,15 @@ describe('the no-flash boot script', () => {
 
     expect(run('dark', false)).toBe('dark')
     expect(run('light', true)).toBe('light')
-    expect(run(null, true)).toBe('dark')
+
+    // The default, and the whole of #633: a phone set to dark that was never
+    // told otherwise still opens Cecilija in light.
+    expect(run(null, true)).toBe('light')
     expect(run(null, false)).toBe('light')
-    expect(run('nonsense', true)).toBe('dark')
+    expect(run('nonsense', true)).toBe('light')
+
+    // ...and "Kao sustav", which is a CHOICE, still follows the phone.
+    expect(run('system', true)).toBe('dark')
+    expect(run('system', false)).toBe('light')
   })
 })

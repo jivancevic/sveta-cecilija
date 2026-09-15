@@ -120,7 +120,11 @@ export function memberSearchKey(value: string | null | undefined): string {
  * spaces, "###") filters nothing: an empty search box is not a filter.
  */
 export function memberMatchesSearch(
-  member: Pick<MemberRosterRow, 'name' | 'nickname'>,
+  // Not `Pick<MemberRosterRow, ...>`: Stanje searches the same two fields over
+  // its own rows, where the real name is a voditelj-only extra and null for a
+  // dancer (#633). `memberSearchKey` folds a null to the empty string, so a
+  // missing name simply never matches.
+  member: { nickname: string | null; name: string | null },
   query: string | null | undefined,
 ): boolean {
   const needle = memberSearchKey(query)

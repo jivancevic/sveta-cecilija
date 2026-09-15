@@ -22,7 +22,7 @@
 import { seasonYear } from '@/lib/member/season'
 import { toIsoDate } from '@/lib/to-iso-date'
 import { isPublicPerformance, type PerformanceKind } from '@/lib/show-performance'
-import { showStartMs } from '@/lib/show-time'
+import { SHOW_GRACE_MS, showStartMs } from '@/lib/show-time'
 import type { ShowsFind } from '@/lib/show-loaders'
 import {
   moreskantMayAnswer,
@@ -164,8 +164,15 @@ export function toRosterPerformance(row: Record<string, unknown>): RosterPerform
  *
  * The boundary is the performance's own start instant in Europe/Zagreb (date +
  * `HH:MM`), not its calendar day: tonight's 21:00 show is upcoming all
- * afternoon. There is no grace window here — unlike the buyer path
- * (`SHOW_GRACE_MS`), a dancer's evening is "past" the moment it begins.
+ * afternoon. It then stays upcoming for {@link SHOW_GRACE_MS} past that start
+ * (#633), the same hour the buyer path holds a show open for, and for the same
+ * kind of reason: the evening a dancer is standing at is the one evening the
+ * hero is looked at, and at 21:00 sharp it used to go blank on them. The
+ * constant is imported rather than re-typed so the two windows cannot drift.
+ *
+ * It changes only WHERE the row is drawn. Whether a dancer may still answer is
+ * `moreskantMayAnswer`, which closes at the start instant with no grace, so
+ * inside the hour the circles are drawn and refused rather than silently live.
  *
  * A cancelled performance survives only within {@link CANCELLED_WINDOW_MS} of
  * now, and stays in whichever half its start time puts it, struck through.
@@ -179,12 +186,9 @@ export function splitSeasonPerformances(
   const visible = rows.filter(
     (p) => !p.cancelled || Math.abs(p.startMs - nowMs) <= CANCELLED_WINDOW_MS,
   )
-  const upcoming = visible
-    .filter((p) => p.startMs >= nowMs)
-    .sort((a, b) => a.startMs - b.startMs)
-  const past = visible
-    .filter((p) => p.startMs < nowMs)
-    .sort((a, b) => b.startMs - a.startMs)
+  const stillNext = (p: RosterPerformance) => p.startMs + SHOW_GRACE_MS >= nowMs
+  const upcoming = visible.filter(stillNext).sort((a, b) => a.startMs - b.startMs)
+  const past = visible.filter((p) => !stillNext(p)).sort((a, b) => b.startMs - a.startMs)
   return { upcoming, past }
 }
 

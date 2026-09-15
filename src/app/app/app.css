@@ -171,8 +171,18 @@
      gesture's to take: a volunteer reading a buyer's name off a phone in the
      dark zooms in, and an accessibility setting that relies on zoom is not
      optional. `pinch-zoom` keeps it; the pull still gets its `preventDefault`
-     on a one-finger vertical drag, which is all it ever needed. */
-  touch-action: pan-y pinch-zoom;
+     on a one-finger vertical drag, which is all it ever needed.
+
+     `pan-x` is back with it (#633), and it has to be HERE. A touch-action is
+     the INTERSECTION of the element's own value and every ancestor's, so a
+     scroller that writes `pan-x` on itself cannot take back what `.app` had
+     already refused: this one declaration was disallowing horizontal panning
+     for every descendant in the app, which is why all three of the app's
+     sideways scrollers were stuck and not only the one that got reported.
+     What is deliberately still off is double-tap-to-zoom (that is the whole
+     difference from `auto`), which on a screen of chips and rows is a
+     mis-tap rather than a gesture. */
+  touch-action: pan-x pan-y pinch-zoom;
   background: var(--bg);
   color: var(--ink);
   font-family: var(--sans);
@@ -3584,6 +3594,11 @@ a.app__ob-link {
   display: flex;
   gap: 8px;
   overflow-x: auto;
+  /* Sideways is this box's own gesture (#633), so it says so rather than
+     inheriting the app's "either axis": the pull-to-refresh is also told to
+     keep off it, in markup, with `data-no-pull`. */
+  overscroll-behavior-x: contain;
+  touch-action: pan-x;
   padding-bottom: 6px;
   scrollbar-width: none;
 }
@@ -6494,6 +6509,7 @@ span.app__sale-head {
      down it must still scroll the screen. */
   overflow-x: auto;
   overscroll-behavior-x: contain;
+  touch-action: pan-x;
   -webkit-overflow-scrolling: touch;
 }
 
@@ -8056,6 +8072,20 @@ a.app__statrow-main:focus-visible {
   display: flex;
   flex-direction: column;
   gap: 2px;
+}
+
+/* The caption over the second half of an army picker (#633): "Dodaj u bile"
+   offers the crni too, at the bottom, and this is the line that says so. A
+   rule above it rather than a border on the first row, which would follow the
+   row if the search reordered the list. */
+.app__stanje-sheet-group {
+  margin: 10px 0 2px;
+  padding-top: 10px;
+  border-top: 1px solid var(--rule);
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .app__stanje-sheet-name {

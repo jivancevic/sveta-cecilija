@@ -83,6 +83,15 @@ export const ALL_TITLES = DANCE_TITLES.length
 export interface StanjePerson {
   memberId: string
   nickname: string
+  /**
+   * Their real name, for the search box only (#633).
+   *
+   * Every list on this screen is searched by what a voditelj types, and half
+   * the roster is known to him by a surname; nothing draws this, the rows stay
+   * nicknames. Null for everybody when a DANCER is reading, because it rides
+   * the voditelj-only roster.
+   */
+  name: string | null
   /** The disc: the column they are standing in. Null for a name with no answer. */
   army: TitleArmy | null
   /** The crown: this evening's title, never the profile's role. */
@@ -130,6 +139,17 @@ export interface StanjePerson {
   roles: DanceRole[]
   /** Their primary role: the disc a picker row wears. Null when unknown. */
   primaryRole: DanceRole | null
+  /**
+   * In a PICKER, and nowhere else: this dancer's profile does not cover the
+   * army of the column being filled (#633).
+   *
+   * Anybody may dance any role if the evening truly needs it, so "Dodaj u bile"
+   * offers the crni as well; they sort to the bottom under a caption rather
+   * than mixing into the names, because the list is read from the top and the
+   * first half is who a voditelj is actually looking for. Always false outside
+   * a picker, where the flag has nothing to be about.
+   */
+  outsider: boolean
   /**
    * Their mobile, for the Nazovi row on the person sheet (#624).
    *
@@ -460,7 +480,7 @@ export function stanjeView(detail: PerformanceDetail): StanjeView {
   const profiles = new Map(
     detail.lineup.roster.map((row) => [
       row.memberId,
-      { roles: row.roles, primaryRole: row.primaryRole },
+      { name: row.name, roles: row.roles, primaryRole: row.primaryRole },
     ]),
   )
 
@@ -487,6 +507,7 @@ export function stanjeView(detail: PerformanceDetail): StanjeView {
     return {
       memberId,
       nickname: names.get(memberId) ?? `#${memberId}`,
+      name: profile?.name ?? null,
       army,
       // A title sits on a postava ROW, so somebody who said "ne dolazim" never
       // wears one (the overlay has already dropped it) and somebody who was
@@ -507,6 +528,9 @@ export function stanjeView(detail: PerformanceDetail): StanjeView {
       withdrewOwn: extra.withdrew ? extra.withdrew.own : null,
       roles: profile?.roles ?? [],
       primaryRole: profile?.primaryRole ?? null,
+      // Only a picker knows which column it is filling, so only a picker sets
+      // this; every other list draws the same person with it off.
+      outsider: false,
       mobile: mobiles.get(memberId) ?? null,
     }
   }
@@ -562,14 +586,18 @@ export function stanjeView(detail: PerformanceDetail): StanjeView {
   /**
    * How many rows a column draws, and it is the SAME number for both (#627).
    *
-   * One more than the fullest thing on the evening, so there is always exactly
-   * one empty place to drop somebody into: a column at 8 of 8 used to end at
-   * its last name with nowhere to add a ninth, while the other at 3 of 8 showed
-   * five holes, and the two sides of the pier stood at different heights.
+   * Both sides of the pier stand at one height: a column at 8 of 8 that ended
+   * at its last name had nowhere to add a ninth while the other at 3 of 8
+   * showed five holes.
    *
-   * Both thresholds and both column LENGTHS are in the max, because any of the
-   * four can be the tallest: a voditelj may put a tenth dancer in one army, and
-   * the two armies may carry different thresholds.
+   * **The threshold is the height until an army reaches it** (#633). A
+   * threshold of 10 draws ten places, not eleven: the eleventh is a place the
+   * evening does not want yet, and a voditelj counting holes was counting one
+   * too many all season. Once some army actually fills the tenth, one more
+   * opens, and after that the height follows the longest column, so there is
+   * always exactly one empty place to drop somebody into and never one before
+   * the evening is full. Both thresholds are in `base` because the two armies
+   * may carry different ones.
    *
    * **The lengths, not the counts.** They are different numbers on an
    * unconfirmed evening: the count is the ANSWERS (#620), and a column also
@@ -577,13 +605,9 @@ export function stanjeView(detail: PerformanceDetail): StanjeView {
    * count would let a dictated row push one column past the other, which is the
    * very thing this is here to stop.
    */
-  const rows =
-    Math.max(
-      count.crni.threshold,
-      count.bili.threshold,
-      peopleByArmy.crni.length,
-      peopleByArmy.bili.length,
-    ) + 1
+  const base = Math.max(count.crni.threshold, count.bili.threshold)
+  const longest = Math.max(peopleByArmy.crni.length, peopleByArmy.bili.length)
+  const rows = longest >= base ? longest + 1 : base
 
   function column(army: 'crni' | 'bili', tally: { threshold: number }): StanjeColumn {
     const people = peopleByArmy[army]
@@ -623,30 +647,42 @@ export function stanjeView(detail: PerformanceDetail): StanjeView {
         .sort((a, b) => a.nickname.localeCompare(b.nickname, 'hr'))
     : []
 
+  /** What a picker reads off a profile to decide about somebody. */
+  type PickerProfile = { roles: DanceRole[]; primaryRole: DanceRole | null }
+
   /**
    * One picker, over the whole roster minus whoever is already in that list.
    *
-   * `eligible` is the profile rule and the ONLY thing that differs between the
-   * four: a column wants somebody whose profile covers that army (so the
-   * otmanović is never offered to a dancer who cannot dance him), the Bule card
-   * wants somebody whose primary role IS bula, and the voditelj's list wants
-   * anybody at all.
+   * `eligible` is who may be offered at all; `own` is who is offered FIRST.
+   * They are the only two things that differ between the four.
+   *
+   * **An army picker offers everybody** (#633). Any moreškant may dance any
+   * role if the evening truly needs it, so the profile no longer decides who
+   * appears in "Dodaj u bile" but in what ORDER: the column's own army by
+   * nickname, then everybody else under a caption. The bula is the exception in
+   * both directions, because she only ever dances the bula and nobody else ever
+   * dances her: she is the one person an army picker leaves out, and her own
+   * card is the only one that lets her in.
    */
   function picker(
     title: string,
     already: readonly StanjePerson[],
     omitRole: DanceRole | null,
-    eligible: (profile: { roles: DanceRole[]; primaryRole: DanceRole | null }) => boolean,
+    eligible: (profile: PickerProfile) => boolean,
+    own?: (profile: PickerProfile) => boolean,
   ): StanjePicker {
     const taken = new Set(already.map((person) => person.memberId))
     const people = detail.lineup.roster
       .filter((row) => !taken.has(row.memberId))
-      .filter((row) => eligible({ roles: row.roles, primaryRole: row.primaryRole }))
-      .map((row) => personOf(row.memberId, null))
+      .filter((row) => eligible(row))
+      .map((row) => ({ ...personOf(row.memberId, null), outsider: own ? !own(row) : false }))
       .sort(
         (a, b) =>
-          // Whoever said "ne dolazim" sinks to the bottom rather than out of the
-          // list: adding them is usually a correction and always deliberate.
+          // The column's own army first, everybody else under the caption.
+          Number(a.outsider) - Number(b.outsider) ||
+          // Whoever said "ne dolazim" sinks to the bottom of their own half
+          // rather than out of the list: adding them is usually a correction
+          // and always deliberate.
           Number(a.answer === 'not_coming') - Number(b.answer === 'not_coming') ||
           a.nickname.localeCompare(b.nickname, 'hr'),
       )
@@ -656,9 +692,12 @@ export function stanjeView(detail: PerformanceDetail): StanjeView {
   const inArmy = (army: Army) => (profile: { roles: DanceRole[] }) =>
     profile.roles.some((role) => ARMY_OF_ROLE[role] === army)
 
+  /** The one person an army picker never offers (#633). */
+  const notBula = (profile: PickerProfile) => profile.primaryRole !== 'bula'
+
   const pickers: Record<PickerKey, StanjePicker> = {
-    crni: picker(S.addTo.crni, columns[0].people, 'crni', inArmy('crni')),
-    bili: picker(S.addTo.bili, columns[1].people, 'bili', inArmy('bili')),
+    crni: picker(S.addTo.crni, columns[0].people, 'crni', notBula, inArmy('crni')),
+    bili: picker(S.addTo.bili, columns[1].people, 'bili', notBula, inArmy('bili')),
     // A bula is not a third value of the attendance army (glossary: *Army
     // count*), so she is picked by her PROFILE: every bula on the roster dances
     // the bula and nothing else, which is what makes the primary role the whole

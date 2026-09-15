@@ -1,12 +1,12 @@
 'use client'
 
-import { useMemo, useState, useTransition } from 'react'
+import { Fragment, useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
 import { Bell, ChevronRight, Phone, Plus } from 'lucide-react'
 import { APP_STRINGS } from '@/lib/app/strings'
 import { Answer } from '../Answer'
 import { MAX_THRESHOLD } from '@/lib/app/performance-form'
-import { memberSearchKey } from '@/lib/app/members-screen'
+import { memberMatchesSearch } from '@/lib/app/members-screen'
 import { armyOfLineupRole, assignTitle, type DanceTitle } from '@/lib/lineup/titles'
 import type { LineupEntry } from '@/lib/lineup/rules'
 import { DANCE_ROLE_LABELS, LINEUP_ROLE_LABELS, type DanceRole } from '@/lib/moreskant-profile'
@@ -679,14 +679,18 @@ function PeopleSheet({
   const [role, setRole] = useState<DanceRole | ''>('')
 
   const filters = useMemo(() => rolesPresent(people), [people])
-  const rows = useMemo(() => {
-    const needle = memberSearchKey(query)
-    return people.filter(
-      (person) =>
-        (needle === '' || memberSearchKey(person.nickname).includes(needle)) &&
-        (role === '' || person.roles.includes(role)),
-    )
-  }, [people, query, role])
+  // Nickname, first name and surname (#633), through Članovi's own predicate
+  // rather than a second one written here: a voditelj types whichever of the
+  // two he thinks of first, and the two screens must not disagree about what
+  // "mar" finds. An empty box filters nothing, which that helper already says.
+  const rows = useMemo(
+    () =>
+      people.filter(
+        (person) =>
+          memberMatchesSearch(person, query) && (role === '' || person.roles.includes(role)),
+      ),
+    [people, query, role],
+  )
 
   // A sheet that closes has to forget what was typed in it: reopening onto
   // somebody else's search is the bug every filter-in-a-modal has.
@@ -743,7 +747,11 @@ function PeopleSheet({
             {clearLabel}
           </SheetOption>
         )}
-        {rows.map((person) => {
+        {rows.map((person, index) => {
+          // The caption over the second half of an army picker (#633): the
+          // first row whose profile does not cover this column's army carries
+          // it, so the line appears once and moves with the search.
+          const opensOthers = person.outsider && !(rows[index - 1]?.outsider ?? false)
           // Minus TWO roles, not one: the one every row in this list holds by
           // definition, and the person's own primary role, which is already the
           // disc on the left. Without the second filter Dado wears a crni disc
@@ -786,18 +794,20 @@ function PeopleSheet({
             )
           }
           return (
-            <SheetOption
-              key={person.memberId}
-              lead={lead}
-              disabled={busy != null}
-              // Somebody who already said no is greyed rather than hidden: a
-              // voditelj adding them is a correction and always deliberate.
-              className={person.answer === 'not_coming' ? 'ui-sheet__opt--muted' : undefined}
-              note={person.answer === 'not_coming' ? S.notComingChip : undefined}
-              onClick={() => onPick(person)}
-            >
-              {inside}
-            </SheetOption>
+            <Fragment key={person.memberId}>
+              {opensOthers && <p className="app__stanje-sheet-group">{S.otherArmy}</p>}
+              <SheetOption
+                lead={lead}
+                disabled={busy != null}
+                // Somebody who already said no is greyed rather than hidden: a
+                // voditelj adding them is a correction and always deliberate.
+                className={person.answer === 'not_coming' ? 'ui-sheet__opt--muted' : undefined}
+                note={person.answer === 'not_coming' ? S.notComingChip : undefined}
+                onClick={() => onPick(person)}
+              >
+                {inside}
+              </SheetOption>
+            </Fragment>
           )
         })}
         {rows.length === 0 && (
