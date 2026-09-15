@@ -52,6 +52,13 @@ export function Tile({ eyebrow, caption, className, children, ...rest }: TilePro
 }
 
 /** The two-up grid tiles live in. Nothing else uses it. */
-export function Tiles({ children }: { children: React.ReactNode }) {
-  return <div className="ui-tiles">{children}</div>
+export function Tiles({
+  children,
+  className,
+}: {
+  children: React.ReactNode
+  /** Početna's second half takes its own class to draw the short tiles (#627). */
+  className?: string
+}) {
+  return <div className={['ui-tiles', className ?? ''].filter(Boolean).join(' ')}>{children}</div>
 }

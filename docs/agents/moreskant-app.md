@@ -368,6 +368,26 @@ Access follows the **roster, not the login table**: unticking `active` or `isMor
 - Cancelled performances survive only within ±7 days of now (`CANCELLED_WINDOW_MS`), struck through; outside that they disappear.
 - The local API runs `overrideAccess: true`, so collection access does not scope these reads. The caller has already established through the access decision that the viewer is on the roster, and roster visibility is society-wide by decision.
 
+### Streaming Početna's second half (#627)
+
+**This is the first and so far the only `<Suspense>` boundary in Cecilija.** Read this before adding a second one somewhere else.
+
+Početna draws a card for every screen the account unlocks (Q23-Q26), which for a superadmin is thirteen. Loading them the old way — two `Promise.all` blocks over the whole set — meant nothing painted until the slowest query in the reader's entire permission set had landed. The cards are independent of each other, so they stream.
+
+The shape, and each part of it is load-bearing:
+
+- **`homeCardPlan(nav)`** (`home-screen.ts`, pure) splits the screens in two: `primary` is the account's tab screens, `secondary` is Obavijesti plus every other unlocked screen in `nav.groups` order. Only the plan decides who gets what; there is no second list of who-may-see-what.
+- **`loadHomeCard(viewer, key)`** (`home-data.ts`) loads exactly ONE card. Every branch is the whole of that card's IO. That is what makes a boundary around it honest: if a branch awaited something outside its own card, the tile would appear late for a reason the reader cannot see.
+- **`loadHomeScreen(viewer)`** awaits the greeting, the sentence, the Moreška hero and the primary cards, and returns `secondary` as KEYS. It never loads a secondary card.
+- **The page** (`(shell)/page.tsx`) wraps each secondary key in its own `<Suspense>` around a small async server component that calls `loadHomeCard`. One boundary per card, never one around the whole half: a single boundary would reintroduce the slowest-query problem inside it.
+
+Two rules that are easy to get wrong:
+
+1. **A pending tile holds the height it will have when it is filled**, and shows a muted rule rather than a zero (`.app__home-wait`). A zero is a figure and a reader believes it; a tile that grows when it lands pushes everything under it down while a thumb is already moving.
+2. **The shared reads are memoised with React's `cache`**, not passed down. Three cards want the public schedule and two want the roster's, and each boundary loads independently, so without the memo one screen's query would run four times. `cache` dedupes within ONE request and caches nothing across requests, which is why it is safe on a screen that prints the door's live progress.
+
+`dynamic = 'force-dynamic'` stays. Streaming is about the ORDER the response is written in, not about caching it.
+
 ## PWA
 
 `public/manifest.webmanifest`: name and short name "Cecilija", `display: standalone`, `start_url` and `scope` `/app`, stone background and gold theme taken from the `.t-stone` tokens, 192 and 512 px PNG icons plus a 512 px maskable one (the webp rule in `assets.md` covers photos in `public/`; manifest icons are PNG by spec). Linked from the `/app` layout only, so no public page advertises it.

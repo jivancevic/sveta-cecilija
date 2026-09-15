@@ -284,6 +284,16 @@ export const APP_STRINGS = {
         few: 'javne izvedbe do kraja sezone',
         many: 'javnih izvedbi do kraja sezone',
       },
+      /**
+       * The dancer's register (CONTEXT.md): "nastup", never "izvedba". Only
+       * ever read on a Moreška TILE, which is what an account that unlocks
+       * Moreška without carrying it as a tab gets instead of the hero.
+       */
+      moreska: {
+        one: 'nastup do kraja sezone',
+        few: 'nastupa do kraja sezone',
+        many: 'nastupa do kraja sezone',
+      },
       members: {
         one: 'aktivan moreškant',
         few: 'aktivna moreškanta',

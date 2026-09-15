@@ -700,6 +700,41 @@ html:has(> .app) {
   font-size: 26px;
 }
 
+/* A short tile's figure: the 72px slot the rings and the podium fill belongs to
+   the three cards at the top, and a second half that reserved it would be as
+   tall as the first (#627). */
+.app__home-rest .app__home-figure {
+  min-height: 0;
+  font-size: 30px;
+}
+
+.app__home-rest .app__home-figure--md {
+  font-size: 24px;
+}
+
+.app__home-rest .app__home-figure--sm {
+  font-size: 19px;
+}
+
+/* A card whose screen has not answered yet (#627).
+   It holds the height it will have when it is filled, so nothing under it
+   jumps when the tile lands, and it shows a RULE rather than a zero: a zero is
+   a figure, and a reader would believe it. `aria-hidden` on the element itself,
+   because a screen reader announcing "Gratis, loading" four times is worse than
+   silence for the half-second it lasts. */
+.app__home-wait {
+  justify-content: flex-start;
+}
+
+.app__home-wait-rule {
+  display: block;
+  width: 56px;
+  height: 10px;
+  margin-top: 8px;
+  border-radius: var(--rPill);
+  background: var(--sunk);
+}
+
 /* The gold disc in front of a row that is news rather than a record. */
 .app__home-ico {
   flex: none;

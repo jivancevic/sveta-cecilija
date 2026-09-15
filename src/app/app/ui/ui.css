@@ -630,6 +630,19 @@ button.ui-row:hover {
   transform: scale(0.98);
 }
 
+/* The second half of Početna (#627): the same tile, at a lower weight.
+   Shorter, tighter, and lifted less — the three tab screens keep the rings, the
+   podium and the big figures, and these say a name and a number. Without the
+   difference, thirteen identical cards are a list with no beginning, which is
+   exactly what the old four-card cap was protecting against. */
+.ui-tile--sm {
+  min-height: 84px;
+  gap: 4px;
+  padding: 14px;
+  box-shadow: none;
+  border: 1px solid var(--rule);
+}
+
 /* ── Ring ─────────────────────────────────────────────────── */
 .ui-ring {
   width: 72px;

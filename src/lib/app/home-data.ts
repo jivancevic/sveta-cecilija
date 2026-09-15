@@ -1,22 +1,40 @@
-// What Početna loads on the server (#564).
+// What Početna loads on the server (#564, restructured in #627).
 //
 // The IO wiring and nothing else, in the `stats-screen-data.ts` shape: which
-// cards a reader gets is `homeCardKeys` (pure, off the bar), what each card
+// cards a reader gets is `homeCardPlan` (pure, off the nav), what each card
 // SAYS is `home-screen.ts` (pure), and this file only asks.
 //
+// **It asks per CARD, and that is what lets the second half stream** (#627).
+// It used to be two `Promise.all` blocks over every card at once, which meant
+// nothing painted until the slowest query in the reader's whole permission set
+// had landed — fine for four cards, not for thirteen. Now `loadHomeCard` loads
+// exactly one card, the page awaits the primary half and hands each secondary
+// card to its own `<Suspense>` boundary, and React streams them in as they
+// arrive. See `docs/agents/moreskant-app.md` → "Streaming Početna's second
+// half" for the shape and its rules.
+//
+// **The shared reads are memoised with React's `cache`**, which is what keeps
+// the per-card shape from turning one query into four. Three cards want the
+// public schedule and two want the roster's; `cache` dedupes them within one
+// request, so a card costs a query only the first time anybody asks for it.
+// Nothing is cached ACROSS requests: these are per-render memos, not a data
+// cache, which is the whole reason they are safe on a screen that prints the
+// door's live progress.
+//
 // **It asks only for the cards it is going to draw.** A `partner` login never
-// touches the orders table and a blagajna login never loads the roster: the
-// loads are keyed off the same list the page renders, so a card that is not on
-// the screen costs nothing. That is also why nothing here is a "dashboard
-// query" — every figure comes from the loader its own screen already uses
-// (`countNewInquiries`, `loadDoorShow`, `loadSellScreen`, `loadFinanceScreen`,
-// `getSeasonStats`, `loadRoster`, `loadAccounts`), so a number on Početna and
-// the same number one tap away cannot disagree.
+// touches the orders table and a blagajna login never loads the roster: a card
+// nobody is drawing is never loaded, because the loading IS the drawing now.
+// That is also why nothing here is a "dashboard query" — every figure comes
+// from the loader its own screen already uses (`countNewInquiries`,
+// `loadDoorShow`, `loadSellScreen`, `loadFinanceScreen`, `getSeasonStats`,
+// `loadRoster`, `loadAccounts`), so a number on Početna and the same number one
+// tap away cannot disagree.
 //
 // Data reaches the database through `getRepo()` or through `src/lib/shows.ts`,
 // the two sanctioned entry points; this file imports no Payload and needs no
 // entry in the repo guard's allow-list.
 
+import { cache } from 'react'
 import { getRepo } from '@/lib/repo'
 import { getUpcomingShows } from '@/lib/shows'
 import { seasonYear } from '@/lib/member/season'
@@ -42,11 +60,13 @@ import {
   compCard,
   financeCard,
   greetingLine,
-  homeCardKeys,
+  homeCardPlan,
   inboxCard,
   inquiriesCard,
   leaderboardCard,
   membersCard,
+  moreskaCard,
+  moreskaEmptyCard,
   nextSentence,
   ordersCard,
   performancesCard,
@@ -55,7 +75,6 @@ import {
   sellCard,
   statementCard,
   statsCard,
-  moreskaEmptyCard,
   usersCard,
   zagrebToday,
   firstNameOf,
@@ -89,8 +108,14 @@ export interface HomeScreen {
   sentence: string | null
   /** The hero, when the account carries the Moreška tab and has a nastup left. */
   moreska: MoreskaHero | null
-  /** The cards, in the account's tab order, Obavijesti last. Four at most. */
+  /** The tab screens' cards, at full weight. Awaited before anything paints. */
   cards: HomeCard[]
+  /**
+   * The rest, as KEYS rather than as cards: the page gives each one its own
+   * `<Suspense>` and calls {@link loadHomeCard} inside it, so one slow screen
+   * delays only its own tile (#627).
+   */
+  secondary: HomeCardKey[]
 }
 
 /** The next public evening, as the two cards that need one read it. */
@@ -101,9 +126,160 @@ interface NextPublic {
   capacity: number
 }
 
+// ── The shared reads, memoised for one request ─────────────────────────────
+
+/** The public schedule: three cards' input, and the selling register's sentence. */
+const upcomingShows = cache(() => getUpcomingShows())
+
+/** The next public evening, as a house rather than as a show row. */
+const nextPublic = cache(async (): Promise<NextPublic | null> => {
+  const shows = await upcomingShows()
+  const show = shows[0]
+  if (!show) return null
+  return {
+    id: show.id,
+    date: show.date,
+    capacity: VENUE_CAPACITY[show.venue],
+    // `remaining` is capacity minus every seat that is gone, ledger seats
+    // included, so the sold figure is its complement rather than a fourth way
+    // to count a house.
+    sold: Math.max(0, VENUE_CAPACITY[show.venue] - show.remaining),
+  }
+})
+
+/**
+ * The roster's own schedule: every evening a dancer has to turn up for, public
+ * or not (ADR-0024). One read serves the sentence and the Moreška hero.
+ *
+ * `armyCounts` is a parameter of the memo rather than a flag on the caller, so
+ * the hero's headcount query is paid for once and only when the hero is drawn.
+ */
+const seasonFor = cache((memberId: string | null, voditelj: boolean, armyCounts: boolean) =>
+  getSeasonPerformances({ memberId, voditelj, armyCounts }),
+)
+
+const doorShow = cache(() => loadDoorShow())
+const rosterRows = cache(() => loadRoster())
+const pendingClaims = cache(() => getPendingJoinClaims())
+
+// ── One card ───────────────────────────────────────────────────────────────
+
+/**
+ * One card, and everything it needs.
+ *
+ * Every branch is the whole of that card's IO, which is what makes a
+ * `<Suspense>` boundary around it honest: nothing outside the branch is waited
+ * for, so a tile appears exactly when its own screen's loader answers.
+ *
+ * Returns null for a key with no card of its own. Početna is a set of glances,
+ * not a mirror of the permission table, and a tab is still how you reach a
+ * screen that has nothing to glance at.
+ */
+export async function loadHomeCard(
+  viewer: AppViewer,
+  key: HomeCardKey,
+): Promise<HomeCard | null> {
+  const nowMs = Date.now()
+  const today = zagrebToday(nowMs)
+
+  switch (key) {
+    case 'moreska': {
+      // The TILE, never the hero: the hero is loaded with the primary half and
+      // is `HomeScreen.moreska`. This branch runs only for an account that
+      // unlocks Moreška without carrying it as a tab.
+      const season = await seasonFor(viewer.me?.id ?? null, viewer.voditelj, false)
+      return season.upcoming.length > 0
+        ? moreskaCard(season.upcoming.length)
+        : moreskaEmptyCard(season.past.length > 0)
+    }
+    case 'orders': {
+      const next = await nextPublic()
+      return ordersCard({
+        count: await countOrders(next?.id ?? null),
+        forNextShow: next !== null,
+      })
+    }
+    case 'inquiries':
+      return inquiriesCard(await countNewInquiries())
+    case 'performances':
+      return performancesCard((await upcomingShows()).length)
+    case 'members': {
+      const [rows, pending] = await Promise.all([rosterRows(), pendingClaims()])
+      return membersCard({
+        active: rows.members.filter((m) => m.active).length,
+        pending: pending.length,
+      })
+    }
+    case 'users':
+      return usersCard((await loadAccounts()).length)
+    case 'comp': {
+      const tickets = await getRepo().comp.ticketsInSeason(seasonYear(new Date(nowMs)))
+      return compCard(tickets.filter((t) => !t.cancelled).length)
+    }
+    case 'sell': {
+      const sell = await loadSellScreen(
+        viewer.access.kind === 'ok' ? viewer.access.partnerId : null,
+      )
+      return sellCard({
+        ticketsSold: sell?.month.ticketsSold ?? 0,
+        monthLabel: sell?.monthLabel ?? '',
+      })
+    }
+    case 'statement':
+      return statementCard()
+    case 'scan':
+      return scanCard((await doorShow())?.progress ?? null)
+    case 'finance': {
+      // The one euro figure on this screen, and it is already a string by the
+      // time it leaves this file: `home-screen.ts` knows nothing about cents.
+      const finance = await loadFinanceScreen({})
+      return financeCard(formatEur(finance.money.collectedCents))
+    }
+    case 'stats': {
+      const next = await nextPublic()
+      return statsCard(next ? { ...next, today } : null)
+    }
+    case 'leaderboard': {
+      // The MOREŠKA list, not the whole season (#568): the card's podium and
+      // its "ti si N." have to be the ones the reader finds when they tap it,
+      // and the screen opens on that list. A season ranked one way on the card
+      // and another on the screen would be the same mistake as two
+      // aggregations of one season.
+      const board = await getSeasonStats(undefined)
+      const ranked = rankDancers({
+        rows: board.rows,
+        kind: 'moreska',
+        myMemberId: viewer.me?.id ?? null,
+        confirmed: kindsOf('moreska').reduce((sum, k) => sum + board.confirmedByKind[k], 0),
+      })
+      return leaderboardCard({
+        top: ranked.slice(0, 3),
+        me: myStanding(ranked),
+        // Ljestvica answers to `moreskant` and `moreska` and to nobody else, so
+        // its count is in the dancer's register: "1. s 11 nastupa", never
+        // "izvedbi" (CONTEXT.md, two registers). The INSTRUMENTAL of it,
+        // because the sentence is "s …" (#568): the nominative read "ti si 4. s
+        // 1 nastup".
+        countWords: APP_STRINGS.board.withCount,
+      })
+    }
+    case 'notifications': {
+      const inbox = await getMyNotifications(viewer.userId)
+      const latest = inbox.rows[0] ?? null
+      return inboxCard({
+        latest: latest ? { title: latest.title, body: latest.body } : null,
+        unread: viewer.unreadNotifications,
+      })
+    }
+    default:
+      return null
+  }
+}
+
+// ── The screen ─────────────────────────────────────────────────────────────
+
 export async function loadHomeScreen(viewer: AppViewer): Promise<HomeScreen> {
-  const keys = homeCardKeys(viewer.nav)
-  const has = (key: HomeCardKey) => keys.includes(key)
+  const plan = homeCardPlan(viewer.nav)
 
   // One clock for the whole screen, read here rather than in a component: the
   // greeting, the sentence and "karata za sutra" all have to agree, and a
@@ -113,61 +289,19 @@ export async function loadHomeScreen(viewer: AppViewer): Promise<HomeScreen> {
   const today = zagrebToday(nowMs)
   const register = registerFor(viewer.permissions)
 
-  // The public schedule is three cards' input and, for a reader in the selling
-  // register, the sentence's too: one read, never four.
-  const needShows =
-    has('stats') || has('performances') || has('orders') || register === 'izvedba'
+  const heroWanted = plan.primary.includes('moreska')
 
-  // The roster's own schedule, which is a different question: every evening a
-  // dancer has to turn up for, public or not (ADR-0024). One read serves both
-  // the sentence and the Moreška hero.
-  const needSeason = has('moreska') || register === 'nastup'
-
-  const [shows, season, inquiriesCount, door, roster, pending, accounts, comps] = await Promise.all([
-    needShows ? getUpcomingShows() : Promise.resolve(null),
-    needSeason
-      ? getSeasonPerformances({
-          memberId: viewer.me?.id ?? null,
-          voditelj: viewer.voditelj,
-          // The hero draws the ArmyBar for a dancer too (#565): "are we enough
-          // tonight" is a question the whole roster reads. Asked for only when
-          // the hero is going to be drawn, so a dancer whose bar has no Moreška
-          // tab does not pay for two headcount queries.
-          armyCounts: has('moreska'),
-        })
+  const [season, next, cards] = await Promise.all([
+    heroWanted || register === 'nastup'
+      ? // The hero draws the ArmyBar for a dancer too (#565): "are we enough
+        // tonight" is a question the whole roster reads. Asked for only when the
+        // hero is going to be drawn, so a dancer whose bar has no Moreška tab
+        // does not pay for two headcount queries.
+        seasonFor(viewer.me?.id ?? null, viewer.voditelj, heroWanted)
       : Promise.resolve(null),
-    has('inquiries') ? countNewInquiries() : Promise.resolve(null),
-    has('scan') ? loadDoorShow() : Promise.resolve(null),
-    has('members') ? loadRoster() : Promise.resolve(null),
-    has('members') ? getPendingJoinClaims() : Promise.resolve(null),
-    has('users') ? loadAccounts() : Promise.resolve(null),
-    has('comp')
-      ? getRepo().comp.ticketsInSeason(seasonYear(new Date(nowMs)))
-      : Promise.resolve(null),
-  ])
-
-  const next: NextPublic | null = shows?.[0]
-    ? {
-        id: shows[0].id,
-        date: shows[0].date,
-        capacity: VENUE_CAPACITY[shows[0].venue],
-        // `remaining` is capacity minus every seat that is gone, ledger seats
-        // included, so the sold figure is its complement rather than a fourth
-        // way to count a house.
-        sold: Math.max(0, VENUE_CAPACITY[shows[0].venue] - shows[0].remaining),
-      }
-    : null
-
-  // The second batch needs `next` (the orders card counts the next evening's
-  // orders), so it cannot join the first.
-  const [orderCount, sell, finance, board, inbox] = await Promise.all([
-    has('orders') ? countOrders(next?.id ?? null) : Promise.resolve(null),
-    has('sell')
-      ? loadSellScreen(viewer.access.kind === 'ok' ? viewer.access.partnerId : null)
-      : Promise.resolve(null),
-    has('finance') ? loadFinanceScreen({}) : Promise.resolve(null),
-    has('leaderboard') ? getSeasonStats(undefined) : Promise.resolve(null),
-    has('notifications') ? getMyNotifications(viewer.userId) : Promise.resolve(null),
+    register === 'izvedba' ? nextPublic() : Promise.resolve(null),
+    // The primary half in parallel, each card loading only its own inputs.
+    Promise.all(plan.primary.map((key) => loadHomeCard(viewer, key))),
   ])
 
   // The hero is the DAY rather than one evening (#591): two nastupa on the same
@@ -176,7 +310,7 @@ export async function loadHomeScreen(viewer: AppViewer): Promise<HomeScreen> {
   const heroPick = pickHeroPerformances(season?.upcoming ?? [])
   const nextNastup = heroPick?.first ?? null
   const moreska: MoreskaHero | null =
-    has('moreska') && heroPick && nextNastup
+    heroWanted && heroPick && nextNastup
       ? {
           // The screen's one clock, again: "DANAS" on the card has to agree
           // with the sentence above it, and both read this `today` (#612).
@@ -188,108 +322,6 @@ export async function loadHomeScreen(viewer: AppViewer): Promise<HomeScreen> {
           canAnswer: nextNastup.canAnswer,
         }
       : null
-
-  const cards: HomeCard[] = []
-  for (const key of keys) {
-    switch (key) {
-      case 'moreska':
-        // The hero, not a tile — unless the season has nothing left, in which
-        // case there is no evening to be the hero of and the card says so.
-        if (!moreska) cards.push(moreskaEmptyCard((season?.past.length ?? 0) > 0))
-        break
-      case 'orders':
-        cards.push(ordersCard({ count: orderCount ?? 0, forNextShow: next !== null }))
-        break
-      case 'inquiries':
-        cards.push(inquiriesCard(inquiriesCount ?? 0))
-        break
-      case 'performances':
-        cards.push(performancesCard(shows?.length ?? 0))
-        break
-      case 'members':
-        cards.push(
-          membersCard({
-            active: (roster?.members ?? []).filter((m) => m.active).length,
-            pending: pending?.length ?? 0,
-          }),
-        )
-        break
-      case 'users':
-        cards.push(usersCard(accounts?.length ?? 0))
-        break
-      case 'comp':
-        cards.push(compCard(comps ? comps.filter((t) => !t.cancelled).length : null))
-        break
-      case 'sell':
-        cards.push(
-          sellCard({
-            ticketsSold: sell?.month.ticketsSold ?? 0,
-            monthLabel: sell?.monthLabel ?? '',
-          }),
-        )
-        break
-      case 'statement':
-        cards.push(statementCard())
-        break
-      case 'scan':
-        cards.push(scanCard(door?.progress ?? null))
-        break
-      case 'finance':
-        // The one euro figure on this screen, and it is already a string by the
-        // time it leaves this file: `home-screen.ts` knows nothing about cents.
-        cards.push(financeCard(formatEur(finance?.money.collectedCents ?? 0)))
-        break
-      case 'stats':
-        cards.push(statsCard(next ? { ...next, today } : null))
-        break
-      case 'leaderboard': {
-        // The MOREŠKA list, not the whole season (#568): the card's podium and
-        // its "ti si N." have to be the ones the reader finds when they tap it,
-        // and the screen opens on that list. A season ranked one way on the
-        // card and another on the screen would be the same mistake as two
-        // aggregations of one season.
-        const ranked = board
-          ? rankDancers({
-              rows: board.rows,
-              kind: 'moreska',
-              myMemberId: viewer.me?.id ?? null,
-              confirmed: kindsOf('moreska').reduce(
-                (sum, k) => sum + board.confirmedByKind[k],
-                0,
-              ),
-            })
-          : []
-        const standing = myStanding(ranked)
-        cards.push(
-          leaderboardCard({
-            top: ranked.slice(0, 3),
-            me: standing,
-            // Ljestvica answers to `moreskant` and `moreska` and to nobody
-            // else, so its count is in the dancer's register: "1. s 11
-            // nastupa", never "izvedbi" (CONTEXT.md, two registers). The
-            // INSTRUMENTAL of it, because the sentence is "s …" (#568): the
-            // nominative read "ti si 4. s 1 nastup".
-            countWords: APP_STRINGS.board.withCount,
-          }),
-        )
-        break
-      }
-      case 'notifications': {
-        const latest = inbox?.rows[0] ?? null
-        cards.push(
-          inboxCard({
-            latest: latest ? { title: latest.title, body: latest.body } : null,
-            unread: viewer.unreadNotifications,
-          }),
-        )
-        break
-      }
-      default:
-        // A screen with no card of its own draws none: Početna is four glances,
-        // not a mirror of the bar. The tab is still how you reach it.
-        break
-    }
-  }
 
   return {
     moreska,
@@ -309,6 +341,11 @@ export async function loadHomeScreen(viewer: AppViewer): Promise<HomeScreen> {
       today,
       register,
     }),
-    cards,
+    // The Moreška hero replaces its own tile, so a primary `moreska` card is
+    // drawn only when there is no evening left to be the hero of.
+    cards: cards.filter(
+      (card): card is HomeCard => card != null && !(card.key === 'moreska' && moreska != null),
+    ),
+    secondary: plan.secondary,
   }
 }
