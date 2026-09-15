@@ -93,10 +93,12 @@
   --rCtl: 16px;
   --rPill: 999px;
 
-  /* Space, as two tokens rather than as a floor (#627).
-     `.app__shell > * + *` below is a FLOOR written as a weak selector, so every
-     screen that wanted more hand-spaced itself past it and the rhythm drifted
-     apart card by card. These two are the rhythm: `--gap` between two widgets,
+  /* Space, as two tokens rather than as a floor (#627, #644).
+     The shell's rhythm was a `> * + *` margin floor, deliberately weak so a
+     screen could hand-space past it — which is how the rhythm drifted apart
+     card by card, and eventually how 143 rules deleted it outright by saying
+     `margin: 0`. It is the shell's own `gap` now. These two are the rhythm:
+     `--gap` between two widgets,
      `--gapTight` between the blocks inside one. 20 and not 16, because the
      distance between two cards is what reads as cramped on a phone — 16 is
      close enough to a card's own 18px padding that two cards read as one
@@ -331,6 +333,22 @@ html:has(> .app) {
    added or "Moreškant" renders behind the status bar. Safari adds 0px here, so
    the browser tab is unchanged. */
 .app__shell {
+  /* The screen's rhythm, and it is a GAP since #644 rather than the margin
+     floor #592 wrote. The floor was `.app__shell > * + *`, which reads as two
+     classes and is one: `*` carries no specificity at all, so the rule tied
+     with every single-class `app__*` rule in this file and lost to each one
+     that came later. `.app__pf-niz { margin: 0 }` is the one Josip found —
+     on another dancer's profile the niz flame sat ON the card above it, while
+     Moja sezona, which renders the same blocks into `.app__lb-panel` (a real
+     flex column with a real gap), spaced them correctly. 143 rules in this
+     file zero their own margin below the floor, so this was never one screen's
+     bug; it was every block that had ever said `margin: 0` out loud.
+
+     A gap cannot be cancelled by a child, which is the whole of #636's rule
+     applied to the container it should have started from. */
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
   max-width: 640px;
   margin: 0 auto;
   /* The bar is a blurred zone now (#592), not a pill with a band of empty page
@@ -341,42 +359,51 @@ html:has(> .app) {
   padding: env(safe-area-inset-top) 20px calc(var(--tabH) + env(safe-area-inset-bottom) + 12px);
 }
 
-/* ── The rhythm of a screen (#592) ─────────────────────────
+/* ── The rhythm of a screen (#592, #627, #644) ─────────────
    Every card, tile row and section in Cecilija is a direct child of the shell,
-   and until this rule the only thing between two of them was a shadow. That
-   worked while the shadows were heavy; palette A and the thinner lift they came
-   with left the hero, the tiles and the inbox looking welded into one block
+   and until #592 the only thing between two of them was a shadow. That worked
+   while the shadows were heavy; palette A and the thinner lift they came with
+   left the hero, the tiles and the inbox looking welded into one block
    ("widgeti su zgusnuti, nema razmaka među njima").
 
-   So the gap is a real one, and it is stated ONCE, here, for every screen:
-   nothing composes its own margin into a card, a tile or a list.
+   The distance is `--gap`, 20px, since #627: it was 12 at first and 16 from
+   #612, and both were close enough to a card's own 18px padding that two cards
+   read as one surface with a seam in it ("ponekad su skuceni widgeti"). It is a
+   token so the containers that space themselves (`.app__lb-panel`, `.app__col`,
+   Stanje) can say the same distance instead of re-measuring it; `--gapTight`
+   names the other one, between two blocks of ONE widget. The tiles follow it
+   (`.ui-tiles`) so Početna's vertical and horizontal rhythm stay one number.
 
-   Two properties of the way it is written matter:
+   It lives on `.app__shell` itself (above), not in a `> * + *` rule. #592 wrote
+   it as a FLOOR on purpose, so a block wanting more air could say so and win
+   the cascade — but a floor a child can raise is a floor a child can also
+   DELETE, and 143 of them did, by saying `margin: 0` for their own reasons.
+   Nothing between two widgets is a child's business any more. */
+/* The gap is the ONLY thing between two blocks of a screen, so a child's own
+   top margin is overridden here rather than hunted down one rule at a time
+   (#644). Under the old margin floor those margins simply WON and replaced the
+   floor; under a gap they would ADD to it, which would have left `.app__lead`
+   at 46px and `.app__roles` at 44 the day the container changed.
 
-   • It is the shell's rule, not the card's, so a component still knows nothing
-     about what is above it — which is what lets the same `Card` be a screen's
-     third block and a sheet's only one.
-   • It is a FLOOR, not a fixed distance. The specificity is one class, and it
-     sits at the top of this sheet, so any block that wants more air than the
-     floor says so on itself further down (`.app__month-group` keeps its 22px,
-     the past disclosure its 30px) and wins the cascade; and because the shell
-     is a plain block, a neighbour's bottom margin collapses with this top one
-     rather than adding to it. A screen that was already spaced is left exactly
-     as it was, and a screen that was not gets the floor.
+   Two classes on purpose. `.app` is the body and this reads as one selector
+   too many until you remember what went wrong: a single-class rule ties with
+   every `app__*` rule in this file and loses to the later ones. That tie is the
+   bug this ticket is about, so the fix must not be written with the same weight
+   that caused it.
 
-   **The floor is `--gap` since #627**, which is 20px: it was 12 at first, 16
-   from #612, and both were still close enough to a card's own 18px padding
-   that two cards read as one surface with a seam in it ("ponekad su skuceni
-   widgeti"). It is a token now rather than a number, so the screens that space
-   themselves INSIDE a container (Stanje, the board) can say the same distance
-   instead of re-measuring it, and `--gapTight` names the other one, between two
-   blocks of one widget. The tiles follow it (`.ui-tiles`) so the vertical and
-   horizontal rhythm of Početna stay one number.
+   `margin-top` and not `margin-block`: the Skener's island cancels the shell's
+   bottom padding with a NEGATIVE bottom margin to reach the foot of the page,
+   and that is a bleed, not rhythm. */
+.app .app__shell > * {
+  margin-top: 0;
+}
 
-   The header is never a second child, so it is untouched, and the greeting sets
-   its own margins right below and keeps them. */
-.app__shell > * + * {
-  margin-top: var(--gap);
+/* Two links that were `inline-block` and are now flex items: without this they
+   stretch to the full width of the shell and a back link becomes a tap target
+   the width of the phone (#644). */
+.app__back,
+.app__user-back {
+  align-self: flex-start;
 }
 
 /* ── The two layout containers, at EVERY width (#636) ──────
