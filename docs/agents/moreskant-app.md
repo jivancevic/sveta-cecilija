@@ -2683,6 +2683,16 @@ is what Moja sezona renders into.
 Where a screen's own container has no class to hang a gap on, give it one
 rather than reaching back into the children.
 
+**And the shell is a container like any other (#644).** Its rhythm was a margin
+floor, `.app__shell > * + *`, written weak on purpose in #592 so a block wanting
+more air could say so and win the cascade. A floor a child can RAISE is a floor
+a child can DELETE, and 143 rules in `app.css` did exactly that by saying
+`margin: 0` for their own reasons — which is why another dancer's profile had
+**0px** between two blocks where Moja sezona, rendering the same blocks into a
+real flex column, had 20. The shell now carries `gap: var(--gap)` and its direct
+children are given `margin-top: 0` by a two-class rule, because a one-class rule
+would lose the same tie that caused the bug.
+
 **#636 is the sweep that made it true everywhere**, and the bug it found is
 worth keeping written down, because it is the reason the rule kept being broken
 by screens whose CSS looked finished. `app__col` and `app__cols` — the two
