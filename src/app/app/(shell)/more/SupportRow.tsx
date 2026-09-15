@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { ChevronRight, LifeBuoy } from 'lucide-react'
 import { APP_STRINGS } from '@/lib/app/strings'
+import { supportMailto, type SupportMailInput } from '@/lib/app/support-mail'
 import { Sheet } from '../../ui'
 
 // "Podrška" (#569, Q20): a row that opens a sheet with one sentence and one
@@ -18,10 +19,16 @@ import { Sheet } from '../../ui'
 // about the audience. `info@moreska.eu` is answered within 24 hours, by a
 // person, from Gmail; nobody is on duty and there is no helpline, so the sheet
 // says exactly that and promises nothing faster.
+//
+// **The mail arrives knowing which build and which account** (#637). It used to
+// be a bare `mailto:` with no subject and no body, so every "ne radi mi" cost a
+// round trip asking the two questions that are always asked first. The body is
+// assembled in `support-mail.ts`, where the reasoning and the tests live; this
+// component only hands it the two facts the server page already knows.
 
 const S = APP_STRINGS.support
 
-export function SupportRow() {
+export function SupportRow({ commit, username }: SupportMailInput) {
   const [open, setOpen] = useState(false)
 
   return (
@@ -42,7 +49,7 @@ export function SupportRow() {
         <p className="app__sheet-body">{S.body}</p>
         {/* A real anchor: a mailto is a navigation the phone completes, not a
             decision this app makes. */}
-        <a className="ui-btn ui-btn--primary" href={`mailto:${S.email}`}>
+        <a className="ui-btn ui-btn--primary" href={supportMailto({ commit, username })}>
           {S.email}
         </a>
       </Sheet>

@@ -5,12 +5,13 @@ import { initialsOf } from '@/lib/app/members-screen'
 import { isDanceRole } from '@/lib/moreskant-profile'
 import { APP_STRINGS } from '@/lib/app/strings'
 import { permissionChips } from '@/lib/app/users-view'
-import { APP_VERSION, versionLine } from '@/lib/app/version'
+import { buildLine } from '@/lib/app/build'
 import { deployedCommit } from '@/lib/health/health'
 import { Chip, List, ListRow, RoleMark, ScreenIcon, Section } from '../../ui'
 import { AppShell, identityLine } from '../../AppShell'
 import { LogoutButton } from '../../LogoutButton'
 import { openScreen } from '../../gate'
+import { BuildLine } from './BuildLine'
 import { SupportRow } from './SupportRow'
 
 // `/app/more` — Više (#457, generalised by #495, reskinned by #569).
@@ -39,10 +40,18 @@ import { SupportRow } from './SupportRow'
 //     holder the Backoffice. No `/admin` link for anybody else (#473): raw
 //     Payload is a developer's tool, and Cecilija is what everyone else works in.
 //
-// Then Odjava, and then the build. **The version line names the same commit
+// Then Odjava, and then the build. **The build line names the same commit
 // `/api/health` reports** (the ticket's acceptance criterion): one reader,
 // `deployedCommit()`, so "which build am I looking at" has one answer whether it
 // is asked by a voditelj on a phone or by curl.
+//
+// **The line carries no version** (#637). `package.json`'s `0.1.0` had not moved
+// since the repo's first commit and was printing here as though it meant
+// something; the reasoning for killing it rather than replacing it is in
+// `src/lib/app/build.ts`. What matters on this page is that the sha is not a
+// thing to read aloud, so it leaves the phone two other ways — the line is
+// tappable and copies itself, and Podrška writes it into the mail — and both
+// are fed from the SAME `commit` read a few lines below.
 //
 // The calendar moved OUT of this screen with #569: subscribing to the izvedbe
 // is something you do once, and it now sits under the notifications it is a
@@ -114,6 +123,11 @@ export default async function MorePage() {
 
   const unread = viewer.unreadNotifications
 
+  // Read ONCE and handed to both readers (#637): the line at the foot of the
+  // screen and the Podrška mail name the same build, because the alternative is
+  // two answers to "which build are you on" the day one of them drifts.
+  const commit = deployedCommit()
+
   return (
     <AppShell viewer={viewer} screen="more">
       <div className="app__me">
@@ -180,7 +194,7 @@ export default async function MorePage() {
           title={S.security}
           trail={<Chev />}
         />
-        <SupportRow />
+        <SupportRow commit={commit} username={viewer.username ?? null} />
       </List>
 
       {/* The overflow BY WORKSPACE, the way the laptop sidebar already draws it
@@ -279,7 +293,7 @@ export default async function MorePage() {
       </div>
 
       <footer className="app__build">
-        <p>{versionLine({ version: APP_VERSION, commit: deployedCommit() })}</p>
+        <BuildLine line={buildLine(commit)} copyable={commit !== null} />
         <p className="app__build-credit">{S.createdBy}</p>
       </footer>
     </AppShell>
