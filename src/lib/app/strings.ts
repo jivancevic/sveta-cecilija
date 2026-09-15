@@ -32,6 +32,24 @@ import { LINEUP_ROLE_LABELS } from '@/lib/moreskant-profile'
 // and a value import either way would be a cycle.
 import type { MemberFilter } from './members-screen'
 
+/**
+ * "7 moreški": a count and the Croatian form that follows it (#628).
+ *
+ * The same three forms `pluralize` in `roster-loaders.ts` picks between, and a
+ * deliberate second copy of that ONE line rather than an import: that module
+ * imports this file, so a value import back would be a cycle. Two callers here
+ * needed it and each had grown its own four-branch cascade, which is a worse
+ * copy than this one.
+ */
+function croatianPlural(n: number, forms: { one: string; few: string; many: string }): string {
+  const mod100 = Math.abs(n) % 100
+  const mod10 = Math.abs(n) % 10
+  if (mod100 >= 11 && mod100 <= 14) return `${n} ${forms.many}`
+  if (mod10 === 1) return `${n} ${forms.one}`
+  if (mod10 >= 2 && mod10 <= 4) return `${n} ${forms.few}`
+  return `${n} ${forms.many}`
+}
+
 export const APP_STRINGS = {
   /** The product name: the manifest, the header and the browser tab all use it. */
   name: 'Cecilija',
@@ -84,10 +102,11 @@ export const APP_STRINGS = {
      * The niz, said out loud (#628).
      *
      * A flame means nothing to a screen reader, and "vatrica 7" means less. The
-     * glyph and the digits are both `aria-hidden` so this is read once.
+     * glyph and the digits are both `aria-hidden` so this is read once. The
+     * forms are GENITIVE, because they follow "od".
      */
     flame: (n: number) =>
-      `niz od ${n} ${n % 100 >= 11 && n % 100 <= 14 ? 'moreški' : n % 10 === 1 ? 'moreške' : n % 10 >= 2 && n % 10 <= 4 ? 'moreške' : 'moreški'}`,
+      `niz od ${croatianPlural(n, { one: 'moreške', few: 'moreške', many: 'moreški' })}`,
     /** The sheet's way out, for a screen reader; the scrim is the visible one. */
     sheetClose: 'Zatvori',
     /**
@@ -876,7 +895,7 @@ export const APP_STRINGS = {
      */
     niz: 'Najduži niz',
     nizValue: (count: number) =>
-      `${count} ${count % 100 >= 11 && count % 100 <= 14 ? 'moreški' : count % 10 === 1 ? 'moreška' : count % 10 >= 2 && count % 10 <= 4 ? 'moreške' : 'moreški'} zaredom`,
+      `${croatianPlural(count, { one: 'moreška', few: 'moreške', many: 'moreški' })} zaredom`,
     /** When the record IS the run still going. */
     nizCurrent: 'I još traje.',
     nizNone: 'još nema',

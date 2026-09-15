@@ -65,10 +65,12 @@ export interface NizPerformance {
 /**
  * The chain: the confirmed moreške that have been danced, newest first.
  *
- * `today` is YYYY-MM-DD and bounds it at the other end: a postava is confirmed
- * AFTER the evening (CONTEXT.md → *Potvrđena postava*), but an evening
- * confirmed in advance must not become the front of the chain and break
- * everybody's niz before it has been danced.
+ * `today` is YYYY-MM-DD and bounds it at the other end: **today's evening is
+ * IN** as soon as it is confirmed, and tomorrow's never is. A postava is
+ * confirmed after the evening it records, so in practice the bound only ever
+ * excludes a lineup somebody typed ahead of time — and including today is the
+ * half that matters to a dancer, because a niz that only moved the next
+ * morning would be a day behind the rehearsal it is talked about at.
  *
  * Ties on the date are broken by id, so two evenings on one day always come out
  * in the same order and a niz cannot change between two renders of one season.
@@ -128,17 +130,21 @@ export function longestNiz(chain: readonly string[], danced: ReadonlySet<string>
   let best = 0
   let bestRunning = false
   let run = 0
+  // **The tie rule is the ORDER, not a comparison.** The chain is newest first,
+  // so a run that is still going is the first one this loop meets; every older
+  // run of the same length then fails the strict `>` and leaves it standing.
+  // Spelling the tie out as a second clause would be dead code.
   chain.forEach((id, index) => {
-    if (danced.has(id)) {
-      run += 1
-      // `>=` so a run that reaches the front wins a tie against an older one.
-      const running = index - run + 1 === 0
-      if (run > best || (run === best && running)) {
-        best = run
-        bestRunning = running
-      }
-    } else {
+    if (!danced.has(id)) {
       run = 0
+      return
+    }
+    run += 1
+    if (run > best) {
+      best = run
+      // The run occupies [index - run + 1 .. index]; it is still going when it
+      // starts at the front of the chain.
+      bestRunning = index - run + 1 === 0
     }
   })
   return { length: best, running: best > 0 && bestRunning }
@@ -175,9 +181,8 @@ export function currentNizByMember(
   const inChain = new Set(chain)
   const danced = new Map<string, Set<string>>()
   for (const row of lineups) {
-    const performanceId = String(row.performanceId)
+    const { performanceId, memberId } = row
     if (!inChain.has(performanceId)) continue
-    const memberId = String(row.memberId)
     let set = danced.get(memberId)
     if (!set) {
       set = new Set<string>()

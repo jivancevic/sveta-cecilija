@@ -173,7 +173,9 @@ export default async function FullLeaderboardPage({
     initials: stats.initials,
     myMemberId: viewer.me?.id ?? null,
     confirmed,
-    niz,
+    // The Moreška list only: an Experience is not a link in the chain, so the
+    // Experience ranking carries no flame (CONTEXT.md → *Niz*).
+    niz: kind === 'moreska' ? niz : {},
   })
   const byId = new Map(stats.rows.map((r) => [String(r.memberId), r]))
 

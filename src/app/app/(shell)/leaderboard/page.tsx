@@ -99,7 +99,10 @@ export default async function LeaderboardPage({
       initials: stats.initials,
       myMemberId: me?.id ?? null,
       confirmed,
-      niz,
+      // **The Moreška list only.** An Experience is not a link in the chain
+      // (CONTEXT.md → *Niz*), so a flame beside a nickname on the Experience
+      // ranking would be a number from the list next door.
+      niz: kind === 'moreska' ? niz : {},
     }
     const ranked = rankDancers({ rows: stats.rows, ...common })
     rankings.set(kind, ranked)

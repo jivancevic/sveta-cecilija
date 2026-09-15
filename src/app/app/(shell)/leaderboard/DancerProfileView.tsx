@@ -3,6 +3,7 @@ import { APP_STRINGS, KIND_LABELS, ROLE_LABELS, dayAndMonth, weekdayLabel } from
 import { MARK_OF_ROLE, type MyStanding, type RivalNews } from '@/lib/app/leaderboard-rank'
 import type { DancerProfile } from '@/lib/app/dancer-season-data'
 import type { MySeasonMonth } from '@/lib/app/my-season-loaders'
+import { flameNiz } from '@/lib/app/niz'
 import { Card, CountUp, Flame, List, ListRow, Ring, RoleMark, Section } from '../../ui'
 import { StandingCard } from './StandingCard'
 
@@ -271,7 +272,12 @@ export function DancerProfileView({
           never been in a confirmed postava gets the line and no flame — a
           flame with a nought in it is not a record. */}
       <p className="app__pf-niz">
-        {niz.length > 0 && <Flame count={niz.length} large />}
+        {/* The same threshold the list applies (`flameNiz`), so a record of one
+            or two is a line of words rather than a 46px flame with a "1" in
+            it. Unlike the list, the profile draws it for a FINISHED record too:
+            this is the one place a run that is over is still the fact on the
+            screen, and "I još traje." under it is what separates the two. */}
+        {flameNiz(niz.length) !== null && <Flame count={niz.length} large />}
         <span>{S.niz}</span>
         <b>{niz.length > 0 ? S.nizValue(niz.length) : S.nizNone}</b>
         {niz.running && <i>{S.nizCurrent}</i>}

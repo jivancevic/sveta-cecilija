@@ -3,6 +3,7 @@ import { ChevronRight } from 'lucide-react'
 import { APP_STRINGS, ROLE_LABELS } from '@/lib/app/strings'
 import { pluralize } from '@/lib/app/roster-loaders'
 import { MARK_OF_ROLE } from '@/lib/app/leaderboard-rank'
+import { flameNiz } from '@/lib/app/niz'
 import type {
   BoardView,
   Leaders,
@@ -340,6 +341,18 @@ export function Board({
       ))}
 
       {kings.length > 0 && <Kings kings={kings} season={season} />}
+
+      {/* What the flame means, said once under the board rather than on twenty
+          rows (#628), and only where one can actually be seen: the Moreška
+          list's ROWS. The podium draws none, and the Experience list has no
+          niz because an Experience is not a link in the chain. */}
+      {lists.some(
+        (list) =>
+          list.kind === 'moreska' &&
+          [...list.view.rows, ...(list.view.pinned ? [list.view.pinned] : [])].some(
+            (row) => flameNiz(row.niz) !== null,
+          ),
+      ) && <p className="app__lb-footer">{APP_STRINGS.profile.nizLegend}</p>}
 
       <p className="app__lb-footer">
         {S.footer(

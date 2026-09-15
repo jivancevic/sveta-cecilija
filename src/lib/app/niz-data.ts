@@ -46,7 +46,12 @@ function toNizPerformance(doc: Record<string, unknown>): NizPerformance {
  *
  * The `where` and `nizChain` apply the same rules, deliberately: the query is
  * what makes the read small and the pure function is what makes it right, and
- * a predicate that only exists in SQL is a rule nothing tests.
+ * a predicate that only exists in SQL is a rule nothing tests. The two are not
+ * quite identical in their tolerance of a NULL — `not_equals` drops a NULL
+ * `kind` or `status` in SQL, while `toNizPerformance` below reads one as
+ * `redovna` and "not cancelled" — and that gap is unreachable rather than
+ * intended: both columns are `required` with a default (`src/collections/
+ * Shows.ts`). The looser reading is the safe one either way.
  */
 export async function loadNizChain(limit: number = NIZ_WINDOW): Promise<string[]> {
   const payload = await getPayload({ config })
@@ -60,8 +65,10 @@ export async function loadNizChain(limit: number = NIZ_WINDOW): Promise<string[]
           { lineupConfirmed: { equals: true } },
           { kind: { not_equals: 'experience' } },
           { status: { not_equals: 'cancelled' } },
-          // Exclusive upper bound on the day AFTER today, so an evening danced
-          // this evening is in the chain whatever its start time.
+          // The end of TODAY, so an evening danced tonight joins the chain the
+          // moment its postava is confirmed rather than the next morning.
+          // Shows are stored at noon UTC (`to-iso-date.ts`), so this bound and
+          // `nizChain`'s own `date <= today` admit exactly the same evenings.
           { date: { less_than: `${today}T23:59:59.999Z` } },
         ],
       },
@@ -90,6 +97,11 @@ export async function getRunningNiz(): Promise<Record<string, number>> {
     await payload.find({
       collection: 'lineups',
       where: { performance: { in: chain } },
+      // Provably enough rather than hopefully enough: the chain is capped at
+      // `NIZ_WINDOW` (60) and a postava is a couple of dozen rows at the very
+      // most, so this read cannot reach its own limit. A truncated read would
+      // SHORTEN somebody's niz and take their flame away with no error to
+      // notice, which is why the bound is argued rather than guessed.
       limit: 5000,
       depth: 0,
       overrideAccess: true,
