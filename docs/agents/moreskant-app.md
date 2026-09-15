@@ -71,13 +71,45 @@ Rows under Više, after the overflow screens:
 | Backoffice (link to `/admin`) | `/admin` | `dev` only | **live** (#495): the row, the denied panel and the consent screen all lost their general `/admin` link | done |
 | Odjava | `POST /api/app/logout` | any screen | same | unchanged |
 
-**The foot of Više names the build**: "Cecilija · <version> (<commit>)" and,
-under it in very small type, "Created by: Josip Ivančević". The version is
-`package.json`'s and the commit is `deployedCommit()` in
-`src/lib/health/health.ts` — **the same reader `GET /api/health` reports from**,
-which is #569's acceptance criterion and is asserted in
-`src/lib/app/version.test.ts`. Two `process.env.SOURCE_COMMIT` reads would be two
-answers to "which build am I looking at" the day Coolify's variable is renamed.
+**The foot of Više names the build**: "Cecilija · ad0eb9c" and, under it in very
+small type, "Created by: Josip Ivančević" (the one English string on a
+Croatian-only screen, kept that way by decision in #637 — it is a signature, not
+a sentence). The commit is `deployedCommit()` in `src/lib/health/health.ts` —
+**the same reader `GET /api/health` reports from**, which is #569's acceptance
+criterion and is asserted in `src/lib/app/build.test.ts`. Two
+`process.env.SOURCE_COMMIT` reads would be two answers to "which build am I
+looking at" the day Coolify's variable is renamed.
+
+**There is no version in that line, and #637 decided there never will be.**
+`package.json`'s `0.1.0` had not moved since the repo's first commit, so it read
+as information and was not. It was not replaced either: `main` auto-deploys
+(ADR-0026) at roughly twenty merges a day, so every scheme that writes a version
+into `package.json` — a patch bump per merge, semantic-release off the
+conventional-commit prefixes — costs a bot commit and a second deploy per merge,
+and at that tempo `0.3.180` read back over the phone tells the developer nothing
+until they go look up what the number was. CalVer from the build date
+(`v2026.09.15`, free from a `RUN date` in the Dockerfile's build stage) was the
+runner-up and went with the rest. The commit answers the only question the line
+is asked.
+
+**The sha is not meant to be transcribed**, which is the other half of the
+ticket: seven characters carrying `0`/`O` and `b`/`6` are exactly what
+CONTEXT.md's temporary-password alphabet exists to avoid. So it leaves the phone
+two other ways, both fed from ONE `deployedCommit()` read on the page. Tapping
+the line copies it whole ("Cecilija · ad0eb9c"; the bare sha pasted into an SMS
+reads as a typo), and **Podrška's `mailto:` carries it in the body** together
+with the signed-in **username** — `tehnika` has no address of its own
+(ADR-0022), so a mail about the door tablet arrives from the private address of
+whoever is holding it and nothing else in it says which account was signed in.
+The body is assembled by `src/lib/app/support-mail.ts`; a missing commit or
+username drops its whole line rather than printing an empty label. Still e-mail
+only and never a telephone number, asserted there rather than left to a
+reviewer's eye.
+
+A stale PWA window left open across a deploy is a separate problem and a
+separate ticket (#638): the service worker has no cache, so a page that loads is
+always the current build, but a window that has been sitting can ask for a
+Next.js chunk the deploy removed.
 
 Screens that are not rows: **Obavijesti** is a bell in the header of every
 screen with the unread count, opening the inbox at `/app/notifications`

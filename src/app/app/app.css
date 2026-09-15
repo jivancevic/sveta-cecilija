@@ -2829,6 +2829,35 @@ html:has(> .app) {
   opacity: 0.7;
 }
 
+/* The build line is a button (#637): a tap copies it, because the sha is the one
+   string here somebody has to get to somebody else and is the worst possible one
+   to read out loud. It must not LOOK like a button — it is a signature at the
+   foot of a screen, not an action — so it inherits the line's own type and only
+   the tap target is real. */
+.app__build-line {
+  appearance: none;
+  padding: 6px 10px;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-family: var(--font-ibm-plex-mono), ui-monospace, monospace;
+  font-size: 12px;
+  color: var(--muted);
+  cursor: pointer;
+  /* iOS otherwise flashes a grey box over the tap, which on a 12px line reads
+     as a glitch rather than as feedback. The confirmation below is the
+     feedback. */
+  -webkit-tap-highlight-color: transparent;
+}
+
+.app__build-copied {
+  /* Present even when empty, so confirming does not nudge the credit down. */
+  min-height: 14px;
+  margin: 0 !important;
+  font-size: 11px !important;
+  color: var(--muted);
+}
+
 /* ── One evening: head, segments, panels (#457) ──────────── */
 .app__detail-head {
   padding-bottom: 14px;

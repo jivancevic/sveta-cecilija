@@ -995,9 +995,20 @@ export const APP_STRINGS = {
      *
      * The credit is deliberately in English and deliberately tiny: it is a
      * signature, not a sentence anybody reads, and it says the same thing on
-     * every build.
+     * every build. It is the one English string on a Croatian-only screen and
+     * it stays that way by decision (#637), so a later reader does not "fix" it.
      */
     createdBy: 'Created by: Josip Ivančević',
+    /**
+     * Tapping the build line copies it (#637). The sha is not a thing to read
+     * out loud, so the clipboard and the Podrška mail are the two ways it
+     * travels. The whole line is copied rather than the bare sha: pasted into an
+     * SMS on its own, `ad0eb9c` reads as a typo.
+     */
+    buildCopy: 'Kopiraj oznaku builda',
+    buildCopied: 'Kopirano',
+    /** `navigator.clipboard` can be refused; the failure is not silent. */
+    buildCopyFailed: 'Kopiranje nije uspjelo. Označi redak i kopiraj ručno.',
     /* The raw Payload UI is the **Backoffice** and never "administracija"
        (ADR-0027): Cecilija is what everyone else works in, and only a `dev`
        holder is offered this row at all. */
@@ -1795,6 +1806,16 @@ export const APP_STRINGS = {
     body: 'Ako nešto ne radi ili ti treba pomoć oko aplikacije, piši nam. Javljamo se u roku od 24 sata.',
     email: 'info@moreska.eu',
     action: 'Pošalji e-poštu',
+    /**
+     * What the mail arrives already carrying (#637), so that the first question
+     * back — which build, which account — is answered before it is asked.
+     * Assembled in `support-mail.ts`; see its header for why the account is in
+     * there.
+     */
+    mailSubject: 'Cecilija: podrška',
+    mailIntro: 'Opiši što se dogodilo:',
+    mailAccount: 'Račun:',
+    mailBuild: 'Build:',
   },
 
   /** The voditelj's "Pošalji alarm" control on `/app/performances/[id]` (#431). */
