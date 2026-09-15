@@ -17,17 +17,26 @@
 
 import {
   DEFAULT_THRESHOLD,
-  PERFORMANCE_KINDS,
+  SHOWN_KINDS,
   PerformanceValidationError,
+  type ShownKind,
   validateAndNormalisePerformance,
   type PerformanceKind,
 } from './show-performance'
 import { VENUE_CAPACITY, type Venue } from './venues'
 
-/** Every kind except `redovna`, which is public by definition and sells tickets. */
-export type NonPublicKind = Exclude<PerformanceKind, 'redovna'>
+/**
+ * Every kind a non-public row may be OFFERED as.
+ *
+ * `redovna` is out because it is public by definition and sells tickets; a kind
+ * Cecilija hides is out because a row saved as one would vanish from every
+ * screen the moment it was written, which reads as a save that failed (#635).
+ * Both the voditelj's form and the MCP `create_performances` tool read this
+ * list, so the two can never disagree about what may be entered.
+ */
+export type NonPublicKind = Exclude<ShownKind, 'redovna'>
 
-export const NON_PUBLIC_KINDS = PERFORMANCE_KINDS.filter(
+export const NON_PUBLIC_KINDS = SHOWN_KINDS.filter(
   (k): k is NonPublicKind => k !== 'redovna',
 )
 
@@ -54,7 +63,7 @@ export const PERFORMANCE_INPUT_MESSAGES = {
   /** A public performance's house: it is what its capacity is read from. */
   venue: 'Odaberi mjesto: Ljetno kino ili Centar za kulturu.',
   publicKind: (kind: string) =>
-    `Nepoznata vrsta "${kind}". Dopuštene su: ${PERFORMANCE_KINDS.join(', ')}.`,
+    `Nepoznata vrsta "${kind}". Dopuštene su: ${SHOWN_KINDS.join(', ')}.`,
 } as const
 
 /**
@@ -292,7 +301,9 @@ export function parsePublicPerformanceEdit(raw: unknown): PublicPerformancePatch
   if (!TIME_RE.test(time)) return { ok: false, error: PERFORMANCE_INPUT_MESSAGES.time }
 
   const kind = text(row.kind)
-  if (!(PERFORMANCE_KINDS as readonly string[]).includes(kind)) {
+  // `SHOWN_KINDS`, not every kind: a public row saved as one Cecilija hides
+  // would leave Izvedbe the moment it was written (#635).
+  if (!(SHOWN_KINDS as readonly string[]).includes(kind)) {
     return { ok: false, error: PERFORMANCE_INPUT_MESSAGES.publicKind(kind) }
   }
 

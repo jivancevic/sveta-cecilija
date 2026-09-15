@@ -27,7 +27,7 @@
 
 import { ARMY_OF_ROLE, isDanceRole, type LineupRole } from '@/lib/moreskant-profile'
 import { STAT_ROLES, type StatRole } from '@/lib/lineup/stats'
-import { PERFORMANCE_KINDS, type PerformanceKind } from '@/lib/show-performance'
+import { MORESKA_KINDS, type PerformanceKind } from '@/lib/show-performance'
 import type { DancerStats } from '@/lib/lineup/stats'
 
 /** The two lists of the Ljestvica segment, in the order they are read. */
@@ -60,14 +60,13 @@ export function parseLeaderboardKind(raw: string | undefined | null): Leaderboar
 /**
  * The performance kinds one list counts.
  *
- * Read off `PERFORMANCE_KINDS` rather than typed out, so a seventh kind added
- * there lands in the Moreška list on the same day instead of falling out of
- * both.
+ * Read off `MORESKA_KINDS` rather than typed out, so a seventh kind added there
+ * lands in the Moreška list on the same day instead of falling out of both —
+ * and so a kind Cecilija hides (the koncert, #635) leaves this list without a
+ * second decision being taken here about what a moreška is.
  */
 export function kindsOf(kind: LeaderboardKind): PerformanceKind[] {
-  return kind === 'experience'
-    ? ['experience']
-    : PERFORMANCE_KINDS.filter((k) => k !== 'experience')
+  return kind === 'experience' ? ['experience'] : [...MORESKA_KINDS]
 }
 
 /* ── The seven chips of the full list (#607, decision Q2) ────────────────

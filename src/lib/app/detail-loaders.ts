@@ -39,6 +39,7 @@ import {
   type RoleWarning,
 } from '@/lib/lineup/rules'
 import { selfCompRemaining } from '@/lib/comp/self-comp'
+import { isShownKind } from '@/lib/show-performance'
 import { toRosterPerformance, type RosterPerformance } from './roster-loaders'
 
 /** One line of the postava, already labelled for the screen. */
@@ -442,6 +443,10 @@ export async function loadPerformanceDetail(
 ): Promise<PerformanceDetail | null> {
   const performanceDoc = await deps.loadPerformance(performanceId)
   if (!performanceDoc) return null
+  // A kind Cecilija does not show has no detail either (#635): Stanje, the
+  // Izvedbe detail and every roster push deep link go through here, and a row
+  // reachable by URL after it left every list is the worst of both.
+  if (!isShownKind(performanceDoc.kind ?? 'redovna')) return null
 
   const memberId = deps.viewer.memberId
   const [attendanceDocs, memberDocs, lineupDocs, ownComps, seatsRemaining] = await Promise.all([

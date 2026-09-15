@@ -2,7 +2,7 @@ import { getPayload } from 'payload'
 import config from '@payload-config'
 import { toIsoDate } from '@/lib/to-iso-date'
 import { relationIdString } from '@/lib/payload-relation'
-import type { PerformanceKind } from '@/lib/show-performance'
+import { MORESKA_KINDS, type PerformanceKind } from '@/lib/show-performance'
 import {
   NIZ_WINDOW,
   currentNizByMember,
@@ -48,8 +48,8 @@ function toNizPerformance(doc: Record<string, unknown>): NizPerformance {
  * The `where` and `nizChain` apply the same rules, deliberately: the query is
  * what makes the read small and the pure function is what makes it right, and
  * a predicate that only exists in SQL is a rule nothing tests. The two are not
- * quite identical in their tolerance of a NULL — `not_equals` drops a NULL
- * `kind` or `status` in SQL, while `toNizPerformance` below reads one as
+ * quite identical in their tolerance of a NULL — `in` / `not_equals` drop a
+ * NULL `kind` or `status` in SQL, while `toNizPerformance` below reads one as
  * `redovna` and "not cancelled" — and that gap is unreachable rather than
  * intended: both columns are `required` with a default (`src/collections/
  * Shows.ts`). The looser reading is the safe one either way.
@@ -64,7 +64,7 @@ export async function loadNizChain(limit: number = NIZ_WINDOW): Promise<string[]
       where: {
         and: [
           { lineupConfirmed: { equals: true } },
-          { kind: { not_equals: 'experience' } },
+          { kind: { in: [...MORESKA_KINDS] } },
           { status: { not_equals: 'cancelled' } },
           // The end of TODAY, so an evening danced tonight joins the chain the
           // moment its postava is confirmed rather than the next morning.
@@ -150,7 +150,7 @@ export async function getSeasonLongestNiz(year: number): Promise<Record<string, 
       where: {
         and: [
           { lineupConfirmed: { equals: true } },
-          { kind: { not_equals: 'experience' } },
+          { kind: { in: [...MORESKA_KINDS] } },
           { status: { not_equals: 'cancelled' } },
           { date: { greater_than_equal: `${year}-01-01T00:00:00.000Z` } },
           { date: { less_than: `${year + 1}-01-01T00:00:00.000Z` } },

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { PERFORMANCE_KINDS, type PerformanceKind } from '@/lib/show-performance'
+import { PERFORMANCE_KINDS, SHOWN_KINDS, type PerformanceKind } from '@/lib/show-performance'
 import { type DancerStats } from '@/lib/lineup/stats'
 import { LINEUP_ROLES, type LineupRole } from '@/lib/moreskant-profile'
 import { pluralize } from './roster-loaders'
@@ -82,17 +82,22 @@ describe('parseLeaderboardKind', () => {
 })
 
 describe('kindsOf', () => {
-  it('counts every kind except experience as Moreška', () => {
-    expect(kindsOf('moreska')).toEqual(PERFORMANCE_KINDS.filter((k) => k !== 'experience'))
+  it('counts every SHOWN kind except experience as Moreška', () => {
+    expect(kindsOf('moreska')).toEqual(['redovna', 'dmc', 'gulliver', 'ostalo'])
+  })
+
+  it('leaves the koncert out of the Moreška list (#635)', () => {
+    expect(kindsOf('moreska')).not.toContain('koncert')
+    expect(kindsOf('experience')).not.toContain('koncert')
   })
 
   it('counts the Experience on its own', () => {
     expect(kindsOf('experience')).toEqual(['experience'])
   })
 
-  it('leaves no kind out of both lists', () => {
+  it('leaves no SHOWN kind out of both lists', () => {
     const covered = [...kindsOf('moreska'), ...kindsOf('experience')].sort()
-    expect(covered).toEqual([...PERFORMANCE_KINDS].sort())
+    expect(covered).toEqual([...SHOWN_KINDS].sort())
   })
 })
 
@@ -157,12 +162,20 @@ describe('rankDancers', () => {
     ])
   })
 
-  it('counts every kind except experience into the Moreška list', () => {
+  it('counts every shown kind except experience into the Moreška list', () => {
     const rows = rankDancers({
-      rows: [dancer('1', 'Ante', { redovna: 8, dmc: 2, koncert: 1, experience: 5 })],
+      rows: [dancer('1', 'Ante', { redovna: 8, dmc: 2, ostalo: 1, experience: 5 })],
       kind: 'moreska',
     })
     expect(rows[0].performances).toBe(11)
+  })
+
+  it('counts a koncert into neither list (#635)', () => {
+    const rows = rankDancers({
+      rows: [dancer('1', 'Ante', { redovna: 8, koncert: 4 })],
+      kind: 'moreska',
+    })
+    expect(rows[0].performances).toBe(8)
   })
 
   it('keeps a moreškant who danced nothing on the list, at no place (#614)', () => {

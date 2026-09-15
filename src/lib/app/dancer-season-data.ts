@@ -5,7 +5,7 @@ import { toIsoDate } from '@/lib/to-iso-date'
 import { relationIdString } from '@/lib/payload-relation'
 import { isDanceRole } from '@/lib/moreskant-profile'
 import { VENUE_LABEL, type Venue } from '@/lib/venues'
-import type { PerformanceKind } from '@/lib/show-performance'
+import { SHOWN_PERFORMANCE_WHERE, type PerformanceKind } from '@/lib/show-performance'
 import { buildMySeason, type MySeason } from './my-season-loaders'
 import { initialsOf } from './members-screen'
 import { longestNiz, type LongestNiz } from './niz'
@@ -113,6 +113,8 @@ export async function getDancerProfile(
         and: [
           { date: { greater_than_equal: `${season}-01-01T00:00:00.000Z` } },
           { date: { less_than: `${season + 1}-01-01T00:00:00.000Z` } },
+          // The profile counts what Ljestvica counts (#635).
+          SHOWN_PERFORMANCE_WHERE,
         ],
       },
       sort: 'date',
@@ -176,7 +178,7 @@ export async function getDancerProfile(
       ? ((
           await payload.find({
             collection: 'shows',
-            where: { id: { in: allIds } },
+            where: { and: [{ id: { in: allIds } }, SHOWN_PERFORMANCE_WHERE] },
             limit: 5000,
             depth: 0,
             overrideAccess: true,

@@ -21,7 +21,12 @@
 
 import { seasonYear } from '@/lib/member/season'
 import { toIsoDate } from '@/lib/to-iso-date'
-import { isPublicPerformance, type PerformanceKind } from '@/lib/show-performance'
+import {
+  SHOWN_PERFORMANCE_WHERE,
+  isPublicPerformance,
+  isShownKind,
+  type PerformanceKind,
+} from '@/lib/show-performance'
 import { SHOW_GRACE_MS, showStartMs } from '@/lib/show-time'
 import type { ShowsFind } from '@/lib/show-loaders'
 import { isLineupRole, type LineupRole } from '@/lib/moreskant-profile'
@@ -523,6 +528,9 @@ export async function loadSeasonPerformances(
       and: [
         { date: { greater_than_equal: `${year}-01-01T00:00:00.000Z` } },
         { date: { less_than: `${year + 1}-01-01T00:00:00.000Z` } },
+        // A kind Cecilija does not show is not in the season at all (#635):
+        // this one read is Moreška, Izvedbe and Početna's hero card.
+        SHOWN_PERFORMANCE_WHERE,
       ],
     },
     sort: 'date',
@@ -530,7 +538,11 @@ export async function loadSeasonPerformances(
     depth: 0,
   })
 
-  let rows = result.docs.map(toRosterPerformance)
+  // The `where` above already asks for it; this is the same rule where a test
+  // can reach it, in the niz-data.ts pattern — the query is what makes the read
+  // small and the predicate is what makes it right, and a rule that only ever
+  // exists in SQL is a rule nothing asserts.
+  let rows = result.docs.map(toRosterPerformance).filter((p) => isShownKind(p.kind))
 
   // The viewer's own answers, one query for the whole season. A voditelj with no
   // Member link (a non-dancing voditelj, story 15) skips it entirely.

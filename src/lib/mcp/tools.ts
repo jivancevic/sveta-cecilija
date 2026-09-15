@@ -456,11 +456,12 @@ export interface CreatePerformancesResult {
 }
 
 /**
- * The kinds this tool may create: never `redovna`, which sells tickets.
+ * The kinds this tool may create: never `redovna`, which sells tickets, and
+ * never one Cecilija hides (#635).
  *
  * Re-exported from the shared input module (#503) rather than re-derived: the
  * zod enum in the route, the voditelj's form on the phone and this tool all
- * have to offer the same four words.
+ * have to offer the same words.
  */
 export const MCP_CREATABLE_KINDS = NON_PUBLIC_KINDS
 

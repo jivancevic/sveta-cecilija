@@ -445,7 +445,7 @@ describe('create_performances', () => {
           { date: '2027-05-04', time: '10:30', kind: 'dmc', location: 'Luka' },
           { date: '4.5.2027.', time: '10:30', kind: 'dmc', location: 'Luka' },
           { date: '2027-05-05', time: '25:00', kind: 'dmc', location: 'Luka' },
-          { date: '2027-05-06', time: '10:30', kind: 'koncert' },
+          { date: '2027-05-06', time: '10:30', kind: 'gulliver' },
           { date: '2026-02-31', time: '10:30', kind: 'dmc', location: 'Luka' },
         ],
       },

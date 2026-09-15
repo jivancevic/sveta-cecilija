@@ -17,7 +17,10 @@
 //     this app applies (`lib/lineup/stats.ts`).
 //   - **An Experience neither counts nor breaks.** It is not a moreška, and
 //     Ljestvica already keeps the two lists apart, so it is not in the chain
-//     at all rather than being a link somebody can miss.
+//     at all rather than being a link somebody can miss. **Nor does a koncert**
+//     (#635), and that one is the half that had teeth: the society singing is
+//     not a sword dance, and a dancer who skipped one lost a run of twenty
+//     evenings he had actually danced.
 //   - **A cancelled evening is skipped, not a break.** Nobody danced it and
 //     nobody could have.
 //   - **A past evening that was never confirmed is skipped, not a break.** Its
@@ -27,7 +30,7 @@
 // crosses seasons.** A niz that reset in January would die every winter, and
 // the season a dancer is in the middle of would never carry one.
 
-import type { PerformanceKind } from '@/lib/show-performance'
+import { isMoreskaKind, type PerformanceKind } from '@/lib/show-performance'
 
 /**
  * How long a niz has to be before it is drawn at all.
@@ -84,7 +87,9 @@ export function nizChain(
       (p) =>
         p.confirmed &&
         !p.cancelled &&
-        p.kind !== 'experience' &&
+        // The one predicate, not a second opinion: a chain link is a moreška,
+        // which since #635 means neither an Experience nor a koncert.
+        isMoreskaKind(p.kind) &&
         p.date <= today,
     )
     .sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id))

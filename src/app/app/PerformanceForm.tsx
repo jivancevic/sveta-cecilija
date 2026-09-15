@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { APP_STRINGS, KIND_LABELS } from '@/lib/app/strings'
 import { MAX_PLACE_LENGTH, NON_PUBLIC_KINDS, VENUES, type NonPublicKind } from '@/lib/performance-input'
-import { PERFORMANCE_KINDS, type PerformanceKind } from '@/lib/show-performance'
+import { SHOWN_KINDS, type PerformanceKind } from '@/lib/show-performance'
 import { VENUE_LABEL, type Venue } from '@/lib/venues'
 import { Button } from './ui/Button'
 
@@ -193,7 +193,7 @@ function PublicFields({
           disabled={disabled}
           onChange={(e) => set('kind', e.target.value as PerformanceKind)}
         >
-          {PERFORMANCE_KINDS.map((kind) => (
+          {SHOWN_KINDS.map((kind) => (
             <option key={kind} value={kind}>
               {KIND_LABELS[kind]}
             </option>

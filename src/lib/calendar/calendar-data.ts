@@ -2,6 +2,7 @@ import { getPayload } from 'payload'
 import config from '@payload-config'
 import { seasonYear } from '@/lib/member/season'
 import { toPerformanceFacts } from '@/lib/app/performance-facts'
+import { SHOWN_PERFORMANCE_WHERE } from '@/lib/show-performance'
 import type { CalendarPerformance } from './ics'
 
 // The one Payload read behind the calendar feed (#433) — the `roster-data.ts`
@@ -25,7 +26,14 @@ export async function getCalendarPerformances(
 
   const result = await payload.find({
     collection: 'shows',
-    where: { date: { greater_than_equal: `${year}-01-01T00:00:00.000Z` } },
+    where: {
+      and: [
+        { date: { greater_than_equal: `${year}-01-01T00:00:00.000Z` } },
+        // Not a koncert (#635): the feed is the roster's own season in the
+        // dancer's phone, and it carries exactly what the roster screens do.
+        SHOWN_PERFORMANCE_WHERE,
+      ],
+    },
     sort: 'date',
     limit: 2000,
     depth: 0,

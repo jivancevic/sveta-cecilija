@@ -43,6 +43,18 @@ describe('nizChain', () => {
     expect(chain).toEqual(['b', 'a'])
   })
 
+  it('leaves out a koncert, so skipping one cannot break a run (#635)', () => {
+    const chain = nizChain(
+      [
+        show({ id: 'a', date: '2026-07-01' }),
+        show({ id: 'k', date: '2026-07-10', kind: 'koncert' }),
+        show({ id: 'b', date: '2026-07-20' }),
+      ],
+      TODAY,
+    )
+    expect(chain).toEqual(['b', 'a'])
+  })
+
   it('skips a cancelled evening and one that was never confirmed', () => {
     const chain = nizChain(
       [

@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
+  HIDDEN_KINDS,
   PERFORMANCE_KINDS,
+  SHOWN_KINDS,
+  SHOWN_PERFORMANCE_WHERE,
+  isShownKind,
   PUBLIC_PERFORMANCE_WHERE,
   PerformanceValidationError,
   isPublicPerformance,
@@ -32,6 +36,24 @@ describe('public performance predicate', () => {
 
   it('lists the five performance kinds', () => {
     expect(PERFORMANCE_KINDS).toEqual(['redovna', 'dmc', 'gulliver', 'koncert', 'experience', 'ostalo'])
+  })
+
+  it('hides the koncert from every Cecilija surface and keeps the enum whole (#635)', () => {
+    expect(HIDDEN_KINDS).toEqual(['koncert'])
+    expect(PERFORMANCE_KINDS).toContain('koncert')
+    expect(SHOWN_KINDS).toEqual(['redovna', 'dmc', 'gulliver', 'experience', 'ostalo'])
+  })
+
+  it('answers isShownKind for a kind, a hidden kind and a nonsense value', () => {
+    expect(isShownKind('redovna')).toBe(true)
+    expect(isShownKind('experience')).toBe(true)
+    expect(isShownKind('koncert')).toBe(false)
+    expect(isShownKind('nonsense')).toBe(false)
+    expect(isShownKind(null)).toBe(false)
+  })
+
+  it('spells the same rule once for a Payload query', () => {
+    expect(SHOWN_PERFORMANCE_WHERE).toEqual({ kind: { not_in: ['koncert'] } })
   })
 })
 

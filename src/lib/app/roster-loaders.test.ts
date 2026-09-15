@@ -220,7 +220,7 @@ describe('splitSeasonPerformances — the ±7-day cancelled window', () => {
 describe('loadSeasonPerformances', () => {
   const find = (docs: Record<string, unknown>[]) => vi.fn().mockResolvedValue({ docs })
 
-  it('asks for the whole calendar year of the current season, every kind', async () => {
+  it('asks for the whole calendar year of the current season, every kind it shows', async () => {
     const f = find([])
     await loadSeasonPerformances({ find: f, now: () => new Date('2026-08-05T10:00:00.000Z') })
     const args = f.mock.calls[0][0]
@@ -229,10 +229,23 @@ describe('loadSeasonPerformances', () => {
       and: [
         { date: { greater_than_equal: '2026-01-01T00:00:00.000Z' } },
         { date: { less_than: '2027-01-01T00:00:00.000Z' } },
+        { kind: { not_in: ['koncert'] } },
       ],
     })
     // No public filter: the roster covers a ship call as much as a Redovna.
     expect(JSON.stringify(args.where)).not.toContain('isPublic')
+  })
+
+  it('drops a koncert from the season even when the query hands one back (#635)', async () => {
+    const f = find([
+      { id: '1', date: '2026-07-01T12:00:00.000Z', time: '21:30', kind: 'redovna', isPublic: true, venue: 'ljetno-kino' },
+      { id: '2', date: '2026-07-02T12:00:00.000Z', time: '20:30', kind: 'koncert', isPublic: false, location: 'Sv. Justina' },
+    ])
+    const result = await loadSeasonPerformances({
+      find: f,
+      now: () => new Date('2026-06-01T10:00:00.000Z'),
+    })
+    expect([...result.upcoming, ...result.past].map((p) => p.id)).toEqual(['1'])
   })
 
   it('returns the season year alongside the two halves', async () => {

@@ -213,6 +213,12 @@ describe('loadPerformanceDetail', () => {
     expect(d.loadAttendance).not.toHaveBeenCalled()
   })
 
+  it('answers null for a koncert, which Cecilija does not show at all (#635)', async () => {
+    const d = deps({ loadPerformance: vi.fn(async () => ({ ...show(), kind: 'koncert' })) })
+    expect(await loadPerformanceDetail('23', d as never)).toBeNull()
+    expect(d.loadAttendance).not.toHaveBeenCalled()
+  })
+
   it('loads the rows for that performance and hands back the detail', async () => {
     const d = deps()
     const out = await loadPerformanceDetail('10', d as never)
