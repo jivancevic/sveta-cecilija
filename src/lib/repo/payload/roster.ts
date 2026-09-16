@@ -152,6 +152,28 @@ export function createRosterRepo(load: () => Promise<PayloadClient> = payloadCli
           })
           return result.docs as unknown as Record<string, unknown>[]
         },
+
+        // Whose hand locked the postava (#658). `Users.name` is whom the login
+        // belongs to (#510) and the invitation writes it for a dancer too, so it
+        // names a voditelj and a Zaduženi alike; the username is the fallback
+        // for a login nobody named. A failure here is a missing signature line,
+        // never a 500 on the screen.
+        loadAccountName: async (userId) => {
+          try {
+            const doc = (await payload.findByID({
+              collection: 'users',
+              id: userId,
+              depth: 0,
+              overrideAccess: true,
+            })) as unknown as Record<string, unknown> | null
+            const name = typeof doc?.name === 'string' ? doc.name.trim() : ''
+            if (name !== '') return name
+            const username = typeof doc?.username === 'string' ? doc.username.trim() : ''
+            return username === '' ? null : username
+          } catch {
+            return null
+          }
+        },
       })
     },
   }

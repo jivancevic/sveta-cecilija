@@ -19,8 +19,6 @@ import type { NonPublicKind } from '@/lib/performance-input'
 import { Card, Chip, Ring } from '../../../ui'
 import { AppShell } from '../../../AppShell'
 import { openScreen } from '../../../gate'
-import { lineupRequirements } from '@/lib/lineup/titles'
-import { LineupEditor } from '../../../LineupEditor'
 import { CompTickets } from '../../../CompTickets'
 import { NoteEditor } from '../../../NoteEditor'
 import { PerformanceEditor, PublicPerformanceEditor } from '../../../PerformanceForm'
@@ -47,10 +45,12 @@ import { PerformanceActions } from './PerformanceActions'
 //      requests in their own handlers: the caption is the courtesy half.
 //   3. **Izvedba**, where the evening itself is corrected — Uredi for either
 //      half since #567, plus Otkaži on a booking, which stays the voditelj's.
-//   4. **Postava** and the voditelj's own two tools (the note, the thresholds),
-//      for a `moreska` holder. The `LineupEditor` stays here until Stanje can
-//      record an unusual role or the voditelj line (#566); it is the tweezers
-//      for a row Stanje has no control for.
+//   4. The voditelj's own two tools, the note and the thresholds, for a
+//      `moreska` holder. The **Postava** editor was the fourth card until #658
+//      moved it to Stanje — which is the ticket #566 was waiting for. It moved
+//      rather than being copied: two editors of one record diverge the first
+//      time one of them is fixed, and the reader who needs it most, an
+//      evening's Zaduženi, does not unlock this screen at all.
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -230,21 +230,12 @@ export default async function PerformanceDetailPage({
             <ThresholdEditor performanceId={p.id} crni={p.thresholdCrni} bili={p.thresholdBili} />
           </Card>
 
-          {/* The postava, until Stanje can do the whole of it (#566): Stanje
-              hands out the four titles, this hands out an unusual role and the
-              voditelj line, and #512 must not take it away before then. */}
-          <Card eyebrow={S.lineupCard}>
-            <LineupEditor
-              performanceId={p.id}
-              initialEntries={detail.lineup.entries}
-              suggested={detail.lineup.suggested}
-              roster={detail.lineup.roster}
-              confirmed={detail.lineup.confirmed}
-              confirmedAt={detail.lineup.confirmedAt}
-              // The split is `lineupRequirements`' and nothing re-types it.
-              experience={lineupRequirements(p.kind).voditelj}
-            />
-          </Card>
+          {/* The postava editor was here until #658, which is the ticket #566
+              was waiting for: it lives on Stanje now, behind "Uredi postava" in
+              the action block's overflow. It moved rather than being copied,
+              because two editors of one record diverge the first time one of
+              them is fixed — and the reader who needs it most, a Zaduženi, does
+              not unlock this screen at all. */}
         </>
       )}
 

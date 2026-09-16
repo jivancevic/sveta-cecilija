@@ -575,6 +575,18 @@ export const APP_STRINGS = {
     noAnswerChip: 'bez odgovora',
     /** The voditelj's two buttons. */
     call: 'Pozovi',
+    /** The "⋯" that opens the two preparatory actions (#658). */
+    moreActions: 'Više radnji',
+    /** The overflow row that opens the postava editor, moved here from Izvedbe. */
+    editLineup: 'Uredi postavu',
+    /**
+     * Why Pozovi is grey in a Zaduženi's hand (#658, Q17). Greyed with a
+     * sentence rather than hidden, the way Izvedbe greys its six actions with
+     * "traži Blagajnu": somebody doing the voditelj's job tonight has to see
+     * that the alarm exists and that it is not theirs, or they spend half an
+     * hour looking for it.
+     */
+    callVoditelj: 'Alarm šalje voditelj.',
     callTitle: 'Pozovi moreškante',
     confirm: 'Potvrdi postavu',
     confirming: 'Potvrđujem...',

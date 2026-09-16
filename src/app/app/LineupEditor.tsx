@@ -7,7 +7,18 @@ import { DANCE_ROLES, LINEUP_ROLES, type LineupRole } from '@/lib/moreskant-prof
 import { compareLineupRows, roleWarnings } from '@/lib/lineup/rules'
 import type { LineupPerson, LineupRow } from '@/lib/app/detail-loaders'
 
-// The Postava section, the voditelj's half (#432).
+// The Postava editor (#432), living on *Stanje* since #658.
+//
+// It used to be a card on the Izvedbe detail, which a `moreskant` login does not
+// unlock — so once one evening's list could be delegated to a dancer (ADR-0029),
+// a Zaduženi could hand out the four titles on Stanje and had nowhere to record
+// an unusual role. It moved rather than being copied: two editors of the same
+// record diverge the first time one of them is fixed.
+//
+// **Confirming left with the move.** Potvrdi and Otključaj used to be here and
+// are now only in Stanje's action block, where #566 put them: one button, one
+// place. This editor saves a draft and nothing else, and the four-title rule
+// still refuses on CONFIRM under the row lock.
 //
 // The whole list is one form and Spremi replaces it: that is the sentence the
 // route implements too (`POST /api/app/lineup` deletes and re-inserts in a
@@ -34,7 +45,6 @@ export function LineupEditor({
   suggested,
   roster,
   confirmed,
-  confirmedAt,
   experience,
 }: {
   performanceId: string
@@ -42,7 +52,6 @@ export function LineupEditor({
   suggested: LineupRow[]
   roster: LineupPerson[]
   confirmed: boolean
-  confirmedAt: string | null
   /**
    * A Moreška Experience (#620): the one kind of evening that HAS a voditelj.
    *
@@ -56,7 +65,7 @@ export function LineupEditor({
   const router = useRouter()
   const [entries, setEntries] = useState<LineupRow[]>(initialEntries)
   const [pick, setPick] = useState('')
-  const [busy, setBusy] = useState<null | 'save' | 'confirm'>(null)
+  const [busy, setBusy] = useState<null | 'save'>(null)
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -115,7 +124,7 @@ export function LineupEditor({
     setPick('')
   }
 
-  async function post(url: string, body: unknown, kind: 'save' | 'confirm') {
+  async function post(url: string, body: unknown, kind: 'save') {
     if (busy) return null
     setBusy(kind)
     setMessage(null)
@@ -153,23 +162,6 @@ export function LineupEditor({
     router.refresh()
   }
 
-  async function toggleConfirm(next: boolean) {
-    // Save first when confirming: the voditelj means "this list, final", and
-    // confirming an unsaved edit would lock the previous list instead.
-    if (next) {
-      const saved = await post(
-        '/api/app/lineup',
-        { performanceId, entries: entries.map((e) => ({ memberId: e.memberId, role: e.role })) },
-        'confirm',
-      )
-      if (!saved) return
-    }
-    const ok = await post('/api/app/lineup/confirm', { performanceId, confirmed: next }, 'confirm')
-    if (!ok) return
-    setMessage(next ? APP_STRINGS.lineup.confirmed : APP_STRINGS.lineup.unlocked)
-    router.refresh()
-  }
-
   return (
     <section className="app__lineup">
       <h2 className="app__army-head">
@@ -179,7 +171,6 @@ export function LineupEditor({
 
       <p className="app__lineup-state">
         {confirmed ? APP_STRINGS.lineup.confirmedNote : APP_STRINGS.lineup.draftNote}
-        {confirmed && confirmedAt && ` (${confirmedAt.slice(0, 10)})`}
       </p>
 
       {!confirmed && suggested.length > 0 && (
@@ -267,25 +258,6 @@ export function LineupEditor({
             {busy === 'save' ? APP_STRINGS.lineup.saving : APP_STRINGS.lineup.save}
           </button>
         )}
-        {/* An empty postava may not be confirmed: "confirmed" is what publishes
-            a lineup and what lets it count in the statistics, and an evening
-            confirmed with nobody in it would show every dancer "još nije
-            objavljena" about a list that is final. The route refuses it with
-            the same sentence, under the row lock. */}
-        <button
-          type="button"
-          className="app__button app__button--small"
-          onClick={() => toggleConfirm(!confirmed)}
-          disabled={busy !== null || (!confirmed && entries.length === 0)}
-        >
-          {confirmed
-            ? busy === 'confirm'
-              ? APP_STRINGS.lineup.unlocking
-              : APP_STRINGS.lineup.unlock
-            : busy === 'confirm'
-              ? APP_STRINGS.lineup.confirming
-              : APP_STRINGS.lineup.confirm}
-        </button>
       </div>
 
       {message && <p className="app__alarm-result">{message}</p>}

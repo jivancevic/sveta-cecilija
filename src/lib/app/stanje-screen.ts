@@ -75,6 +75,7 @@ import { APP_STRINGS, PUSH_MESSAGES, formatPerformanceDateLong, timeOfDay } from
 import { kindTone, kindWord, type KindTone } from './performance-kind'
 
 const S = APP_STRINGS.stanje
+const K = APP_STRINGS.listKeepers
 
 /** How many titles an evening has: four, and the tally says so out loud. */
 export const ALL_TITLES = DANCE_TITLES.length
@@ -337,6 +338,21 @@ export interface StanjeView {
    * the voditelj confirms.
    */
   lineup: LineupEntry[]
+  /**
+   * Whether the reader keeps THIS evening's list (ADR-0029, #658): a voditelj
+   * on every evening, a Zaduženi on this one. Every control that RUNS the night
+   * hangs off this. The alarm does not — that is the `voditelj` prop, and the
+   * two being different fields is the whole point of the ticket.
+   */
+  keepsList: boolean
+  /** "Popis vodi: …", or null when no third party is named. */
+  keptBy: string | null
+  /** The Members named, for the sheet's switches. */
+  listKeepers: string[]
+  /** The Zaduženi sheet's list: every active moreškant. */
+  keeperPicker: StanjePicker
+  /** "Potvrdio: … · …", or null on an unconfirmed or unsigned postava. */
+  confirmedBy: string | null
 }
 
 /**
@@ -465,12 +481,15 @@ export function stanjeView(detail: PerformanceDetail): StanjeView {
   for (const row of detail.lineup.entries) names.set(row.memberId, row.nickname)
 
   /**
-   * A mobile for anybody the screen can name, and ONLY for a voditelj (#624).
+   * A mobile for anybody the screen can name, and ONLY for whoever keeps this
+   * evening's list (#624, widened from `voditelj` to `keepsList` by #658).
    * Everybody else gets an empty map, so the field is null all the way to the
-   * browser rather than hidden once it has arrived there.
+   * browser rather than hidden once it has arrived there. The Zaduženi is the
+   * person ringing round at seven in the evening, so they are exactly who the
+   * numbers are for.
    */
   const mobiles = new Map<string, string>()
-  if (detail.voditelj) {
+  if (detail.keepsList) {
     for (const person of [...answeredPeople, ...count.noAnswer]) {
       if (person.mobile) mobiles.set(person.memberId, person.mobile)
     }
@@ -770,5 +789,29 @@ export function stanjeView(detail: PerformanceDetail): StanjeView {
     titlesGiven: given,
     canConfirm: requirements.voditelj ? voditelji.length === 1 : given === ALL_TITLES,
     lineup,
+    keepsList: detail.keepsList,
+    // "Popis vodi: Ante Bačić" — drawn only when there IS one (#658, Q12). A
+    // voditelj keeps every list without being named, so an absent line is not a
+    // gap: it says the voditelji are running the night, as always.
+    keptBy: detail.listKeepers.length
+      ? K.kept(detail.listKeepers.map((keeper) => keeper.nickname).join(', '))
+      : null,
+    listKeepers: detail.listKeepers.map((keeper) => keeper.memberId),
+    // The whole roster, for the Zaduženi sheet. It rides the same `roster` the
+    // postava editor does, which is the list-keeper's only, so no other dancer's
+    // browser receives it.
+    keeperPicker: {
+      title: K.title,
+      people: detail.lineup.roster.map((row) => personOf(row.memberId, null)),
+      omitRole: null,
+    },
+    // "Potvrdio: Ante Bačić · 20. kolovoza" — the signature, when there is one.
+    confirmedBy:
+      confirmed && detail.lineup.confirmedBy
+        ? K.confirmedBy(
+            detail.lineup.confirmedBy,
+            formatPerformanceDateLong((detail.lineup.confirmedAt ?? '').slice(0, 10)),
+          )
+        : null,
   }
 }
