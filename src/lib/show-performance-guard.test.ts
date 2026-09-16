@@ -67,6 +67,8 @@ export const ALLOW_LIST: Record<string, string> = {
     'Roster read (#431, #435): the moreškant notifications cover EVERY performance of the season, public or not (ADR-0024) — a ship call is an evening a dancer has to turn up for, so filtering on the predicate would silence the alarm for exactly the performances nobody has a ticket to. The sweep is bounded by the start instant and the cancelled flag, and the callers are a `moreska` route and the CRON_SECRET job.',
   'src/app/api/app/lineup/route.ts':
     'Roster write route (#432): a postava is recorded for EVERY performance, public or not (ADR-0024) — a ship call has a lineup exactly like a Redovna. The id-addressed read only checks the row exists and whether the lineup is confirmed, behind requirePermission([moreska, moreskant]) plus the row question `keepsList` (ADR-0029, #658).',
+  'src/app/api/app/performances/[id]/list-keepers/route.ts':
+    'Roster write route (#658): a Zaduženi is named on EVERY kind of evening, public or not (ADR-0024) — a ship call needs somebody to run it exactly as a Redovna does. The id-addressed read carries only the date, the time and the current set, and the caller is behind requirePermission(moreska).',
   'src/app/api/app/lineup/confirm/route.ts':
     'Roster write route (#432, #658): the same id-addressed read its sibling above makes, added when confirming gained the row question (ADR-0029). A postava is confirmed for EVERY performance, public or not (ADR-0024), the read checks only that the row exists and who keeps its list, and the caller is behind requirePermission([moreska, moreskant]) plus that very check.',
   'src/lib/lineup/lineup-store.ts':

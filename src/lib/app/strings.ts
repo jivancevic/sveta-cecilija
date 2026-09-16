@@ -1860,6 +1860,27 @@ export const APP_STRINGS = {
    * line says "spremit će se svejedno" out loud, because story 29 is precisely
    * that an unusual role is recorded rather than refused.
    */
+  /** The Zaduženi write route's own refusals and the sheet's copy (#658). */
+  listKeepers: {
+    title: 'Zaduženi',
+    /** The overflow row that opens the sheet. */
+    open: 'Zaduženi za popis',
+    /** Under the sheet's title: what the switch actually hands over. */
+    explain:
+      'Zaduženi vodi popis za ovaj nastup: odgovara za druge, dijeli titule, uređuje i potvrđuje postavu. Alarm ostaje voditelju.',
+    search: 'Traži moreškanta',
+    empty: 'Nema aktivnih moreškanata.',
+    /** The header line, drawn only when somebody other than a voditelj keeps it. */
+    kept: (names: string) => `Popis vodi: ${names}`,
+    /** Under the gold chip, once a postava carries a signature. */
+    confirmedBy: (name: string, when: string) => `Potvrdio: ${name} · ${when}`,
+    rejected: 'Zaduženog trenutno nije moguće promijeniti.',
+    badRequest: 'Nejasno je koga i za što zadužiti.',
+    noPerformance: 'Taj nastup ne postoji.',
+    notMoreskant: 'Taj član nije aktivan moreškant.',
+    failed: 'Nije uspjelo. Pokušaj ponovno.',
+  },
+
   lineup: {
     title: 'Postava',
     fromAttendance: 'Napravi iz prisutnosti',
@@ -3394,6 +3415,19 @@ export const PUSH_MESSAGES = {
     },
     /** The way back: the row was cancelled and is not any more. */
     uncancelled: 'nastup više nije otkazan',
+  },
+
+  /**
+   * "Vodiš popis" (#658): one dancer has been put in charge of one evening.
+   *
+   * It does not name who appointed them. Only a `moreska` holder can, and there
+   * are two of those, so the sentence would carry no information the reader
+   * lacks — and the useful half is WHICH evening, which is all the body says.
+   */
+  listKeeper: {
+    title: 'Vodiš popis',
+    body: (input: { date: string; time: string }) =>
+      `Nastup ${formatPerformanceDate(input.date)} u ${input.time}.`,
   },
 
   /** Type (4): a performance that did not exist a minute ago (story 17). */
