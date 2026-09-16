@@ -1330,8 +1330,13 @@ button.ui-army:active {
 .ui-sheet {
   position: fixed;
   left: 50%;
-  /* Minus the installed iPhone's dead band: see `--shim` in app.css. */
-  bottom: calc(0px - var(--shim, 0px));
+  /* Above the keyboard, minus the installed iPhone's dead band (`--shim` in
+     app.css). `--kb` is 0 whenever there is no keyboard, which is nearly
+     always, so this is the old rule the rest of the time. Without it the panel
+     sat at the bottom of the LAYOUT viewport, which neither iOS nor Chrome
+     shrinks for a keyboard, and the reader typed into a sheet they could no
+     longer see (#667). `KeyboardInset` maintains it. */
+  bottom: calc(var(--kb, 0px) - var(--shim, 0px));
   transform: translateX(-50%);
   width: min(430px, 100%);
   z-index: 31;
@@ -1347,6 +1352,9 @@ button.ui-army:active {
      no bar to clear. */
   padding: 12px 20px calc(var(--tabH, 0px) + env(safe-area-inset-bottom, 0px) + 24px);
   border-radius: 28px 28px 0 0;
+  /* The keyboard is the only thing that changes here at run time, and it
+     changes twice a second while a phone animates it up. */
+  transition: bottom 0.15s var(--ease);
   background: var(--card);
   color: var(--ink);
   box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.2);
@@ -1354,9 +1362,13 @@ button.ui-army:active {
   /* A sheet is short by design and a landscape phone is 599 px tall (#563):
      the panel never grows past the viewport, the middle scrolls, and the
      handle, the title and the buttons stay where the thumb left them. */
-  max-height: calc(100dvh - 16px - env(safe-area-inset-top, 0px));
+  max-height: calc(100dvh - var(--kb, 0px) - 16px - env(safe-area-inset-top, 0px));
   overflow: hidden;
 }
+
+/* The strip this panel reserves for the bar disappears on its own while the
+   keyboard is up, because `app.css` zeroes `--tabH` there and the bar has
+   hidden itself. One mechanism rather than a second rule here. */
 
 .ui-sheet__body {
   display: flex;
@@ -1479,7 +1491,9 @@ a.ui-sheet__opt {
 .ui-toast {
   position: fixed;
   left: 50%;
-  bottom: calc(var(--tabH) + env(safe-area-inset-bottom, 0px) + 28px - var(--shim, 0px));
+  bottom: calc(
+    var(--kb, 0px) + var(--tabH) + env(safe-area-inset-bottom, 0px) + 28px - var(--shim, 0px)
+  );
   transform: translateX(-50%) translateY(10px);
   padding: 10px 16px;
   border-radius: var(--rPill);

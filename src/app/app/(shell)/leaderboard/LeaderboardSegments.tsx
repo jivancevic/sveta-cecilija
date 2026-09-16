@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { APP_STRINGS } from '@/lib/app/strings'
 import { LEADERBOARD_SEGMENTS, type LeaderboardSegment } from '@/lib/app/leaderboard-loaders'
 import { Seasons, Segmented } from '../../ui'
+import { useMirrorState } from '../../use-screen-state'
 
 // The two panels of the Ljestvica screen (#457, #495, reskinned in #568):
 // "Ljestvica" and "Moja sezona", in that order since Q36.
@@ -34,13 +35,16 @@ export function LeaderboardSegments({
   all: React.ReactNode
 }) {
   const [segment, setSegment] = useState<LeaderboardSegment>(initial)
+  const mirror = useMirrorState()
 
   function show(next: LeaderboardSegment) {
     setSegment(next)
-    if (typeof window === 'undefined') return
-    const url = new URL(window.location.href)
-    url.searchParams.set('part', next)
-    window.history.replaceState(null, '', url.toString())
+    // Through the shared writer since #666, and the reason is not tidiness:
+    // this used to call `window.history.replaceState(null, …)` itself, and that
+    // `null` throws away Next's own per-entry `key` — which `ScrollMemory`
+    // looks the offset up by. Switching the segment quietly cost this screen
+    // its place in the list. `useMirrorState` passes the state through.
+    mirror({ part: next })
   }
 
   return (

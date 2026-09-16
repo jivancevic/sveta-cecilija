@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { Bell, KeyRound, Minus, Smartphone, type LucideIcon } from 'lucide-react'
 import {
   isMissing,
@@ -17,7 +18,9 @@ import {
   memberListRows,
   type MemberListInput,
 } from '@/lib/app/members-screen'
+import { FILTER_PARAM, QUERY_PARAM } from '@/lib/app/screen-state'
 import { APP_STRINGS } from '@/lib/app/strings'
+import { useMirrorState } from '../../use-screen-state'
 import {
   Button,
   Card,
@@ -81,6 +84,7 @@ const S = APP_STRINGS.members
 /** The size of a mark inside its 20px slot. */
 const MARK_SIZE = 16
 
+
 /**
  * One drawing per column, in the order the columns are drawn (#663).
  *
@@ -112,8 +116,27 @@ export function MembersList({
    */
   access: Record<string, MemberAccess> | null
 }) {
-  const [query, setQuery] = useState('')
-  const [filter, setFilter] = useState<MemberFilter>('all')
+  // The opening state comes from the ADDRESS (#666, ADR-0030), read here rather
+  // than parsed by the server and handed down. The server's answer looks like
+  // the better one — it would put the filtered roster in the HTML — and it is
+  // the wrong one: on a Back the Next router rebuilds this page from the tree
+  // stored on the history entry, which predates the mirrored address, so the
+  // props would say "Svi" while the address says `?f=no-app`, on exactly the
+  // journey this ticket exists to fix. `useSearchParams` reads the router's
+  // canonical URL, which `popstate` updates from `window.location`. Because
+  // every `/app` screen is `force-dynamic` it is also correct during the server
+  // render, so a shared link still arrives filtered with no flash.
+  const params = useSearchParams()
+  const mirror = useMirrorState()
+  const [query, setQuery] = useState(() => (params?.get(QUERY_PARAM) ?? '').trim())
+  const [filter, setFilter] = useState<MemberFilter>(() => {
+    const raw = (params?.get(FILTER_PARAM) ?? '').trim()
+    // A word that is not a chip reads as "Svi": an address outlives the code
+    // that wrote it, and a renamed chip must not turn the roster into an error.
+    return (MEMBER_FILTERS as readonly string[]).includes(raw) ? (raw as MemberFilter) : 'all'
+  })
+  // NOT in the address: a legend is a thing the reader opened, not a thing the
+  // screen is showing, and Back landing on an open sheet would be a ghost.
   const [legend, setLegend] = useState(false)
 
   // The search first, the chip second, so the counts describe the list the
@@ -136,7 +159,10 @@ export function MembersList({
           type="search"
           className="app__input"
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => {
+            setQuery(e.target.value)
+            mirror({ [QUERY_PARAM]: e.target.value })
+          }}
           placeholder={S.searchPlaceholder}
           autoComplete="off"
           enterKeyHint="search"
@@ -156,7 +182,11 @@ export function MembersList({
           }))}
           active={filter}
           label={S.filtersLabel}
-          onSelect={(key) => setFilter(key as MemberFilter)}
+          onSelect={(key) => {
+            setFilter(key as MemberFilter)
+            // "Svi" is the default, so it leaves no trace in the address.
+            mirror({ [FILTER_PARAM]: key === 'all' ? null : key })
+          }}
         />
       )}
 

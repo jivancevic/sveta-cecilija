@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
+  androidInstaller,
+  chromeIntentUrl,
   decideInstallStep,
   detectPlatform,
   type AppPlatform,
@@ -31,6 +33,14 @@ const UA = {
     'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Safari/605.1.15',
   windowsChrome:
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+  // Ana Pendo's, off the production table on 2026-09-16. The one device in the
+  // roster that hit the Play Protect block (#668).
+  androidSamsung:
+    'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) SamsungBrowser/30.0 Chrome/143.0.0.0 Mobile Safari/537.36',
+  // Dino Bojanić's, same table, same afternoon.
+  androidFirefox: 'Mozilla/5.0 (Android 16; Mobile; rv:155.0) Gecko/155.0 Firefox/155.0',
+  androidOpera:
+    'Mozilla/5.0 (Linux; Android 14; SM-S911B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36 OPR/82.0.0.0',
 }
 
 describe('detectPlatform', () => {
@@ -63,6 +73,56 @@ describe('detectPlatform', () => {
     for (const userAgent of Object.values(UA)) {
       expect(detectPlatform({ userAgent, standalone: true, touchPoints: 5 })).toBe('installed')
     }
+  })
+})
+
+describe('androidInstaller', () => {
+  it('names the browsers that build their own install APK', () => {
+    expect(androidInstaller(UA.androidSamsung)).toBe('own-apk')
+    expect(androidInstaller(UA.androidFirefox)).toBe('own-apk')
+    expect(androidInstaller(UA.androidOpera)).toBe('own-apk')
+  })
+
+  it('leaves Chrome alone, which has a minting service behind it', () => {
+    expect(androidInstaller(UA.androidChrome)).toBe('chrome')
+  })
+
+  it('answers "chrome" for anything that is not Android at all', () => {
+    // A voditelj on an iPhone can switch to the Android instructions to help
+    // somebody, and must not be shown a Play Protect note about their own phone.
+    expect(androidInstaller(UA.iphoneSafari)).toBe('chrome')
+    expect(androidInstaller(UA.windowsChrome)).toBe('chrome')
+    expect(androidInstaller('')).toBe('chrome')
+  })
+
+  it('answers "chrome" for a Chromium skin we cannot tell from Chrome', () => {
+    // Brave and friends report Chrome's own UA. A browser we cannot identify is
+    // one we have no business warning about.
+    const brave =
+      'Mozilla/5.0 (Linux; Android 14; SM-S911B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36'
+    expect(androidInstaller(brave)).toBe('chrome')
+  })
+})
+
+describe('chromeIntentUrl', () => {
+  it('wraps an https address in Android’s intent scheme', () => {
+    expect(chromeIntentUrl('https://moreska.eu/app')).toBe(
+      'intent://moreska.eu/app#Intent;scheme=https;package=com.android.chrome;end',
+    )
+  })
+
+  it('refuses anything that is not https', () => {
+    // An intent built out of an arbitrary string is a way to open something
+    // that was never meant to be opened.
+    expect(chromeIntentUrl('http://moreska.eu/app')).toBe(null)
+    expect(chromeIntentUrl('javascript:alert(1)')).toBe(null)
+    expect(chromeIntentUrl('intent://evil#Intent;end')).toBe(null)
+    expect(chromeIntentUrl('')).toBe(null)
+    expect(chromeIntentUrl('https://')).toBe(null)
+  })
+
+  it('refuses an address carrying a fragment, which would end the intent early', () => {
+    expect(chromeIntentUrl('https://moreska.eu/app#Intent;package=com.evil;end')).toBe(null)
   })
 })
 

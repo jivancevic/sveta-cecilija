@@ -9,6 +9,8 @@ import {
   isDeviceId,
   newDeviceId,
   notificationsAnswer,
+  recordsOutOfTurn,
+  shouldConfirmStandalone,
   shouldRecordDevice,
   type DeviceSignal,
 } from './device'
@@ -82,6 +84,43 @@ describe('the six-hour throttle', () => {
 
   it('is six hours, so an evening of tapping around is one write', () => {
     expect(DEVICE_HEARTBEAT_MS).toBe(6 * 60 * 60 * 1000)
+  })
+})
+
+describe('asking a browser again, outside the throttle (#669)', () => {
+  it('asks a browser that has never said it is installed', () => {
+    // The case Josip hit: a dancer installs the app at rehearsal, opens it, and
+    // the six-hour throttle keeps the mark off all afternoon.
+    expect(shouldConfirmStandalone({ standalone: false })).toBe(true)
+  })
+
+  it('stops asking once it has said so', () => {
+    expect(shouldConfirmStandalone({ standalone: true })).toBe(false)
+  })
+
+  it('does not ask a browser with no row: the throttle already says yes', () => {
+    expect(shouldConfirmStandalone(null)).toBe(false)
+    expect(shouldConfirmStandalone(undefined)).toBe(false)
+  })
+
+  it('writes out of turn only for a first "yes"', () => {
+    expect(recordsOutOfTurn({ standalone: true }, { standalone: false })).toBe(true)
+  })
+
+  it('refuses a "no", which the OR-ing column could not record anyway', () => {
+    // Letting this through would turn every load on every plain tab into a
+    // write that changes no value.
+    expect(recordsOutOfTurn({ standalone: false }, { standalone: false })).toBe(false)
+  })
+
+  it('refuses a repeat "yes" from a device already on record', () => {
+    expect(recordsOutOfTurn({ standalone: true }, { standalone: true })).toBe(false)
+  })
+
+  it('leaves a browser with no row to the throttle', () => {
+    // `shouldRecordDevice(null)` is already true, so there is nothing to
+    // override and two reasons to write would be one too many.
+    expect(recordsOutOfTurn({ standalone: true }, null)).toBe(false)
   })
 })
 

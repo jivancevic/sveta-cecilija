@@ -461,6 +461,8 @@ Every browser push call goes through **`push-client.ts`** (#457): `use-install.t
 
 **The three places that show these instructions are one implementation.** Početna's offer, the Dobrodošlica's first step and `/app/install` all call `readPlatform()` and render `InstallSteps`, all offer the same one-tap `install.action` button when Chromium parked a prompt, and all show the same way out of a webview. There is no second set of install copy anywhere in `/app`.
 
+**The one dead end the guide cannot code its way out of is Play Protect** (#668). Installing on Android means handing Android a generated APK. Chrome does not build it — Google's minting service does, and signs it, and Play Protect passes it. A browser without access to that service builds one on the phone with an old `targetSdk`, and some phones then refuse it with *"Nesigurna aplikacija blokirana — Ta je aplikacija napravljena za stariju verziju Androida"*. So `/app/install` shows a fourth branch on the Android steps when `androidInstaller()` recognises such a browser: what the message is, and a way to open the same page in Chrome (`chromeIntentUrl()`, Android's `intent://` with the package named, https only and a plain `<a>` because Next's Link would route it) with a copy button beside it for a browser that ignores the scheme. **It is worded as an offer, not a warning**, because the block is the phone's call rather than the browser's: on this roster four people installed from Samsung Internet and one was refused. Brave and the other Chromium skins are deliberately unrecognised — they report Chrome's own UA, and a browser we cannot identify is one we have no business warning about. Why not a Play Store listing instead: see "Why not the App Store or Google Play" below.
+
 **The offer is asked of the browser, never of a flag** (#616). Until then the only way to be SENT to an install instruction was `needsOnboarding()`, which reads a Member link and a year-long cookie — so an account with no Member (a blagajna) could never reach it, and a dancer who tapped "Kasnije" in June carried a cookie saying "welcomed" while the home screen stayed empty. Two people typed `app.moreska.eu` and landed on Početna with nothing to install from. `display-mode: standalone` is true or false on every load, so the card needs no flag to appear and none to DISAPPEAR. The Dobrodošlica keeps its `hasMember` gate on purpose — its push and calendar steps are written in the dancer's register ("Reci nam dolaziš li", "Alarm od voditelja") — and finishing it snoozes the card so nobody is asked twice in one minute.
 
 **`/app/install`** is the same guide full screen, and deliberately **not** behind the access decision: it is the target of the QR code a voditelj puts on the wall at a rehearsal, and the person scanning it has not signed in yet. Its platform switch exists because the voditelj is holding somebody else's phone half the time.
@@ -857,7 +859,7 @@ The rule itself is pure and table-tested in `src/lib/app/session-renewal.ts`: `s
 
 **Where it is wired, and why there.** Two obvious homes cannot do the job: `src/proxy.ts` can set a cookie but must never carry Payload or a database connection, and a server component cannot set one at all (`cookies().set()` throws outside a Server Action or a Route Handler). So the seam is the **`(shell)` layout** — already async, already resolving the viewer, and the one thing in `/app` that survives a client navigation (#593), so it fires once per document load rather than once per tab tap. It covers exactly the signed-in screens; the shell-less pages (`login`, `session`, `join`, `install`) have no session to slide.
 
-The layout asks `appKeeperWork()` (`session-renewal-data.ts`, which wraps `appSessionRenewalDue()` and #652's `appDeviceHeartbeatDue()`) and mounts `SessionKeeper` **only when at least one answer is yes**, so on the other six days of the week there is no extra request at all. `SessionKeeper` POSTs `/api/app/session/renew`, which carries the `/app` cross-site guard plus `requireAppSession` — a session is addressed to an **account**, like #496's inbox — and applies the same age rule again before it writes, because this is the handler that writes and a route that renews whatever it is asked to is one stuck retry away from rewriting the row on every load. That decide-on-the-server, tell-a-route-afterwards shape is the seam #652's device heartbeat hangs off.
+The layout asks `appKeeperWork()` (`session-renewal-data.ts`, which wraps `appSessionRenewalDue()` and #652's device work, `appDeviceWork()` since #669) and mounts `SessionKeeper` **only when at least one answer is yes**, so on the other six days of the week there is no extra request at all. `SessionKeeper` POSTs `/api/app/session/renew`, which carries the `/app` cross-site guard plus `requireAppSession` — a session is addressed to an **account**, like #496's inbox — and applies the same age rule again before it writes, because this is the handler that writes and a route that renews whatever it is asked to is one stuck retry away from rewriting the row on every load. That decide-on-the-server, tell-a-route-afterwards shape is the seam #652's device heartbeat hangs off.
 
 Minting is `openAppSession` unchanged: the same four Payload helpers a sign-in link uses, never a second crypto decision. Two properties it must keep, both asserted in `session-data.test.ts`: it reads the **raw** row (a projection drops `user.sessions`, and the write-back would sign every other device out), and the superseded `sid` is **not revoked** — a dropped response on a bad connection would otherwise sign the dancer out instead of extending them, and `addSessionToUser` prunes expired sessions on its own.
 
@@ -870,6 +872,8 @@ Minting is `openAppSession` unchanged: the same four Payload helpers a sign-in l
 **A device is a random id in a server-written `HttpOnly` cookie** (`cecilija_device`), exactly like `cecilija_onboarded` and for exactly the same reason: Safari's ITP caps a *script*-written cookie at seven days, so a browser-written year quietly becomes next week. Not a user-agent fingerprint, which folds two iPhones into one row; not one row per user, which would lose the phone's trace the morning its owner opens the app on a laptop. `Path=/` rather than `/app` is the one difference from the onboarding cookie — the handler lives at `/api/app/session/renew`, which is not under `/app`. Two browsers on one account carry two cookies and stay two rows; one browser across two accounts **moves** to the newer one, exactly as a push endpoint does.
 
 **The write is a throttled heartbeat**, at most once per six hours per device (`shouldRecordDevice(lastSeenAt, now)`, `DEVICE_HEARTBEAT_MS`), so an evening of tapping around is one write and not forty. It rides #650's seam rather than a second one: the server decides from `last_seen_at` before the browser is asked anything, and `SessionKeeper` puts `standalone` on the one POST it was already making. `standalone` is **ORed, not replaced** — on Android an installed app and a plain tab share a cookie jar, so replacing would blink the mark off every time somebody tapped a link in a message — which is why the column means "this browser has reported itself installed".
+
+**The throttle bends once, and only one way** (#669, `shouldConfirmStandalone` / `recordsOutOfTurn`). A browser whose row has NEVER said `standalone` is asked again on every load, outside the six hours, and writes immediately if the answer is yes. Josip found it from the other end — "Ana P. je skinula tako app, a meni pod clanovi pise da nije" — and her row was honest; the fault was that six hours of lag made her case, a blocked install, look identical to the common one, a dancer who installs at rehearsal and opens the app while the voditelj is watching the screen to see whether the instruction landed. It costs nothing when the answer is no: `SessionKeeper` reads the media query and returns without calling, so a reader who really is in a tab makes no request. And it cannot lie in the dangerous direction, because the column ORs — an early write can only turn a mark ON. A row that already says installed is never asked again.
 
 **Three answers, and `unknown` is a real one** (`installedAnswer`, `notificationsAnswer` over a `DeviceSignal`):
 
@@ -3046,7 +3050,32 @@ every page.tsx, and it still REMOUNTS on every client navigation — which is
 right, because a title and a screen's own actions are per-page. Anything that
 has to survive a navigation still cannot hold its state there: `ScrollMemory`
 lives in the ROOT `layout.tsx` for exactly this reason (#562 review), a level
-above `(shell)`, because the pages outside the group scroll too.
+above `(shell)`, because the pages outside the group scroll too. Two more
+joined it there and render nothing either: **`NavMemory`** (#666), which counts
+how many of our own screens are behind this one so `BackControl` can tell a real
+Back from one that would walk the reader out of the app, and **`KeyboardInset`**
+(#667), which writes `--kb` and `data-keyboard`.
+
+**The keyboard is a first-class fact of this layout** (#667). Neither iOS nor
+Chrome shrinks the LAYOUT viewport when the keyboard opens — they shrink the
+visual one — so everything pinned to `bottom: 0` (the sheets, the scrim, the
+toast) sits underneath it, and Josip typed into a sheet he could not see.
+`KeyboardInset` listens to `visualViewport` for `resize` AND `scroll`, because
+on iOS the gap often arrives entirely in `offsetTop`, and publishes the height
+as `--kb`; the rule with the threshold that keeps a collapsing address bar from
+reading as a keyboard is `lib/app/keyboard-inset.ts`. While it is open the tab
+bar hides and `--tabH` goes to 0, which moves the page's bottom padding, the
+sheet's reserved strip and the toast's offset in one stroke, because all three
+are written in terms of it — the same trick the laptop already uses.
+
+**Every field a thumb types into is 16px, at the class** (`.app__input`,
+`.app__textarea`, `.app__select`). Below that iOS zooms the page on focus and
+leaves it zoomed. Three screens had each discovered this and fixed it locally,
+with the same comment three times, while the class most screens use stayed at
+15px. Pinch-zoom stays on (`touch-action: pan-y pinch-zoom`, no `maximum-scale`
+in the viewport export) and that is a decision, not an omission: turning zooming
+off is the one-line fix and it takes zooming away from whoever reads a postava
+at arm's length.
 
 **The laptop** hides the bar, sets `--tabH: 0` so everything that clears a bar
 has nothing to clear, and offers two layout classes for a screen to opt into:

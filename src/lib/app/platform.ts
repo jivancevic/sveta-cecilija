@@ -72,6 +72,76 @@ export function detectPlatform({ userAgent, standalone, touchPoints }: PlatformI
   return 'desktop'
 }
 
+/**
+ * Android browsers that build the install APK THEMSELVES (#668).
+ *
+ * Installing a web app on Android means handing Android a generated APK. Chrome
+ * does not build it: Google's minting service does, and signs it, and Play
+ * Protect lets it through. A browser without access to that service falls back
+ * to generating one on the phone, with an old `targetSdk` — which is word for
+ * word the sentence Josip photographed: *"Ta je aplikacija napravljena za
+ * stariju verziju Androida i ne uključuje najnoviju zaštitu privatnosti."*
+ *
+ * **This is not "these browsers always fail".** Production says otherwise: of
+ * the four other people on Samsung Internet, all four are installed. The block
+ * is the phone's call, not the browser's, and it is Android that makes it. So
+ * the guide never tells anybody their browser is broken — it offers the route
+ * that has a minting service behind it, for whoever needs one.
+ *
+ * Lowercase, matched against a lowercased UA. Brave and most Chromium skins are
+ * deliberately absent: their UA is Chrome's, and a browser we cannot tell from
+ * Chrome is one we have no business warning about.
+ */
+const OWN_APK_FRAGMENTS = [
+  'samsungbrowser',
+  'firefox',
+  'fxios',
+  'opr/', // Opera, which spells itself OPR in the UA
+  'opera',
+  'yabrowser', // Yandex
+  'miuibrowser',
+  'heytapbrowser', // Oppo
+  'huaweibrowser',
+  'vivaldi',
+  'ucbrowser',
+]
+
+/** Which install route this Android browser has. */
+export type AndroidInstaller = 'chrome' | 'own-apk'
+
+/**
+ * Whether this Android browser mints its own install APK.
+ *
+ * `chrome` for anything we cannot tell apart from Chrome, which is the safe
+ * answer: it changes nothing about what the guide shows.
+ */
+export function androidInstaller(userAgent: string): AndroidInstaller {
+  const ua = (userAgent ?? '').toLowerCase()
+  if (!ua.includes('android')) return 'chrome'
+  return OWN_APK_FRAGMENTS.some((fragment) => ua.includes(fragment)) ? 'own-apk' : 'chrome'
+}
+
+/**
+ * An address that opens in Chrome on Android, and nowhere else.
+ *
+ * Android's own `intent://` scheme with the package named. A browser that does
+ * not understand it does nothing at all, which is why the guide always offers
+ * the copy button beside it: a control that silently fails is worse than a
+ * sentence telling somebody to paste an address.
+ *
+ * Only https is wrapped. Anything else is handed back untouched rather than
+ * turned into an intent, because an intent URL built out of an arbitrary string
+ * is a way to open something that was never meant to be opened.
+ */
+export function chromeIntentUrl(url: string): string | null {
+  if (typeof url !== 'string') return null
+  const prefix = 'https://'
+  if (!url.startsWith(prefix)) return null
+  const rest = url.slice(prefix.length)
+  if (rest === '' || rest.includes('#')) return null
+  return `intent://${rest}#Intent;scheme=https;package=com.android.chrome;end`
+}
+
 /** What the banner offers right now. `none` renders nothing at all. */
 export type InstallStep = 'inapp' | 'install' | 'push' | 'on' | 'none'
 

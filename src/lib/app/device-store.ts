@@ -29,21 +29,37 @@ function intOrNull(value: string | number): number | null {
   return Number.isFinite(n) && Number.isInteger(n) ? n : null
 }
 
+/** What is on record for one browser, or null when there is no row yet. */
+export interface DeviceState {
+  lastSeenAt: Date | null
+  /** Has this browser ever reported itself installed? */
+  standalone: boolean
+}
+
 /**
- * When did this device last report? `null` for a device with no row yet.
+ * What is on record for this device? `null` for a device with no row yet.
  *
- * The throttle is decided off this, on the server, before the browser is asked
- * to say anything — see `appDeviceHeartbeatDue` in `session-renewal-data.ts`.
+ * Both answers in one read, because both decide the same thing: the throttle is
+ * decided off `lastSeenAt`, and whether to ask an un-installed browser to speak
+ * up off `standalone` — see `appKeeperWork` in `session-renewal-data.ts`.
  */
-export async function loadDeviceLastSeen(
+export async function loadDeviceState(
   query: PoolQuery,
   deviceId: string,
-): Promise<Date | null> {
-  const res = await query(`SELECT last_seen_at FROM app_devices WHERE device_id = $1`, [deviceId])
-  const value = res.rows[0]?.last_seen_at
-  if (value == null) return null
-  const date = value instanceof Date ? value : new Date(String(value))
-  return Number.isNaN(date.getTime()) ? null : date
+): Promise<DeviceState | null> {
+  const res = await query(
+    `SELECT last_seen_at, standalone FROM app_devices WHERE device_id = $1`,
+    [deviceId],
+  )
+  const row = res.rows[0]
+  if (!row) return null
+  const value = row.last_seen_at
+  let lastSeenAt: Date | null = null
+  if (value != null) {
+    const date = value instanceof Date ? value : new Date(String(value))
+    lastSeenAt = Number.isNaN(date.getTime()) ? null : date
+  }
+  return { lastSeenAt, standalone: row.standalone === true }
 }
 
 /**

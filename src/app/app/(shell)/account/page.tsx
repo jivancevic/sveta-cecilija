@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { getSelfLinkCandidates } from '@/lib/app/link-self-data'
 import { APP_STRINGS } from '@/lib/app/strings'
 import { vapidPublicKey } from '@/lib/push/vapid'
@@ -66,10 +65,12 @@ export default async function AccountPage() {
   const candidates = canLinkSelf ? await getSelfLinkCandidates() : []
 
   return (
-    <AppShell viewer={viewer} screen="more" title={APP_STRINGS.screens.account}>
-      <Link className="app__back" href="/app/more">
-        ‹ {APP_STRINGS.screens.more}
-      </Link>
+    <AppShell
+      viewer={viewer}
+      screen="more"
+      title={APP_STRINGS.screens.account}
+      back={{ href: '/app/more', label: APP_STRINGS.screens.more }}
+    >
 
       {me && (
         <section className="app__more-group">

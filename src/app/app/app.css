@@ -426,14 +426,6 @@ html:has(> .app[data-theme='dark']) {
   margin-top: 0;
 }
 
-/* Two links that were `inline-block` and are now flex items: without this they
-   stretch to the full width of the shell and a back link becomes a tap target
-   the width of the phone (#644). */
-.app__back,
-.app__user-back {
-  align-self: flex-start;
-}
-
 /* ── The two layout containers, at EVERY width (#636) ──────
    `app__col` and `app__cols` were declared inside the 1024px block only, with
    the comment "it collapses to one column below this width by simply not
@@ -947,6 +939,27 @@ html:has(> .app[data-theme='dark']) {
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
   box-shadow: var(--shadowBar);
+}
+
+/* ── The bar while the keyboard is up (#667) ───────────────
+   It goes, and it takes its reserved strip with it. Josip's call in the
+   grilling: you are not switching to Financije mid-word, and on a screen the
+   keyboard has already cut in half the bar would eat two more rows of results.
+
+   `--tabH: 0` rather than a second rule per surface: the page's own bottom
+   padding, the sheet's reserved strip and the toast's offset are all written in
+   terms of it, so zeroing it here moves every one of them at once. Anything
+   that needs the bar's height while the bar is gone would be asking the wrong
+   question.
+
+   `visibility` rather than `display: none`, so the bar does not rebuild its
+   blur layers and its pill on every keystroke that dismisses the keyboard. */
+.app[data-keyboard='open'] {
+  --tabH: 0px;
+}
+
+.app[data-keyboard='open'] .app__tabbar {
+  visibility: hidden;
 }
 
 /* ── The bar while a sheet is open (#624) ──────────────────
@@ -2148,20 +2161,10 @@ html:has(> .app[data-theme='dark']) {
   font-weight: 700;
 }
 
-.app__back {
-  display: inline-block;
-  padding: 14px 0 10px;
-  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
-  font-size: 13px;
-  letter-spacing: 0.06em;
-  color: var(--goldText);
-  text-decoration: none;
-}
-
-.app__back:hover,
-.app__back:focus-visible {
-  color: var(--ink);
-}
+/* `.app__back` and `.app__user-back` were the eight body links that said "‹
+   Natrag" — gone with #666, which moved every one of them into the header as
+   the chevron `.app__header-back` already drew for Ljestvica. They were also
+   the last two rules the 1024px flex note at the top of this file existed for. */
 
 .app__note--detail {
   margin-top: 16px;
@@ -2317,8 +2320,23 @@ html:has(> .app[data-theme='dark']) {
   cursor: default;
 }
 
+/* One or two controls. Two since #668, where the Chrome route and the copy
+   fallback stand side by side, so this wraps rather than letting a long
+   Croatian label push the second one off a 320px phone. */
 .app__hint-actions {
   margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* An `<a>` wearing the button: `intent://` is Android's own scheme and has to
+   be a plain anchor (#668), and an anchor is inline, so the padding and the
+   width of `.app__button` mean nothing on it without this. */
+a.app__button {
+  display: inline-block;
+  text-align: center;
+  text-decoration: none;
 }
 
 .app__button--small {
@@ -2364,7 +2382,7 @@ html:has(> .app[data-theme='dark']) {
   margin: 6px 0 12px;
   padding: 10px 12px;
   font: inherit;
-  font-size: 15px;
+  font-size: 16px;
   color: var(--ink);
   background: var(--sunk);
   border: 1px solid var(--cardEdge);
@@ -2462,7 +2480,7 @@ html:has(> .app[data-theme='dark']) {
   min-height: 44px;
   padding: 10px 12px;
   font: inherit;
-  font-size: 14px;
+  font-size: 16px;
   color: var(--ink);
   background: var(--sunk);
   border: 0;
@@ -2628,13 +2646,28 @@ html:has(> .app[data-theme='dark']) {
   color: var(--muted);
 }
 
+/* ── Every field a thumb types into is 16px (#667) ─────────
+   Below 16px iOS Safari zooms the page on focus, and then leaves it zoomed:
+   Josip, from his iPhone, "bude blagi zoom in ... kad se zavrsi s tipkanje,
+   ostane aplikacija tako malo zoom inana, pa se mora opet zoom outat."
+
+   Three places already knew — `.app__field input`, `.app__scan-search input`
+   and `.app__search-field input` each carry 16px and a comment saying why — but
+   the generic class most screens use did not, so Članovi, Korisnici, Gratis and
+   every sheet with a search in it zoomed. Fixing it at the CLASS is the point:
+   the next form inherits the fix instead of needing the comment.
+
+   The other half of that grilling: we do NOT turn zooming off. `maximum-scale=1`
+   is one line and would have fixed the symptom this afternoon, at the price of
+   taking pinch-zoom away from everybody forever — and somebody who reads a
+   postava at arm's length needs it more than we need the line. */
 .app__input {
   display: block;
   width: 100%;
   margin-bottom: 12px;
   padding: 10px 12px;
   font: inherit;
-  font-size: 15px;
+  font-size: 16px;
   color: var(--ink);
   background: var(--sunk);
   border: 1px solid var(--cardEdge);
@@ -5748,17 +5781,16 @@ a.app__ob-link {
   color: var(--muted);
 }
 
+/* The two anti-zoom overrides that used to live here are gone: `.app__input`
+   and `.app__select` are 16px at the class since #667, so this screen no longer
+   has to remember what every other screen forgot. The height is its own. */
 .app__perf-field .app__select {
   display: block;
   width: 100%;
   margin-bottom: 12px;
-  /* 16px keeps iOS Safari from zooming the page on focus. */
-  font-size: 16px;
 }
 
 .app__perf-field .app__input {
-  /* Same reason as the select above; .app__input is 15px elsewhere. */
-  font-size: 16px;
   min-height: 44px;
 }
 
@@ -7874,14 +7906,6 @@ a.app__statrow-main:focus-visible {
 }
 
 /* ── One account ──────────────────────────────────────────── */
-.app__user-back {
-  display: inline-block;
-  margin: 0;
-  font-size: 13px;
-  color: var(--muted);
-  text-decoration: none;
-}
-
 .app__user-facts {
   border-top: 1px solid var(--rule);
 }

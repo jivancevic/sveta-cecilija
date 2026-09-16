@@ -63,11 +63,12 @@ export default async function InquiryDetailPage({ params }: { params: Promise<{ 
   const mailto = replyMailto(inquiry)
 
   return (
-    <AppShell viewer={viewer} screen="inquiries" title={name}>
-      <Link className="app__back" href="/app/inquiries">
-        ‹ {D.back}
-      </Link>
-
+    <AppShell
+      viewer={viewer}
+      screen="inquiries"
+      title={name}
+      back={{ href: '/app/inquiries', label: D.back }}
+    >
       <Card eyebrow={D.eyebrow} className="app__facts">
         <Fact label={D.email}>
           {inquiry.email ? (

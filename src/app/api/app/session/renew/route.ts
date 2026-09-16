@@ -5,9 +5,10 @@ import {
   deviceCookie,
   deviceIdFromCookieHeader,
   newDeviceId,
+  recordsOutOfTurn,
   shouldRecordDevice,
 } from '@/lib/app/device'
-import { loadDeviceLastSeen, recordDevice } from '@/lib/app/device-store'
+import { loadDeviceState, recordDevice } from '@/lib/app/device-store'
 import { poolQuery } from '@/lib/db/pool-query'
 import { openAppSession } from '@/lib/app/session-data'
 import { requireAppSession } from '@/lib/app/session-guard'
@@ -106,8 +107,15 @@ async function maybeRecordDevice(
     const existing = deviceIdFromCookieHeader(req.headers.get('cookie'))
     // A browser with no cookie is one this app has never named, so `null` here
     // means "never seen" and the throttle says yes on the spot.
-    const lastSeen = existing ? await loadDeviceLastSeen(query, existing) : null
-    if (!shouldRecordDevice(lastSeen, now)) return null
+    const onRecord = existing ? await loadDeviceState(query, existing) : null
+    // Two reasons to write, and the second is #669's: the throttle has run out,
+    // OR this browser has just said it is an installed app for the first time.
+    // A voditelj checking whether an instruction landed should not be reading a
+    // six-hour-old answer.
+    const due =
+      shouldRecordDevice(onRecord?.lastSeenAt ?? null, now) ||
+      recordsOutOfTurn({ standalone: body.standalone }, onRecord)
+    if (!due) return null
 
     const deviceId = existing ?? newDeviceId()
     await recordDevice(query, {

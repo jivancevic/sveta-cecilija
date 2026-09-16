@@ -1,4 +1,3 @@
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getPerformanceDetail } from '@/lib/app/detail-data'
 import { stanjeView } from '@/lib/app/stanje-screen'
@@ -44,9 +43,6 @@ export default async function StanjePage({ params }: { params: Promise<{ id: str
 
   const intro = (
     <header className="app__stanje-head">
-      <Link className="app__back" href="/app/moreska">
-        ‹ {S.back}
-      </Link>
       <p className="app__stanje-when">
         <span>{view.headDate}</span>
         {/* The kind as a chip since #592, in the tone its disc wears on Moreška
@@ -76,7 +72,13 @@ export default async function StanjePage({ params }: { params: Promise<{ id: str
   )
 
   return (
-    <AppShell viewer={viewer} screen="moreska" title={S.title} intro={intro}>
+    <AppShell
+      viewer={viewer}
+      screen="moreska"
+      title={S.title}
+      intro={intro}
+      back={{ href: '/app/moreska', label: S.back }}
+    >
       {view.note && <Note>{view.note}</Note>}
       <Stanje
         view={view}

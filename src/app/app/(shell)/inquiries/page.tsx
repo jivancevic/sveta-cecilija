@@ -5,9 +5,9 @@ import {
   inquiriesHref,
   parseInquiriesQuery,
   INQUIRIES_PER_PAGE,
-  type RawSearchParams,
 } from '@/lib/app/inquiries-query'
 import { foundLabel, inquiryRowView, pageCount } from '@/lib/app/inquiries-view'
+import type { RawSearchParams } from '@/lib/app/screen-state'
 import { APP_STRINGS } from '@/lib/app/strings'
 import { AppShell } from '../../AppShell'
 import { openScreen } from '../../gate'

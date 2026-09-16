@@ -1,9 +1,12 @@
+import { Suspense } from 'react'
 import type { Metadata, Viewport } from 'next'
 import { bodoni, ibmPlexMono, inter } from '@/app/(frontend)/fonts'
 import { INSTALL_PROMPT_CAPTURE } from '@/lib/app/platform'
 import { APP_STRINGS } from '@/lib/app/strings'
 import { THEME_BOOT_SCRIPT } from '@/lib/app/theme'
 import { vapidPublicKey } from '@/lib/push/vapid'
+import { KeyboardInset } from './KeyboardInset'
+import { NavMemory } from './NavMemory'
 import { ScrollMemory } from './ScrollMemory'
 import { ServiceWorkerMigration } from './ServiceWorkerMigration'
 import './app.css'
@@ -80,6 +83,28 @@ export default function MoreskantAppLayout({ children }: { children: React.React
           nothing to scroll, so its listener never fires.
         */}
         <ScrollMemory />
+        {/*
+          Also renders nothing: it counts how many of our own screens are behind
+          this one, so the back chevron can be a real Back for the reader who
+          tapped their way here and a plain link for the reader a push
+          notification dropped straight onto one nastup (#666).
+
+          HERE for the same reason as `ScrollMemory` — the layout is the only
+          thing in `/app` that survives a navigation. In a `<Suspense>` because
+          it reads the query string, which a pager and a filter live in, and
+          `useSearchParams` asks for one.
+        */}
+        <Suspense fallback={null}>
+          <NavMemory />
+        </Suspense>
+        {/*
+          And a third that renders nothing: how tall the on-screen keyboard is,
+          as `--kb` and `data-keyboard` (#667). The sheets, the toast and the
+          tab bar read it; the scrim deliberately does not, because it should
+          keep covering the strip the keyboard stands on. Here because a sheet
+          is portalled to `document.body` and this must outlive a navigation.
+        */}
+        <KeyboardInset />
         {children}
       </body>
     </html>
