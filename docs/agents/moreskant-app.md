@@ -1773,14 +1773,16 @@ as a whole, and half a confirmed evening is not a state anybody means.
 
 ### Read is scoped by the performance, not by the member
 
-That is the one place this differs from attendance. `moreska` sees everything; a
-`moreskant` gets `{ 'performance.lineupConfirmed': { equals: true } }` on
-**read** and nothing on create, update or delete. Reaching THROUGH the
-relationship rather than carrying a list of ids is deliberate: an id list would
-go stale between the access decision and the query, and a lineup unlocked mid
-request has to stop being visible immediately (story 34). Writes stay a plain
-boolean for the reason `attendance-access.ts` sets out at length — Payload's
-create tests the result for truthiness, so a `Where` there reads as "allowed".
+That is the one place this differs from attendance. `moreska` sees everything,
+and since #670 so does a `moreskant`: **read** is a plain `true` for either.
+It used to be `{ 'performance.lineupConfirmed': { equals: true } }`, which is
+the shape to return to if a draft ever has to be hidden again — story 34 hid one
+until confirmation, and confirmation is pressed AFTER the evening, so a dancer
+learnt they had been kralj the morning after. Confirmation now decides what
+COUNTS, not who may look. Writes are unchanged: nothing on create, update or
+delete, a plain boolean for the reason `attendance-access.ts` sets out at length
+— Payload's create tests the result for truthiness, so a `Where` there reads as
+"allowed".
 
 ### The two writers
 
@@ -2053,8 +2055,9 @@ a database; what it can DO is `src/app/app/moreska/[id]/Stanje.tsx`, the one
 client island.
 
 Moreška's own top mark wears the title too: `RosterPerformance.myTitle` is the
-reader's role in the next nastup's **confirmed** postava, folded in by
-`attachOwnTitles` and null for a draft (story 34).
+reader's role in the next nastup's postava, folded in by `attachOwnTitles`. A
+**nacrt counts** since #670 — the crown is worn the moment the voditelj hands it
+out, which is the point of showing it at all.
 
 ## Statistics (#437 — phase 4 batch C)
 
@@ -2924,11 +2927,25 @@ belong to, and it is gone.
 | three states | **Svijetla** (the default since #633) · **Tamna** · **Kao sustav** |
 | stored | `localStorage`, key `cecilija.theme`, one value per device |
 | applied | `data-theme="dark"` or `"light"` on `.app` (the `<body>`), always written out rather than removed, so the state can be read back off the element |
+| refused | `color-scheme: only light` / `only dark` on `<html>` (#670), inline from the boot script and in `app.css` for a page whose script never ran |
 | no flash | `THEME_BOOT_SCRIPT`, inline in `src/app/app/layout.tsx` ABOVE everything it renders |
 
+**Two writes, not one** (#670). `data-theme` on the body is for our tokens;
+`color-scheme` on `<html>` is for Android, which repaints a page in its own dark
+theme unless the ROOT refuses. Ours sat on `.app` — the body — so on a Samsung
+A55 the light skin came back inverted: Profil highlighted *Svijetla* over a black
+screen and all three choices looked alike, because the darkness was not the
+app's to switch. The word `only` is the fix rather than decoration: Chrome
+documents `only light` as the opt-out, and a bare `light` states which scheme the
+page uses without refusing anything
+([Auto Dark Theme](https://developer.chrome.com/blog/auto-dark-theme)). The root
+rule does not reach the themed islands, and that is right — a refusal is a
+refusal whichever skin the page is wearing.
+
 The rules live in `src/lib/app/theme.ts` and NOTHING re-types them: the boot
-script is built from the same three constants the switch writes with, so a
-renamed key renames itself in both. `ThemeSwitch.tsx` is a `useSyncExternalStore`
+script is built from the same constants the switch writes with — the key, the
+attribute, the media query, the style key and `rootColorScheme` — so a rename
+renames itself in both. `ThemeSwitch.tsx` is a `useSyncExternalStore`
 over localStorage and `matchMedia`, never a piece of state copied out of them in
 an effect — the snapshot carries the CHOICE and the RESOLVED skin together,
 because otherwise a phone flipping at sunset would move the skin without moving

@@ -378,10 +378,11 @@ describe('attachOwnTitles', () => {
     expect(out[0]!.myTitle).toBe('bili_kralj')
   })
 
-  it('says nothing about an unconfirmed postava', () => {
-    // A crown the voditelj is still moving around is not news a dancer may
-    // read (story 34), and Moreška would print it on their own mark.
-    expect(attachOwnTitles([draft], new Map([['2', 'crni_kralj']]))[0]!.myTitle).toBeNull()
+  it('wears the crown of a nacrt, without waiting for the confirmation', () => {
+    // #670: confirmation happens AFTER the evening, so a dancer who only got
+    // the crown on a confirmed postava read a plain disc on the very night they
+    // were kralj. The title is worn the moment the voditelj hands it out.
+    expect(attachOwnTitles([draft], new Map([['2', 'crni_kralj']]))[0]!.myTitle).toBe('crni_kralj')
   })
 
   it('is null for a plain role, which is not a title at all', () => {
@@ -718,8 +719,10 @@ describe('attachPostavaCounts — who danced, per army (#634)', () => {
   })
 
   it('says nothing at all about an evening nobody confirmed', () => {
-    // A draft is not a record of who danced (story 34), so the row carries no
-    // number and the screen draws "Nema popisa" instead.
+    // A draft is not a record of who danced, so the row carries no number and
+    // the screen draws "Nema popisa" instead. #670 opened the postava itself to
+    // a dancer and left this alone deliberately: the count is withheld from the
+    // voditelj too, so it is a rule about drafts and not about audiences.
     const [row] = attachPostavaCounts(
       [evening('1', false)],
       [{ performanceId: '1', role: 'crni' }],

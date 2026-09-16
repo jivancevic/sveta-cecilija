@@ -320,7 +320,8 @@ export interface StanjeView {
    */
   callMessage: { title: string; body: string }
   /** How many of the four titles have exactly one holder right now. */
-  titlesGiven: number
+  /** How many of the four are given, or null for a reader not keeping the list (#670). */
+  titlesGiven: number | null
   /**
    * Whether Potvrdi may be pressed at all, by THIS evening's rule (#620).
    *
@@ -361,8 +362,9 @@ export interface StanjeView {
  *
  * While the voditelj may still edit it, that is the answers with the stored
  * rows overlaid ({@link lineupWithTitles}); once it is confirmed, or for a
- * dancer, it is exactly what is stored, which the loader has already emptied
- * for a dancer looking at a draft (story 34).
+ * dancer, it is exactly what is stored — draft included since #670, which is
+ * what puts the crowns on a dancer's screen on the night rather than the
+ * morning after.
  *
  * `answered` is every member with an attendance row of any kind, which is the
  * difference between "said no" and "was never asked": the first drops a stored
@@ -744,7 +746,16 @@ export function stanjeView(detail: PerformanceDetail): StanjeView {
     voditelj: picker(S.addVoditelj, voditelji, null, () => true),
   }
 
+  // How far along the postava is, and whether it may be confirmed: both belong
+  // to whoever is assembling it (#670). A dancer reads the draft — the crowns
+  // are on the names — but not the checklist of somebody else's job, which they
+  // could not act on and which reads as breakage when it is short.
+  //
+  // `null` rather than 0 for a dancer: zero titles given is a real state of a
+  // postava somebody is part-way through, and a screen that cannot tell it from
+  // "you were not shown this" is a screen waiting to say the wrong thing.
   const given = titlesGiven(countTitles(lineup.map((entry) => entry.role)))
+  const shownGiven = detail.keepsList ? given : null
 
   return {
     id: p.id,
@@ -803,8 +814,10 @@ export function stanjeView(detail: PerformanceDetail): StanjeView {
         crni: count.crni.count,
       }),
     },
-    titlesGiven: given,
-    canConfirm: requirements.voditelj ? voditelji.length === 1 : given === ALL_TITLES,
+    titlesGiven: shownGiven,
+    canConfirm:
+      detail.keepsList &&
+      (requirements.voditelj ? voditelji.length === 1 : given === ALL_TITLES),
     lineup,
     keepsList: detail.keepsList,
     // "Popis vodi: Ante Bačić" — drawn only when there IS one (#658). A

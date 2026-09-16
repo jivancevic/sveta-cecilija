@@ -82,11 +82,20 @@ export interface LineupPerson {
 /**
  * The Postava section (#432).
  *
- * `visible` is the story-34 rule in one field: a moreškant sees a lineup only
- * once it is confirmed, past or future, and never a draft. `canEdit` is the
- * story-31 rule: a voditelj edits until they press Potvrdi, and the replace
- * route refuses the same case with a 409, so the read-only fields a voditelj
- * SEES and the refusal the server ENFORCES are one sentence.
+ * **The postava is visible as soon as it exists** (#670). Story 34 used to hide
+ * a draft from everyone but its keeper, and it was reversed: a dancer coming to
+ * the plac may know the podjela, and confirmation stopped deciding who may READ
+ * the postava. It decides what COUNTS — what enters the season statistics and
+ * Ljestvica — and nothing else. The rule holds past and future alike: a
+ * visibility rule that depends on the calendar is one nobody remembers.
+ *
+ * What a dancer still does not get is the keeper's INSTRUMENTS — `suggested`,
+ * `roster` and `warnings`, all gated on `keepsList`. A dancer can act on none of
+ * them, and "nedostaje bula" reads to them as breakage rather than as a list
+ * being assembled. `canEdit` is the story-31 rule, unchanged: a voditelj edits
+ * until they press Potvrdi, and the replace route refuses the same case with a
+ * 409, so the read-only fields a voditelj SEES and the refusal the server
+ * ENFORCES are one sentence.
  */
 export interface LineupView {
   confirmed: boolean
@@ -107,7 +116,6 @@ export interface LineupView {
   warnings: RoleWarning[]
   /** Every active moreškant, for the picker. The list-keeper's, only. */
   roster: LineupPerson[]
-  visible: boolean
   canEdit: boolean
 }
 
@@ -336,20 +344,18 @@ export function buildLineupView(input: {
   const toRows = (entries: readonly LineupEntry[]): LineupRow[] =>
     entries.map(toRow).sort(compareLineupRows)
 
-  const visible = input.keepsList || confirmed
-
   return {
     confirmed,
     confirmedAt,
     confirmedBy: confirmed ? (input.confirmedBy ?? null) : null,
-    // A dancer looking at a draft gets an EMPTY list rather than a hidden
-    // section: the shape of the payload is where story 34 is enforced, so no
-    // template can leak a draft by forgetting a condition.
-    entries: visible ? toRows(stored) : [],
+    // Everybody's, draft or not (#670). There is no `visible` flag left to
+    // forget: the postava is the postava, and the fields below are what the
+    // shape of the payload still withholds.
+    entries: toRows(stored),
     suggested: input.keepsList
       ? toRows(buildLineupFromAttendance(input.attendanceRows, roster))
       : [],
-    warnings: visible ? roleWarnings(stored, roster) : [],
+    warnings: input.keepsList ? roleWarnings(stored, roster) : [],
     roster: input.keepsList
       ? roster.map((m) => ({
           memberId: String(m.id),
@@ -359,7 +365,6 @@ export function buildLineupView(input: {
           primaryRole: isDanceRole(m.primaryRole) ? m.primaryRole : null,
         }))
       : [],
-    visible,
     canEdit: input.keepsList && !confirmed,
   }
 }

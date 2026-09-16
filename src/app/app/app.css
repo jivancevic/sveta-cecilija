@@ -212,6 +212,34 @@ html:has(> .app) {
      be a hex — one the night skin would not follow. Leaving `html` transparent
      lets the body's own `--bg` propagate to the canvas, which is the behaviour
      we wanted from the hex and gets the theme for free. */
+
+  /* `color-scheme` is the exception to that paragraph, and it is #670 (found on
+     a Samsung A55 on Android 16). Chrome on Android repaints a page in its own
+     dark theme unless the document refuses, and it reads the refusal off the
+     ROOT element. Ours sat on `.app` — the body — so the page never spoke for
+     itself, Android inverted the light skin, and the switch on Profil read
+     "Svijetla" over a black screen with all three choices looking alike.
+
+     `only light`, not `light`: Chrome documents `only light` as the opt-out and
+     a bare `light` merely says which scheme the page uses, which would have left
+     the bug exactly where it was while looking like a fix
+     (https://developer.chrome.com/blog/auto-dark-theme). Unlike a background
+     this is not a colour, so naming it up here costs the night skin nothing —
+     the rule below follows the theme. */
+  color-scheme: only light;
+}
+
+/* The same statement for the night skin, keyed off the body the boot script
+   writes. `THEME_BOOT_SCRIPT` sets this inline on `<html>` too and gets there
+   first; this pair is what a page whose script never ran still gets right.
+
+   It deliberately does NOT reach the themed ISLANDS (`.app [data-theme='dark']`,
+   e.g. Skener, which forces its own night). An island is a descendant, so the
+   root keeps saying `only light` while a corner of the page is dark — which is
+   the right answer rather than a miss: the root's job here is to refuse the
+   repaint, and a refusal is a refusal whichever skin the page is wearing. */
+html:has(> .app[data-theme='dark']) {
+  color-scheme: only dark;
 }
 
 /* The installed iPhone (#592, measured on Josip's phone on 2026-09-14, iOS 18.7):
