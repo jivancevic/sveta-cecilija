@@ -2,11 +2,13 @@ import { NextResponse } from 'next/server'
 import { requirePermission } from '@/lib/access/route-guard'
 import { appRequestMeta } from '@/lib/app/request-guard'
 import { resolveOwnMemberId, type MemberLinkReader } from '@/lib/access/attendance-access'
+import { listKeepersOf, loadShowRow, type ShowRowReader } from '@/lib/app/show-row'
 import { relationIdForWrite as relId } from '@/lib/payload-relation'
 import { toIsoInstant } from '@/lib/to-iso-date'
 import { handleAttendanceAnswer, type ExistingAnswer } from '@/lib/attendance/answer'
 import type { Army, AttendanceMember, AttendancePerformance } from '@/lib/attendance/rules'
 import { showStartMs } from '@/lib/show-time'
+import { isMoreskantRow } from '@/lib/moreskant-profile'
 
 // POST /api/app/attendance — the ONE writer of an attendance row (#422).
 //
@@ -46,9 +48,20 @@ export async function POST(req: Request) {
   const { payload, user } = gate
 
   // `Users.member` is field-locked to `users` (#420), so the session carries no
-  // link: re-read it, exactly as /app's viewer does.
-  const ownMemberId = await resolveOwnMemberId(
-    payload as unknown as MemberLinkReader,
+  // link: re-read it, exactly as /app's viewer does — and then check that the
+  // Member it points at is a LIVE moreskant, because that is the bar the
+  // `moreskant` permission itself has to clear (ADR-0024, `decideAppAccess`):
+  // untick `active` or `isMoreskant` and the account is out on its next
+  // request. `requirePermission` cannot see that, it only reads the word.
+  //
+  // It matters more since #658 than it did before it. The link decides two
+  // things now: whose answer counts as this caller's OWN, and - through
+  // `keepsList` - whether they may answer for ANYBODY on an evening that names
+  // them. A retired dancer left on `listKeepers` with a cookie still in date
+  // would otherwise keep running that evening, which ADR-0029 says outright
+  // they do not.
+  const ownMemberId = await resolveLiveOwnMemberId(
+    payload as unknown as LiveMemberReader,
     user as { id?: string | number; member?: unknown },
   )
 
@@ -56,31 +69,20 @@ export async function POST(req: Request) {
 
   const result = await handleAttendanceAnswer(body, {
     request: appRequestMeta(req, process.env.NEXT_PUBLIC_BASE_URL),
-    actor: { user: user as { permissions?: unknown }, memberId: ownMemberId == null ? null : String(ownMemberId) },
+    actor: { user: user as { permissions?: unknown }, memberId: ownMemberId },
 
     loadPerformance: async (id): Promise<AttendancePerformance | null> => {
-      try {
-        const doc = (await payload.findByID({
-          collection: 'shows',
-          id,
-          depth: 0,
-          overrideAccess: true,
-        })) as unknown as Record<string, unknown> | null
-        if (!doc) return null
-        const date = String(doc.date ?? '').slice(0, 10)
-        const time = typeof doc.time === 'string' ? doc.time : ''
-        return {
-          id: String(doc.id),
-          startMs: date && time ? showStartMs(date, time) : Number.NaN,
-          cancelled: doc.status === 'cancelled',
-          date,
-          time,
-          // Who keeps this evening's list (#658). At `depth: 0` these are bare
-          // Member ids, which is what `keepsList` reads.
-          listKeepers: Array.isArray(doc.listKeepers) ? doc.listKeepers : [],
-        }
-      } catch {
-        return null
+      const doc = await loadShowRow(payload as unknown as ShowRowReader, id)
+      if (!doc) return null
+      const date = String(doc.date ?? '').slice(0, 10)
+      const time = typeof doc.time === 'string' ? doc.time : ''
+      return {
+        id: String(doc.id),
+        startMs: date && time ? showStartMs(date, time) : Number.NaN,
+        cancelled: doc.status === 'cancelled',
+        date,
+        time,
+        listKeepers: listKeepersOf(doc),
       }
     },
 
@@ -165,4 +167,44 @@ export async function POST(req: Request) {
   })
 
   return NextResponse.json(result.body, { status: result.status })
+}
+
+/** The two reads this makes: the account for the link, the Member for its state. */
+interface LiveMemberReader {
+  findByID: (args: {
+    collection: 'users' | 'members'
+    id: string | number
+    depth: number
+    overrideAccess: boolean
+  }) => Promise<unknown>
+}
+
+/**
+ * The caller's own Member link, or null unless it is a live moreškant.
+ *
+ * Two reads, both of which the page gate makes as well (`resolveAppAccessFor`):
+ * the account for the link, the Member for whether it is still on the roster.
+ * It is deliberately NOT `resolveAppAccessFor` itself — that one also decides
+ * the screen set and answers null for a `moreska`-only voditelj who dances,
+ * which would quietly change whose answer counts as their own here.
+ */
+async function resolveLiveOwnMemberId(
+  payload: LiveMemberReader,
+  user: { id?: string | number; member?: unknown },
+): Promise<string | null> {
+  const linked = await resolveOwnMemberId(payload as unknown as MemberLinkReader, user)
+  if (linked == null) return null
+  try {
+    const doc = (await payload.findByID({
+      collection: 'members',
+      id: linked,
+      depth: 0,
+      overrideAccess: true,
+    })) as Record<string, unknown> | null
+    if (!doc || doc.active === false || !isMoreskantRow(doc)) return null
+    return String(linked)
+  } catch {
+    // A link pointing at a row that is gone is a caller with no Member.
+    return null
+  }
 }

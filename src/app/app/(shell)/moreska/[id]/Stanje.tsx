@@ -348,7 +348,7 @@ export function Stanje({
           <div className="ui-btns">
             {/* Pozovi is the voditelj's on every evening (ADR-0029): ringing
                 seventy-six phones is not part of keeping a list. For a Zaduženi
-                it is GREY WITH A SENTENCE rather than absent (#658, Q17), the
+                it is GREY WITH A SENTENCE rather than absent (#658), the
                 way Izvedbe greys its six actions with "traži Blagajnu" —
                 somebody doing the voditelj's job tonight has to see that the
                 alarm exists and that it is not theirs. */}
@@ -374,7 +374,7 @@ export function Stanje({
                 {busy.what === 'confirm' ? S.confirming : S.confirm}
               </Button>
             )}
-            {/* The third control (#658, Q25). Uredi postavu and Zaduženi are
+            {/* The third control (#658). Uredi postavu and Zaduženi are
                 PREPARATORY — pressed before the evening, at a table — while the
                 two beside it are pressed under time pressure, so they keep the
                 width and these go behind one tap. */}
@@ -923,7 +923,7 @@ function PeopleSheet({
  * once, watching what is already on. The shared component would have to grow an
  * on-state and a "stay open" mode to say that, and the two would then drift.
  *
- * A clean list, with no mark for who has a login (#658, Q7/Q26): a voditelj
+ * A clean list, with no mark for who has a login (#658): a voditelj
  * knows, and an annotation with nothing to do about it is noise. Naming a dancer
  * who has never signed in is allowed and writes the row — they simply get no
  * push, which the handler already decides.

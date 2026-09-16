@@ -67,7 +67,7 @@ export default async function StanjePage({ params }: { params: Promise<{ id: str
           first time a season statistic looks wrong. */}
       {view.confirmedBy && <p className="app__stanje-where">{view.confirmedBy}</p>}
       {/* "Popis vodi: …", and ONLY when it is somebody other than a voditelj
-          (#658, Q12). A voditelj keeps every list without being written down,
+          (#658). A voditelj keeps every list without being written down,
           so no line means the voditelji are running the night, as always. It
           answers "koga pitam"; the line above answers "tko je ovo zaključao",
           which is a different question and therefore a different line. */}

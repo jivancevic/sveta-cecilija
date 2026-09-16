@@ -231,7 +231,7 @@ export default async function PerformanceDetailPage({
           </Card>
 
           {/* The postava editor was here until #658, which is the ticket #566
-              was waiting for: it lives on Stanje now, behind "Uredi postava" in
+              was waiting for: it lives on Stanje now, behind "Uredi postavu" in
               the action block's overflow. It moved rather than being copied,
               because two editors of one record diverge the first time one of
               them is fixed — and the reader who needs it most, a Zaduženi, does

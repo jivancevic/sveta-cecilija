@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { requirePermission } from '@/lib/access/route-guard'
 import { appRequestMeta } from '@/lib/app/request-guard'
+import { listKeepersOf, loadShowRow, type ShowRowReader } from '@/lib/app/show-row'
 import {
   handleListKeeperWrite,
   type ListKeeperCandidate,
@@ -48,23 +49,13 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     request: appRequestMeta(req, process.env.NEXT_PUBLIC_BASE_URL),
 
     loadPerformance: async (performanceId): Promise<ListKeeperPerformance | null> => {
-      try {
-        const doc = (await payload.findByID({
-          collection: 'shows',
-          id: performanceId,
-          depth: 0,
-          overrideAccess: true,
-        })) as unknown as Record<string, unknown> | null
-        if (!doc) return null
-        return {
-          id: String(doc.id),
-          date: String(doc.date ?? '').slice(0, 10),
-          time: typeof doc.time === 'string' ? doc.time : '',
-          listKeepers: Array.isArray(doc.listKeepers) ? doc.listKeepers : [],
-        }
-      } catch {
-        // A bad id in the URL is a 400 from the handler, never a 500 from here.
-        return null
+      const doc = await loadShowRow(payload as unknown as ShowRowReader, performanceId)
+      if (!doc) return null
+      return {
+        id: String(doc.id),
+        date: String(doc.date ?? '').slice(0, 10),
+        time: typeof doc.time === 'string' ? doc.time : '',
+        listKeepers: listKeepersOf(doc),
       }
     },
 

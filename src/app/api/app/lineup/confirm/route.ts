@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { requirePermission } from '@/lib/access/route-guard'
 import { appRequestMeta } from '@/lib/app/request-guard'
+import { listKeepersOf, loadShowRow, type ShowRowReader } from '@/lib/app/show-row'
 import { handleLineupConfirm, type LineupPerformance } from '@/lib/lineup/replace'
 import { listKeeperActor } from '@/lib/app/list-keeper-actor'
 import { performanceKindOf } from '@/lib/show-performance'
@@ -59,22 +60,13 @@ export async function POST(req: Request) {
     // that has to be true AT THE MOMENT OF THE WRITE is re-read under the lock
     // in `write-tx.ts`; who may press the button is not one of those.
     loadPerformance: async (id): Promise<LineupPerformance | null> => {
-      try {
-        const doc = (await payload.findByID({
-          collection: 'shows',
-          id,
-          depth: 0,
-          overrideAccess: true,
-        })) as unknown as Record<string, unknown> | null
-        if (!doc) return null
-        return {
-          id: String(doc.id),
-          confirmed: doc.lineupConfirmed === true,
-          kind: performanceKindOf(doc.kind),
-          listKeepers: Array.isArray(doc.listKeepers) ? doc.listKeepers : [],
-        }
-      } catch {
-        return null
+      const doc = await loadShowRow(payload as unknown as ShowRowReader, id)
+      if (!doc) return null
+      return {
+        id: String(doc.id),
+        confirmed: doc.lineupConfirmed === true,
+        kind: performanceKindOf(doc.kind),
+        listKeepers: listKeepersOf(doc),
       }
     },
 

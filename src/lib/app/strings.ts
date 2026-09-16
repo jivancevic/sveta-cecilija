@@ -580,7 +580,7 @@ export const APP_STRINGS = {
     /** The overflow row that opens the postava editor, moved here from Izvedbe. */
     editLineup: 'Uredi postavu',
     /**
-     * Why Pozovi is grey in a Zaduženi's hand (#658, Q17). Greyed with a
+     * Why Pozovi is grey in a Zaduženi's hand (#658). Greyed with a
      * sentence rather than hidden, the way Izvedbe greys its six actions with
      * "traži Blagajnu": somebody doing the voditelj's job tonight has to see
      * that the alarm exists and that it is not theirs, or they spend half an
@@ -3438,8 +3438,11 @@ export const PUSH_MESSAGES = {
    */
   listKeeper: {
     title: 'Vodiš popis',
+    // The reminder's shape a few lines up, deliberately: "Nastup <dan> u
+    // <vrijeme>" reads as a fragment on its own, and these two messages are
+    // read in the same list.
     body: (input: { date: string; time: string }) =>
-      `Nastup ${formatPerformanceDate(input.date)} u ${input.time}.`,
+      `Nastup je ${formatPerformanceDate(input.date)} u ${input.time}.`,
   },
 
   /** Type (4): a performance that did not exist a minute ago (story 17). */

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { requirePermission } from '@/lib/access/route-guard'
 import { appRequestMeta } from '@/lib/app/request-guard'
+import { listKeepersOf, loadShowRow, type ShowRowReader } from '@/lib/app/show-row'
 import { listKeeperActor } from '@/lib/app/list-keeper-actor'
 import type { ViewerPayload } from '@/lib/app/viewer'
 import { handleLineupReplace, type LineupPerformance } from '@/lib/lineup/replace'
@@ -52,25 +53,13 @@ export async function POST(req: Request) {
     // proves nothing about the moment of the write, which is why the locked
     // re-check inside the transaction is the one that decides.
     loadPerformance: async (id): Promise<LineupPerformance | null> => {
-      try {
-        const doc = (await payload.findByID({
-          collection: 'shows',
-          id,
-          depth: 0,
-          overrideAccess: true,
-        })) as unknown as Record<string, unknown> | null
-        if (!doc) return null
-        return {
-          id: String(doc.id),
-          confirmed: doc.lineupConfirmed === true,
-          kind: performanceKindOf(doc.kind),
-          // At `depth: 0` these are bare Member ids, which is what the row
-          // question reads (#658).
-          listKeepers: Array.isArray(doc.listKeepers) ? doc.listKeepers : [],
-        }
-      } catch {
-        // A bad id in the body is a 400 from the handler, never a 500 from here.
-        return null
+      const doc = await loadShowRow(payload as unknown as ShowRowReader, id)
+      if (!doc) return null
+      return {
+        id: String(doc.id),
+        confirmed: doc.lineupConfirmed === true,
+        kind: performanceKindOf(doc.kind),
+        listKeepers: listKeepersOf(doc),
       }
     },
 

@@ -71,6 +71,7 @@ import type { LineupView, PerformanceDetail } from './detail-loaders'
 import type { RosterPerson } from '@/lib/attendance/army-count'
 import type { Army } from '@/lib/attendance/rules'
 import { performancePlace } from './performance-place'
+import { zagrebDayOf } from '@/lib/zagreb-time'
 import { APP_STRINGS, PUSH_MESSAGES, formatPerformanceDateLong, timeOfDay } from './strings'
 import { kindTone, kindWord, type KindTone } from './performance-kind'
 
@@ -423,6 +424,22 @@ export function rolesPresent(people: readonly StanjePerson[]): DanceRole[] {
 }
 
 /** Everything Stanje draws, from one loaded evening. */
+/**
+ * The DAY a postava was confirmed, in Korčula's own clock (#658).
+ *
+ * `confirmedAt` is a UTC instant, and slicing ten characters off it names the
+ * previous day for anything confirmed between midnight and 02:00 CEST — which
+ * is exactly when a postava gets confirmed, because it is written down after
+ * the evening. So it goes through the same real zone conversion every other
+ * date on this screen does.
+ */
+function confirmedDay(confirmedAt: string | null): string {
+  if (!confirmedAt) return ''
+  const instant = new Date(confirmedAt)
+  if (Number.isNaN(instant.getTime())) return ''
+  return formatPerformanceDateLong(zagrebDayOf(instant))
+}
+
 export function stanjeView(detail: PerformanceDetail): StanjeView {
   const p = detail.performance
   const count = detail.count
@@ -790,7 +807,7 @@ export function stanjeView(detail: PerformanceDetail): StanjeView {
     canConfirm: requirements.voditelj ? voditelji.length === 1 : given === ALL_TITLES,
     lineup,
     keepsList: detail.keepsList,
-    // "Popis vodi: Ante Bačić" — drawn only when there IS one (#658, Q12). A
+    // "Popis vodi: Ante Bačić" — drawn only when there IS one (#658). A
     // voditelj keeps every list without being named, so an absent line is not a
     // gap: it says the voditelji are running the night, as always.
     keptBy: detail.listKeepers.length
@@ -808,10 +825,7 @@ export function stanjeView(detail: PerformanceDetail): StanjeView {
     // "Potvrdio: Ante Bačić · 20. kolovoza" — the signature, when there is one.
     confirmedBy:
       confirmed && detail.lineup.confirmedBy
-        ? K.confirmedBy(
-            detail.lineup.confirmedBy,
-            formatPerformanceDateLong((detail.lineup.confirmedAt ?? '').slice(0, 10)),
-          )
+        ? K.confirmedBy(detail.lineup.confirmedBy, confirmedDay(detail.lineup.confirmedAt))
         : null,
   }
 }

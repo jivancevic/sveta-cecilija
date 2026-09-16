@@ -13,7 +13,7 @@
 //
 // The push is part of this handler rather than of the route because whether it
 // is sent is a RULE: appointing somebody rings their phone once, removing them
-// rings nothing (#658, Q13). A send that fails never fails the write — being
+// rings nothing (#658). A send that fails never fails the write — being
 // named is the fact, and a phone that missed the message is a phone whose owner
 // will see the screen.
 //
