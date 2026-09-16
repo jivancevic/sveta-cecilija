@@ -1,0 +1,33 @@
+-- `users.password_set_at`: the moment a person chose their OWN password (#653
+-- review, ADR-0028).
+--
+-- The 🔑 mark on Članovi and the card on Početna both mean "this dancer can get
+-- back in on their own", and that takes an address AND a password. The address
+-- is readable off `users.email`; the password is not, because **every invited
+-- account already has one**: `ensureDancerLogin` mints a random password nobody
+-- will ever know (`invite.ts`), so `hash IS NOT NULL` is true for the entire
+-- roster and says nothing at all.
+--
+-- So the distinction is recorded rather than inferred. `PATCH /api/app/account`
+-- stamps this column when the dancer sets a password on Profil; "Resetiraj
+-- lozinku" (#510) clears it again, because a temporary password read off a
+-- `users` holder's screen is not one the dancer chose. Nothing else writes it,
+-- and nobody edits it by hand.
+--
+-- Nullable forever: null is the honest reading of "we have never seen this
+-- person choose one", which is where every account starts.
+--
+-- Declared on the collection (`src/collections/Users.ts`) so Payload's own push
+-- adds it in development; this file is what adds it on a deployment, where push
+-- is off.
+--
+-- ORDERING: bootstrap-db.mjs applies db/schema/*.sql in plain filename order on
+-- every restart (db/schema/README.md). It touches a table `00-base.sql` creates
+-- first and carries no foreign key, so it only has to keep sorting BEFORE
+-- `migrate-zz-drop-users-role.sql`, which must stay the last `migrate-*` file
+-- (#398, asserted by `src/lib/db-schema-safety.test.ts`). `zz-dm-` continues the
+-- `zz-d…` sequence and does ('dm' < 'dr').
+--
+-- Guarded and safe to re-run: it adds a column and writes no row.
+
+ALTER TABLE public.users ADD COLUMN IF NOT EXISTS password_set_at timestamp(3) with time zone;

@@ -8,7 +8,7 @@ import { AppShell, identityLine } from '../../AppShell'
 import { openScreen } from '../../gate'
 import { LinkSelfList } from './LinkSelfList'
 import { PushSwitch } from './PushSwitch'
-import { SetPasswordForm } from './SetPasswordForm'
+import { OwnAccessForm } from './OwnAccessForm'
 import { ThemeSwitch } from './ThemeSwitch'
 import { ViewportReadout } from './ViewportReadout'
 import { can } from '@/lib/access/permissions'
@@ -16,7 +16,7 @@ import { can } from '@/lib/access/permissions'
 // `/app/account` — Profil (#473, reskinned and renamed by #569).
 //
 // Everything about the person and about the phone in their hand, on one screen:
-// their own record, the two switches, an optional password, and — for a
+// their own record, the two switches, their own e-mail and password, and — for a
 // voditelj who dances but whose login carries no Member — the one sanctioned way
 // to link it (#462).
 //
@@ -32,11 +32,15 @@ import { can } from '@/lib/access/permissions'
 // wear is a fact of the phone, and a shared login has no single answer at all.
 //
 // **Sigurnost carries the anchor Više links to.** `#security` rather than a
-// route of its own: the password form is a section of this screen, and a second
-// URL for it would exist only so that a row could point somewhere.
+// route of its own: the form is a section of this screen, and a second URL for
+// it would exist only so that a row could point somewhere.
 //
-// The password is OPTIONAL by design (#463): an invitation signs a dancer in and
-// a session lasts thirty days, so most of the roster will never set one.
+// Since #651 (ADR-0028) that section is **E-mail i lozinka** and not a password
+// alone: the two are one task, because an address with no password signs nobody
+// in and a password with no address cannot be recovered. It stays OPTIONAL — an
+// invitation link still signs a dancer in and the session slides (#650), so a
+// dancer who never fills it in loses nothing — and the reader's own address is
+// the one address anywhere in Cecilija (ADR-0024's boundary, narrowed).
 //
 // Linking is offered only to a voditelj whose RAW link is empty, the same
 // condition the route re-applies (#462 review): a moreškant already has a link
@@ -113,10 +117,10 @@ export default async function AccountPage() {
 
       {/* The anchor Više's Sigurnost row lands on. */}
       <section className="app__more-group" id="security">
-        <Section title={S.security} />
+        <Section title={APP_STRINGS.ownAccess.title} />
         <Card>
-          <p className="app__setting-note">{APP_STRINGS.setPassword.intro}</p>
-          <SetPasswordForm />
+          <p className="app__setting-note">{APP_STRINGS.ownAccess.intro}</p>
+          <OwnAccessForm email={viewer.email} />
         </Card>
       </section>
 

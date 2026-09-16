@@ -339,6 +339,36 @@ export const Users: CollectionConfig = {
         },
       },
     },
+    // When this person last chose their OWN password (#653 review, ADR-0028).
+    //
+    // The 🔑 mark on Članovi and the card on Početna both mean "this dancer can
+    // get back in without texting the voditelj", and that needs an address AND
+    // a password. The address is `email`; the password cannot be read off the
+    // row, because every invited account already HAS one — `ensureDancerLogin`
+    // mints a random password nobody will ever know, so `hash IS NOT NULL` is
+    // true for the whole roster and answers nothing.
+    //
+    // So the act is recorded instead of inferred. `PATCH /api/app/account`
+    // stamps it when the dancer types a password on Profil; "Resetiraj lozinku"
+    // (#510) clears it, because a temporary password read off a `users`
+    // holder's screen is not one the dancer chose. Null is where every account
+    // starts and is the honest reading of "never seen them choose one".
+    //
+    // Field-locked like `permissions`: it is a fact ABOUT an account rather
+    // than a setting on it, and nothing but those two routes may write it.
+    // Hidden from the Backoffice form for the same reason — there is no hand
+    // edit that would be true.
+    {
+      name: 'passwordSetAt',
+      type: 'date',
+      label: { en: 'Own password set at', hr: 'Vlastita lozinka postavljena' },
+      admin: { hidden: true },
+      access: {
+        read: ({ req }) => usersHolder(req.user as ReqUser),
+        update: ({ req }) => usersHolder(req.user as ReqUser),
+        create: ({ req }) => usersHolder(req.user as ReqUser),
+      },
+    },
     // Log out action on the account view (/admin/account). A `ui` field stores
     // nothing; its component renders a Log out button, scoped to the viewer's
     // own record. Logout was moved here off the dashboards (#167).

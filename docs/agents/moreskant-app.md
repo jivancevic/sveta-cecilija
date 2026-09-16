@@ -48,7 +48,7 @@ two fields apart for this reason.
 | 1 | Narudžbe | `/app/orders`, `/app/orders/[id]` | `tickets` | **live** (#501): the list with search (name, e-mail or code), a performance filter, a state filter (`active\|refunded\|partner\|comp`) and a pager, all in the query string; the detail with the order's facts, its tickets and four named actions — Povrat (`refunds` only, and only on a paid, unrefunded order), Pošalji ulaznice ponovno, Otvori PDF, Uredi kupca | none, the Backoffice keeps its list |
 | 1.5 | Moreška (the dancer's register screen) | `/app/moreska` | `moreskant`, `moreska` | **live** (#565): the 44px RoleMark with the name and "N nastupa pred tobom"; the hero of the next nastup (the day at 80px, weekday · time · Redovna, the voditelj's note, Dolazim / Ne dolazim, and after an answer "Dolaziš · Crni" or "Ne dolaziš" with Promijeni); the ArmyBar under it, which taps through to Stanje; then the season by month, a gold DateDisc for every Redovna and one chip per row. **A non-regular evening reads "Vanredna" and never names its client or its kind**, there is no seat count or revenue anywhere on it (Q29) and no Dodaj (Q31). What it says is `src/lib/app/moreska-screen.ts`, pure and tested without a database. **`/app/moreska/[id]` is Stanje** (#566), one nastup with its two armies and its four titles | new; nothing 308s here |
 | 2 | Izvedbe (one screen, content by `can()`) | `/app/performances`, `/app/performances/[id]` | `tickets`, `moreska` (a `moreskant` reads the schedule on Moreška since #565 and one evening on Stanje since #566, so Izvedbe is not theirs at all) | **live, redesigned by #567**: the season as a register — every izvedba, public and non-public, for both halves — with the blagajna's sold-of-capacity, channel split and per-show numbers under the public rows (the old `/admin/stats/[id]` drill-down), and the detail **titled by the date** (Q32). **Dodaj and Uredi are either half's** since #567; the six named actions are gated one at a time and a refused one is greyed with *traži Blagajnu* rather than hidden (Q53), Otkaži asking for `tickets` **and** `refunds`. Since #538 the per-show *Prihod* is online money net of refunds plus the evening's ledger, with the partner seats named under it at face value, before commission | 308 from `/app/izvedba/[id]`; push messages now carry the new path |
-| 2.5 | Članovi (dancer profiles, invitations, join code; absorbs Pozivnice, added by #476) | `/app/members`, `/app/members/[id]` | `moreska` | **live** (#511): the rehearsal join code and its pending claims at the top, Dodaj plesača beside them, then the roster — a diacritic-insensitive search, active moreškanti first and retired ones under them, one row per dancer carrying the nickname, the real name, the primary role, whether a login exists, and the two invitation channels behind a disclosure (`POST /api/app/invite/link` for the SMS link, `POST /api/app/invite` for the letter), plus "Pošalji pozivnice svima"; the profile at `/app/members/[id]` writes nadimak, mobitel, e-mail, plesne uloge, glavna uloga and aktivan through `PATCH /api/app/members/[id]`, and Dodaj plesača through `POST /api/app/members` | `/app/invitations` and `/app/pozivnice` both 308 here; the Backoffice Members list stays for the attribution half |
+| 2.5 | Članovi (dancer profiles, invitations, join code; absorbs Pozivnice, added by #476) | `/app/members`, `/app/members/[id]` | `moreska` | **live** (#511): the rehearsal join code and its pending claims at the top, Dodaj plesača beside them, then the roster — a diacritic-insensitive search, active moreškanti first and retired ones under them, one row per dancer carrying the nickname, the real name, the primary role, the three marks of #653 (📲 installed, 🔔 notifications, 🔑 *Pristup*, or the words *nije ušao*) under four counting chips, and the two invitation channels behind a disclosure (`POST /api/app/invite/link` for the SMS link, `POST /api/app/invite` for the letter, which since #651 only reaches a dancer who has set an address on their own login); the profile at `/app/members/[id]` writes nadimak, mobitel, plesne uloge, glavna uloga and aktivan through `PATCH /api/app/members/[id]`, and Dodaj plesača through `POST /api/app/members` | `/app/invitations` and `/app/pozivnice` both 308 here; the Backoffice Members list stays for the attribution half |
 | 3 | Ljestvica (roster ranking + own season) | `/app/leaderboard?season=2026&part=all\|mine`, `/app/leaderboard/full?season=&kind=` | `moreskant`, `moreska` | **live** (#568): *Ljestvica* first and by default, *Moja sezona* second. The board is TWO lists, Moreška and Experience, each a podium of its top three, the rows to twenty, the reader's own row highlighted or pinned, and "Vidi cijeli popis" into the whole ranking. Everyone reads the same two lists: the voditelj's six-column scoreboard went with `StatsTable` | 308 from `/app/moje` (→ `part=mine`) and `/app/statistika` (→ `part=all`) |
 | 4 | Skener (camera, code entry, door list) | `/app/scan` | `door` | **live, redesigned by #572**: the camera and the four result states, Pusti ostatak grupe (n), Poništi propuštanje, Pronađi ulaznicu and the "ušlo X od Y" ring, all on one screen. Since the redesign the whole screen is dark whatever skin the reader chose (`data-theme` on its own root, not an island of its own), the ring is the `lg` one and its count runs up when somebody walks in, and Pronađi ulaznicu is a sheet rather than a form living open under the scanner. **The camera flow itself is untouched by all of it** — `scan-camera.ts`, the iOS WASM ponyfill, `startCamera` and `handleDecoded` are where the reliability work left them | `/admin/scan` 308s here and the Backoffice view is deleted; the ticket QR stays `/scan/[token]`, whose staff buttons point at `/app/scan` |
 | 5 | Prodaja | `/app/sell` | `partner` | **live** (#505): the izvedba picker with seats left, the two steppers, Izdaj ulaznice → the PDF, Zadnje prodaje with the delete-then-undo storno, and the live month card | the Backoffice partner dashboard stays until #512 |
@@ -67,7 +67,7 @@ Rows under Više, after the overflow screens:
 | Kalendar | `/app/calendar` | `moreskant`, `moreska` | **moved** (#569): the panel now sits UNDER the list on Obavijesti, because both halves of that screen are the same promise at two speeds | new |
 <!-- Pozivnice was a row here until #511 folded it into Članovi; both of its old
      paths now 308 to /app/members. -->
-| Profil (the person, the two switches, the member link, the password) | `/app/account` | any screen | **live** (#495, reskinned and renamed #569): "Moj račun" became **Profil** so the row and the screen are called the same thing; Moji podaci, **Izgled** (the theme switch), **Obavijesti** (push as a switch), the self-link and, under `#security`, the password | 308 from `/app/set-password` and `/app/povezi` |
+| Profil (the person, the two switches, the member link, the e-mail and the password) | `/app/account` | any screen | **live** (#495, reskinned and renamed #569): "Moj račun" became **Profil** so the row and the screen are called the same thing; Moji podaci, **Izgled** (the theme switch), **Obavijesti** (push as a switch), the self-link and, under `#security`, **E-mail i lozinka** (#651: one form, `PATCH /api/app/account`) | 308 from `/app/set-password` and `/app/povezi` |
 | Backoffice (link to `/admin`) | `/admin` | `dev` only | **live** (#495): the row, the denied panel and the consent screen all lost their general `/admin` link | done |
 | Odjava | `POST /api/app/logout` | any screen | same | unchanged |
 
@@ -125,7 +125,7 @@ Public pages, no session:
 | Instalacija (the rehearsal QR target) | `/app/install` | **live** (#495) | 308 from `/app/instalacija` **kept permanently**: the QR may hang on a wall |
 | sign-in by link (invitation, new password) | `/app/session?token=` | **live** (#495); invitations are issued on the new path | 308 from `/app/prijava` **kept permanently**: the link is in SMS and mail |
 | `/app/login`, `/app/forgot`, `/app/authorize`, `/app/join/[code]` | unchanged | | 
-| ~~`/app/set-password`~~ | the signed-in password form folded into `/app/account` (#495); only `POST /api/app/set-password` keeps the name | 308 | |
+| ~~`/app/set-password`~~ | the signed-in password form folded into `/app/account` (#495) and widened into "E-mail i lozinka" by #651; the API route is `PATCH /api/app/account` now, and `POST /api/app/set-password` is gone | 308 | |
 
 Every other 308 follows the #481 rule: one release, dropped after the season.
 
@@ -388,7 +388,7 @@ Access follows the **roster, not the login table**: unticking `active` or `isMor
 1. **Re-reads the account and the Member with `overrideAccess`.** Not because the session lacks the link: Payload's JWT strategy loads the user through the local API with `overrideAccess: true`, so the `users` field lock on `Users.member` (#420) never applies to `payload.auth()` — the same reason `permissions` reaches `can()`. The re-read is defence in depth (a session issued before a relink cannot decide who a dancer is) and, either way, the Member row itself is a second document the session never carried.
 2. **Tells "signed out" from "denied".** Anonymous → redirect to `/app/login`. Signed in but off the roster → the Croatian "Nemate pristup" page with a link to `/admin`.
 
-`toAppMember()` is an explicit projection, never a spread: `members.email` exists since #420 and must never reach an `/app` payload (ADR-0024's PII boundary is mobiles yes, emails no).
+`toAppMember()` is an explicit projection, never a spread: a Member row must reach an `/app` payload field by field (ADR-0024's PII boundary is mobiles yes, emails no). `members.email` itself is **gone** since #651 (ADR-0028) — a dancer's address lives on their own login, and `AppViewer.email` carries it for exactly one field, the one on Profil where they type it.
 
 ## Reads
 
@@ -604,15 +604,19 @@ a message rendered inside the item is unmounted before the fetch resolves.
 
 `requirePermission(req, 'moreska')` first (the chokepoint every staff route
 uses), then the `/app` cross-site guard, then the rules in
-`src/lib/app/invite.ts`. It refuses with 400 and a Croatian sentence naming the
-field to fix when the Member is missing, not `isMoreskant`, not active, or has
-no email — the four things a voditelj can repair themselves. (Since #463 the
-last of those is the ONE rule the copied-link channel drops: see
+`src/lib/app/invite.ts`. It refuses with 400 and a Croatian sentence when the
+Member is missing, not `isMoreskant` or not active — three things a voditelj can
+repair themselves — and with a fourth when **the dancer's login carries no
+address of its own** (#651), which a voditelj cannot repair and which the
+sentence therefore sends to "Kopiraj pozivnicu" instead. That fourth refusal
+runs BEFORE anything is opened, so a press on a dancer who has never typed an
+address leaves no account behind. (Since #463 it is also the ONE rule the
+copied-link channel drops: see
 [Passwordless onboarding](#passwordless-onboarding-463).)
 
 Otherwise it finds the User whose `member` link is this Member and, if there is
-none, creates one: `permissions: ['moreskant']` exactly, the `member` link, the
-Member's email, a `username` slugged from the nickname (`Cici` → `cici`, `Đuro`
+none, creates one: `permissions: ['moreskant']` exactly, the `member` link, no
+address at all, a `username` slugged from the nickname (`Cici` → `cici`, `Đuro`
 → `djuro`, colliding names get `cici2`, `cici3`; `src/lib/app/username.ts`) and
 a crypto-random password that is never emailed and never used. A second press
 finds the same login and only mints a fresh token, which is what a lost email
@@ -625,12 +629,14 @@ is the fix, and it is idempotent.
 
 Two decisions live here rather than in a comment somewhere:
 
-- **The Member's email wins.** A voditelj maintains a dancer's contact details on
-  the Member row, so an invitation that meets a login carrying a different
-  address moves the login onto the Member's. Two addresses for one person would
-  mean "Zaboravljena lozinka" silently mailing the stale one.
-- **The reset token is targeted by username**, not by address: it is unique,
-  stable and unaffected by an email the invitation may just have moved.
+- **"The Member's email wins" is GONE** (#651, ADR-0028). Until then an
+  invitation press moved the login onto the Member's address, a rule that
+  existed only so that one person could not end up with two. `Members.email` is
+  retired, `Users.email` is the truth, and an invitation now writes **nothing**
+  to a login it finds — otherwise every press would overwrite the address the
+  dancer typed for themselves on Profil.
+- **The reset token is targeted by username**, not by address: it is unique and
+  stable, while the address is the dancer's own to change.
 
 ### The token lengths
 
@@ -649,19 +655,22 @@ subjects "Pozivnica za Moreškant" and "Nova lozinka za Moreškant").
 
 ### The password form and `/app/forgot`
 
-> **Changed by #463, renamed by #495.** The link opens the session by itself
-> (`/app/session?token=` → `POST /api/app/session`), and the password form is
-> an optional section of **`/app/account`** that takes no token; the API route
-> keeps its name, `POST /api/app/set-password`. The paragraphs below describe
-> the #424 shape and are kept for the three surprises at the end, which still
-> hold. The current flow is
+> **Changed by #463, renamed by #495, widened by #651.** The link opens the
+> session by itself (`/app/session?token=` → `POST /api/app/session`), and the
+> form is an optional section of **`/app/account`** that takes no token. Since
+> #651 (ADR-0028) it asks for the **e-mail and the password together**, as one
+> task, through **`PATCH /api/app/account`** (`src/lib/app/own-access.ts`);
+> `POST /api/app/set-password` and `set-password.ts` are gone, replaced rather
+> than kept beside it, because two routes writing one password is how they come
+> to disagree. The paragraphs below describe the #424 shape and are kept for the
+> three surprises at the end, which still hold. The current flow is
 > [Passwordless onboarding (#463)](#passwordless-onboarding-463).
 
 `POST /api/app/set-password` ran Payload's `resetPassword`, which stores the
 hash **and opens a session**, so the route set the same cookie the login route
 sets and the dancer landed on `/app` signed in rather than on a form asking for
-the password they chose two seconds ago. Minimum length is eight, enforced in
-`src/lib/app/set-password.ts` because the Users collection sets no minimum of
+the password they chose two seconds ago. Minimum length is eight, enforced now
+in `src/lib/app/own-access.ts` because the Users collection sets no minimum of
 its own. Bad token, expired token, already-used token: one 400 and one sentence,
 because for the dancer they are the same situation.
 
@@ -675,11 +684,12 @@ Three things a reset does **not** do, each of which has surprised somebody:
   `users.sessions` and `resetPassword` adds one rather than clearing the rest,
   so a phone that was already signed in stays signed in. "Set a new password" is
   not "sign everyone else out" here.
-- The **"Member's email wins" rule of a resend overwrites an address the dancer
-  changed themselves** on their own account page. The Member row is where a
-  voditelj maintains contact details, and the next invitation moves the login
-  back onto it; a dancer who wants a different address asks the voditelj to
-  change it on the Member.
+- The **"Member's email wins" rule of a resend used to overwrite an address the
+  dancer changed themselves**. That is what #651 (ADR-0028) removed, and it is
+  the reason the field on Profil could not exist before: the Member row was
+  where a voditelj maintained contact details, and the next invitation moved the
+  login back onto it. Now the login's address is the only one and nothing but
+  the dancer writes it.
 
 `POST /api/app/forgot` **always answers 200** with the same sentence — account
 found, not found, or found without an email — since the difference between two
@@ -779,39 +789,34 @@ everywhere that asks "is there a dancer here"; `/app/account` asks the other
 question — may this account still be linked at all — and without it would offer
 a list whose every tap 409s.
 
-### "Pošalji pozivnice svima" (#462)
+### "Pošalji pozivnice svima" (#462), retired by #651
 
-The list-view half of the same gap: the per-Member action (#424) leaves a
-voditelj to read the "Ima prijavu" column down forty rows and open each miss by
-hand. `POST /api/app/invite/all` does it once, for every active moreškant with
-an e-mail and no login.
+It existed to close the gap between the roster and the logins in one press, for
+every active moreškant **with an e-mail and no login**. ADR-0028 retired the
+field that sentence depends on: the letter is addressed to the LOGIN now, and a
+dancer with no login has no address anywhere, so the batch could only ever be
+empty and the toast could only ever say that nobody could be written to.
 
-It adds **no invitation rule of its own**: it loops `handleInvite` over the
-batch, so the four refusals, the idempotent reverse lookup and the seven-day
-link stay written once. The Payload wiring both routes need moved into
-`src/lib/app/invite-data.ts` for that reason — two hand-copied sets of calls is
-how "the Member's e-mail wins" ends up true on one route and not the other.
-`src/lib/app/invite-all.ts` holds the only two decisions that are the bulk
-action's own: who is in the batch, and what the toast says.
-
-The toast **names** the dancers of both bad outcomes rather than counting them,
-and the failed ones are the reason why: `handleInvite` creates the login before
-it mails, so a send that fails leaves an account behind, and the next bulk press
-sees a Member that "already has a login" and skips it for good. A count would
-strand those dancers silently. The names send the voditelj to the per-row
-"Pošalji pozivnicu", which is idempotent and does re-mail them.
+Gone with it: `src/lib/app/invite-all.ts`, `POST /api/app/invite/all`, the
+Članovi sheet's button, the Backoffice list menu item and
+`inviteAllActionVisible`. What remains is the per-dancer pair on the profile —
+"Kopiraj pozivnicu" (the SMS link, which needs no address and is how most of the
+roster gets in) and "Pošalji pozivnicu" (the letter, for a dancer who has set
+one). The Payload wiring stays shared in `src/lib/app/invite-data.ts`, because
+there are still three callers of `ensureDancerLogin`.
 
 ### An invitation may not be aimed at a staff login (#462 review, allowlist #520)
 
-A second press MOVES the found login's e-mail onto the Member's and mails that
-address a password-reset link. On a dancer that is the point: it is how a lost
-letter is fixed. On a login that holds more than `moreskant` it is an account
-takeover, because **any** voditelj may edit a Member's e-mail — so pressing
-"Pošalji pozivnicu" on a Member whose login is a colleague's staff account would
-send that colleague's reset link wherever the presser chose.
+A press mints a live sign-in token for the login behind the Member and either
+mails it or hands it to the presser. On a dancer that is the point: it is how a
+lost letter is fixed. On a login that holds more than `moreskant` it is an
+account takeover, because **any** voditelj may press it on any Member — so a
+Member whose login is a colleague's staff account would hand the presser a live
+session for that colleague's account. (Until #651 it was worse: the press also
+moved the login onto the Member's address, which a voditelj could edit.)
 
 `isDancerLogin` (`src/lib/app/invite.ts`) is the guard: it refuses with a 409
-before the e-mail move and before any token is minted, unless the login holds
+before any token is minted, unless the login holds
 nothing outside the allowlist. An empty permission set passes — a row from
 before the vocabulary is still not a staff account.
 
@@ -837,15 +842,60 @@ it is why the production task (#521) adds `moreskant` to the three door logins
 
 The hole predates this work (a `users` holder could always hand-link a staff
 account), but `/api/app/link-self` is what makes such links routine, so the
-guard ships with it. The bulk action is not a vector: it skips every Member that
-already has a login.
+guard ships with it. There is no bulk press left to be a vector: "Pošalji
+pozivnice svima" was retired by #651 (see the section above), so the two
+channels this rule covers are the per-dancer pair on the profile, plus a
+voditelj approving a join claim.
 
-Sends are sequential (Brevo's free tier is 300/day and rate-limits a burst; tens
-of dancers is a second of wall clock). The menu item is on Members'
-`listMenuItems` and hides itself from the ticketing backoffice through the field
-lock rather than through a permission list: `isMoreskant` locks read to
-`moreska`, so a `tickets`-only account receives rows with no such key
-(`inviteAllActionVisible`). As always that is UX; the route re-checks `moreska`.
+## The session slides (#650)
+
+[ADR-0028](../adr/0028-moreskant-owns-their-access.md) decision 1. `Users.auth.tokenExpiration` is thirty days and nothing under `/app` ever re-minted the cookie, so a dancer who signed in on 10 September was signed out around 10 October however often they opened the app in between — and for a roster with one e-mail address between seventy-six people, "signed out" means texting the voditelj.
+
+**The rule:** a request under `/app` whose session cookie is **older than seven days** is re-issued for another thirty; a fresher one is left alone. Not "refresh on every load", because minting a cookie is a write to `users.sessions` (`addSessionToUser` rewrites the row) and a dozen of those a day per device buys the dancer nothing. Seven days already gives a weekly user a session that never ends, and the dancer who has been away thirty-one days still falls out — that person needs a fresh way in anyway.
+
+The rule itself is pure and table-tested in `src/lib/app/session-renewal.ts`: `shouldRenewSession(issuedAt, now)`, plus the `iat` reader that feeds it (read **without** verifying the signature, because nothing is granted on the strength of that number — it only decides whether to bother asking). Three refusals worth knowing: an unreadable or `iat`-less token, a token issued in the future (clock skew must not renew on every load), and exactly seven days, since the comparison is strict.
+
+**Where it is wired, and why there.** Two obvious homes cannot do the job: `src/proxy.ts` can set a cookie but must never carry Payload or a database connection, and a server component cannot set one at all (`cookies().set()` throws outside a Server Action or a Route Handler). So the seam is the **`(shell)` layout** — already async, already resolving the viewer, and the one thing in `/app` that survives a client navigation (#593), so it fires once per document load rather than once per tab tap. It covers exactly the signed-in screens; the shell-less pages (`login`, `session`, `join`, `install`) have no session to slide.
+
+The layout asks `appKeeperWork()` (`session-renewal-data.ts`, which wraps `appSessionRenewalDue()` and #652's `appDeviceHeartbeatDue()`) and mounts `SessionKeeper` **only when at least one answer is yes**, so on the other six days of the week there is no extra request at all. `SessionKeeper` POSTs `/api/app/session/renew`, which carries the `/app` cross-site guard plus `requireAppSession` — a session is addressed to an **account**, like #496's inbox — and applies the same age rule again before it writes, because this is the handler that writes and a route that renews whatever it is asked to is one stuck retry away from rewriting the row on every load. That decide-on-the-server, tell-a-route-afterwards shape is the seam #652's device heartbeat hangs off.
+
+Minting is `openAppSession` unchanged: the same four Payload helpers a sign-in link uses, never a second crypto decision. Two properties it must keep, both asserted in `session-data.test.ts`: it reads the **raw** row (a projection drops `user.sessions`, and the write-back would sign every other device out), and the superseded `sid` is **not revoked** — a dropped response on a bad connection would otherwise sign the dancer out instead of extending them, and `addSessionToUser` prunes expired sessions on its own.
+
+## Who actually has the app (#652)
+
+[ADR-0028](../adr/0028-moreskant-owns-their-access.md). Whether a moreškant has Cecilija **installed** was a browser fact that never left the browser: `src/lib/app/platform.ts` reads `display-mode: standalone` (or iOS's `navigator.standalone`) to pick an install banner and throws it away. The only server trace of a device was `push_subscriptions`, which answers "does this device ring" and only for devices whose owner said yes. So the roster had nothing to read, and #653 needs something honest.
+
+**`app_devices` is the signal** (`db/schema/migrate-zz-dl-app-devices.sql`), a raw table for the same reasons `push_subscriptions` is one: nobody edits a device in the Backoffice, the rows are written only by an `/app` route, and a row is a fact about a browser rather than a document. Its rules are pure and table-tested in `src/lib/app/device.ts`; the SQL is `device-store.ts` and nothing else touches the table.
+
+**A device is a random id in a server-written `HttpOnly` cookie** (`cecilija_device`), exactly like `cecilija_onboarded` and for exactly the same reason: Safari's ITP caps a *script*-written cookie at seven days, so a browser-written year quietly becomes next week. Not a user-agent fingerprint, which folds two iPhones into one row; not one row per user, which would lose the phone's trace the morning its owner opens the app on a laptop. `Path=/` rather than `/app` is the one difference from the onboarding cookie — the handler lives at `/api/app/session/renew`, which is not under `/app`. Two browsers on one account carry two cookies and stay two rows; one browser across two accounts **moves** to the newer one, exactly as a push endpoint does.
+
+**The write is a throttled heartbeat**, at most once per six hours per device (`shouldRecordDevice(lastSeenAt, now)`, `DEVICE_HEARTBEAT_MS`), so an evening of tapping around is one write and not forty. It rides #650's seam rather than a second one: the server decides from `last_seen_at` before the browser is asked anything, and `SessionKeeper` puts `standalone` on the one POST it was already making. `standalone` is **ORed, not replaced** — on Android an installed app and a plain tab share a cookie jar, so replacing would blink the mark off every time somebody tapped a link in a message — which is why the column means "this browser has reported itself installed".
+
+**Three answers, and `unknown` is a real one** (`installedAnswer`, `notificationsAnswer` over a `DeviceSignal`):
+
+- **Instalirano** — any device of this person has reported `standalone`.
+- **Obavijesti** — any live row in `push_subscriptions`. Never `unknown`, and the return type says so: that table has been true since the day it shipped and it self-heals, because a 404/410 on send deletes the row (`src/lib/push/send.ts`).
+- **Ne znam** — nobody has reported for this person yet. The table starts empty, so the whole install column reads this on day one and for a while after, and that is the honest answer. **Do not backfill it** from an iPhone user agent that happens to have a push row: a guess written into a database is the worst kind, because nothing downstream can tell it from a measurement.
+
+Nothing dancer-facing reads any of this. #653 is the consumer, on the voditelj's roster.
+
+## The three marks on Članovi (#653)
+
+[ADR-0028](../adr/0028-moreskant-owns-their-access.md). A voditelj standing in a hall wants three things per dancer: **is the app on their phone** (📲), **will it ring** (🔔), **can they get back in on their own** (🔑). The row used to carry `hasLogin`, which says an account exists and nothing about whether anybody ever opened it.
+
+**One glyph per column, and the state is weight rather than a second emoji.** 🔔/🔕 as a pair reads logical in the head and breaks the scan on the page: the eye looks down a column for the same shape at different weights, not for two shapes. `yes` is full colour, `no` is `grayscale(1)` at `opacity: .35`, and `unknown` is a 12px **rule** — a shape change and not only a tone change, because on day one the whole install column is `unknown` and a dimmed blob at arm's length reads as "nobody has it". The slots are a fixed 3 × 20px grid (`.app__member-marks`), so seventy-six rows scan as three columns. **Nothing there is tappable**: the row is already a link to the profile, and three small targets inside a target is a thumb miss that opens the wrong person.
+
+**🔑 is the PAIR: an address AND a password the dancer chose** (`ownsTheirAccess`, shared with Početna's card so the two can never disagree). It shipped reading the address alone, and the review of #653 caught what that costs: a dancer who typed an address and skipped the password got a full key, lost the card on Početna, and was still carrying the random password their invitation minted — so they still could not sign in on a second phone, which is the whole reason the task exists. The mark lied about exactly the person it exists to catch. It is still ONE mark and not two, because one form writes both.
+
+**"Has a password" is a STAMP, never a hash.** `ensureDancerLogin` mints a random password for every invitation, so `hash IS NOT NULL` is true for the entire roster and says nothing. `users.password_set_at` (`migrate-zz-dm-users-password-set-at.sql`) records the moment somebody chose one: written by `PATCH /api/app/account`, which is the only place a person types theirs, and cleared by "Resetiraj lozinku" (#510), because a temporary password read off a `users` holder's screen is dictated rather than chosen. The column is field-locked and the route refuses a body that tries to stamp itself.
+
+ADR-0028 still accepts the REVERSE case: a dancer who set only a password can sign in on any phone and reads as incomplete until they give an address.
+
+**"Nije ušao" is a trace, not an absence of marks** (`everSignedIn`). It is the union of two things, and the union is the point: a row in `users.sessions` covers everybody back to #463 but is deleted by "Odjava" (`logoutOperation`), while an `app_devices` row is never deleted but has only existed since #652. Either is proof. The only person the pair still misses is a dancer who signed in before #652, signed out and has not opened the app since, who is exactly somebody to ring anyway. A dancer who has never been in gets no marks at all and the words **nije ušao**: what to do about it lives on their profile, where the two invitation buttons already are.
+
+**Four chips, each with its own count** — `svi · bez appa · bez obavijesti · bez pristupa` — because "who do I still have to ring" is a question about a **set** and not about a row. They replace #573's `svi · aktivni · bez prijave`; the active/retired split is already in the order of the list. **A chip counts only a definite `no`, never an `unknown`**, which is what keeps "bez appa" reading 0 on day one instead of 76. The counts are live over the rows the search left standing, and the legend sits in a sheet behind the count over the list, so "what do these mean" and "who is missing what" open with the same tap.
+
+Rules: `src/lib/app/member-marks.ts`, pure and table-tested with no database. SQL: `src/lib/repo/payload/member-signals.ts`, reached through `repo.members.accountSignals()`. It sits **below the seam**, beside the repo that calls it: it first shipped under `src/lib/app/` so that `repo/payload/members.ts` would keep passing the roster's PII source scan, which is a test being routed around rather than satisfied (#653 review). The scan now asserts the real rule instead — the signal is exercised and answers in booleans (`own-access-pii.test.ts`, `member-signals.test.ts`) — and the source list under it is a canary for the files vitest cannot import, not the rule. A failed read is `null`, which draws no marks and no chips: an empty map would say "nije ušao" about the whole roster, which is a lie a voditelj would act on.
 
 ## Passwordless onboarding (#463)
 
@@ -929,8 +979,9 @@ on the roster.
 
 ### "Kopiraj pozivnicu": the invitation travels by SMS
 
-`POST /api/app/invite` refuses a Member with no address, which is nearly all of
-them. `POST /api/app/invite/link` is the same invitation handed to the voditelj
+`POST /api/app/invite` refuses a dancer whose LOGIN has no address, which since
+#651 is nearly all of them and, for a dancer with no login at all, every one.
+`POST /api/app/invite/link` is the same invitation handed to the voditelj
 instead of to Brevo.
 
 Both go through **`mintInvitation`**, and the account half of that is
@@ -949,9 +1000,10 @@ fresh seven-day link, then the message appears in full with SMS, WhatsApp and
 Kopiraj under it. The message is **shown** rather than silently copied, because
 the voditelj is about to leave for Messages and should see what they are
 sending. The letter ("Pošalji pozivnicu") is offered on every row rather than
-only on a dancer who has an address, because an e-mail must never reach an
-`/app` payload (ADR-0024's PII boundary) and the route answers "Član nema e-mail
-adresu" when there is none. Both are also edit-menu items on a Member, for the
+only on a dancer who has an address, because an address must not reach an `/app`
+payload (ADR-0024's PII boundary, narrowed by ADR-0028 to the reader's own) and
+the route answers with the sentence that sends the voditelj to the SMS channel
+when there is none. Both are also edit-menu items on a Member, for the
 desktop Backoffice where `sms:` does nothing.
 
 **Send it by SMS, not WhatsApp and not Viber, and the UI says so.** A messenger
@@ -1592,10 +1644,45 @@ secretary has to act on.
 | `performance_changed` | dancers | `Users.member` | yes | **yes** |
 | `inquiry` | staff | holds `tickets` | no | no |
 | `dispute` | staff | holds `tickets` | no | no |
+| `message` | dancers | `Users.member` | yes | no |
 
 The rule is a pure table (`resolveNotificationAudience`), so `inbox` is a
 superset of `push` by construction: a notification somebody was pushed and
 cannot then find in their inbox is the defect the table exists to prevent.
+
+### The seventh kind: a voditelj writes to the roster (#654, ADR-0028)
+
+The other six are event-driven — the system reporting something that happened
+to it. `message` is a **person writing a Croatian sentence**, from *Obavijesti*,
+to **every active moreškant**. It is a kind rather than a script because #651's
+"set an e-mail and a password" will not be the last thing seventy-six people
+have to be told.
+
+- **Where the action lives:** `/app/notifications`, the inbox, gated **per
+  action** on `moreska` because the screen is a Više row every account the
+  access decision admits can open. The control is **hidden** from a reader
+  without `moreska`, not greyed with "traži Moreška" — that rule is Izvedbe's
+  (#567) and exists so a blagajna knows who to ask, and nobody has to ask a
+  voditelj for permission to write to the dancers. `POST
+  /api/app/notifications/message` re-checks `moreska` with `requirePermission`
+  regardless: hiding a control is not authorization.
+- **No recipient picker.** A picker is a screen for a case nobody has described.
+  The audience is a pure function over the roster
+  (`rosterMessageAudience` in `src/lib/push/roster-message.ts`, table-tested),
+  and it shrinks in exactly one place: a dancer with no login.
+- **Every one of them gets a row whether or not their phone could be reached.**
+  The send goes through `createSender` like every other roster sender, so the
+  rows are filed for the whole audience before a single endpoint is posted to; a
+  push half that fails in part, or collapses entirely, is reported as fewer
+  phones rung and never as a failed send. Answering 500 there would have a
+  voditelj write the same sentence again on top of rows that already landed.
+- **The confirmation sheet says BOTH numbers out loud** before anything is sent
+  ("Zvonit će na 43 mobitela, a svih 76 će je naći u Sandučiću"), computed on
+  the server by `getRosterMessageCounts` (`roster-message-data.ts`): devices
+  from `push_subscriptions`, accounts from the audience. `readRosterMessage`
+  requires `confirmed: true`, so a caller that skipped the sheet is refused. The
+  failure this prevents is not a mis-tap but somebody sending twice because they
+  could not tell whether the first one went through: the counts are a receipt.
 
 **The route map's open question (#473 Q15), settled by #496: a `door`-only
 holder gets the inbox row and never the push**, and only for the two kinds

@@ -1,15 +1,31 @@
 import { describe, expect, it } from 'vitest'
+import { memberAccess, type MemberAccess } from './member-marks'
 import {
   armyOfRole,
   foundLabel,
   initialsOf,
   memberListRows,
-  memberMatchesFilter,
   memberMatchesSearch,
   memberSearchKey,
   toMemberListInput,
   type MemberRosterRow,
 } from './members-screen'
+
+/** The marks of a dancer who is in and has set nothing up yet. */
+const IN: MemberAccess = memberAccess({
+  sessions: 1,
+  device: { devices: 0, standaloneDevices: 0, pushDevices: 0 },
+  hasEmail: false,
+  hasOwnPassword: false,
+})
+
+/** A dancer who is in, on an installed app that rings, with their own key. */
+const READY: MemberAccess = memberAccess({
+  sessions: 1,
+  device: { devices: 1, standaloneDevices: 1, pushDevices: 1 },
+  hasEmail: true,
+  hasOwnPassword: true,
+})
 
 // The list half of Članovi (#511): who is on it, in what order, and what the
 // search box actually matches.
@@ -19,7 +35,6 @@ function member(over: Partial<MemberRosterRow> & { id: string }): MemberRosterRo
     name: 'Ime Prezime',
     nickname: null,
     mobile: null,
-    email: null,
     roles: [],
     primaryRole: null,
     active: true,
@@ -76,39 +91,46 @@ describe('memberListRows', () => {
   ]
 
   it('puts the active moreškanti first and orders each half by the shown name', () => {
-    const list = memberListRows(rows, new Set(), '')
+    const list = memberListRows(rows, {}, '')
     expect(list.map((r) => r.id)).toEqual(['3', '1', '2'])
   })
 
   it('shows the nickname as the name, with the real name underneath', () => {
-    const [, ciro] = memberListRows(rows, new Set(), '')
+    const [, ciro] = memberListRows(rows, {}, '')
     expect(ciro.nickname).toBe('Ćiro')
     expect(ciro.name).toBe('Ivan Marić')
   })
 
   it('falls back to the real name when a moreškant has no nickname', () => {
-    const list = memberListRows([member({ id: '9', name: 'Bez Nadimka' })], new Set(), '')
+    const list = memberListRows([member({ id: '9', name: 'Bez Nadimka' })], {}, '')
     expect(list[0].nickname).toBe('Bez Nadimka')
   })
 
-  it('derives has-login from the set of member ids some login points at', () => {
-    const list = memberListRows(rows, new Set(['1']), '')
-    expect(list.find((r) => r.id === '1')?.hasLogin).toBe(true)
-    expect(list.find((r) => r.id === '3')?.hasLogin).toBe(false)
+  it('reads each row’s marks off the map, and "nije ušao" for an id that is not in it', () => {
+    const list = memberListRows(rows, { '1': READY }, '')
+    expect(list.find((r) => r.id === '1')?.access).toEqual(READY)
+    expect(list.find((r) => r.id === '3')?.access).toEqual({ kind: 'never-in' })
+  })
+
+  it('draws no marks at all when the signal could not be read', () => {
+    // An empty map would say "nije ušao" about the whole roster, which is a lie
+    // a voditelj would act on; null says nothing, which is the truth.
+    const list = memberListRows(rows, null, '')
+    expect(list.every((r) => r.access === null)).toBe(true)
   })
 
   it('labels the primary role in Croatian and says so when there is none', () => {
-    const list = memberListRows(rows, new Set(), '')
+    const list = memberListRows(rows, {}, '')
     expect(list.find((r) => r.id === '1')?.roleLabel).toBe('Crni')
     expect(list.find((r) => r.id === '3')?.roleLabel).toBe('bez uloge')
   })
 
   it('applies the search, keeping the same order', () => {
-    expect(memberListRows(rows, new Set(), 'ciro').map((r) => r.id)).toEqual(['1'])
+    expect(memberListRows(rows, {}, 'ciro').map((r) => r.id)).toEqual(['1'])
   })
 
   it('links each row at its own profile', () => {
-    expect(memberListRows(rows, new Set(), 'ciro')[0].href).toBe('/app/members/1')
+    expect(memberListRows(rows, {}, 'ciro')[0].href).toBe('/app/members/1')
   })
 })
 
@@ -134,11 +156,14 @@ describe('foundLabel', () => {
 
 describe('toMemberListInput', () => {
   // ADR-0024's PII boundary: a mobile may cross into `/app` and an e-mail may
-  // not. The list is a client component, so anything it is handed is in the
-  // HTML — the projection is what keeps the address out of it.
-  it('drops the e-mail and keeps the mobile', () => {
-    const row = member({ id: '1', mobile: '0912345678', email: 'ciro@example.test' })
-    const input = toMemberListInput(row)
+  // not, and #651 (ADR-0028) narrowed rather than reversed it — no Member row
+  // carries an address at all now, and the reader's own is on their own Profil.
+  // The list is a client component, so anything it is handed is in the HTML,
+  // which is why this is a PROJECTION and not a spread: a stray address on the
+  // object it is handed must not survive the trip.
+  it('drops an e-mail smuggled onto the row and keeps the mobile', () => {
+    const row = { ...member({ id: '1', mobile: '0912345678' }), email: 'ciro@example.test' }
+    const input = toMemberListInput(row as never)
     expect(input).not.toHaveProperty('email')
     expect(Object.keys(input)).not.toContain('email')
     expect(input.mobile).toBe('0912345678')
@@ -160,7 +185,7 @@ describe('toMemberListInput', () => {
   })
 })
 
-// The row's mark and the three chips (#573).
+// The row's mark (#573) and the three marks on its right (#653).
 
 describe('armyOfRole', () => {
   it('reads a special role back to the army it presupposes', () => {
@@ -197,24 +222,6 @@ describe('initialsOf', () => {
   })
 })
 
-describe('memberMatchesFilter', () => {
-  it('lets everybody through the chip that filters nothing', () => {
-    expect(memberMatchesFilter({ active: false, hasLogin: false }, 'all')).toBe(true)
-  })
-
-  it('keeps only the dancers who still dance', () => {
-    expect(memberMatchesFilter({ active: true, hasLogin: true }, 'active')).toBe(true)
-    expect(memberMatchesFilter({ active: false, hasLogin: true }, 'active')).toBe(false)
-  })
-
-  // The chip that leads somewhere: every row under it is an invitation
-  // waiting to be sent.
-  it('keeps only the dancers who cannot get in yet', () => {
-    expect(memberMatchesFilter({ active: true, hasLogin: false }, 'no-login')).toBe(true)
-    expect(memberMatchesFilter({ active: true, hasLogin: true }, 'no-login')).toBe(false)
-  })
-})
-
 describe('memberListRows, with a chip on', () => {
   const rows = [
     member({ id: '1', name: 'Ana Anić', active: true, primaryRole: 'crni' }),
@@ -222,14 +229,17 @@ describe('memberListRows, with a chip on', () => {
   ]
 
   it('carries the disc and the dot on every row', () => {
-    const [first] = memberListRows(rows, new Set(), '')
+    const [first] = memberListRows(rows, {}, '')
     expect(first.army).toBe('crni')
     expect(first.initials).toBe('AA')
   })
 
+  // What each chip MEANS is `member-marks.test.ts`; this is only that the list
+  // applies it after the search and keeps its order.
   it('narrows to what the chip asks for, search and order unchanged', () => {
-    expect(memberListRows(rows, new Set(['1']), '', 'active').map((r) => r.id)).toEqual(['1'])
-    expect(memberListRows(rows, new Set(['1']), '', 'no-login').map((r) => r.id)).toEqual(['2'])
-    expect(memberListRows(rows, new Set(), '', 'all')).toHaveLength(2)
+    const access = { '1': READY, '2': IN }
+    expect(memberListRows(rows, access, '', 'no-access').map((r) => r.id)).toEqual(['2'])
+    expect(memberListRows(rows, access, '', 'no-push').map((r) => r.id)).toEqual(['2'])
+    expect(memberListRows(rows, access, '', 'all')).toHaveLength(2)
   })
 })

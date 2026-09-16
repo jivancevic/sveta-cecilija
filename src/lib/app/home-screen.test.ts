@@ -17,6 +17,7 @@ import {
   moreskaEmptyCard,
   nextSentence,
   ordersCard,
+  ownAccessPrompt,
   performancesCard,
   registerFor,
   scanCard,
@@ -379,5 +380,54 @@ describe('the Obavijesti card', () => {
 
   it('has no title when the inbox is empty, which is what the screen renders', () => {
     expect(inboxCard({ latest: null, unread: 0 }).title).toBeNull()
+  })
+})
+
+/**
+ * "Postavi e-mail i lozinku" (#651, ADR-0028).
+ *
+ * The one card on Početna that asks rather than reports, and the one that can
+ * take itself away. The address is the signal and the only one, for the reason
+ * ADR-0028 gives: a dancer who sets only a password can already sign in
+ * anywhere, and two half-signals on seventy-six rows is worse than one honest
+ * one. The form behind it writes both fields, so a reader who finishes the task
+ * has both and the card is gone on the next render.
+ */
+describe('ownAccessPrompt', () => {
+  const S = APP_STRINGS.ownAccess.card
+
+  it('asks a reader who owns no way in, and points at the fields themselves', () => {
+    expect(ownAccessPrompt({ hasEmail: false, hasOwnPassword: false })).toEqual({
+      title: S.title,
+      body: S.body,
+      action: S.action,
+      href: '/app/account#security',
+    })
+  })
+
+  it('disappears the moment the reader holds BOTH halves of the key', () => {
+    expect(ownAccessPrompt({ hasEmail: true, hasOwnPassword: true })).toBeNull()
+  })
+
+  // The version that shipped first read the address alone, and took the card
+  // away from exactly the dancer who still could not sign in on a second phone
+  // (#653 review): an address typed, and the random password the invitation
+  // minted still in place.
+  it.each([
+    ['an address and no password of their own', true, false],
+    ['a password of their own and no address', false, true],
+  ])('stays for a reader with %s', (_label, hasEmail, hasOwnPassword) => {
+    expect(ownAccessPrompt({ hasEmail, hasOwnPassword })).not.toBeNull()
+  })
+
+  it('never asks a shared login, which is a room rather than a person', () => {
+    expect(ownAccessPrompt({ hasEmail: false, hasOwnPassword: false, shared: true })).toBeNull()
+    expect(ownAccessPrompt({ hasEmail: true, hasOwnPassword: true, shared: true })).toBeNull()
+  })
+
+  it('names both halves of the task, because it is one task', () => {
+    const card = ownAccessPrompt({ hasEmail: false, hasOwnPassword: false })
+    expect(card?.title).toContain('e-mail')
+    expect(card?.title).toContain('lozinku')
   })
 })

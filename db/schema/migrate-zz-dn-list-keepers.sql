@@ -29,8 +29,10 @@
 -- references `shows`, `members` and `users`, all created by `00-base.sql`, which
 -- sorts first. It must keep sorting BEFORE `migrate-zz-drop-users-role.sql`,
 -- which stays the last `migrate-*` file (#398, asserted by
--- `src/lib/db-schema-safety.test.ts`); `zz-dk-` continues the `zz-d…` sequence
--- after `zz-dj-` and does.
+-- `src/lib/db-schema-safety.test.ts`); `zz-dn-` continues the `zz-d…` sequence
+-- after `zz-dm-` and does. It was `zz-dk-` until #657 landed a `zz-dk-` of its
+-- own on main: two files sharing a prefix sort by the rest of the name, which
+-- is a coin toss nobody wrote down, so the later branch moves.
 --
 -- Guarded and safe to re-run: every statement is IF NOT EXISTS or wrapped in a
 -- duplicate-object guard, and not one of them writes a row.

@@ -153,12 +153,12 @@ export const Members: CollectionConfig = {
           '@/components/payload/CopyInviteMenuItem#CopyInviteMenuItem',
         ],
       },
-      // "Pošalji pozivnice svima" (#462): the same action for everyone still
-      // missing a login, so the gap is closed rather than hunted for down the
-      // "Ima prijavu" column. Its route re-checks `moreska` itself.
-      listMenuItems: [
-        '@/components/payload/InviteAllMoreskantiMenuItem#InviteAllMoreskantiMenuItem',
-      ],
+      // "Pošalji pozivnice svima" (#462) stood here until #651 (ADR-0028).
+      // The letter now goes to the LOGIN's address, and a dancer who has no
+      // login yet has no address anywhere, so a bulk mail to "everyone still
+      // missing a login" could only ever report that nobody can be mailed. The
+      // invitation a voditelj hands over is "Kopiraj pozivnicu", one dancer at
+      // a time, because sending it is an SMS they send from their own phone.
     },
   },
   hooks: {
@@ -191,7 +191,7 @@ export const Members: CollectionConfig = {
 
         // Write back only the keys normalisation may have touched, so a partial
         // update stays partial.
-        for (const key of ['nickname', 'mobile', 'email']) {
+        for (const key of ['nickname', 'mobile']) {
           if (key in patch && normalised[key] !== merged[key]) patch[key] = normalised[key]
         }
         return patch
@@ -271,19 +271,11 @@ export const Members: CollectionConfig = {
       },
       access: MORESKANT_FIELD_ACCESS,
     },
-    {
-      name: 'email',
-      type: 'text',
-      label: { en: 'Email', hr: 'E-mail' },
-      admin: {
-        condition: moreskantOnly,
-        description: {
-          en: 'Where the app invitation is sent. Never shown to other moreškanti.',
-          hr: 'Adresa na koju se šalje pozivnica za aplikaciju. Nikad se ne prikazuje drugim moreškantima.',
-        },
-      },
-      access: MORESKANT_FIELD_ACCESS,
-    },
+    // `email` lived here from #420 until #651 (ADR-0028). It was never a contact
+    // field: its only job was "where the app invitation is sent", and the
+    // invitation now goes to the login's own address, which the dancer writes
+    // themselves on Profil. The mobile is the voditelj's channel and the e-mail
+    // is the dancer's access; that line is why only one of the two is here.
     {
       name: 'roles',
       type: 'select',

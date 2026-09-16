@@ -4,17 +4,18 @@ import { UserPlus } from 'lucide-react'
 import { useState } from 'react'
 import { APP_STRINGS } from '@/lib/app/strings'
 import { Button, Sheet } from '../../ui'
-import { InviteAll } from './InviteAll'
 import { JoinCodeCard } from './JoinCodeCard'
 import { PendingClaims, type PendingClaimRow } from './PendingClaims'
 
 // The invitation half of Članovi, behind one icon (#573, Q37).
 //
-// Three things used to sit above the roster: the rehearsal code with its QR,
-// the queue of people waiting to be let in, and the bulk e-mail invitation.
-// They are what a voditelj needs while standing in a hall at the start of a
-// season, and the list is what they need for the rest of it, so the list is the
-// screen and these are one tap away in the header.
+// Two things used to sit above the roster: the rehearsal code with its QR and
+// the queue of people waiting to be let in. They are what a voditelj needs
+// while standing in a hall at the start of a season, and the list is what they
+// need for the rest of it, so the list is the screen and these are one tap away
+// in the header. (A third, the bulk e-mail invitation, was retired with
+// `Members.email` in #651: an invitation is handed over one dancer at a time,
+// by SMS, from the profile.)
 //
 // One component rather than three, because the icon and the sheet share one
 // piece of state and the icon lives in `AppShell`'s `actions` slot: the sheet
@@ -32,15 +33,12 @@ export function Invitations({
   url,
   qr,
   claims,
-  missingLogins,
 }: {
   code: string | null
   validUntil: string | null
   url: string | null
   qr: string | null
   claims: PendingClaimRow[]
-  /** How many active dancers still have no login; the bulk invite's audience. */
-  missingLogins: number
 }) {
   const [open, setOpen] = useState(false)
 
@@ -70,7 +68,6 @@ export function Invitations({
         <p className="app__sheet-body">{S.invitationsBody}</p>
         <JoinCodeCard code={code} validUntil={validUntil} url={url} qr={qr} />
         <PendingClaims claims={claims} />
-        <InviteAll missing={missingLogins} />
       </Sheet>
     </>
   )

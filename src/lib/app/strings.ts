@@ -30,7 +30,7 @@ import type { LineupRole } from '@/lib/moreskant-profile'
 import { LINEUP_ROLE_LABELS } from '@/lib/moreskant-profile'
 // A type, and therefore erased: `members-screen.ts` imports these strings back,
 // and a value import either way would be a cycle.
-import type { MemberFilter } from './members-screen'
+import type { MemberFilter, MemberMark } from './member-marks'
 
 /**
  * "7 moreški": a count and the Croatian form that follows it (#628).
@@ -49,6 +49,9 @@ function croatianPlural(n: number, forms: { one: string; few: string; many: stri
   if (mod10 >= 2 && mod10 <= 4) return `${n} ${forms.few}`
   return `${n} ${forms.many}`
 }
+
+/** The phones a roster message rings (#654): 1 mobitel, 43 mobitela, 11 mobitela. */
+const PHONES = { one: 'mobitel', few: 'mobitela', many: 'mobitela' } as const
 
 export const APP_STRINGS = {
   /** The product name: the manifest, the header and the browser tab all use it. */
@@ -1273,7 +1276,13 @@ export const APP_STRINGS = {
     missingMember: 'Taj član ne postoji.',
     notMoreskant: 'Član nije označen kao moreškant. Označi ga i spremi, pa pošalji pozivnicu.',
     notActive: 'Član nije aktivan.',
-    noEmail: 'Član nema e-mail adresu. Upiši je i spremi, pa pošalji pozivnicu.',
+    /**
+     * #651: the address belongs to the dancer now, so a voditelj cannot fill it
+     * in. The sentence says what they CAN do instead, which is the other button
+     * on the same screen.
+     */
+    noEmail:
+      'Plesač nije postavio e-mail adresu, pa mu pozivnicu pošalji porukom preko "Kopiraj pozivnicu".',
     createFailed:
       'Račun nije stvoren: adresa ili korisničko ime već postoje. Provjeri podatke i pokušaj ponovno.',
     sendFailed: 'Prijava je otvorena, ali pozivnica nije poslana. Pokušaj ponovno.',
@@ -1287,38 +1296,15 @@ export const APP_STRINGS = {
     staffLogin:
       'Prijava tog člana ima šire dozvole od moreškanta, pa pozivnica nije poslana. Lozinku za takav račun postavlja administrator.',
     sentNew: 'Pozivnica je poslana i prijava je otvorena.',
-    sentAgain: 'Nova poveznica je poslana na e-mail člana.',
+    sentAgain: 'Nova poveznica je poslana na e-mail plesača.',
     unexpected: 'Slanje trenutno nije moguće. Pokušaj ponovno.',
     /** The Members list column: does this member already have a login? */
     hasLogin: 'Ima prijavu',
   },
 
-  /**
-   * "Pošalji pozivnice svima" on the Members LIST (#462).
-   *
-   * The per-row action leaves a voditelj to work out who is still missing by
-   * reading the "Ima prijavu" column, which is a job for the machine. This one
-   * sends to everyone eligible and then says what it did per outcome, because
-   * "poslano 9" alone hides the three dancers whose row has no e-mail and who
-   * are exactly the ones that still need a hand.
-   */
-  inviteAll: {
-    action: 'Pošalji pozivnice svima',
-    sending: 'Šaljem...',
-    /** Nothing to do, which is the good ending and not an error. */
-    none: 'Svi aktivni moreškanti s e-mailom već imaju prijavu.',
-    sent: (count: number) => `Poslano pozivnica: ${count}.`,
-    /**
-     * The two bad outcomes NAME the dancers rather than counting them: a
-     * voditelj can only act on a name. The failed ones especially, because a
-     * failed send still leaves a login behind, so the next bulk press skips
-     * them and only the per-row "Pošalji pozivnicu" will reach them.
-     */
-    noEmail: (who: string) => `Bez e-maila: ${who}.`,
-    failed: (who: string) => `Nije poslano: ${who}. Pošalji im pojedinačno.`,
-    andMore: (count: number) => `i još ${count}`,
-    unexpected: 'Slanje trenutno nije moguće. Pokušaj ponovno.',
-  },
+  // `inviteAll` ("Pošalji pozivnice svima", #462) stood here until #651
+  // (ADR-0028): the letter goes to the login's own address now, so a dancer who
+  // has no login has no address to write to and the bulk send had nobody left.
 
   /**
    * Članovi (#511): the voditelj's roster screen, and the profile behind a row.
@@ -1326,8 +1312,8 @@ export const APP_STRINGS = {
    * Everything here is aimed at a voditelj holding a phone at a rehearsal, so
    * the list says one fact per dancer and every refusal names what to do rather
    * than which rule was broken. The invitation words are NOT here: they are
-   * `inviteLink` and `inviteAll`, unchanged, because the same invitation is the
-   * same invitation wherever it is handed over from.
+   * `inviteLink`, unchanged, because the same invitation is the same invitation
+   * wherever it is handed over from.
    */
   members: {
     /** The list */
@@ -1343,19 +1329,60 @@ export const APP_STRINGS = {
     empty: 'Nema moreškanta po tom upitu.',
     emptyAll: 'Još nema nijednog moreškanta na popisu.',
     listTitle: 'Moreškanti',
-    hasLogin: 'ima prijavu',
-    noLogin: 'bez prijave',
     retired: 'neaktivan',
     /**
-     * The three chips over the list (#573). The keys are `MemberFilter`, and
-     * `satisfies` is what stops a fourth chip shipping without its Croatian.
+     * The four chips over the list (#653). The keys are `MemberFilter`, and
+     * `satisfies` is what stops a fifth chip shipping without its Croatian.
+     *
+     * Each carries its own count beside it: without the number a voditelj has
+     * to enter a filter to find out whether it was worth entering.
      */
     filters: {
       all: 'Svi',
-      active: 'Aktivni',
-      'no-login': 'Bez prijave',
+      'no-app': 'Bez appa',
+      'no-push': 'Bez obavijesti',
+      'no-access': 'Bez pristupa',
     } satisfies Record<MemberFilter, string>,
     filtersLabel: 'Filtar popisa',
+
+    /**
+     * The three marks on a row, and the sheet that explains them (#653).
+     *
+     * The words are a voditelj's, not a system's: "aplikacija na mobitelu"
+     * rather than "instalirano", because the thing being asked about is a phone
+     * in somebody's pocket.
+     */
+    marks: {
+      installed: 'Aplikacija na mobitelu',
+      notifications: 'Obavijesti rade',
+      access: 'Svoj e-mail i lozinka',
+      /** The aria-label a screen reader hears on each glyph. */
+      state: {
+        yes: 'ima',
+        no: 'nema',
+        unknown: 'ne znam',
+      },
+      /** The words a dancer who has never signed in gets instead of marks. */
+      neverIn: 'nije ušao',
+      /** The legend, behind the count over the list. */
+      legendTitle: 'Što znače oznake',
+      legendOpen: 'Oznake i tko što nema',
+      /**
+       * The caveat the dash exists for. On day one nobody's phone has reported
+       * yet, and a whole column of dashes must not read as "nitko nema app".
+       */
+      unknownNote:
+        'Crtica znači da mobitel još nije javio, ne da aplikacije nema. Javi se sam čim moreškant otvori Ceciliju.',
+      neverInNote:
+        'Taj se moreškant nikad nije prijavio. Pozivnicu mu pošalji s njegovog profila.',
+      /** "bez appa: 12" inside the legend, per column. */
+      missing: (label: string, count: number) => `${label}: ${count}`,
+      missingLabels: {
+        installed: 'bez appa',
+        notifications: 'bez obavijesti',
+        access: 'bez pristupa',
+      } satisfies Record<MemberMark, string>,
+    },
     /** The header icon: everything about letting somebody in, in one sheet. */
     invitations: 'Pozivnice',
     invitationsBody:
@@ -1373,8 +1400,6 @@ export const APP_STRINGS = {
     name: 'Ime i prezime',
     mobile: 'Mobitel',
     mobileHint: 'Na taj broj ide pozivnica SMS-om. Vidljiv je ostalim moreškantima.',
-    email: 'E-mail',
-    emailHint: 'Nije obavezan. Koristi se samo za pozivnicu i nikad se ne prikazuje drugima.',
     roles: 'Plesne uloge',
     primaryRole: 'Glavna uloga',
     active: 'Aktivan moreškant',
@@ -1405,7 +1430,6 @@ export const APP_STRINGS = {
     invalidBody: 'Podaci nisu ispravni.',
     lockedField: 'Ime i bilješku mijenja blagajna, ne voditelj.',
     badMobile: 'Mobitel nije u ispravnom obliku. Upiši ga kao 0912345678 ili +385912345678.',
-    badEmail: 'E-mail nije u ispravnom obliku.',
     missingName: 'Upiši ime i prezime.',
   },
 
@@ -1553,21 +1577,51 @@ export const APP_STRINGS = {
    * on a phone that stays signed in for thirty days, a dancer who sets none is
    * not neglecting anything.
    */
-  setPassword: {
-    title: 'Postavi lozinku',
+  /**
+   * "E-mail i lozinka" on Profil, and the card on Početna that leads to it
+   * (#651, ADR-0028).
+   *
+   * One task and not two: an address with no password cannot sign anybody in
+   * and a password with no address cannot be recovered, so the form asks for
+   * both and the card names both. Every sentence says what the reader GETS
+   * rather than what the system needs, because nothing here is compulsory: a
+   * dancer who never fills it in is still let in by the voditelj's link, for as
+   * long as they like.
+   */
+  ownAccess: {
+    title: 'E-mail i lozinka',
     intro:
-      'Lozinka nije obavezna: u aplikaciju uvijek možeš ući poveznicom koju ti pošaljemo. Postavi je ako se želiš prijavljivati bez čekanja poruke.',
+      'S njima se prijaviš na bilo kojem telefonu i sam zatražiš novu lozinku ako je zaboraviš. Nije obavezno: voditelj ti i dalje može poslati poveznicu za prijavu.',
+    email: 'E-mail',
+    emailHint:
+      'Na tu adresu šaljemo poveznicu za prijavu. Ne vidi je nitko drugi u aplikaciji.',
     password: 'Nova lozinka',
     repeat: 'Ponovi lozinku',
-    submit: 'Spremi lozinku',
+    submit: 'Spremi',
     submitting: 'Spremam...',
     tooShort: 'Lozinka mora imati barem 8 znakova.',
     mismatch: 'Lozinke se ne podudaraju.',
-    saved: 'Lozinka je spremljena.',
+    badEmail: 'Upiši ispravnu e-mail adresu.',
+    nothingToSave: 'Nema promjena za spremanje.',
+    /** The unique index on `users.email`, in a sentence a dancer can act on. */
+    emailTaken: 'Ta e-mail adresa već pripada drugom računu.',
+    /** A voditelj may not empty their own address: the policy requires one. */
+    emailRequired: 'Tvoj račun mora imati e-mail adresu.',
+    saved: 'Spremljeno.',
     /** ADR-0022 again: one holder of a shared login may not rotate it. */
     sharedAccount:
-      'Ovu prijavu koristi više osoba, pa lozinku mijenja administrator.',
+      'Ovu prijavu koristi više osoba, pa e-mail i lozinku mijenja administrator.',
+    /** The route's own refusals; a dancer should never see either. */
+    otherAccount: 'Možeš mijenjati samo vlastiti račun.',
+    lockedField: 'Te podatke mijenja administrator.',
     unexpected: 'Spremanje trenutno nije moguće. Pokušaj ponovno.',
+    /** The Početna card: it removes itself the moment the task is done. */
+    card: {
+      title: 'Postavi e-mail i lozinku',
+      body:
+        'Tako ulaziš u aplikaciju na svakom telefonu i sam vraćaš pristup ako ti prijava istekne. Traje minutu.',
+      action: 'Postavi sada',
+    },
   },
 
   /**
@@ -3243,6 +3297,70 @@ export const APP_STRINGS = {
     /** "danas u 21:00" / "5. kolovoza u 21:00", built by `notification-view.ts`. */
     today: 'danas',
     yesterday: 'jučer',
+
+    /**
+     * The voditelj's own message to the roster (#654, ADR-0028).
+     *
+     * The action lives on this screen and is HIDDEN from a reader without
+     * `moreska`, rather than greyed with "traži Moreška" the way Izvedbe's six
+     * actions are (#567). That greying exists so a blagajna knows a thing
+     * exists and who to ask; nobody needs to ask a voditelj for permission to
+     * write to the dancers, so the control is simply not theirs to see.
+     *
+     * `counts` is the whole design of the feature in one sentence: it says BOTH
+     * numbers out loud before anything is sent, because the failure this
+     * prevents is not a mis-tap but somebody writing the same sentence twice
+     * for want of a receipt.
+     */
+    message: {
+      open: 'Napiši poruku',
+      title: 'Poruka moreškantima',
+      hint: 'Ide svim aktivnim moreškantima.',
+      placeholder: 'Što treba javiti?',
+      /** "312 / 500", so the limit is a number rather than a surprise. */
+      counter: (used: number, max: number) => `${used} / ${max}`,
+      send: 'Pošalji',
+      sending: 'Šaljem...',
+      cancel: 'Odustani',
+      confirmTitle: 'Poslati poruku?',
+      /**
+       * "Zvonit će na 43 mobitela, a svih 76 će je naći u Sandučiću."
+       *
+       * "mobitel" takes the three Croatian plural buckets (1 mobitel, 43
+       * mobitela, 11 mobitela); one person is named rather than counted,
+       * because "svih 1" is not Croatian.
+       */
+      counts: (devices: number, people: number) => {
+        const phones =
+          devices === 0
+            ? 'Neće zazvoniti ni jedan mobitel'
+            : `Zvonit će na ${croatianPlural(devices, PHONES)}`
+        const inbox = people === 1 ? 'jedan će je' : `svih ${people} će je`
+        return `${phones}, a ${inbox} naći u Sandučiću.`
+      },
+      /**
+       * Under the counts, only when somebody on the roster has no login at all.
+       *
+       * Three buckets like everything else counted here: 1 aktivni moreškant
+       * nema, 2 aktivna moreškanta nemaju, 11 aktivnih moreškanata nema. The
+       * verb moves with the noun, which is why the whole clause is in the
+       * forms rather than only the word.
+       */
+      withoutLogin: (count: number) =>
+        `${croatianPlural(count, {
+          one: 'aktivni moreškant nema račun i neće je dobiti',
+          few: 'aktivna moreškanta nemaju račun i neće je dobiti',
+          many: 'aktivnih moreškanata nema račun i neće je dobiti',
+        })}.`,
+      empty: 'Napiši poruku prije slanja.',
+      tooLong: (max: number) => `Poruka može imati najviše ${max} znakova.`,
+      /** The server's refusal to a caller that skipped the sheet. */
+      unconfirmed: 'Poruku potvrdi prije slanja.',
+      nobody: 'Nijedan aktivni moreškant nema račun, pa poruku nema kome poslati.',
+      failed: 'Poruka nije poslana. Pokušaj ponovno.',
+      sent: (people: number, devices: number) =>
+        `Poruka je poslana. U Sandučiću je kod ${people}, a zazvonilo je ${croatianPlural(devices, PHONES)}.`,
+    },
   },
 
   /**
@@ -3462,6 +3580,18 @@ export const PUSH_MESSAGES = {
    * a schedule nobody has to answer this instant. One sentence, and the tap
    * lands on the list rather than on any one evening.
    */
+  /**
+   * The seventh kind (#654, ADR-0028): a voditelj wrote to the roster.
+   *
+   * The title says WHO rather than what, because the body is the whole message
+   * and a lock screen shows both. "Poruka voditelja" is what a dancer needs to
+   * decide whether to open it now or at the end of the shift; the app's own
+   * name is already on the notification.
+   */
+  message: {
+    title: 'Poruka voditelja',
+  },
+
   createdBulk: {
     title: 'Novi nastupi',
     body: (input: { count: number; firstDate: string }) =>

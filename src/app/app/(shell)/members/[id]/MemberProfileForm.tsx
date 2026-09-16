@@ -7,11 +7,16 @@ import { APP_STRINGS } from '@/lib/app/strings'
 import { Button, Note, Section, Switch, Toast } from '../../../ui'
 import { RolePicker } from '../RolePicker'
 
-// The profile form of Članovi (#511): the six fields a voditelj owns.
+// The profile form of Članovi (#511): the five fields a voditelj owns.
+//
+// The e-mail was one of them until #651 (ADR-0028). It is gone from the form
+// and from the Members row both: a dancer writes their own address on their own
+// Profil, and the mobile stays here, because the mobile is the voditelj's
+// channel and the e-mail is the dancer's access.
 //
 // It sends a PATCH of the whole set rather than of what changed, which is
 // deliberate: the route reads only the keys that are present, so sending all
-// six means "this is the profile now" and there is no diffing to get wrong.
+// of them means "this is the profile now" and there is no diffing to get wrong.
 // The two nullable fields go as `''` when cleared, which the route reads as
 // null, because an absent key would mean "leave it alone".
 //
@@ -21,7 +26,7 @@ import { RolePicker } from '../RolePicker'
 // honest version — the voditelj needs to see WHO this is, and a disabled input
 // would invite a tap that goes nowhere.
 //
-// One Spremi at the foot and no per-field save (#573): the six fields are one
+// One Spremi at the foot and no per-field save (#573): the fields are one
 // answer to "who is this dancer now", and a form with two ways to commit is a
 // form where half the changes are lost. The two flags are T1's `Switch`, which
 // is the same control the account screen uses for the push toggle.
@@ -40,7 +45,6 @@ export function MemberProfileForm({ member }: { member: MemberRosterRow }) {
 
   const [nickname, setNickname] = useState(member.nickname ?? '')
   const [mobile, setMobile] = useState(member.mobile ?? '')
-  const [email, setEmail] = useState(member.email ?? '')
   const [active, setActive] = useState(member.active)
   const [yearRound, setYearRound] = useState(member.yearRound)
   const [picked, setPicked] = useState<{ roles: string[]; primaryRole: string }>({
@@ -61,7 +65,6 @@ export function MemberProfileForm({ member }: { member: MemberRosterRow }) {
         body: JSON.stringify({
           nickname,
           mobile,
-          email,
           roles: picked.roles,
           primaryRole: picked.primaryRole,
           active,
@@ -119,19 +122,6 @@ export function MemberProfileForm({ member }: { member: MemberRosterRow }) {
           inputMode="tel"
         />
         <small>{S.mobileHint}</small>
-      </label>
-
-      <label className="app__field">
-        <span>{S.email}</span>
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          disabled={busy}
-          autoComplete="off"
-          inputMode="email"
-        />
-        <small>{S.emailHint}</small>
       </label>
 
       <RolePicker

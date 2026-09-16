@@ -77,9 +77,6 @@ export async function loadJoinMember(memberId: string): Promise<(JoinMember & In
     id: member.id,
     name: member.name,
     nickname: member.nickname,
-    // The e-mail rides along for ONE reason: `ensureDancerLogin` puts it on the
-    // login it opens when the Member has one. It never leaves the server.
-    email: member.email,
     isMoreskant: member.isMoreskant,
     active: member.active,
   }

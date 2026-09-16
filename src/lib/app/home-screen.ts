@@ -35,6 +35,7 @@
 // "danas". `home-screen.test.ts` is where the rules are asserted.
 
 import type { Permission } from '@/lib/access/permissions'
+import { ownsTheirAccess } from './member-marks'
 import { screenByKey, type AppNav, type AppScreenKey } from './screens'
 import { APP_STRINGS, dayAndMonth, weekdayAfterU } from './strings'
 import { pluralForm } from './roster-loaders'
@@ -245,6 +246,56 @@ export function nextSentence(input: {
   if (days === 1) return words.tomorrow
   if (days <= 6) return words.onDay(weekdayAfterU(input.date))
   return words.onDate(dayAndMonth(input.date))
+}
+
+// ── The one thing Početna asks for ─────────────────────────────────────────
+
+/** The card that asks a reader to take their own way in (#651, ADR-0028). */
+export interface OwnAccessPrompt {
+  title: string
+  body: string
+  action: string
+  href: string
+}
+
+/**
+ * "Postavi e-mail i lozinku", or nothing at all.
+ *
+ * The one prompt on a screen that is otherwise all figures, and the only thing
+ * on it that asks rather than reports. It exists because a dancer signed in by
+ * a voditelj's link holds no key of their own: no address means "Zaboravljena
+ * lozinka" has nowhere to send anything, and no password means a second phone
+ * has nothing to type.
+ *
+ * **The card goes when BOTH halves are there**, which is the same predicate the
+ * 🔑 mark on Članovi applies (`ownsTheirAccess`) and deliberately the same
+ * function rather than a second copy of it. Reading only the address was the
+ * version that shipped first, and it took the card away from exactly the dancer
+ * who still could not sign in on a second phone: they had typed an address and
+ * were still carrying the random password their invitation minted. The form
+ * behind the card writes both, so a reader who completes it loses the card on
+ * the same render.
+ *
+ * **Never blocking, and never for a shared login.** `/app/welcome` gains no
+ * fourth step for this (the Dobrodošlica is remembered per DEVICE and this is
+ * per account, so a fourth step would re-ask somebody on every new phone), and
+ * `tehnika` is a room rather than a person, so it has no address to own.
+ */
+export function ownAccessPrompt(input: {
+  hasEmail: boolean
+  hasOwnPassword: boolean
+  shared?: boolean
+}): OwnAccessPrompt | null {
+  if (input.shared === true || ownsTheirAccess(input)) return null
+  const words = APP_STRINGS.ownAccess.card
+  return {
+    title: words.title,
+    body: words.body,
+    action: words.action,
+    // The anchor rather than the bare screen: the fields are the fourth section
+    // of Profil, and a reader who tapped "Postavi sada" should land on them.
+    href: '/app/account#security',
+  }
 }
 
 // ── The cards ──────────────────────────────────────────────────────────────

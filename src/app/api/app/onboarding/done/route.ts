@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { requirePermission } from '@/lib/access/route-guard'
 import { onboardingCookie } from '@/lib/app/onboarding'
+import { requestIsHttps } from '@/lib/app/http'
 import { appRequestMeta, rejectAppRequest } from '@/lib/app/request-guard'
 
 // POST /api/app/onboarding/done — this device has seen the Dobrodošlica (#457).
@@ -21,17 +22,6 @@ import { appRequestMeta, rejectAppRequest } from '@/lib/app/request-guard'
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-/** The scheme the browser actually used, as the reverse proxy reports it. */
-function isHttps(req: Request): boolean {
-  const forwarded = req.headers.get('x-forwarded-proto')?.split(',')[0]?.trim()
-  if (forwarded) return forwarded.toLowerCase() === 'https'
-  try {
-    return new URL(req.url).protocol === 'https:'
-  } catch {
-    return false
-  }
-}
-
 export async function POST(req: Request) {
   const rejection = rejectAppRequest(appRequestMeta(req, process.env.NEXT_PUBLIC_BASE_URL))
   if (rejection) {
@@ -44,6 +34,6 @@ export async function POST(req: Request) {
   if (gate.error) return gate.error
 
   const response = new NextResponse(null, { status: 204 })
-  response.headers.set('Set-Cookie', onboardingCookie({ secure: isHttps(req) }))
+  response.headers.set('Set-Cookie', onboardingCookie({ secure: requestIsHttps(req) }))
   return response
 }

@@ -21,10 +21,13 @@ const cici = {
   id: 12,
   name: 'Ivan Fabris',
   nickname: 'Cici',
-  email: 'cici@example.com',
+  mobile: '091 234 5678',
   isMoreskant: true,
   active: true,
 }
+
+/** The login of a dancer who has set an address of their own (#651). */
+const withEmail = { id: 99, username: 'cici', email: 'cici@example.com' }
 
 function deps(overrides: Partial<InviteDeps> = {}): InviteDeps {
   return {
@@ -33,13 +36,20 @@ function deps(overrides: Partial<InviteDeps> = {}): InviteDeps {
     loadMember: vi.fn().mockResolvedValue(cici),
     findUserByMember: vi.fn().mockResolvedValue(null),
     usernameTaken: vi.fn().mockResolvedValue(false),
-    createUser: vi.fn(async (data) => ({ id: 99, username: data.username, email: data.email })),
-    updateUserEmail: vi.fn().mockResolvedValue(undefined),
+    createUser: vi.fn(async (data) => ({ id: 99, username: data.username, email: null })),
     issueResetToken: vi.fn().mockResolvedValue('tok-abc'),
     sendInvite: vi.fn().mockResolvedValue(undefined),
     randomPassword: () => 'a-very-random-password',
     ...overrides,
   }
+}
+
+/**
+ * Deps for the LETTER, which since #651 presupposes a login with an address:
+ * the mail channel refuses everything else before it opens anything.
+ */
+function mailDeps(overrides: Partial<InviteDeps> = {}): InviteDeps {
+  return deps({ findUserByMember: vi.fn().mockResolvedValue(withEmail), ...overrides })
 }
 
 describe('handleInvite — the request guard', () => {
@@ -81,15 +91,9 @@ describe('handleInvite — the four refusals', () => {
       APP_STRINGS.invite.notActive,
     ],
     [
-      'a member without an email',
+      'a dancer whose login has no address of their own',
       { memberId: '12' },
-      { ...cici, email: null },
-      APP_STRINGS.invite.noEmail,
-    ],
-    [
-      'a member whose email is blank',
-      { memberId: '12' },
-      { ...cici, email: '   ' },
+      cici,
       APP_STRINGS.invite.noEmail,
     ],
   ])('400s on %s, creating nothing and sending nothing', async (_label, input, member, message) => {
@@ -110,44 +114,45 @@ describe('handleInvite — the four refusals', () => {
   })
 })
 
-describe('handleInvite — creating the login', () => {
-  it('creates exactly the moreskant bundle, linked to the member', async () => {
+/**
+ * The letter, after #651 (ADR-0028).
+ *
+ * The address is the LOGIN's now, so a letter can only ever go to a dancer who
+ * has already typed one. A dancer with no login yet has no address anywhere,
+ * which is why the first press on most of the roster is refused here and handed
+ * to "Kopiraj pozivnicu" instead.
+ */
+describe('handleInvite — the letter needs an address the dancer owns', () => {
+  it('refuses before it opens an account, so no row is left behind', async () => {
     const d = deps()
     const result = await handleInvite({ memberId: '12' }, d)
-    expect(result.status).toBe(200)
-    expect(result.body).toEqual({
-      ok: true,
-      created: true,
-      username: 'cici',
-      message: APP_STRINGS.invite.sentNew,
-    })
-    expect(d.createUser).toHaveBeenCalledWith({
-      username: 'cici',
-      email: 'cici@example.com',
-      password: 'a-very-random-password',
-      permissions: ['moreskant'],
-      member: 12,
-    })
-  })
-
-  it('suffixes the username when the slug is taken', async () => {
-    const taken = new Set(['cici'])
-    const d = deps({ usernameTaken: vi.fn(async (c: string) => taken.has(c)) })
-    const result = await handleInvite({ memberId: '12' }, d)
-    expect(result.body).toMatchObject({ username: 'cici2' })
-  })
-
-  it('400s with a fixable message when the account cannot be created', async () => {
-    const d = deps({ createUser: vi.fn().mockRejectedValue(new Error('duplicate email')) })
-    const result = await handleInvite({ memberId: '12' }, d)
     expect(result.status).toBe(400)
-    expect(result.body).toEqual({ error: APP_STRINGS.invite.createFailed })
+    expect(result.body).toEqual({ error: APP_STRINGS.invite.noEmail })
+    expect(d.createUser).not.toHaveBeenCalled()
+    expect(d.issueResetToken).not.toHaveBeenCalled()
     expect(d.sendInvite).not.toHaveBeenCalled()
+  })
+
+  it('refuses a login whose address is blank', async () => {
+    const d = deps({ findUserByMember: vi.fn().mockResolvedValue({ ...withEmail, email: '  ' }) })
+    expect((await handleInvite({ memberId: '12' }, d)).status).toBe(400)
+    expect(d.sendInvite).not.toHaveBeenCalled()
+  })
+
+  it('writes the letter to the LOGIN’s address and never to the Member row', async () => {
+    const d = deps({ findUserByMember: vi.fn().mockResolvedValue(withEmail) })
+    const result = await handleInvite({ memberId: '12' }, d)
+    expect(result.status).toBe(200)
+    expect(d.sendInvite).toHaveBeenCalledWith({
+      to: 'cici@example.com',
+      greeting: 'Cici',
+      link: 'https://moreska.eu/app/session?token=tok-abc',
+    })
   })
 })
 
 describe('handleInvite — a second press', () => {
-  const existing = { id: 99, username: 'cici', email: 'cici@example.com' }
+  const existing = withEmail
 
   it('reuses the linked login and never creates a second one', async () => {
     const d = deps({ findUserByMember: vi.fn().mockResolvedValue(existing) })
@@ -166,33 +171,34 @@ describe('handleInvite — a second press', () => {
     expect(d.sendInvite).toHaveBeenCalledTimes(1)
   })
 
-  it("moves the login onto the Member's email when the two drifted apart", async () => {
+  /**
+   * The rule "the Member's email wins" stood here until #651 and is GONE, not
+   * moved: an invitation press used to write the Member's address onto the
+   * login, which after ADR-0028 would overwrite what the dancer typed for
+   * themselves. Asserted as an absence, because that is what a regression here
+   * would look like.
+   */
+  it('writes nothing at all to the login it found', async () => {
     const d = deps({
-      findUserByMember: vi.fn().mockResolvedValue({ ...existing, email: 'staro@example.com' }),
+      findUserByMember: vi.fn().mockResolvedValue({ ...existing, email: 'moje@example.com' }),
     })
     await handleInvite({ memberId: '12' }, d)
-    expect(d.updateUserEmail).toHaveBeenCalledWith(99, 'cici@example.com')
-  })
-
-  it('leaves the login alone when the addresses differ only in case', async () => {
-    const d = deps({
-      findUserByMember: vi.fn().mockResolvedValue({ ...existing, email: 'CICI@example.com' }),
-    })
-    await handleInvite({ memberId: '12' }, d)
-    expect(d.updateUserEmail).not.toHaveBeenCalled()
+    expect(d.sendInvite).toHaveBeenCalledWith(
+      expect.objectContaining({ to: 'moje@example.com' }),
+    )
+    expect(d.createUser).not.toHaveBeenCalled()
   })
 })
 
 /**
  * The takeover guard (#462 review).
  *
- * A second press MOVES the found login's e-mail onto the Member's and mails it
- * a reset link. On a dancer that is the fix for a lost letter. On an account
- * that also holds `moreska`, `tickets` or `users` it is a takeover: any
- * voditelj may edit a Member's e-mail, so pressing "Pošalji pozivnicu" on a
- * Member whose login is a colleague's staff account would send that colleague's
- * reset link wherever the presser likes. `/api/app/link-self` makes exactly
- * that link routine, which is why the rule lands with it.
+ * A press mints a live sign-in token for the login behind the Member and either
+ * mails it or hands it to the presser. On a dancer that is the fix for a lost
+ * letter. On an account that also holds `moreska`, `tickets` or `users` it is a
+ * takeover, because any voditelj may press it on any Member.
+ * `/api/app/link-self` makes exactly that link routine, which is why the rule
+ * lands with it.
  */
 describe('handleInvite — the login behind the Member is not a dancer', () => {
   const staff = {
@@ -202,12 +208,11 @@ describe('handleInvite — the login behind the Member is not a dancer', () => {
     permissions: ['moreska', 'moreskant'],
   }
 
-  it('refuses before it moves an e-mail or mints a token', async () => {
+  it('refuses before it mints a token', async () => {
     const d = deps({ findUserByMember: vi.fn().mockResolvedValue(staff) })
     const result = await handleInvite({ memberId: '12' }, d)
     expect(result.status).toBe(409)
     expect(result.body).toEqual({ error: APP_STRINGS.invite.staffLogin })
-    expect(d.updateUserEmail).not.toHaveBeenCalled()
     expect(d.issueResetToken).not.toHaveBeenCalled()
     expect(d.sendInvite).not.toHaveBeenCalled()
   })
@@ -237,8 +242,10 @@ describe('handleInvite — the login behind the Member is not a dancer', () => {
 
   it('does not stand between a Member and their FIRST login', async () => {
     // Nobody to check: the account this press creates holds ['moreskant'].
+    // Asserted on the LINK channel, because since #651 the letter is the one
+    // that cannot open an account (it has no address to write to yet).
     const d = deps({ findUserByMember: vi.fn().mockResolvedValue(null) })
-    expect((await handleInvite({ memberId: '12' }, d)).status).toBe(200)
+    expect((await handleInviteLink({ memberId: '12' }, d)).status).toBe(200)
     expect(d.createUser).toHaveBeenCalledTimes(1)
   })
 })
@@ -266,7 +273,7 @@ describe('isDancerLogin', () => {
 
 describe('handleInvite — the token and the mail', () => {
   it('asks for a seven-day token, targeted by username', async () => {
-    const d = deps()
+    const d = mailDeps()
     await handleInvite({ memberId: '12' }, d)
     expect(d.issueResetToken).toHaveBeenCalledWith({ username: 'cici' }, INVITE_EXPIRATION_MS)
     expect(INVITE_EXPIRATION_MS).toBe(7 * 24 * 60 * 60 * 1000)
@@ -280,8 +287,17 @@ describe('handleInvite — the token and the mail', () => {
     expect(d.issueResetToken).toHaveBeenCalledWith({ email: 'cici@example.com' }, INVITE_EXPIRATION_MS)
   })
 
+  // The mail channel reads the account BEFORE anything is opened, because it
+  // refuses a login with no address; `ensureDancerLogin` is then handed that
+  // row rather than asking the same question a second time (#653 review).
+  it('looks the login up once, not once per rule', async () => {
+    const d = mailDeps()
+    await handleInvite({ memberId: '12' }, d)
+    expect(d.findUserByMember).toHaveBeenCalledTimes(1)
+  })
+
   it('sends the link to the member, greeted by nickname', async () => {
-    const d = deps()
+    const d = mailDeps()
     await handleInvite({ memberId: '12' }, d)
     expect(d.sendInvite).toHaveBeenCalledWith({
       to: 'cici@example.com',
@@ -291,13 +307,13 @@ describe('handleInvite — the token and the mail', () => {
   })
 
   it('greets by name when the member has no nickname', async () => {
-    const d = deps({ loadMember: vi.fn().mockResolvedValue({ ...cici, nickname: null }) })
+    const d = mailDeps({ loadMember: vi.fn().mockResolvedValue({ ...cici, nickname: null }) })
     await handleInvite({ memberId: '12' }, d)
     expect(d.sendInvite).toHaveBeenCalledWith(expect.objectContaining({ greeting: 'Ivan Fabris' }))
   })
 
   it('500s without sending when no token comes back', async () => {
-    const d = deps({ issueResetToken: vi.fn().mockResolvedValue(null) })
+    const d = mailDeps({ issueResetToken: vi.fn().mockResolvedValue(null) })
     const result = await handleInvite({ memberId: '12' }, d)
     expect(result.status).toBe(500)
     expect(result.body).toEqual({ error: APP_STRINGS.invite.tokenFailed })
@@ -322,12 +338,11 @@ describe('signInLink', () => {
 describe('handleInvite — the mail can fail after the account exists', () => {
   it('502s with a message that says the login is there and the letter is not', async () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {})
-    const d = deps({ sendInvite: vi.fn().mockRejectedValue(new Error('brevo down')) })
+    const d = mailDeps({ sendInvite: vi.fn().mockRejectedValue(new Error('brevo down')) })
     const result = await handleInvite({ memberId: '12' }, d)
     expect(result.status).toBe(502)
     expect(result.body).toEqual({ error: APP_STRINGS.invite.sendFailed })
-    // The login and the token are real; pressing again is the fix.
-    expect(d.createUser).toHaveBeenCalledTimes(1)
+    // The token is real and so is the login; pressing again is the fix.
     expect(d.issueResetToken).toHaveBeenCalledTimes(1)
     expect(error).toHaveBeenCalled()
     error.mockRestore()
@@ -379,7 +394,7 @@ describe('isUsableBaseUrl', () => {
  * the takeover guard, the seven-day token — still holds when no letter is sent.
  */
 describe('handleInviteLink', () => {
-  const noEmail = { ...cici, email: null, mobile: '091 234 5678' }
+  const noEmail = cici
   const link = 'https://moreska.eu/app/session?token=tok-abc'
 
   it('mints a link for a dancer with no e-mail at all', async () => {
@@ -409,21 +424,55 @@ describe('handleInviteLink', () => {
     })
   })
 
+  /**
+   * Restored with #651's shape (#653 review): the bundle, the username
+   * allocator and the create-failure path had nothing to do with the "Member
+   * wins" rule that ticket deleted, and the link channel is the one that opens
+   * accounts now.
+   */
+  it('creates exactly the moreskant bundle, linked to the member', async () => {
+    const d = deps({ loadMember: vi.fn().mockResolvedValue(noEmail) })
+    const result = await handleInviteLink({ memberId: '12' }, d)
+    expect(result.status).toBe(200)
+    expect(result.body).toMatchObject({ created: true, username: 'cici' })
+    expect(d.createUser).toHaveBeenCalledWith(
+      expect.objectContaining({ permissions: ['moreskant'], member: 12 }),
+    )
+  })
+
+  it('suffixes the username when the slug is taken', async () => {
+    const taken = new Set(['cici'])
+    const d = deps({
+      loadMember: vi.fn().mockResolvedValue(noEmail),
+      usernameTaken: vi.fn(async (c: string) => taken.has(c)),
+    })
+    const result = await handleInviteLink({ memberId: '12' }, d)
+    expect(result.body).toMatchObject({ username: 'cici2' })
+    expect(d.createUser).toHaveBeenCalledWith(expect.objectContaining({ username: 'cici2' }))
+  })
+
+  it('400s with a fixable message when the account cannot be created', async () => {
+    const d = deps({
+      loadMember: vi.fn().mockResolvedValue(noEmail),
+      createUser: vi.fn().mockRejectedValue(new Error('duplicate username')),
+    })
+    const result = await handleInviteLink({ memberId: '12' }, d)
+    expect(result.status).toBe(400)
+    expect(result.body).toEqual({ error: APP_STRINGS.invite.createFailed })
+    expect(d.issueResetToken).not.toHaveBeenCalled()
+  })
+
   it('asks for the same seven-day token as the letter', async () => {
     const d = deps({ loadMember: vi.fn().mockResolvedValue(noEmail) })
     await handleInviteLink({ memberId: '12' }, d)
     expect(d.issueResetToken).toHaveBeenCalledWith({ username: 'cici' }, INVITE_EXPIRATION_MS)
   })
 
-  it('still moves the e-mail onto the Member’s when there is one', async () => {
-    const d = deps({
-      findUserByMember: vi
-        .fn()
-        .mockResolvedValue({ id: 99, username: 'cici', email: 'staro@example.com' }),
-    })
+  it('leaves a login that already has an address exactly as it was', async () => {
+    const d = deps({ findUserByMember: vi.fn().mockResolvedValue(withEmail) })
     const result = await handleInviteLink({ memberId: '12' }, d)
     expect(result.status).toBe(200)
-    expect(d.updateUserEmail).toHaveBeenCalledWith(99, 'cici@example.com')
+    expect(d.createUser).not.toHaveBeenCalled()
   })
 
   // A copied sign-in link is a session in a text message, so aiming one at a

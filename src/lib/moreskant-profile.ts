@@ -110,7 +110,6 @@ export interface MoreskantShape {
   is_moreskant?: unknown
   nickname?: unknown
   mobile?: unknown
-  email?: unknown
   roles?: unknown
   primaryRole?: unknown
   [key: string]: unknown
@@ -160,8 +159,8 @@ export interface MoreskantValidationOptions {
  * - a primary role, from the vocabulary and contained in the roles;
  * - `crni_kralj` / `otmanovic` require `crni`, `bili_kralj` requires `bili`.
  *
- * Returns a NEW object with `nickname` / `mobile` trimmed and `email` trimmed +
- * lower-cased; the input is never mutated. Throws {@link MoreskantProfileError}
+ * Returns a NEW object with `nickname` and `mobile` trimmed; the input is never
+ * mutated. Throws {@link MoreskantProfileError}
  * with a Croatian, admin-readable message.
  */
 export function validateAndNormaliseMoreskant<T extends MoreskantShape>(
@@ -180,8 +179,6 @@ export function validateAndNormaliseMoreskant<T extends MoreskantShape>(
 
   const mobile = trimmed(out.mobile)
   if (mobile !== undefined) out.mobile = mobile
-  const email = trimmed(out.email)
-  if (email !== undefined) out.email = email.toLowerCase()
 
   const taken = new Set(
     (opts.otherNicknames ?? []).map(nicknameKey).filter((k) => k !== ''),
