@@ -33,6 +33,15 @@ Eleven words, listed once in `src/lib/access/permissions.ts`. Never re-type the 
 
 An unknown permission string is dropped rather than fatal, so a stale or hand-edited row stays safe.
 
+### `keepsList(user, row)` — the one predicate about a ROW
+
+[ADR-0029](../adr/0029-list-keeper-a-permission-that-hangs-on-a-row.md). One evening's list can be delegated to a moreškant (the *Zaduženi*, CONTEXT.md), so there is a second predicate, and it is deliberately not a permission:
+
+- It lives in `src/lib/app/list-keeper.ts`, pure and tested without a database, and answers **only** "may this person keep the list of THIS evening". True for a `moreska` holder on every row; true for a dancer whose Member is in that row's `shows.listKeepers`.
+- It never replaces the route guard, it follows it. The three routes that take it (`POST /api/app/lineup`, `/lineup/confirm`, `/api/app/attendance`) keep `requirePermission(req, ['moreska','moreskant'])` and then check `keepsList` against the row they loaded. The permission answers "may this caller be in here at all", the row answers "is this their evening". A guard that refuses on the session alone cannot decide this, which is why the row has to be loaded first.
+- **The alarm is not delegated.** `POST /api/app/alarm` keeps `requirePermission(req, 'moreska')`, and so do the two army thresholds that travel in the same sheet.
+- Do not add a `list_keeper` word to the vocabulary and do not fold this back into `can()`. Either one turns a single evening's delegation into a permanent, global grant — the exact thing the ADR was written to refuse.
+
 ## Gotchas
 
 - **Staff wins over reseller.** A `users` holder holds `partner` too, so a bare `can(user, 'partner')` would flip the developer into the reseller branch of a route that serves both. Use `actsAsPartner()` from `partner.ts`, which is `partner && !tickets`.
