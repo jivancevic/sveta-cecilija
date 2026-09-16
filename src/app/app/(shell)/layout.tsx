@@ -1,7 +1,9 @@
+import { appSessionRenewalDue } from '@/lib/app/session-renewal-data'
 import { resolveAppViewer } from '@/lib/app/viewer'
 import { Sidebar, TabBar } from '../AppNav'
 import { PullToRefresh } from '../PullToRefresh'
 import { ScreenTransition } from '../ScreenTransition'
+import { SessionKeeper } from '../SessionKeeper'
 
 // The chrome that does NOT remount (#593).
 //
@@ -29,11 +31,20 @@ import { ScreenTransition } from '../ScreenTransition'
 // which is exactly the denied case — the refusal panel gets no bar offering
 // more doors to the same refusal.
 
+// It is also the seam where the session slides (#650, ADR-0028 decision 1): a
+// cookie older than seven days is re-issued for another thirty, so a dancer who
+// opens the app at all never falls out — which matters because most of the
+// roster has no e-mail and therefore no way back in. The decision is the
+// server's and the `Set-Cookie` is a route's, because a layout cannot set one;
+// the reasoning is in `lib/app/session-renewal-data.ts`.
+
 export default async function ShellLayout({ children }: { children: React.ReactNode }) {
-  const viewer = await resolveAppViewer()
+  const [viewer, renewSession] = await Promise.all([resolveAppViewer(), appSessionRenewalDue()])
 
   return (
     <div className="app__frame">
+      {viewer.signedIn && renewSession ? <SessionKeeper /> : null}
+
       <Sidebar nav={viewer.nav} />
 
       {/* Everything that scrolls is inside the gesture (#562); the sidebar and

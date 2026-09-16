@@ -847,6 +847,20 @@ lock rather than through a permission list: `isMoreskant` locks read to
 `moreska`, so a `tickets`-only account receives rows with no such key
 (`inviteAllActionVisible`). As always that is UX; the route re-checks `moreska`.
 
+## The session slides (#650)
+
+[ADR-0028](../adr/0028-moreskant-owns-their-access.md) decision 1. `Users.auth.tokenExpiration` is thirty days and nothing under `/app` ever re-minted the cookie, so a dancer who signed in on 10 September was signed out around 10 October however often they opened the app in between — and for a roster with one e-mail address between seventy-six people, "signed out" means texting the voditelj.
+
+**The rule:** a request under `/app` whose session cookie is **older than seven days** is re-issued for another thirty; a fresher one is left alone. Not "refresh on every load", because minting a cookie is a write to `users.sessions` (`addSessionToUser` rewrites the row) and a dozen of those a day per device buys the dancer nothing. Seven days already gives a weekly user a session that never ends, and the dancer who has been away thirty-one days still falls out — that person needs a fresh way in anyway.
+
+The rule itself is pure and table-tested in `src/lib/app/session-renewal.ts`: `shouldRenewSession(issuedAt, now)`, plus the `iat` reader that feeds it (read **without** verifying the signature, because nothing is granted on the strength of that number — it only decides whether to bother asking). Three refusals worth knowing: an unreadable or `iat`-less token, a token issued in the future (clock skew must not renew on every load), and exactly seven days, since the comparison is strict.
+
+**Where it is wired, and why there.** Two obvious homes cannot do the job: `src/proxy.ts` can set a cookie but must never carry Payload or a database connection, and a server component cannot set one at all (`cookies().set()` throws outside a Server Action or a Route Handler). So the seam is the **`(shell)` layout** — already async, already resolving the viewer, and the one thing in `/app` that survives a client navigation (#593), so it fires once per document load rather than once per tab tap. It covers exactly the signed-in screens; the shell-less pages (`login`, `session`, `join`, `install`) have no session to slide.
+
+The layout asks `appSessionRenewalDue()` (`session-renewal-data.ts`) and mounts `SessionKeeper` **only when the answer is yes**, so on the other six days of the week there is no extra request at all. `SessionKeeper` POSTs `/api/app/session/renew`, which carries the `/app` cross-site guard plus `requireAppSession` — a session is addressed to an **account**, like #496's inbox — and applies the same age rule again before it writes, because this is the handler that writes and a route that renews whatever it is asked to is one stuck retry away from rewriting the row on every load. That decide-on-the-server, tell-a-route-afterwards shape is the seam #652's device heartbeat hangs off.
+
+Minting is `openAppSession` unchanged: the same four Payload helpers a sign-in link uses, never a second crypto decision. Two properties it must keep, both asserted in `session-data.test.ts`: it reads the **raw** row (a projection drops `user.sessions`, and the write-back would sign every other device out), and the superseded `sid` is **not revoked** — a dropped response on a bad connection would otherwise sign the dancer out instead of extending them, and `addSessionToUser` prunes expired sessions on its own.
+
 ## Passwordless onboarding (#463)
 
 The last of the three onboarding changes (#455 install flow, #462 voditelj
