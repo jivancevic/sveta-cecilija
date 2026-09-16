@@ -1,9 +1,10 @@
 // Which skin Cecilija wears, and where that choice is kept (#569, decision Q21).
 //
 // T1 (#562) shipped both skins as tokens — light on `.app`, night on
-// `.app[data-theme="dark"]` — and left the switch to this ticket. So everything
-// here is about ONE attribute on the `.app` root and the three words a person
-// may choose between.
+// `.app[data-theme="dark"]` — and left the switch to this ticket. So most of
+// what follows is about ONE attribute on the `.app` root and the three words a
+// person may choose between. #670 added a second write, on `<html>`, for a
+// reader that is not our CSS at all: see `ROOT_SCHEME_STYLE_KEY`.
 //
 // **Three states, not two.** "Kao sustav" is the default, because a phone that
 // is already in night mode should not hand a dancer a white screen at the door
@@ -32,13 +33,32 @@ export const THEME_STORAGE_KEY = 'cecilija.theme'
 export const THEME_ATTRIBUTE = 'data-theme'
 
 /**
- * What the resolved skin is called on `<html>` (#670).
+ * The CSSOM key for `color-scheme`, which is the one property Android reads to
+ * decide whether to repaint the page in its own dark theme (#670).
  *
- * Not a token and not a colour: the one property Android reads to decide
- * whether to repaint the page in its own dark theme. It has to sit on the root,
- * which is the one element `data-theme` is deliberately NOT on.
+ * A style KEY, not an attribute name and not the CSS spelling: `THEME_ATTRIBUTE`
+ * above goes through `setAttribute` and is written as it appears in HTML, this
+ * one is an `element.style` property and is therefore camelCase. It has to sit
+ * on the root, which is the one element `data-theme` is deliberately NOT on.
  */
-export const ROOT_SCHEME_PROPERTY = 'colorScheme'
+export const ROOT_SCHEME_STYLE_KEY = 'colorScheme'
+
+/**
+ * What to write there for a resolved skin, and the word `only` is the whole
+ * point (#670).
+ *
+ * Chrome's Auto Dark Theme documents exactly two opt-outs, and both spell it
+ * `only light`: a bare `color-scheme: light` declares which scheme the page
+ * uses without refusing the repaint, so it would have left the bug in place
+ * while looking like a fix. `only dark` is the same statement for the night
+ * skin — a page that says it is dark is not auto-darkened either, but saying it
+ * the same way in both directions means the rule has no second case to forget.
+ *
+ * https://developer.chrome.com/blog/auto-dark-theme
+ */
+export function rootColorScheme(resolved: ResolvedTheme): string {
+  return `only ${resolved}`
+}
 
 /** What a person chooses. `system` follows the phone; `light` is the default. */
 export type ThemePreference = 'system' | 'light' | 'dark'
@@ -108,8 +128,9 @@ export const DARK_MEDIA_QUERY = '(prefers-color-scheme: dark)'
  * this is those two rules written once more in ES5 for the first paint.
  *
  * **It writes the answer in TWO places** (#670): `data-theme` on the body, which
- * is where the tokens live, and `color-scheme` on `<html>`, which is where
- * Android looks. Chrome on Android repaints a page in its own dark theme unless
+ * is where the tokens live, and `color-scheme: only <skin>` on `<html>`, which
+ * is where Android looks — `only` being what turns a declaration into a refusal
+ * ({@link rootColorScheme}). Chrome on Android repaints a page in its own dark theme unless
  * the document says which schemes it handles, and it asks the ROOT element — so
  * `color-scheme: light` declared on `.app` (the body, `app.css`) never counted.
  * The app was drawing its light skin correctly and the phone was inverting it,
@@ -119,4 +140,4 @@ export const DARK_MEDIA_QUERY = '(prefers-color-scheme: dark)'
  * paint. The body is written FIRST: if a browser were to refuse one of the two,
  * the tokens matter more than the canvas.
  */
-export const THEME_BOOT_SCRIPT = `(function(){try{var v=localStorage.getItem('${THEME_STORAGE_KEY}');var d=window.matchMedia&&window.matchMedia('${DARK_MEDIA_QUERY}').matches;var t=(v==='light'||v==='dark')?v:(v==='system'?(d?'dark':'light'):'light');document.body.setAttribute('${THEME_ATTRIBUTE}',t);document.documentElement.style.${ROOT_SCHEME_PROPERTY}=t}catch(e){}})()`
+export const THEME_BOOT_SCRIPT = `(function(){try{var v=localStorage.getItem('${THEME_STORAGE_KEY}');var d=window.matchMedia&&window.matchMedia('${DARK_MEDIA_QUERY}').matches;var t=(v==='light'||v==='dark')?v:(v==='system'?(d?'dark':'light'):'light');document.body.setAttribute('${THEME_ATTRIBUTE}',t);document.documentElement.style.${ROOT_SCHEME_STYLE_KEY}='only '+t}catch(e){}})()`

@@ -30,15 +30,15 @@ import type { Where } from 'payload'
 /**
  * READ: the voditelj and the dancer alike see every row (#670).
  *
- * It used to be a `Where` on `performance.lineupConfirmed`, which is the shape
- * this file would go back to if a draft ever had to be hidden again. It does
- * not: the postava is visible as soon as it exists, and what a dancer is still
- * kept away from — the picker, the suggestion, the warnings, the tally — is not
- * lineup ROWS and so was never this predicate's job. The return type stays
- * `boolean | Where` for that reason and because the write half below reads as a
- * deliberate boolean only next to a sibling that could have been a `Where`.
+ * It used to be a `Where` on `performance.lineupConfirmed`, and the history
+ * holds that shape if a draft ever has to be hidden again. It does not: the
+ * postava is visible as soon as it exists, and what a dancer is still kept away
+ * from — the picker, the suggestion, the warnings, the tally — is not lineup
+ * ROWS and so was never this predicate's job. The type says `boolean` because
+ * that is what it returns; a `boolean | Where` nothing ever returns a `Where`
+ * from is a shape to explain rather than a shape to read.
  */
-export function lineupReadAccess(user: PermissionUser): boolean | Where {
+export function lineupReadAccess(user: PermissionUser): boolean {
   if (can(user, 'moreska')) return true
   return can(user, 'moreskant')
 }

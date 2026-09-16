@@ -405,8 +405,25 @@ describe('stanjeView for a dancer', () => {
     // A dancer can act on neither the count nor the warnings: they are the
     // checklist of somebody else's job (#670). The names carry the crowns; the
     // progress of the job does not leave the keeper.
-    expect(asDancer().titlesGiven).toBe(0)
+    expect(asDancer().titlesGiven).toBeNull()
     expect(asDancer().canConfirm).toBe(false)
+  })
+
+  it('shows the untitled roles and the rows nobody answered for', () => {
+    // "Plesač treba vidjeti postavu kao i voditelj": not only the crowns. A
+    // dictated row — written into the postava by the voditelj, no answer given
+    // — stands in its column with its own chip, the way it does for a keeper.
+    const out = asDancer([
+      { memberId: '3', nickname: 'Bepo', role: 'bili_kralj' },
+      { memberId: '5', nickname: 'Niko', role: 'bili' },
+      { memberId: '4', nickname: 'Mare', role: 'bula' },
+    ])
+    const everyone = out.columns.flatMap((c) => c.people)
+    expect(everyone.map((p) => p.memberId)).toContain('5')
+    expect(everyone.find((p) => p.memberId === '5')?.title).toBeNull()
+    // The bula is not a column but the Bule card, and it is a title all the
+    // same: all four are the dancer's to see, not three of them.
+    expect(out.bule.find((p) => p.memberId === '4')?.title).toBe('bula')
   })
 
   it('shows the titles once the postava is confirmed', () => {

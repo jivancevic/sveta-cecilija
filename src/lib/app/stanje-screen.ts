@@ -320,7 +320,8 @@ export interface StanjeView {
    */
   callMessage: { title: string; body: string }
   /** How many of the four titles have exactly one holder right now. */
-  titlesGiven: number
+  /** How many of the four are given, or null for a reader not keeping the list (#670). */
+  titlesGiven: number | null
   /**
    * Whether Potvrdi may be pressed at all, by THIS evening's rule (#620).
    *
@@ -749,9 +750,12 @@ export function stanjeView(detail: PerformanceDetail): StanjeView {
   // to whoever is assembling it (#670). A dancer reads the draft — the crowns
   // are on the names — but not the checklist of somebody else's job, which they
   // could not act on and which reads as breakage when it is short.
-  const given = detail.keepsList
-    ? titlesGiven(countTitles(lineup.map((entry) => entry.role)))
-    : 0
+  //
+  // `null` rather than 0 for a dancer: zero titles given is a real state of a
+  // postava somebody is part-way through, and a screen that cannot tell it from
+  // "you were not shown this" is a screen waiting to say the wrong thing.
+  const given = titlesGiven(countTitles(lineup.map((entry) => entry.role)))
+  const shownGiven = detail.keepsList ? given : null
 
   return {
     id: p.id,
@@ -810,7 +814,7 @@ export function stanjeView(detail: PerformanceDetail): StanjeView {
         crni: count.crni.count,
       }),
     },
-    titlesGiven: given,
+    titlesGiven: shownGiven,
     canConfirm:
       detail.keepsList &&
       (requirements.voditelj ? voditelji.length === 1 : given === ALL_TITLES),
