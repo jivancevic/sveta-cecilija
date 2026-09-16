@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { flagValue } from '@/lib/app/screen-state'
 import { useMirrorState } from '../use-screen-state'
 
@@ -25,23 +26,29 @@ import { useMirrorState } from '../use-screen-state'
 
 export function ParamDetails({
   param,
-  open,
   summary,
   className,
   children,
 }: {
   /** The key in the address. `past` on both screens that have one. */
   param: string
-  /** Open on arrival, decided by the server from the address it was given. */
-  open: boolean
   /** The `<summary>` line, which is the control. */
   summary: React.ReactNode
   className?: string
   children: React.ReactNode
 }) {
-  // Seeded from the server's answer, then owned here: an uncontrolled `<details>`
-  // would let the DOM and the address drift apart on the reader's second tap.
-  const [isOpen, setIsOpen] = useState(open)
+  // Seeded from the ADDRESS, and this is the one decision in the file worth
+  // arguing about. The server could parse it and hand it down as a prop, and
+  // that is what this component did first — but on a Back the Next router
+  // rebuilds the page from the tree stored on the history entry, which is the
+  // one from BEFORE the address was mirrored, so the server's answer is the
+  // stale one and the harmonica would fold on exactly the journey this ticket
+  // exists to fix. `useSearchParams` reads the router's canonical URL, which
+  // `popstate` updates from `window.location`, so it is right in both cases —
+  // and because every `/app` screen is `force-dynamic` it is right during the
+  // server render too, so a shared link still arrives open with no flash.
+  const params = useSearchParams()
+  const [isOpen, setIsOpen] = useState(() => params?.get(param) === '1')
   const mirror = useMirrorState()
 
   return (

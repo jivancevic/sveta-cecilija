@@ -7,7 +7,10 @@ import { keyboardInset, keyboardIsOpen } from '@/lib/app/keyboard-inset'
 //
 // Renders nothing. It writes one CSS variable, `--kb`, and one attribute,
 // `data-keyboard`, and every bottom-anchored surface in the app reads them: the
-// sheets, the scrim, the toast, and the tab bar, which gets out of the way.
+// sheets, the toast, and the tab bar, which gets out of the way. The scrim
+// deliberately does NOT: it is `inset: 0` and should keep covering the whole
+// layout viewport, including the strip the keyboard is standing on, so a tap
+// anywhere outside the panel still closes it.
 //
 // Before this, nothing in `/app` listened to `window.visualViewport` at all —
 // the one reference in the repo was the dev strip's diagnostic readout. So a

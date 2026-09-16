@@ -79,6 +79,13 @@ export function FilterChips({ items, active, label, onSelect, className }: Filte
             // the list from jumping to the top of the document every time one is
             // picked: the reader is looking at the chips, not at the header.
             scroll={false}
+            // REPLACE, never push (#666, ADR-0030 rule 1). A chip that pushes
+            // turns Back into "undo my last filter", so a reader who tried
+            // three chips has to press Back three times to leave a screen they
+            // are done with. It is still a real link — the address is still the
+            // filter, it still opens in a new tab, it still works with no
+            // JavaScript — it just does not stack.
+            replace
           >
             {item.label}
           </Link>

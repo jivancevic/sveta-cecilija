@@ -57,9 +57,9 @@ export function InstallGuide() {
     else setError(APP_STRINGS.install.failed)
   }
 
-  async function copyLink() {
+  async function copyLink(path: string) {
     try {
-      await navigator.clipboard.writeText(window.location.origin + '/app')
+      await navigator.clipboard.writeText(window.location.origin + path)
       setCopied(true)
     } catch {
       setError(APP_STRINGS.install.failed)
@@ -76,7 +76,12 @@ export function InstallGuide() {
   // change while the page is open, and `window` is safe by now because the
   // component has already returned null until the platform was read.
   const ownApk = androidInstaller(navigator.userAgent) === 'own-apk'
-  const chromeUrl = chromeIntentUrl(`${window.location.origin}/app`)
+  // THIS page, not `/app` (#668 review). Chrome is a different browser with no
+  // session in it, so `/app` there is the login screen and the dancer cannot
+  // install from a login screen. `/app/install` is one of the two `/app` pages
+  // deliberately outside the access decision, because it is the rehearsal QR's
+  // target — which is exactly the property this needs.
+  const chromeUrl = chromeIntentUrl(`${window.location.origin}/app/install`)
 
   return (
     <>
@@ -90,7 +95,7 @@ export function InstallGuide() {
             {webviewHostIsIos() ? APP_STRINGS.install.inappIos : APP_STRINGS.install.inappAndroid}
           </p>
           <div className="app__hint-actions">
-            <button type="button" className="app__button app__button--small" onClick={copyLink}>
+            <button type="button" className="app__button app__button--small" onClick={() => copyLink('/app')}>
               {APP_STRINGS.install.inappCopy}
             </button>
           </div>
@@ -139,7 +144,11 @@ export function InstallGuide() {
                 {APP_STRINGS.install.playProtectOpen}
               </a>
             )}
-            <button type="button" className="app__button app__button--small" onClick={copyLink}>
+            <button
+              type="button"
+              className="app__button app__button--small"
+              onClick={() => copyLink('/app/install')}
+            >
               {APP_STRINGS.install.playProtectCopy}
             </button>
           </div>

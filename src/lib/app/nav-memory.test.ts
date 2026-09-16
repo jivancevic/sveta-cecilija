@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  depthOnLoad,
   canGoBack,
   NAV_DEPTH_KEY,
   nextDepth,
@@ -113,6 +114,37 @@ describe('canGoBack', () => {
   it('is false for nonsense', () => {
     expect(canGoBack(Number.NaN)).toBe(false)
     expect(canGoBack(-1)).toBe(false)
+  })
+})
+
+describe('depthOnLoad', () => {
+  it('starts a fresh navigation at zero', () => {
+    // The fault this exists for: Cecilija → moreska.eu → a link back into the
+    // app is a NEW document on the SAME origin, so `sessionStorage` still holds
+    // yesterday's count and Back would leave for the public site.
+    expect(depthOnLoad(4, 'navigate')).toBe(0)
+  })
+
+  it('keeps the count through a reload: the entries are still there', () => {
+    expect(depthOnLoad(4, 'reload')).toBe(4)
+  })
+
+  it('keeps the count for a restored document', () => {
+    expect(depthOnLoad(4, 'back_forward')).toBe(4)
+  })
+
+  it('keeps the count when the browser does not say', () => {
+    // An older browser reports no navigation entry. Keeping it is the safe half
+    // of the guess: a Back that stays in the app is never worse than a link.
+    expect(depthOnLoad(4, null)).toBe(4)
+    expect(depthOnLoad(4, undefined)).toBe(4)
+    expect(depthOnLoad(4, 'prerender')).toBe(4)
+  })
+
+  it('never hands back nonsense', () => {
+    expect(depthOnLoad(Number.NaN, 'reload')).toBe(0)
+    expect(depthOnLoad(-2, 'reload')).toBe(0)
+    expect(depthOnLoad(2.9, 'reload')).toBe(2)
   })
 })
 

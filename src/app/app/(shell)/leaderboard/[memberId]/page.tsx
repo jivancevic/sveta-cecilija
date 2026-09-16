@@ -56,8 +56,14 @@ export default async function DancerProfilePage({
       // In the header, where a thumb goes looking for it (#614, finding 12).
       // It used to be a row of its own under the title, on a screen where
       // every other row is an evening.
+      // The season, and deliberately NOT the panel: this used to say
+      // `&part=all`, which was a guess about where the reader had been and was
+      // wrong for anybody who arrived from Moja sezona. Since #666 the chevron
+      // is a real Back for anybody who tapped their way here, so this is only
+      // the fallback for a pasted link — and a fallback should claim nothing it
+      // does not know.
       back={{
-        href: `/app/leaderboard?season=${stats.season}&part=all`,
+        href: `/app/leaderboard?season=${stats.season}`,
         label: APP_STRINGS.profile.back,
       }}
     >

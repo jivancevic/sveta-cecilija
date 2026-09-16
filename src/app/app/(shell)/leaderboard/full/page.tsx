@@ -229,7 +229,7 @@ export default async function FullLeaderboardPage({
       // In the header rather than as a row of its own (#614, finding 12): on a
       // screen where every row is a person, the way back was costing one.
       back={{
-        href: `/app/leaderboard?season=${stats.season}&part=all`,
+        href: `/app/leaderboard?season=${stats.season}`,
         label: S.full.back,
       }}
     >

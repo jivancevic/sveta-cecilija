@@ -2,12 +2,13 @@
 
 import { useEffect, useRef } from 'react'
 import { usePathname, useSearchParams } from 'next/navigation'
-import { nextDepth, readDepth, writeDepth, type NavStore } from '@/lib/app/nav-memory'
+import { depthOnLoad, nextDepth, readDepth, writeDepth } from '@/lib/app/nav-memory'
+import { sessionStore } from './session-store'
 
 // How deep into Cecilija this reader has walked (#666).
 //
 // Renders nothing. It keeps one number — how many of our own screens are behind
-// the current one — so `BackButton` can tell the reader who tapped their way
+// the current one — so `BackControl` can tell the reader who tapped their way
 // here from the reader a push notification dropped straight onto one nastup.
 // The first gets a real `history.back()`, which is what makes the address, the
 // filters and the scroll offset come back with them. The second gets a link,
@@ -37,11 +38,14 @@ import { nextDepth, readDepth, writeDepth, type NavStore } from '@/lib/app/nav-m
  */
 const POP_WINDOW_MS = 500
 
-function sessionStore(): NavStore | null {
+/** How this document was reached, or null when the browser does not say. */
+function navigationType(): string | null {
   try {
-    return window.sessionStorage
+    const entry = performance.getEntriesByType('navigation')[0] as
+      | { type?: string }
+      | undefined
+    return entry?.type ?? null
   } catch {
-    // Some browsers throw on the ACCESS, not on the call.
     return null
   }
 }
@@ -58,6 +62,12 @@ export function NavMemory() {
 
   useEffect(() => {
     const store = sessionStore()
+
+    // The count outlives this document, and only sometimes should. A reader who
+    // steps out to moreska.eu and follows a link back arrives in a NEW document
+    // with the old count still in `sessionStorage`, and a Back would take them
+    // to the public site instead of to the screen the chevron names.
+    writeDepth(store, depthOnLoad(readDepth(store), navigationType()))
 
     // Counted HERE rather than in the render effect below, because a `popstate`
     // does not always produce one.

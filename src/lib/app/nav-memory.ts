@@ -81,6 +81,32 @@ export function writeDepth(store: NavStore | null, depth: number): void {
 }
 
 /**
+ * The depth this document should start from.
+ *
+ * The count lives in `sessionStorage`, which survives more than it should: a
+ * reader who leaves Cecilija for moreska.eu and comes back through a link
+ * arrives in a NEW document on the same origin, with the old count still there
+ * — and `history.back()` would then take them to the public site rather than to
+ * the screen the chevron names. Only a fresh navigation resets it:
+ *
+ *  - **`navigate`** — a typed address, a link from outside, a redirect: the
+ *    entry behind this one is not one of our screens. Start at zero.
+ *  - **`reload`** — the entries are all still there; the count is still true.
+ *  - **`back_forward`** — a restored document; likewise.
+ *  - **anything else, or nothing at all** — an older browser reports no
+ *    navigation entry, and keeping the count is the safe half of that guess: a
+ *    Back that stays in the app is never worse than a link.
+ */
+export function depthOnLoad(current: number, navigationType: string | null | undefined): number {
+  return navigationType === 'navigate' ? 0 : readableDepth(current)
+}
+
+/** The count as a number the rest of this file will accept. */
+function readableDepth(value: number): number {
+  return Number.isFinite(value) && value > 0 ? Math.floor(value) : 0
+}
+
+/**
  * Is the history entry behind this one ours?
  *
  * The one question the back control asks. A reader who has moved inside the app

@@ -10,11 +10,7 @@ import {
   type IzvedbaRow,
 } from '@/lib/app/izvedbe-screen'
 import { mayWritePerformance } from '@/lib/app/performance-actions'
-import {
-  PAST_PARAM,
-  readFlagParam,
-  type RawSearchParams,
-} from '@/lib/app/screen-state'
+import { PAST_PARAM } from '@/lib/app/screen-state'
 import { APP_STRINGS, formatPerformanceDate } from '@/lib/app/strings'
 import {
   Card,
@@ -87,16 +83,9 @@ function IzvedbaListRow({ row }: { row: IzvedbaRow }) {
   )
 }
 
-export default async function PerformancesPage({
-  searchParams,
-}: {
-  // Only the open state of the past (#666); the season itself is not filtered.
-  searchParams: Promise<RawSearchParams>
-}) {
+export default async function PerformancesPage() {
   const { viewer, refusal } = await openScreen('performances')
   if (refusal) return refusal
-
-  const past = readFlagParam(await searchParams, PAST_PARAM)
 
   // `can()` over the set the viewer already carries, never a second read and
   // never a role word.
@@ -171,7 +160,6 @@ export default async function PerformancesPage({
         <ParamDetails
           className="app__past"
           param={PAST_PARAM}
-          open={past}
           summary={S.past(season.past.length)}
         >
           <List>

@@ -24,12 +24,17 @@
 // apart, and neither can a reader who bookmarks one.
 
 /**
- * The key both "Prošle izvedbe" harmonicas use — Moreška's and Izvedbe's.
+ * The keys the app's screens write, named once.
  *
- * Named once, because the two screens are read by two different people in two
- * different registers and the address is the one thing they share.
+ * `past` is both "Prošle izvedbe" harmonicas, Moreška's and Izvedbe's, which
+ * are read by two different people in two different registers and share only
+ * the address. `q` is the search box on Članovi, Korisnici and Narudžbe alike:
+ * one letter across three lists, so a reader who has seen one address can read
+ * the next. `f` is a filter chip.
  */
 export const PAST_PARAM = 'past'
+export const QUERY_PARAM = 'q'
+export const FILTER_PARAM = 'f'
 
 /** A change to the address: a value to set, or null to take the key out. */
 export type ScreenPatch = Record<string, string | null | undefined>
@@ -54,51 +59,6 @@ export function nextSearch(current: string, patch: ScreenPatch): string {
   }
   const search = params.toString()
   return search === '' ? '' : `?${search}`
-}
-
-/** The whole address a patch produces. `pathname` is taken as given. */
-export function nextHref(pathname: string, current: string, patch: ScreenPatch): string {
-  return `${pathname}${nextSearch(current, patch)}`
-}
-
-/**
- * One free-text parameter — a search box.
- *
- * Trimmed, because " " in an address is a filter that hides every row and looks
- * like a broken screen.
- */
-export function readText(search: string | null | undefined, key: string): string {
-  if (!search) return ''
-  const raw = new URLSearchParams(search.startsWith('?') ? search.slice(1) : search).get(key)
-  return (raw ?? '').trim()
-}
-
-/**
- * One parameter out of a fixed set — a filter chip, a segmented control.
- *
- * A word that is not in the set reads as the fallback rather than as an error:
- * an address is typed by people and outlives the code that wrote it, and a
- * roster screen that refuses to render because a chip was renamed last month is
- * worse than one that opens on "Svi".
- */
-export function readOneOf<T extends string>(
-  search: string | null | undefined,
-  key: string,
-  allowed: readonly T[],
-  fallback: T,
-): T {
-  const raw = readText(search, key)
-  return (allowed as readonly string[]).includes(raw) ? (raw as T) : fallback
-}
-
-/**
- * One yes-or-no parameter — an open `<details>`.
- *
- * Present and `1` is open; anything else is closed. Only the open state is ever
- * written, so a closed harmonica leaves no trace in the address at all.
- */
-export function readFlag(search: string | null | undefined, key: string): boolean {
-  return readText(search, key) === '1'
 }
 
 /** The value to patch a flag with: `'1'` when open, `null` when closed. */

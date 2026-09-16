@@ -11,6 +11,8 @@
 // four, a page that is not a whole number and a search term of half a kilobyte
 // all resolve to something harmless rather than reaching the database.
 
+import { firstValue, type RawSearchParams } from './screen-state'
+
 /**
  * The four states the ticket names, which are two different questions wearing
  * one control: `active` / `refunded` ask about the money, `partner` / `comp`
@@ -41,27 +43,19 @@ export const ORDERS_PER_PAGE = 25
  */
 const MAX_QUERY = 80
 
-/** Next.js hands `searchParams` as a string, a repeated string, or nothing. */
-export type RawSearchParams = Record<string, string | string[] | undefined>
-
-function first(value: string | string[] | undefined): string {
-  if (Array.isArray(value)) return value[0] ?? ''
-  return value ?? ''
-}
-
 export function parseOrdersQuery(params: RawSearchParams): OrdersQuery {
-  const q = first(params.q).trim().replace(/\s+/g, ' ').slice(0, MAX_QUERY)
+  const q = firstValue(params, 'q').replace(/\s+/g, ' ').slice(0, MAX_QUERY)
 
-  const show = first(params.show).trim()
+  const show = firstValue(params, 'show')
   // A relationship id, and nothing that could be read as anything else.
   const showId = /^[A-Za-z0-9_-]{1,64}$/.test(show) ? show : null
 
-  const rawState = first(params.state).trim()
+  const rawState = firstValue(params, 'state')
   const state = (ORDER_STATES as readonly string[]).includes(rawState)
     ? (rawState as OrderState)
     : null
 
-  const rawPage = first(params.page).trim()
+  const rawPage = firstValue(params, 'page')
   const page = /^\d+$/.test(rawPage) ? Math.max(1, Number(rawPage)) : 1
 
   return { q, showId, state, page }

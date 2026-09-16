@@ -2,13 +2,9 @@ import { describe, expect, it } from 'vitest'
 import {
   firstValue,
   flagValue,
-  nextHref,
   nextSearch,
-  readFlag,
   readFlagParam,
-  readOneOf,
   readOneOfParam,
-  readText,
 } from './screen-state'
 
 describe('nextSearch', () => {
@@ -48,7 +44,9 @@ describe('nextSearch', () => {
 
   it('escapes what a Croatian roster actually types', () => {
     expect(nextSearch('', { q: 'Ćiro & Đani' })).toBe('?q=%C4%86iro+%26+%C4%90ani')
-    expect(readText(nextSearch('', { q: 'Ćiro & Đani' }), 'q')).toBe('Ćiro & Đani')
+    // And comes back out the way it went in, through the browser's own parser,
+    // which is what the screen reads it with.
+    expect(new URLSearchParams(nextSearch('', { q: 'Ćiro & Đani' })).get('q')).toBe('Ćiro & Đani')
   })
 
   it('applies several changes at once', () => {
@@ -63,65 +61,15 @@ describe('nextSearch', () => {
   })
 })
 
-describe('nextHref', () => {
-  it('joins the path to the new address', () => {
-    expect(nextHref('/app/members', '', { f: 'no-app' })).toBe('/app/members?f=no-app')
-  })
-
-  it('gives a bare path when nothing is set', () => {
-    expect(nextHref('/app/members', '?f=no-app', { f: null })).toBe('/app/members')
-  })
-})
-
-describe('readText', () => {
-  it('reads a value', () => {
-    expect(readText('?q=ana', 'q')).toBe('ana')
-  })
-
-  it('reads a missing key, an empty address and nothing at all as empty', () => {
-    expect(readText('?f=all', 'q')).toBe('')
-    expect(readText('', 'q')).toBe('')
-    expect(readText(null, 'q')).toBe('')
-    expect(readText(undefined, 'q')).toBe('')
-  })
-
-  it('trims, so a space in the address does not hide every row', () => {
-    expect(readText('?q=%20%20', 'q')).toBe('')
-    expect(readText('?q=%20ana%20', 'q')).toBe('ana')
-  })
-})
-
-describe('readOneOf', () => {
-  const chips = ['all', 'no-app', 'no-push', 'no-access'] as const
-
-  it('reads a word from the set', () => {
-    expect(readOneOf('?f=no-app', 'f', chips, 'all')).toBe('no-app')
-  })
-
-  it('falls back rather than failing on a word that is not in the set', () => {
-    // An address outlives the chip that wrote it; a renamed chip must not turn
-    // a roster screen into an error.
-    expect(readOneOf('?f=bez-appa', 'f', chips, 'all')).toBe('all')
-    expect(readOneOf('', 'f', chips, 'all')).toBe('all')
-  })
-})
-
-describe('readFlag and flagValue', () => {
-  it('reads one as open and everything else as closed', () => {
-    expect(readFlag('?past=1', 'past')).toBe(true)
-    expect(readFlag('?past=0', 'past')).toBe(false)
-    expect(readFlag('?past=true', 'past')).toBe(false)
-    expect(readFlag('', 'past')).toBe(false)
-  })
-
+describe('flagValue', () => {
   it('writes only the open state, so a closed harmonica leaves no trace', () => {
     expect(flagValue(true)).toBe('1')
     expect(flagValue(false)).toBe(null)
     expect(nextSearch('?past=1', { past: flagValue(false) })).toBe('')
   })
 
-  it('round-trips', () => {
-    expect(readFlag(nextSearch('', { past: flagValue(true) }), 'past')).toBe(true)
+  it('round-trips through the address', () => {
+    expect(new URLSearchParams(nextSearch('', { past: flagValue(true) })).get('past')).toBe('1')
   })
 })
 
@@ -139,7 +87,7 @@ describe('what a server component is handed', () => {
     expect(firstValue({ past: [] }, 'past')).toBe('')
   })
 
-  it('trims', () => {
+  it('trims, so a space in the address does not hide every row', () => {
     expect(firstValue({ q: '  ana ' }, 'q')).toBe('ana')
   })
 
@@ -153,6 +101,8 @@ describe('what a server component is handed', () => {
   it('reads one word out of a set, falling back on anything else', () => {
     const chips = ['all', 'no-app'] as const
     expect(readOneOfParam({ f: 'no-app' }, 'f', chips, 'all')).toBe('no-app')
+    // An address outlives the chip that wrote it; a renamed chip must not turn
+    // a list screen into an error.
     expect(readOneOfParam({ f: 'nonsense' }, 'f', chips, 'all')).toBe('all')
     expect(readOneOfParam({}, 'f', chips, 'all')).toBe('all')
   })

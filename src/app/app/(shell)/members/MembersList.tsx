@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { Bell, KeyRound, Minus, Smartphone, type LucideIcon } from 'lucide-react'
 import {
   isMissing,
@@ -17,6 +18,7 @@ import {
   memberListRows,
   type MemberListInput,
 } from '@/lib/app/members-screen'
+import { FILTER_PARAM, QUERY_PARAM } from '@/lib/app/screen-state'
 import { APP_STRINGS } from '@/lib/app/strings'
 import { useMirrorState } from '../../use-screen-state'
 import {
@@ -82,15 +84,6 @@ const S = APP_STRINGS.members
 /** The size of a mark inside its 20px slot. */
 const MARK_SIZE = 16
 
-/**
- * The two keys this screen writes into its address (#666).
- *
- * `q` is the same letter Korisnici and Narudžbe use for their search, which is
- * the point: three lists, one word, so a reader who has seen one address can
- * read the next.
- */
-const QUERY_PARAM = 'q'
-const FILTER_PARAM = 'f'
 
 /**
  * One drawing per column, in the order the columns are drawn (#663).
@@ -115,30 +108,33 @@ function MarkIcon({ mark, unknown = false }: { mark: MemberMark; unknown?: boole
 export function MembersList({
   members,
   access,
-  initialQuery,
-  initialFilter,
 }: {
   members: MemberListInput[]
-  /** What the address said the search box holds, decided by the server. */
-  initialQuery: string
-  /** What the address said the chip is, decided by the server. */
-  initialFilter: MemberFilter
   /**
    * The decided marks by Member id, or null when the signal could not be read.
    * A plain object rather than a Map: a server component may not hand one down.
    */
   access: Record<string, MemberAccess> | null
 }) {
-  // The opening state comes from the SERVER, which read it out of the address
-  // (#666, ADR-0030), rather than from `useSearchParams` here. Both would work,
-  // and only one of them renders the filtered list in the HTML: reading it on
-  // the client means the server sends all seventy-six rows and the first frame
-  // after a Back shows the whole roster before collapsing to the six the reader
-  // had filtered to. From here the screen owns its own filtering and mirrors
-  // what it does back into the address.
+  // The opening state comes from the ADDRESS (#666, ADR-0030), read here rather
+  // than parsed by the server and handed down. The server's answer looks like
+  // the better one — it would put the filtered roster in the HTML — and it is
+  // the wrong one: on a Back the Next router rebuilds this page from the tree
+  // stored on the history entry, which predates the mirrored address, so the
+  // props would say "Svi" while the address says `?f=no-app`, on exactly the
+  // journey this ticket exists to fix. `useSearchParams` reads the router's
+  // canonical URL, which `popstate` updates from `window.location`. Because
+  // every `/app` screen is `force-dynamic` it is also correct during the server
+  // render, so a shared link still arrives filtered with no flash.
+  const params = useSearchParams()
   const mirror = useMirrorState()
-  const [query, setQuery] = useState(initialQuery)
-  const [filter, setFilter] = useState<MemberFilter>(initialFilter)
+  const [query, setQuery] = useState(() => (params?.get(QUERY_PARAM) ?? '').trim())
+  const [filter, setFilter] = useState<MemberFilter>(() => {
+    const raw = (params?.get(FILTER_PARAM) ?? '').trim()
+    // A word that is not a chip reads as "Svi": an address outlives the code
+    // that wrote it, and a renamed chip must not turn the roster into an error.
+    return (MEMBER_FILTERS as readonly string[]).includes(raw) ? (raw as MemberFilter) : 'all'
+  })
   // NOT in the address: a legend is a thing the reader opened, not a thing the
   // screen is showing, and Back landing on an open sheet would be a ghost.
   const [legend, setLegend] = useState(false)

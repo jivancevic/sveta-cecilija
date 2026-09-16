@@ -3,7 +3,8 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { ChevronLeft } from 'lucide-react'
-import { canGoBack, readDepth, type NavStore } from '@/lib/app/nav-memory'
+import { canGoBack, readDepth } from '@/lib/app/nav-memory'
+import { sessionStore } from '../session-store'
 
 // The chevron every detail screen wears, and the one control in Cecilija that
 // is a real Back (#666).
@@ -27,15 +28,6 @@ import { canGoBack, readDepth, type NavStore } from '@/lib/app/nav-memory'
 // may have walked further in since this screen rendered, and a stale answer here
 // is either a lost filter or an exit from the app.
 
-function sessionStore(): NavStore | null {
-  try {
-    return window.sessionStorage
-  } catch {
-    // Some browsers throw on the ACCESS, not on the call.
-    return null
-  }
-}
-
 /** A click the browser would handle as a plain navigation, and nothing else. */
 function isPlainClick(event: React.MouseEvent<HTMLAnchorElement>): boolean {
   return (
@@ -51,20 +43,17 @@ function isPlainClick(event: React.MouseEvent<HTMLAnchorElement>): boolean {
 export function BackControl({
   href,
   label,
-  className = 'app__header-back',
 }: {
   /** Where to go when there is nothing of ours behind: the list this belongs to. */
   href: string
   /** The accessible name; the chevron carries no text. */
   label: string
-  /** The header slot by default; a screen with its own place may say otherwise. */
-  className?: string
 }) {
   const router = useRouter()
 
   return (
     <Link
-      className={className}
+      className="app__header-back"
       href={href}
       aria-label={label}
       onClick={(event) => {

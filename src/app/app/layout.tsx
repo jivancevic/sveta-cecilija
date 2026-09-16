@@ -99,9 +99,10 @@ export default function MoreskantAppLayout({ children }: { children: React.React
         </Suspense>
         {/*
           And a third that renders nothing: how tall the on-screen keyboard is,
-          as `--kb` and `data-keyboard` (#667). The sheets, the scrim, the toast
-          and the tab bar all read it. Here because a sheet is portalled to
-          `document.body` and because this must outlive a navigation.
+          as `--kb` and `data-keyboard` (#667). The sheets, the toast and the
+          tab bar read it; the scrim deliberately does not, because it should
+          keep covering the strip the keyboard stands on. Here because a sheet
+          is portalled to `document.body` and this must outlive a navigation.
         */}
         <KeyboardInset />
         {children}

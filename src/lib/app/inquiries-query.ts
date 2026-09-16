@@ -12,6 +12,8 @@
 // is not a whole number resolve to the plain inbox rather than reaching the
 // database.
 
+import { firstValue, type RawSearchParams } from './screen-state'
+
 /** The lifecycle of one enquiry (`contact_submissions.status`, #239). */
 export const INQUIRY_STATES = ['new', 'handled'] as const
 
@@ -31,21 +33,13 @@ export interface InquiriesQuery {
  */
 export const INQUIRIES_PER_PAGE = 25
 
-/** Next.js hands `searchParams` as a string, a repeated string, or nothing. */
-export type RawSearchParams = Record<string, string | string[] | undefined>
-
-function first(value: string | string[] | undefined): string {
-  if (Array.isArray(value)) return value[0] ?? ''
-  return value ?? ''
-}
-
 export function parseInquiriesQuery(params: RawSearchParams): InquiriesQuery {
-  const rawState = first(params.state).trim()
+  const rawState = firstValue(params, 'state')
   const state = (INQUIRY_STATES as readonly string[]).includes(rawState)
     ? (rawState as InquiryState)
     : null
 
-  const rawPage = first(params.page).trim()
+  const rawPage = firstValue(params, 'page')
   const page = /^\d+$/.test(rawPage) ? Math.max(1, Number(rawPage)) : 1
 
   return { state, page }

@@ -8,11 +8,7 @@ import {
   monthSections,
   type NastupRow,
 } from '@/lib/app/moreska-screen'
-import {
-  PAST_PARAM,
-  readFlagParam,
-  type RawSearchParams,
-} from '@/lib/app/screen-state'
+import { PAST_PARAM } from '@/lib/app/screen-state'
 import { APP_STRINGS, formatPerformanceDate } from '@/lib/app/strings'
 import { zagrebToday } from '@/lib/app/home-screen'
 import {
@@ -69,17 +65,9 @@ export const dynamic = 'force-dynamic'
 
 const S = APP_STRINGS.moreska
 
-export default async function MoreskaPage({
-  searchParams,
-}: {
-  // Only the open state of the past (#666). Everything else on this screen is
-  // the season itself, which is not a thing the reader filters.
-  searchParams: Promise<RawSearchParams>
-}) {
+export default async function MoreskaPage() {
   const { viewer, refusal } = await openScreen('moreska')
   if (refusal) return refusal
-
-  const past = readFlagParam(await searchParams, PAST_PARAM)
 
   const me = viewer.me
   const season = await getSeasonPerformances({
@@ -266,7 +254,6 @@ export default async function MoreskaPage({
         <ParamDetails
           className="app__past"
           param={PAST_PARAM}
-          open={past}
           summary={S.past(season.past.length)}
         >
           {pastMonths.map((month) => (
