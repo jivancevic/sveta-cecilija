@@ -2676,8 +2676,8 @@ twice, a few commits apart, on two different screens, and both times the cause
 was the same: a screen whose container had no gap, spacing itself with whatever
 margins its blocks happened to carry, several of which are `0`. A margin is a
 rhythm one screen owns and the next screen forgets; a gap is a rhythm the
-container keeps for anything ever put inside it. #627 gave the gap to the shell
-floor, to Ljestvica and to Stanje; #634 gave it to the Ljestvica tabpanel, which
+container keeps for anything ever put inside it. #627 gave the gap to the shell's
+own floor, to Ljestvica and to Stanje; #634 gave it to the Ljestvica tabpanel, which
 is what Moja sezona renders into.
 
 Where a screen's own container has no class to hang a gap on, give it one
@@ -2712,10 +2712,10 @@ What the sweep converted, and the shape each screen ended up in:
 | Container | Was | Is |
 |---|---|---|
 | `.app__col`, `.app__cols` | desktop-only, no gap on a phone | flex column, `--gap`, at every width |
-| `.app__st`, `.app__fin` | `gap: 12px` + `margin-top: 16px` on the wrapper | `gap: var(--gap)`; the floor spaces the wrapper |
+| `.app__st`, `.app__fin` | `gap: 12px` + `margin-top: 16px` on the wrapper | `gap: var(--gap)`; the shell's gap spaces the wrapper |
 | `.app__lb` | `gap: 28px` | `gap: var(--gap)` |
 | `.app__scan` | `gap: 12px` + a `16px` top inside the bleed shorthand | `gap: var(--gapTight)` |
-| `.app__more-group`, `.app__month-group` | `gap: 10px` + `margin-top: 22px` | `gap: var(--gapTight)`; the floor spaces the groups |
+| `.app__more-group`, `.app__month-group` | `gap: 10px` + `margin-top: 22px` | `gap: var(--gapTight)`; the shell's gap spaces the groups |
 | `.app__statement`, `.app__partner-season` | eleven child `margin-top`s | flex column, `--gap` |
 | `.app__filters`, `.app__inbox` | `gap: 10px` + a top margin | `gap: var(--gapTight)` |
 | `.app__fin-partners`, `.app__fin-lines` | every item's own `margin-top: 10px` | the list is a column with a gap |
