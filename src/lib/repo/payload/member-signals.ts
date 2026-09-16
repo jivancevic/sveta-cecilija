@@ -67,6 +67,11 @@ export async function loadMemberAccountSignals(
       // A stamp rather than a hash: every invited account carries a random
       // password `ensureDancerLogin` minted, so `hash IS NOT NULL` is true for
       // the whole roster. Only `PATCH /api/app/account` writes this column.
+      //
+      // NULL is "we have never seen this dancer choose one", not "they have
+      // none" (`readPasswordStamp`, #664). The mark reads it as not done on
+      // purpose: for a dancer the unknown half is the dangerous one, and the
+      // worst an over-eager 🔑 costs is a voditelj asking again.
       hasOwnPassword: row.has_own_password === true,
     })
   }

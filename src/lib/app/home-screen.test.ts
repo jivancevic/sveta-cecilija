@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { Permission } from '@/lib/access/permissions'
+import { PERMISSIONS, type Permission } from '@/lib/access/permissions'
 import { appNav, type AppNav } from './screens'
 import { APP_STRINGS } from './strings'
 import {
@@ -395,9 +395,13 @@ describe('the Obavijesti card', () => {
  */
 describe('ownAccessPrompt', () => {
   const S = APP_STRINGS.ownAccess.card
+  /** A plain dancer's login: the only audience the card has (#664). */
+  const dancer = ['moreskant']
 
   it('asks a reader who owns no way in, and points at the fields themselves', () => {
-    expect(ownAccessPrompt({ hasEmail: false, hasOwnPassword: false })).toEqual({
+    expect(
+      ownAccessPrompt({ hasEmail: false, hasOwnPassword: false, permissions: dancer }),
+    ).toEqual({
       title: S.title,
       body: S.body,
       action: S.action,
@@ -406,7 +410,9 @@ describe('ownAccessPrompt', () => {
   })
 
   it('disappears the moment the reader holds BOTH halves of the key', () => {
-    expect(ownAccessPrompt({ hasEmail: true, hasOwnPassword: true })).toBeNull()
+    expect(
+      ownAccessPrompt({ hasEmail: true, hasOwnPassword: true, permissions: dancer }),
+    ).toBeNull()
   })
 
   // The version that shipped first read the address alone, and took the card
@@ -417,16 +423,43 @@ describe('ownAccessPrompt', () => {
     ['an address and no password of their own', true, false],
     ['a password of their own and no address', false, true],
   ])('stays for a reader with %s', (_label, hasEmail, hasOwnPassword) => {
-    expect(ownAccessPrompt({ hasEmail, hasOwnPassword })).not.toBeNull()
+    expect(ownAccessPrompt({ hasEmail, hasOwnPassword, permissions: dancer })).not.toBeNull()
   })
 
   it('never asks a shared login, which is a room rather than a person', () => {
-    expect(ownAccessPrompt({ hasEmail: false, hasOwnPassword: false, shared: true })).toBeNull()
-    expect(ownAccessPrompt({ hasEmail: true, hasOwnPassword: true, shared: true })).toBeNull()
+    expect(
+      ownAccessPrompt({ hasEmail: false, hasOwnPassword: false, shared: true, permissions: [] }),
+    ).toBeNull()
+    expect(
+      ownAccessPrompt({ hasEmail: true, hasOwnPassword: true, shared: true, permissions: [] }),
+    ).toBeNull()
+  })
+
+  // #664: the card had no audience at all, so the account holding every
+  // permission — whose password is its own since May and whose stamp is simply
+  // NULL because the column is younger than the account — was told to go and
+  // set one. A staff login manages credentials in Korisnici and the Backoffice.
+  it.each([
+    ['all eleven permissions', [...PERMISSIONS]],
+    ['a voditelj', ['moreska', 'moreskant']],
+    ['the blagajna', ['tickets', 'refunds', 'door']],
+    ['a partner login', ['partner']],
+    ['the shared season login', ['season_stats']],
+  ])('never asks %s, whatever the stamp says', (_label, permissions) => {
+    expect(ownAccessPrompt({ hasEmail: false, hasOwnPassword: false, permissions })).toBeNull()
+  })
+
+  // The other side of the same rule: a door person who dances holds ONE account
+  // (#487, #520) and is still exactly the person ADR-0028 is about.
+  it.each([
+    ['a plain moreškant', ['moreskant']],
+    ['a moreškant who also works the door', ['moreskant', 'door']],
+  ])('still asks %s', (_label, permissions) => {
+    expect(ownAccessPrompt({ hasEmail: false, hasOwnPassword: false, permissions })).not.toBeNull()
   })
 
   it('names both halves of the task, because it is one task', () => {
-    const card = ownAccessPrompt({ hasEmail: false, hasOwnPassword: false })
+    const card = ownAccessPrompt({ hasEmail: false, hasOwnPassword: false, permissions: dancer })
     expect(card?.title).toContain('e-mail')
     expect(card?.title).toContain('lozinku')
   })

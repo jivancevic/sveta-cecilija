@@ -34,7 +34,7 @@
 // clock in with the rows, so the same instant decides the greeting and the
 // "danas". `home-screen.test.ts` is where the rules are asserted.
 
-import type { Permission } from '@/lib/access/permissions'
+import { isDancerLogin, type Permission } from '@/lib/access/permissions'
 import { ownsTheirAccess } from './member-marks'
 import { screenByKey, type AppNav, type AppScreenKey } from './screens'
 import { APP_STRINGS, dayAndMonth, weekdayAfterU } from './strings'
@@ -280,13 +280,33 @@ export interface OwnAccessPrompt {
  * fourth step for this (the Dobrodošlica is remembered per DEVICE and this is
  * per account, so a fourth step would re-ask somebody on every new phone), and
  * `tehnika` is a room rather than a person, so it has no address to own.
+ *
+ * **And only for a DANCER's login** (#664). ADR-0028 is about the person whose
+ * only way in is an invitation; a `users`, `tickets` or `finance` holder chose
+ * their password in the Backoffice and manages credentials in Korisnici, so the
+ * card is nonsense on their screen — which is what shipped, because the first
+ * version guarded on the credentials and never on the audience, and told the
+ * one account holding all eleven permissions to go and set a password it has
+ * had since May. The test is `isDancerLogin`, the same predicate that decides
+ * where an invitation may land, because it is the same population; "links a
+ * Member" is NOT the test, since #462 links a voditelj's own Member to their
+ * staff login.
+ *
+ * `hasOwnPassword` is false for "we do not know" as much as for "there is
+ * none" — `users.password_set_at` cannot tell them apart (`readPasswordStamp`)
+ * — so the card may ask a dancer who already chose one. That costs a minute
+ * and is accepted; for everybody else the audience check above is what makes
+ * the same unknown harmless.
  */
 export function ownAccessPrompt(input: {
   hasEmail: boolean
   hasOwnPassword: boolean
   shared?: boolean
+  /** The reader's permission set, raw, for the audience check. */
+  permissions: readonly unknown[] | null
 }): OwnAccessPrompt | null {
   if (input.shared === true || ownsTheirAccess(input)) return null
+  if (!isDancerLogin({ permissions: input.permissions })) return null
   const words = APP_STRINGS.ownAccess.card
   return {
     title: words.title,
