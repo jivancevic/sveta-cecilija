@@ -426,14 +426,6 @@ html:has(> .app[data-theme='dark']) {
   margin-top: 0;
 }
 
-/* Two links that were `inline-block` and are now flex items: without this they
-   stretch to the full width of the shell and a back link becomes a tap target
-   the width of the phone (#644). */
-.app__back,
-.app__user-back {
-  align-self: flex-start;
-}
-
 /* ── The two layout containers, at EVERY width (#636) ──────
    `app__col` and `app__cols` were declared inside the 1024px block only, with
    the comment "it collapses to one column below this width by simply not
@@ -2148,20 +2140,10 @@ html:has(> .app[data-theme='dark']) {
   font-weight: 700;
 }
 
-.app__back {
-  display: inline-block;
-  padding: 14px 0 10px;
-  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
-  font-size: 13px;
-  letter-spacing: 0.06em;
-  color: var(--goldText);
-  text-decoration: none;
-}
-
-.app__back:hover,
-.app__back:focus-visible {
-  color: var(--ink);
-}
+/* `.app__back` and `.app__user-back` were the eight body links that said "‹
+   Natrag" — gone with #666, which moved every one of them into the header as
+   the chevron `.app__header-back` already drew for Ljestvica. They were also
+   the last two rules the 1024px flex note at the top of this file existed for. */
 
 .app__note--detail {
   margin-top: 16px;
@@ -7874,14 +7856,6 @@ a.app__statrow-main:focus-visible {
 }
 
 /* ── One account ──────────────────────────────────────────── */
-.app__user-back {
-  display: inline-block;
-  margin: 0;
-  font-size: 13px;
-  color: var(--muted);
-  text-decoration: none;
-}
-
 .app__user-facts {
   border-top: 1px solid var(--rule);
 }

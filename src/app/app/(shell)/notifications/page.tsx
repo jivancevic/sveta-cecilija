@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { getMyNotifications } from '@/lib/app/notifications-data'
 import {
   getRosterMessageCounts,
@@ -69,11 +68,12 @@ export default async function NotificationsPage() {
   )
 
   return (
-    <AppShell viewer={viewer} screen="more" title={APP_STRINGS.notifications.title}>
-      <Link className="app__back" href="/app/more">
-        ‹ {APP_STRINGS.screens.more}
-      </Link>
-
+    <AppShell
+      viewer={viewer}
+      screen="more"
+      title={APP_STRINGS.notifications.title}
+      back={{ href: '/app/more', label: APP_STRINGS.screens.more }}
+    >
       {viewer.voditelj && <RosterMessage counts={messageCounts} />}
 
       <NotificationList rows={rows} nowMs={nowMs} />
