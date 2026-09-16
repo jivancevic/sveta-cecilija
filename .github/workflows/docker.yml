@@ -29,6 +29,12 @@ on:
   push:
     branches: [main]
 
+# See the note in ci.yml: one set per branch, and a `push` to main is never
+# cancelled because it is the only check on a PR merged from a stale base.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   docker:
     name: docker
@@ -91,9 +97,26 @@ jobs:
           done
           echo "Postgres never became ready"; docker logs ci-pg; exit 1
 
+      # buildx rather than plain `docker build`, purely for the cache: this job
+      # is the long pole of the gate and it used to run a cold `npm ci` plus a
+      # cold `next build` on every PR. `type=gha` persists the layer cache
+      # across runs, so an unchanged lockfile reuses the deps stage. `load: true`
+      # puts the image in the local daemon, which the boot and inspect steps
+      # below need. Coolify still builds this same Dockerfile itself — the cache
+      # lives on GitHub and never reaches the box.
+      - name: Set up buildx
+        if: steps.scope.outputs.decision == 'build'
+        uses: docker/setup-buildx-action@v3
+
       - name: Build the image Coolify builds
         if: steps.scope.outputs.decision == 'build'
-        run: docker build -t moreska-ci .
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: moreska-ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Boot the container against the throwaway database
         if: steps.scope.outputs.decision == 'build'
