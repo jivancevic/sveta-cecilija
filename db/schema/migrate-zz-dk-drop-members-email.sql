@@ -23,5 +23,16 @@
 --
 -- Idempotent: IF EXISTS, so it is a no-op on every restart after the first and
 -- on a fresh database built from 00-base.sql, which no longer declares it.
+--
+-- NO BACKFILL, and that is a checked fact rather than an assumption. Dropping a
+-- column destroys what is in it, so production was queried before this shipped
+-- (2026-09-16): of 76 members exactly ONE carries an address, that member has a
+-- login, and that login already holds the same address — `mintInvitation` put it
+-- there, which is precisely what the "the Member's email wins" rule guaranteed
+-- for as long as it existed. Zero rows would have been copied. A guarded UPDATE
+-- here would therefore have been SQL that runs on production, does nothing, and
+-- was never exercised by CI (a fresh database has no such column, so the backfill
+-- path would be skipped in every test that exists). If this file is ever revived
+-- against a database that was NOT checked, re-run that query first.
 
 ALTER TABLE public.members DROP COLUMN IF EXISTS email;
