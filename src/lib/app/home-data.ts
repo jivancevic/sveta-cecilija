@@ -346,7 +346,11 @@ export async function loadHomeScreen(viewer: AppViewer): Promise<HomeScreen> {
     // screen that is not about a job. It is never blocking: the card sits under
     // the reader's own work and a dancer who came to read tonight's postava
     // walks past it.
-    ownAccess: ownAccessPrompt({ hasEmail: viewer.email != null, shared: viewer.shared }),
+    ownAccess: ownAccessPrompt({
+      hasEmail: viewer.email != null,
+      hasOwnPassword: viewer.hasOwnPassword,
+      shared: viewer.shared,
+    }),
     greeting: greetingLine({
       nowMs,
       shared: viewer.shared,

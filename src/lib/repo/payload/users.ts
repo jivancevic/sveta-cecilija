@@ -238,10 +238,16 @@ export function createUsersRepo(
       const payload = await load()
       // Payload hashes `password` in its own beforeChange; the column never
       // holds the plaintext, and nothing here logs it.
+      //
+      // `passwordSetAt: null` rides along, and it is not bookkeeping: this is
+      // the TEMPORARY password a `users` holder reads off a screen and dictates
+      // (#510), so the account no longer holds one its owner chose. Leaving the
+      // stamp would make the 🔑 mark say a dancer can get back in on their own
+      // the moment somebody resets them (#653 review, ADR-0028).
       await payload.update({
         collection: 'users',
         id,
-        data: { password } as never,
+        data: { password, passwordSetAt: null } as never,
         user: actor(ctx),
         overrideAccess: true,
       })

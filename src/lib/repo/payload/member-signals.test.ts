@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { PoolQuery } from '@/lib/db/pool-query'
-import { loadMemberAccountSignals } from './member-access-store'
+import { loadMemberAccountSignals } from './member-signals'
 
 // The store is thin, so this is about the two things a fake pool CAN see: which
 // statements go out, and what comes back out of the merge. The one rule with
@@ -28,8 +28,8 @@ describe('loadMemberAccountSignals', () => {
     const { query } = fakeQuery({
       [ACCOUNTS]: {
         rows: [
-          { user_id: 7, member_id: 42, has_address: true, sessions: 2 },
-          { user_id: 8, member_id: 43, has_address: false, sessions: 0 },
+          { user_id: 7, member_id: 42, has_address: true, has_own_password: true, sessions: 2 },
+          { user_id: 8, member_id: 43, has_address: false, has_own_password: false, sessions: 0 },
         ],
       },
       'FROM app_devices': {
@@ -45,11 +45,13 @@ describe('loadMemberAccountSignals', () => {
       sessions: 2,
       device: { devices: 2, standaloneDevices: 1, pushDevices: 0 },
       hasEmail: true,
+      hasOwnPassword: true,
     })
     expect(signals.get('43')).toEqual({
       sessions: 0,
       device: { devices: 0, standaloneDevices: 0, pushDevices: 1 },
       hasEmail: false,
+      hasOwnPassword: false,
     })
   })
 
@@ -74,8 +76,31 @@ describe('loadMemberAccountSignals', () => {
       },
     })
     const signal = signalOf(await loadMemberAccountSignals(query))
-    expect(Object.keys(signal).sort()).toEqual(['device', 'hasEmail', 'sessions'])
+    expect(Object.keys(signal).sort()).toEqual([
+      'device',
+      'hasEmail',
+      'hasOwnPassword',
+      'sessions',
+    ])
     expect(JSON.stringify(signal)).not.toContain('@')
+  })
+
+  // The second half of the key (#653 review): a password the dancer CHOSE.
+  // It is a stamp on the row and never the hash, because `ensureDancerLogin`
+  // mints a random password for every invitation, so a hash is set for the
+  // whole roster and would make this constant true.
+  it('reads the chosen password off the stamp, not off the hash', async () => {
+    const { query, calls } = fakeQuery({
+      [ACCOUNTS]: {
+        rows: [
+          { user_id: 7, member_id: 42, has_address: true, has_own_password: false, sessions: 1 },
+        ],
+      },
+    })
+    const signal = signalOf(await loadMemberAccountSignals(query))
+    expect(signal.hasOwnPassword).toBe(false)
+    expect(calls[0]!.sql).toContain('password_set_at')
+    expect(calls[0]!.sql).not.toContain('hash')
   })
 })
 

@@ -101,6 +101,10 @@ export interface UsersRepo {
    *
    * Payload hashes it in the update; the plaintext exists only in the response
    * the `users` holder reads once, and is never logged.
+   *
+   * It also CLEARS `passwordSetAt`: this password was dictated rather than
+   * chosen, so the account stops counting as one whose owner holds a key of
+   * their own (#653 review, ADR-0028).
    */
   setPassword(id: string, password: string, ctx: WriteCtx): Promise<void>
 

@@ -67,7 +67,7 @@ export const ALLOW_LIST: Record<string, string> = {
   'src/lib/app/session-data.ts':
     'The invitation link that IS the authentication (#463): payload.resetPassword mints the session the token stands for. Its `openAppSession` half already sits behind repo.auth.openSession (#511); the reset-token reader beside it is retired with the rest of repo.auth (#475, seam research 2.4).',
   'src/lib/app/session-renewal-data.ts':
-    'The sliding session’s one server read (#650, ADR-0028 decision 1): it needs `payload.config.cookiePrefix` to find the session cookie by the name Payload itself gives it. Retired with repo.auth (#475) — it is the same “who is asking” family as viewer.ts and session-guard.ts and swaps with them. The RULE it applies imports nothing (session-renewal.ts).',
+    'The sliding session’s server reads (#650, #652, ADR-0028 decision 1): `payload.config.cookiePrefix`, so the session cookie is found by the name Payload itself gives it, and `loadDeviceLastSeen` beside it, so the six-hour device throttle is decided before the browser is asked anything. Retired with repo.auth (#475) — it is the same “who is asking” family as viewer.ts and session-guard.ts and swaps with them. The RULE it applies imports nothing (session-renewal.ts).',
   'src/lib/app/session-guard.ts':
     'The inbox routes’ session guard (#496): payload.auth composed with decideAppAccess, because a notification is addressed to an ACCOUNT rather than to a permission. Retired with repo.auth (#475) — it asks the same "who is asking" question as viewer.ts and swaps with it.',
   'src/lib/app/notifications-data.ts':

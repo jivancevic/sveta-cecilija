@@ -10,6 +10,9 @@ import { APP_STRINGS } from './strings'
 
 const S = APP_STRINGS.ownAccess
 
+/** A fixed clock, so the stamp the handler writes is a value a row can assert. */
+const STAMPED_AT = new Date('2026-09-16T10:00:00.000Z')
+
 const sameOrigin = {
   origin: 'https://moreska.eu',
   secFetchSite: 'same-origin',
@@ -22,6 +25,7 @@ function deps(over: Partial<OwnAccessDeps> = {}): OwnAccessDeps {
     request: sameOrigin,
     caller: { id: 42 },
     save: vi.fn().mockResolvedValue(undefined),
+    now: () => STAMPED_AT,
     ...over,
   }
 }
@@ -82,7 +86,16 @@ describe('handleOwnAccess — what a dancer may not send', () => {
 
   it('names the whole set, so nothing Korisnici owns can be smuggled in', () => {
     expect([...LOCKED_KEYS].sort()).toEqual(
-      ['member', 'name', 'note', 'permissions', 'shared', 'tabs', 'username'].sort(),
+      [
+        'member',
+        'name',
+        'note',
+        'passwordSetAt',
+        'permissions',
+        'shared',
+        'tabs',
+        'username',
+      ].sort(),
     )
   })
 
@@ -141,7 +154,10 @@ describe('handleOwnAccess — the password', () => {
     const res = await handleOwnAccess({ password: 'moreska2026', repeat: 'moreska2026' }, d)
     expect(res.status).toBe(200)
     expect(res.body).toEqual({ ok: true, message: S.saved })
-    expect(d.save).toHaveBeenCalledWith(42, { password: 'moreska2026' })
+    expect(d.save).toHaveBeenCalledWith(42, {
+      password: 'moreska2026',
+      passwordSetAt: STAMPED_AT.toISOString(),
+    })
   })
 
   it('400s a short one', async () => {
@@ -162,7 +178,10 @@ describe('handleOwnAccess — the password', () => {
   it('takes a password verbatim, spaces and all', async () => {
     const d = deps()
     await handleOwnAccess({ password: ' dva slova ', repeat: ' dva slova ' }, d)
-    expect(d.save).toHaveBeenCalledWith(42, { password: ' dva slova ' })
+    expect(d.save).toHaveBeenCalledWith(42, {
+      password: ' dva slova ',
+      passwordSetAt: STAMPED_AT.toISOString(),
+    })
   })
 })
 
@@ -177,6 +196,7 @@ describe('handleOwnAccess — one task, two fields', () => {
     expect(d.save).toHaveBeenCalledWith(42, {
       email: 'ja@example.com',
       password: 'moreska2026',
+      passwordSetAt: STAMPED_AT.toISOString(),
     })
   })
 
@@ -184,7 +204,41 @@ describe('handleOwnAccess — one task, two fields', () => {
     const d = deps()
     const res = await handleOwnAccess({ email: 'ja@example.com', password: '', repeat: '' }, d)
     expect(res.status).toBe(200)
+    // No stamp either: nothing was chosen, so nothing may claim it was (#653
+    // review). An address alone must never make the 🔑 mark or the Početna card
+    // call the task done.
     expect(d.save).toHaveBeenCalledWith(42, { email: 'ja@example.com' })
+  })
+
+  /**
+   * The stamp that makes "this person chose their own password" knowable.
+   *
+   * Every invited account already HAS a password — `ensureDancerLogin` mints a
+   * random one — so the hash cannot tell the two apart. This handler is the one
+   * place a person types theirs, so it is where the fact is recorded.
+   */
+  it('stamps the moment a password is actually chosen, and only then', async () => {
+    const withPassword = deps()
+    await handleOwnAccess({ password: 'moreska2026', repeat: 'moreska2026' }, withPassword)
+    expect(withPassword.save).toHaveBeenCalledWith(
+      42,
+      expect.objectContaining({ passwordSetAt: STAMPED_AT.toISOString() }),
+    )
+
+    const addressOnly = deps()
+    await handleOwnAccess({ email: 'ja@example.com' }, addressOnly)
+    expect(addressOnly.save).toHaveBeenCalledWith(42, { email: 'ja@example.com' })
+  })
+
+  it('refuses a body that tries to stamp itself', async () => {
+    const d = deps()
+    const res = await handleOwnAccess(
+      { passwordSetAt: new Date().toISOString() } as never,
+      d,
+    )
+    expect(res.status).toBe(403)
+    expect(res.body).toEqual({ error: S.lockedField })
+    expect(d.save).not.toHaveBeenCalled()
   })
 
   it.each([

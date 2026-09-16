@@ -3298,9 +3298,20 @@ export const APP_STRINGS = {
         const inbox = people === 1 ? 'jedan će je' : `svih ${people} će je`
         return `${phones}, a ${inbox} naći u Sandučiću.`
       },
-      /** Under the counts, only when somebody on the roster has no login at all. */
+      /**
+       * Under the counts, only when somebody on the roster has no login at all.
+       *
+       * Three buckets like everything else counted here: 1 aktivni moreškant
+       * nema, 2 aktivna moreškanta nemaju, 11 aktivnih moreškanata nema. The
+       * verb moves with the noun, which is why the whole clause is in the
+       * forms rather than only the word.
+       */
       withoutLogin: (count: number) =>
-        `${count} ${count === 1 ? 'aktivni moreškant nema račun i neće je dobiti' : 'aktivnih moreškanata nema račun i neće je dobiti'}.`,
+        `${croatianPlural(count, {
+          one: 'aktivni moreškant nema račun i neće je dobiti',
+          few: 'aktivna moreškanta nemaju račun i neće je dobiti',
+          many: 'aktivnih moreškanata nema račun i neće je dobiti',
+        })}.`,
       empty: 'Napiši poruku prije slanja.',
       tooLong: (max: number) => `Poruka može imati najviše ${max} znakova.`,
       /** The server's refusal to a caller that skipped the sheet. */

@@ -67,6 +67,15 @@ export interface AppViewer {
    */
   email: string | null
   /**
+   * Has the reader ever CHOSEN their own password? (`users.passwordSetAt`.)
+   *
+   * The other half of "do I hold a key of my own", and the half that cannot be
+   * inferred: every invited account carries a random password minted by
+   * `ensureDancerLogin`, so a hash proves nothing. Read as a boolean only, and
+   * only so Početna's card knows whether the task is finished (#653 review).
+   */
+  hasOwnPassword: boolean
+  /**
    * The login's own name (ADR-0011), for the one header that has nothing else.
    *
    * Više names the reader (#569), and a shared account has no person to name:
@@ -101,6 +110,7 @@ const DENIED: AppViewer = {
   me: null,
   accountName: null,
   email: null,
+  hasOwnPassword: false,
   username: null,
   shared: false,
   nav: { tabs: [], overflow: [], landing: null, groups: [] },
@@ -147,6 +157,7 @@ export async function resolveAppAccessFor(
   memberLinkId: string | null
   accountName: string | null
   email: string | null
+  hasOwnPassword: boolean
   username: string | null
   shared: boolean
 }> {
@@ -161,6 +172,7 @@ export async function resolveAppAccessFor(
   let tabs: unknown = null
   let accountName: string | null = null
   let email: string | null = null
+  let hasOwnPassword = false
   let username: string | null = null
   let shared = false
   try {
@@ -178,6 +190,9 @@ export async function resolveAppAccessFor(
     tabs = row?.tabs ?? null
     accountName = typeof row?.name === 'string' && row.name.trim() !== '' ? row.name.trim() : null
     email = typeof row?.email === 'string' && row.email.trim() !== '' ? row.email.trim() : null
+    // A stamp, never a hash: the column is set only where a person types a
+    // password of their own, and cleared by "Resetiraj lozinku" (ADR-0028).
+    hasOwnPassword = row?.passwordSetAt != null
     username =
       typeof row?.username === 'string' && row.username.trim() !== '' ? row.username.trim() : null
     shared = row?.shared === true
@@ -200,6 +215,7 @@ export async function resolveAppAccessFor(
     memberLinkId,
     accountName,
     email,
+    hasOwnPassword,
     username,
     shared,
   }
@@ -221,10 +237,8 @@ async function resolveAppViewerUncached(): Promise<AppViewer> {
   const { user } = await payload.auth({ headers: await headers() })
   if (!user) return DENIED
 
-  const { access, memberLinkId, accountName, email, username, shared } = await resolveAppAccessFor(
-    payload as unknown as ViewerPayload,
-    user,
-  )
+  const { access, memberLinkId, accountName, email, hasOwnPassword, username, shared } =
+    await resolveAppAccessFor(payload as unknown as ViewerPayload, user)
 
   return {
     signedIn: true,
@@ -234,6 +248,7 @@ async function resolveAppViewerUncached(): Promise<AppViewer> {
     me: access.kind === 'ok' ? access.self : null,
     accountName,
     email,
+    hasOwnPassword,
     username,
     shared,
     nav: access.kind === 'ok' ? access.nav : DENIED.nav,

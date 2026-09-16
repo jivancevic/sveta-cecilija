@@ -290,12 +290,23 @@ export type EnsureLoginOutcome =
 export async function ensureDancerLogin(
   member: InviteMember,
   deps: EnsureLoginDeps,
+  /**
+   * The login this Member already has, when the caller has just looked it up.
+   *
+   * A BOX rather than a bare value, so "I looked and there is none" is not the
+   * same argument as "I did not look". The mail channel has to read the account
+   * before anything is opened (it refuses a login with no address), and without
+   * this it asked the database the same question twice in one request.
+   */
+  loaded?: { user: InviteUser | null },
 ): Promise<EnsureLoginOutcome> {
-  let user: InviteUser | null = null
-  try {
-    user = await deps.findUserByMember(member.id)
-  } catch {
-    user = null
+  let user: InviteUser | null = loaded?.user ?? null
+  if (!loaded) {
+    try {
+      user = await deps.findUserByMember(member.id)
+    } catch {
+      user = null
+    }
   }
 
   // Everything below this line assumes the login it found is a dancer's;
@@ -396,6 +407,7 @@ async function mintInvitation(
   // channel looks the account up BEFORE anything is opened: refusing after
   // `ensureDancerLogin` would leave a brand-new account behind on every press
   // for a dancer who has never typed an address, which is most of them.
+  let loaded: { user: InviteUser | null } | undefined
   if (channel === 'email') {
     let existing: InviteUser | null = null
     try {
@@ -405,9 +417,13 @@ async function mintInvitation(
     }
     const known = typeof existing?.email === 'string' ? existing.email.trim() : ''
     if (!known) return no(400, APP_STRINGS.invite.noEmail)
+    // Hand the row on rather than making `ensureDancerLogin` ask again: the two
+    // lookups were the same question in the same request, and a second answer
+    // could only differ by being staler.
+    loaded = { user: existing }
   }
 
-  const login = await ensureDancerLogin(member, deps)
+  const login = await ensureDancerLogin(member, deps, loaded)
   if (!login.ok) {
     return no(
       login.reason === 'staff-login' ? 409 : 400,

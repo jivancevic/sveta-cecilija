@@ -842,15 +842,10 @@ it is why the production task (#521) adds `moreskant` to the three door logins
 
 The hole predates this work (a `users` holder could always hand-link a staff
 account), but `/api/app/link-self` is what makes such links routine, so the
-guard ships with it. The bulk action is not a vector: it skips every Member that
-already has a login.
-
-Sends are sequential (Brevo's free tier is 300/day and rate-limits a burst; tens
-of dancers is a second of wall clock). The menu item is on Members'
-`listMenuItems` and hides itself from the ticketing backoffice through the field
-lock rather than through a permission list: `isMoreskant` locks read to
-`moreska`, so a `tickets`-only account receives rows with no such key
-(`inviteAllActionVisible`). As always that is UX; the route re-checks `moreska`.
+guard ships with it. There is no bulk press left to be a vector: "Pošalji
+pozivnice svima" was retired by #651 (see the section above), so the two
+channels this rule covers are the per-dancer pair on the profile, plus a
+voditelj approving a join claim.
 
 ## The session slides (#650)
 
@@ -890,13 +885,17 @@ Nothing dancer-facing reads any of this. #653 is the consumer, on the voditelj's
 
 **One glyph per column, and the state is weight rather than a second emoji.** 🔔/🔕 as a pair reads logical in the head and breaks the scan on the page: the eye looks down a column for the same shape at different weights, not for two shapes. `yes` is full colour, `no` is `grayscale(1)` at `opacity: .35`, and `unknown` is a 12px **rule** — a shape change and not only a tone change, because on day one the whole install column is `unknown` and a dimmed blob at arm's length reads as "nobody has it". The slots are a fixed 3 × 20px grid (`.app__member-marks`), so seventy-six rows scan as three columns. **Nothing there is tappable**: the row is already a link to the profile, and three small targets inside a target is a thumb miss that opens the wrong person.
 
-**🔑 is the ADDRESS, and that is not a bug to fix.** ADR-0028 makes the e-mail and the password one task written by one form, so the address is what witnesses the pair — the same predicate #651 reads on Početna, not a second one. A dancer who set only a password can sign in on any phone and still shows an empty key until they give an address: two half-signals on seventy-six rows is worse than one honest one.
+**🔑 is the PAIR: an address AND a password the dancer chose** (`ownsTheirAccess`, shared with Početna's card so the two can never disagree). It shipped reading the address alone, and the review of #653 caught what that costs: a dancer who typed an address and skipped the password got a full key, lost the card on Početna, and was still carrying the random password their invitation minted — so they still could not sign in on a second phone, which is the whole reason the task exists. The mark lied about exactly the person it exists to catch. It is still ONE mark and not two, because one form writes both.
+
+**"Has a password" is a STAMP, never a hash.** `ensureDancerLogin` mints a random password for every invitation, so `hash IS NOT NULL` is true for the entire roster and says nothing. `users.password_set_at` (`migrate-zz-dm-users-password-set-at.sql`) records the moment somebody chose one: written by `PATCH /api/app/account`, which is the only place a person types theirs, and cleared by "Resetiraj lozinku" (#510), because a temporary password read off a `users` holder's screen is dictated rather than chosen. The column is field-locked and the route refuses a body that tries to stamp itself.
+
+ADR-0028 still accepts the REVERSE case: a dancer who set only a password can sign in on any phone and reads as incomplete until they give an address.
 
 **"Nije ušao" is a trace, not an absence of marks** (`everSignedIn`). It is the union of two things, and the union is the point: a row in `users.sessions` covers everybody back to #463 but is deleted by "Odjava" (`logoutOperation`), while an `app_devices` row is never deleted but has only existed since #652. Either is proof. The only person the pair still misses is a dancer who signed in before #652, signed out and has not opened the app since, who is exactly somebody to ring anyway. A dancer who has never been in gets no marks at all and the words **nije ušao**: what to do about it lives on their profile, where the two invitation buttons already are.
 
 **Four chips, each with its own count** — `svi · bez appa · bez obavijesti · bez pristupa` — because "who do I still have to ring" is a question about a **set** and not about a row. They replace #573's `svi · aktivni · bez prijave`; the active/retired split is already in the order of the list. **A chip counts only a definite `no`, never an `unknown`**, which is what keeps "bez appa" reading 0 on day one instead of 76. The counts are live over the rows the search left standing, and the legend sits in a sheet behind the count over the list, so "what do these mean" and "who is missing what" open with the same tap.
 
-Rules: `src/lib/app/member-marks.ts`, pure and table-tested with no database. SQL: `member-access-store.ts`, reached through `repo.members.accountSignals()`. That store is also **the one file allowed to ask whether a login carries an address**, and it answers with a boolean — `repo/payload/members.ts` is on the roster's PII scan (`own-access-pii.test.ts`) and may not name the column, so the boundary is drawn in a module whose return type has no room for a string. A failed read is `null`, which draws no marks and no chips: an empty map would say "nije ušao" about the whole roster, which is a lie a voditelj would act on.
+Rules: `src/lib/app/member-marks.ts`, pure and table-tested with no database. SQL: `src/lib/repo/payload/member-signals.ts`, reached through `repo.members.accountSignals()`. It sits **below the seam**, beside the repo that calls it: it first shipped under `src/lib/app/` so that `repo/payload/members.ts` would keep passing the roster's PII source scan, which is a test being routed around rather than satisfied (#653 review). The scan now asserts the real rule instead — the signal is exercised and answers in booleans (`own-access-pii.test.ts`, `member-signals.test.ts`) — and the source list under it is a canary for the files vitest cannot import, not the rule. A failed read is `null`, which draws no marks and no chips: an empty map would say "nije ušao" about the whole roster, which is a lie a voditelj would act on.
 
 ## Passwordless onboarding (#463)
 

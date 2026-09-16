@@ -35,6 +35,7 @@
 // "danas". `home-screen.test.ts` is where the rules are asserted.
 
 import type { Permission } from '@/lib/access/permissions'
+import { ownsTheirAccess } from './member-marks'
 import { screenByKey, type AppNav, type AppScreenKey } from './screens'
 import { APP_STRINGS, dayAndMonth, weekdayAfterU } from './strings'
 import { pluralForm } from './roster-loaders'
@@ -266,11 +267,14 @@ export interface OwnAccessPrompt {
  * lozinka" has nowhere to send anything, and no password means a second phone
  * has nothing to type.
  *
- * **The address is the signal, and it is the only one.** ADR-0028 says why in
- * as many words: a dancer who sets only a password can already sign in
- * anywhere, and two half-signals on seventy-six rows is worse than one honest
- * one. The form behind the card is one form that writes both, so a reader who
- * completes it has both and the card is gone on the same render.
+ * **The card goes when BOTH halves are there**, which is the same predicate the
+ * 🔑 mark on Članovi applies (`ownsTheirAccess`) and deliberately the same
+ * function rather than a second copy of it. Reading only the address was the
+ * version that shipped first, and it took the card away from exactly the dancer
+ * who still could not sign in on a second phone: they had typed an address and
+ * were still carrying the random password their invitation minted. The form
+ * behind the card writes both, so a reader who completes it loses the card on
+ * the same render.
  *
  * **Never blocking, and never for a shared login.** `/app/welcome` gains no
  * fourth step for this (the Dobrodošlica is remembered per DEVICE and this is
@@ -279,9 +283,10 @@ export interface OwnAccessPrompt {
  */
 export function ownAccessPrompt(input: {
   hasEmail: boolean
+  hasOwnPassword: boolean
   shared?: boolean
 }): OwnAccessPrompt | null {
-  if (input.shared === true || input.hasEmail) return null
+  if (input.shared === true || ownsTheirAccess(input)) return null
   const words = APP_STRINGS.ownAccess.card
   return {
     title: words.title,

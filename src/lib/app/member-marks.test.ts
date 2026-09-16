@@ -7,6 +7,7 @@ import {
   memberAccess,
   memberFilterCounts,
   memberMatchesFilter,
+  ownsTheirAccess,
   type MemberAccountSignal,
 } from './member-marks'
 
@@ -18,8 +19,19 @@ function device(over: Partial<DeviceSignal> = {}): DeviceSignal {
 }
 
 function signal(over: Partial<MemberAccountSignal> = {}): MemberAccountSignal {
-  return { sessions: 0, device: device(), hasEmail: false, ...over }
+  return { sessions: 0, device: device(), hasEmail: false, hasOwnPassword: false, ...over }
 }
+
+describe('ownsTheirAccess', () => {
+  it.each([
+    ['both halves', true, true, true],
+    ['an address alone', true, false, false],
+    ['a chosen password alone', false, true, false],
+    ['neither', false, false, false],
+  ])('%s → %s', (_label, hasEmail, hasOwnPassword, expected) => {
+    expect(ownsTheirAccess({ hasEmail, hasOwnPassword })).toBe(expected)
+  })
+})
 
 describe('everSignedIn', () => {
   it('is false for a Member no login points at', () => {
@@ -79,9 +91,24 @@ describe('memberAccess', () => {
     expect(access).toMatchObject({ notifications: 'yes' })
   })
 
-  it('reads the key off the address, which is what witnesses the one task', () => {
-    expect(memberAccess(signal({ sessions: 1, hasEmail: true }))).toMatchObject({ access: 'yes' })
-    expect(memberAccess(signal({ sessions: 1, hasEmail: false }))).toMatchObject({ access: 'no' })
+  // The mark says the ONE task is done, and the task is both halves (#653
+  // review). A full key on an address alone lied about exactly the person it
+  // exists to catch: they still carry the random password their invitation
+  // minted, so a second phone still has nothing to type.
+  it('is full only when the address AND a chosen password are both there', () => {
+    expect(
+      memberAccess(signal({ sessions: 1, hasEmail: true, hasOwnPassword: true })),
+    ).toMatchObject({ access: 'yes' })
+  })
+
+  it.each([
+    ['an address and no password of their own', true, false],
+    ['a password of their own and no address', false, true],
+    ['neither', false, false],
+  ])('is empty on %s', (_label, hasEmail, hasOwnPassword) => {
+    expect(memberAccess(signal({ sessions: 1, hasEmail, hasOwnPassword }))).toMatchObject({
+      access: 'no',
+    })
   })
 
   it('never answers "ne znam" for the two columns the database always knows', () => {
@@ -97,6 +124,7 @@ describe('isMissing', () => {
       sessions: 1,
       device: device({ devices: 1, standaloneDevices: 1, pushDevices: 1 }),
       hasEmail: true,
+      hasOwnPassword: true,
     }),
   )
 
@@ -136,7 +164,14 @@ describe('memberMatchesFilter', () => {
     ],
     [
       'in, a plain tab, no push, an address',
-      memberAccess(signal({ sessions: 1, device: device({ devices: 1 }), hasEmail: true })),
+      memberAccess(
+        signal({
+          sessions: 1,
+          device: device({ devices: 1 }),
+          hasEmail: true,
+          hasOwnPassword: true,
+        }),
+      ),
       { all: true, 'no-app': true, 'no-push': true, 'no-access': false },
     ],
     [
@@ -146,6 +181,7 @@ describe('memberMatchesFilter', () => {
           sessions: 1,
           device: device({ devices: 1, standaloneDevices: 1, pushDevices: 1 }),
           hasEmail: true,
+          hasOwnPassword: true,
         }),
       ),
       { all: true, 'no-app': false, 'no-push': false, 'no-access': false },
@@ -168,13 +204,14 @@ describe('memberFilterCounts', () => {
   it('counts each chip over the rows it is handed, and "svi" over all of them', () => {
     const counts = memberFilterCounts([
       { access: { kind: 'never-in' } },
-      { access: memberAccess(signal({ sessions: 1, hasEmail: true })) },
+      { access: memberAccess(signal({ sessions: 1, hasEmail: true, hasOwnPassword: true })) },
       {
         access: memberAccess(
           signal({
             sessions: 1,
             device: device({ devices: 1, standaloneDevices: 1, pushDevices: 1 }),
             hasEmail: true,
+            hasOwnPassword: true,
           }),
         ),
       },
@@ -184,7 +221,7 @@ describe('memberFilterCounts', () => {
 
   it('reads zero for the install column on day one, not "everybody"', () => {
     const fresh = Array.from({ length: 76 }, () => ({
-      access: memberAccess(signal({ sessions: 1, hasEmail: true })),
+      access: memberAccess(signal({ sessions: 1, hasEmail: true, hasOwnPassword: true })),
     }))
     expect(memberFilterCounts(fresh)).toMatchObject({ all: 76, 'no-app': 0 })
   })

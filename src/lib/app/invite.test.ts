@@ -287,6 +287,15 @@ describe('handleInvite — the token and the mail', () => {
     expect(d.issueResetToken).toHaveBeenCalledWith({ email: 'cici@example.com' }, INVITE_EXPIRATION_MS)
   })
 
+  // The mail channel reads the account BEFORE anything is opened, because it
+  // refuses a login with no address; `ensureDancerLogin` is then handed that
+  // row rather than asking the same question a second time (#653 review).
+  it('looks the login up once, not once per rule', async () => {
+    const d = mailDeps()
+    await handleInvite({ memberId: '12' }, d)
+    expect(d.findUserByMember).toHaveBeenCalledTimes(1)
+  })
+
   it('sends the link to the member, greeted by nickname', async () => {
     const d = mailDeps()
     await handleInvite({ memberId: '12' }, d)
@@ -413,6 +422,44 @@ describe('handleInviteLink', () => {
       permissions: ['moreskant'],
       member: 12,
     })
+  })
+
+  /**
+   * Restored with #651's shape (#653 review): the bundle, the username
+   * allocator and the create-failure path had nothing to do with the "Member
+   * wins" rule that ticket deleted, and the link channel is the one that opens
+   * accounts now.
+   */
+  it('creates exactly the moreskant bundle, linked to the member', async () => {
+    const d = deps({ loadMember: vi.fn().mockResolvedValue(noEmail) })
+    const result = await handleInviteLink({ memberId: '12' }, d)
+    expect(result.status).toBe(200)
+    expect(result.body).toMatchObject({ created: true, username: 'cici' })
+    expect(d.createUser).toHaveBeenCalledWith(
+      expect.objectContaining({ permissions: ['moreskant'], member: 12 }),
+    )
+  })
+
+  it('suffixes the username when the slug is taken', async () => {
+    const taken = new Set(['cici'])
+    const d = deps({
+      loadMember: vi.fn().mockResolvedValue(noEmail),
+      usernameTaken: vi.fn(async (c: string) => taken.has(c)),
+    })
+    const result = await handleInviteLink({ memberId: '12' }, d)
+    expect(result.body).toMatchObject({ username: 'cici2' })
+    expect(d.createUser).toHaveBeenCalledWith(expect.objectContaining({ username: 'cici2' }))
+  })
+
+  it('400s with a fixable message when the account cannot be created', async () => {
+    const d = deps({
+      loadMember: vi.fn().mockResolvedValue(noEmail),
+      createUser: vi.fn().mockRejectedValue(new Error('duplicate username')),
+    })
+    const result = await handleInviteLink({ memberId: '12' }, d)
+    expect(result.status).toBe(400)
+    expect(result.body).toEqual({ error: APP_STRINGS.invite.createFailed })
+    expect(d.issueResetToken).not.toHaveBeenCalled()
   })
 
   it('asks for the same seven-day token as the letter', async () => {

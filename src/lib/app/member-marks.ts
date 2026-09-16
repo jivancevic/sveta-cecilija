@@ -18,14 +18,20 @@
 //     `push_subscriptions`, which has been true and self-healing since it
 //     shipped, so `notificationsAnswer` cannot return `unknown` and this file
 //     does not fake it into one.
-//  2. **The key is the ADDRESS, and it is not a half state.** ADR-0028 makes
-//     the e-mail and the password one task, written by one form on Profil, so
-//     the address is what witnesses the pair — it is the same predicate #651
-//     already reads on Početna (`viewer.email != null`), not a second one. The
-//     accepted cost is in the ADR in as many words: a dancer who set only a
-//     password can sign in on any phone and still shows an empty key until they
-//     give an address. Two half-signals on seventy-six rows is worse than one
-//     honest one.
+//  2. **The key is the PAIR, and it is not a half state.** ADR-0028 makes the
+//     e-mail and the password one task, written by one form on Profil, and the
+//     mark says that task is done: an address to send a reset to AND a password
+//     the dancer chose. Reading only the address was the version that shipped
+//     first and it lied about exactly the person the mark exists to catch — a
+//     dancer who typed an address and skipped the password still carries the
+//     random password their invitation minted, so they still cannot sign in on
+//     a second phone, and the full key said otherwise. It is still ONE mark and
+//     not two: the form writes both, so a reader who finishes it flips it on
+//     the same render.
+//
+//     "Has a password" is not readable off the hash — every invited account has
+//     one — so it is recorded at the moment it is chosen (`users.password_set_at`,
+//     stamped by `PATCH /api/app/account` and cleared by "Resetiraj lozinku").
 //  3. **"Never signed in" is a trace, not an absence of marks.** See
 //     {@link everSignedIn}.
 
@@ -55,15 +61,26 @@ export interface MemberAccountSignal {
   sessions: number
   /** The devices half (#652): `app_devices` and `push_subscriptions`, counted. */
   device: DeviceSignal
-  /** Does `Users.email` carry an address? The *Pristup* fact (#651). */
+  /** Does `Users.email` carry an address? Half of the *Pristup* fact (#651). */
   hasEmail: boolean
+  /**
+   * Has this person ever CHOSEN a password? (`users.password_set_at`.)
+   *
+   * Never "is there a hash": `ensureDancerLogin` mints a random password on
+   * every invitation, so the hash is set for the entire roster and would make
+   * this constant true. The stamp is written only where a person types one.
+   */
+  hasOwnPassword: boolean
 }
 
 /** The three marks, one glyph per column. */
 export interface MemberMarks {
   installed: DeviceAnswer
   notifications: DeviceAnswer
-  /** `yes` or `no` only: an address is a fact the database always knows. */
+  /**
+   * `yes` or `no` only: both halves of the key are facts the database knows,
+   * so there is nothing here to be `unknown` about.
+   */
   access: DeviceAnswer
 }
 
@@ -101,6 +118,25 @@ export function everSignedIn(signal: MemberAccountSignal | null | undefined): bo
 }
 
 /**
+ * Does this person hold a key of their own?
+ *
+ * BOTH halves, and the conjunction is the whole point (#653 review): an address
+ * with no chosen password cannot sign anybody in on a second phone, and a
+ * password with no address cannot be recovered when it is forgotten. ADR-0028
+ * accepts that the second of those reads as incomplete; the first one reading
+ * as COMPLETE was the mark lying about the person it exists to catch.
+ *
+ * Shared with Početna's card (`ownAccessPrompt`), so the list and the dancer's
+ * own screen can never disagree about whether the task is done.
+ */
+export function ownsTheirAccess(input: {
+  hasEmail: boolean
+  hasOwnPassword: boolean
+}): boolean {
+  return input.hasEmail && input.hasOwnPassword
+}
+
+/**
  * One dancer's row, from one dancer's signal.
  *
  * `null` (no login points at this Member at all) and an account that was never
@@ -114,7 +150,7 @@ export function memberAccess(signal: MemberAccountSignal | null | undefined): Me
     kind: 'marks',
     installed: installedAnswer(signal.device),
     notifications: notificationsAnswer(signal.device),
-    access: signal.hasEmail ? 'yes' : 'no',
+    access: ownsTheirAccess(signal) ? 'yes' : 'no',
   }
 }
 

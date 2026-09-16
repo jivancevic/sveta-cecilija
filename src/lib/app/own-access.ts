@@ -58,6 +58,10 @@ export const LOCKED_KEYS = [
   'shared',
   'tabs',
   'username',
+  // Not somebody else's, but nobody's: the stamp is written by this handler
+  // from its own clock, and a caller who could send one could claim a password
+  // they never chose and clear the 🔑 warning off their row.
+  'passwordSetAt',
 ] as const
 
 /** Good enough for a dancer's address: a name, an @, a dotted host. */
@@ -94,8 +98,10 @@ export interface OwnAccessDeps {
    */
   save: (
     userId: string | number,
-    patch: { email?: string | null; password?: string },
+    patch: { email?: string | null; password?: string; passwordSetAt?: string },
   ) => Promise<void | 'email-taken' | 'email-required'>
+  /** Injectable only so the stamp below is a value a test can assert. */
+  now?: () => Date
 }
 
 function fail(status: number, error: string): OwnAccessResult {
@@ -114,11 +120,13 @@ function str(value: unknown): string {
  * is not one, a password that is too short or mismatched, and for a body that
  * changes nothing, 200 otherwise.
  *
- * **Either field alone is a complete request.** The screen asks for both and
- * the card on Početna names both, but a dancer who already has an address and
- * only wants a new password must not be made to retype the address, and the
- * reverse is just as true. What the handler refuses is a request that would
- * write nothing.
+ * **Either field alone is a complete REQUEST, and neither alone is the task.**
+ * A dancer who already has an address and only wants a new password must not be
+ * made to retype the address, and the reverse is just as true, so the handler
+ * refuses only a request that would write nothing. What the 🔑 mark and the
+ * Početna card call done is the PAIR — an address to be written to and a
+ * password the dancer chose — and each half of that is recorded here as it
+ * arrives (`email`, `passwordSetAt`), never assumed from the other.
  *
  * An empty e-mail CLEARS the address (`null`), which is the honest reading of
  * an emptied field: a dancer who wants their address out of the system may take
@@ -162,7 +170,7 @@ export async function handleOwnAccess(
     if (asString === '' || asString !== String(deps.caller.id)) return fail(403, S.otherAccount)
   }
 
-  const patch: { email?: string | null; password?: string } = {}
+  const patch: { email?: string | null; password?: string; passwordSetAt?: string } = {}
 
   if ('email' in body) {
     const email = str(body.email).trim().toLowerCase()
@@ -183,6 +191,15 @@ export async function handleOwnAccess(
       if (password.length < MIN_PASSWORD_LENGTH) return fail(400, S.tooShort)
       if (password !== repeat) return fail(400, S.mismatch)
       patch.password = password
+      // The stamp that makes "this person chose their own password" KNOWABLE.
+      //
+      // Every invited account already carries a password — `ensureDancerLogin`
+      // mints a random one nobody will ever know — so the hash column cannot
+      // tell a dancer who typed one from a dancer who never has. This write is
+      // the only place a person chooses theirs, so it is where the fact is
+      // recorded; "Resetiraj lozinku" clears it again. The 🔑 mark and the
+      // Početna card read nothing else.
+      patch.passwordSetAt = (deps.now?.() ?? new Date()).toISOString()
     }
   }
 

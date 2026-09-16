@@ -16,6 +16,7 @@ const IN: MemberAccess = memberAccess({
   sessions: 1,
   device: { devices: 0, standaloneDevices: 0, pushDevices: 0 },
   hasEmail: false,
+  hasOwnPassword: false,
 })
 
 /** A dancer who is in, on an installed app that rings, with their own key. */
@@ -23,6 +24,7 @@ const READY: MemberAccess = memberAccess({
   sessions: 1,
   device: { devices: 1, standaloneDevices: 1, pushDevices: 1 },
   hasEmail: true,
+  hasOwnPassword: true,
 })
 
 // The list half of Članovi (#511): who is on it, in what order, and what the
