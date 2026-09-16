@@ -212,6 +212,23 @@ html:has(> .app) {
      be a hex — one the night skin would not follow. Leaving `html` transparent
      lets the body's own `--bg` propagate to the canvas, which is the behaviour
      we wanted from the hex and gets the theme for free. */
+
+  /* `color-scheme` is the exception to that paragraph, and it is #670 (found on
+     a Samsung A55 on Android 16). Chrome on Android repaints a page in its own
+     dark theme unless the document declares which schemes it handles, and it
+     reads the declaration off the ROOT element. Ours sat on `.app` — the body —
+     so the page never called itself light, Android inverted the light skin, and
+     the switch on Profil read "Svijetla" over a black screen with all three
+     choices looking alike. Unlike a background this is not a colour, so naming
+     it up here costs the night skin nothing: the rule below follows the theme. */
+  color-scheme: light;
+}
+
+/* The same word for the night skin, keyed off the body the boot script writes.
+   `THEME_BOOT_SCRIPT` sets this inline on `<html>` too and gets there first;
+   this pair is what a page whose script never ran still gets right. */
+html:has(> .app[data-theme='dark']) {
+  color-scheme: dark;
 }
 
 /* The installed iPhone (#592, measured on Josip's phone on 2026-09-14, iOS 18.7):

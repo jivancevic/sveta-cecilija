@@ -4,6 +4,7 @@ import { useEffect, useSyncExternalStore } from 'react'
 import { APP_STRINGS } from '@/lib/app/strings'
 import {
   DARK_MEDIA_QUERY,
+  ROOT_SCHEME_PROPERTY,
   THEME_ATTRIBUTE,
   THEME_STORAGE_KEY,
   readThemePreference,
@@ -96,9 +97,14 @@ export function ThemeSwitch() {
   const snap = useSyncExternalStore(subscribe, snapshot, serverSnapshot)
   const [preference, resolved] = snap.split('|') as [ThemePreference, 'light' | 'dark']
 
-  // The one write: `.app` is the `<body>`, which is where the tokens live.
+  // Two writes, the same word (#670). `.app` is the `<body>`, which is where
+  // the tokens live; `color-scheme` on `<html>` is what Android reads before
+  // deciding to repaint the page in its own dark theme, and a root that still
+  // said "light" under the night skin would hand it a reason to. Both are the
+  // boot script's writes, kept in step for the rest of the session.
   useEffect(() => {
     document.body.setAttribute(THEME_ATTRIBUTE, resolved)
+    document.documentElement.style[ROOT_SCHEME_PROPERTY] = resolved
   }, [resolved])
 
   function pick(next: ThemePreference) {

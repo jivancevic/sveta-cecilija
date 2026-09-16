@@ -31,6 +31,15 @@ export const THEME_STORAGE_KEY = 'cecilija.theme'
 /** The attribute the tokens key off, on `.app` (the `<body>`). */
 export const THEME_ATTRIBUTE = 'data-theme'
 
+/**
+ * What the resolved skin is called on `<html>` (#670).
+ *
+ * Not a token and not a colour: the one property Android reads to decide
+ * whether to repaint the page in its own dark theme. It has to sit on the root,
+ * which is the one element `data-theme` is deliberately NOT on.
+ */
+export const ROOT_SCHEME_PROPERTY = 'colorScheme'
+
 /** What a person chooses. `system` follows the phone; `light` is the default. */
 export type ThemePreference = 'system' | 'light' | 'dark'
 
@@ -97,5 +106,17 @@ export const DARK_MEDIA_QUERY = '(prefers-color-scheme: dark)'
  * everybody who had chosen it, which is the opposite of what the default change
  * was for. `readThemePreference` and `resolveTheme` compose to the same answer;
  * this is those two rules written once more in ES5 for the first paint.
+ *
+ * **It writes the answer in TWO places** (#670): `data-theme` on the body, which
+ * is where the tokens live, and `color-scheme` on `<html>`, which is where
+ * Android looks. Chrome on Android repaints a page in its own dark theme unless
+ * the document says which schemes it handles, and it asks the ROOT element — so
+ * `color-scheme: light` declared on `.app` (the body, `app.css`) never counted.
+ * The app was drawing its light skin correctly and the phone was inverting it,
+ * which is why Profil could show "Svijetla" over a black screen and why none of
+ * the three choices appeared to do anything. The stylesheet carries the same
+ * rule for a page whose script never ran; this is the copy that beats the first
+ * paint. The body is written FIRST: if a browser were to refuse one of the two,
+ * the tokens matter more than the canvas.
  */
-export const THEME_BOOT_SCRIPT = `(function(){try{var v=localStorage.getItem('${THEME_STORAGE_KEY}');var d=window.matchMedia&&window.matchMedia('${DARK_MEDIA_QUERY}').matches;var t=(v==='light'||v==='dark')?v:(v==='system'?(d?'dark':'light'):'light');document.body.setAttribute('${THEME_ATTRIBUTE}',t)}catch(e){}})()`
+export const THEME_BOOT_SCRIPT = `(function(){try{var v=localStorage.getItem('${THEME_STORAGE_KEY}');var d=window.matchMedia&&window.matchMedia('${DARK_MEDIA_QUERY}').matches;var t=(v==='light'||v==='dark')?v:(v==='system'?(d?'dark':'light'):'light');document.body.setAttribute('${THEME_ATTRIBUTE}',t);document.documentElement.style.${ROOT_SCHEME_PROPERTY}=t}catch(e){}})()`

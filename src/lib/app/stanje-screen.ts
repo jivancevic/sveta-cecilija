@@ -744,7 +744,13 @@ export function stanjeView(detail: PerformanceDetail): StanjeView {
     voditelj: picker(S.addVoditelj, voditelji, null, () => true),
   }
 
-  const given = titlesGiven(countTitles(lineup.map((entry) => entry.role)))
+  // How far along the postava is, and whether it may be confirmed: both belong
+  // to whoever is assembling it (#670). A dancer reads the draft — the crowns
+  // are on the names — but not the checklist of somebody else's job, which they
+  // could not act on and which reads as breakage when it is short.
+  const given = detail.keepsList
+    ? titlesGiven(countTitles(lineup.map((entry) => entry.role)))
+    : 0
 
   return {
     id: p.id,
@@ -804,7 +810,9 @@ export function stanjeView(detail: PerformanceDetail): StanjeView {
       }),
     },
     titlesGiven: given,
-    canConfirm: requirements.voditelj ? voditelji.length === 1 : given === ALL_TITLES,
+    canConfirm:
+      detail.keepsList &&
+      (requirements.voditelj ? voditelji.length === 1 : given === ALL_TITLES),
     lineup,
     keepsList: detail.keepsList,
     // "Popis vodi: Ante Bačić" — drawn only when there IS one (#658). A

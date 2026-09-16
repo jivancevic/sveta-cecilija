@@ -3,10 +3,13 @@ import { buildLineupView, buildPerformanceDetail } from './detail-loaders'
 
 // #432 — the Postava half of the detail loader.
 //
-// The interesting assertion is story 34: a dancer must never receive a draft.
-// It is asserted on the RENDERED PAYLOAD rather than on a template, because the
-// visibility rule is a property of the data contract — the same reason
-// `detail-loaders.test.ts` asserts the email boundary there.
+// Story 34 used to live here: a dancer must never receive a draft. #670
+// reversed it — the postava is visible as soon as it exists, and confirmation
+// decides only what COUNTS. What the loader still withholds from a dancer is
+// the keeper's instruments (the picker, the suggestion, the warnings), and that
+// is asserted on the RENDERED PAYLOAD rather than on a template, because it is
+// a property of the data contract — the same reason `detail-loaders.test.ts`
+// asserts the email boundary there.
 
 const performance = (over: Record<string, unknown> = {}) => ({
   id: 10,
@@ -72,7 +75,6 @@ describe('buildLineupView', () => {
     expect(v.roster.map((p) => p.nickname)).toEqual(['Cici', 'Dado', 'Otman'])
     expect(v.warnings).toEqual([])
     expect(v.canEdit).toBe(true)
-    expect(v.visible).toBe(true)
   })
 
   it('warns about a role outside the profile without hiding the row', () => {
@@ -103,21 +105,54 @@ describe('buildLineupView', () => {
     expect(v.entries).toHaveLength(2)
   })
 
-  // Story 34: the draft never reaches a dancer.
-  it('hands a moreškant NOTHING for a draft lineup', () => {
+  // Story 34 was reversed by #670: the draft is not a secret, the keeper's
+  // INSTRUMENTS are. A dancer reads the postava as soon as it exists — every
+  // role, titled or not — and gets nothing they could not act on.
+  it('hands a moreškant the draft, without the keeper\'s instruments', () => {
     const v = view({}, false)
-    expect(v.visible).toBe(false)
-    expect(v.entries).toEqual([])
+    expect(v.entries).toEqual([
+      { memberId: '1', nickname: 'Cici', role: 'crni_kralj' },
+      { memberId: '2', nickname: 'Dado', role: 'bili' },
+    ])
+    expect(v.canEdit).toBe(false)
+    // The picker, the suggestion and the warnings belong to whoever assembles
+    // the lineup: a dancer can act on none of them, and "nedostaje bula" reads
+    // to them as breakage rather than as work in progress.
     expect(v.suggested).toEqual([])
     expect(v.roster).toEqual([])
     expect(v.warnings).toEqual([])
+  })
+
+  it('keeps the warnings from a dancer even when the draft has one', () => {
+    const v = buildLineupView({
+      performanceDoc: performance(),
+      lineupDocs: [{ id: 1, performance: 10, member: 2, role: 'crni_kralj' }],
+      attendanceRows: [],
+      members: view().roster.map((p) => ({
+        id: p.memberId,
+        nickname: p.nickname,
+        roles: p.roles,
+        primaryRole: p.roles[0] ?? null,
+        active: true,
+        isMoreskant: true,
+      })),
+      keepsList: false,
+    })
+    expect(v.entries).toHaveLength(1)
+    expect(v.warnings).toEqual([])
+  })
+
+  // The same rule, past or future: a visibility rule that depends on the
+  // calendar is one nobody remembers (#670).
+  it('hands a moreškant a past evening the voditelj never confirmed', () => {
+    const v = view({ date: '2026-07-01' }, false)
+    expect(v.entries).toHaveLength(2)
     expect(v.canEdit).toBe(false)
   })
 
   // Story 33: past or future, once confirmed.
   it('hands a moreškant the confirmed lineup, with no editing surface', () => {
     const v = view({ lineupConfirmed: true }, false)
-    expect(v.visible).toBe(true)
     expect(v.entries).toHaveLength(2)
     expect(v.canEdit).toBe(false)
     // No picker for somebody who cannot write.
@@ -150,6 +185,5 @@ describe('buildPerformanceDetail lineup', () => {
       nowMs: Date.UTC(2026, 7, 1),
     })
     expect(detail.lineup.entries).toEqual([])
-    expect(detail.lineup.visible).toBe(false)
   })
 })

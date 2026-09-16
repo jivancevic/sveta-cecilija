@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { effectiveLineup, rolesPresent, stanjeView } from './stanje-screen'
-import type { PerformanceDetail } from './detail-loaders'
+import type { LineupRow, PerformanceDetail } from './detail-loaders'
 import type { RosterPerson } from '@/lib/attendance/army-count'
 import { APP_STRINGS } from './strings'
 
@@ -73,7 +73,6 @@ function detail(over: Partial<PerformanceDetail> = {}): PerformanceDetail {
       ],
       warnings: [],
       roster: [],
-      visible: true,
       canEdit: true,
     },
     comps: {
@@ -381,7 +380,10 @@ describe('stanjeView titles', () => {
 })
 
 describe('stanjeView for a dancer', () => {
-  const asDancer = () => {
+  // The loader hands a dancer the draft itself now (#670) and keeps back only
+  // the keeper's instruments, so that is what this fixture is.
+  const draft: LineupRow[] = [{ memberId: '3', nickname: 'Bepo', role: 'bili_kralj' }]
+  const asDancer = (entries: LineupRow[] = draft) => {
     const d = detail()
     return stanjeView({
       ...d,
@@ -389,17 +391,22 @@ describe('stanjeView for a dancer', () => {
       keepsList: false,
       canEditOthers: false,
       moveTargets: {},
-      lineup: { ...d.lineup, suggested: [], visible: false, canEdit: false },
+      lineup: { ...d.lineup, entries, suggested: [], warnings: [], canEdit: false },
     })
   }
 
-  it('shows no titles at all while the postava is a draft', () => {
-    // The loader empties a draft before it reaches this module (story 34), so
-    // there is nothing to leak: every name is plain and the tally is zero.
+  it('shows the titles of a draft the voditelj has not confirmed', () => {
     const out = asDancer()
-    expect(out.columns.flatMap((c) => c.people).every((p) => p.title === null)).toBe(true)
-    expect(out.titlesGiven).toBe(0)
-    expect(out.lineup).toEqual([])
+    const titled = out.columns.flatMap((c) => c.people).filter((p) => p.title !== null)
+    expect(titled.map((p) => p.title)).toEqual(['bili_kralj'])
+  })
+
+  it('keeps the tally of given titles to whoever is assembling the postava', () => {
+    // A dancer can act on neither the count nor the warnings: they are the
+    // checklist of somebody else's job (#670). The names carry the crowns; the
+    // progress of the job does not leave the keeper.
+    expect(asDancer().titlesGiven).toBe(0)
+    expect(asDancer().canConfirm).toBe(false)
   })
 
   it('shows the titles once the postava is confirmed', () => {
