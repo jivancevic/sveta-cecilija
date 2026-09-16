@@ -1,6 +1,10 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { getMyNotifications } from '@/lib/app/notifications-data'
+import {
+  getRosterMessageCounts,
+  NO_ROSTER_MESSAGE_COUNTS,
+} from '@/lib/app/roster-message-data'
 import { APP_STRINGS } from '@/lib/app/strings'
 import { calendarFeedUrl } from '@/lib/calendar/feed'
 import { Section } from '../../ui'
@@ -8,6 +12,7 @@ import { AppShell } from '../../AppShell'
 import { CalendarPanel } from '../../CalendarPanel'
 import { openScreen } from '../../gate'
 import { NotificationList } from './NotificationList'
+import { RosterMessage } from './RosterMessage'
 
 // `/app/notifications` — the Sandučić obavijesti (#473, #496, reskinned #569).
 //
@@ -45,6 +50,19 @@ export default async function NotificationsPage() {
   // browser) is both impure and a chance for the two to disagree.
   const { rows, nowMs } = await getMyNotifications(viewer.userId)
 
+  // "Napiši poruku" is the one action on this screen, and it is gated PER
+  // ACTION rather than per screen (#654): Obavijesti is a Više row every
+  // account the access decision admits can open, so the screen cannot be the
+  // gate. A reader without `moreska` gets no component at all — hidden, not
+  // greyed with "traži Moreška", which is Izvedbe's rule (#567) and exists so a
+  // blagajna knows who to ask. Nobody has to ask a voditelj for permission to
+  // write to the dancers. The counts are only read for the reader who can send.
+  // `viewer.voditelj` IS `can(user, 'moreska')`, resolved once in `viewer.ts`;
+  // re-typing the predicate here would be a second answer to the same question.
+  const messageCounts = viewer.voditelj
+    ? await getRosterMessageCounts()
+    : NO_ROSTER_MESSAGE_COUNTS
+
   const calendarUrl = calendarFeedUrl(
     process.env.NEXT_PUBLIC_BASE_URL,
     process.env.CALENDAR_FEED_TOKEN,
@@ -55,6 +73,8 @@ export default async function NotificationsPage() {
       <Link className="app__back" href="/app/more">
         ‹ {APP_STRINGS.screens.more}
       </Link>
+
+      {viewer.voditelj && <RosterMessage counts={messageCounts} />}
 
       <NotificationList rows={rows} nowMs={nowMs} />
 

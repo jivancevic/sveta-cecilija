@@ -84,6 +84,32 @@ export async function loadSubscriptions(
 }
 
 /**
+ * How many DEVICES these accounts have between them (#654).
+ *
+ * The confirmation sheet of a voditelj's message says both numbers out loud
+ * ("Zvonit će na 43 mobitela, a svih 76 će je naći u Sandučiću"), and the first
+ * of them is this: phones, not people. A dancer with a phone and a tablet is
+ * two of them, exactly as `sendPushToUsers` counts its `devices`, so the
+ * promise the sheet makes is the one the send can keep.
+ *
+ * A count rather than `loadSubscriptions(...).length`, because the sheet is
+ * rendered for every reader of the screen and has no use for the keys.
+ */
+export async function countSubscriptions(
+  query: PushQuery,
+  userIds: readonly string[],
+): Promise<number> {
+  const ids = userIds.map(Number).filter((n) => Number.isFinite(n))
+  if (ids.length === 0) return 0
+  const res = await query(
+    `SELECT count(*)::int AS n FROM push_subscriptions WHERE user_id = ANY($1::int[])`,
+    [ids],
+  )
+  const n = Number(res.rows[0]?.n ?? 0)
+  return Number.isFinite(n) ? n : 0
+}
+
+/**
  * Member id → the user id of that dancer's login.
  *
  * `Users.member` is the link the invitation writes (#424). A Member without a

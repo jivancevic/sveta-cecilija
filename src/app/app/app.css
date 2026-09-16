@@ -9076,3 +9076,38 @@ a.app__statrow-main:focus-visible {
   white-space: nowrap;
   text-overflow: ellipsis;
 }
+
+/* "Napiši poruku" on Obavijesti (#654): the voditelj's own sentence to the
+   roster. The counter and the button share the line under the field, so the
+   limit sits where the thumb already is rather than above the text. */
+.app__msg-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 4px;
+}
+
+/* Both numbers, said out loud before anything is sent. This is the receipt the
+   whole action is designed around, so it reads at the size of a statement and
+   not at the size of a caption. */
+.app__msg-counts {
+  margin: 0 0 12px;
+  font-size: 16px;
+  line-height: 1.45;
+  color: var(--ink);
+}
+
+/* The sentence itself, quoted back. A voditelj confirming a send is confirming
+   these exact words, so the sheet shows them rather than trusting the field
+   behind the scrim. */
+.app__msg-preview {
+  margin: 12px 0 0;
+  padding: 12px;
+  font-size: 15px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+  color: var(--ink);
+  background: var(--sunk);
+  border-radius: var(--radius);
+}

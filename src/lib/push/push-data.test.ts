@@ -78,6 +78,18 @@ describe('createSender', () => {
     expect(result).toEqual({ recipients: 0, devices: 0, delivered: 0, dead: 0, failed: 0 })
   })
 
+  // The seventh kind (#654) rides the same seam as the other six, which is what
+  // keeps "the push and the inbox row are one write" true for it: every active
+  // moreškant gets a row whether or not their phone could be reached, and the
+  // door is not part of a voditelj's sentence to the dancers.
+  it('files a voditelj message for the whole roster and never for the door', async () => {
+    const { query, calls } = fakeQuery()
+    await createSender(query)(['7', '9'], message('message'))
+
+    expect(lookups(calls)).toEqual([])
+    expect(inserts(calls)[0]!.params[0]).toEqual([7, 9])
+  })
+
   it('writes nothing and asks nothing for an empty audience', async () => {
     const { query, calls } = fakeQuery()
     await createSender(query)([], message('alarm'))

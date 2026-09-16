@@ -1642,10 +1642,45 @@ secretary has to act on.
 | `performance_changed` | dancers | `Users.member` | yes | **yes** |
 | `inquiry` | staff | holds `tickets` | no | no |
 | `dispute` | staff | holds `tickets` | no | no |
+| `message` | dancers | `Users.member` | yes | no |
 
 The rule is a pure table (`resolveNotificationAudience`), so `inbox` is a
 superset of `push` by construction: a notification somebody was pushed and
 cannot then find in their inbox is the defect the table exists to prevent.
+
+### The seventh kind: a voditelj writes to the roster (#654, ADR-0028)
+
+The other six are event-driven — the system reporting something that happened
+to it. `message` is a **person writing a Croatian sentence**, from *Obavijesti*,
+to **every active moreškant**. It is a kind rather than a script because #651's
+"set an e-mail and a password" will not be the last thing seventy-six people
+have to be told.
+
+- **Where the action lives:** `/app/notifications`, the inbox, gated **per
+  action** on `moreska` because the screen is a Više row every account the
+  access decision admits can open. The control is **hidden** from a reader
+  without `moreska`, not greyed with "traži Moreška" — that rule is Izvedbe's
+  (#567) and exists so a blagajna knows who to ask, and nobody has to ask a
+  voditelj for permission to write to the dancers. `POST
+  /api/app/notifications/message` re-checks `moreska` with `requirePermission`
+  regardless: hiding a control is not authorization.
+- **No recipient picker.** A picker is a screen for a case nobody has described.
+  The audience is a pure function over the roster
+  (`rosterMessageAudience` in `src/lib/push/roster-message.ts`, table-tested),
+  and it shrinks in exactly one place: a dancer with no login.
+- **Every one of them gets a row whether or not their phone could be reached.**
+  The send goes through `createSender` like every other roster sender, so the
+  rows are filed for the whole audience before a single endpoint is posted to; a
+  push half that fails in part, or collapses entirely, is reported as fewer
+  phones rung and never as a failed send. Answering 500 there would have a
+  voditelj write the same sentence again on top of rows that already landed.
+- **The confirmation sheet says BOTH numbers out loud** before anything is sent
+  ("Zvonit će na 43 mobitela, a svih 76 će je naći u Sandučiću"), computed on
+  the server by `getRosterMessageCounts` (`roster-message-data.ts`): devices
+  from `push_subscriptions`, accounts from the audience. `readRosterMessage`
+  requires `confirmed: true`, so a caller that skipped the sheet is refused. The
+  failure this prevents is not a mis-tap but somebody sending twice because they
+  could not tell whether the first one went through: the counts are a receipt.
 
 **The route map's open question (#473 Q15), settled by #496: a `door`-only
 holder gets the inbox row and never the push**, and only for the two kinds

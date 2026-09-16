@@ -35,6 +35,10 @@ describe('audienceFor', () => {
     }
   })
 
+  it('sends a voditelj message to the roster, phones and inboxes alike (#654)', () => {
+    expect(audienceFor('message')).toEqual({ group: 'roster', pushes: true, doorInbox: false })
+  })
+
   it('covers every kind, so a new one cannot ship without a rule', () => {
     for (const kind of APP_NOTIFICATION_KINDS) {
       expect(audienceFor(kind)).toBeDefined()
@@ -66,6 +70,13 @@ describe('resolveNotificationAudience', () => {
     expect(resolveNotificationAudience('performance_changed', candidates)).toEqual({
       push: ['7', '9'],
       inbox: ['7', '9', '31'],
+    })
+  })
+
+  it('never files a voditelj message for the door', () => {
+    expect(resolveNotificationAudience('message', candidates)).toEqual({
+      push: ['7', '9'],
+      inbox: ['7', '9'],
     })
   })
 

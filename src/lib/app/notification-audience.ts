@@ -30,6 +30,13 @@
  * An ORDER is never one of them (#496): a sale is not news, it is a number on
  * the Narudžbe screen, and an inbox that filled up with them would bury the two
  * kinds a secretary actually has to act on.
+ *
+ * `message` is the seventh (#654, ADR-0028) and the first that is NOT
+ * event-driven: a voditelj writes a Croatian sentence to the roster from
+ * Obavijesti. Every other kind is the system reporting something that happened
+ * to it; this one is a person saying something. It is a kind rather than a
+ * script because "javite e-mail i lozinku" will not be the last sentence
+ * anybody has to send to seventy-six people.
  */
 export const APP_NOTIFICATION_KINDS = [
   'alarm',
@@ -38,6 +45,7 @@ export const APP_NOTIFICATION_KINDS = [
   'performance_changed',
   'inquiry',
   'dispute',
+  'message',
 ] as const
 
 export type AppNotificationKind = (typeof APP_NOTIFICATION_KINDS)[number]
@@ -74,6 +82,12 @@ const RULES: Record<AppNotificationKind, AudienceRule> = {
   performance_changed: { group: 'roster', pushes: true, doorInbox: true },
   inquiry: { group: 'staff', pushes: false, doorInbox: false },
   dispute: { group: 'staff', pushes: false, doorInbox: false },
+  // The voditelj's own sentence (#654). `roster`, because the audience is the
+  // dancers and nobody else: the door holds no opinion on a rehearsal, and a
+  // blagajna reading "javite e-mail" would be told to do something that is not
+  // theirs to do. It pushes, because the whole point is reaching the phones
+  // that can be reached; the inbox row is what reaches the rest.
+  message: { group: 'roster', pushes: true, doorInbox: false },
 }
 
 export function audienceFor(kind: AppNotificationKind): AudienceRule {

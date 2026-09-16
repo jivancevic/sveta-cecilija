@@ -50,6 +50,9 @@ function croatianPlural(n: number, forms: { one: string; few: string; many: stri
   return `${n} ${forms.many}`
 }
 
+/** The phones a roster message rings (#654): 1 mobitel, 43 mobitela, 11 mobitela. */
+const PHONES = { one: 'mobitel', few: 'mobitela', many: 'mobitela' } as const
+
 export const APP_STRINGS = {
   /** The product name: the manifest, the header and the browser tab all use it. */
   name: 'Cecilija',
@@ -3254,6 +3257,59 @@ export const APP_STRINGS = {
     /** "danas u 21:00" / "5. kolovoza u 21:00", built by `notification-view.ts`. */
     today: 'danas',
     yesterday: 'jučer',
+
+    /**
+     * The voditelj's own message to the roster (#654, ADR-0028).
+     *
+     * The action lives on this screen and is HIDDEN from a reader without
+     * `moreska`, rather than greyed with "traži Moreška" the way Izvedbe's six
+     * actions are (#567). That greying exists so a blagajna knows a thing
+     * exists and who to ask; nobody needs to ask a voditelj for permission to
+     * write to the dancers, so the control is simply not theirs to see.
+     *
+     * `counts` is the whole design of the feature in one sentence: it says BOTH
+     * numbers out loud before anything is sent, because the failure this
+     * prevents is not a mis-tap but somebody writing the same sentence twice
+     * for want of a receipt.
+     */
+    message: {
+      open: 'Napiši poruku',
+      title: 'Poruka moreškantima',
+      hint: 'Ide svim aktivnim moreškantima.',
+      placeholder: 'Što treba javiti?',
+      /** "312 / 500", so the limit is a number rather than a surprise. */
+      counter: (used: number, max: number) => `${used} / ${max}`,
+      send: 'Pošalji',
+      sending: 'Šaljem...',
+      cancel: 'Odustani',
+      confirmTitle: 'Poslati poruku?',
+      /**
+       * "Zvonit će na 43 mobitela, a svih 76 će je naći u Sandučiću."
+       *
+       * "mobitel" takes the three Croatian plural buckets (1 mobitel, 43
+       * mobitela, 11 mobitela); one person is named rather than counted,
+       * because "svih 1" is not Croatian.
+       */
+      counts: (devices: number, people: number) => {
+        const phones =
+          devices === 0
+            ? 'Neće zazvoniti ni jedan mobitel'
+            : `Zvonit će na ${croatianPlural(devices, PHONES)}`
+        const inbox = people === 1 ? 'jedan će je' : `svih ${people} će je`
+        return `${phones}, a ${inbox} naći u Sandučiću.`
+      },
+      /** Under the counts, only when somebody on the roster has no login at all. */
+      withoutLogin: (count: number) =>
+        `${count} ${count === 1 ? 'aktivni moreškant nema račun i neće je dobiti' : 'aktivnih moreškanata nema račun i neće je dobiti'}.`,
+      empty: 'Napiši poruku prije slanja.',
+      tooLong: (max: number) => `Poruka može imati najviše ${max} znakova.`,
+      /** The server's refusal to a caller that skipped the sheet. */
+      unconfirmed: 'Poruku potvrdi prije slanja.',
+      nobody: 'Nijedan aktivni moreškant nema račun, pa poruku nema kome poslati.',
+      failed: 'Poruka nije poslana. Pokušaj ponovno.',
+      sent: (people: number, devices: number) =>
+        `Poruka je poslana. U Sandučiću je kod ${people}, a zazvonilo je ${croatianPlural(devices, PHONES)}.`,
+    },
   },
 
   /**
@@ -3457,6 +3513,18 @@ export const PUSH_MESSAGES = {
    * a schedule nobody has to answer this instant. One sentence, and the tap
    * lands on the list rather than on any one evening.
    */
+  /**
+   * The seventh kind (#654, ADR-0028): a voditelj wrote to the roster.
+   *
+   * The title says WHO rather than what, because the body is the whole message
+   * and a lock screen shows both. "Poruka voditelja" is what a dancer needs to
+   * decide whether to open it now or at the end of the shift; the app's own
+   * name is already on the notification.
+   */
+  message: {
+    title: 'Poruka voditelja',
+  },
+
   createdBulk: {
     title: 'Novi nastupi',
     body: (input: { count: number; firstDate: string }) =>
