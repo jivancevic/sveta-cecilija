@@ -26,6 +26,12 @@ on:
   push:
     branches: [main]
 
+# See the note in ci.yml: one set per branch, and a `push` to main is never
+# cancelled because it is the only check on a PR merged from a stale base.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   drift:
     runs-on: ubuntu-latest

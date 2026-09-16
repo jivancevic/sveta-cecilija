@@ -4,52 +4,121 @@ on:
     branches: [main]
   push:
     branches: [main]
+
+# One set of checks per branch. Three pushes to a PR used to start three full
+# sets and queue the newest behind two runs nobody will read. Cancelling only
+# applies to a pull request: a `push` to main is the only signal that a PR green
+# on a stale base (branch protection runs with `strict: false`) did not break
+# main semantically, so those runs always finish.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
-  # Matches Coolify's `npm ci --omit=dev` on the node:22 image (npm 10).
-  # Catches lockfile / platform skew ("Missing <pkg> from lock file") that
-  # only surfaces in the real prod install, not in setup-node (npm 11).
-  prod-install:
-    name: prod-install
+  # Docs-only changes still have to REPORT — GitHub reads a skipped required
+  # check as forever-pending and wedges the PR — but they do not have to run
+  # anything. `docker.yml` and `schema-drift.yml` each decide this inline; here
+  # one job decides once for the three that follow, so the base-sha fetch
+  # happens once instead of three times. It costs ~20 s on the critical path of
+  # nothing, because `docker` is the long pole and does not wait on it.
+  #
+  # Default is ALWAYS to run: a diff we cannot classify (first push to a branch,
+  # missing base) runs the checks. And if this job itself fails, the three
+  # `needs:` it — all required checks — are skipped and never report, which
+  # wedges the PR. That is the intended failure mode: a wedged PR is safe and
+  # loud, while an `if: always()` that treated a broken scope as "nothing to do"
+  # would report green on an unbuilt change.
+  scope:
+    name: scope
     runs-on: ubuntu-latest
-    container: node:22
+    outputs:
+      decision: ${{ steps.decide.outputs.decision }}
     steps:
       - uses: actions/checkout@v4
-      - run: npm ci --omit=dev
+        with:
+          fetch-depth: 0
+      - id: decide
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            base="${{ github.event.pull_request.base.sha }}"
+            head="${{ github.event.pull_request.head.sha }}"
+          else
+            base="${{ github.event.before }}"
+            head="${{ github.sha }}"
+          fi
+
+          decision=run
+          if [ -n "$base" ] && [ "$base" != "0000000000000000000000000000000000000000" ] \
+             && git cat-file -e "$base^{commit}" 2>/dev/null; then
+            changed=$(git diff --name-only "$base" "$head")
+            if [ -n "$changed" ] && ! echo "$changed" | grep -qvE '(^docs/|\.md$)'; then
+              decision=skip
+            fi
+            echo "Changed files:"; echo "$changed"
+          else
+            echo "No usable base sha ($base) — running."
+          fi
+
+          echo "decision=$decision" >> "$GITHUB_OUTPUT"
+          echo "Decision: $decision"
 
   lint-types:
     name: lint-types
     runs-on: ubuntu-latest
+    needs: scope
     steps:
       - uses: actions/checkout@v4
+        if: needs.scope.outputs.decision == 'run'
       - uses: actions/setup-node@v4
+        if: needs.scope.outputs.decision == 'run'
         with:
           node-version: '22'
           cache: 'npm'
       - run: npm ci
+        if: needs.scope.outputs.decision == 'run'
       # tsc + eslint are BLOCKING gates. The pre-existing backlog (~99 eslint
       # errors, mostly `@next/next/no-html-link-for-pages`, plus a couple of
       # `tsc --noEmit` errors in test files) was cleared in #207, so any new
       # type error or eslint error now fails the PR.
       - name: tsc --noEmit
+        if: needs.scope.outputs.decision == 'run'
         run: npx tsc --noEmit
       - name: eslint
+        if: needs.scope.outputs.decision == 'run'
         run: npm run lint
 
   vitest:
     name: vitest
     runs-on: ubuntu-latest
+    needs: scope
     steps:
       - uses: actions/checkout@v4
+        if: needs.scope.outputs.decision == 'run'
       - uses: actions/setup-node@v4
+        if: needs.scope.outputs.decision == 'run'
         with:
           node-version: '22'
           cache: 'npm'
       - run: npm ci
+        if: needs.scope.outputs.decision == 'run'
       - run: npm test
+        if: needs.scope.outputs.decision == 'run'
 
+  # Kept even though `docker` also runs `next build` inside the image it ships:
+  # when the build breaks, this job says so in a clean 90-second log, while
+  # `docker` says the same thing buried in docker build output. That is worth a
+  # parallel job that costs no wall-clock.
+  #
+  # `prod-install` used to sit beside it, running `npm ci --omit=dev` to mirror
+  # what Coolify installed. Since ADR-0012 Coolify builds the repo-root
+  # Dockerfile, whose deps stage runs a full `npm ci` on node:22-slim — the same
+  # npm major this job pinned. It guarded a path production no longer takes, so
+  # it was removed in #649 rather than left as sincere-looking noise.
   build:
     name: build
     runs-on: ubuntu-latest
+    needs: scope
     env:
       # Throwaway non-secrets: next build fail-fasts at module load on a
       # missing PAYLOAD_SECRET and reads DATABASE_URL. No real DB is reached.
@@ -57,9 +126,13 @@ jobs:
       DATABASE_URL: postgres://u:p@localhost:5432/db
     steps:
       - uses: actions/checkout@v4
+        if: needs.scope.outputs.decision == 'run'
       - uses: actions/setup-node@v4
+        if: needs.scope.outputs.decision == 'run'
         with:
           node-version: '22'
           cache: 'npm'
       - run: npm ci
+        if: needs.scope.outputs.decision == 'run'
       - run: npm run build
+        if: needs.scope.outputs.decision == 'run'
