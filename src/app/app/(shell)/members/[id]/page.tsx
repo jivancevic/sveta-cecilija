@@ -1,5 +1,4 @@
 import type { Metadata } from 'next'
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { loadMember } from '@/lib/app/members-data'
 import { armyOfRole, initialsOf, roleLabel, shownName } from '@/lib/app/members-screen'
@@ -54,11 +53,12 @@ export default async function MemberProfilePage({
   const shown = shownName(member)
 
   return (
-    <AppShell viewer={viewer} screen="members" title={shown}>
-      <Link className="app__back" href="/app/members">
-        ‹ {S.back}
-      </Link>
-
+    <AppShell
+      viewer={viewer}
+      screen="members"
+      title={shown}
+      back={{ href: '/app/members', label: S.back }}
+    >
       <div className="app__cols">
         {/* `app__col` on the inner halves too (#636): the grid spaces the two
             columns, and each column spaces its own blocks. A bare div spaced

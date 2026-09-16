@@ -3,7 +3,13 @@ import QRCode from 'qrcode'
 import { getCurrentJoinCode, getPendingJoinClaims } from '@/lib/app/join-data'
 import { formatDateTimeHr } from '@/lib/app/join'
 import { loadMemberAccess, loadRoster } from '@/lib/app/members-data'
+import { MEMBER_FILTERS } from '@/lib/app/member-marks'
 import { toMemberListInput } from '@/lib/app/members-screen'
+import {
+  firstValue,
+  readOneOfParam,
+  type RawSearchParams,
+} from '@/lib/app/screen-state'
 import { APP_STRINGS } from '@/lib/app/strings'
 import { AppShell } from '../../AppShell'
 import { openScreen } from '../../gate'
@@ -36,9 +42,21 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 }
 
-export default async function MembersPage() {
+export default async function MembersPage({
+  searchParams,
+}: {
+  // The search box and the chip (#666). Read here rather than in the list so
+  // the HTML already carries the filtered roster: a Back that lands on the whole
+  // society and then collapses to six rows reads as a bug even when it settles
+  // in a frame.
+  searchParams: Promise<RawSearchParams>
+}) {
   const { viewer, refusal } = await openScreen('members')
   if (refusal) return refusal
+
+  const params = await searchParams
+  const query = firstValue(params, 'q')
+  const filter = readOneOfParam(params, 'f', MEMBER_FILTERS, 'all')
 
   const [{ members }, access, joinCode, pending] = await Promise.all([
     loadRoster(),
@@ -72,7 +90,12 @@ export default async function MembersPage() {
             client component, so every field it is handed ships in the HTML.
             ADR-0024 lets a mobile cross into `/app` and not an address, and
             since #651 no Member row carries an address at all. */}
-        <MembersList members={members.map(toMemberListInput)} access={access} />
+        <MembersList
+          members={members.map(toMemberListInput)}
+          access={access}
+          initialQuery={query}
+          initialFilter={filter}
+        />
 
         <AddDancer />
       </div>

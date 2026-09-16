@@ -1,6 +1,4 @@
 import Image from 'next/image'
-import Link from 'next/link'
-import { ChevronLeft } from 'lucide-react'
 import type { AppMember } from '@/lib/app/access'
 import type { AppScreenKey } from '@/lib/app/screens'
 import { screenByKey } from '@/lib/app/screens'
@@ -8,6 +6,7 @@ import { APP_STRINGS, ROLE_LABELS } from '@/lib/app/strings'
 import type { AppViewer } from '@/lib/app/viewer'
 import type { DanceRole } from '@/lib/moreskant-profile'
 import { NotificationBell } from './NotificationBell'
+import { BackControl } from './ui/BackControl'
 
 // The header every screen wears, and the column it is rendered in (#495, #593).
 //
@@ -90,6 +89,13 @@ export function AppShell({
    * looking. It used to be a full row under the title on the two screens that
    * have one — the full list and a dancer's profile — which spent a whole row
    * of a phone on a link, on screens where every row is a person.
+   *
+   * **Since #666 every detail screen has one, and it is a real Back**: the
+   * `href` is the fallback for a reader who arrived from a notification or a
+   * pasted address, and everybody else gets `history.back()`, which is what
+   * brings the filter and the scroll offset back with them. In an installed app
+   * on an iPhone there is no address bar and no hardware Back, so a screen
+   * without this carries nothing but an edge gesture. `BackControl` decides.
    */
   back?: { href: string; label: string }
   /** Extra controls left of the bell. The bell itself is always there (#496). */
@@ -118,11 +124,7 @@ export function AppShell({
           </div>
         ) : (
           <div className="app__header-title">
-            {back && (
-              <Link className="app__header-back" href={back.href} aria-label={back.label}>
-                <ChevronLeft size={22} strokeWidth={2} aria-hidden="true" />
-              </Link>
-            )}
+            {back && <BackControl href={back.href} label={back.label} />}
             <div className="app__header-heading">
               <h1>{heading}</h1>
               {season != null && (

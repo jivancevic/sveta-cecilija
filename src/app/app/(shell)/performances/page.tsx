@@ -10,8 +10,23 @@ import {
   type IzvedbaRow,
 } from '@/lib/app/izvedbe-screen'
 import { mayWritePerformance } from '@/lib/app/performance-actions'
+import {
+  PAST_PARAM,
+  readFlagParam,
+  type RawSearchParams,
+} from '@/lib/app/screen-state'
 import { APP_STRINGS, formatPerformanceDate } from '@/lib/app/strings'
-import { Card, Chip, DateDisc, Hero, List, ListRow, Ring, Section } from '../../ui'
+import {
+  Card,
+  Chip,
+  DateDisc,
+  Hero,
+  List,
+  ListRow,
+  ParamDetails,
+  Ring,
+  Section,
+} from '../../ui'
 import { AppShell } from '../../AppShell'
 import { AddPerformance } from '../../PerformanceForm'
 import { openScreen } from '../../gate'
@@ -72,9 +87,16 @@ function IzvedbaListRow({ row }: { row: IzvedbaRow }) {
   )
 }
 
-export default async function PerformancesPage() {
+export default async function PerformancesPage({
+  searchParams,
+}: {
+  // Only the open state of the past (#666); the season itself is not filtered.
+  searchParams: Promise<RawSearchParams>
+}) {
   const { viewer, refusal } = await openScreen('performances')
   if (refusal) return refusal
+
+  const past = readFlagParam(await searchParams, PAST_PARAM)
 
   // `can()` over the set the viewer already carries, never a second read and
   // never a role word.
@@ -146,14 +168,18 @@ export default async function PerformancesPage() {
           schedule is read forwards and last month's evening is something a
           person goes looking for (to correct a door batch, usually). */}
       {season.past.length > 0 && (
-        <details className="app__past">
-          <summary>{S.past(season.past.length)}</summary>
+        <ParamDetails
+          className="app__past"
+          param={PAST_PARAM}
+          open={past}
+          summary={S.past(season.past.length)}
+        >
           <List>
             {season.past.map((p) => (
               <IzvedbaListRow key={p.id} row={izvedbaRow(p, sales?.get(p.id))} />
             ))}
           </List>
-        </details>
+        </ParamDetails>
       )}
     </AppShell>
   )

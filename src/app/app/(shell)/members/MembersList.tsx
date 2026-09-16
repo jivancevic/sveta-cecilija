@@ -18,6 +18,7 @@ import {
   type MemberListInput,
 } from '@/lib/app/members-screen'
 import { APP_STRINGS } from '@/lib/app/strings'
+import { useMirrorState } from '../../use-screen-state'
 import {
   Button,
   Card,
@@ -82,6 +83,16 @@ const S = APP_STRINGS.members
 const MARK_SIZE = 16
 
 /**
+ * The two keys this screen writes into its address (#666).
+ *
+ * `q` is the same letter Korisnici and Narudžbe use for their search, which is
+ * the point: three lists, one word, so a reader who has seen one address can
+ * read the next.
+ */
+const QUERY_PARAM = 'q'
+const FILTER_PARAM = 'f'
+
+/**
  * One drawing per column, in the order the columns are drawn (#663).
  *
  * `Bell` is the one the header already draws for the inbox, on purpose: a bell
@@ -104,16 +115,32 @@ function MarkIcon({ mark, unknown = false }: { mark: MemberMark; unknown?: boole
 export function MembersList({
   members,
   access,
+  initialQuery,
+  initialFilter,
 }: {
   members: MemberListInput[]
+  /** What the address said the search box holds, decided by the server. */
+  initialQuery: string
+  /** What the address said the chip is, decided by the server. */
+  initialFilter: MemberFilter
   /**
    * The decided marks by Member id, or null when the signal could not be read.
    * A plain object rather than a Map: a server component may not hand one down.
    */
   access: Record<string, MemberAccess> | null
 }) {
-  const [query, setQuery] = useState('')
-  const [filter, setFilter] = useState<MemberFilter>('all')
+  // The opening state comes from the SERVER, which read it out of the address
+  // (#666, ADR-0030), rather than from `useSearchParams` here. Both would work,
+  // and only one of them renders the filtered list in the HTML: reading it on
+  // the client means the server sends all seventy-six rows and the first frame
+  // after a Back shows the whole roster before collapsing to the six the reader
+  // had filtered to. From here the screen owns its own filtering and mirrors
+  // what it does back into the address.
+  const mirror = useMirrorState()
+  const [query, setQuery] = useState(initialQuery)
+  const [filter, setFilter] = useState<MemberFilter>(initialFilter)
+  // NOT in the address: a legend is a thing the reader opened, not a thing the
+  // screen is showing, and Back landing on an open sheet would be a ghost.
   const [legend, setLegend] = useState(false)
 
   // The search first, the chip second, so the counts describe the list the
@@ -136,7 +163,10 @@ export function MembersList({
           type="search"
           className="app__input"
           value={query}
-          onChange={(e) => setQuery(e.target.value)}
+          onChange={(e) => {
+            setQuery(e.target.value)
+            mirror({ [QUERY_PARAM]: e.target.value })
+          }}
           placeholder={S.searchPlaceholder}
           autoComplete="off"
           enterKeyHint="search"
@@ -156,7 +186,11 @@ export function MembersList({
           }))}
           active={filter}
           label={S.filtersLabel}
-          onSelect={(key) => setFilter(key as MemberFilter)}
+          onSelect={(key) => {
+            setFilter(key as MemberFilter)
+            // "Svi" is the default, so it leaves no trace in the address.
+            mirror({ [FILTER_PARAM]: key === 'all' ? null : key })
+          }}
         />
       )}
 

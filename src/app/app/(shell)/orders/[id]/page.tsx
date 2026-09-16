@@ -75,11 +75,12 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
   const amount = totalLabel(order)
 
   return (
-    <AppShell viewer={viewer} screen="orders" title={buyer}>
-      <Link className="app__back" href="/app/orders">
-        ‹ {D.back}
-      </Link>
-
+    <AppShell
+      viewer={viewer}
+      screen="orders"
+      title={buyer}
+      back={{ href: '/app/orders', label: D.back }}
+    >
       <Card eyebrow={D.eyebrow} className="app__facts">
         <Fact label={D.performance}>
           {performanceLabel(order.show)}

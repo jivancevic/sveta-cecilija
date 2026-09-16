@@ -73,11 +73,12 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
   const self = account.id === viewer.userId
 
   return (
-    <AppShell viewer={viewer} screen="users" title={name || account.username || account.id}>
-      <Link className="app__user-back" href="/app/users">
-        ‹ {S.back}
-      </Link>
-
+    <AppShell
+      viewer={viewer}
+      screen="users"
+      title={name || account.username || account.id}
+      back={{ href: '/app/users', label: S.back }}
+    >
       <div className="app__cols">
         <Card className="app__user-facts">
           <Fact label={S.create.username}>

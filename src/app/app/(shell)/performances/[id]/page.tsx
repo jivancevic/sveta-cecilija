@@ -1,4 +1,3 @@
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { can } from '@/lib/access/permissions'
 import { getPerformanceDetail } from '@/lib/app/detail-data'
@@ -98,9 +97,6 @@ export default async function PerformanceDetailPage({
 
   const intro = (
     <header className="app__izv-head">
-      <Link className="app__back" href="/app/performances">
-        ‹ {APP_STRINGS.screens.performances}
-      </Link>
       <p className="app__izv-meta">{head.meta}</p>
       {head.chips.length > 0 && (
         <div className="app__chips">
@@ -115,7 +111,13 @@ export default async function PerformanceDetailPage({
   )
 
   return (
-    <AppShell viewer={viewer} screen="performances" title={head.title} intro={intro}>
+    <AppShell
+      viewer={viewer}
+      screen="performances"
+      title={head.title}
+      intro={intro}
+      back={{ href: '/app/performances', label: APP_STRINGS.screens.performances }}
+    >
       {sales && (
         <Card eyebrow={S.salesCard} className="app__izv-sales-card">
           <div className="app__izv-ring">
