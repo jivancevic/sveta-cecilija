@@ -1,4 +1,4 @@
-# ADR-0028: CI is production's last gate, so the bypass is closed
+# ADR-0029: CI is production's last gate, so the bypass is closed
 
 **Status:** Accepted
 **Date:** 2026-09-16
