@@ -28,6 +28,8 @@
 //     loses the phone's trace the morning its owner opens the app on a laptop.
 //     A random id per browser is the only thing that survives both.
 
+import { cookieValue, toMillis } from './http'
+
 /**
  * The cookie that names one browser.
  *
@@ -71,15 +73,8 @@ export function isDeviceId(value: unknown): value is string {
 
 /** The device id out of a raw `Cookie:` header, or null. */
 export function deviceIdFromCookieHeader(header: string | null | undefined): string | null {
-  if (!header) return null
-  for (const pair of header.split(';')) {
-    const at = pair.indexOf('=')
-    if (at === -1) continue
-    if (pair.slice(0, at).trim() !== DEVICE_COOKIE) continue
-    const value = pair.slice(at + 1).trim()
-    return isDeviceId(value) ? value : null
-  }
-  return null
+  const value = cookieValue(header, DEVICE_COOKIE)
+  return isDeviceId(value) ? value : null
 }
 
 /**
@@ -100,12 +95,6 @@ export function deviceCookie(deviceId: string, options: { secure: boolean }): st
   ]
   if (options.secure) parts.push('Secure')
   return parts.join('; ')
-}
-
-function toMillis(value: Date | number | null | undefined): number | null {
-  if (value == null) return null
-  const ms = value instanceof Date ? value.getTime() : value
-  return Number.isFinite(ms) ? ms : null
 }
 
 /**

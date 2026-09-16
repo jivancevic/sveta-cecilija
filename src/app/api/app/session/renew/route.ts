@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { requestIsHttps } from '@/lib/app/http'
 import { appRequestMeta, rejectAppRequest } from '@/lib/app/request-guard'
 import {
   deviceCookie,
@@ -6,7 +7,8 @@ import {
   newDeviceId,
   shouldRecordDevice,
 } from '@/lib/app/device'
-import { loadDeviceLastSeen, poolQuery, recordDevice } from '@/lib/app/device-store'
+import { loadDeviceLastSeen, recordDevice } from '@/lib/app/device-store'
+import { poolQuery } from '@/lib/db/pool-query'
 import { openAppSession } from '@/lib/app/session-data'
 import { requireAppSession } from '@/lib/app/session-guard'
 import { decideSessionRenewal } from '@/lib/app/session-renewal'
@@ -52,17 +54,6 @@ import { decideSessionRenewal } from '@/lib/app/session-renewal'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
-
-/** The scheme the browser actually used, as the reverse proxy reports it. */
-function isHttps(req: Request): boolean {
-  const forwarded = req.headers.get('x-forwarded-proto')?.split(',')[0]?.trim()
-  if (forwarded) return forwarded.toLowerCase() === 'https'
-  try {
-    return new URL(req.url).protocol === 'https:'
-  } catch {
-    return false
-  }
-}
 
 export async function POST(req: Request) {
   const rejection = rejectAppRequest(appRequestMeta(req, process.env.NEXT_PUBLIC_BASE_URL))
@@ -127,7 +118,7 @@ async function maybeRecordDevice(
     })
     // Re-sent on every write, so the year rolls forward for a browser that
     // keeps being used rather than expiring on the anniversary of its first load.
-    return deviceCookie(deviceId, { secure: isHttps(req) })
+    return deviceCookie(deviceId, { secure: requestIsHttps(req) })
   } catch (err) {
     console.error('[app] device heartbeat failed', err)
     return null

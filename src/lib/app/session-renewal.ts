@@ -26,14 +26,10 @@
 // unchanged: renewal is the same four Payload helpers a sign-in link uses,
 // never a second crypto decision.
 
+import { cookieValue, toMillis } from './http'
+
 /** A session cookie older than this is re-issued; a fresher one is left alone. */
 export const SESSION_RENEW_AFTER_MS = 7 * 24 * 60 * 60 * 1000
-
-function toMillis(value: Date | number | null | undefined): number | null {
-  if (value == null) return null
-  const ms = value instanceof Date ? value.getTime() : value
-  return Number.isFinite(ms) ? ms : null
-}
 
 /**
  * Is this session old enough to be worth re-issuing?
@@ -71,16 +67,7 @@ export function sessionTokenFromCookieHeader(
   header: string | null | undefined,
   cookiePrefix: string | null | undefined,
 ): string | null {
-  if (!header) return null
-  const name = appSessionCookieName(cookiePrefix)
-  for (const pair of header.split(';')) {
-    const at = pair.indexOf('=')
-    if (at === -1) continue
-    if (pair.slice(0, at).trim() !== name) continue
-    const value = pair.slice(at + 1).trim()
-    return value === '' ? null : value
-  }
-  return null
+  return cookieValue(header, appSessionCookieName(cookiePrefix))
 }
 
 function decodeBase64Url(segment: string): string | null {

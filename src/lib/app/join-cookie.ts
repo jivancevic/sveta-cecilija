@@ -16,18 +16,9 @@
 //  - **`SameSite=Lax`**, so scanning the QR (a top-level navigation) carries it
 //    and a third-party frame does not.
 
-export const JOIN_COOKIE = 'moreskant_join'
+import { cookieValue, requestIsHttps } from './http'
 
-/** True when the request reached us over https (Traefik terminates TLS). */
-function secureRequest(req: Request): boolean {
-  const proto = req.headers.get('x-forwarded-proto')?.split(',')[0]?.trim()
-  if (proto) return proto === 'https'
-  try {
-    return new URL(req.url).protocol === 'https:'
-  } catch {
-    return false
-  }
-}
+export const JOIN_COOKIE = 'moreskant_join'
 
 /** The `Set-Cookie` value that parks a claim secret on the dancer's device. */
 export function joinClaimCookie(secret: string, maxAgeSeconds: number, req: Request): string {
@@ -38,14 +29,14 @@ export function joinClaimCookie(secret: string, maxAgeSeconds: number, req: Requ
     'SameSite=Lax',
     `Max-Age=${Math.round(maxAgeSeconds)}`,
   ]
-  if (secureRequest(req)) parts.push('Secure')
+  if (requestIsHttps(req)) parts.push('Secure')
   return parts.join('; ')
 }
 
 /** The `Set-Cookie` value that takes it away again: spent, refused or expired. */
 export function clearJoinClaimCookie(req: Request): string {
   const parts = [`${JOIN_COOKIE}=`, 'Path=/', 'HttpOnly', 'SameSite=Lax', 'Max-Age=0']
-  if (secureRequest(req)) parts.push('Secure')
+  if (requestIsHttps(req)) parts.push('Secure')
   return parts.join('; ')
 }
 
@@ -58,19 +49,11 @@ export function clearJoinClaimCookie(req: Request): string {
  * issued, so it is treated as no cookie at all.
  */
 export function joinSecretFrom(req: Request): string | null {
-  const header = req.headers.get('cookie')
-  if (!header) return null
-  for (const part of header.split(';')) {
-    const [name, ...rest] = part.trim().split('=')
-    if (name === JOIN_COOKIE) {
-      const value = rest.join('=')
-      if (!value) return null
-      try {
-        return decodeURIComponent(value)
-      } catch {
-        return null
-      }
-    }
+  const value = cookieValue(req.headers.get('cookie'), JOIN_COOKIE)
+  if (value === null) return null
+  try {
+    return decodeURIComponent(value)
+  } catch {
+    return null
   }
-  return null
 }

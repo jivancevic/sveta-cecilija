@@ -2,7 +2,8 @@ import { headers } from 'next/headers'
 import { getPayload } from 'payload'
 import config from '@payload-config'
 import { deviceIdFromCookieHeader, shouldRecordDevice } from './device'
-import { loadDeviceLastSeen, poolQuery } from './device-store'
+import { loadDeviceLastSeen } from './device-store'
+import { poolQuery } from '@/lib/db/pool-query'
 import { decideSessionRenewal } from './session-renewal'
 
 // Where the sliding session is ASKED FOR (#650).

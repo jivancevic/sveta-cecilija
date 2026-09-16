@@ -12,13 +12,7 @@
 // `device.ts` and are pure. Nothing in this file decides anything.
 
 import type { PoolQuery } from '@/lib/db/pool-query'
-import { poolQuery as poolQueryOf } from '@/lib/db/pool-query'
 import { NO_DEVICE_SIGNAL, type DeviceSignal } from './device'
-
-export type { PoolQuery }
-
-/** The pool Payload holds open, typed down to the one method we use. */
-export const poolQuery: (payload: unknown) => PoolQuery = poolQueryOf
 
 /** One browser's report, as the heartbeat route hands it over. */
 export interface DeviceReport {
