@@ -19,7 +19,6 @@ function member(over: Partial<MemberRosterRow> & { id: string }): MemberRosterRo
     name: 'Ime Prezime',
     nickname: null,
     mobile: null,
-    email: null,
     roles: [],
     primaryRole: null,
     active: true,
@@ -134,11 +133,14 @@ describe('foundLabel', () => {
 
 describe('toMemberListInput', () => {
   // ADR-0024's PII boundary: a mobile may cross into `/app` and an e-mail may
-  // not. The list is a client component, so anything it is handed is in the
-  // HTML — the projection is what keeps the address out of it.
-  it('drops the e-mail and keeps the mobile', () => {
-    const row = member({ id: '1', mobile: '0912345678', email: 'ciro@example.test' })
-    const input = toMemberListInput(row)
+  // not, and #651 (ADR-0028) narrowed rather than reversed it — no Member row
+  // carries an address at all now, and the reader's own is on their own Profil.
+  // The list is a client component, so anything it is handed is in the HTML,
+  // which is why this is a PROJECTION and not a spread: a stray address on the
+  // object it is handed must not survive the trip.
+  it('drops an e-mail smuggled onto the row and keeps the mobile', () => {
+    const row = { ...member({ id: '1', mobile: '0912345678' }), email: 'ciro@example.test' }
+    const input = toMemberListInput(row as never)
     expect(input).not.toHaveProperty('email')
     expect(Object.keys(input)).not.toContain('email')
     expect(input.mobile).toBe('0912345678')

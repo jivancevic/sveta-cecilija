@@ -1261,7 +1261,13 @@ export const APP_STRINGS = {
     missingMember: 'Taj član ne postoji.',
     notMoreskant: 'Član nije označen kao moreškant. Označi ga i spremi, pa pošalji pozivnicu.',
     notActive: 'Član nije aktivan.',
-    noEmail: 'Član nema e-mail adresu. Upiši je i spremi, pa pošalji pozivnicu.',
+    /**
+     * #651: the address belongs to the dancer now, so a voditelj cannot fill it
+     * in. The sentence says what they CAN do instead, which is the other button
+     * on the same screen.
+     */
+    noEmail:
+      'Plesač nije postavio e-mail adresu, pa mu pozivnicu pošalji porukom preko "Kopiraj pozivnicu".',
     createFailed:
       'Račun nije stvoren: adresa ili korisničko ime već postoje. Provjeri podatke i pokušaj ponovno.',
     sendFailed: 'Prijava je otvorena, ali pozivnica nije poslana. Pokušaj ponovno.',
@@ -1275,38 +1281,15 @@ export const APP_STRINGS = {
     staffLogin:
       'Prijava tog člana ima šire dozvole od moreškanta, pa pozivnica nije poslana. Lozinku za takav račun postavlja administrator.',
     sentNew: 'Pozivnica je poslana i prijava je otvorena.',
-    sentAgain: 'Nova poveznica je poslana na e-mail člana.',
+    sentAgain: 'Nova poveznica je poslana na e-mail plesača.',
     unexpected: 'Slanje trenutno nije moguće. Pokušaj ponovno.',
     /** The Members list column: does this member already have a login? */
     hasLogin: 'Ima prijavu',
   },
 
-  /**
-   * "Pošalji pozivnice svima" on the Members LIST (#462).
-   *
-   * The per-row action leaves a voditelj to work out who is still missing by
-   * reading the "Ima prijavu" column, which is a job for the machine. This one
-   * sends to everyone eligible and then says what it did per outcome, because
-   * "poslano 9" alone hides the three dancers whose row has no e-mail and who
-   * are exactly the ones that still need a hand.
-   */
-  inviteAll: {
-    action: 'Pošalji pozivnice svima',
-    sending: 'Šaljem...',
-    /** Nothing to do, which is the good ending and not an error. */
-    none: 'Svi aktivni moreškanti s e-mailom već imaju prijavu.',
-    sent: (count: number) => `Poslano pozivnica: ${count}.`,
-    /**
-     * The two bad outcomes NAME the dancers rather than counting them: a
-     * voditelj can only act on a name. The failed ones especially, because a
-     * failed send still leaves a login behind, so the next bulk press skips
-     * them and only the per-row "Pošalji pozivnicu" will reach them.
-     */
-    noEmail: (who: string) => `Bez e-maila: ${who}.`,
-    failed: (who: string) => `Nije poslano: ${who}. Pošalji im pojedinačno.`,
-    andMore: (count: number) => `i još ${count}`,
-    unexpected: 'Slanje trenutno nije moguće. Pokušaj ponovno.',
-  },
+  // `inviteAll` ("Pošalji pozivnice svima", #462) stood here until #651
+  // (ADR-0028): the letter goes to the login's own address now, so a dancer who
+  // has no login has no address to write to and the bulk send had nobody left.
 
   /**
    * Članovi (#511): the voditelj's roster screen, and the profile behind a row.
@@ -1314,8 +1297,8 @@ export const APP_STRINGS = {
    * Everything here is aimed at a voditelj holding a phone at a rehearsal, so
    * the list says one fact per dancer and every refusal names what to do rather
    * than which rule was broken. The invitation words are NOT here: they are
-   * `inviteLink` and `inviteAll`, unchanged, because the same invitation is the
-   * same invitation wherever it is handed over from.
+   * `inviteLink`, unchanged, because the same invitation is the same invitation
+   * wherever it is handed over from.
    */
   members: {
     /** The list */
@@ -1361,8 +1344,6 @@ export const APP_STRINGS = {
     name: 'Ime i prezime',
     mobile: 'Mobitel',
     mobileHint: 'Na taj broj ide pozivnica SMS-om. Vidljiv je ostalim moreškantima.',
-    email: 'E-mail',
-    emailHint: 'Nije obavezan. Koristi se samo za pozivnicu i nikad se ne prikazuje drugima.',
     roles: 'Plesne uloge',
     primaryRole: 'Glavna uloga',
     active: 'Aktivan moreškant',
@@ -1393,7 +1374,6 @@ export const APP_STRINGS = {
     invalidBody: 'Podaci nisu ispravni.',
     lockedField: 'Ime i bilješku mijenja blagajna, ne voditelj.',
     badMobile: 'Mobitel nije u ispravnom obliku. Upiši ga kao 0912345678 ili +385912345678.',
-    badEmail: 'E-mail nije u ispravnom obliku.',
     missingName: 'Upiši ime i prezime.',
   },
 
@@ -1541,21 +1521,51 @@ export const APP_STRINGS = {
    * on a phone that stays signed in for thirty days, a dancer who sets none is
    * not neglecting anything.
    */
-  setPassword: {
-    title: 'Postavi lozinku',
+  /**
+   * "E-mail i lozinka" on Profil, and the card on Početna that leads to it
+   * (#651, ADR-0028).
+   *
+   * One task and not two: an address with no password cannot sign anybody in
+   * and a password with no address cannot be recovered, so the form asks for
+   * both and the card names both. Every sentence says what the reader GETS
+   * rather than what the system needs, because nothing here is compulsory: a
+   * dancer who never fills it in is still let in by the voditelj's link, for as
+   * long as they like.
+   */
+  ownAccess: {
+    title: 'E-mail i lozinka',
     intro:
-      'Lozinka nije obavezna: u aplikaciju uvijek možeš ući poveznicom koju ti pošaljemo. Postavi je ako se želiš prijavljivati bez čekanja poruke.',
+      'S njima se prijaviš na bilo kojem telefonu i sam zatražiš novu lozinku ako je zaboraviš. Nije obavezno: voditelj ti i dalje može poslati poveznicu za prijavu.',
+    email: 'E-mail',
+    emailHint:
+      'Na tu adresu šaljemo poveznicu za prijavu. Ne vidi je nitko drugi u aplikaciji.',
     password: 'Nova lozinka',
     repeat: 'Ponovi lozinku',
-    submit: 'Spremi lozinku',
+    submit: 'Spremi',
     submitting: 'Spremam...',
     tooShort: 'Lozinka mora imati barem 8 znakova.',
     mismatch: 'Lozinke se ne podudaraju.',
-    saved: 'Lozinka je spremljena.',
+    badEmail: 'Upiši ispravnu e-mail adresu.',
+    nothingToSave: 'Nema promjena za spremanje.',
+    /** The unique index on `users.email`, in a sentence a dancer can act on. */
+    emailTaken: 'Ta e-mail adresa već pripada drugom računu.',
+    /** A voditelj may not empty their own address: the policy requires one. */
+    emailRequired: 'Tvoj račun mora imati e-mail adresu.',
+    saved: 'Spremljeno.',
     /** ADR-0022 again: one holder of a shared login may not rotate it. */
     sharedAccount:
-      'Ovu prijavu koristi više osoba, pa lozinku mijenja administrator.',
+      'Ovu prijavu koristi više osoba, pa e-mail i lozinku mijenja administrator.',
+    /** The route's own refusals; a dancer should never see either. */
+    otherAccount: 'Možeš mijenjati samo vlastiti račun.',
+    lockedField: 'Te podatke mijenja administrator.',
     unexpected: 'Spremanje trenutno nije moguće. Pokušaj ponovno.',
+    /** The Početna card: it removes itself the moment the task is done. */
+    card: {
+      title: 'Postavi e-mail i lozinku',
+      body:
+        'Tako ulaziš u aplikaciju na svakom telefonu i sam vraćaš pristup ako ti prijava istekne. Traje minutu.',
+      action: 'Postavi sada',
+    },
   },
 
   /**

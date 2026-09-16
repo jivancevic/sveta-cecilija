@@ -1,0 +1,27 @@
+-- Drop `members.email`. See ADR-0028 (#651).
+--
+-- The column had ONE job in the whole repository, stated in its own
+-- admin.description since #420: "Where the app invitation is sent." It was
+-- never a contact field, and it served one moreškant out of seventy-six.
+--
+-- ADR-0028 moves the key to the dancer: `users.email` is the address, written
+-- by the person who owns the inbox, and `members.mobile` stays the voditelj's
+-- channel. Keeping both would keep the rule that existed to reconcile them
+-- ("the Member's email wins"), which after #651 would silently overwrite the
+-- address a dancer typed for themselves.
+--
+-- Nothing reads the column any more: the collection field is gone, the seam's
+-- `toRosterRow` no longer projects it, and the invitation reads the login.
+--
+-- ORDERING: `migrate-moreskant-identity.sql` used to add this column on every
+-- restart; that ADD is removed in the same commit, so this file is the only
+-- statement that touches it. It still has to sort AFTER that file (it does:
+-- 'z' > 'm') so an older database that ran the ADD before this release is
+-- cleaned up, and BEFORE `migrate-zz-drop-users-role.sql`, which must stay the
+-- last `migrate-*` file ('dk' < 'drop'); `src/lib/db-schema-safety.test.ts`
+-- asserts that.
+--
+-- Idempotent: IF EXISTS, so it is a no-op on every restart after the first and
+-- on a fresh database built from 00-base.sql, which no longer declares it.
+
+ALTER TABLE public.members DROP COLUMN IF EXISTS email;

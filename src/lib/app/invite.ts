@@ -1,7 +1,7 @@
 // "Pošalji pozivnicu": the one way a moreškant gets a login (#424, ADR-0024).
 //
-// A voditelj opens a Member, ticks Moreškant, fills the email and presses one
-// button. Everything that follows is here: the four refusals, the reverse
+// A voditelj opens a Member, ticks Moreškant and presses one button.
+// Everything that follows is here: the four refusals, the reverse
 // lookup that makes a second press idempotent, the username the login gets and
 // the seven-day link the dancer receives. The voditelj never chooses a
 // permission set, so the invitation bundle is `['moreskant']` and nothing else
@@ -31,12 +31,16 @@ export const INVITE_EXPIRATION_MS = 7 * 24 * 60 * 60 * 1000
  */
 export type InviteChannel = 'email' | 'link'
 
-/** The Member fields the invitation decides on. Emails stay server-side. */
+/**
+ * The Member fields the invitation decides on.
+ *
+ * No address: since #651 (ADR-0028) a dancer's e-mail is their own login's, and
+ * the Member row carries only the mobile the voditelj texts.
+ */
 export interface InviteMember {
   id: string | number
   name?: string | null
   nickname?: string | null
-  email?: string | null
   /**
    * For the SMS deep link of "Kopiraj pozivnicu" (#463). A mobile may cross the
    * `/app` boundary and an e-mail may not (ADR-0024); this one never leaves the
@@ -68,13 +72,12 @@ export interface InviteUser {
  * vocabulary is still not a staff account, and refusing it would break
  * re-inviting a dancer whose row predates #393.
  *
- * The rule exists because an invitation MOVES an existing login's e-mail onto
- * the Member's and mails it a password-reset link (see below). On a dancer that
- * is the point: it is how "the letter got lost" is fixed. On an account that
- * also holds `moreska`, `tickets` or `users` it is an account takeover — any
- * voditelj can edit a Member's e-mail, so pressing "Pošalji pozivnicu" on a
- * Member whose login is a colleague's staff account would mail that colleague's
- * reset link to an address of the presser's choosing.
+ * The rule exists because an invitation mints a live sign-in token for that
+ * login and either mails it or hands it over. On a dancer that is the point: it
+ * is how "the letter got lost" is fixed. On an account that
+ * also holds `moreska`, `tickets` or `users` it is an account takeover: any
+ * voditelj may press the invitation on any Member, so a Member whose login is a
+ * colleague's staff account would hand the presser a live session for it.
  *
  * Before #462 a staff account carried a `member` link only if a `users` holder
  * set one by hand. `/api/app/link-self` makes exactly that link routine for a
@@ -133,14 +136,10 @@ export interface InviteDeps {
   usernameTaken: (candidate: string) => Promise<boolean>
   createUser: (data: {
     username: string
-    /** Absent for a dancer whose Member row has no address (#463). */
-    email?: string
     password: string
     permissions: string[]
     member: string | number
   }) => Promise<InviteUser>
-  /** Keeps an existing login's address on the Member's email (see below). */
-  updateUserEmail: (id: string | number, email: string) => Promise<void>
   /** Payload's `forgotPassword`, email disabled; resolves with the token. */
   issueResetToken: (target: { username?: string; email?: string }, expirationMs: number) => Promise<string | null>
   /** Sends the Croatian invitation mail through the shared Brevo poster. */
@@ -172,10 +171,13 @@ function id(value: unknown): string {
  * login through the `member` reverse lookup and only mints a fresh token, which
  * is exactly what "the email got lost" needs (#419, story 7).
  *
- * **The Member's email wins.** When the linked login carries a different
- * address, the invitation moves the login onto the Member's — the Member row is
- * where a voditelj maintains a dancer's contact details, and two addresses for
- * one person would mean "Zaboravljena lozinka" silently mailing the stale one.
+ * **The letter goes to the LOGIN's address** (#651, ADR-0028). It went to the
+ * Member's until then, and the invitation moved the login onto it on every
+ * press: one rule, existing only so that one person could not end up with two
+ * addresses. Now that a dancer writes their own on Profil, that rule would
+ * overwrite what they typed with a field maintained on their behalf, so both
+ * are gone. A dancer who has set no address gets the link by SMS instead, which
+ * is how most of the roster gets in anyway.
  */
 export async function handleInvite(
   input: { memberId?: unknown } | null | undefined,
@@ -262,7 +264,7 @@ function greetingFor(member: InviteMember): string {
 /** What `ensureDancerLogin` needs: the account half of `InviteDeps`. */
 export type EnsureLoginDeps = Pick<
   InviteDeps,
-  'findUserByMember' | 'usernameTaken' | 'createUser' | 'updateUserEmail' | 'randomPassword'
+  'findUserByMember' | 'usernameTaken' | 'createUser' | 'randomPassword'
 >
 
 export type EnsureLoginOutcome =
@@ -282,15 +284,13 @@ export type EnsureLoginOutcome =
  *
  * The takeover guard runs first (#462 review) and is the reason this returns a
  * REASON rather than throwing: the Member's login may be a colleague's staff
- * account, and every caller has to refuse that before it moves an e-mail, mints
- * a token or opens a session.
+ * account, and every caller has to refuse that before it mints a token or opens
+ * a session.
  */
 export async function ensureDancerLogin(
   member: InviteMember,
   deps: EnsureLoginDeps,
 ): Promise<EnsureLoginOutcome> {
-  const email = typeof member.email === 'string' ? member.email.trim() : ''
-
   let user: InviteUser | null = null
   try {
     user = await deps.findUserByMember(member.id)
@@ -310,9 +310,9 @@ export async function ensureDancerLogin(
     try {
       user = await deps.createUser({
         username,
-        // Omitted rather than empty when there is none: Payload's unique index
-        // on `email` would make the second address-less dancer a duplicate.
-        ...(email ? { email } : {}),
+        // No address at all: a dancer's login is opened without one and stays
+        // without one until they type theirs on Profil (#651). Payload's unique
+        // index on `email` is also why an empty string is not an option.
         password: deps.randomPassword(),
         // The whole bundle, spelled here once: a dancer's login reaches /app
         // and their own answers, nothing else.
@@ -320,25 +320,17 @@ export async function ensureDancerLogin(
         member: member.id,
       })
     } catch {
-      // The realistic failure is a duplicate email (the address already belongs
-      // to another account), which is a data problem the voditelj can fix.
+      // The realistic failure left is a duplicate username, which the allocator
+      // avoids but cannot rule out under a race.
       return { ok: false, reason: 'create-failed' }
     }
     return { ok: true, user, created: true }
   }
 
-  // The Member's e-mail wins: the Member row is where a voditelj maintains a
-  // dancer's contact details, and two addresses for one person would mean the
-  // sign-in link going to the stale one.
-  if (email && typeof user.email === 'string' && user.email.trim().toLowerCase() !== email.toLowerCase()) {
-    try {
-      await deps.updateUserEmail(user.id, email)
-      user = { ...user, email }
-    } catch {
-      return { ok: false, reason: 'create-failed' }
-    }
-  }
-
+  // Nothing is written to an existing login here. "The Member's e-mail wins"
+  // lived at exactly this point until #651 and moved the account onto the
+  // Member's address on every press; ADR-0028 gives the address to the dancer,
+  // so an invitation may no longer touch it.
   return { ok: true, user, created: false }
 }
 
@@ -349,7 +341,7 @@ type MintedInvitation =
       member: InviteMember
       created: boolean
       username: string
-      /** The Member's address, empty on the link channel when there is none. */
+      /** The LOGIN's address, empty on the link channel when there is none. */
       email: string
       link: string
     }
@@ -358,13 +350,12 @@ type MintedInvitation =
 /**
  * Find or create the dancer's login and mint a fresh seven-day link.
  *
- * The whole of what an invitation IS, in one place, because there are three
- * callers now (the mail, "Kopiraj pozivnicu" and the bulk action) and three
- * hand-copied versions of "the Member's e-mail wins" is how that rule ends up
- * true on two of them.
+ * The whole of what an invitation IS, in one place, because there are two
+ * callers (the mail and "Kopiraj pozivnicu") and two hand-copied versions of a
+ * rule is how it comes to be true on only one of them.
  *
- * The channel changes exactly one thing: whether a Member with no e-mail is a
- * refusal (mail) or ordinary (link).
+ * The channel changes exactly one thing: whether a dancer whose LOGIN has no
+ * address is a refusal (mail) or ordinary (link).
  */
 async function mintInvitation(
   input: { memberId?: unknown } | null | undefined,
@@ -400,11 +391,21 @@ async function mintInvitation(
   // `active` defaults to true in the schema, so only an explicit false refuses.
   if (member.active === false) return no(400, APP_STRINGS.invite.notActive)
 
-  const email = typeof member.email === 'string' ? member.email.trim() : ''
   // The one channel difference: a letter needs somewhere to go, a copied link
-  // does not. Since #463 a dancer's login needs no address at all
-  // (`user-email-policy.ts`), so this is the only place the absence bites.
-  if (!email && channel === 'email') return no(400, APP_STRINGS.invite.noEmail)
+  // does not. The address is the LOGIN's since #651 (ADR-0028), so the mail
+  // channel looks the account up BEFORE anything is opened: refusing after
+  // `ensureDancerLogin` would leave a brand-new account behind on every press
+  // for a dancer who has never typed an address, which is most of them.
+  if (channel === 'email') {
+    let existing: InviteUser | null = null
+    try {
+      existing = await deps.findUserByMember(member.id)
+    } catch {
+      existing = null
+    }
+    const known = typeof existing?.email === 'string' ? existing.email.trim() : ''
+    if (!known) return no(400, APP_STRINGS.invite.noEmail)
+  }
 
   const login = await ensureDancerLogin(member, deps)
   if (!login.ok) {
@@ -414,9 +415,10 @@ async function mintInvitation(
     )
   }
   const { user, created } = login
+  const email = typeof user.email === 'string' ? user.email.trim() : ''
 
-  // Target the login by username when it has one: it is unique, stable and
-  // unaffected by the email we may have just moved. Payload's forgotPassword
+  // Target the login by username when it has one: it is unique and stable,
+  // while an address is the dancer's own to change. Payload's forgotPassword
   // resolves exactly one of the two fields.
   const username = typeof user.username === 'string' && user.username ? user.username : ''
   if (!username && !email) {

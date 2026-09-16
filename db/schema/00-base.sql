@@ -308,7 +308,6 @@ CREATE TABLE IF NOT EXISTS public.members (
     is_moreskant boolean DEFAULT false,
     nickname character varying,
     mobile character varying,
-    email character varying,
     primary_role public.enum_members_primary_role,
     year_round boolean DEFAULT false,
     updated_at timestamp(3) with time zone DEFAULT now() NOT NULL,

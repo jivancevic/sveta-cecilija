@@ -247,6 +247,52 @@ export function nextSentence(input: {
   return words.onDate(dayAndMonth(input.date))
 }
 
+// ── The one thing Početna asks for ─────────────────────────────────────────
+
+/** The card that asks a reader to take their own way in (#651, ADR-0028). */
+export interface OwnAccessPrompt {
+  title: string
+  body: string
+  action: string
+  href: string
+}
+
+/**
+ * "Postavi e-mail i lozinku", or nothing at all.
+ *
+ * The one prompt on a screen that is otherwise all figures, and the only thing
+ * on it that asks rather than reports. It exists because a dancer signed in by
+ * a voditelj's link holds no key of their own: no address means "Zaboravljena
+ * lozinka" has nowhere to send anything, and no password means a second phone
+ * has nothing to type.
+ *
+ * **The address is the signal, and it is the only one.** ADR-0028 says why in
+ * as many words: a dancer who sets only a password can already sign in
+ * anywhere, and two half-signals on seventy-six rows is worse than one honest
+ * one. The form behind the card is one form that writes both, so a reader who
+ * completes it has both and the card is gone on the same render.
+ *
+ * **Never blocking, and never for a shared login.** `/app/welcome` gains no
+ * fourth step for this (the Dobrodošlica is remembered per DEVICE and this is
+ * per account, so a fourth step would re-ask somebody on every new phone), and
+ * `tehnika` is a room rather than a person, so it has no address to own.
+ */
+export function ownAccessPrompt(input: {
+  hasEmail: boolean
+  shared?: boolean
+}): OwnAccessPrompt | null {
+  if (input.shared === true || input.hasEmail) return null
+  const words = APP_STRINGS.ownAccess.card
+  return {
+    title: words.title,
+    body: words.body,
+    action: words.action,
+    // The anchor rather than the bare screen: the fields are the fourth section
+    // of Profil, and a reader who tapped "Postavi sada" should land on them.
+    href: '/app/account#security',
+  }
+}
+
 // ── The cards ──────────────────────────────────────────────────────────────
 
 export interface CardChip {

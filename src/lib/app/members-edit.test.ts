@@ -24,7 +24,6 @@ const CICI: MemberRosterRow = {
   name: 'Ivan Marić',
   nickname: 'Ćiro',
   mobile: '0912345678',
-  email: 'ciro@example.com',
   roles: ['crni', 'crni_kralj'],
   primaryRole: 'crni_kralj',
   active: true,
@@ -75,19 +74,16 @@ describe('handleMemberPatch', () => {
     })
   })
 
-  it('normalises the mobile and lower-cases the e-mail the way the hook does', async () => {
+  it('normalises the mobile the way the hook does', async () => {
     const d = deps()
-    await handleMemberPatch('4', { mobile: ' 091 234 5678 ', email: ' Ciro@Example.COM ' }, d)
-    expect(d.save).toHaveBeenCalledWith('4', {
-      mobile: '091 234 5678',
-      email: 'ciro@example.com',
-    })
+    await handleMemberPatch('4', { mobile: ' 091 234 5678 ' }, d)
+    expect(d.save).toHaveBeenCalledWith('4', { mobile: '091 234 5678' })
   })
 
-  it('clears a mobile or an e-mail typed empty', async () => {
+  it('clears a mobile typed empty', async () => {
     const d = deps()
-    await handleMemberPatch('4', { mobile: '', email: '' }, d)
-    expect(d.save).toHaveBeenCalledWith('4', { mobile: null, email: null })
+    await handleMemberPatch('4', { mobile: '' }, d)
+    expect(d.save).toHaveBeenCalledWith('4', { mobile: null })
   })
 
   it('refuses a mobile no dialler could read, because the SMS invitation goes there', async () => {
@@ -98,10 +94,15 @@ describe('handleMemberPatch', () => {
     expect(d.save).not.toHaveBeenCalled()
   })
 
-  it('refuses an e-mail that is not one', async () => {
-    const res = await handleMemberPatch('4', { email: 'ciro' }, deps())
+  // #651 (ADR-0028): `email` is not a key of this route any more. A body that
+  // carries one changes nothing, because only the keys the reader knows are
+  // read, and a patch with nothing else in it is the "nothing to save" refusal.
+  it('ignores an e-mail, because the address belongs to the login now', async () => {
+    const d = deps()
+    const res = await handleMemberPatch('4', { email: 'ciro@example.com' }, d)
     expect(res.status).toBe(400)
-    expect(res.body).toEqual({ error: S.badEmail })
+    expect(res.body).toEqual({ error: S.nothingToSave })
+    expect(d.save).not.toHaveBeenCalled()
   })
 
   it('refuses the attribution half, which is the blagajna’s (ADR-0019)', async () => {
@@ -226,16 +227,15 @@ describe('handleMemberCreate', () => {
     })
   })
 
-  it('carries an optional mobile and e-mail through the same normalisation', async () => {
+  it('carries an optional mobile through the same normalisation', async () => {
     const d = deps()
-    await handleMemberCreate({ ...NEW, mobile: ' 0912345678 ', email: ' P@E.HR ' }, d)
+    await handleMemberCreate({ ...NEW, mobile: ' 0912345678 ' }, d)
     expect(d.create).toHaveBeenCalledWith({
       name: 'Pero Perić',
       nickname: 'Pero',
       roles: ['crni'],
       primaryRole: 'crni',
       mobile: '0912345678',
-      email: 'p@e.hr',
       isMoreskant: true,
     })
   })

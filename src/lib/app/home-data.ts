@@ -68,6 +68,7 @@ import {
   moreskaCard,
   moreskaEmptyCard,
   nextSentence,
+  ownAccessPrompt,
   ordersCard,
   performancesCard,
   registerFor,
@@ -80,6 +81,7 @@ import {
   firstNameOf,
   type HomeCard,
   type HomeCardable,
+  type OwnAccessPrompt,
 } from './home-screen'
 
 /**
@@ -108,6 +110,14 @@ export interface HomeScreen {
   sentence: string | null
   /** The hero, when the account carries the Moreška tab and has a nastup left. */
   moreska: MoreskaHero | null
+  /**
+   * "Postavi e-mail i lozinku", or null once the reader owns their way in
+   * (#651, ADR-0028).
+   *
+   * No query of its own: the answer is the account row the viewer already
+   * carries, so the card is gone on the first render after the form saves.
+   */
+  ownAccess: OwnAccessPrompt | null
   /** The tab screens' cards, at full weight. Awaited before anything paints. */
   cards: HomeCard[]
   /**
@@ -332,6 +342,11 @@ export async function loadHomeScreen(viewer: AppViewer): Promise<HomeScreen> {
 
   return {
     moreska,
+    // A reader with no address of their own is asked for one, once, on the one
+    // screen that is not about a job. It is never blocking: the card sits under
+    // the reader's own work and a dancer who came to read tonight's postava
+    // walks past it.
+    ownAccess: ownAccessPrompt({ hasEmail: viewer.email != null, shared: viewer.shared }),
     greeting: greetingLine({
       nowMs,
       shared: viewer.shared,

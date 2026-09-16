@@ -28,7 +28,6 @@ export function toRosterRow(doc: Record<string, unknown>): MemberRosterRow {
     name: typeof doc.name === 'string' ? doc.name : '',
     nickname: typeof doc.nickname === 'string' ? doc.nickname : null,
     mobile: typeof doc.mobile === 'string' ? doc.mobile : null,
-    email: typeof doc.email === 'string' ? doc.email : null,
     roles: Array.isArray(doc.roles) ? doc.roles.filter((r): r is string => typeof r === 'string') : [],
     primaryRole: typeof doc.primaryRole === 'string' ? doc.primaryRole : null,
     active: doc.active !== false,

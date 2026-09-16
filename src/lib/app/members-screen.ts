@@ -30,7 +30,6 @@ export interface MemberRosterRow {
   name: string
   nickname: string | null
   mobile: string | null
-  email: string | null
   roles: string[]
   primaryRole: string | null
   active: boolean
@@ -51,16 +50,21 @@ export interface MemberRosterRow {
 }
 
 /**
- * What the CLIENT list is handed: the roster row with the e-mail taken off.
+ * What the CLIENT list is handed: the roster row, projected field by field.
  *
  * ADR-0024's PII boundary is that a mobile may cross into `/app` and an e-mail
- * may not. The list needs the mobile (the SMS deep link dials it) and never the
- * address, so the page projects it away with {@link toMemberListInput} before
- * the row reaches a `'use client'` component and, with it, the HTML.
+ * may not, and ADR-0028 narrowed rather than reversed it: a dancer's address is
+ * their own login's, read only on their own Profil, and no roster row carries
+ * one at all since `Members.email` was retired (#651).
+ *
+ * The projection stays, and stays explicit, because it is what keeps that true:
+ * a row reaching a `'use client'` component ships in the HTML, so the list is
+ * handed the nine fields it draws rather than whatever the seam happens to
+ * return. `Omit<…, 'email'>` is the same set as the row today and says why.
  */
 export type MemberListInput = Omit<MemberRosterRow, 'email'>
 
-/** Drop the e-mail. Explicit, because a spread would carry it silently. */
+/** The nine fields the list draws. Explicit, because a spread carries anything. */
 export function toMemberListInput(member: MemberRosterRow): MemberListInput {
   return {
     id: member.id,

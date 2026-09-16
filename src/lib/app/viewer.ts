@@ -56,6 +56,17 @@ export interface AppViewer {
    */
   accountName: string | null
   /**
+   * The reader's OWN e-mail address, or null (#651, ADR-0028).
+   *
+   * ADR-0024 keeps a dancer's address out of `/app`, and this narrows that
+   * rather than reversing it: it is the reader's own, on their own row, and it
+   * is rendered on exactly one screen — the "E-mail i lozinka" field on Profil,
+   * which is where they write it. No client component is handed the viewer, so
+   * nothing else can put it into HTML by accident, and Početna reads only
+   * whether it is null.
+   */
+  email: string | null
+  /**
    * The login's own name (ADR-0011), for the one header that has nothing else.
    *
    * Više names the reader (#569), and a shared account has no person to name:
@@ -89,6 +100,7 @@ const DENIED: AppViewer = {
   memberLinkId: null,
   me: null,
   accountName: null,
+  email: null,
   username: null,
   shared: false,
   nav: { tabs: [], overflow: [], landing: null, groups: [] },
@@ -134,6 +146,7 @@ export async function resolveAppAccessFor(
   access: AppAccess
   memberLinkId: string | null
   accountName: string | null
+  email: string | null
   username: string | null
   shared: boolean
 }> {
@@ -147,6 +160,7 @@ export async function resolveAppAccessFor(
   // sign-in.
   let tabs: unknown = null
   let accountName: string | null = null
+  let email: string | null = null
   let username: string | null = null
   let shared = false
   try {
@@ -163,6 +177,7 @@ export async function resolveAppAccessFor(
     partnerId = partner == null ? null : String(partner)
     tabs = row?.tabs ?? null
     accountName = typeof row?.name === 'string' && row.name.trim() !== '' ? row.name.trim() : null
+    email = typeof row?.email === 'string' && row.email.trim() !== '' ? row.email.trim() : null
     username =
       typeof row?.username === 'string' && row.username.trim() !== '' ? row.username.trim() : null
     shared = row?.shared === true
@@ -184,6 +199,7 @@ export async function resolveAppAccessFor(
     access: decideAppAccess(user, toAppMember(memberDoc), { partnerId, tabs }),
     memberLinkId,
     accountName,
+    email,
     username,
     shared,
   }
@@ -205,7 +221,7 @@ async function resolveAppViewerUncached(): Promise<AppViewer> {
   const { user } = await payload.auth({ headers: await headers() })
   if (!user) return DENIED
 
-  const { access, memberLinkId, accountName, username, shared } = await resolveAppAccessFor(
+  const { access, memberLinkId, accountName, email, username, shared } = await resolveAppAccessFor(
     payload as unknown as ViewerPayload,
     user,
   )
@@ -217,6 +233,7 @@ async function resolveAppViewerUncached(): Promise<AppViewer> {
     memberLinkId,
     me: access.kind === 'ok' ? access.self : null,
     accountName,
+    email,
     username,
     shared,
     nav: access.kind === 'ok' ? access.nav : DENIED.nav,

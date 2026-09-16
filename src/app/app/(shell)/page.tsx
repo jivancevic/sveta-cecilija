@@ -1,4 +1,5 @@
 import { Suspense } from 'react'
+import Link from 'next/link'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { Bell } from 'lucide-react'
@@ -168,6 +169,24 @@ export default async function AppHomePage() {
           a flag, so it can never be wrong about it. Placed here and on no other
           screen: Početna is the front door, and an offer on top of a screen
           somebody opened to do something is noise. */}
+      {/* "Postavi e-mail i lozinku" (#651, ADR-0028): the one thing this screen
+          ASKS for, under the reader's own work and above everything else. It
+          removes itself the moment the account carries an address, and it is
+          never blocking — a dancer who opened the app five minutes before a
+          nastup to read the postava scrolls past it. The rule is
+          `ownAccessPrompt`, so nothing here decides who sees it. */}
+      {home.ownAccess && (
+        <Card>
+          <div className="ui-card__eyebrow">{home.ownAccess.title}</div>
+          <p className="ui-small">{home.ownAccess.body}</p>
+          <div className="ui-btns">
+            <Link className="ui-btn ui-btn--primary" href={home.ownAccess.href}>
+              {home.ownAccess.action}
+            </Link>
+          </div>
+        </Card>
+      )}
+
       <InstallNudge />
 
       {home.cards.length > 0 && <Tiles>{home.cards.map(renderTile)}</Tiles>}

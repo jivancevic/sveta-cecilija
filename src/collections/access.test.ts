@@ -298,11 +298,12 @@ describe('Members access', () => {
         }
       | undefined
 
+  // `email` was one of these until #651 (ADR-0028): a dancer's address is now
+  // their own login's, and the Member row carries only the mobile.
   const MORESKANT_FIELDS = [
     'isMoreskant',
     'nickname',
     'mobile',
-    'email',
     'roles',
     'primaryRole',
   ] as const
