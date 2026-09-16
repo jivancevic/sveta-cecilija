@@ -42,10 +42,10 @@ describe('Lineups access', () => {
   // reaches nobody. The Where reaches THROUGH the relationship rather than
   // carrying a list of ids, so it cannot go stale between the access decision
   // and the query.
-  it('a moreškant reads only rows of a CONFIRMED performance, as a Where', () => {
-    expect(access('read', moreskant)).toEqual({
-      'performance.lineupConfirmed': { equals: true },
-    })
+  it('a moreškant reads every row, draft included', () => {
+    // Story 34 scoped this to `performance.lineupConfirmed` until #670. The
+    // postava is visible as soon as it exists; confirmation decides what counts.
+    expect(access('read', moreskant)).toBe(true)
   })
 
   // The hole this asserts against is the one attendance-access.ts documents:

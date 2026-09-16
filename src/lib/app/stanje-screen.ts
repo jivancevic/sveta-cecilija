@@ -361,8 +361,9 @@ export interface StanjeView {
  *
  * While the voditelj may still edit it, that is the answers with the stored
  * rows overlaid ({@link lineupWithTitles}); once it is confirmed, or for a
- * dancer, it is exactly what is stored, which the loader has already emptied
- * for a dancer looking at a draft (story 34).
+ * dancer, it is exactly what is stored — draft included since #670, which is
+ * what puts the crowns on a dancer's screen on the night rather than the
+ * morning after.
  *
  * `answered` is every member with an attendance row of any kind, which is the
  * difference between "said no" and "was never asked": the first drops a stored

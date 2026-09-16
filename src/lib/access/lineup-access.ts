@@ -1,14 +1,15 @@
 // Who may see and change a lineup row (#432, ADR-0023 × ADR-0024).
 //
 // The attendance shape with one difference, and the difference is the whole
-// feature: a dancer's read is scoped by the PERFORMANCE's confirmation flag
-// rather than by their own member link. A confirmed lineup is society-wide
-// news ("I know I am kralj tonight", story 33); a DRAFT is a half-typed list
-// that must reach nobody (story 34).
+// feature: a dancer's read is not scoped by their own member link. A lineup is
+// society-wide news ("I know I am kralj tonight", story 33), and since #670
+// that holds for a DRAFT too — story 34 hid one until confirmation, and
+// confirmation comes after the evening, so a dancer learnt they had been kralj
+// the morning after. Confirmation decides what COUNTS, not who may look
+// (glossary: *Lineup (postava)*).
 //
 //   - `moreska` — the voditelj. Every row, read and write.
-//   - `moreskant` — a dancer. Only rows of a confirmed performance, as a
-//     `Where`, so the stock Payload CRUD can never hand out a draft.
+//   - `moreskant` — a dancer. Every row, read only.
 // Nobody else, `tickets` included: roster data stays inside the voditelj circle.
 //
 // WRITES ARE `moreska`-ONLY AND A BOOLEAN, never a `Where`. Payload's create
@@ -27,17 +28,19 @@ import { can, type PermissionUser } from './permissions'
 import type { Where } from 'payload'
 
 /**
- * READ: the voditelj sees every row; a dancer sees the confirmed ones.
+ * READ: the voditelj and the dancer alike see every row (#670).
  *
- * The `Where` reaches through the relationship (`performance.lineupConfirmed`)
- * rather than carrying a list of ids, so it cannot go stale between the moment
- * access is decided and the moment the query runs — a lineup unlocked mid
- * request stops being visible immediately, which is what "never a draft" means.
+ * It used to be a `Where` on `performance.lineupConfirmed`, which is the shape
+ * this file would go back to if a draft ever had to be hidden again. It does
+ * not: the postava is visible as soon as it exists, and what a dancer is still
+ * kept away from — the picker, the suggestion, the warnings, the tally — is not
+ * lineup ROWS and so was never this predicate's job. The return type stays
+ * `boolean | Where` for that reason and because the write half below reads as a
+ * deliberate boolean only next to a sibling that could have been a `Where`.
  */
 export function lineupReadAccess(user: PermissionUser): boolean | Where {
   if (can(user, 'moreska')) return true
-  if (!can(user, 'moreskant')) return false
-  return { 'performance.lineupConfirmed': { equals: true } }
+  return can(user, 'moreskant')
 }
 
 /**

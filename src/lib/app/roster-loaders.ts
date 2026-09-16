@@ -77,15 +77,14 @@ export interface RosterPerformance {
   /** Whether the postava of this evening is confirmed (#432): a past-row badge. */
   lineupConfirmed: boolean
   /**
-   * The title the viewer wears in this evening's CONFIRMED postava (#566), or
-   * null: no title, no postava, or one the voditelj has not confirmed yet.
+   * The title the viewer wears in this evening's postava (#566), or null: no
+   * title, or no postava at all. A nacrt counts (#670) — the crown is worn the
+   * moment the voditelj hands it out, not the morning after they confirm.
    *
    * A title belongs to one performance's lineup and never to a person
    * (glossary: *Title*), which is exactly why it is a field on the performance
    * rather than on the profile. Moreška reads it off the NEXT nastup for the
-   * crown on the reader's own mark, and an unconfirmed postava yields nothing:
-   * a dancer must not learn they are kralj tonight from a draft the voditelj is
-   * still moving around (story 34).
+   * crown on the reader's own mark.
    */
   myTitle: DanceTitle | null
   /** Whether the viewer may still change that answer from the card (#422). */
@@ -252,9 +251,9 @@ export function attachOwnAnswers(
  * Fold the viewer's OWN title into the cards (#566).
  *
  * `titles` is keyed by performance id and holds whatever the viewer's lineup
- * row says; only a title on a CONFIRMED postava survives, because an
- * unconfirmed one is a draft no dancer may read (story 34) and a plain crni is
- * not a title at all.
+ * row says; a plain crni is not a title and drops out. **A nacrt counts** since
+ * #670: the evening a dancer is kralj is the evening they should see the crown,
+ * and confirmation happens after the night it records.
  */
 export function attachOwnTitles(
   rows: RosterPerformance[],
@@ -264,7 +263,7 @@ export function attachOwnTitles(
     const role = titles.get(p.id)
     return {
       ...p,
-      myTitle: p.lineupConfirmed && isDanceTitle(role) ? role : null,
+      myTitle: isDanceTitle(role) ? role : null,
     }
   })
 }
@@ -282,10 +281,12 @@ export interface PostavaRoleRow {
  * than a query per evening: the season list draws forty rows and a read per row
  * is forty round trips for two digits each.
  *
- * **Only a confirmed evening gets a count.** An unconfirmed lineup is a draft
- * (story 34) and saying "7/9" off one would put a number nobody has stood
- * behind on a screen every dancer reads. A confirmed postava with nobody in an
- * army counts zero there, which is a fact and not a missing list.
+ * **Only a confirmed evening gets a count.** Saying "7/9" off a draft would put
+ * a number nobody has stood behind on a screen every dancer reads. #670 opened
+ * the postava itself to a dancer and left this alone on purpose: the count is
+ * withheld from the voditelj too, so it is a rule about drafts rather than
+ * about audiences. A confirmed postava with nobody in an army counts zero
+ * there, which is a fact and not a missing list.
  *
  * The bula is in neither number, and neither is an Experience's voditelj:
  * `armyOfLineupRole` answers 'bula' and null for those, and "7/9" is the two
