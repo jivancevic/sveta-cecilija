@@ -3,7 +3,6 @@ import {
   handleInvite,
   handleInviteLink,
   INVITE_EXPIRATION_MS,
-  isDancerLogin,
   isUsableBaseUrl,
   signInLink,
   type InviteDeps,
@@ -247,27 +246,6 @@ describe('handleInvite — the login behind the Member is not a dancer', () => {
     const d = deps({ findUserByMember: vi.fn().mockResolvedValue(null) })
     expect((await handleInviteLink({ memberId: '12' }, d)).status).toBe(200)
     expect(d.createUser).toHaveBeenCalledTimes(1)
-  })
-})
-
-describe('isDancerLogin', () => {
-  it.each([
-    ['no login at all', null, true],
-    ['an empty set', { id: 1, permissions: [] }, true],
-    ['a missing set', { id: 1 }, true],
-    ['exactly moreskant', { id: 1, permissions: ['moreskant'] }, true],
-    // #520: a door login reaches no further than the shared `tehnika` account,
-    // so the door person who dances keeps ONE account and stays invitable.
-    ['exactly door', { id: 1, permissions: ['door'] }, true],
-    ['door and moreskant', { id: 1, permissions: ['door', 'moreskant'] }, true],
-    ['door plus a staff word', { id: 1, permissions: ['door', 'tickets'] }, false],
-    ['moreska alone', { id: 1, permissions: ['moreska'] }, false],
-    ['moreska too', { id: 1, permissions: ['moreskant', 'moreska'] }, false],
-    ['tickets', { id: 1, permissions: ['tickets'] }, false],
-    ['users', { id: 1, permissions: ['users'] }, false],
-    ['an unknown word, which is still not moreskant', { id: 1, permissions: ['xyz'] }, false],
-  ])('%s → %s', (_label, user, expected) => {
-    expect(isDancerLogin(user)).toBe(expected)
   })
 })
 

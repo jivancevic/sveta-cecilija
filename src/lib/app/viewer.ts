@@ -5,6 +5,7 @@ import config from '@payload-config'
 import { relationId } from '@/lib/payload-relation'
 import { can, permissionsOf, type Permission } from '@/lib/access/permissions'
 import { decideAppAccess, type AppAccess, type AppMember } from './access'
+import { readPasswordStamp } from './member-marks'
 import { poolQuery, unreadNotificationCount } from './notifications-store'
 import type { AppNav } from './screens'
 
@@ -192,7 +193,11 @@ export async function resolveAppAccessFor(
     email = typeof row?.email === 'string' && row.email.trim() !== '' ? row.email.trim() : null
     // A stamp, never a hash: the column is set only where a person types a
     // password of their own, and cleared by "Resetiraj lozinku" (ADR-0028).
-    hasOwnPassword = row?.passwordSetAt != null
+    // `unknown` collapses into false HERE and nowhere deeper: the column cannot
+    // say "no" (`readPasswordStamp`), and the only reader of this boolean is the
+    // card a dancer is asked to complete, which may ask twice but must never
+    // skip somebody (#664).
+    hasOwnPassword = readPasswordStamp(row?.passwordSetAt) === 'chosen'
     username =
       typeof row?.username === 'string' && row.username.trim() !== '' ? row.username.trim() : null
     shared = row?.shared === true

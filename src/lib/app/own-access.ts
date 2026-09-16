@@ -60,7 +60,7 @@ export const LOCKED_KEYS = [
   'username',
   // Not somebody else's, but nobody's: the stamp is written by this handler
   // from its own clock, and a caller who could send one could claim a password
-  // they never chose and clear the 🔑 warning off their row.
+  // they never chose and clear the *Pristup* warning off their row.
   'passwordSetAt',
 ] as const
 
@@ -123,7 +123,7 @@ function str(value: unknown): string {
  * **Either field alone is a complete REQUEST, and neither alone is the task.**
  * A dancer who already has an address and only wants a new password must not be
  * made to retype the address, and the reverse is just as true, so the handler
- * refuses only a request that would write nothing. What the 🔑 mark and the
+ * refuses only a request that would write nothing. What the *Pristup* mark and the
  * Početna card call done is the PAIR — an address to be written to and a
  * password the dancer chose — and each half of that is recorded here as it
  * arrives (`email`, `passwordSetAt`), never assumed from the other.
@@ -197,7 +197,7 @@ export async function handleOwnAccess(
       // mints a random one nobody will ever know — so the hash column cannot
       // tell a dancer who typed one from a dancer who never has. This write is
       // the only place a person chooses theirs, so it is where the fact is
-      // recorded; "Resetiraj lozinku" clears it again. The 🔑 mark and the
+      // recorded; "Resetiraj lozinku" clears it again. The *Pristup* mark and the
       // Početna card read nothing else.
       patch.passwordSetAt = (deps.now?.() ?? new Date()).toISOString()
     }

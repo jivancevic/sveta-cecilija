@@ -57,10 +57,47 @@ export type Permission = (typeof PERMISSIONS)[number]
  *
  * Anything else (`moreska`, `tickets`, `users`, `finance`, …) is a staff
  * account, and pointing an invitation at one is account takeover: any voditelj
- * may edit a Member's e-mail. The check itself is `isDancerLogin` in
- * `src/lib/app/invite.ts`; the words live here, once, with the vocabulary.
+ * may edit a Member's e-mail. The check is {@link isDancerLogin}, just below.
  */
 export const INVITABLE_PERMISSIONS: readonly Permission[] = ['moreskant', 'door']
+
+/**
+ * Is this login a dancer's, and nothing more?
+ *
+ * True when it holds nothing outside {@link INVITABLE_PERMISSIONS}. An empty
+ * set counts: a login from before the permission vocabulary is still not a
+ * staff account, and refusing it would break re-inviting a dancer whose row
+ * predates #393.
+ *
+ * **It answers two questions, and they are the same population.**
+ *
+ *  1. *May an invitation land here?* (#520, `invite.ts`.) An invitation mints a
+ *     live sign-in token for the login and either mails it or hands it over. On
+ *     a dancer that is the point. On an account that also holds `moreska`,
+ *     `tickets` or `users` it is an account takeover: any voditelj may press the
+ *     invitation on any Member, and since #462 a voditelj who dances links their
+ *     own Member, so a Member's login may well BE a colleague's staff account.
+ *  2. *Is this the person ADR-0028 is about?* (#664, `ownAccessPrompt`.) The
+ *     card on Početna asks the reader to set an e-mail and a password because
+ *     an invited dancer holds no key of their own. A `users`, `tickets` or
+ *     `finance` holder chose their password in the Backoffice and manages
+ *     credentials in Korisnici, so asking them is simply wrong — which is what
+ *     shipped, because the card guarded on the credentials and never on the
+ *     audience.
+ *
+ * The obvious-looking alternative for (2) — "does this login link a Member" —
+ * is wrong for the same #462 reason, and was checked against production before
+ * being discarded. One predicate, here, rather than two that can drift.
+ *
+ * Reads the RAW set rather than `permissionsOf`: an unknown word must not be
+ * silently dropped into "holds nothing but a dancer's permissions".
+ */
+export function isDancerLogin(user: PermissionUser): boolean {
+  if (!user) return true
+  const held = Array.isArray(user.permissions) ? user.permissions : []
+  const allowed: readonly string[] = INVITABLE_PERMISSIONS
+  return held.every((p) => typeof p === 'string' && allowed.includes(p))
+}
 
 /** Anything Payload might hand us as `req.user`. */
 export type PermissionUser = { permissions?: unknown } | null | undefined

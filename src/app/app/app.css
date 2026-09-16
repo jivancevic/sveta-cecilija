@@ -7338,9 +7338,10 @@ a.app__statrow-main:focus-visible {
   box-shadow: inset 0 0 0 1.5px var(--rule);
 }
 
-/* ── The three marks (#653) ───────────────────────────────
-   📲 the app on their phone, 🔔 will it ring, 🔑 can they get back in on their
-   own. A fixed grid and not a flex row: the slots hold their position on every
+/* ── The three marks (#653, drawn in Lucide by #663) ──────
+   A phone (is the app on it), a bell (will it ring) and a key (can they get
+   back in on their own), all three Lucide at the app's own stroke since #663.
+   A fixed grid and not a flex row: the slots hold their position on every
    row, so seventy-six rows scan DOWN three columns instead of across a ragged
    right edge. 20px slots plus 6px gaps is 72px, which still leaves a 320px row
    its name and its role. Nothing here is tappable — the row is already a link,
@@ -7355,36 +7356,40 @@ a.app__statrow-main:focus-visible {
   flex-shrink: 0;
 }
 
+/* "ima": the drawing in full ink, because the row around it (`.app__member-flags`)
+   is already muted and a mark that meant YES would otherwise arrive dimmed. */
 .app__mark {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   width: 20px;
   height: 20px;
-  font-size: 15px;
   line-height: 1;
+  color: var(--ink);
 }
 
-/* "ne": the same glyph at a different weight, which is what lets the eye read
-   a column. A second emoji (🔕) reads logical in the head and breaks the scan
-   on the page. */
+/* "nema": the same drawing, dimmed — which is what lets the eye read a column.
+   A second picture (a bell with a slash) reads logical in the head and breaks
+   the scan on the page.
+
+   The dim is this app's own, the one a tab you are NOT standing on wears and
+   the one a row's chevron wears (#569): the colour drops to `--muted` and the
+   stroke thins with opacity. No `grayscale()` — that existed only because an
+   emoji is coloured, and line art has no colour to take away. */
 .app__mark--no {
-  filter: grayscale(1);
-  opacity: 0.35;
+  color: var(--muted);
+  opacity: 0.45;
 }
 
-/* "ne znam": a RULE, not a dimmed glyph.
+/* "ne znam": a DASH, not a dimmed drawing.
    On day one the whole install column is this one, so it has to be
    distinguishable at arm's length and not only when the two are side by side.
-   Tone alone cannot do that — a grey emoji is still a 20px blob — so the shape
-   changes: a blob becomes a 12px hairline. "Nothing measured" then looks
-   nothing like "they do not have it". */
-.app__mark--unknown::before {
-  content: '';
-  width: 12px;
-  height: 2px;
-  border-radius: 1px;
-  background: var(--rule);
+   Tone alone cannot do that, so the SHAPE changes: the phone, the bell or the
+   key becomes Lucide's `Minus`, one flat line from the same set as everything
+   else. "Nothing measured" then looks nothing like "they do not have it". */
+.app__mark--unknown {
+  color: var(--muted);
+  opacity: 0.45;
 }
 
 /* The dancer who never came in: a fact, in words, where the marks would be.
@@ -7421,10 +7426,20 @@ a.app__statrow-main:focus-visible {
   cursor: pointer;
 }
 
+/* The three drawings beside the count, as a legend rather than as a state: they
+   sit at the section heading's own weight (`--muted` at 0.6), which is how the
+   reader knows they are naming the columns and not answering for anybody. */
 .app__member-legend-glyphs {
-  font-size: 12px;
-  letter-spacing: 1px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--muted);
   opacity: 0.6;
+}
+
+.app__member-legend-glyphs svg {
+  width: 14px;
+  height: 14px;
 }
 
 .app__member-legend {

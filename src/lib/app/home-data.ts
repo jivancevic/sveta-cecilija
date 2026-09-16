@@ -350,6 +350,9 @@ export async function loadHomeScreen(viewer: AppViewer): Promise<HomeScreen> {
       hasEmail: viewer.email != null,
       hasOwnPassword: viewer.hasOwnPassword,
       shared: viewer.shared,
+      // Who the card is FOR, and not only what it asks (#664): a staff login
+      // manages its credentials in Korisnici and the Backoffice.
+      permissions: viewer.permissions,
     }),
     greeting: greetingLine({
       nowMs,

@@ -118,6 +118,41 @@ export function everSignedIn(signal: MemberAccountSignal | null | undefined): bo
 }
 
 /**
+ * What `users.password_set_at` is able to say about one account (#664).
+ *
+ * **Two values, and there is deliberately no third one called `no`.** The
+ * column is a STAMP written at the one moment a person types a password of
+ * their own (`PATCH /api/app/account`), so a row that has never been through
+ * that form reads NULL whether the person chose their password in the
+ * Backoffice years ago or has never had one at all. NULL is therefore "we do
+ * not know", and every reader of this column has to spell which of the two it
+ * is treating `unknown` as.
+ *
+ * It is not a theoretical gap: on the day #657 shipped the column, all 48
+ * production accounts read NULL, Josip's included — he has signed in with his
+ * own password since 2026-05-22 — and the card on Početna read that as "has no
+ * password" and told him to set one (#664).
+ *
+ * Where each reader stands, once, so the next one does not have to guess:
+ *
+ *  - the *Pristup* mark on Članovi and Početna's card treat `unknown` as not
+ *    done. Both are addressed to dancers only, and for a dancer the answer
+ *    genuinely IS unknown: an invited login carries a random password nobody
+ *    knows, so asking again costs a minute and not asking can cost the account.
+ *  - accounts that are not dancer logins are simply not asked at all
+ *    (`isDancerLogin`), which is what makes the same `unknown` harmless for
+ *    them. Their historical rows were stamped once from `created_at` by
+ *    `db/schema/migrate-zz-do-password-set-at-backfill.sql`, because a
+ *    Backoffice account was created with a password somebody chose.
+ */
+export type PasswordStamp = 'chosen' | 'unknown'
+
+/** Reads the stamp. `null`/absent is `unknown`, never `chosen` and never "no". */
+export function readPasswordStamp(passwordSetAt: unknown): PasswordStamp {
+  return passwordSetAt == null ? 'unknown' : 'chosen'
+}
+
+/**
  * Does this person hold a key of their own?
  *
  * BOTH halves, and the conjunction is the whole point (#653 review): an address

@@ -8,6 +8,7 @@ import {
   memberFilterCounts,
   memberMatchesFilter,
   ownsTheirAccess,
+  readPasswordStamp,
   type MemberAccountSignal,
 } from './member-marks'
 
@@ -21,6 +22,20 @@ function device(over: Partial<DeviceSignal> = {}): DeviceSignal {
 function signal(over: Partial<MemberAccountSignal> = {}): MemberAccountSignal {
   return { sessions: 0, device: device(), hasEmail: false, hasOwnPassword: false, ...over }
 }
+
+// #664: the column is a stamp, so it has exactly two readings and "no" is not
+// one of them. Every reader has to say which way it takes `unknown`.
+describe('readPasswordStamp', () => {
+  it('reads a timestamp as chosen', () => {
+    expect(readPasswordStamp(new Date().toISOString())).toBe('chosen')
+    expect(readPasswordStamp(new Date())).toBe('chosen')
+  })
+
+  it('reads null and absent as unknown, never as "has no password"', () => {
+    expect(readPasswordStamp(null)).toBe('unknown')
+    expect(readPasswordStamp(undefined)).toBe('unknown')
+  })
+})
 
 describe('ownsTheirAccess', () => {
   it.each([

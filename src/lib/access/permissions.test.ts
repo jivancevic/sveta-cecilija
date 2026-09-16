@@ -1,5 +1,14 @@
 import { describe, it, expect } from 'vitest'
-import { PERMISSIONS, can, hasAny, isPermission, permissionsOf, type Permission } from './permissions'
+import {
+  PERMISSIONS,
+  can,
+  hasAny,
+  isDancerLogin,
+  isPermission,
+  permissionsOf,
+  type Permission,
+  type PermissionUser,
+} from './permissions'
 
 describe('PERMISSIONS vocabulary', () => {
   it('is the closed eleven-word list from ADR-0023 plus #500, in order', () => {
@@ -130,5 +139,31 @@ describe('hasAny', () => {
   it('ignores unknown strings on both sides', () => {
     expect(hasAny({ permissions: ['sudo'] }, ['sudo' as unknown as Permission])).toBe(false)
     expect(hasAny(user, ['sudo' as unknown as Permission, 'tickets'])).toBe(true)
+  })
+})
+
+// The predicate has two callers and they must agree: an invitation may land
+// only on a dancer's login (#520), and Početna's own-access card is addressed
+// only to one (#664). The table is the population both of them mean.
+describe('isDancerLogin', () => {
+  it.each([
+    ['no login at all', null, true],
+    ['an empty set', { id: 1, permissions: [] }, true],
+    ['a missing set', { id: 1 }, true],
+    ['exactly moreskant', { id: 1, permissions: ['moreskant'] }, true],
+    // #520: a door login reaches no further than the shared `tehnika` account,
+    // so the door person who dances keeps ONE account and stays invitable.
+    ['exactly door', { id: 1, permissions: ['door'] }, true],
+    ['door and moreskant', { id: 1, permissions: ['door', 'moreskant'] }, true],
+    ['door plus a staff word', { id: 1, permissions: ['door', 'tickets'] }, false],
+    ['moreska alone', { id: 1, permissions: ['moreska'] }, false],
+    ['moreska too', { id: 1, permissions: ['moreskant', 'moreska'] }, false],
+    ['tickets', { id: 1, permissions: ['tickets'] }, false],
+    ['users', { id: 1, permissions: ['users'] }, false],
+    ['an unknown word, which is still not moreskant', { id: 1, permissions: ['xyz'] }, false],
+    // The rows are Users documents as the two callers read them, so they carry
+    // an id the predicate never looks at; the cast is only about that.
+  ])('%s → %s', (_label, user, expected) => {
+    expect(isDancerLogin(user as PermissionUser)).toBe(expected)
   })
 })

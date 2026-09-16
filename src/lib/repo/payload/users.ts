@@ -242,7 +242,7 @@ export function createUsersRepo(
       // `passwordSetAt: null` rides along, and it is not bookkeeping: this is
       // the TEMPORARY password a `users` holder reads off a screen and dictates
       // (#510), so the account no longer holds one its owner chose. Leaving the
-      // stamp would make the 🔑 mark say a dancer can get back in on their own
+      // stamp would make the *Pristup* mark say a dancer can get back in on their own
       // the moment somebody resets them (#653 review, ADR-0028).
       await payload.update({
         collection: 'users',

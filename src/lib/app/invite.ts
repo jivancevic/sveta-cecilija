@@ -14,7 +14,7 @@
 // API runs `overrideAccess: true`, so collection access does not gate a route
 // (CLAUDE.md hard rule).
 
-import { INVITABLE_PERMISSIONS } from '@/lib/access/permissions'
+import { isDancerLogin } from '@/lib/access/permissions'
 import { APP_STRINGS } from './strings'
 import { rejectAppRequest, type AppRequestMeta } from './request-guard'
 import { allocateUsername } from './username'
@@ -58,36 +58,12 @@ export interface InviteUser {
   email?: string | null
   /**
    * What that login may do, as stored. Read for ONE reason: an invitation must
-   * never be pointed at an account that is more than a dancer (see
-   * {@link isDancerLogin}).
+   * never be pointed at an account that is more than a dancer — `isDancerLogin`
+   * in `src/lib/access/permissions.ts`, which lives with the vocabulary because
+   * Početna's own-access card asks the same question of the same population
+   * (#664).
    */
   permissions?: readonly unknown[] | null
-}
-
-/**
- * Is the login behind this Member one an invitation may land on?
- *
- * True when it holds nothing outside `INVITABLE_PERMISSIONS` (`moreskant` and,
- * since #520, `door`). An empty set counts: a login from before the permission
- * vocabulary is still not a staff account, and refusing it would break
- * re-inviting a dancer whose row predates #393.
- *
- * The rule exists because an invitation mints a live sign-in token for that
- * login and either mails it or hands it over. On a dancer that is the point: it
- * is how "the letter got lost" is fixed. On an account that
- * also holds `moreska`, `tickets` or `users` it is an account takeover: any
- * voditelj may press the invitation on any Member, so a Member whose login is a
- * colleague's staff account would hand the presser a live session for it.
- *
- * Before #462 a staff account carried a `member` link only if a `users` holder
- * set one by hand. `/api/app/link-self` makes exactly that link routine for a
- * voditelj who dances, which is what turns a latent hole into a live one.
- */
-export function isDancerLogin(user: InviteUser | null | undefined): boolean {
-  if (!user) return true
-  const held = Array.isArray(user.permissions) ? user.permissions : []
-  const allowed: readonly string[] = INVITABLE_PERMISSIONS
-  return held.every((p) => typeof p === 'string' && allowed.includes(p))
 }
 
 /** What the invitation email needs; the copy itself lives in lib/email. */

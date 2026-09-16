@@ -1,6 +1,7 @@
 'use client'
 
 import { useMemo, useState } from 'react'
+import { Bell, KeyRound, Minus, Smartphone, type LucideIcon } from 'lucide-react'
 import {
   isMissing,
   MEMBER_FILTERS,
@@ -17,7 +18,18 @@ import {
   type MemberListInput,
 } from '@/lib/app/members-screen'
 import { APP_STRINGS } from '@/lib/app/strings'
-import { Button, Card, Chip, FilterChips, List, ListRow, RoleMark, Section, Sheet } from '../../ui'
+import {
+  Button,
+  Card,
+  Chip,
+  FilterChips,
+  ICON_STROKE,
+  List,
+  ListRow,
+  RoleMark,
+  Section,
+  Sheet,
+} from '../../ui'
 
 // The roster list of Članovi (#511, in the redesign's skin since #573, with
 // #653's three marks on every row).
@@ -28,11 +40,21 @@ import { Button, Card, Chip, FilterChips, List, ListRow, RoleMark, Section, Shee
 //
 // **A row now answers the three questions a voditelj actually has** (#653): is
 // the app on that phone, will it ring, can that person get back in on their
-// own. One glyph per column and the STATE is carried by weight rather than by a
-// second emoji — 🔔/🔕 reads logical in the head and breaks the scan on the
-// page, because the eye looks down a column for the same shape at different
-// weights and not for two shapes. The slots are a fixed grid, so seventy-six
-// rows read as three columns rather than as a ragged right edge.
+// own. One drawing per column and the STATE is carried by weight rather than by
+// a second picture — a bell and a crossed-out bell as a pair read logical in the
+// head and break the scan on the page, because the eye looks down a column for
+// the same shape at different weights and not for two shapes. The slots are a
+// fixed grid, so seventy-six rows read as three columns rather than as a ragged
+// right edge.
+//
+// **The drawings are Lucide at the app's own stroke** (#663), which is not a new
+// decision but the one `ui/ScreenIcon.tsx` already states: an emoji is not a
+// picture this app draws, and the single hand-drawn exception is the crossed
+// swords, because no icon set ships them. #653 shipped these three as system
+// emoji and they were the only emoji on a screen whose tab bar, header and every
+// row icon are line art at 1.75 — a full-colour blue phone beside a line-drawn
+// trophy reads as a different app. The bell is deliberately the SAME `Bell` the
+// header's inbox wears, so a bell means one thing everywhere in Cecilija.
 //
 // **The marks are not tappable.** The row is already a link to the profile, and
 // three 20px targets inside a target is a thumb miss that opens the wrong
@@ -56,11 +78,27 @@ import { Button, Card, Chip, FilterChips, List, ListRow, RoleMark, Section, Shee
 
 const S = APP_STRINGS.members
 
-/** One glyph per column, in the order the columns are drawn. */
-const GLYPH: Record<MemberMark, string> = {
-  installed: '📲',
-  notifications: '🔔',
-  access: '🔑',
+/** The size of a mark inside its 20px slot. */
+const MARK_SIZE = 16
+
+/**
+ * One drawing per column, in the order the columns are drawn (#663).
+ *
+ * `Bell` is the one the header already draws for the inbox, on purpose: a bell
+ * is the notification in this app, and two bells would be two things.
+ */
+const MARK_ICON: Record<MemberMark, LucideIcon> = {
+  installed: Smartphone,
+  notifications: Bell,
+  access: KeyRound,
+}
+
+/** One mark, at the app's stroke. `unknown` is the dash and not the drawing. */
+function MarkIcon({ mark, unknown = false }: { mark: MemberMark; unknown?: boolean }) {
+  // "ne znam" is Lucide's `Minus`, so all four drawings come from one set and
+  // the dash is a SHAPE change rather than a fainter version of the glyph.
+  const Icon = unknown ? Minus : MARK_ICON[mark]
+  return <Icon size={MARK_SIZE} strokeWidth={ICON_STROKE} aria-hidden="true" />
 }
 
 export function MembersList({
@@ -136,7 +174,9 @@ export function MembersList({
             >
               <span aria-live="polite">{foundLabel(rows.length)}</span>
               <span className="app__member-legend-glyphs" aria-hidden="true">
-                {MEMBER_MARKS.map((mark) => GLYPH[mark]).join('')}
+                {MEMBER_MARKS.map((mark) => (
+                  <MarkIcon key={mark} mark={mark} />
+                ))}
               </span>
             </button>
           )
@@ -187,7 +227,7 @@ export function MembersList({
           {MEMBER_MARKS.map((mark) => (
             <li key={mark}>
               <span className="app__mark app__mark--yes" aria-hidden="true">
-                {GLYPH[mark]}
+                <MarkIcon mark={mark} />
               </span>
               <div>
                 <b>{S.marks[mark]}</b>
@@ -202,7 +242,9 @@ export function MembersList({
             </li>
           ))}
           <li>
-            <span className="app__mark app__mark--unknown" aria-hidden="true" />
+            <span className="app__mark app__mark--unknown" aria-hidden="true">
+              <Minus size={MARK_SIZE} strokeWidth={ICON_STROKE} />
+            </span>
             <div>
               <b>{S.marks.state.unknown}</b>
               <span>{S.marks.unknownNote}</span>
@@ -234,16 +276,19 @@ function Marks({ access }: { access: MemberAccess | null }) {
       {MEMBER_MARKS.map((mark) => {
         const answer = access[mark]
         const label = `${S.marks[mark]}: ${S.marks.state[answer]}`
-        // "ne znam" draws a RULE rather than a dimmed glyph: a dash and a
-        // grayscale emoji differ in tone when compared side by side and in
-        // SHAPE at arm's length, and on day one the whole install column is
-        // this one. A blob that is not there is what "nobody has it" looks
-        // like; a line is what "nothing measured" looks like.
-        return answer === 'unknown' ? (
-          <span key={mark} className="app__mark app__mark--unknown" role="img" aria-label={label} />
-        ) : (
-          <span key={mark} className={`app__mark app__mark--${answer}`} role="img" aria-label={label}>
-            {GLYPH[mark]}
+        // "ne znam" draws a DASH rather than a dimmed drawing: a dash and a
+        // faded bell differ in tone when compared side by side and in SHAPE at
+        // arm's length, and on day one the whole install column is this one. A
+        // glyph that is barely there is what "nobody has it" looks like; a line
+        // is what "nothing measured" looks like.
+        return (
+          <span
+            key={mark}
+            className={`app__mark app__mark--${answer}`}
+            role="img"
+            aria-label={label}
+          >
+            <MarkIcon mark={mark} unknown={answer === 'unknown'} />
           </span>
         )
       })}
