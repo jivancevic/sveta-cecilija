@@ -268,7 +268,7 @@ export interface OwnAccessPrompt {
  * has nothing to type.
  *
  * **The card goes when BOTH halves are there**, which is the same predicate the
- * 🔑 mark on Članovi applies (`ownsTheirAccess`) and deliberately the same
+ * *Pristup* mark on Članovi applies (`ownsTheirAccess`) and deliberately the same
  * function rather than a second copy of it. Reading only the address was the
  * version that shipped first, and it took the card away from exactly the dancer
  * who still could not sign in on a second phone: they had typed an address and

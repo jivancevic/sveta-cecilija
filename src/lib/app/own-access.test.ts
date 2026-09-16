@@ -205,7 +205,7 @@ describe('handleOwnAccess — one task, two fields', () => {
     const res = await handleOwnAccess({ email: 'ja@example.com', password: '', repeat: '' }, d)
     expect(res.status).toBe(200)
     // No stamp either: nothing was chosen, so nothing may claim it was (#653
-    // review). An address alone must never make the 🔑 mark or the Početna card
+    // review). An address alone must never make the *Pristup* mark or the Početna card
     // call the task done.
     expect(d.save).toHaveBeenCalledWith(42, { email: 'ja@example.com' })
   })

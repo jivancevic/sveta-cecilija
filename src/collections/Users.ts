@@ -341,7 +341,7 @@ export const Users: CollectionConfig = {
     },
     // When this person last chose their OWN password (#653 review, ADR-0028).
     //
-    // The 🔑 mark on Članovi and the card on Početna both mean "this dancer can
+    // The *Pristup* mark on Članovi and the card on Početna both mean "this dancer can
     // get back in without texting the voditelj", and that needs an address AND
     // a password. The address is `email`; the password cannot be read off the
     // row, because every invited account already HAS one — `ensureDancerLogin`
