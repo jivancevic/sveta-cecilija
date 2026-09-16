@@ -1799,6 +1799,25 @@ export const APP_STRINGS = {
     inappAndroid: 'Dodirni tri točkice pa "Otvori u pregledniku" ili "Otvori u Chromeu".',
     inappCopy: 'Kopiraj link',
     inappCopied: 'Link je kopiran. Zalijepi ga u Safari ili Chrome.',
+
+    /**
+     * The Play Protect dead end (#668), and the reason it is worded as an offer
+     * rather than as a warning: on this roster four people installed Cecilija
+     * from Samsung Internet without ever seeing this screen, and one did. The
+     * block is the phone's call, so the guide hands over a route that works
+     * instead of telling somebody their browser is broken.
+     *
+     * "Nesigurna aplikacija" is quoted because it is what the reader is looking
+     * at while they read this, and a person holding a red warning wants to see
+     * their own words before they believe anything else on the page.
+     */
+    playProtectTitle: 'Ako Android odbije instalaciju',
+    playProtectBody:
+      'Neki Androidi jave "Nesigurna aplikacija blokirana" kad instalaciju pokreće preglednik koji nije Chrome. To nije do Cecilije: aplikaciju u tom slučaju sastavlja sam preglednik, a Android takve odbija.',
+    playProtectHow: 'Otvori ovu stranicu u Chromeu i instaliraj odande. Chrome ide drugim putem i Android ga pušta.',
+    playProtectOpen: 'Otvori u Chromeu',
+    playProtectCopy: 'Kopiraj poveznicu',
+    playProtectCopied: 'Poveznica je kopirana. Zalijepi je u Chrome.',
   },
 
   /**

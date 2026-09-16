@@ -2320,8 +2320,23 @@ html:has(> .app[data-theme='dark']) {
   cursor: default;
 }
 
+/* One or two controls. Two since #668, where the Chrome route and the copy
+   fallback stand side by side, so this wraps rather than letting a long
+   Croatian label push the second one off a 320px phone. */
 .app__hint-actions {
   margin-top: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* An `<a>` wearing the button: `intent://` is Android's own scheme and has to
+   be a plain anchor (#668), and an anchor is inline, so the padding and the
+   width of `.app__button` mean nothing on it without this. */
+a.app__button {
+  display: inline-block;
+  text-align: center;
+  text-decoration: none;
 }
 
 .app__button--small {

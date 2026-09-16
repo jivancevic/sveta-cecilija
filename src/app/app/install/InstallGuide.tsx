@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useState } from 'react'
-import type { AppPlatform } from '@/lib/app/platform'
+import { androidInstaller, chromeIntentUrl, type AppPlatform } from '@/lib/app/platform'
 import { APP_STRINGS } from '@/lib/app/strings'
 import { InstallSteps, type StepPlatform } from '../InstallSteps'
 import { useInstallPrompt, usePlatform, webviewHostIsIos } from '../use-install'
@@ -72,6 +72,11 @@ export function InstallGuide() {
 
   const installed = platform === 'installed'
   const inapp = platform === 'inapp'
+  // Read here rather than in state: it is a fact about the browser, it cannot
+  // change while the page is open, and `window` is safe by now because the
+  // component has already returned null until the platform was read.
+  const ownApk = androidInstaller(navigator.userAgent) === 'own-apk'
+  const chromeUrl = chromeIntentUrl(`${window.location.origin}/app`)
 
   return (
     <>
@@ -108,6 +113,38 @@ export function InstallGuide() {
           error={error}
           onInstall={runInstall}
         />
+      )}
+
+      {/*
+        The Play Protect route (#668). Shown while the ANDROID steps are the
+        ones on screen and this browser mints its own APK — which is also right
+        for a voditelj who switched to the Android tab on their own iPhone,
+        since `androidInstaller` reads a UA and an iPhone's is not Android.
+        An installed reader is not nagged: they are past this.
+      */}
+      {device === 'android' && !installed && ownApk && (
+        <section className="app__hint">
+          <strong>{APP_STRINGS.install.playProtectTitle}</strong>
+          {APP_STRINGS.install.playProtectBody}
+          <p className="app__install-how">{APP_STRINGS.install.playProtectHow}</p>
+          <div className="app__hint-actions">
+            {/*
+              A plain anchor, deliberately: `intent://` is Android's, Next's
+              Link would try to route it, and a browser that does not understand
+              it must simply do nothing rather than throw. The copy button
+              beside it is the answer for that browser.
+            */}
+            {chromeUrl && (
+              <a className="app__button app__button--small" href={chromeUrl}>
+                {APP_STRINGS.install.playProtectOpen}
+              </a>
+            )}
+            <button type="button" className="app__button app__button--small" onClick={copyLink}>
+              {APP_STRINGS.install.playProtectCopy}
+            </button>
+          </div>
+          {copied && <p className="app__install-how">{APP_STRINGS.install.playProtectCopied}</p>}
+        </section>
       )}
 
       <div className="app__install-devices">
