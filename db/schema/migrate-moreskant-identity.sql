@@ -1,6 +1,6 @@
 -- Moreškant identity on Members + Users.member (#420, ADR-0024 phase 3).
 --
--- A Member becomes a dancer: `is_moreskant` plus nickname, mobile, email, a
+-- A Member becomes a dancer: `is_moreskant` plus nickname, mobile, a
 -- hasMany `members_roles` table for the dance roles and a single `primary_role`.
 -- `users.member_id` links a login to that dancer.
 --
@@ -42,7 +42,11 @@ EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 ALTER TABLE members ADD COLUMN IF NOT EXISTS is_moreskant boolean DEFAULT false;
 ALTER TABLE members ADD COLUMN IF NOT EXISTS nickname character varying;
 ALTER TABLE members ADD COLUMN IF NOT EXISTS mobile character varying;
-ALTER TABLE members ADD COLUMN IF NOT EXISTS email character varying;
+-- `email` was added here until #651 (ADR-0028) retired it: the dancer's address
+-- now lives on their own login (`users.email`) and the mobile is the voditelj's
+-- channel. The column is dropped by migrate-zz-dk-drop-members-email.sql, which
+-- sorts after this file; re-adding it here would only make every restart add a
+-- column and drop it again.
 ALTER TABLE members ADD COLUMN IF NOT EXISTS primary_role public.enum_members_primary_role;
 
 -- 3. Nickname uniqueness, case-insensitive and only among moreškanti — the

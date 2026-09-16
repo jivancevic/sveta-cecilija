@@ -18,6 +18,8 @@
 //
 // Pure, so the table lives in request-guard.test.ts rather than in a browser.
 
+import { firstHeaderValue } from './http'
+
 /** The request headers the check reads, plus the origins this deployment owns. */
 export interface AppRequestMeta {
   /** `Origin`, when the client sent one. */
@@ -54,9 +56,9 @@ export function originOf(url: string | null | undefined): string | null {
  * Traefik's `X-Forwarded-Host` / `X-Forwarded-Proto` carry the public name.
  */
 export function forwardedOrigin(req: Request): string | null {
-  const host = req.headers.get('x-forwarded-host')?.split(',')[0]?.trim()
+  const host = firstHeaderValue(req, 'x-forwarded-host')
   if (!host) return null
-  const proto = req.headers.get('x-forwarded-proto')?.split(',')[0]?.trim() || 'https'
+  const proto = firstHeaderValue(req, 'x-forwarded-proto') || 'https'
   return originOf(`${proto}://${host}`)
 }
 

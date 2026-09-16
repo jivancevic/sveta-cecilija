@@ -17,6 +17,7 @@ import type { Army } from '@/app/app/ui/RoleMark'
 import { pluralize } from './roster-loaders'
 import { normaliseNickname } from './username'
 import { APP_STRINGS } from './strings'
+import { memberMatchesFilter, type MemberAccess, type MemberFilter } from './member-marks'
 
 /**
  * One moreškant as the seam hands them over. The Members row, projected: the
@@ -30,7 +31,6 @@ export interface MemberRosterRow {
   name: string
   nickname: string | null
   mobile: string | null
-  email: string | null
   roles: string[]
   primaryRole: string | null
   active: boolean
@@ -51,16 +51,21 @@ export interface MemberRosterRow {
 }
 
 /**
- * What the CLIENT list is handed: the roster row with the e-mail taken off.
+ * What the CLIENT list is handed: the roster row, projected field by field.
  *
  * ADR-0024's PII boundary is that a mobile may cross into `/app` and an e-mail
- * may not. The list needs the mobile (the SMS deep link dials it) and never the
- * address, so the page projects it away with {@link toMemberListInput} before
- * the row reaches a `'use client'` component and, with it, the HTML.
+ * may not, and ADR-0028 narrowed rather than reversed it: a dancer's address is
+ * their own login's, read only on their own Profil, and no roster row carries
+ * one at all since `Members.email` was retired (#651).
+ *
+ * The projection stays, and stays explicit, because it is what keeps that true:
+ * a row reaching a `'use client'` component ships in the HTML, so the list is
+ * handed the nine fields it draws rather than whatever the seam happens to
+ * return. `Omit<…, 'email'>` is the same set as the row today and says why.
  */
 export type MemberListInput = Omit<MemberRosterRow, 'email'>
 
-/** Drop the e-mail. Explicit, because a spread would carry it silently. */
+/** The nine fields the list draws. Explicit, because a spread carries anything. */
 export function toMemberListInput(member: MemberRosterRow): MemberListInput {
   return {
     id: member.id,
@@ -91,8 +96,15 @@ export interface MemberListRow {
   army: Army | null
   /** One or two letters for the disc, from the real name. */
   initials: string
-  /** Does some login already point at this Member (`repo.members.idsWithLogin`)? */
-  hasLogin: boolean
+  /**
+   * The three marks, or "nije ušao" (#653).
+   *
+   * Null when the signal could not be read at all: the roster is not taken down
+   * over a statistic, and a row with nothing on its right is honest, where
+   * seventy-six "nije ušao" would be a lie. It replaces #573's `hasLogin`,
+   * which answered only whether an account exists.
+   */
+  access: MemberAccess | null
   active: boolean
   /** As typed on the row; the invitation deep links normalise it themselves. */
   mobile: string | null
@@ -188,27 +200,6 @@ export function initialsOf(name: string): string {
 }
 
 /**
- * The three chips over the list (#573, Q37).
- *
- * A voditelj asks the roster three questions and no more: show me everyone,
- * show me who still dances, show me who cannot get in yet. "Bez prijave" is the
- * one that leads somewhere — every row under it is an invitation waiting to be
- * sent.
- */
-export const MEMBER_FILTERS = ['all', 'active', 'no-login'] as const
-export type MemberFilter = (typeof MEMBER_FILTERS)[number]
-
-/** Does this row survive the chip that is on? */
-export function memberMatchesFilter(
-  row: Pick<MemberListRow, 'active' | 'hasLogin'>,
-  filter: MemberFilter,
-): boolean {
-  if (filter === 'active') return row.active
-  if (filter === 'no-login') return !row.hasLogin
-  return true
-}
-
-/**
  * The list the screen renders: the search applied, active moreškanti first,
  * each half alphabetical by the name the row is shown under.
  *
@@ -221,7 +212,13 @@ export function memberMatchesFilter(
  */
 export function memberListRows(
   members: readonly MemberListInput[],
-  idsWithLogin: ReadonlySet<string>,
+  /**
+   * What is known about each dancer's account, by Member id (#653). Null when
+   * the whole read failed, which draws no marks at all rather than "nije ušao"
+   * down the list. A plain object rather than a `Map`, because this crosses
+   * from a server component into a client one.
+   */
+  accessById: Readonly<Record<string, MemberAccess>> | null,
   query: string | null | undefined,
   filter: MemberFilter = 'all',
 ): MemberListRow[] {
@@ -236,13 +233,13 @@ export function memberListRows(
         roleLabel: roleLabel(m.primaryRole),
         army: armyOfRole(m.primaryRole),
         initials: initialsOf(m.name || shown),
-        hasLogin: idsWithLogin.has(m.id),
+        access: accessById === null ? null : (accessById[m.id] ?? { kind: 'never-in' as const }),
         active: m.active,
         mobile: m.mobile,
         href: `/app/members/${m.id}`,
       }
     })
-    .filter((row) => memberMatchesFilter(row, filter))
+    .filter((row) => memberMatchesFilter(row.access, filter))
     .sort(
       (a, b) =>
         Number(b.active) - Number(a.active) ||

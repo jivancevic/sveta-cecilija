@@ -308,7 +308,6 @@ CREATE TABLE IF NOT EXISTS public.members (
     is_moreskant boolean DEFAULT false,
     nickname character varying,
     mobile character varying,
-    email character varying,
     primary_role public.enum_members_primary_role,
     year_round boolean DEFAULT false,
     updated_at timestamp(3) with time zone DEFAULT now() NOT NULL,
@@ -660,6 +659,7 @@ CREATE TABLE IF NOT EXISTS public.users (
     salt character varying,
     hash character varying,
     login_attempts numeric DEFAULT 0,
+    password_set_at timestamp(3) with time zone,
     lock_until timestamp(3) with time zone
 );
 

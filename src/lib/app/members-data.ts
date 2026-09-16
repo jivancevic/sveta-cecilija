@@ -1,6 +1,7 @@
 import { getRepo } from '@/lib/repo'
 import { MemberHookError } from '@/lib/repo/members'
 import type { WriteCtx } from '@/lib/repo/auth'
+import { memberAccess, type MemberAccess } from './member-marks'
 import type { MemberSaveOutcome } from './members-edit'
 import type { MemberRosterRow } from './members-screen'
 
@@ -25,6 +26,26 @@ export async function loadRoster(): Promise<{
     repo.members.idsWithLogin(),
   ])
   return { members, idsWithLogin }
+}
+
+/**
+ * The three marks for every dancer, by Member id (#653).
+ *
+ * **Null on failure, never an empty map.** An empty map would say "nije ušao"
+ * about seventy-six people, which is a lie a voditelj would act on; null draws
+ * no marks and no chips at all, which is the truth. The roster itself is not
+ * taken down over a statistic, the way the bell's count is not.
+ */
+export async function loadMemberAccess(): Promise<Record<string, MemberAccess> | null> {
+  try {
+    const signals = await getRepo().members.accountSignals()
+    const access: Record<string, MemberAccess> = {}
+    for (const [memberId, signal] of signals) access[memberId] = memberAccess(signal)
+    return access
+  } catch (err) {
+    console.error('[app] roster access signals failed', err)
+    return null
+  }
 }
 
 /** One dancer's profile, or null. The screen 404s on null. */

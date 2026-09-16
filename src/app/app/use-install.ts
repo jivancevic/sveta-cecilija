@@ -30,7 +30,16 @@ export interface BeforeInstallPromptEvent extends Event {
  */
 export { pushSupported } from './push-client'
 
-function standalone(): boolean {
+/**
+ * Is this browser running as an installed app?
+ *
+ * Exported because #652 sends it to the server: `SessionKeeper` reports it on
+ * the throttled heartbeat, and this is the one place in the app that knows how
+ * to ask (Chromium answers the media query, iOS answers `navigator.standalone`
+ * and nothing else). Re-reading it beside the fetch would be a second, subtly
+ * different definition of "installed".
+ */
+export function readStandalone(): boolean {
   try {
     return (
       window.matchMedia?.('(display-mode: standalone)').matches === true ||
@@ -45,7 +54,7 @@ function standalone(): boolean {
 export function readPlatform(): AppPlatform {
   return detectPlatform({
     userAgent: navigator.userAgent,
-    standalone: standalone(),
+    standalone: readStandalone(),
     touchPoints: navigator.maxTouchPoints ?? 0,
   })
 }

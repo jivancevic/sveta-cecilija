@@ -14,7 +14,9 @@
 // roster writers unwrap it rather than swallowing it.
 
 import { loadMemberIdsWithLogin, type UserLinkFinder } from '@/lib/access/member-logins'
+import { poolQuery } from '@/lib/db/pool-query'
 import type { MemberRosterRow } from '@/lib/app/members-screen'
+import { loadMemberAccountSignals } from './member-signals'
 import { MemberHookError, type MembersRepo, type NewMoreskant } from '../members'
 import { payloadClient, type PayloadClient } from './client'
 
@@ -28,7 +30,6 @@ export function toRosterRow(doc: Record<string, unknown>): MemberRosterRow {
     name: typeof doc.name === 'string' ? doc.name : '',
     nickname: typeof doc.nickname === 'string' ? doc.nickname : null,
     mobile: typeof doc.mobile === 'string' ? doc.mobile : null,
-    email: typeof doc.email === 'string' ? doc.email : null,
     roles: Array.isArray(doc.roles) ? doc.roles.filter((r): r is string => typeof r === 'string') : [],
     primaryRole: typeof doc.primaryRole === 'string' ? doc.primaryRole : null,
     active: doc.active !== false,
@@ -134,6 +135,14 @@ export function createMembersRepo(
       const payload = await load()
       return loadMemberIdsWithLogin(payload as unknown as UserLinkFinder)
     },
+
+    // The account half of a roster row (#653, ADR-0028).
+    //
+    // The SQL is `member-signals.ts`, beside this file and below the seam,
+    // because it reads two raw tables and two auth columns the local API does
+    // not expose. It answers in booleans and hands nobody an address, which is
+    // the rule `own-access-pii.test.ts` asserts of what leaves here.
+    accountSignals: async () => loadMemberAccountSignals(poolQuery(await load())),
 
     update(id, patch, ctx) {
       return write(

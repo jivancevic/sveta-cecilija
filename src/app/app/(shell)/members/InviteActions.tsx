@@ -30,10 +30,12 @@ import { usePlatform } from '../../use-install'
 // story 7).
 //
 // "Pošalji e-mailom" is the older channel (#424) and is offered unconditionally
-// rather than only on a dancer who has an address, because an e-mail must never
-// reach an `/app` payload (ADR-0024's PII boundary): the row does not know
-// whether there is one, and the route answers "Član nema e-mail adresu" when
-// there is not. One fewer field crossing the boundary for one extra tap.
+// rather than only on a dancer who has an address, because an address must not
+// reach an `/app` payload (ADR-0024's boundary, narrowed by ADR-0028 to the
+// reader's OWN on Profil): the row does not know whether there is one, and the
+// route answers with the sentence that sends the voditelj to "Kopiraj
+// pozivnicu" when there is not. Since #651 the address it looks for is the
+// dancer's own login's, so this button reaches only a dancer who has set one.
 
 interface Minted {
   link: string

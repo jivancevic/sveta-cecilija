@@ -69,8 +69,14 @@ function fail(status: number, error: string): MemberWriteResult {
   return { status, body: { error } }
 }
 
-/** The seven keys a voditelj owns. Anything else in the body is a refusal. */
-const EDITABLE = ['nickname', 'mobile', 'email', 'roles', 'primaryRole', 'active', 'yearRound'] as const
+/**
+ * The six keys a voditelj owns. Anything else in the body is a refusal.
+ *
+ * `email` was the seventh until #651 (ADR-0028): a dancer's address is now
+ * their own login's, written by the person who owns the inbox, and a voditelj
+ * keeps the mobile.
+ */
+const EDITABLE = ['nickname', 'mobile', 'roles', 'primaryRole', 'active', 'yearRound'] as const
 
 /** The attribution half (ADR-0019). Named so the refusal can say which it was. */
 const LOCKED = ['name', 'note'] as const
@@ -112,15 +118,6 @@ function readPatch(body: unknown): { patch: Record<string, unknown> } | { error:
       // the one thing this screen exists to send. Better refused than stored.
       if (normalizeMobile(mobile) === null) return { error: S.badMobile, status: 400 }
       patch.mobile = mobile
-    }
-  }
-
-  if ('email' in input) {
-    const email = text(input.email).toLowerCase()
-    if (email === '') patch.email = null
-    else {
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return { error: S.badEmail, status: 400 }
-      patch.email = email
     }
   }
 
@@ -209,9 +206,7 @@ export async function handleMemberPatch(
     patch[key] = key in checked.normalised ? checked.normalised[key] : read.patch[key]
   }
   // `null` survives normalisation as null: clearing a mobile is a real edit.
-  for (const key of ['mobile', 'email'] as const) {
-    if (key in read.patch && read.patch[key] === null) patch[key] = null
-  }
+  if ('mobile' in read.patch && read.patch.mobile === null) patch.mobile = null
 
   const outcome = await deps.save(id, patch)
   if (!outcome.ok) return fail(400, outcome.message)

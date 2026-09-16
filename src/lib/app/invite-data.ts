@@ -10,10 +10,9 @@ import { sendMoreskantEmail } from '@/lib/email/send-moreskant-email'
 //
 // `handleInvite` is pure and knows nothing about Payload; this is everything it
 // needs injected. It used to be written inline in `/api/app/invite`, which was
-// right while there was one caller. There are two now — the per-Member action
-// and the bulk "Pošalji pozivnice svima" — and two hand-copied sets of Payload
-// calls is how "the Member's e-mail wins" ends up true on one route and not the
-// other.
+// right while there was one caller. There are three now — the letter, "Kopiraj
+// pozivnicu" and a voditelj approving a join claim — and hand-copied sets of
+// Payload calls is how one door comes to grant something the others do not.
 //
 // Every call runs `overrideAccess: true`, as the rest of `/app` does: the local
 // API gates nothing (CLAUDE.md hard rule), and both routes have already checked
@@ -67,15 +66,6 @@ export function createLoginDeps(payload: PayloadClient): EnsureLoginDeps {
       return user
     },
 
-    updateUserEmail: async (id, email) => {
-      await payload.update({
-        collection: 'users',
-        id,
-        data: { email } as never,
-        overrideAccess: true,
-      })
-    },
-
     // Never emailed, never used: since #463 the dancer signs in from the link
     // or the approval, and sets a password only if they ever want one. It
     // exists because Payload's local strategy requires one on create.
@@ -123,9 +113,9 @@ export function createInviteDeps(payload: PayloadClient, request: AppRequestMeta
         id: doc.id as string | number,
         name: typeof doc.name === 'string' ? doc.name : null,
         nickname: typeof doc.nickname === 'string' ? doc.nickname : null,
-        email: typeof doc.email === 'string' ? doc.email : null,
-        // For the SMS deep link of "Kopiraj pozivnicu" (#463); unused by the
-        // mail channel, which addresses the letter with the e-mail above.
+        // For the SMS deep link of "Kopiraj pozivnicu" (#463). The letter is
+        // addressed with the LOGIN's e-mail since #651 (ADR-0028), so a Member
+        // row carries no address at all any more.
         mobile: typeof doc.mobile === 'string' ? doc.mobile : null,
         isMoreskant: doc.isMoreskant === true,
         active: doc.active !== false,

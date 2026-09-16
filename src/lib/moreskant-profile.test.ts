@@ -79,14 +79,15 @@ describe('validateAndNormaliseMoreskant — a valid profile', () => {
     expect(out.nickname).toBe('Cici')
   })
 
-  it('trims the nickname, mobile and email', () => {
+  it('trims the nickname and the mobile', () => {
+    // No e-mail among them since #651 (ADR-0028): the Member row has none, and
+    // the address a dancer types is normalised by the route that writes their
+    // own login (`own-access.ts`).
     const out = validateAndNormaliseMoreskant(
-      profile({ nickname: '  Cici  ', mobile: ' +385 91 ', email: '  Cici@Example.com ' }),
+      profile({ nickname: '  Cici  ', mobile: ' +385 91 ' }),
     )
     expect(out.nickname).toBe('Cici')
     expect(out.mobile).toBe('+385 91')
-    // Email is lower-cased: it becomes the login address at invitation time (#424).
-    expect(out.email).toBe('cici@example.com')
   })
 
   it.each([

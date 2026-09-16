@@ -27,6 +27,7 @@
 // moreškant fields — and `createMoreskant` is the voditelj's counterpart.
 
 import type { MemberOption } from '@/lib/app/comp-screen'
+import type { MemberAccountSignal } from '@/lib/app/member-marks'
 import type { MemberRosterRow } from '@/lib/app/members-screen'
 import type { WriteCtx } from './auth'
 
@@ -76,6 +77,19 @@ export interface MembersRepo {
    * once per row. It answers whether an account exists and never what is in it.
    */
   idsWithLogin(): Promise<Set<string>>
+
+  /**
+   * What the roster knows about each dancer's ACCOUNT, by Member id (#653).
+   *
+   * The sharper half of `idsWithLogin`: not "does a login exist" but "has
+   * anybody ever been inside, is the app on their phone, does it ring, and do
+   * they hold a key of their own". A Member absent from the map has no login at
+   * all, which the screen reads as the same "nije ušao".
+   *
+   * One call for the whole list rather than one per row, for the same reason
+   * `idsWithLogin` is: seventy-six rows must not cost seventy-six queries.
+   */
+  accountSignals(): Promise<Map<string, MemberAccountSignal>>
 
   /**
    * Patch one Member through the collection, so the hook runs.
