@@ -17,6 +17,7 @@ import type { Army } from '@/app/app/ui/RoleMark'
 import { pluralize } from './roster-loaders'
 import { normaliseNickname } from './username'
 import { APP_STRINGS } from './strings'
+import { memberMatchesFilter, type MemberAccess, type MemberFilter } from './member-marks'
 
 /**
  * One moreškant as the seam hands them over. The Members row, projected: the
@@ -95,8 +96,15 @@ export interface MemberListRow {
   army: Army | null
   /** One or two letters for the disc, from the real name. */
   initials: string
-  /** Does some login already point at this Member (`repo.members.idsWithLogin`)? */
-  hasLogin: boolean
+  /**
+   * The three marks, or "nije ušao" (#653).
+   *
+   * Null when the signal could not be read at all: the roster is not taken down
+   * over a statistic, and a row with nothing on its right is honest, where
+   * seventy-six "nije ušao" would be a lie. It replaces #573's `hasLogin`,
+   * which answered only whether an account exists.
+   */
+  access: MemberAccess | null
   active: boolean
   /** As typed on the row; the invitation deep links normalise it themselves. */
   mobile: string | null
@@ -192,27 +200,6 @@ export function initialsOf(name: string): string {
 }
 
 /**
- * The three chips over the list (#573, Q37).
- *
- * A voditelj asks the roster three questions and no more: show me everyone,
- * show me who still dances, show me who cannot get in yet. "Bez prijave" is the
- * one that leads somewhere — every row under it is an invitation waiting to be
- * sent.
- */
-export const MEMBER_FILTERS = ['all', 'active', 'no-login'] as const
-export type MemberFilter = (typeof MEMBER_FILTERS)[number]
-
-/** Does this row survive the chip that is on? */
-export function memberMatchesFilter(
-  row: Pick<MemberListRow, 'active' | 'hasLogin'>,
-  filter: MemberFilter,
-): boolean {
-  if (filter === 'active') return row.active
-  if (filter === 'no-login') return !row.hasLogin
-  return true
-}
-
-/**
  * The list the screen renders: the search applied, active moreškanti first,
  * each half alphabetical by the name the row is shown under.
  *
@@ -225,7 +212,13 @@ export function memberMatchesFilter(
  */
 export function memberListRows(
   members: readonly MemberListInput[],
-  idsWithLogin: ReadonlySet<string>,
+  /**
+   * What is known about each dancer's account, by Member id (#653). Null when
+   * the whole read failed, which draws no marks at all rather than "nije ušao"
+   * down the list. A plain object rather than a `Map`, because this crosses
+   * from a server component into a client one.
+   */
+  accessById: Readonly<Record<string, MemberAccess>> | null,
   query: string | null | undefined,
   filter: MemberFilter = 'all',
 ): MemberListRow[] {
@@ -240,13 +233,13 @@ export function memberListRows(
         roleLabel: roleLabel(m.primaryRole),
         army: armyOfRole(m.primaryRole),
         initials: initialsOf(m.name || shown),
-        hasLogin: idsWithLogin.has(m.id),
+        access: accessById === null ? null : (accessById[m.id] ?? { kind: 'never-in' as const }),
         active: m.active,
         mobile: m.mobile,
         href: `/app/members/${m.id}`,
       }
     })
-    .filter((row) => memberMatchesFilter(row, filter))
+    .filter((row) => memberMatchesFilter(row.access, filter))
     .sort(
       (a, b) =>
         Number(b.active) - Number(a.active) ||

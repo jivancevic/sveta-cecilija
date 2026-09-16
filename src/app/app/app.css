@@ -7338,11 +7338,125 @@ a.app__statrow-main:focus-visible {
   box-shadow: inset 0 0 0 1.5px var(--rule);
 }
 
-/* The quiet login mark (Q37): this person can already get in. Nothing marks
-   the ones who cannot, because the "Bez prijave" chip filters the whole list
-   to exactly them. */
-.app__member-in {
-  color: var(--goldText);
+/* ── The three marks (#653) ───────────────────────────────
+   📲 the app on their phone, 🔔 will it ring, 🔑 can they get back in on their
+   own. A fixed grid and not a flex row: the slots hold their position on every
+   row, so seventy-six rows scan DOWN three columns instead of across a ragged
+   right edge. 20px slots plus 6px gaps is 72px, which still leaves a 320px row
+   its name and its role. Nothing here is tappable — the row is already a link,
+   and three small targets inside a target is a thumb miss that opens the wrong
+   person. */
+.app__member-marks {
+  display: grid;
+  grid-template-columns: repeat(3, 20px);
+  gap: 6px;
+  align-items: center;
+  justify-items: center;
+  flex-shrink: 0;
+}
+
+.app__mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  font-size: 15px;
+  line-height: 1;
+}
+
+/* "ne": the same glyph at a different weight, which is what lets the eye read
+   a column. A second emoji (🔕) reads logical in the head and breaks the scan
+   on the page. */
+.app__mark--no {
+  filter: grayscale(1);
+  opacity: 0.35;
+}
+
+/* "ne znam": a RULE, not a dimmed glyph.
+   On day one the whole install column is this one, so it has to be
+   distinguishable at arm's length and not only when the two are side by side.
+   Tone alone cannot do that — a grey emoji is still a 20px blob — so the shape
+   changes: a blob becomes a 12px hairline. "Nothing measured" then looks
+   nothing like "they do not have it". */
+.app__mark--unknown::before {
+  content: '';
+  width: 12px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--rule);
+}
+
+/* The dancer who never came in: a fact, in words, where the marks would be.
+   What to DO about it is on their profile, where the two invitation buttons
+   already live, so this says nothing more. */
+.app__member-never {
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--muted);
+}
+
+/* The count on a chip: "Bez pristupa 36". Without the number a voditelj has to
+   enter a filter to find out whether it was worth entering. */
+.app__member-chip-count {
+  margin-left: 6px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  opacity: 0.75;
+}
+
+/* The count over the list, which is also the way into the legend: one tap
+   answers both "what do these mean" and "who is missing what". */
+.app__member-legend-open {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.app__member-legend-glyphs {
+  font-size: 12px;
+  letter-spacing: 1px;
+  opacity: 0.6;
+}
+
+.app__member-legend {
+  display: grid;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.app__member-legend li {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.app__member-legend li > span:first-child {
+  flex-shrink: 0;
+  min-width: 20px;
+  padding-top: 1px;
+}
+
+.app__member-legend b {
+  display: block;
+  font-size: 14px;
+}
+
+.app__member-legend div > span {
+  display: block;
+  margin-top: 2px;
+  font-size: 13px;
+  color: var(--muted);
 }
 
 /* ── The profile's head ───────────────────────────────────

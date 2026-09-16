@@ -14,6 +14,8 @@
 // roster writers unwrap it rather than swallowing it.
 
 import { loadMemberIdsWithLogin, type UserLinkFinder } from '@/lib/access/member-logins'
+import { poolQuery } from '@/lib/db/pool-query'
+import { loadMemberAccountSignals } from '@/lib/app/member-access-store'
 import type { MemberRosterRow } from '@/lib/app/members-screen'
 import { MemberHookError, type MembersRepo, type NewMoreskant } from '../members'
 import { payloadClient, type PayloadClient } from './client'
@@ -133,6 +135,16 @@ export function createMembersRepo(
       const payload = await load()
       return loadMemberIdsWithLogin(payload as unknown as UserLinkFinder)
     },
+
+    // The account half of a roster row (#653, ADR-0028).
+    //
+    // The SQL itself is `member-access-store.ts` and is deliberately NOT
+    // written here: this file is on the roster's PII scan (#651), and the
+    // question "does this login carry an address" cannot be asked without
+    // naming the column. The store asks it once, answers with a boolean, and
+    // never hands an address to anybody — which is the rule the scan exists to
+    // protect, stated where it can actually be kept.
+    accountSignals: async () => loadMemberAccountSignals(poolQuery(await load())),
 
     update(id, patch, ctx) {
       return write(

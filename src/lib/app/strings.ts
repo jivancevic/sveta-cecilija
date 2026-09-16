@@ -30,7 +30,7 @@ import type { LineupRole } from '@/lib/moreskant-profile'
 import { LINEUP_ROLE_LABELS } from '@/lib/moreskant-profile'
 // A type, and therefore erased: `members-screen.ts` imports these strings back,
 // and a value import either way would be a cycle.
-import type { MemberFilter } from './members-screen'
+import type { MemberFilter, MemberMark } from './member-marks'
 
 /**
  * "7 moreški": a count and the Croatian form that follows it (#628).
@@ -1314,19 +1314,60 @@ export const APP_STRINGS = {
     empty: 'Nema moreškanta po tom upitu.',
     emptyAll: 'Još nema nijednog moreškanta na popisu.',
     listTitle: 'Moreškanti',
-    hasLogin: 'ima prijavu',
-    noLogin: 'bez prijave',
     retired: 'neaktivan',
     /**
-     * The three chips over the list (#573). The keys are `MemberFilter`, and
-     * `satisfies` is what stops a fourth chip shipping without its Croatian.
+     * The four chips over the list (#653). The keys are `MemberFilter`, and
+     * `satisfies` is what stops a fifth chip shipping without its Croatian.
+     *
+     * Each carries its own count beside it: without the number a voditelj has
+     * to enter a filter to find out whether it was worth entering.
      */
     filters: {
       all: 'Svi',
-      active: 'Aktivni',
-      'no-login': 'Bez prijave',
+      'no-app': 'Bez appa',
+      'no-push': 'Bez obavijesti',
+      'no-access': 'Bez pristupa',
     } satisfies Record<MemberFilter, string>,
     filtersLabel: 'Filtar popisa',
+
+    /**
+     * The three marks on a row, and the sheet that explains them (#653).
+     *
+     * The words are a voditelj's, not a system's: "aplikacija na mobitelu"
+     * rather than "instalirano", because the thing being asked about is a phone
+     * in somebody's pocket.
+     */
+    marks: {
+      installed: 'Aplikacija na mobitelu',
+      notifications: 'Obavijesti rade',
+      access: 'Svoj e-mail i lozinka',
+      /** The aria-label a screen reader hears on each glyph. */
+      state: {
+        yes: 'ima',
+        no: 'nema',
+        unknown: 'ne znam',
+      },
+      /** The words a dancer who has never signed in gets instead of marks. */
+      neverIn: 'nije ušao',
+      /** The legend, behind the count over the list. */
+      legendTitle: 'Što znače oznake',
+      legendOpen: 'Oznake i tko što nema',
+      /**
+       * The caveat the dash exists for. On day one nobody's phone has reported
+       * yet, and a whole column of dashes must not read as "nitko nema app".
+       */
+      unknownNote:
+        'Crtica znači da mobitel još nije javio, ne da aplikacije nema. Javi se sam čim moreškant otvori Ceciliju.',
+      neverInNote:
+        'Taj se moreškant nikad nije prijavio. Pozivnicu mu pošalji s njegovog profila.',
+      /** "bez appa: 12" inside the legend, per column. */
+      missing: (label: string, count: number) => `${label}: ${count}`,
+      missingLabels: {
+        installed: 'bez appa',
+        notifications: 'bez obavijesti',
+        access: 'bez pristupa',
+      } satisfies Record<MemberMark, string>,
+    },
     /** The header icon: everything about letting somebody in, in one sheet. */
     invitations: 'Pozivnice',
     invitationsBody:
