@@ -5,6 +5,7 @@ import { INSTALL_PROMPT_CAPTURE } from '@/lib/app/platform'
 import { APP_STRINGS } from '@/lib/app/strings'
 import { THEME_BOOT_SCRIPT } from '@/lib/app/theme'
 import { vapidPublicKey } from '@/lib/push/vapid'
+import { KeyboardInset } from './KeyboardInset'
 import { NavMemory } from './NavMemory'
 import { ScrollMemory } from './ScrollMemory'
 import { ServiceWorkerMigration } from './ServiceWorkerMigration'
@@ -96,6 +97,13 @@ export default function MoreskantAppLayout({ children }: { children: React.React
         <Suspense fallback={null}>
           <NavMemory />
         </Suspense>
+        {/*
+          And a third that renders nothing: how tall the on-screen keyboard is,
+          as `--kb` and `data-keyboard` (#667). The sheets, the scrim, the toast
+          and the tab bar all read it. Here because a sheet is portalled to
+          `document.body` and because this must outlive a navigation.
+        */}
+        <KeyboardInset />
         {children}
       </body>
     </html>
