@@ -40,7 +40,7 @@ function deps(over: Partial<AnswerDeps> = {}): AnswerDeps & {
   return {
     request: sameOrigin,
     actor: { user: cici, memberId: '3' },
-    loadPerformance: vi.fn(async () => ({ id: '10', startMs: START, cancelled: false })),
+    loadPerformance: vi.fn(async () => ({ id: '10', startMs: START, cancelled: false, listKeepers: [] })),
     loadMember: async () => member,
     findExisting: async () => null,
     create: vi.fn(async () => ({})),
@@ -62,7 +62,7 @@ describe('handleAttendanceAnswer — the cross-site guard', () => {
   it('403s a cross-site POST before it reads anything', async () => {
     const d = deps({
       request: { ...sameOrigin, secFetchSite: 'cross-site' },
-      loadPerformance: vi.fn(async () => ({ id: '10', startMs: START, cancelled: false })),
+      loadPerformance: vi.fn(async () => ({ id: '10', startMs: START, cancelled: false, listKeepers: [] })),
     })
     const out = await handleAttendanceAnswer(body(), d)
     expect(out).toEqual({ status: 403, body: { error: ANSWER_ROUTE_ERRORS.rejected } })
@@ -126,7 +126,7 @@ describe('handleAttendanceAnswer — the rules reach the status code', () => {
   it('403s a moreškant after the performance started', async () => {
     const out = await handleAttendanceAnswer(
       body(),
-      deps({ loadPerformance: async () => ({ id: '10', startMs: NOW.getTime() - 1, cancelled: false }) }),
+      deps({ loadPerformance: async () => ({ id: '10', startMs: NOW.getTime() - 1, cancelled: false, listKeepers: [] }) }),
     )
     expect(out).toMatchObject({ status: 403, body: { error: ANSWER_ERRORS.started } })
   })
@@ -299,7 +299,7 @@ describe('handleAttendanceAnswer — clear', () => {
   it('a moreškant may not clear an answer once the performance started', async () => {
     const out = await handleAttendanceAnswer(
       body({ status: 'clear' }),
-      deps({ loadPerformance: async () => ({ id: '10', startMs: NOW.getTime() - 1, cancelled: false }) }),
+      deps({ loadPerformance: async () => ({ id: '10', startMs: NOW.getTime() - 1, cancelled: false, listKeepers: [] }) }),
     )
     expect(out).toMatchObject({ status: 403 })
   })
@@ -307,7 +307,7 @@ describe('handleAttendanceAnswer — clear', () => {
   it('a voditelj may clear one at any time', async () => {
     const d = deps({
       actor: { user: boss, memberId: null },
-      loadPerformance: async () => ({ id: '10', startMs: NOW.getTime() - 1, cancelled: true }),
+      loadPerformance: async () => ({ id: '10', startMs: NOW.getTime() - 1, cancelled: true, listKeepers: [] }),
       findExisting: async () => ({ id: 55, army: null }),
     })
     const out = await handleAttendanceAnswer(body({ status: 'clear' }), d)
@@ -412,7 +412,7 @@ describe('handleAttendanceAnswer \u2014 undo (#624)', () => {
     const out = await handleAttendanceAnswer(
       body({ status: 'undo' }),
       deps({
-        loadPerformance: async () => ({ id: '10', startMs: NOW.getTime() - 1, cancelled: false }),
+        loadPerformance: async () => ({ id: '10', startMs: NOW.getTime() - 1, cancelled: false, listKeepers: [] }),
       }),
     )
     expect(out).toMatchObject({ status: 403 })

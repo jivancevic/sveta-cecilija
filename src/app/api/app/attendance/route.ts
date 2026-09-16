@@ -26,6 +26,12 @@ import { showStartMs } from '@/lib/show-time'
 // anonymous caller and 403 for a `tickets`, `door` or `partner` login; the rules
 // then decide whether this particular moreškant may answer for this particular
 // member on this particular evening.
+//
+// Since #658 that last decision also reads the ROW (ADR-0029): whoever keeps
+// this evening's list answers for anybody on it, which is a voditelj on every
+// evening and the evening's Zaduženi on one. Nothing is computed here for it —
+// the row's `listKeepers` simply rides along on the performance the rules
+// already receive, and `keepsTheList` asks the question where the rule is.
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -69,6 +75,9 @@ export async function POST(req: Request) {
           cancelled: doc.status === 'cancelled',
           date,
           time,
+          // Who keeps this evening's list (#658). At `depth: 0` these are bare
+          // Member ids, which is what `keepsList` reads.
+          listKeepers: Array.isArray(doc.listKeepers) ? doc.listKeepers : [],
         }
       } catch {
         return null

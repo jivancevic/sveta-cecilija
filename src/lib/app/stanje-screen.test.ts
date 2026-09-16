@@ -53,6 +53,8 @@ function detail(over: Partial<PerformanceDetail> = {}): PerformanceDetail {
       noAnswer: [GRGO],
     },
     voditelj: true,
+    keepsList: true,
+    listKeepers: [],
     canEditOthers: true,
     canAlarm: true,
     moveTargets: { '2': ['crni', 'bili'] },
@@ -382,6 +384,7 @@ describe('stanjeView for a dancer', () => {
     return stanjeView({
       ...d,
       voditelj: false,
+      keepsList: false,
       canEditOthers: false,
       moveTargets: {},
       lineup: { ...d.lineup, suggested: [], visible: false, canEdit: false },
@@ -402,6 +405,7 @@ describe('stanjeView for a dancer', () => {
     const out = stanjeView({
       ...d,
       voditelj: false,
+      keepsList: false,
       canEditOthers: false,
       moveTargets: {},
       lineup: {

@@ -32,7 +32,7 @@ const lineupDocs = [
   { id: 2, performance: 10, member: 1, role: 'crni_kralj' },
 ]
 
-const view = (over: Parameters<typeof buildLineupView>[0]['performanceDoc'] = {}, voditelj = true) =>
+const view = (over: Parameters<typeof buildLineupView>[0]['performanceDoc'] = {}, keepsList = true) =>
   buildLineupView({
     performanceDoc: performance(over),
     lineupDocs,
@@ -51,7 +51,7 @@ const view = (over: Parameters<typeof buildLineupView>[0]['performanceDoc'] = {}
       active: m.active,
       isMoreskant: m.isMoreskant,
     })),
-    voditelj,
+    keepsList,
   })
 
 describe('buildLineupView', () => {
@@ -88,7 +88,7 @@ describe('buildLineupView', () => {
         active: true,
         isMoreskant: true,
       })),
-      voditelj: true,
+      keepsList: true,
     })
     expect(v.entries).toHaveLength(1)
     expect(v.warnings.map((w) => w.memberId)).toEqual(['2'])
@@ -134,7 +134,7 @@ describe('buildLineupView', () => {
       ],
       attendanceRows: [],
       members: [],
-      voditelj: true,
+      keepsList: true,
     })
     expect(v.entries).toEqual([])
   })

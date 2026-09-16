@@ -6,10 +6,12 @@
 //   - a **moreškant** answers for exactly one person, themselves, and only
 //     while the performance has not started. A cancelled evening takes no
 //     answer at all — there is nothing to come to.
-//   - a **voditelj** answers for anybody on the roster, at any time, cancelled
-//     or long past, because the record has to be correctable (#419, story 13).
-//     The army is the voditelj's alone: a dancer says "dolazim" and the
-//     voditelj decides which army they dance in (glossary: *Attendance*).
+//   - **whoever keeps this evening's list** answers for anybody on the roster,
+//     at any time, cancelled or long past, because the record has to be
+//     correctable (#419, story 13). That is a voditelj on every evening and the
+//     evening's own Zaduženi on one of them (ADR-0029, #658), and the army is
+//     theirs: a dancer says "dolazim" and whoever is running the night decides
+//     which army they dance in (glossary: *Attendance*).
 //
 // The army a new answer lands in comes from the member's PRIMARY role, never
 // from a guess: `crni` / `crni_kralj` / `otmanovic` are crni, `bili` /
@@ -24,6 +26,7 @@
 
 import { can, type PermissionUser } from '@/lib/access/permissions'
 import { ARMY_OF_ROLE, isDanceRole, isMoreskantRow } from '@/lib/moreskant-profile'
+import { keepsList } from '@/lib/app/list-keeper'
 import { APP_STRINGS } from '@/lib/app/strings'
 
 /** The two armies. `null` is a bula, who dances in neither. */
@@ -101,6 +104,15 @@ export interface AttendancePerformance {
    */
   date?: string
   time?: string
+  /**
+   * The Members put in charge of THIS evening's list (ADR-0029, #658), exactly
+   * as the row stores them. Required, not optional: whether the caller may
+   * answer for somebody else is decided from it, and a loader that forgets to
+   * carry it would silently turn every voditelj into a dancer who can only
+   * answer for themselves. An evening with no Zaduženi is `[]`, which is the
+   * normal case and says so.
+   */
+  listKeepers: unknown[]
 }
 
 /** Who is asking. `memberId` is the actor's OWN Member link, if any. */
@@ -176,9 +188,26 @@ export function moreskantMayAnswer(
   return !performance.cancelled && nowMs < performance.startMs
 }
 
-/** True when the actor holds `moreska`: the voditelj branch of every rule. */
-export function isVoditelj(actor: AttendanceActor): boolean {
-  return can(actor.user, 'moreska')
+/**
+ * The branch every rule below forks on: whoever is RUNNING this evening.
+ *
+ * A voditelj on every evening, a Zaduženi on the one that names them. They
+ * answer for anybody, at any time, on a cancelled evening too, and the army is
+ * theirs to choose — because all four of those are what running the night
+ * means, not privileges of a rank (ADR-0029, #658).
+ *
+ * It was `can(actor.user, 'moreska')` until #658, and the reason it now takes
+ * the PERFORMANCE is the whole of that ticket: the answer depends on the row.
+ * The row is one the rule is already judging, so nothing is loaded for it and
+ * nothing has to be computed in the right order elsewhere and passed in —
+ * an earlier draft of this did exactly that, and a caller reordering two awaits
+ * would have quietly demoted a voditelj to a dancer.
+ */
+export function keepsTheList(
+  actor: AttendanceActor,
+  performance: AttendancePerformance,
+): boolean {
+  return keepsList(actor, performance)
 }
 
 export type AnswerDecision =
@@ -238,9 +267,9 @@ export function decideAttendanceAnswer(input: {
   nowMs: number
 }): AnswerDecision {
   const { actor, member, performance, nowMs } = input
-  const voditelj = isVoditelj(actor)
+  const keeper = keepsTheList(actor, performance)
 
-  if (!voditelj && !can(actor.user, 'moreskant')) {
+  if (!keeper && !can(actor.user, 'moreskant')) {
     return { ok: false, status: 403, error: ANSWER_ERRORS.notAllowed }
   }
 
@@ -249,7 +278,7 @@ export function decideAttendanceAnswer(input: {
   // yours" and nothing else: if the 400 "that member is not an active
   // moreškant" came first, a moreškant could walk the Members table and learn
   // who is on the roster by reading status codes.
-  if (!voditelj && (!actor.memberId || String(actor.memberId) !== String(memberIdOf(member, input)))) {
+  if (!keeper && (!actor.memberId || String(actor.memberId) !== String(memberIdOf(member, input)))) {
     return { ok: false, status: 403, error: ANSWER_ERRORS.notAllowed }
   }
 
@@ -258,7 +287,7 @@ export function decideAttendanceAnswer(input: {
   }
   const target = member as AttendanceMember
 
-  if (!voditelj) {
+  if (!keeper) {
     if (performance.cancelled) {
       return { ok: false, status: 403, error: ANSWER_ERRORS.cancelled }
     }
@@ -283,7 +312,7 @@ export function decideAttendanceAnswer(input: {
   // answer simply counts in the army of their primary role, which is what the
   // fall-through below computes. Refusing it would only turn a stale tab into a
   // dancer who cannot say "dolazim".
-  const armyGiven = voditelj && input.army !== undefined && input.army !== null
+  const armyGiven = keeper && input.army !== undefined && input.army !== null
   if (armyGiven) {
     if (!isArmy(input.army)) return { ok: false, status: 400, error: ANSWER_ERRORS.unknownArmy }
     if (!allowedArmies(target).includes(input.army)) {

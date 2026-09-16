@@ -17,7 +17,7 @@
 
 import {
   decideAttendanceAnswer,
-  isVoditelj,
+  keepsTheList,
   type AnswerRequest,
   type Army,
   type AttendanceActor,
@@ -260,5 +260,5 @@ export async function handleAttendanceAnswer(
   return { status: 200, body: { ok: true, status: write.status, army: write.army } }
 }
 
-/** Re-exported so the route file needs one import for the voditelj branch. */
-export { isVoditelj }
+/** Re-exported so the route file needs one import for the list-keeper branch. */
+export { keepsTheList }
