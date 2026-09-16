@@ -1,6 +1,8 @@
 import { headers } from 'next/headers'
 import { getPayload } from 'payload'
 import config from '@payload-config'
+import { deviceIdFromCookieHeader, shouldRecordDevice } from './device'
+import { loadDeviceLastSeen, poolQuery } from './device-store'
 import { decideSessionRenewal } from './session-renewal'
 
 // Where the sliding session is ASKED FOR (#650).
@@ -29,7 +31,9 @@ import { decideSessionRenewal } from './session-renewal'
 //
 // This is the general shape for "server decides, the page quietly tells a route
 // afterwards", and #652's device heartbeat hangs off the same seam: another
-// flag out of this file, another field on `SessionKeeper`'s one POST.
+// flag out of this file, another field on `SessionKeeper`'s one POST. Both
+// flags come out of `appKeeperWork()` below, and the keeper is mounted when
+// EITHER of them is true — one background call, never two.
 
 /**
  * Should this request's page quietly ask for a fresh cookie?
@@ -50,4 +54,47 @@ export async function appSessionRenewalDue(now: Date = new Date()): Promise<bool
     console.error('[app] session renewal check failed', err)
     return false
   }
+}
+
+/**
+ * Should this request's page report the browser it is running in? (#652)
+ *
+ * Two cases say yes, and both are read on the server before the browser is
+ * asked for anything:
+ *
+ *  - **no device cookie**, which is a browser this app has never named. The
+ *    route mints the id and the `Set-Cookie`, because a `document.cookie` write
+ *    would live seven days under Safari's ITP (`device.ts`).
+ *  - **a cookie whose row was last seen more than six hours ago**, or has no
+ *    row at all (the account was deleted, the database was rebuilt).
+ *
+ * Never throws: a failure here must not take a screen down over a statistic.
+ */
+export async function appDeviceHeartbeatDue(now: Date = new Date()): Promise<boolean> {
+  try {
+    const requestHeaders = await headers()
+    const deviceId = deviceIdFromCookieHeader(requestHeaders.get('cookie'))
+    if (!deviceId) return true
+    const payload = await getPayload({ config })
+    const lastSeen = await loadDeviceLastSeen(poolQuery(payload), deviceId)
+    return shouldRecordDevice(lastSeen, now)
+  } catch (err) {
+    console.error('[app] device heartbeat check failed', err)
+    return false
+  }
+}
+
+/** Everything the one background POST might have to do, decided in one place. */
+export interface AppKeeperWork {
+  renewSession: boolean
+  recordDevice: boolean
+}
+
+/** Both flags, asked for together so the layout waits on one round of work. */
+export async function appKeeperWork(now: Date = new Date()): Promise<AppKeeperWork> {
+  const [renewSession, recordDevice] = await Promise.all([
+    appSessionRenewalDue(now),
+    appDeviceHeartbeatDue(now),
+  ])
+  return { renewSession, recordDevice }
 }

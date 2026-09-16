@@ -1,4 +1,4 @@
-import { appSessionRenewalDue } from '@/lib/app/session-renewal-data'
+import { appKeeperWork } from '@/lib/app/session-renewal-data'
 import { resolveAppViewer } from '@/lib/app/viewer'
 import { Sidebar, TabBar } from '../AppNav'
 import { PullToRefresh } from '../PullToRefresh'
@@ -37,13 +37,21 @@ import { SessionKeeper } from '../SessionKeeper'
 // roster has no e-mail and therefore no way back in. The decision is the
 // server's and the `Set-Cookie` is a route's, because a layout cannot set one;
 // the reasoning is in `lib/app/session-renewal-data.ts`.
+//
+// #652 hangs off the same seam rather than building a second one: the same
+// server decision, the same one background POST, now also carrying "this
+// browser is (or is not) an installed app" so the roster can finally tell who
+// actually has Cecilija. Neither flag is set on a normal load, and then this
+// component is not in the tree at all.
 
 export default async function ShellLayout({ children }: { children: React.ReactNode }) {
-  const [viewer, renewSession] = await Promise.all([resolveAppViewer(), appSessionRenewalDue()])
+  const [viewer, keeper] = await Promise.all([resolveAppViewer(), appKeeperWork()])
 
   return (
     <div className="app__frame">
-      {viewer.signedIn && renewSession ? <SessionKeeper /> : null}
+      {viewer.signedIn && (keeper.renewSession || keeper.recordDevice) ? (
+        <SessionKeeper recordDevice={keeper.recordDevice} />
+      ) : null}
 
       <Sidebar nav={viewer.nav} />
 
