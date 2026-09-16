@@ -43,6 +43,17 @@ export const APP_NOTIFICATION_KINDS = [
   'reminder',
   'performance_created',
   'performance_changed',
+  /**
+   * "Vodiš popis": one dancer has been put in charge of one evening's list
+   * (#658). Addressed to exactly ONE account, which is what makes it unlike
+   * every other roster kind — the caller resolves the candidate, as every
+   * caller does, and here the list happens to be one name long.
+   *
+   * There is no matching kind for the delegation being TAKEN BACK, deliberately
+   * (#658, Q13): a phone that buzzes to say something was removed is a phone
+   * asking a question nobody can act on.
+   */
+  'list_keeper',
   'inquiry',
   'dispute',
   'message',
@@ -80,6 +91,7 @@ const RULES: Record<AppNotificationKind, AudienceRule> = {
   reminder: { group: 'roster', pushes: true, doorInbox: false },
   performance_created: { group: 'roster', pushes: true, doorInbox: true },
   performance_changed: { group: 'roster', pushes: true, doorInbox: true },
+  list_keeper: { group: 'roster', pushes: true, doorInbox: false },
   inquiry: { group: 'staff', pushes: false, doorInbox: false },
   dispute: { group: 'staff', pushes: false, doorInbox: false },
   // The voditelj's own sentence (#654). `roster`, because the audience is the

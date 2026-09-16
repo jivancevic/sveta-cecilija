@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { effectiveLineup, rolesPresent, stanjeView } from './stanje-screen'
 import type { PerformanceDetail } from './detail-loaders'
 import type { RosterPerson } from '@/lib/attendance/army-count'
+import { APP_STRINGS } from './strings'
 
 // #566 — what Stanje says, over a fixture detail. The rules asserted here are
 // the ones a screenshot cannot prove: which column a name is in, which titles
@@ -53,6 +54,8 @@ function detail(over: Partial<PerformanceDetail> = {}): PerformanceDetail {
       noAnswer: [GRGO],
     },
     voditelj: true,
+    keepsList: true,
+    listKeepers: [],
     canEditOthers: true,
     canAlarm: true,
     moveTargets: { '2': ['crni', 'bili'] },
@@ -60,6 +63,7 @@ function detail(over: Partial<PerformanceDetail> = {}): PerformanceDetail {
     lineup: {
       confirmed: false,
       confirmedAt: null,
+      confirmedBy: null,
       entries: [],
       suggested: [
         { memberId: '1', nickname: 'Ćići', role: 'crni' },
@@ -382,6 +386,7 @@ describe('stanjeView for a dancer', () => {
     return stanjeView({
       ...d,
       voditelj: false,
+      keepsList: false,
       canEditOthers: false,
       moveTargets: {},
       lineup: { ...d.lineup, suggested: [], visible: false, canEdit: false },
@@ -402,6 +407,7 @@ describe('stanjeView for a dancer', () => {
     const out = stanjeView({
       ...d,
       voditelj: false,
+      keepsList: false,
       canEditOthers: false,
       moveTargets: {},
       lineup: {
@@ -717,12 +723,51 @@ describe('the reader\u2019s own answer and the numbers to ring (#624)', () => {
     expect(stanjeView(detail({ myMemberId: null })).me).toBeNull()
   })
 
-  it('carries a mobile for a voditelj, and for nobody else', () => {
+  // The Zaduženi lines (#658).
+  it('names the keepers only when there are any, and never a voditelj', () => {
+    // Nobody delegated: the voditelji are running the night, as always, and the
+    // line is absent rather than empty.
+    expect(stanjeView(detail()).keptBy).toBeNull()
+    expect(stanjeView(detail()).listKeepers).toEqual([])
+
+    const kept = stanjeView(
+      detail({ listKeepers: [{ memberId: '7', nickname: 'Ante' }] }),
+    )
+    expect(kept.keptBy).toBe(APP_STRINGS.listKeepers.kept('Ante'))
+    expect(kept.listKeepers).toEqual(['7'])
+  })
+
+  it('joins several keepers into one line', () => {
+    const view = stanjeView(
+      detail({
+        listKeepers: [
+          { memberId: '7', nickname: 'Ante' },
+          { memberId: '9', nickname: 'Bepo' },
+        ],
+      }),
+    )
+    expect(view.keptBy).toBe(APP_STRINGS.listKeepers.kept('Ante, Bepo'))
+  })
+
+  it('signs a confirmed postava, and signs nothing otherwise', () => {
+    const base = detail()
+    const signed = (over: Partial<PerformanceDetail['lineup']>) =>
+      stanjeView(detail({ lineup: { ...base.lineup, ...over } })).confirmedBy
+
+    expect(
+      signed({ confirmed: true, confirmedAt: '2026-08-20T21:00:00.000Z', confirmedBy: 'Ante' }),
+    ).toContain('Ante')
+    // Unconfirmed, and confirmed by nobody the row remembers: no line either way.
+    expect(signed({ confirmed: false, confirmedBy: 'Ante' })).toBeNull()
+    expect(signed({ confirmed: true, confirmedAt: '2026-08-20T21:00:00.000Z' })).toBeNull()
+  })
+
+  it('carries a mobile for whoever keeps the list, and for nobody else', () => {
     const roster = [{ ...CICI, mobile: '0915551234' }]
-    const withPhones = (voditelj: boolean) =>
+    const withPhones = (over: Partial<PerformanceDetail>) =>
       stanjeView(
         detail({
-          voditelj,
+          ...over,
           count: {
             ...detail().count,
             crni: { count: 1, threshold: 3, below: true, nicknames: [], members: roster },
@@ -730,9 +775,13 @@ describe('the reader\u2019s own answer and the numbers to ring (#624)', () => {
         }),
       ).columns[0].people.find((p) => p.memberId === '1')?.mobile ?? null
 
-    expect(withPhones(true)).toBe('0915551234')
-    // A dancer's browser never receives it: the Nazovi row is the voditelj's,
-    // so the number is left out of the payload rather than hidden in the CSS.
-    expect(withPhones(false)).toBeNull()
+    expect(withPhones({ voditelj: true, keepsList: true })).toBe('0915551234')
+    // A Zaduženi is the person ringing round at seven in the evening (#658), so
+    // the numbers follow `keepsList` rather than the permission.
+    expect(withPhones({ voditelj: false, keepsList: true })).toBe('0915551234')
+    // Any other dancer's browser never receives it: the Nazovi row belongs to
+    // whoever is running the night, so the number is left out of the payload
+    // rather than hidden in the CSS.
+    expect(withPhones({ voditelj: false, keepsList: false })).toBeNull()
   })
 })

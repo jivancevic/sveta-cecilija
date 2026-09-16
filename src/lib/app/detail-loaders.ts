@@ -30,6 +30,7 @@ import {
   type AttendanceStatus,
 } from '@/lib/attendance/rules'
 import { relationIdString } from '@/lib/payload-relation'
+import { keepsListAs, listKeeperIds } from './list-keeper'
 import { isDanceRole, isLineupRole, type DanceRole, type LineupRole } from '@/lib/moreskant-profile'
 import {
   buildLineupFromAttendance,
@@ -62,7 +63,7 @@ export interface LineupPerson {
    * the whole screen is written in — so this is a match key, not a column.
    * Null where the member row has none.
    *
-   * It rides the voditelj-only roster, so no dancer's browser receives it.
+   * It rides the list-keeper's roster, so no other dancer's browser receives it.
    */
   name: string | null
   /** The roles their profile lists, so the select can mark the unusual ones. */
@@ -90,16 +91,30 @@ export interface LineupPerson {
 export interface LineupView {
   confirmed: boolean
   confirmedAt: string | null
+  /**
+   * WHO confirmed it (#658). Until this ticket a postava had exactly one
+   * possible confirmer, so "when" was the whole story; now an evening's
+   * Zaduženi can lock one too, and "whose hand" is the first question asked
+   * when a season statistic looks wrong. Null on an unconfirmed postava, and
+   * null on one confirmed before the column existed.
+   */
+  confirmedBy: string | null
   /** The stored postava. Empty for a dancer looking at a draft. */
   entries: LineupRow[]
-  /** What "Napravi iz prisutnosti" would produce. Voditelj only. */
+  /** What "Napravi iz prisutnosti" would produce. The list-keeper's, only. */
   suggested: LineupRow[]
   /** Roles outside a dancer's profile, for the stored entries (story 29). */
   warnings: RoleWarning[]
-  /** Every active moreškant, for the picker. Voditelj only. */
+  /** Every active moreškant, for the picker. The list-keeper's, only. */
   roster: LineupPerson[]
   visible: boolean
   canEdit: boolean
+}
+
+/** A Zaduženi, as the header line and the picker name them (#658). */
+export interface ListKeeperPerson {
+  memberId: string
+  nickname: string
 }
 
 /** One of the caller's own self-issued comp orders, as the section lists it. */
@@ -149,10 +164,29 @@ export interface CompView {
 export interface PerformanceDetail {
   performance: RosterPerformance
   count: ArmyCount
-  /** True when the viewer holds `moreska`. */
+  /**
+   * True when the viewer holds `moreska`.
+   *
+   * Since #658 this is NO LONGER the question "may they run this evening" — that
+   * is `keepsList`. What is left to it is what stayed the voditelj's alone: the
+   * alarm, and naming this evening's Zaduženi.
+   */
   voditelj: boolean
   /**
-   * True when the viewer may change ANY answer here (a voditelj, always). A
+   * True when the viewer keeps THIS evening's list (ADR-0029): a voditelj on
+   * every evening, a Zaduženi on the one that names them. Everything about
+   * running the night hangs off this and not off `voditelj`.
+   */
+  keepsList: boolean
+  /**
+   * The Zaduženi named on this evening, in roster order — never a voditelj, who
+   * keeps every list without being written down. Empty is the normal state, and
+   * it is what makes "Popis vodi: …" a line that appears only when somebody
+   * OTHER than a voditelj is running the night.
+   */
+  listKeepers: ListKeeperPerson[]
+  /**
+   * True when the viewer may change ANY answer here (whoever keeps the list). A
    * moreškant edits only their own, which `performance.canAnswer` decides.
    */
   canEditOthers: boolean
@@ -264,7 +298,15 @@ export function buildLineupView(input: {
   lineupDocs: Record<string, unknown>[]
   attendanceRows: readonly AttendanceRow[]
   members: readonly ReturnType<typeof toAttendanceMember>[]
-  voditelj: boolean
+  /**
+   * Whoever keeps THIS evening's list (#658): a voditelj on every evening, the
+   * evening's own Zaduženi on this one. It used to be plain `voditelj`, and the
+   * rename is the whole point — the postava is edited by whoever is running the
+   * night, and on a night neither voditelj attends that is somebody else.
+   */
+  keepsList: boolean
+  /** The name on the account that confirmed it, when there is one (#658). */
+  confirmedBy?: string | null
 }): LineupView {
   const confirmed = input.performanceDoc.lineupConfirmed === true
   const confirmedAtRaw = input.performanceDoc.lineupConfirmedAt
@@ -294,20 +336,21 @@ export function buildLineupView(input: {
   const toRows = (entries: readonly LineupEntry[]): LineupRow[] =>
     entries.map(toRow).sort(compareLineupRows)
 
-  const visible = input.voditelj || confirmed
+  const visible = input.keepsList || confirmed
 
   return {
     confirmed,
     confirmedAt,
+    confirmedBy: confirmed ? (input.confirmedBy ?? null) : null,
     // A dancer looking at a draft gets an EMPTY list rather than a hidden
     // section: the shape of the payload is where story 34 is enforced, so no
     // template can leak a draft by forgetting a condition.
     entries: visible ? toRows(stored) : [],
-    suggested: input.voditelj
+    suggested: input.keepsList
       ? toRows(buildLineupFromAttendance(input.attendanceRows, roster))
       : [],
     warnings: visible ? roleWarnings(stored, roster) : [],
-    roster: input.voditelj
+    roster: input.keepsList
       ? roster.map((m) => ({
           memberId: String(m.id),
           nickname: label.get(String(m.id)) ?? String(m.id),
@@ -317,7 +360,7 @@ export function buildLineupView(input: {
         }))
       : [],
     visible,
-    canEdit: input.voditelj && !confirmed,
+    canEdit: input.keepsList && !confirmed,
   }
 }
 
@@ -335,6 +378,8 @@ export function buildPerformanceDetail(input: {
   lineupDocs?: Record<string, unknown>[]
   ownComps?: readonly OwnCompRow[]
   seatsRemaining?: number | null
+  /** The name on the account that confirmed the postava, when there is one. */
+  confirmedBy?: string | null
   viewer: { memberId: string | null; voditelj: boolean }
   nowMs: number
 }): PerformanceDetail {
@@ -387,17 +432,33 @@ export function buildPerformanceDetail(input: {
     if (armies.length > 1) moveTargets[String(member.id)] = armies
   }
 
+  // The alarm stays the voditelj's on every evening (ADR-0029): ringing
+  // seventy-six phones is not part of keeping a list.
   const canAlarm =
     input.viewer.voditelj &&
     !performance.cancelled &&
     !Number.isNaN(performance.startMs) &&
     performance.startMs > input.nowMs
 
+  // Who is running THIS evening (#658). The same pure rule the three write
+  // routes apply, so a button this payload offers is never one they refuse.
+  const keeps = keepsListAs(input.viewer, input.performanceDoc)
+  const keeperIds = new Set(listKeeperIds(input.performanceDoc))
+  const listKeepers: ListKeeperPerson[] = members
+    .filter((m) => keeperIds.has(String(m.id)))
+    .map((m) => ({
+      memberId: String(m.id),
+      nickname: (m.nickname ?? m.name ?? String(m.id)).trim(),
+    }))
+    .sort((a, b) => a.nickname.localeCompare(b.nickname, 'hr'))
+
   return {
     performance: { ...performance, myAnswer, myArmy, canAnswer },
     count,
     voditelj: input.viewer.voditelj,
-    canEditOthers: input.viewer.voditelj,
+    keepsList: keeps,
+    listKeepers,
+    canEditOthers: keeps,
     canAlarm,
     moveTargets,
     myMemberId: input.viewer.memberId,
@@ -415,7 +476,8 @@ export function buildPerformanceDetail(input: {
       lineupDocs: input.lineupDocs ?? [],
       attendanceRows: rows,
       members,
-      voditelj: input.viewer.voditelj,
+      keepsList: keeps,
+      confirmedBy: input.confirmedBy ?? null,
     }),
   }
 }
@@ -433,6 +495,11 @@ export interface PerformanceDetailDeps {
   loadOwnComps?: (performanceId: string, memberId: string) => Promise<OwnCompRow[]>
   /** Seats still sellable, for the comp form's sold-out line (#434). */
   loadSeatsRemaining?: (performanceId: string) => Promise<number | null>
+  /**
+   * The name on one account, for the postava's signature (#658). Only called
+   * when there IS a signature, so an unconfirmed evening costs no extra read.
+   */
+  loadAccountName?: (userId: string) => Promise<string | null>
   viewer: { memberId: string | null; voditelj: boolean }
   now?: () => Date
 }
@@ -449,19 +516,26 @@ export async function loadPerformanceDetail(
   if (!isShownKind(performanceDoc.kind ?? 'redovna')) return null
 
   const memberId = deps.viewer.memberId
-  const [attendanceDocs, memberDocs, lineupDocs, ownComps, seatsRemaining] = await Promise.all([
-    deps.loadAttendance(performanceId),
-    deps.loadMoreskanti(),
-    deps.loadLineup?.(performanceId) ?? Promise.resolve([]),
-    // Both comp reads are for the viewer's own section, so neither runs for a
-    // viewer who has no Member row to issue against.
-    memberId && deps.loadOwnComps
-      ? deps.loadOwnComps(performanceId, memberId)
-      : Promise.resolve([] as OwnCompRow[]),
-    memberId && deps.loadSeatsRemaining
-      ? deps.loadSeatsRemaining(performanceId)
-      : Promise.resolve(null),
-  ])
+  // Who locked the postava (#658). Read alongside everything else rather than
+  // after it, and only when the row actually carries a signature.
+  const confirmedById = relationIdString(performanceDoc.lineupConfirmedBy)
+  const [attendanceDocs, memberDocs, lineupDocs, ownComps, seatsRemaining, confirmedBy] =
+    await Promise.all([
+      deps.loadAttendance(performanceId),
+      deps.loadMoreskanti(),
+      deps.loadLineup?.(performanceId) ?? Promise.resolve([]),
+      // Both comp reads are for the viewer's own section, so neither runs for a
+      // viewer who has no Member row to issue against.
+      memberId && deps.loadOwnComps
+        ? deps.loadOwnComps(performanceId, memberId)
+        : Promise.resolve([] as OwnCompRow[]),
+      memberId && deps.loadSeatsRemaining
+        ? deps.loadSeatsRemaining(performanceId)
+        : Promise.resolve(null),
+      confirmedById && deps.loadAccountName
+        ? deps.loadAccountName(confirmedById)
+        : Promise.resolve(null),
+    ])
 
   return buildPerformanceDetail({
     performanceDoc,
@@ -470,6 +544,7 @@ export async function loadPerformanceDetail(
     lineupDocs,
     ownComps,
     seatsRemaining,
+    confirmedBy,
     viewer: deps.viewer,
     nowMs: (deps.now?.() ?? new Date()).getTime(),
   })

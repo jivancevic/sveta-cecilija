@@ -457,6 +457,46 @@ export const Shows: CollectionConfig = {
       },
       access: { read: rosterFieldRead, update: rosterFieldUpdate },
     },
+    // Whose hand locked it (#658). A postava used to have exactly one possible
+    // confirmer — the voditelj — so "when" was the whole story. Now an evening's
+    // Zaduženi can confirm it too, and "who" is the first question asked the
+    // first time a season statistic looks wrong.
+    //
+    // The ACCOUNT, not the Member: a voditelj who does not dance has no Member
+    // at all, and the line must still have a name to print. Cleared on unlock
+    // with `lineupConfirmedAt`, because a signature under a postava that is no
+    // longer confirmed is a claim about a state that no longer exists.
+    {
+      name: 'lineupConfirmedBy',
+      type: 'relationship',
+      relationTo: 'users',
+      admin: {
+        description:
+          'The account that confirmed the lineup: a voditelj, or the evening’s Zaduženi. Cleared again when it is unlocked.',
+      },
+      access: { read: rosterFieldRead, update: rosterFieldUpdate },
+    },
+    // The Zaduženi: who may keep THIS evening's list (ADR-0029, #658).
+    //
+    // A `moreska` holder keeps every list and is never written here, so a name
+    // on this field always means somebody else — which is why Stanje prints
+    // "Popis vodi: …" exactly when the field is non-empty. Several at once; no
+    // expiry, because the delegation dies with the evening on its own and must
+    // outlive it (a postava is confirmed AFTER the night it records).
+    //
+    // The predicate that reads it is `keepsList` in `src/lib/app/list-keeper.ts`
+    // and it is deliberately NOT a permission: see ADR-0029 before touching it.
+    {
+      name: 'listKeepers',
+      type: 'relationship',
+      relationTo: 'members',
+      hasMany: true,
+      admin: {
+        description:
+          'Moreškanti put in charge of this evening’s list: they answer for others, hand out titles, edit the postava and lock or unlock it — on this performance only. Not the alarm.',
+      },
+      access: { read: rosterFieldRead, update: rosterFieldUpdate },
+    },
     {
       name: 'voditeljNote',
       type: 'textarea',

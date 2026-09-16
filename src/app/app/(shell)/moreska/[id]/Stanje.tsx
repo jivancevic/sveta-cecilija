@@ -2,13 +2,15 @@
 
 import { Fragment, useMemo, useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { Bell, ChevronRight, Phone, Plus } from 'lucide-react'
+import { Bell, ChevronRight, MoreHorizontal, Phone, Plus } from 'lucide-react'
 import { APP_STRINGS } from '@/lib/app/strings'
 import { Answer } from '../Answer'
 import { MAX_THRESHOLD } from '@/lib/app/performance-form'
 import { memberMatchesSearch } from '@/lib/app/members-screen'
 import { armyOfLineupRole, assignTitle, type DanceTitle } from '@/lib/lineup/titles'
 import type { LineupEntry } from '@/lib/lineup/rules'
+import type { LineupView } from '@/lib/app/detail-loaders'
+import { LineupEditor } from '../../../LineupEditor'
 import { DANCE_ROLE_LABELS, LINEUP_ROLE_LABELS, type DanceRole } from '@/lib/moreskant-profile'
 import type {
   PickerKey,
@@ -74,6 +76,7 @@ import {
 // lock.
 
 const S = APP_STRINGS.stanje
+const K = APP_STRINGS.listKeepers
 
 interface Busy {
   /** What is in flight, so one sheet can be saving while the rest is readable. */
@@ -85,10 +88,18 @@ export function Stanje({
   view,
   voditelj,
   canAlarm,
+  lineup,
 }: {
   view: StanjeView
+  /**
+   * Holds `moreska`. Since #658 this is NO LONGER "may run this evening" —
+   * that is `view.keepsList`. Two things are left to it and both are the
+   * voditelj's alone: the alarm, and naming this evening's Zaduženi.
+   */
   voditelj: boolean
   canAlarm: boolean
+  /** The postava editor's data (#658): it lives on this screen now. */
+  lineup: LineupView
 }) {
   const router = useRouter()
   const [busy, setBusy] = useState<Busy>({ what: null, error: null })
@@ -96,6 +107,10 @@ export function Stanje({
   const [list, setList] = useState<'noAnswer' | 'notComing' | null>(null)
   const [adding, setAdding] = useState<PickerKey | null>(null)
   const [calling, setCalling] = useState(false)
+  // The three sheets #658 adds: the "⋯" itself, and the two things behind it.
+  const [menu, setMenu] = useState(false)
+  const [editing, setEditing] = useState(false)
+  const [keepers, setKeepers] = useState(false)
   const [, startTransition] = useTransition()
 
   /** One POST, one refresh, one sentence when it fails. */
@@ -226,9 +241,17 @@ export function Stanje({
   // story 13), so the names stay tappable once the postava is confirmed. What
   // the sheet stops offering then is the TITLES: a confirmed postava changes
   // only after Otključaj, which is what the replace route's 409 says too.
-  const tap = voditelj ? setPerson : null
-  /** Adding is the voditelj's, and never on a confirmed postava (#620). */
-  const add = voditelj && !view.confirmed ? setAdding : null
+  // Whoever keeps THIS evening's list (#658), not whoever holds the word: on a
+  // night neither voditelj attends, the person writing the evening down is the
+  // Zaduženi, and every control below is theirs for that one evening.
+  const tap = view.keepsList ? setPerson : null
+  /** Adding is the list-keeper's, and never on a confirmed postava (#620). */
+  const add = view.keepsList && !view.confirmed ? setAdding : null
+
+  /** One switch on the Zaduženi sheet. The route is a switch too, not a toggle. */
+  async function setKeeper(memberId: string, keeps: boolean) {
+    await send('keeper', `/api/app/performances/${view.id}/list-keepers`, { memberId, keeps })
+  }
 
   return (
     <div className="app__stanje">
@@ -320,10 +343,16 @@ export function Stanje({
           In the flow the shell's own bottom padding clears the bar, and the two
           buttons stand where the screen ends rather than following the thumb up
           the page. */}
-      {voditelj && (
+      {view.keepsList && (
         <div className="app__stanje-actions">
           <div className="ui-btns">
-            <Button variant="ghost" onClick={() => setCalling(true)}>
+            {/* Pozovi is the voditelj's on every evening (ADR-0029): ringing
+                seventy-six phones is not part of keeping a list. For a Zaduženi
+                it is GREY WITH A SENTENCE rather than absent (#658), the
+                way Izvedbe greys its six actions with "traži Blagajnu" —
+                somebody doing the voditelj's job tonight has to see that the
+                alarm exists and that it is not theirs. */}
+            <Button variant="ghost" disabled={!voditelj} onClick={() => setCalling(true)}>
               <Bell size={17} strokeWidth={1.75} aria-hidden="true" />
               {S.call}
             </Button>
@@ -345,6 +374,18 @@ export function Stanje({
                 {busy.what === 'confirm' ? S.confirming : S.confirm}
               </Button>
             )}
+            {/* The third control (#658). Uredi postavu and Zaduženi are
+                PREPARATORY — pressed before the evening, at a table — while the
+                two beside it are pressed under time pressure, so they keep the
+                width and these go behind one tap. */}
+            <Button
+              variant="ghost"
+              className="app__stanje-more"
+              aria-label={S.moreActions}
+              onClick={() => setMenu(true)}
+            >
+              <MoreHorizontal size={18} strokeWidth={1.75} aria-hidden="true" />
+            </Button>
           </div>
           {/* The reason, where the refusal would be: the route says the same
               thing in its own words, so a disabled button is never a mystery.
@@ -355,6 +396,7 @@ export function Stanje({
             </p>
           )}
           {view.confirmed && <p className="app__stanje-why">{S.confirmedNote}</p>}
+          {!voditelj && <p className="app__stanje-why">{S.callVoditelj}</p>}
         </div>
       )}
 
@@ -433,6 +475,61 @@ export function Stanje({
               : null
           }
           clearLabel={S.noVoditelj}
+        />
+      )}
+
+      {/* The "⋯" (#658). Two rows, because Cecilija's questions are short and
+          closed (`ui/Sheet.tsx`) — a screen that needs a form needs a screen,
+          and neither of these is a form until it is opened. */}
+      <Sheet open={menu} title={S.moreActions} onClose={() => setMenu(false)}>
+        <SheetOption
+          onClick={() => {
+            setMenu(false)
+            setEditing(true)
+          }}
+        >
+          {S.editLineup}
+        </SheetOption>
+        {/* Naming a Zaduženi is the voditelj's alone: a delegation that can be
+            passed on is one nobody can follow. The route refuses it too. */}
+        {voditelj && (
+          <SheetOption
+            onClick={() => {
+              setMenu(false)
+              setKeepers(true)
+            }}
+          >
+            {K.open}
+          </SheetOption>
+        )}
+      </Sheet>
+
+      {/* The postava editor, moved off Izvedbe by #658 — a `moreskant` login
+          does not unlock that screen, so without the move a Zaduženi could hand
+          out the four titles and never record an unusual role. Its own
+          Potvrdi/Otključaj went with the move: confirming lives in the action
+          block above and nowhere else. */}
+      <Sheet open={editing} title={APP_STRINGS.lineup.title} onClose={() => setEditing(false)}>
+        <LineupEditor
+          performanceId={view.id}
+          initialEntries={lineup.entries}
+          suggested={lineup.suggested}
+          roster={lineup.roster}
+          confirmed={lineup.confirmed}
+          // The split is `lineupRequirements`' and nothing re-types it; the
+          // view already asked it, which is what `experience` is.
+          experience={view.experience}
+        />
+      </Sheet>
+
+      {voditelj && (
+        <KeeperSheet
+          open={keepers}
+          picker={view.keeperPicker}
+          chosen={view.listKeepers}
+          busy={busy.what}
+          onClose={() => setKeepers(false)}
+          onToggle={(memberId, keeps) => void setKeeper(memberId, keeps)}
         />
       )}
 
@@ -813,6 +910,76 @@ function PeopleSheet({
         {rows.length === 0 && (
           <p className="app__stanje-empty">{people.length === 0 ? S.nobodyToAdd : S.nobody}</p>
         )}
+      </div>
+    </Sheet>
+  )
+}
+
+/**
+ * The Zaduženi sheet (#658): every active moreškant with a switch each.
+ *
+ * Deliberately NOT a `PeopleSheet`. That one is a picker — a tap chooses
+ * somebody and closes — while this is a set the voditelj arranges, several at
+ * once, watching what is already on. The shared component would have to grow an
+ * on-state and a "stay open" mode to say that, and the two would then drift.
+ *
+ * A clean list, with no mark for who has a login (#658): a voditelj
+ * knows, and an annotation with nothing to do about it is noise. Naming a dancer
+ * who has never signed in is allowed and writes the row — they simply get no
+ * push, which the handler already decides.
+ */
+function KeeperSheet({
+  open,
+  picker,
+  chosen,
+  busy,
+  onClose,
+  onToggle,
+}: {
+  open: boolean
+  picker: StanjePicker
+  chosen: readonly string[]
+  busy: string | null
+  onClose: () => void
+  onToggle: (memberId: string, keeps: boolean) => void
+}) {
+  const [query, setQuery] = useState('')
+  const on = useMemo(() => new Set(chosen.map(String)), [chosen])
+  const rows = useMemo(
+    () => picker.people.filter((person) => memberMatchesSearch(person, query)),
+    [picker.people, query],
+  )
+
+  function close() {
+    setQuery('')
+    onClose()
+  }
+
+  return (
+    <Sheet open={open} title={picker.title} onClose={close}>
+      <p className="app__stanje-why">{K.explain}</p>
+      {picker.people.length > 0 && (
+        <input
+          className="app__input"
+          type="search"
+          value={query}
+          placeholder={K.search}
+          onChange={(event) => setQuery(event.target.value)}
+        />
+      )}
+      <div className="app__stanje-sheet-list">
+        {rows.map((person) => (
+          <SheetOption
+            key={person.memberId}
+            on={on.has(person.memberId)}
+            disabled={busy != null}
+            lead={<RoleMark army={person.army} role={person.primaryRole ?? undefined} small />}
+            onClick={() => onToggle(person.memberId, !on.has(person.memberId))}
+          >
+            {person.nickname}
+          </SheetOption>
+        ))}
+        {rows.length === 0 && <p className="app__stanje-empty">{K.empty}</p>}
       </div>
     </Sheet>
   )

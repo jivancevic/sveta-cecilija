@@ -25,10 +25,17 @@
 // read identically to the person holding the phone.
 //
 // The `/app` cross-site guard runs first on both, like every other
-// cookie-authenticated `/app` POST. `requirePermission(req, 'moreska')` is the
-// route's own line: a dancer never writes a lineup.
+// cookie-authenticated `/app` POST. The route's own line used to be
+// `requirePermission(req, 'moreska')` — a dancer never writes a lineup — and
+// since #658 it is that guard widened to `['moreska','moreskant']` followed by
+// a question about the ROW: does this caller keep THIS evening's list
+// (ADR-0029)? A voditelj does on every evening, the evening's Zaduženi on one.
+// The 403 for everybody else is decided HERE rather than in the route, beside
+// the other refusals and under the same tests, because "who may write this
+// postava" is a rule about a lineup and not a fact about a session.
 
 import { rejectAppRequest, type AppRequestMeta } from '@/lib/app/request-guard'
+import { keepsList, type ListKeeperActor } from '@/lib/app/list-keeper'
 import type { AttendanceMember } from '@/lib/attendance/rules'
 import type { PerformanceKind } from '@/lib/show-performance'
 import { lineupRequirements } from './titles'
@@ -66,10 +73,19 @@ export interface LineupPerformance {
    * half of the same split, applied at CONFIRM.
    */
   kind: PerformanceKind
+  /**
+   * The Members put in charge of THIS evening's list (#658), as the row stores
+   * them. Required: it is what separates a Zaduženi from any other moreškant,
+   * and a loader that forgot it would refuse the one person the delegation
+   * exists for.
+   */
+  listKeepers: unknown[]
 }
 
 export interface LineupReplaceDeps {
   request: AppRequestMeta
+  /** Who is asking, for the row question (#658). */
+  actor: ListKeeperActor
   loadPerformance: (id: string) => Promise<LineupPerformance | null>
   /** The ACTIVE moreškanti: the set an entry's member must belong to. */
   loadRoster: () => Promise<AttendanceMember[]>
@@ -88,6 +104,15 @@ export interface LineupReplaceDeps {
 
 export interface LineupConfirmDeps {
   request: AppRequestMeta
+  /** Who is asking, for the row question (#658). */
+  actor: ListKeeperActor
+  /**
+   * The evening, read once before the transaction, for the row question and
+   * nothing else. Deliberately OUTSIDE the lock: the worst a race can do is let
+   * a confirm land microseconds after the delegation was taken back, and taking
+   * the lock twice to close that would cost every confirm a transaction.
+   */
+  loadPerformance: (id: string) => Promise<LineupPerformance | null>
   /**
    * Takes the same shows row lock the replace takes, reads the confirmation and
    * the row count, applies `decideConfirmation` and writes — all inside one
@@ -132,6 +157,9 @@ export async function handleLineupReplace(
 
   const performance = await deps.loadPerformance(performanceId)
   if (!performance) return { status: 400, body: { error: APP_STRINGS.lineup.missing } }
+  if (!keepsList(deps.actor, performance)) {
+    return { status: 403, body: { error: APP_STRINGS.lineup.notKeeper } }
+  }
   if (performance.confirmed) return { status: 409, body: { error: APP_STRINGS.lineup.locked } }
 
   const roster = await deps.loadRoster()
@@ -188,6 +216,12 @@ export async function handleLineupConfirm(
   if (!performanceId) return { status: 400, body: { error: APP_STRINGS.lineup.missing } }
   if (typeof body?.confirmed !== 'boolean') {
     return { status: 400, body: { error: APP_STRINGS.lineup.badConfirm } }
+  }
+
+  const performance = await deps.loadPerformance(performanceId)
+  if (!performance) return { status: 400, body: { error: APP_STRINGS.lineup.missing } }
+  if (!keepsList(deps.actor, performance)) {
+    return { status: 403, body: { error: APP_STRINGS.lineup.notKeeper } }
   }
 
   const outcome = await deps.setConfirmed(performanceId, body.confirmed)

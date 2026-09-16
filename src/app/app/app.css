@@ -8366,6 +8366,16 @@ a.app__statrow-main:focus-visible {
   color: var(--muted);
 }
 
+/* The "⋯" beside Pozovi and Potvrdi (#658).
+   `.ui-btn` is `flex: 1`, which would give three equal thirds and take a third
+   of the width away from the two buttons that are pressed under time pressure.
+   This one holds an icon and nothing else, so it takes its own width and the
+   other two split what is left. */
+.app__stanje-more {
+  flex: 0 0 auto;
+  padding: 0 14px;
+}
+
 .app__stanje-sheet-list {
   display: flex;
   flex-direction: column;

@@ -22,8 +22,19 @@ const voditeljWhoDances: AttendanceActor = {
   user: { permissions: ['moreska', 'moreskant'] },
   memberId: '1',
 }
+
+// The Zaduženi (#658): a plain moreškant named on ONE evening's `listKeepers`.
+// Every rule that forks on "is this person running the night" must treat them
+// exactly as it treats a voditelj, on that evening and on no other.
+const zaduzeni: AttendanceActor = {
+  user: { permissions: ['moreskant'] },
+  memberId: '7',
+}
 const cici: AttendanceActor = { user: { permissions: ['moreskant'] }, memberId: '1' }
-const ticketAdmin: AttendanceActor = { user: { permissions: ['tickets', 'refunds'] }, memberId: null }
+const ticketAdmin: AttendanceActor = {
+  user: { permissions: ['tickets', 'refunds'] },
+  memberId: null,
+}
 const anon: AttendanceActor = { user: null, memberId: null }
 
 const dancer = (over: Partial<AttendanceMember> = {}): AttendanceMember => ({
@@ -36,9 +47,11 @@ const dancer = (over: Partial<AttendanceMember> = {}): AttendanceMember => ({
   ...over,
 })
 
-const upcoming: AttendancePerformance = { id: '10', startMs: LATER, cancelled: false }
-const started: AttendancePerformance = { id: '11', startMs: EARLIER, cancelled: false }
-const cancelled: AttendancePerformance = { id: '12', startMs: LATER, cancelled: true }
+const upcoming: AttendancePerformance = { id: '10', startMs: LATER, cancelled: false, listKeepers: [] }
+const started: AttendancePerformance = { id: '11', startMs: EARLIER, cancelled: false, listKeepers: [] }
+const cancelled: AttendancePerformance = { id: '12', startMs: LATER, cancelled: true, listKeepers: [] }
+/** The same three evenings, with Ante (Member 7) put in charge of this one. */
+const kept = (p: AttendancePerformance): AttendancePerformance => ({ ...p, listKeepers: ['7'] })
 
 function decide(over: Partial<Parameters<typeof decideAttendanceAnswer>[0]> = {}) {
   return decideAttendanceAnswer({
@@ -135,6 +148,40 @@ describe('decideAttendanceAnswer — who may answer', () => {
     expect(decide({ actor })).toEqual({ ok: false, status: 403, error: ANSWER_ERRORS.notAllowed })
   })
 
+  // The Zaduženi (#658, ADR-0029). The delegation is bounded by the EVENING, so
+  // every one of these is a pair: what they may do on the evening that names
+  // them, and that they may do none of it on the one that does not.
+  it('a zaduženi answers for any dancer on the evening that names them', () => {
+    expect(
+      decide({
+        actor: zaduzeni,
+        performance: kept(upcoming),
+        member: dancer({ id: '9', nickname: 'Bepo' }),
+      }),
+    ).toMatchObject({ ok: true, op: 'write' })
+  })
+
+  it('the same account answers for nobody but themselves on another evening', () => {
+    expect(
+      decide({ actor: zaduzeni, performance: upcoming, member: dancer({ id: '9' }) }),
+    ).toEqual({ ok: false, status: 403, error: ANSWER_ERRORS.notAllowed })
+  })
+
+  it('a moreškant named on an evening they are not on still answers for themselves', () => {
+    expect(
+      decide({ actor: cici, performance: kept(upcoming), member: dancer({ id: '1' }) }),
+    ).toMatchObject({ ok: true, op: 'write' })
+  })
+
+  it('a ticket admin named on the row keeps nothing: the list belongs to the dance', () => {
+    const named: AttendanceActor = { user: { permissions: ['tickets'] }, memberId: '7' }
+    expect(decide({ actor: named, performance: kept(upcoming) })).toEqual({
+      ok: false,
+      status: 403,
+      error: ANSWER_ERRORS.notAllowed,
+    })
+  })
+
   it.each([
     ['a retired member', dancer({ active: false })],
     ['a member who is not a moreškant', dancer({ isMoreskant: false })],
@@ -183,12 +230,12 @@ describe('decideAttendanceAnswer — when', () => {
   })
 
   it('the boundary is the start instant itself', () => {
-    expect(decide({ performance: { id: '13', startMs: NOW, cancelled: false } })).toMatchObject({
+    expect(decide({ performance: { id: '13', startMs: NOW, cancelled: false, listKeepers: [] } })).toMatchObject({
       ok: false,
       status: 403,
     })
     expect(
-      decide({ performance: { id: '13', startMs: NOW + 1, cancelled: false } }),
+      decide({ performance: { id: '13', startMs: NOW + 1, cancelled: false, listKeepers: [] } }),
     ).toMatchObject({ ok: true })
   })
 
@@ -203,6 +250,22 @@ describe('decideAttendanceAnswer — when', () => {
   it('a voditelj answers after the start and on a cancelled performance', () => {
     expect(decide({ actor: voditelj, performance: started })).toMatchObject({ ok: true })
     expect(decide({ actor: voditelj, performance: cancelled })).toMatchObject({ ok: true })
+  })
+
+  it('a zaduženi answers after the start and on a cancelled evening, on theirs only', () => {
+    expect(
+      decide({ actor: zaduzeni, performance: kept(started), member: dancer({ id: '9' }) }),
+    ).toMatchObject({ ok: true })
+    expect(
+      decide({ actor: zaduzeni, performance: kept(cancelled), member: dancer({ id: '9' }) }),
+    ).toMatchObject({ ok: true })
+    // Not theirs: the time rule bites them like any other dancer, even for
+    // their own answer.
+    expect(decide({ actor: zaduzeni, performance: started, member: dancer({ id: '7' }) })).toEqual({
+      ok: false,
+      status: 403,
+      error: ANSWER_ERRORS.started,
+    })
   })
 })
 

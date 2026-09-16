@@ -379,8 +379,8 @@ CREATE TABLE IF NOT EXISTS public.orders (
     refund_status public.enum_orders_refund_status DEFAULT 'none'::public.enum_orders_refund_status NOT NULL,
     show_id integer NOT NULL,
     locale public.enum_orders_locale,
-    review_email_sent_at timestamp(3) with time zone,
     cancel_notified_at timestamp(3) with time zone,
+    review_email_sent_at timestamp(3) with time zone,
     updated_at timestamp(3) with time zone DEFAULT now() NOT NULL,
     created_at timestamp(3) with time zone DEFAULT now() NOT NULL
 );
@@ -604,6 +604,7 @@ CREATE TABLE IF NOT EXISTS public.shows (
     threshold_bili numeric DEFAULT 8 NOT NULL,
     lineup_confirmed boolean DEFAULT false,
     lineup_confirmed_at timestamp(3) with time zone,
+    lineup_confirmed_by_id integer,
     voditelj_note character varying,
     updated_at timestamp(3) with time zone DEFAULT now() NOT NULL,
     created_at timestamp(3) with time zone DEFAULT now() NOT NULL
@@ -618,6 +619,24 @@ CREATE SEQUENCE IF NOT EXISTS public.shows_id_seq
     CACHE 1;
 
 ALTER SEQUENCE public.shows_id_seq OWNED BY public.shows.id;
+
+CREATE TABLE IF NOT EXISTS public.shows_rels (
+    id integer NOT NULL,
+    "order" integer,
+    parent_id integer NOT NULL,
+    path character varying NOT NULL,
+    members_id integer
+);
+
+CREATE SEQUENCE IF NOT EXISTS public.shows_rels_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+ALTER SEQUENCE public.shows_rels_id_seq OWNED BY public.shows_rels.id;
 
 CREATE TABLE IF NOT EXISTS public.tickets (
     id integer NOT NULL,
@@ -646,10 +665,11 @@ ALTER SEQUENCE public.tickets_id_seq OWNED BY public.tickets.id;
 CREATE TABLE IF NOT EXISTS public.users (
     id integer NOT NULL,
     tabs jsonb,
-    name character varying,
     shared boolean DEFAULT false,
     partner_id integer,
     member_id integer,
+    name character varying,
+    password_set_at timestamp(3) with time zone,
     updated_at timestamp(3) with time zone DEFAULT now() NOT NULL,
     created_at timestamp(3) with time zone DEFAULT now() NOT NULL,
     email character varying,
@@ -659,7 +679,6 @@ CREATE TABLE IF NOT EXISTS public.users (
     salt character varying,
     hash character varying,
     login_attempts numeric DEFAULT 0,
-    password_set_at timestamp(3) with time zone,
     lock_until timestamp(3) with time zone
 );
 
@@ -733,6 +752,8 @@ ALTER TABLE ONLY public.posts ALTER COLUMN id SET DEFAULT nextval('public.posts_
 ALTER TABLE ONLY public.promo_codes ALTER COLUMN id SET DEFAULT nextval('public.promo_codes_id_seq'::regclass);
 
 ALTER TABLE ONLY public.shows ALTER COLUMN id SET DEFAULT nextval('public.shows_id_seq'::regclass);
+
+ALTER TABLE ONLY public.shows_rels ALTER COLUMN id SET DEFAULT nextval('public.shows_rels_id_seq'::regclass);
 
 ALTER TABLE ONLY public.tickets ALTER COLUMN id SET DEFAULT nextval('public.tickets_id_seq'::regclass);
 
@@ -863,6 +884,13 @@ DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'shows_pkey' AND conrelid = 'public.shows'::regclass) THEN
     ALTER TABLE ONLY public.shows
     ADD CONSTRAINT shows_pkey PRIMARY KEY (id);
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'shows_rels_pkey' AND conrelid = 'public.shows_rels'::regclass) THEN
+    ALTER TABLE ONLY public.shows_rels
+    ADD CONSTRAINT shows_rels_pkey PRIMARY KEY (id);
   END IF;
 END $$;
 
@@ -1029,6 +1057,16 @@ CREATE INDEX IF NOT EXISTS promo_codes_updated_at_idx ON public.promo_codes USIN
 CREATE INDEX IF NOT EXISTS shows_created_at_idx ON public.shows USING btree (created_at);
 
 CREATE INDEX IF NOT EXISTS shows_date_changed_by_idx ON public.shows USING btree (date_changed_by_id);
+
+CREATE INDEX IF NOT EXISTS shows_lineup_confirmed_by_idx ON public.shows USING btree (lineup_confirmed_by_id);
+
+CREATE INDEX IF NOT EXISTS shows_rels_members_id_idx ON public.shows_rels USING btree (members_id);
+
+CREATE INDEX IF NOT EXISTS shows_rels_order_idx ON public.shows_rels USING btree ("order");
+
+CREATE INDEX IF NOT EXISTS shows_rels_parent_idx ON public.shows_rels USING btree (parent_id);
+
+CREATE INDEX IF NOT EXISTS shows_rels_path_idx ON public.shows_rels USING btree (path);
 
 CREATE INDEX IF NOT EXISTS shows_updated_at_idx ON public.shows USING btree (updated_at);
 
@@ -1269,6 +1307,27 @@ DO $$ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'shows_date_changed_by_id_users_id_fk' AND conrelid = 'public.shows'::regclass) THEN
     ALTER TABLE ONLY public.shows
     ADD CONSTRAINT shows_date_changed_by_id_users_id_fk FOREIGN KEY (date_changed_by_id) REFERENCES public.users(id) ON DELETE SET NULL;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'shows_lineup_confirmed_by_id_users_id_fk' AND conrelid = 'public.shows'::regclass) THEN
+    ALTER TABLE ONLY public.shows
+    ADD CONSTRAINT shows_lineup_confirmed_by_id_users_id_fk FOREIGN KEY (lineup_confirmed_by_id) REFERENCES public.users(id) ON DELETE SET NULL;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'shows_rels_members_fk' AND conrelid = 'public.shows_rels'::regclass) THEN
+    ALTER TABLE ONLY public.shows_rels
+    ADD CONSTRAINT shows_rels_members_fk FOREIGN KEY (members_id) REFERENCES public.members(id) ON DELETE CASCADE;
+  END IF;
+END $$;
+
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'shows_rels_parent_fk' AND conrelid = 'public.shows_rels'::regclass) THEN
+    ALTER TABLE ONLY public.shows_rels
+    ADD CONSTRAINT shows_rels_parent_fk FOREIGN KEY (parent_id) REFERENCES public.shows(id) ON DELETE CASCADE;
   END IF;
 END $$;
 

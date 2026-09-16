@@ -61,14 +61,12 @@ export const ALLOW_LIST: Record<string, string> = {
     'Roster read (#433): the shared ICS feed carries EVERY performance of the current and future seasons, public or not (ADR-0024) — a ship call is an evening a dancer has to turn up for, and filtering on the predicate would hide it from the calendar the roster subscribes to. Token-authed route, no buyer surface.',
   'src/app/api/app/note/route.ts':
     'Roster write route (#436): the voditelj note is a roster field on EVERY performance, public or not (ADR-0024). The id-addressed read only checks the row exists before the update, behind requirePermission(moreska).',
-  'src/app/api/app/attendance/route.ts':
-    'Roster write route (#422): the moreškant app covers EVERY performance of the season, public or not (ADR-0024), so filtering on the predicate would be wrong. The id-addressed read only builds the start instant and the cancelled flag for the answer rules, behind requirePermission([moreskant, moreska]).',
   'src/lib/push/push-data.ts':
     'Roster read (#431, #435): the moreškant notifications cover EVERY performance of the season, public or not (ADR-0024) — a ship call is an evening a dancer has to turn up for, so filtering on the predicate would silence the alarm for exactly the performances nobody has a ticket to. The sweep is bounded by the start instant and the cancelled flag, and the callers are a `moreska` route and the CRON_SECRET job.',
-  'src/app/api/app/lineup/route.ts':
-    'Roster write route (#432): a postava is recorded for EVERY performance, public or not (ADR-0024) — a ship call has a lineup exactly like a Redovna. The id-addressed read only checks the row exists and whether the lineup is confirmed, behind requirePermission(moreska).',
+  'src/lib/app/show-row.ts':
+    'Roster write path (#658): the ONE id-addressed read the four `/api/app` write routes share (attendance, the two lineup writers, list-keepers). A postava, an answer and a Zaduženi belong to EVERY performance, public or not (ADR-0024); the row is fetched by id, never listed, and every caller is behind requirePermission plus the row question `keepsList` (ADR-0029).',
   'src/lib/lineup/lineup-store.ts':
-    'Roster write path (#432, #442 review): the id-addressed `SELECT … FOR UPDATE` that serializes the two lineup writers. A postava belongs to EVERY performance, public or not (ADR-0024), and the row is locked rather than listed — it reaches no buyer surface and both callers are behind requirePermission(moreska).',
+    'Roster write path (#432, #442 review): the id-addressed `SELECT … FOR UPDATE` that serializes the two lineup writers. A postava belongs to EVERY performance, public or not (ADR-0024), and the row is locked rather than listed — it reaches no buyer surface and both callers are behind requirePermission([moreska, moreskant]) plus the row question `keepsList` (ADR-0029, #658).',
   'src/lib/mcp/store.ts':
     'Roster read + write path (#438): the MCP tools cover EVERY performance of the season, public or not (ADR-0024) — a voditelj dictates a postava for a ship call exactly as for a Redovna, and filtering on the predicate would hide those evenings from the connector. Both reads are behind an OAuth token whose user is re-checked for `moreska` on every call, and the answers carry no capacity, no sales and no buyer.',
   'src/lib/app/stats-data.ts':

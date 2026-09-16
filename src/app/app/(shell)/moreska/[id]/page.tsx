@@ -62,6 +62,16 @@ export default async function StanjePage({ params }: { params: Promise<{ id: str
           {view.confirmed && <Chip tone="gold">{S.lineupConfirmed}</Chip>}
         </div>
       )}
+      {/* "Potvrdio: Ante Bačić · 20. kolovoza" (#658). A postava can be locked
+          by more than one hand now, and "whose" is the first question asked the
+          first time a season statistic looks wrong. */}
+      {view.confirmedBy && <p className="app__stanje-where">{view.confirmedBy}</p>}
+      {/* "Popis vodi: …", and ONLY when it is somebody other than a voditelj
+          (#658). A voditelj keeps every list without being written down,
+          so no line means the voditelji are running the night, as always. It
+          answers "koga pitam"; the line above answers "tko je ovo zaključao",
+          which is a different question and therefore a different line. */}
+      {view.keptBy && <p className="app__stanje-where">{view.keptBy}</p>}
     </header>
   )
 
@@ -70,7 +80,10 @@ export default async function StanjePage({ params }: { params: Promise<{ id: str
       {view.note && <Note>{view.note}</Note>}
       <Stanje
         view={view}
+        // `moreska` — the alarm and naming a Zaduženi, and nothing else since
+        // #658. Whether the reader may RUN this evening is `view.keepsList`.
         voditelj={voditelj}
+        lineup={detail.lineup}
         // The alarm is only ever about an evening still ahead (#430, story 20).
         // The route refuses the other two cases anyway, so this only keeps the
         // sheet from offering what the server would decline.

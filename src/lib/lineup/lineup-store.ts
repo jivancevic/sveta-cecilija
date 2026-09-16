@@ -169,7 +169,16 @@ export function createLineupStore(
       await payload.update({
         collection: 'shows',
         id: performanceId,
-        data: { lineupConfirmed: confirmed, lineupConfirmedAt: confirmedAt },
+        data: {
+          lineupConfirmed: confirmed,
+          lineupConfirmedAt: confirmedAt,
+          // Whose hand locked it (#658). The account that pressed the button is
+          // already here — it is the `user` every write in this store runs as —
+          // so the signature costs nothing and needs no new argument. Cleared on
+          // unlock alongside the timestamp: a signature under a postava that is
+          // no longer confirmed is a claim about a state that no longer exists.
+          lineupConfirmedBy: confirmed ? ((user as { id?: unknown } | undefined)?.id ?? null) : null,
+        },
         overrideAccess: true,
         user,
         req: req(tx),

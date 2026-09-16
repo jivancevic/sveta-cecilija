@@ -1549,10 +1549,13 @@ with *Redovna · 21:00 · Ljetno kino* under it. The sticky answer bar is gone,
 and so is everything else dancer-facing — a dancer answers on Moreška (#565)
 and reads the two armies on Stanje (#566), so `AttendanceButtons`,
 `ArmyMoveButton`, `AlarmButton`, `DetailSegments` and `lib/app/detail-view.ts`
-went with this ticket. **The `LineupEditor` stays**, in a card of its own, for
-exactly the reason #566 gave: it is the tweezers for a row Stanje has no
-control for (an unusual role, the voditelj line), and #512 must not take it
-away before Stanje can do that.
+went with this ticket. The `LineupEditor` stayed in a card of its own for the
+reason #566 gave — the tweezers for a row Stanje had no control for — until
+**#658 moved it to Stanje**, behind the action block's "⋯". That was the ticket
+#566 was waiting for, and it arrived with a reason of its own: a `moreskant`
+login does not unlock this screen, so an evening's *Zaduženi* could hand out the
+four titles and never record an unusual role. It MOVED rather than being copied,
+because two editors of one record diverge the first time one is fixed.
 
 **The words.** The screen speaks the box office's register throughout —
 *izvedba*, never *nastup* — and it is the one screen that NAMES a booking's
@@ -1958,7 +1961,7 @@ kings and no bula to hand out, and what it does have is the member who RUNS it
 (CONTEXT.md → *Voditelj (u postavi)*). So an Experience confirms on its voditelj
 and nothing else, and every other kind of evening cannot even hold the line —
 both writers refuse it, the app route (`handleLineupReplace`) and the MCP
-`set_lineup`, and the Izvedbe `LineupEditor` stops offering the role there.
+`set_lineup`, and the `LineupEditor` stops offering the role there (on Stanje since #658).
 On Stanje it is a **Voditelj card** under the Bule, drawn only on an Experience.
 
 **The rule is the CONFIRM's and nothing else's.** It lives in
@@ -2029,15 +2032,18 @@ counts again.
 
 **Stanje writes answers and titles, and preserves what it did not derive.** A
 save from this screen is the answers plus the titles plus every stored row it
-kept, never a list rebuilt from scratch. What it still cannot record is an
-unusual role (a bula danced by a crni, story 29) or the `voditelj` line, so
-**the old `LineupEditor` on the Izvedbe detail stays** until something here can:
-it is the tweezers for a row Stanje has no control for, and #512 must not take
-it away before then.
+kept, never a list rebuilt from scratch. An unusual role (a bula danced by a crni,
+story 29) and the `voditelj` line are what the screen itself still has no
+control for, and since **#658 the `LineupEditor` is here** rather than on
+Izvedbe, behind the action block's "⋯", stripped of its own Potvrdi/Otključaj:
+confirming lives in the action block and nowhere else.
 
 **A dancer reads the same screen with no action bar and no sheets on the
-names.** The routes refuse them anyway (`requirePermission(req, 'moreska')`), so
-the missing controls are honesty about the account rather than the lock. A
+names.** The routes refuse them anyway — since #658 with
+`requirePermission(req, ['moreska','moreskant'])` plus the row question
+`keepsList` (ADR-0029), so a moreškant who does not keep THIS evening's list is
+refused 403 exactly as before — and the missing controls are honesty about the
+account rather than the lock. A
 confirmed postava shows its titles to everyone, with a chip in the header.
 
 What the screen SAYS is `src/lib/app/stanje-screen.ts`, pure and tested without
@@ -2727,6 +2733,64 @@ in `src/lib/comp/comp-report.ts` the way every raw statement does. There is no
 comp WRITE in the seam and there must not be: issuing and voiding go through the
 two existing routes, which take the per-show advisory lock and the `storno` void
 primitive, and a second writer would be a second way to spend a seat.
+
+## The Zaduženi: one evening's list, delegated (#658)
+
+[ADR-0029](../adr/0029-list-keeper-a-permission-that-hangs-on-a-row.md),
+CONTEXT.md → *Zaduženi (za popis)*.
+
+Running an evening's list is `moreska`'s work and `moreska` is two people, so an
+evening neither of them attends had nobody who could record it. The repair is a
+delegation bounded by the evening and **not** a permission, because a permission
+is global and permanent and this is neither.
+
+**The shape.**
+
+- `shows.listKeepers` (hasMany → Members). Several at once; a `moreska` holder is
+  never written here, which is what makes the *Popis vodi: …* line appear
+  exactly when somebody else is running the night. No expiry: it dies with the
+  evening on its own and must outlive it, because a postava is confirmed AFTER
+  the night it records.
+- `keepsList(actor, row)` in `src/lib/app/list-keeper.ts` — pure, tested without
+  a database, and the ONLY predicate about a row. `keepsListAs` is the same rule
+  for the loader, which knows `voditelj` and a Member rather than a session, so
+  the screen can never offer a button the route refuses.
+- `shows.lineupConfirmedBy` — whose hand locked the postava, cleared on unlock
+  with the timestamp. It is the ACCOUNT and not the Member, because a voditelj
+  who does not dance has no Member and the line must still have a name.
+
+**What moved, and what did not.**
+
+| | Before | After |
+|---|---|---|
+| `POST /api/app/lineup` | `moreska` | `['moreska','moreskant']` + `keepsList` |
+| `POST /api/app/lineup/confirm` | `moreska` | the same |
+| `POST /api/app/attendance` | `['moreskant','moreska']`, forking on `can(moreska)` | the same guard, forking on `keepsTheList(actor, performance)` |
+| `POST /api/app/alarm` | `moreska` | **unchanged** |
+| naming a Zaduženi | — | `POST /api/app/performances/[id]/list-keepers`, `moreska` only |
+
+The widened word is never the authorization: a plain moreškant passes the guard
+and is refused 403 on every evening that does not name them. In the attendance
+rules the row rides on the `AttendancePerformance` the rule already receives —
+an earlier draft computed the flag in the route and passed it in, and a caller
+reordering two awaits would have quietly demoted a voditelj.
+
+**Two things stay the voditelj's.** The alarm, because ringing seventy-six
+phones is not part of keeping a list (and the two army thresholds travel in its
+sheet). And naming the Zaduženi, because a delegation that can be passed on is
+one nobody can follow. Pozovi is **greyed with a sentence** for a Zaduženi
+rather than hidden, the way Izvedbe greys its six actions with "traži Blagajnu".
+
+**The push.** One message on appointment (`list_keeper`, deep-linked to Stanje),
+nothing on removal — a phone that buzzes to say something was taken away asks a
+question nobody can act on. A dancer with no login is named without anything
+being sent. A send that fails never fails the write.
+
+**Known and accepted.** The write is a read-modify-write of a relationship array
+and is not atomic: two voditelji naming two people in the same second would lose
+one name. There are two of them, the action is rare, and the loss is visible on
+the screen that caused it. The atomicity rule in CLAUDE.md is about accumulating
+counters, where a lost update is invisible and compounds.
 
 ## The skin: tokens, shapes and the shell (#562)
 

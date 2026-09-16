@@ -578,6 +578,18 @@ export const APP_STRINGS = {
     noAnswerChip: 'bez odgovora',
     /** The voditelj's two buttons. */
     call: 'Pozovi',
+    /** The "⋯" that opens the two preparatory actions (#658). */
+    moreActions: 'Više radnji',
+    /** The overflow row that opens the postava editor, moved here from Izvedbe. */
+    editLineup: 'Uredi postavu',
+    /**
+     * Why Pozovi is grey in a Zaduženi's hand (#658). Greyed with a
+     * sentence rather than hidden, the way Izvedbe greys its six actions with
+     * "traži Blagajnu": somebody doing the voditelj's job tonight has to see
+     * that the alarm exists and that it is not theirs, or they spend half an
+     * hour looking for it.
+     */
+    callVoditelj: 'Alarm šalje voditelj.',
     callTitle: 'Pozovi moreškante',
     confirm: 'Potvrdi postavu',
     confirming: 'Potvrđujem...',
@@ -1914,6 +1926,27 @@ export const APP_STRINGS = {
    * line says "spremit će se svejedno" out loud, because story 29 is precisely
    * that an unusual role is recorded rather than refused.
    */
+  /** The Zaduženi write route's own refusals and the sheet's copy (#658). */
+  listKeepers: {
+    title: 'Zaduženi',
+    /** The overflow row that opens the sheet. */
+    open: 'Zaduženi za popis',
+    /** Under the sheet's title: what the switch actually hands over. */
+    explain:
+      'Zaduženi vodi popis za ovaj nastup: odgovara za druge, dijeli titule, uređuje i potvrđuje postavu. Alarm ostaje voditelju.',
+    search: 'Traži moreškanta',
+    empty: 'Nema aktivnih moreškanata.',
+    /** The header line, drawn only when somebody other than a voditelj keeps it. */
+    kept: (names: string) => `Popis vodi: ${names}`,
+    /** Under the gold chip, once a postava carries a signature. */
+    confirmedBy: (name: string, when: string) => `Potvrdio: ${name} · ${when}`,
+    rejected: 'Zaduženog trenutno nije moguće promijeniti.',
+    badRequest: 'Nejasno je koga i za što zadužiti.',
+    noPerformance: 'Taj nastup ne postoji.',
+    notMoreskant: 'Taj član nije aktivan moreškant.',
+    failed: 'Nije uspjelo. Pokušaj ponovno.',
+  },
+
   lineup: {
     title: 'Postava',
     fromAttendance: 'Napravi iz prisutnosti',
@@ -1944,6 +1977,13 @@ export const APP_STRINGS = {
     rejected: 'Postavu trenutno nije moguće mijenjati.',
     missing: 'Ta izvedba ne postoji.',
     locked: 'Postava je potvrđena. Otključaj je pa pokušaj ponovno.',
+    /**
+     * The row refusal (#658): the caller may write A postava, just not THIS
+     * one. It names the evening rather than the person, because the reader is
+     * either a moreškant on somebody else's night or a stale tab, and neither
+     * is helped by being told what they are not.
+     */
+    notKeeper: 'Ne vodiš popis za ovaj nastup.',
     badConfirm: 'Nejasno je treba li postavu potvrditi ili otključati.',
     confirmEmpty: 'Prazna postava se ne može potvrditi. Dodaj barem jednog moreškanta.',
     /**
@@ -3505,6 +3545,22 @@ export const PUSH_MESSAGES = {
     },
     /** The way back: the row was cancelled and is not any more. */
     uncancelled: 'nastup više nije otkazan',
+  },
+
+  /**
+   * "Vodiš popis" (#658): one dancer has been put in charge of one evening.
+   *
+   * It does not name who appointed them. Only a `moreska` holder can, and there
+   * are two of those, so the sentence would carry no information the reader
+   * lacks — and the useful half is WHICH evening, which is all the body says.
+   */
+  listKeeper: {
+    title: 'Vodiš popis',
+    // The reminder's shape a few lines up, deliberately: "Nastup <dan> u
+    // <vrijeme>" reads as a fragment on its own, and these two messages are
+    // read in the same list.
+    body: (input: { date: string; time: string }) =>
+      `Nastup je ${formatPerformanceDate(input.date)} u ${input.time}.`,
   },
 
   /** Type (4): a performance that did not exist a minute ago (story 17). */
