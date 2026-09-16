@@ -100,13 +100,15 @@
 }
 
 /* ── Section heading ──────────────────────────────────────── */
-/* No margin of its own since #592. It carried 6px, which is less than half of
-   the floor the shell puts between two blocks (`.app__shell > * + *` in
-   `app.css`, 16px since #612) —
-   and because this sheet loads after that one, those 6px would have won the tie
+/* No margin of its own since #592, and this is the rule's clearest case.
+   It carried 6px, less than half of what the shell puts between two blocks
+   (`--gap`, 20px since #627). The shell's distance was a MARGIN floor then,
+   and because this sheet loads after `app.css` those 6px would have won the tie
    and left every screen whose blocks are Sections spaced tighter than every
-   screen whose blocks are cards. A heading nested inside a group is separated
-   by that group's own `gap`. */
+   screen whose blocks are cards. #644 showed how far that went — 143 rules were
+   deleting the floor the same way — so the shell carries a `gap` now and a
+   child's margin cannot reach it at all. The reason to stay at zero is
+   unchanged: a heading nested in a group is spaced by that group's own gap. */
 .ui-section {
   display: flex;
   align-items: baseline;
