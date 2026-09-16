@@ -25,17 +25,39 @@ import { readStandalone } from './use-install'
 // Failures are swallowed on purpose. The cookie this is extending is still good
 // for weeks and the device signal is a statistic; a dancer on a lift with no
 // signal must not see anything at all.
-export function SessionKeeper({ recordDevice = false }: { recordDevice?: boolean }) {
+export function SessionKeeper({
+  recordDevice = false,
+  renewSession = false,
+  confirmStandalone = false,
+}: {
+  recordDevice?: boolean
+  renewSession?: boolean
+  /**
+   * This browser has never reported itself installed, so ask it once more
+   * (#669). Unlike the other two flags this one may decide NOT to call: the
+   * answer is a media query, and a `false` inside the throttle tells the server
+   * nothing it does not already have.
+   */
+  confirmStandalone?: boolean
+}) {
   useEffect(() => {
+    // The one fact the server cannot read for itself, and the only reason this
+    // component exists on a load where nothing else is due.
+    const standalone = recordDevice || confirmStandalone ? readStandalone() : null
+    const reportsDevice = recordDevice || standalone === true
+    // Nothing to say: a browser that is still a tab, asked only because it had
+    // never said otherwise. No request at all, which is what keeps #669 free.
+    if (!renewSession && !reportsDevice) return
+
     void fetch('/api/app/session/renew', {
       method: 'POST',
       // `application/json` and a same-origin credential: the two things
       // `rejectAppRequest` looks for on a cookie-setting POST.
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(recordDevice ? { standalone: readStandalone() } : {}),
+      body: JSON.stringify(reportsDevice ? { standalone } : {}),
       credentials: 'same-origin',
     }).catch(() => {})
-  }, [recordDevice])
+  }, [recordDevice, renewSession, confirmStandalone])
 
   return null
 }

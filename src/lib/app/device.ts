@@ -126,6 +126,48 @@ export function shouldRecordDevice(
 }
 
 /**
+ * Should this browser be ASKED whether it is an installed app, even though the
+ * six-hour throttle has not run out? (#669)
+ *
+ * Josip: "Ana P. je skinula tako app, a meni pod clanovi pise da nije." Her row
+ * was honest — she is in Samsung Internet and her install was blocked — but the
+ * throttle made it impossible to tell that case from the other one, which is a
+ * dancer who installs the app at rehearsal, opens it, and keeps reading as
+ * "nema app" for the rest of the afternoon. That is the exact moment a voditelj
+ * is looking at the screen to check whether the instruction landed.
+ *
+ * So: a row that has NEVER reported itself installed is worth one question per
+ * page load. The question is free — the browser answers a media query and the
+ * page only posts when the answer is yes, so a reader who really is in a tab
+ * costs nothing at all — and the answer can only ever turn the mark ON, because
+ * `standalone` ORs and never resets (`device-store.ts`).
+ *
+ * A row that already says installed is not asked again: there is nothing left
+ * to learn, and the throttle is right for everything else.
+ */
+export function shouldConfirmStandalone(
+  device: { standalone: boolean } | null | undefined,
+): boolean {
+  if (!device) return false
+  return device.standalone !== true
+}
+
+/**
+ * Is this report worth writing down out of turn?
+ *
+ * Only an installed browser saying so for the first time. A `false` arriving
+ * inside the throttle says nothing new — the column ORs, so writing it would
+ * change no value — and letting it through would turn every page load on every
+ * plain tab into a write.
+ */
+export function recordsOutOfTurn(
+  reported: { standalone: boolean },
+  onRecord: { standalone: boolean } | null | undefined,
+): boolean {
+  return reported.standalone === true && shouldConfirmStandalone(onRecord)
+}
+
+/**
  * What the roster knows about one person's devices.
  *
  * Counts rather than rows: the two questions #653 asks are both "is there at

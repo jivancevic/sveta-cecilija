@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { PoolQuery } from '@/lib/db/pool-query'
 import { installedAnswer, notificationsAnswer } from './device'
-import { loadDeviceLastSeen, loadDeviceSignals, recordDevice } from './device-store'
+import { loadDeviceSignals, loadDeviceState, recordDevice } from './device-store'
 
 // The store is thin, so these tests are about the two things a fake pool CAN
 // see: which statements go out, and what comes back out of the merge of the two
@@ -54,16 +54,39 @@ describe('recordDevice', () => {
   })
 })
 
-describe('loadDeviceLastSeen', () => {
+describe('loadDeviceState', () => {
   it('is null for a device with no row, which the throttle reads as "never"', async () => {
     const { query } = fakeQuery({})
-    expect(await loadDeviceLastSeen(query, 'dev-unknown')).toBeNull()
+    expect(await loadDeviceState(query, 'dev-unknown')).toBeNull()
   })
 
   it('hands back a Date, whatever pg gives it', async () => {
     const iso = '2026-09-16T10:00:00.000Z'
-    const { query } = fakeQuery({ last_seen_at: { rows: [{ last_seen_at: new Date(iso) }] } })
-    expect((await loadDeviceLastSeen(query, 'dev-1'))?.toISOString()).toBe(iso)
+    const { query } = fakeQuery({
+      last_seen_at: { rows: [{ last_seen_at: new Date(iso), standalone: false }] },
+    })
+    expect((await loadDeviceState(query, 'dev-1'))?.lastSeenAt?.toISOString()).toBe(iso)
+  })
+
+  it('reads a string timestamp too, because pg hands one back unparsed', async () => {
+    const iso = '2026-09-16T10:00:00.000Z'
+    const { query } = fakeQuery({
+      last_seen_at: { rows: [{ last_seen_at: iso, standalone: true }] },
+    })
+    expect((await loadDeviceState(query, 'dev-1'))?.lastSeenAt?.toISOString()).toBe(iso)
+  })
+
+  it('reports whether this browser has ever said it is installed (#669)', async () => {
+    const yes = fakeQuery({ last_seen_at: { rows: [{ last_seen_at: null, standalone: true }] } })
+    expect((await loadDeviceState(yes.query, 'dev-1'))?.standalone).toBe(true)
+
+    const no = fakeQuery({ last_seen_at: { rows: [{ last_seen_at: null, standalone: false }] } })
+    expect((await loadDeviceState(no.query, 'dev-1'))?.standalone).toBe(false)
+
+    // A NULL column reads as "has not", never as "unknown": the mark it feeds
+    // has three answers and this is not where the third one comes from.
+    const nul = fakeQuery({ last_seen_at: { rows: [{ last_seen_at: null, standalone: null }] } })
+    expect((await loadDeviceState(nul.query, 'dev-1'))?.standalone).toBe(false)
   })
 })
 

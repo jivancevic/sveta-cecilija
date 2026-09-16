@@ -43,14 +43,25 @@ import { SessionKeeper } from '../SessionKeeper'
 // browser is (or is not) an installed app" so the roster can finally tell who
 // actually has Cecilija. Neither flag is set on a normal load, and then this
 // component is not in the tree at all.
+//
+// #669 adds a third flag with a weaker promise: a browser that has never
+// reported itself installed is asked on every load, because the six-hour
+// throttle made "Ana installed it an hour ago" look exactly like "Ana never
+// installed it". It costs nothing when the answer is no — the component reads a
+// media query and returns without calling — and it can only ever turn a mark on.
 
 export default async function ShellLayout({ children }: { children: React.ReactNode }) {
   const [viewer, keeper] = await Promise.all([resolveAppViewer(), appKeeperWork()])
 
   return (
     <div className="app__frame">
-      {viewer.signedIn && (keeper.renewSession || keeper.recordDevice) ? (
-        <SessionKeeper recordDevice={keeper.recordDevice} />
+      {viewer.signedIn &&
+      (keeper.renewSession || keeper.recordDevice || keeper.confirmStandalone) ? (
+        <SessionKeeper
+          recordDevice={keeper.recordDevice}
+          renewSession={keeper.renewSession}
+          confirmStandalone={keeper.confirmStandalone}
+        />
       ) : null}
 
       <Sidebar nav={viewer.nav} />

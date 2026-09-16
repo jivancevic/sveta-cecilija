@@ -1,8 +1,12 @@
 import { headers } from 'next/headers'
 import { getPayload } from 'payload'
 import config from '@payload-config'
-import { deviceIdFromCookieHeader, shouldRecordDevice } from './device'
-import { loadDeviceLastSeen } from './device-store'
+import {
+  deviceIdFromCookieHeader,
+  shouldConfirmStandalone,
+  shouldRecordDevice,
+} from './device'
+import { loadDeviceState } from './device-store'
 import { poolQuery } from '@/lib/db/pool-query'
 import { decideSessionRenewal } from './session-renewal'
 
@@ -58,7 +62,7 @@ export async function appSessionRenewalDue(now: Date = new Date()): Promise<bool
 }
 
 /**
- * Should this request's page report the browser it is running in? (#652)
+ * Should this request's page report the browser it is running in? (#652, #669)
  *
  * Two cases say yes, and both are read on the server before the browser is
  * asked for anything:
@@ -69,19 +73,32 @@ export async function appSessionRenewalDue(now: Date = new Date()): Promise<bool
  *  - **a cookie whose row was last seen more than six hours ago**, or has no
  *    row at all (the account was deleted, the database was rebuilt).
  *
+ * And since #669 a third, weaker answer: a row that has never reported itself
+ * INSTALLED is asked every load, outside the throttle. Not the same flag,
+ * because it buys a different thing — the page then only posts if the browser
+ * says yes, so a reader who is genuinely in a tab makes no request at all,
+ * while `recordDevice` posts either way to move `last_seen_at`. Without it a
+ * dancer who installs the app at rehearsal reads as "nema app" for the rest of
+ * the afternoon, which is exactly when a voditelj is looking.
+ *
  * Never throws: a failure here must not take a screen down over a statistic.
  */
-export async function appDeviceHeartbeatDue(now: Date = new Date()): Promise<boolean> {
+export async function appDeviceWork(
+  now: Date = new Date(),
+): Promise<{ recordDevice: boolean; confirmStandalone: boolean }> {
   try {
     const requestHeaders = await headers()
     const deviceId = deviceIdFromCookieHeader(requestHeaders.get('cookie'))
-    if (!deviceId) return true
+    if (!deviceId) return { recordDevice: true, confirmStandalone: false }
     const payload = await getPayload({ config })
-    const lastSeen = await loadDeviceLastSeen(poolQuery(payload), deviceId)
-    return shouldRecordDevice(lastSeen, now)
+    const onRecord = await loadDeviceState(poolQuery(payload), deviceId)
+    return {
+      recordDevice: shouldRecordDevice(onRecord?.lastSeenAt ?? null, now),
+      confirmStandalone: shouldConfirmStandalone(onRecord),
+    }
   } catch (err) {
     console.error('[app] device heartbeat check failed', err)
-    return false
+    return { recordDevice: false, confirmStandalone: false }
   }
 }
 
@@ -89,13 +106,19 @@ export async function appDeviceHeartbeatDue(now: Date = new Date()): Promise<boo
 export interface AppKeeperWork {
   renewSession: boolean
   recordDevice: boolean
+  /**
+   * Ask a browser that has never reported itself installed whether it is now
+   * (#669). It answers a media query and only posts when the answer is yes, so
+   * a reader who really is in a tab costs nothing.
+   */
+  confirmStandalone: boolean
 }
 
-/** Both flags, asked for together so the layout waits on one round of work. */
+/** Every flag, asked for together so the layout waits on one round of work. */
 export async function appKeeperWork(now: Date = new Date()): Promise<AppKeeperWork> {
-  const [renewSession, recordDevice] = await Promise.all([
+  const [renewSession, device] = await Promise.all([
     appSessionRenewalDue(now),
-    appDeviceHeartbeatDue(now),
+    appDeviceWork(now),
   ])
-  return { renewSession, recordDevice }
+  return { renewSession, ...device }
 }
