@@ -659,6 +659,7 @@ CREATE TABLE IF NOT EXISTS public.users (
     salt character varying,
     hash character varying,
     login_attempts numeric DEFAULT 0,
+    password_set_at timestamp(3) with time zone,
     lock_until timestamp(3) with time zone
 );
 
