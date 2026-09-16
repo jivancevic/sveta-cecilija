@@ -1890,6 +1890,13 @@ export const APP_STRINGS = {
     rejected: 'Postavu trenutno nije moguće mijenjati.',
     missing: 'Ta izvedba ne postoji.',
     locked: 'Postava je potvrđena. Otključaj je pa pokušaj ponovno.',
+    /**
+     * The row refusal (#658): the caller may write A postava, just not THIS
+     * one. It names the evening rather than the person, because the reader is
+     * either a moreškant on somebody else's night or a stale tab, and neither
+     * is helped by being told what they are not.
+     */
+    notKeeper: 'Ne vodiš popis za ovaj nastup.',
     badConfirm: 'Nejasno je treba li postavu potvrditi ili otključati.',
     confirmEmpty: 'Prazna postava se ne može potvrditi. Dodaj barem jednog moreškanta.',
     /**

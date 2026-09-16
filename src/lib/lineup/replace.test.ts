@@ -33,14 +33,20 @@ const roster = [
   member('2', 'Dado', ['bili']),
 ]
 
+/** A voditelj, who keeps every list. */
+const VODITELJ = { user: { permissions: ['moreska'] }, memberId: null }
+/** A plain moreškant, Member 7, who keeps only the evening that names them. */
+const ZADUZENI = { user: { permissions: ['moreskant'] }, memberId: '7' }
+
 function deps(over: Partial<Parameters<typeof handleLineupReplace>[1]> = {}) {
   const replaceEntries = vi.fn().mockResolvedValue({ written: true })
   return {
     replaceEntries,
     all: {
       request: sameSite,
+      actor: VODITELJ,
       loadPerformance: async (id: string): Promise<LineupPerformance | null> =>
-        id === '10' ? { id: '10', confirmed: false, kind: 'redovna' as const } : null,
+        id === '10' ? { id: '10', confirmed: false, kind: 'redovna' as const, listKeepers: [] } : null,
       loadRoster: async () => roster,
       replaceEntries,
       ...over,
@@ -83,7 +89,7 @@ describe('handleLineupReplace', () => {
   // Story 31: Potvrdi is the promise that the list cannot change by accident.
   it('refuses a confirmed lineup with 409 and writes nothing', async () => {
     const { all, replaceEntries } = deps({
-      loadPerformance: async () => ({ id: '10', confirmed: true, kind: 'redovna' as const }),
+      loadPerformance: async () => ({ id: '10', confirmed: true, kind: 'redovna' as const, listKeepers: [] }),
     })
     const result = await handleLineupReplace(
       { performanceId: '10', entries: [{ memberId: '1', role: 'crni' }] },
@@ -145,7 +151,7 @@ describe('handleLineupReplace', () => {
   // the same 409 and the same sentence a plain refusal gives.
   it('409s when the LOCKED re-check finds the lineup confirmed after the pre-check passed', async () => {
     const { all } = deps({
-      loadPerformance: async () => ({ id: '10', confirmed: false, kind: 'redovna' as const }),
+      loadPerformance: async () => ({ id: '10', confirmed: false, kind: 'redovna' as const, listKeepers: [] }),
       replaceEntries: vi.fn().mockResolvedValue({ written: false, reason: 'confirmed' }),
     })
     const result = await handleLineupReplace(
@@ -154,6 +160,65 @@ describe('handleLineupReplace', () => {
     )
     expect(result.status).toBe(409)
     expect(result.body).toEqual({ error: APP_STRINGS.lineup.locked })
+  })
+
+  // The row question (#658, ADR-0029). The delegation is bounded by the evening,
+  // so each of these is a pair: the evening that names them, and one that
+  // does not.
+  it('lets the evening’s zaduženi replace its postava', async () => {
+    const { all, replaceEntries } = deps({
+      actor: ZADUZENI,
+      loadPerformance: async () => ({
+        id: '10',
+        confirmed: false,
+        kind: 'redovna' as const,
+        listKeepers: ['7'],
+      }),
+    })
+    const result = await handleLineupReplace({ performanceId: '10', entries: [] }, all)
+    expect(result.status).toBe(200)
+    expect(replaceEntries).toHaveBeenCalled()
+  })
+
+  it('403s the same account on an evening that names somebody else, writing nothing', async () => {
+    const { all, replaceEntries } = deps({
+      actor: ZADUZENI,
+      loadPerformance: async () => ({
+        id: '10',
+        confirmed: false,
+        kind: 'redovna' as const,
+        listKeepers: ['9'],
+      }),
+    })
+    const result = await handleLineupReplace({ performanceId: '10', entries: [] }, all)
+    expect(result.status).toBe(403)
+    expect(result.body).toEqual({ error: APP_STRINGS.lineup.notKeeper })
+    expect(replaceEntries).not.toHaveBeenCalled()
+  })
+
+  it('403s a plain moreškant on an evening that names nobody', async () => {
+    const { all } = deps({ actor: ZADUZENI })
+    const result = await handleLineupReplace({ performanceId: '10', entries: [] }, all)
+    expect(result.status).toBe(403)
+  })
+
+  // The row refusal comes BEFORE the confirmation one: a moreškant who does not
+  // keep this list learns nothing about whether its postava is locked.
+  it('403s rather than 409s a stranger on a confirmed evening', async () => {
+    const { all } = deps({
+      actor: ZADUZENI,
+      loadPerformance: async () => ({
+        id: '10',
+        confirmed: true,
+        kind: 'redovna' as const,
+        listKeepers: [],
+      }),
+    })
+    const result = await handleLineupReplace(
+      { performanceId: '10', entries: [{ memberId: '1', role: 'crni' }] },
+      all,
+    )
+    expect(result.status).toBe(403)
   })
 
   it('400s when the performance disappeared between the pre-check and the lock', async () => {
@@ -172,7 +237,12 @@ describe('handleLineupConfirm', () => {
     over: Partial<Parameters<typeof handleLineupConfirm>[1]> = {},
   ) => {
     const setConfirmed = vi.fn().mockResolvedValue(outcome)
-    return { setConfirmed, all: { request: sameSite, setConfirmed, ...over } }
+    const loadPerformance = async (id: string): Promise<LineupPerformance | null> =>
+      id === '10' ? { id: '10', confirmed: false, kind: 'redovna' as const, listKeepers: [] } : null
+    return {
+      setConfirmed,
+      all: { request: sameSite, actor: VODITELJ, loadPerformance, setConfirmed, ...over },
+    }
   }
 
   it('confirms and answers with the stamp the locked write decided', async () => {
@@ -185,6 +255,37 @@ describe('handleLineupConfirm', () => {
       confirmed: true,
       confirmedAt: '2026-08-05T19:00:00.000Z',
     })
+  })
+
+  it('lets the evening’s zaduženi confirm it, and unlock it afterwards', async () => {
+    const kept = async () => ({
+      id: '10',
+      confirmed: false,
+      kind: 'redovna' as const,
+      listKeepers: ['7'],
+    })
+    const { all, setConfirmed } = confirmDeps(undefined, {
+      actor: ZADUZENI,
+      loadPerformance: kept,
+    })
+    expect((await handleLineupConfirm({ performanceId: '10', confirmed: true }, all)).status).toBe(200)
+    expect((await handleLineupConfirm({ performanceId: '10', confirmed: false }, all)).status).toBe(200)
+    expect(setConfirmed).toHaveBeenCalledTimes(2)
+  })
+
+  it('403s a moreškant who does not keep this evening’s list, confirming nothing', async () => {
+    const { all, setConfirmed } = confirmDeps(undefined, { actor: ZADUZENI })
+    const result = await handleLineupConfirm({ performanceId: '10', confirmed: true }, all)
+    expect(result.status).toBe(403)
+    expect(result.body).toEqual({ error: APP_STRINGS.lineup.notKeeper })
+    expect(setConfirmed).not.toHaveBeenCalled()
+  })
+
+  it('400s an unknown performance before it asks who keeps its list', async () => {
+    const { all } = confirmDeps(undefined, { actor: ZADUZENI })
+    const result = await handleLineupConfirm({ performanceId: '99', confirmed: true }, all)
+    expect(result.status).toBe(400)
+    expect(result.body).toEqual({ error: APP_STRINGS.lineup.missing })
   })
 
   it('unlocks and clears the timestamp', async () => {
@@ -245,7 +346,7 @@ describe('handleLineupReplace and the voditelj line (#620)', () => {
 
   it('writes the same row on an Experience', async () => {
     const { all, replaceEntries } = deps({
-      loadPerformance: async () => ({ id: '10', confirmed: false, kind: 'experience' as const }),
+      loadPerformance: async () => ({ id: '10', confirmed: false, kind: 'experience' as const, listKeepers: [] }),
     })
     const result = await handleLineupReplace(
       { performanceId: '10', entries: [{ memberId: '1', role: 'voditelj' }] },
