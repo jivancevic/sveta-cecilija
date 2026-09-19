@@ -162,7 +162,7 @@ describe('handleLineupReplace', () => {
     expect(result.body).toEqual({ error: APP_STRINGS.lineup.locked })
   })
 
-  // The row question (#658, ADR-0029). The delegation is bounded by the evening,
+  // The row question (#658, ADR-0031). The delegation is bounded by the evening,
   // so each of these is a pair: the evening that names them, and one that
   // does not.
   it('lets the evening’s zaduženi replace its postava', async () => {

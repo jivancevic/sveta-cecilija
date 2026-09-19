@@ -1,4 +1,4 @@
--- The Zaduženi, and whose hand locked a postava (#658, ADR-0029).
+-- The Zaduženi, and whose hand locked a postava (#658, ADR-0031).
 --
 -- Two fields on `shows`:
 --

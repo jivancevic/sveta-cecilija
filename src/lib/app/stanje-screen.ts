@@ -341,7 +341,7 @@ export interface StanjeView {
    */
   lineup: LineupEntry[]
   /**
-   * Whether the reader keeps THIS evening's list (ADR-0029, #658): a voditelj
+   * Whether the reader keeps THIS evening's list (ADR-0031, #658): a voditelj
    * on every evening, a Zaduženi on this one. Every control that RUNS the night
    * hangs off this. The alarm does not — that is the `voditelj` prop, and the
    * two being different fields is the whole point of the ticket.

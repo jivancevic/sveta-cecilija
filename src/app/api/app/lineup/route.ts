@@ -13,7 +13,7 @@ import { performanceKindOf } from '@/lib/show-performance'
 // POST /api/app/lineup — the ONE writer of a postava (#432).
 //
 // The guard is `requirePermission(req, ['moreska','moreskant'])` followed by a
-// question about the ROW, asked inside the pure handler (ADR-0029, #658): does
+// question about the ROW, asked inside the pure handler (ADR-0031, #658): does
 // this caller keep THIS evening's list? It was `'moreska'` alone until #658 — a
 // lineup was the voditelj's record and a dancer never wrote one — and what
 // changed is not who may write A postava but that one evening's list can be

@@ -9,7 +9,7 @@
 //   - **whoever keeps this evening's list** answers for anybody on the roster,
 //     at any time, cancelled or long past, because the record has to be
 //     correctable (#419, story 13). That is a voditelj on every evening and the
-//     evening's own Zaduženi on one of them (ADR-0029, #658), and the army is
+//     evening's own Zaduženi on one of them (ADR-0031, #658), and the army is
 //     theirs: a dancer says "dolazim" and whoever is running the night decides
 //     which army they dance in (glossary: *Attendance*).
 //
@@ -105,7 +105,7 @@ export interface AttendancePerformance {
   date?: string
   time?: string
   /**
-   * The Members put in charge of THIS evening's list (ADR-0029, #658), exactly
+   * The Members put in charge of THIS evening's list (ADR-0031, #658), exactly
    * as the row stores them. Required, not optional: whether the caller may
    * answer for somebody else is decided from it, and a loader that forgets to
    * carry it would silently turn every voditelj into a dancer who can only
@@ -194,7 +194,7 @@ export function moreskantMayAnswer(
  * A voditelj on every evening, a Zaduženi on the one that names them. They
  * answer for anybody, at any time, on a cancelled evening too, and the army is
  * theirs to choose — because all four of those are what running the night
- * means, not privileges of a rank (ADR-0029, #658).
+ * means, not privileges of a rank (ADR-0031, #658).
  *
  * It was `can(actor.user, 'moreska')` until #658, and the reason it now takes
  * the PERFORMANCE is the whole of that ticket: the answer depends on the row.

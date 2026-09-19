@@ -29,7 +29,7 @@
 // `requirePermission(req, 'moreska')` — a dancer never writes a lineup — and
 // since #658 it is that guard widened to `['moreska','moreskant']` followed by
 // a question about the ROW: does this caller keep THIS evening's list
-// (ADR-0029)? A voditelj does on every evening, the evening's Zaduženi on one.
+// (ADR-0031)? A voditelj does on every evening, the evening's Zaduženi on one.
 // The 403 for everybody else is decided HERE rather than in the route, beside
 // the other refusals and under the same tests, because "who may write this
 // postava" is a rule about a lineup and not a fact about a session.

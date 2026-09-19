@@ -346,7 +346,7 @@ export function Stanje({
       {view.keepsList && (
         <div className="app__stanje-actions">
           <div className="ui-btns">
-            {/* Pozovi is the voditelj's on every evening (ADR-0029): ringing
+            {/* Pozovi is the voditelj's on every evening (ADR-0031): ringing
                 seventy-six phones is not part of keeping a list. For a Zaduženi
                 it is GREY WITH A SENTENCE rather than absent (#658), the
                 way Izvedbe greys its six actions with "traži Blagajnu" —

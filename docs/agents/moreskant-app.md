@@ -2049,7 +2049,7 @@ confirming lives in the action block and nowhere else.
 **A dancer reads the same screen with no action bar and no sheets on the
 names.** The routes refuse them anyway — since #658 with
 `requirePermission(req, ['moreska','moreskant'])` plus the row question
-`keepsList` (ADR-0029), so a moreškant who does not keep THIS evening's list is
+`keepsList` (ADR-0031), so a moreškant who does not keep THIS evening's list is
 refused 403 exactly as before — and the missing controls are honesty about the
 account rather than the lock. A
 confirmed postava shows its titles to everyone, with a chip in the header.
@@ -2745,7 +2745,7 @@ primitive, and a second writer would be a second way to spend a seat.
 
 ## The Zaduženi: one evening's list, delegated (#658)
 
-[ADR-0029](../adr/0029-list-keeper-a-permission-that-hangs-on-a-row.md),
+[ADR-0031](../adr/0031-list-keeper-a-permission-that-hangs-on-a-row.md),
 CONTEXT.md → *Zaduženi (za popis)*.
 
 Running an evening's list is `moreska`'s work and `moreska` is two people, so an

@@ -148,7 +148,7 @@ describe('decideAttendanceAnswer — who may answer', () => {
     expect(decide({ actor })).toEqual({ ok: false, status: 403, error: ANSWER_ERRORS.notAllowed })
   })
 
-  // The Zaduženi (#658, ADR-0029). The delegation is bounded by the EVENING, so
+  // The Zaduženi (#658, ADR-0031). The delegation is bounded by the EVENING, so
   // every one of these is a pair: what they may do on the evening that names
   // them, and that they may do none of it on the one that does not.
   it('a zaduženi answers for any dancer on the evening that names them', () => {
