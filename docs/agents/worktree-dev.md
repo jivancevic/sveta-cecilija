@@ -53,6 +53,16 @@ gh pr merge <child> --merge
 
 Prefer **not** stacking unless the PRs genuinely overlap files — independent PRs off `main` each get CI for free.
 
+## An ADR number is not yours until it merges
+
+`ls docs/adr/ | tail -1` reads the number off *your base*, and every parallel session branching that hour reads the same one. On 2026-09-16 it collided three times: one ADR was written as 0028 while another branch was already calling itself 0028, both replacements then landed as 0029, and two files named `0029-*.md` sat on `main` for three days — a duplicate filename is not a merge conflict, git takes both.
+
+Three rules, each earned:
+
+1. **Re-check the number against `origin/main` immediately before you push**, not when you create the file, and again if the PR sits overnight.
+2. **Before fixing a collision, look for an open PR already fixing it** (`gh pr list --state open`). On 2026-09-19 two sessions started renumbering the same pair in *opposite* directions within minutes of each other; the second one to notice dropped its own branch, which was the whole cost of checking first.
+3. **Renumbering is the file, its own `# ADR-00NN:` heading, every link target, every link *label*, and every mention in source.** A `sed` on the path alone leaves `[ADR-0029](../adr/0031-….md)`, which reads correctly and lies. Count the source side before deciding which of two ADRs moves — `grep -rn "ADR-00NN" --include="*.ts" --include="*.tsx" --include="*.sql" .` — because one of the two collisions here was cited from nine route comments and the other from none.
+
 ## A compound shell command that names `git` or `gh` is refused
 
 A worktree-isolated session may only run git operations it can prove target its own worktree, and the guard gives up on anything it cannot parse statically. Two shapes that look harmless are refused outright:
