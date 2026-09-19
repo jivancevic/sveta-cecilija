@@ -1,8 +1,10 @@
 # Google Business Profile setup checklist (#36)
 
+> **#36 is closed (2026-09-19) and this pass is done.** Everything below landed except the photo target in step 6, which the owner waived at three photos rather than six. Two things outlived the issue: the duplicate report from step 8 is still with Google, and the previous owner is still **Primary owner** (step 1 deliberately left him there until the profile was configured, which it now is). Keep this file as the runbook for the next profile pass, and read the notes in steps 4 and 7 before touching either.
+
 One-sitting checklist to configure the **existing** Google Business Profile for HGD Sveta Cecilija. The listing was already claimed and transferred to `info@moreska.eu` (backup `josip.ivancevic00@gmail.com`) on 2026-05-26, so **no postcard/verification is needed**. This is a configuration pass, not a creation pass.
 
-Do everything from `https://business.google.com` while logged in as `info@moreska.eu`. Set the **category first** (some fields, like the booking link, only appear after the category is right).
+Do everything from the **"Your business on Google"** panel that appears on a normal Google Search results page when you search the business name while signed in as `info@moreska.eu` (`authuser=` picks the account). `business.google.com/locations` only lists profiles, and deep paths like `business.google.com/n/<id>/managers` 404. Set the **category first**: it is what decides which surfaces exist.
 
 ---
 
@@ -43,14 +45,16 @@ This is the society HQ and matches the registry record (OIB `52537805408`, MB `0
 
 Edit profile → **Category**.
 
-- [ ] Primary category = `Performing arts theater`
+- [ ] Primary category = `Performing arts theatre`
 - [ ] Secondary categories (add all four):
-  - [ ] `Cultural center`
+  - [ ] `Cultural centre`
   - [ ] `Tourist attraction`
   - [ ] `Historical society`
   - [ ] `Live music venue`
 
-> Set the **primary** category before step 7 — the booking/reservation link field only surfaces for certain categories.
+> **Spelling is en-GB in this account's locale** (`theatre`, `centre`), and the field REFUSES free text: type a short prefix, wait for the async suggestion list, and click the entry. Typing the full name and pressing Save fails with "We didn't understand your category."
+
+> Set the **primary** category before step 7, and expect approval to take about a day rather than the ten minutes the banner promises. Step 7's surface does not exist until the category is approved, not merely submitted.
 
 ## 5. Hours
 
@@ -73,9 +77,14 @@ Source imagery: HGD-controlled photos only (avoid generic stock). Optimised webp
 
 ## 7. Booking / reservation link
 
-Edit profile → **Contact** → **Appointment / Reservation links** (label varies by category; appears only after step 4).
+**Not a field in Business information.** Verified 2026-09-14 with the primary category approved: there is no Appointment/Reservation field in any of the five sections (About, Contact, Location, Hours, More). For `Performing arts theatre` the booking URL lives behind the panel's **Activities** button, a two-step wizard:
+
+1. Name, description, price, visitor type, then "Where can people book this activity online?" → **Booking URL**, then the includes chips.
+2. Photo, duration, language. Its **Save** is what commits (Skip commits too, without the step-2 fields).
 
 - [ ] Booking link = `https://moreska.eu/tickets`
+
+An activity is editable and deletable afterwards, and shows publicly within ~20 minutes rather than going through the usual review queue. Only tick the includes chips that are TRUE: `Instant confirmation` and `Mobile ticket` are, `Free cancellation` is **not** (refunds here are admin-initiated, plus the ADR-0021 self-serve path on a rescheduled show).
 
 Never point this at the legacy `korcula-moreska.com`.
 
@@ -83,7 +92,9 @@ Never point this at the legacy `korcula-moreska.com`.
 
 While editing, search Google Maps for "Sveta Cecilija" / "Moreška HGD" in Korčula.
 
-- [ ] Confirm there is no **second** HGD listing (a duplicate). No evidence one exists, but worth a 30-second check. If you find one, use **Suggest an edit → Close or remove → Duplicate** on the spurious one — do not touch the competitor's separate `moreska.hr` listing.
+- [ ] Confirm there is no **second** HGD listing (a duplicate). If you find one, use **Suggest an edit → Close or remove → Duplicate** on the spurious one — do not touch the competitor's separate `moreska.hr` listing.
+
+One WAS found and reported on 2026-09-13: `HRVATSKO GLAZBENO DRUŠTVO SV. CECILIJA` at Ul. Ante Starčevića 53, no reviews, no website, carrying the exact registry legal name. Still with Google. The Maps place panel would not open for it, so the report went through the Google Search knowledge panel's **Suggest an edit** instead. Its phone number `020 715 770` was never positively attributed to the society, so check that before re-filing if Google rejects the report.
 
 ## 9. Weekly posts (ongoing, not a one-off)
 
@@ -108,8 +119,8 @@ Once the profile is live and configured:
 |---|---|
 | Business name | `HGD Sveta Cecilija` |
 | Address | `Knežev prolaz 1, 20260 Korčula, Croatia` |
-| Primary category | `Performing arts theater` |
-| Secondary categories | `Cultural center`, `Tourist attraction`, `Historical society`, `Live music venue` |
+| Primary category | `Performing arts theatre` (en-GB, as the picker spells it) |
+| Secondary categories | `Cultural centre`, `Tourist attraction`, `Historical society`, `Live music venue` |
 | Hours | Mon 21:00–23:00, Thu 21:00–23:00, else Closed |
 | Booking link | `https://moreska.eu/tickets` |
 | Legal name (if re-verification prompts) | `HRVATSKO GLAZBENO DRUŠTVO SV.CECILIJA - KORČULA` |
