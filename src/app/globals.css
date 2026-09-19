@@ -578,6 +578,13 @@ html, body { overflow-x: hidden; }
   white-space: nowrap;
 }
 .perfs-venue__map:hover { border-bottom-color: var(--goldBright); color: #f0d680; }
+/* When the gate opens (#674). Sits under the venue name because that is the
+   block a buyer reads to answer "where and when do I turn up". */
+.perfs-venue__entrance {
+  margin-top: 8px;
+  font-size: 13px; line-height: 1.5;
+  color: rgba(255,255,255,0.72);
+}
 .perfs-venue__divider {
   height: 1px; background: rgba(217,165,38,0.18); margin: 16px 0 14px;
 }

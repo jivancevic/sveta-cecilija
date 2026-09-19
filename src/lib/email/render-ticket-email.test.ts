@@ -37,3 +37,27 @@ describe('renderTicketEmail footer', () => {
     }
   })
 })
+
+describe('renderTicketEmail entrance line (#674)', () => {
+  it('tells the buyer when the entrance opens, in both languages', async () => {
+    const { html: en } = await renderTicketEmail(makeInput())
+    expect(en).toContain('Entrance')
+    expect(en).toContain('around 20:30')
+
+    const { html: hr } = await renderTicketEmail(makeInput({ locale: 'hr' }))
+    expect(hr).toContain('Ulaz')
+    expect(hr).toContain('oko 20:30')
+  })
+
+  it('still says when the performance starts', async () => {
+    const { html } = await renderTicketEmail(makeInput())
+    expect(html).toContain('21:00')
+  })
+
+  it('leaves the line out rather than guessing when the start time is unreadable', async () => {
+    const { html } = await renderTicketEmail(
+      makeInput({ show: { date: '2026-07-15', time: 'evening', venue: 'ljetno-kino' } }),
+    )
+    expect(html).not.toContain('Entrance')
+  })
+})

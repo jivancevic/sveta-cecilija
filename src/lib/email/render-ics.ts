@@ -1,3 +1,4 @@
+import { entranceTime } from '../entrance-time'
 import type { Venue } from '../venues'
 
 const VENUE_ADDRESS: Record<Venue, string> = {
@@ -62,6 +63,19 @@ const DESCRIPTION: Record<'en' | 'hr', string> = {
   hr: 'Moreška u izvedbi HGD Sveta Cecilija. Donesite PDF ulaznice; osoblje skenira jedan QR kod za cijelu vašu skupinu.',
 }
 
+// The entrance line goes in the DESCRIPTION, never in DTSTART: the event in
+// somebody's calendar must still say when the performance begins (#674).
+const ENTRANCE_NOTE: Record<'en' | 'hr', (time: string) => string> = {
+  en: (time) => `Entrance opens around ${time}.`,
+  hr: (time) => `Ulaz se otvara oko ${time}.`,
+}
+
+function describe(input: RenderIcsInput): string {
+  const base = DESCRIPTION[input.locale]
+  const entrance = entranceTime(input.show.time)
+  return entrance ? `${base} ${ENTRANCE_NOTE[input.locale](entrance)}` : base
+}
+
 export function renderIcs(input: RenderIcsInput): string {
   const duration = input.durationMinutes ?? 90
   const start = toUtc(input.show.date, input.show.time)
@@ -71,7 +85,7 @@ export function renderIcs(input: RenderIcsInput): string {
   const dtStamp = formatIcsDate(new Date())
   const uid = `moreska-order-${input.orderId}@moreska.eu`
   const summary = SUMMARY[input.locale]
-  const description = DESCRIPTION[input.locale]
+  const description = describe(input)
   const location = VENUE_ADDRESS[input.show.venue]
 
   const lines = [
@@ -107,7 +121,7 @@ export function googleCalendarLink(input: RenderIcsInput): string {
     action: 'TEMPLATE',
     text: SUMMARY[input.locale],
     dates: `${fmt(start)}/${fmt(end)}`,
-    details: DESCRIPTION[input.locale],
+    details: describe(input),
     location: VENUE_ADDRESS[input.show.venue],
   })
   return `https://calendar.google.com/calendar/render?${params.toString()}`

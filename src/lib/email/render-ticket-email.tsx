@@ -9,6 +9,7 @@ import {
   Text,
 } from '@react-email/components'
 import { render } from '@react-email/render'
+import { entranceTime } from '../entrance-time'
 import type { Venue } from '../venues'
 
 const VENUE_LABEL: Record<'en' | 'hr', Record<Venue, string>> = {
@@ -32,6 +33,8 @@ const COPY = {
     showHeading: 'Performance details',
     date: 'Date',
     time: 'Time',
+    entrance: 'Entrance',
+    entranceValue: (t: string) => `around ${t}`,
     venue: 'Venue',
     summaryHeading: 'Order summary',
     adultRow: (n: number) => `${n} × Adult ticket`,
@@ -57,6 +60,8 @@ const COPY = {
     showHeading: 'Detalji izvedbe',
     date: 'Datum',
     time: 'Vrijeme',
+    entrance: 'Ulaz',
+    entranceValue: (t: string) => `oko ${t}`,
     venue: 'Mjesto',
     summaryHeading: 'Sažetak narudžbe',
     adultRow: (n: number) => `${n} × Odrasli`,
@@ -272,6 +277,7 @@ function TicketEmail(input: RenderTicketEmailInput) {
   const c = COPY[input.locale]
   const venueLabel = VENUE_LABEL[input.locale][input.show.venue]
   const dateLabel = formatDate(input.show.date, input.locale)
+  const entrance = entranceTime(input.show.time)
   const adultTotal = input.order.adultCount * 2000
   const childTotal = input.order.childCount * 1000
 
@@ -299,6 +305,12 @@ function TicketEmail(input: RenderTicketEmailInput) {
               <span style={styles.showRowLabel}>{c.time}</span>
               {input.show.time}
             </Text>
+            {entrance && (
+              <Text style={styles.showRow}>
+                <span style={styles.showRowLabel}>{c.entrance}</span>
+                {c.entranceValue(entrance)}
+              </Text>
+            )}
             <Text style={styles.showRow}>
               <span style={styles.showRowLabel}>{c.venue}</span>
               {venueLabel}
