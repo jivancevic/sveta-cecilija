@@ -181,7 +181,7 @@ export interface PerformanceDetail {
    */
   voditelj: boolean
   /**
-   * True when the viewer keeps THIS evening's list (ADR-0029): a voditelj on
+   * True when the viewer keeps THIS evening's list (ADR-0031): a voditelj on
    * every evening, a Zaduženi on the one that names them. Everything about
    * running the night hangs off this and not off `voditelj`.
    */
@@ -437,7 +437,7 @@ export function buildPerformanceDetail(input: {
     if (armies.length > 1) moveTargets[String(member.id)] = armies
   }
 
-  // The alarm stays the voditelj's on every evening (ADR-0029): ringing
+  // The alarm stays the voditelj's on every evening (ADR-0031): ringing
   // seventy-six phones is not part of keeping a list.
   const canAlarm =
     input.viewer.voditelj &&

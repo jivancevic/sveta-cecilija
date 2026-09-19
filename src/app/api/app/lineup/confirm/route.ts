@@ -19,7 +19,7 @@ import { setLineupConfirmationInTransaction } from '@/lib/lineup/write-tx'
 //
 // The guard is the replace route's — `requirePermission(req,
 // ['moreska','moreskant'])` plus the row question inside the pure handler
-// (ADR-0029, #658) — for the reason that route has it, plus one more:
+// (ADR-0031, #658) — for the reason that route has it, plus one more:
 // confirming is the act a MCP tool is deliberately not given (#430, story 63),
 // and widening the word here must not widen that. It does not: the MCP tools
 // are gated on `moreska` in their own layer and reach this route not at all.

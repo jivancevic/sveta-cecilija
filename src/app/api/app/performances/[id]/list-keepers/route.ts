@@ -11,7 +11,7 @@ import { createPushDeps, type PushPayload } from '@/lib/push/push-data'
 import { relationIdForWrite } from '@/lib/payload-relation'
 
 // POST /api/app/performances/[id]/list-keepers — naming this evening's Zaduženi
-// (#658, ADR-0029).
+// (#658, ADR-0031).
 //
 // `requirePermission(req, 'moreska')` and nothing wider, on purpose. This is the
 // ONE route in the feature that a Zaduženi may not call: a delegation that can

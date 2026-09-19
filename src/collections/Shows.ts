@@ -476,7 +476,7 @@ export const Shows: CollectionConfig = {
       },
       access: { read: rosterFieldRead, update: rosterFieldUpdate },
     },
-    // The Zaduženi: who may keep THIS evening's list (ADR-0029, #658).
+    // The Zaduženi: who may keep THIS evening's list (ADR-0031, #658).
     //
     // A `moreska` holder keeps every list and is never written here, so a name
     // on this field always means somebody else — which is why Stanje prints
@@ -485,7 +485,7 @@ export const Shows: CollectionConfig = {
     // outlive it (a postava is confirmed AFTER the night it records).
     //
     // The predicate that reads it is `keepsList` in `src/lib/app/list-keeper.ts`
-    // and it is deliberately NOT a permission: see ADR-0029 before touching it.
+    // and it is deliberately NOT a permission: see ADR-0031 before touching it.
     {
       name: 'listKeepers',
       type: 'relationship',

@@ -1,4 +1,4 @@
-// `keepsList` — the one predicate about a ROW (ADR-0029, #658).
+// `keepsList` — the one predicate about a ROW (ADR-0031, #658).
 //
 // Every other access decision in this repository is a question about a PERSON:
 // `can(user, 'refunds')`. This one is a question about a person AND an evening.
@@ -17,7 +17,7 @@
 //     answer the second question, which is the whole cost of the design.
 //   - It never grows into `can()` and no `list_keeper` word is ever added to
 //     the vocabulary. Either one would turn one night's delegation into a
-//     permanent, global grant: exactly what ADR-0029 refuses.
+//     permanent, global grant: exactly what ADR-0031 refuses.
 //
 // The alarm is deliberately outside all of this: `/api/app/alarm` keeps plain
 // `requirePermission(req, 'moreska')`. Ringing seventy-six phones is not part

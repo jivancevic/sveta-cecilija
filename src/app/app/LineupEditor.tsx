@@ -10,7 +10,7 @@ import type { LineupPerson, LineupRow } from '@/lib/app/detail-loaders'
 // The Postava editor (#432), living on *Stanje* since #658.
 //
 // It used to be a card on the Izvedbe detail, which a `moreskant` login does not
-// unlock — so once one evening's list could be delegated to a dancer (ADR-0029),
+// unlock — so once one evening's list could be delegated to a dancer (ADR-0031),
 // a Zaduženi could hand out the four titles on Stanje and had nowhere to record
 // an unusual role. It moved rather than being copied: two editors of the same
 // record diverge the first time one of them is fixed.

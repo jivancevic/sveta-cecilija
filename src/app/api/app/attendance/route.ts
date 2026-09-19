@@ -29,7 +29,7 @@ import { isMoreskantRow } from '@/lib/moreskant-profile'
 // then decide whether this particular moreškant may answer for this particular
 // member on this particular evening.
 //
-// Since #658 that last decision also reads the ROW (ADR-0029): whoever keeps
+// Since #658 that last decision also reads the ROW (ADR-0031): whoever keeps
 // this evening's list answers for anybody on it, which is a voditelj on every
 // evening and the evening's Zaduženi on one. Nothing is computed here for it —
 // the row's `listKeepers` simply rides along on the performance the rules
@@ -58,7 +58,7 @@ export async function POST(req: Request) {
   // things now: whose answer counts as this caller's OWN, and - through
   // `keepsList` - whether they may answer for ANYBODY on an evening that names
   // them. A retired dancer left on `listKeepers` with a cookie still in date
-  // would otherwise keep running that evening, which ADR-0029 says outright
+  // would otherwise keep running that evening, which ADR-0031 says outright
   // they do not.
   const ownMemberId = await resolveLiveOwnMemberId(
     payload as unknown as LiveMemberReader,

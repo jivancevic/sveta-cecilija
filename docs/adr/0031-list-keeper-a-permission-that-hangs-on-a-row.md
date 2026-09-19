@@ -1,4 +1,4 @@
-# ADR-0029: The Zaduženi — a permission that hangs on a row
+# ADR-0031: The Zaduženi — a permission that hangs on a row
 
 **Status:** Accepted
 **Date:** 2026-09-16

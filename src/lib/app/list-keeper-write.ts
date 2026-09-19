@@ -1,5 +1,5 @@
 // Putting one moreškant in charge of one evening's list, and taking it back
-// (#658, ADR-0029).
+// (#658, ADR-0031).
 //
 // A SWITCH, not a toggle: the body says `keeps: true | false` and never "flip
 // it". The same shape #507's *Označi riješenim* and #599's *Označi poslanim*

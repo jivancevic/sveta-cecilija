@@ -35,7 +35,7 @@ An unknown permission string is dropped rather than fatal, so a stale or hand-ed
 
 ### `keepsList(user, row)` — the one predicate about a ROW
 
-[ADR-0029](../adr/0029-list-keeper-a-permission-that-hangs-on-a-row.md). One evening's list can be delegated to a moreškant (the *Zaduženi*, CONTEXT.md), so there is a second predicate, and it is deliberately not a permission:
+[ADR-0031](../adr/0031-list-keeper-a-permission-that-hangs-on-a-row.md). One evening's list can be delegated to a moreškant (the *Zaduženi*, CONTEXT.md), so there is a second predicate, and it is deliberately not a permission:
 
 - It lives in `src/lib/app/list-keeper.ts`, pure and tested without a database, and answers **only** "may this person keep the list of THIS evening". True for a `moreska` holder on every row; true for a dancer whose Member is in that row's `shows.listKeepers`.
 - It never replaces the route guard, it follows it. The three routes that take it (`POST /api/app/lineup`, `/lineup/confirm`, `/api/app/attendance`) keep `requirePermission(req, ['moreska','moreskant'])` and then check `keepsList` against the row they loaded. The permission answers "may this caller be in here at all", the row answers "is this their evening". A guard that refuses on the session alone cannot decide this, which is why the row has to be loaded first.
