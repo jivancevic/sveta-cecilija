@@ -10,6 +10,7 @@ import {
   View,
   renderToBuffer,
 } from '@react-pdf/renderer'
+import { entranceTime } from '../entrance-time'
 import type { Venue } from '../venues'
 import { ADULT_PRICE_EUR, CHILD_PRICE_EUR } from '../pricing'
 import { programmeUrl, scanUrl } from '../site-url'
@@ -60,6 +61,8 @@ const COPY = {
     holder: 'Holder',
     date: 'Date',
     time: 'Time',
+    entrance: 'Entrance',
+    entranceValue: (t: string) => `around ${t}`,
     venue: 'Venue',
     order: 'Order',
     soldBy: 'Sold by',
@@ -77,6 +80,8 @@ const COPY = {
     holder: 'Vlasnik',
     date: 'Datum',
     time: 'Vrijeme',
+    entrance: 'Ulaz',
+    entranceValue: (t: string) => `oko ${t}`,
     venue: 'Mjesto',
     order: 'Narudžba',
     soldBy: 'Prodano putem',
@@ -337,6 +342,7 @@ export async function renderTicketsPdf(
   const c = COPY[input.locale]
   const venueLabel = VENUE_LABEL[input.locale][input.show.venue]
   const dateLabel = formatDate(input.show.date, input.locale)
+  const entrance = entranceTime(input.show.time)
   const programmeLink = programmeUrl()
 
   // One QR per ticket, rendered in issuance order. The scan URL must point at
@@ -381,6 +387,12 @@ export async function renderTicketsPdf(
             <Text style={styles.fieldLabel}>{c.time.toUpperCase()}</Text>
             <Text style={styles.fieldValueBig}>{input.show.time}</Text>
           </View>
+          {entrance && (
+            <View style={styles.fieldRow}>
+              <Text style={styles.fieldLabel}>{c.entrance.toUpperCase()}</Text>
+              <Text style={styles.fieldValue}>{c.entranceValue(entrance)}</Text>
+            </View>
+          )}
           <View style={styles.fieldRow}>
             <Text style={styles.fieldLabel}>{c.venue.toUpperCase()}</Text>
             <Text style={styles.fieldValue}>{venueLabel}</Text>

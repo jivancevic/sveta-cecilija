@@ -85,6 +85,7 @@ export default function PerformancesPage({ t, tSchedule, tHelp, tEvening, shows,
               {t.venueViewMap}
             </a>
           </div>
+          <div className="perfs-venue__entrance">{t.entranceNote}</div>
           <div className="perfs-venue__divider" />
           <EveningBlock t={tEvening} />
         </div>
