@@ -1,12 +1,17 @@
 'use client'
 
 import { useCallback, useEffect, useState, useSyncExternalStore } from 'react'
+import { decideInstallOffer, type InstallOffer } from '@/lib/app/install-nudge'
 import {
+  androidInstaller,
   detectPlatform,
   INSTALL_PROMPT_EVENT,
   INSTALL_PROMPT_KEY,
+  REINSTALL_SNOOZE_KEY,
+  REINSTALL_SNOOZE_MS,
   SNOOZE_KEY,
   SNOOZE_MS,
+  type AndroidInstaller,
   type AppPlatform,
 } from '@/lib/app/platform'
 
@@ -76,6 +81,23 @@ export function usePlatform(): AppPlatform | null {
   return useSyncExternalStore(noSubscription, readPlatform, noServerSnapshot)
 }
 
+/** Which install route built this browser's app, from its UA (#684). */
+export function readInstaller(): AndroidInstaller {
+  return androidInstaller(navigator.userAgent)
+}
+
+/**
+ * The installer as a render-time fact, `null` until the browser exists.
+ *
+ * `usePlatform`'s twin, and read the same way for the same reason: an
+ * installed app keeps reporting the UA of the browser that built it, so this
+ * is a fact of the browser that never changes under us, and the honest server
+ * snapshot is "not known yet" rather than a guess at Chrome.
+ */
+export function useInstaller(): AndroidInstaller | null {
+  return useSyncExternalStore(noSubscription, readInstaller, noServerSnapshot)
+}
+
 /**
  * Whether the phone behind a webview is an iPhone, for the "get out of here"
  * instruction. Not `detectPlatform`, which has already answered `inapp` and is
@@ -85,17 +107,42 @@ export function webviewHostIsIos(): boolean {
   return /iphone|ipad|ipod/i.test(navigator.userAgent)
 }
 
-export function isSnoozed(now = Date.now()): boolean {
+/**
+ * Is a "Kasnije" still in force under this key?
+ *
+ * Keyed rather than fixed since #684: there are two cards that can be put off
+ * and they must not silence each other (`platform.ts` says why).
+ */
+function snoozedUnder(key: string, now: number): boolean {
   try {
-    const until = Number(window.localStorage.getItem(SNOOZE_KEY) ?? '0')
+    const until = Number(window.localStorage.getItem(key) ?? '0')
     return Number.isFinite(until) && until > now
   } catch {
     return false
   }
 }
 
-/** Whoever is rendering the snooze, so a "Kasnije" reaches them immediately. */
+export function isSnoozed(now = Date.now()): boolean {
+  return snoozedUnder(SNOOZE_KEY, now)
+}
+
+export function isReinstallSnoozed(now = Date.now()): boolean {
+  return snoozedUnder(REINSTALL_SNOOZE_KEY, now)
+}
+
+/** Whoever is rendering a snooze, so a "Kasnije" reaches them immediately. */
 const snoozeWatchers = new Set<() => void>()
+
+function writeSnooze(key: string, ms: number, now: number): void {
+  try {
+    window.localStorage.setItem(key, String(now + ms))
+  } catch {
+    // Not remembered this time; the card simply comes back sooner.
+  }
+  // Both cards share the watcher set: there is one card slot on Početna, so
+  // whichever of them was just put off, the same component re-renders.
+  for (const watcher of snoozeWatchers) watcher()
+}
 
 /**
  * "Kasnije" means tomorrow, not never (#455).
@@ -105,12 +152,12 @@ const snoozeWatchers = new Set<() => void>()
  * device. A timestamp costs the same and forgets on its own.
  */
 export function snooze(now = Date.now()): void {
-  try {
-    window.localStorage.setItem(SNOOZE_KEY, String(now + SNOOZE_MS))
-  } catch {
-    // Not remembered this time; the banner simply comes back sooner.
-  }
-  for (const watcher of snoozeWatchers) watcher()
+  writeSnooze(SNOOZE_KEY, SNOOZE_MS, now)
+}
+
+/** The same, for the reinstall card, which is put off for a week (#684). */
+export function snoozeReinstall(now = Date.now()): void {
+  writeSnooze(REINSTALL_SNOOZE_KEY, REINSTALL_SNOOZE_MS, now)
 }
 
 function subscribeToSnooze(watcher: () => void): () => void {
@@ -131,6 +178,32 @@ function subscribeToSnooze(watcher: () => void): () => void {
  */
 export function useSnoozed(): boolean {
   return useSyncExternalStore(subscribeToSnooze, isSnoozed, alwaysSnoozed)
+}
+
+/** The reinstall card's own snooze, read the same way (#684). */
+export function useReinstallSnoozed(): boolean {
+  return useSyncExternalStore(subscribeToSnooze, isReinstallSnoozed, alwaysSnoozed)
+}
+
+/**
+ * The install card's answer for THIS browser, or `null` while it is unread.
+ *
+ * Both screens that render it — the card itself and #682's notifications
+ * widget, which goes quiet whenever the card is saying something — used to
+ * gather the same five facts and guard the same two nulls apiece. One reader,
+ * so a sixth fact is added in one place rather than remembered in two.
+ *
+ * `canPrompt` is the caller's, because `useInstallPrompt` also hands back the
+ * `install()` the card needs and asking for it twice would park two listeners
+ * on one event.
+ */
+export function useInstallOffer(canPrompt: boolean): InstallOffer | null {
+  const platform = usePlatform()
+  const installer = useInstaller()
+  const snoozed = useSnoozed()
+  const reinstallSnoozed = useReinstallSnoozed()
+  if (platform === null || installer === null) return null
+  return decideInstallOffer({ platform, snoozed, canPrompt, installer, reinstallSnoozed })
 }
 
 const alwaysSnoozed = () => true

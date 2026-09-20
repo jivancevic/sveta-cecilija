@@ -1801,23 +1801,66 @@ export const APP_STRINGS = {
     inappCopied: 'Link je kopiran. Zalijepi ga u Safari ili Chrome.',
 
     /**
-     * The Play Protect dead end (#668), and the reason it is worded as an offer
-     * rather than as a warning: on this roster four people installed Cecilija
-     * from Samsung Internet without ever seeing this screen, and one did. The
-     * block is the phone's call, so the guide hands over a route that works
-     * instead of telling somebody their browser is broken.
+     * Why the install belongs in Chrome (#684), and the sentence that leads
+     * now: an app installed by another browser runs in THAT browser, with its
+     * own prijava, its own obavijesti and its own postavke. #668 led with Play
+     * Protect instead, which was the right answer to "will the install
+     * succeed" and the wrong question — an install that succeeds perfectly is
+     * exactly how somebody ends up with two Cecilijas and no warning.
+     *
+     * It never says a browser is broken. Production says these installs work;
+     * what they do not do is share anything with Chrome.
+     */
+    otherBrowserTitle: 'Instaliraj iz preglednika koji inače koristiš',
+    otherBrowserBody:
+      'Aplikacija ostaje u pregledniku koji ju je instalirao: ima svoju prijavu, svoje obavijesti i svoje postavke, odvojene od ostalih preglednika na mobitelu.',
+    otherBrowserHow:
+      'Ako Ceciliju inače otvaraš u Chromeu, otvori ovu stranicu u Chromeu i instaliraj odande.',
+
+    /**
+     * The Play Protect dead end (#668), now the SECOND sentence rather than
+     * the first, and still worded as an offer rather than as a warning: on
+     * this roster four people installed Cecilija from Samsung Internet without
+     * ever seeing this screen, and one did. The block is the phone's call, so
+     * the guide hands over a route that works instead of telling somebody
+     * their browser is broken.
      *
      * "Nesigurna aplikacija" is quoted because it is what the reader is looking
      * at while they read this, and a person holding a red warning wants to see
      * their own words before they believe anything else on the page.
      */
-    playProtectTitle: 'Ako Android odbije instalaciju',
     playProtectBody:
       'Neki Androidi jave "Nesigurna aplikacija blokirana" kad instalaciju pokreće preglednik koji nije Chrome. To nije do Cecilije: aplikaciju u tom slučaju sastavlja sam preglednik, a Android takve odbija.',
-    playProtectHow: 'Otvori ovu stranicu u Chromeu i instaliraj odande. Chrome ide drugim putem i Android ga pušta.',
-    playProtectOpen: 'Otvori u Chromeu',
-    playProtectCopy: 'Kopiraj poveznicu',
-    playProtectCopied: 'Poveznica je kopirana. Zalijepi je u Chrome.',
+    /**
+     * What Chrome does differently, and NOT a second "open this in Chrome":
+     * the lead above already says that, and #684 review caught the same
+     * instruction standing twice in one section.
+     */
+    playProtectHow: 'Chrome ide drugim putem: aplikaciju mu sastavlja Google, pa je Android pušta.',
+    /**
+     * The way into Chrome, and the copy button for a browser that ignores the
+     * intent. Named for the route rather than for Play Protect since #684:
+     * the guide and the reinstall card both render this pair, and only one of
+     * them is about Play Protect at all.
+     */
+    chromeOpen: 'Otvori u Chromeu',
+    chromeCopy: 'Kopiraj poveznicu',
+    chromeCopied: 'Poveznica je kopirana. Zalijepi je u Chrome.',
+
+    /**
+     * The card for somebody who is ALREADY in the wrong Cecilija (#684).
+     *
+     * It is the only place in the app that can tell them, because nothing on
+     * the server can see which engine an icon runs in. It says what to expect
+     * as well as what to do: the push subscription dies with the old icon, and
+     * #682's widget is what will say so afterwards, so hearing it here first
+     * means the second card is a confirmation rather than a surprise.
+     */
+    reinstallTitle: 'Ova ikona je instalirana iz drugog preglednika',
+    reinstallBody:
+      'Zato ima svoju prijavu, svoje obavijesti i svoje postavke, odvojene od preglednika u kojem inače otvaraš Ceciliju. Što namjestiš ondje, ovdje se ne vidi.',
+    reinstallHow:
+      'Obriši ikonu s ekrana, otvori Ceciliju u Chromeu i instaliraj je odande. Obavijesti nakon toga treba ponovo uključiti.',
   },
 
   /**
