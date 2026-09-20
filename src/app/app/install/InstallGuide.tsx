@@ -121,16 +121,24 @@ export function InstallGuide() {
       )}
 
       {/*
-        The Play Protect route (#668). Shown while the ANDROID steps are the
-        ones on screen and this browser mints its own APK — which is also right
-        for a voditelj who switched to the Android tab on their own iPhone,
-        since `androidInstaller` reads a UA and an iPhone's is not Android.
-        An installed reader is not nagged: they are past this.
+        The Chrome route (#668, reframed by #684). Shown while the ANDROID
+        steps are the ones on screen and this browser mints its own APK — which
+        is also right for a voditelj who switched to the Android tab on their
+        own iPhone, since `androidInstaller` reads a UA and an iPhone's is not
+        Android. An installed reader is not nagged: they are past this.
+
+        The lead is WHERE THE APP'S DATA LIVES and Play Protect follows it.
+        #668 had them the other way round, which answered "will this install
+        succeed" — and the install succeeding is exactly how somebody ends up
+        with a second Cecilija holding a different login and a different push
+        subscription. Play Protect stays, because it still happens.
       */}
       {device === 'android' && !installed && ownApk && (
         <section className="app__hint">
-          <strong>{APP_STRINGS.install.playProtectTitle}</strong>
-          {APP_STRINGS.install.playProtectBody}
+          <strong>{APP_STRINGS.install.otherBrowserTitle}</strong>
+          {APP_STRINGS.install.otherBrowserBody}
+          <p className="app__install-how">{APP_STRINGS.install.otherBrowserHow}</p>
+          <p className="app__install-how">{APP_STRINGS.install.playProtectBody}</p>
           <p className="app__install-how">{APP_STRINGS.install.playProtectHow}</p>
           <div className="app__hint-actions">
             {/*

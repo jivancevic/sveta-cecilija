@@ -162,3 +162,19 @@ export const INSTALL_PROMPT_CAPTURE = `(function(){var w=window;w.addEventListen
 export const SNOOZE_KEY = 'moreskant.install.snoozedUntil'
 /** One day. Long enough to stop nagging, short enough to come back. */
 export const SNOOZE_MS = 24 * 60 * 60 * 1000
+
+/**
+ * The reinstall card's own "Kasnije" (#684), deliberately a second store.
+ *
+ * Sharing the install offer's key would mean the Dobrodošlica silences this
+ * card: it snoozes the offer on its way out, and the person walking through it
+ * has just installed the app — from whichever browser they were holding.
+ */
+export const REINSTALL_SNOOZE_KEY = 'moreskant.reinstall.snoozedUntil'
+/**
+ * A week, not a day. Reinstalling is a chore with a real cost — the push
+ * subscription dies with the old icon and has to be switched on again — so
+ * somebody mid-season may reasonably put it off, and asking again tomorrow
+ * would only teach them to stop reading the card.
+ */
+export const REINSTALL_SNOOZE_MS = 7 * 24 * 60 * 60 * 1000

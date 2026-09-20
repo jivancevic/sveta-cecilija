@@ -8,7 +8,14 @@ import { pushRefusal } from '@/lib/app/push-refusal'
 import { APP_STRINGS } from '@/lib/app/strings'
 import { Button, Card, Note } from './ui'
 import { notificationPermission, subscribeToPush } from './push-client'
-import { useInstallPrompt, usePlatform, usePushFacts, useSnoozed } from './use-install'
+import {
+  useInstaller,
+  useInstallPrompt,
+  usePlatform,
+  usePushFacts,
+  useReinstallSnoozed,
+  useSnoozed,
+} from './use-install'
 
 // "Na ovom uređaju ne primaš obavijesti" (#682).
 //
@@ -50,7 +57,9 @@ export function NotificationsNudge({
   fallback?: React.ReactNode
 }) {
   const platform = usePlatform()
+  const installer = useInstaller()
   const snoozed = useSnoozed()
+  const reinstallSnoozed = useReinstallSnoozed()
   const { canPrompt } = useInstallPrompt()
   const facts = usePushFacts(vapidPublicKey)
   /** This tap subscribed. `facts` is read once, so the card closes itself. */
@@ -77,13 +86,25 @@ export function NotificationsNudge({
     if (notificationPermission() !== 'denied') setError(S.failed)
   }, [busy, vapidPublicKey])
 
-  if (facts.state === 'looking' || platform === null) return <>{fallback}</>
+  if (facts.state === 'looking' || platform === null || installer === null)
+    return <>{fallback}</>
 
   const nudge = subscribed
     ? 'none'
     : decideNotificationsNudge({
         isDancer,
-        installOffer: decideInstallOffer({ platform, snoozed, canPrompt }),
+        // #684's `reinstall` reaches this rule as "the install card is saying
+        // something", which is the right answer: a dancer about to delete this
+        // icon will lose the subscription with it, so asking them to switch
+        // notifications on in the app they are leaving would be work undone
+        // five minutes later. The card they reinstall into says it instead.
+        installOffer: decideInstallOffer({
+          platform,
+          snoozed,
+          canPrompt,
+          installer,
+          reinstallSnoozed,
+        }),
         refusal: pushRefusal({ platform, pushSupported: facts.supported }),
         subscribed: facts.subscribed,
         permission: facts.permission,

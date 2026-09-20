@@ -1,4 +1,4 @@
-import type { AppPlatform } from './platform'
+import type { AndroidInstaller, AppPlatform } from './platform'
 
 // Whether Cecilija offers to install itself, right now, on this browser (#616).
 //
@@ -22,8 +22,22 @@ import type { AppPlatform } from './platform'
 // voditelja") and the box office has no business being walked through them.
 // Finishing it snoozes this offer, so nobody is asked twice in one minute.
 
+// The fourth answer is #684's, and it is the opposite question: not "shall we
+// offer an install" but "did the install that already happened put this person
+// in the wrong Cecilija". An app installed from Samsung Internet runs in
+// Samsung's engine, with Samsung's cookie jar, Samsung's localStorage and
+// Samsung's push subscription. The login, the theme and the notifications the
+// dancer set in Chrome are not the ones behind the icon, and until this card
+// nothing in the app could say so — it cost three rounds of remote guessing on
+// a Galaxy A55 whose theme switch did nothing at all.
+//
+// It reuses the card slot rather than adding a card, and that is not only
+// tidiness: `installed` returns `none` today, so the slot under the greeting is
+// empty for exactly these people, while Početna already carries the install
+// offer and #682's notifications widget for everybody else.
+
 /** What the offer says, or `none` when it renders nothing at all. */
-export type InstallOffer = 'none' | 'install' | 'inapp'
+export type InstallOffer = 'none' | 'install' | 'inapp' | 'reinstall'
 
 export interface InstallOfferInput {
   /** `platform.ts`'s answer for this browser. */
@@ -32,6 +46,15 @@ export interface InstallOfferInput {
   snoozed: boolean
   /** Chromium parked a `beforeinstallprompt`: this browser CAN install. */
   canPrompt: boolean
+  /**
+   * `androidInstaller()` on THIS browser's UA (#684). An installed app keeps
+   * reporting the UA of the browser that built it, which is what makes the
+   * wrong Cecilija recognisable at all. `chrome` for anything we cannot tell
+   * apart from Chrome, and for every non-Android UA.
+   */
+  installer: AndroidInstaller
+  /** "Kasnije" on the REINSTALL card, which is its own, longer snooze. */
+  reinstallSnoozed: boolean
 }
 
 /**
@@ -50,13 +73,25 @@ export interface InstallOfferInput {
  * describe and the guide's "ikona u adresnoj traci" names a control that is not
  * there. Offering it would be the app confidently giving a wrong instruction,
  * so on a desktop the browser's own capability is the permission to ask.
+ *
+ * The `installed` clause is where #684 lives, and the two snoozes stay apart
+ * on purpose. They are answers to different questions — "not now" to an offer,
+ * and "not now" to a chore that costs this device its push subscription — and
+ * the install one is written by the Dobrodošlica on its way out, by somebody
+ * who has just installed the app and would otherwise silence the very card
+ * telling them they installed it from the wrong place.
  */
 export function decideInstallOffer({
   platform,
   snoozed,
   canPrompt,
+  installer,
+  reinstallSnoozed,
 }: InstallOfferInput): InstallOffer {
-  if (platform === 'installed') return 'none'
+  if (platform === 'installed') {
+    if (installer !== 'own-apk' || reinstallSnoozed) return 'none'
+    return 'reinstall'
+  }
   if (snoozed) return 'none'
   if (platform === 'inapp') return 'inapp'
   if (platform === 'desktop' && !canPrompt) return 'none'
