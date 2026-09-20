@@ -84,6 +84,7 @@ RNO registry updated 2026-08-17 (#369): website `https://moreska.eu/`, e-mail `i
 | `/about` | `src/app/(frontend)/about/page.tsx` | About HGD |
 | `/sections/[slug]` | `src/app/(frontend)/sections/[slug]/page.tsx` | Section pages (see slug map below) |
 | `/tickets` | `src/app/(frontend)/tickets/page.tsx` | Public show schedule (reads Shows; force-dynamic) |
+| `/programme` | `src/app/(frontend)/programme/page.tsx` | Digital programme a guest reads on a phone before the show (#544): cast, the evening's two parts, the seven kolapi, story from `sectionPages.moreska`. Linked from the ticket PDF footer through `programmeUrl()` in `src/lib/site-url.ts`; never a second QR (#541). Copy in `programmePage`, parity + order asserted by `src/lib/programme-copy.test.ts` |
 | `/services/[slug]` | `src/app/(frontend)/services/[slug]/page.tsx` | Service enquiry pages, no pricing |
 | `/checkout/[showId]` | `src/app/(frontend)/checkout/[showId]/page.tsx` | Stripe checkout |
 | `/checkout/[showId]/confirmation` | `…/confirmation/page.tsx` | Post-payment landing; looks up Order by `pi` (5×400ms retry to bridge the webhook race) |
