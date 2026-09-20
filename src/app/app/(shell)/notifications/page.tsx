@@ -7,12 +7,13 @@ import {
 import { APP_STRINGS } from '@/lib/app/strings'
 import { calendarFeedUrl } from '@/lib/calendar/feed'
 import { vapidPublicKey } from '@/lib/push/vapid'
+import { isDancer } from '@/lib/app/viewer'
 import { Section } from '../../ui'
 import { AppShell } from '../../AppShell'
 import { CalendarPanel } from '../../CalendarPanel'
 import { NotificationsNudge } from '../../NotificationsNudge'
 import { openScreen } from '../../gate'
-import { NotificationList } from './NotificationList'
+import { InboxEmpty, NotificationList } from './NotificationList'
 import { RosterMessage } from './RosterMessage'
 
 // `/app/notifications` — the Sandučić obavijesti (#473, #496, reskinned #569).
@@ -78,15 +79,21 @@ export default async function NotificationsPage() {
     >
       {viewer.voditelj && <RosterMessage counts={messageCounts} />}
 
-      <NotificationList rows={rows} nowMs={nowMs} />
-
       {/* The one place besides Početna, and only when the list is EMPTY (#682).
-          An inbox with nothing in it has nothing to say, and "you are not
-          receiving these" is exactly the reason it might be empty. A standing
-          banner over a full list would be the second permanent notice about one
-          thing, which is nagging, and nagging is what people stop seeing. */}
-      {rows.length === 0 && (
-        <NotificationsNudge isDancer={viewer.me != null} vapidPublicKey={vapidPublicKey()} />
+          An inbox with nothing in it has nothing else to say, and "you are not
+          receiving these" is exactly why it might be empty. The widget REPLACES
+          the empty card rather than standing under it: that card promises
+          "javit ćemo ti", which is the one thing this device will not do. Over a
+          full list there is no banner at all — a second permanent notice about
+          one thing is nagging, and nagging is what people stop seeing. */}
+      {rows.length === 0 ? (
+        <NotificationsNudge
+          isDancer={isDancer(viewer)}
+          vapidPublicKey={vapidPublicKey()}
+          fallback={<InboxEmpty />}
+        />
+      ) : (
+        <NotificationList rows={rows} nowMs={nowMs} />
       )}
 
       {calendarUrl && (

@@ -123,4 +123,3 @@ describe('chromeIntentUrl', () => {
     expect(chromeIntentUrl('https://moreska.eu/app#Intent;package=com.evil;end')).toBe(null)
   })
 })
-

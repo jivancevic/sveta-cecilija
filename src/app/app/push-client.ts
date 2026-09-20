@@ -108,7 +108,6 @@ function urlBase64ToBytes(base64: string): ArrayBuffer {
   return out.buffer as ArrayBuffer
 }
 
-/** Does this browser have the three APIs a subscription needs? */
 /**
  * What the browser says about the notification permission, or null where there
  * is no Notification API to ask (#682).
@@ -127,6 +126,7 @@ export function notificationPermission(): NotificationPermission | null {
   }
 }
 
+/** Does this browser have the three APIs a subscription needs? */
 export function pushSupported(): boolean {
   return (
     typeof window !== 'undefined' &&

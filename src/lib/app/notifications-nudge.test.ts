@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { decideNotificationsNudge, type NotificationsNudgeInput } from './notifications-nudge'
+import { pushRefusal } from './push-refusal'
 
 // #682 — the widget that tells a device it is not getting the push.
 //
@@ -11,9 +12,8 @@ import { decideNotificationsNudge, type NotificationsNudgeInput } from './notifi
 /** A dancer's installed phone with notifications off: the one case that speaks. */
 const off: NotificationsNudgeInput = {
   isDancer: true,
-  platform: 'installed',
   installOffer: 'none',
-  pushSupported: true,
+  refusal: null,
   subscribed: false,
   permission: 'default',
 }
@@ -28,13 +28,6 @@ describe('decideNotificationsNudge', () => {
 
   it('goes the moment the device has a subscription', () => {
     expect(decide({ subscribed: true })).toBe('none')
-  })
-
-  it('says nothing at all until the browser has been asked', () => {
-    // The server renders nothing and so does the first client frame: a card
-    // that appeared during SSR would flash "turn these on" at a phone that
-    // already rings.
-    expect(decide({ platform: null })).toBe('none')
   })
 
   it('is silent when the browser will not say whether it is subscribed', () => {
@@ -52,18 +45,16 @@ describe('decideNotificationsNudge', () => {
 
   it('waits while the install card is asking for something', () => {
     // Both cards would say "first install the app", one under the other.
-    expect(decide({ installOffer: 'install', platform: 'ios', pushSupported: false })).toBe('none')
-    expect(decide({ installOffer: 'inapp', platform: 'inapp' })).toBe('none')
+    expect(decide({ installOffer: 'install', refusal: 'install' })).toBe('none')
+    expect(decide({ installOffer: 'inapp', refusal: 'inapp' })).toBe('none')
   })
 
-  it('stays quiet in a webview even once the install card is snoozed', () => {
-    // The snooze silences the install card, not the webview's inability to
-    // subscribe at any scroll position.
-    expect(decide({ platform: 'inapp', installOffer: 'none' })).toBe('none')
-  })
-
-  it('stays quiet in a browser that has no push to offer', () => {
-    expect(decide({ pushSupported: false })).toBe('none')
+  it('stays quiet for every device that cannot subscribe at all', () => {
+    // The refusals outlive the install card: a snooze silences that card, not a
+    // webview's inability to subscribe at any scroll position.
+    for (const refusal of ['inapp', 'install', 'unsupported'] as const) {
+      expect(decide({ refusal, installOffer: 'none' })).toBe('none')
+    }
   })
 
   it('says where to unblock rather than offering a button that cannot work', () => {
@@ -78,8 +69,18 @@ describe('decideNotificationsNudge', () => {
   })
 
   it('speaks on a plain Android tab, where push works without installing', () => {
-    // Deliberately not gated on `installed`: what matters is whether this
-    // browser can hold a subscription, and on Android a tab can.
-    expect(decide({ platform: 'android', installOffer: 'none' })).toBe('enable')
+    // Deliberately not gated on "installed": what matters is whether this
+    // browser can hold a subscription, and on Android a tab can. Composed with
+    // the real refusal rather than a hand-written `null`, so this stays true
+    // only while `push-refusal.ts` agrees.
+    const refusal = pushRefusal({ platform: 'android', pushSupported: true })
+    expect(decide({ refusal, installOffer: 'none' })).toBe('enable')
+  })
+
+  it('is the same refusal Profil renders its three Notes from', () => {
+    // The whole point of the shared rule: an iPhone that is still a Safari tab
+    // is told to install on both screens, never offered a dead switch on one.
+    expect(pushRefusal({ platform: 'ios', pushSupported: false })).toBe('install')
+    expect(decide({ refusal: pushRefusal({ platform: 'ios', pushSupported: false }) })).toBe('none')
   })
 })

@@ -7,7 +7,7 @@ import { loadHomeCard, loadHomeScreen } from '@/lib/app/home-data'
 import { homeCardLabel, type HomeCard, type HomeCardable } from '@/lib/app/home-screen'
 import { ONBOARDING_COOKIE, needsOnboarding } from '@/lib/app/onboarding'
 import { APP_STRINGS } from '@/lib/app/strings'
-import { resolveAppViewer, type AppViewer } from '@/lib/app/viewer'
+import { isDancer, resolveAppViewer, type AppViewer } from '@/lib/app/viewer'
 import { vapidPublicKey } from '@/lib/push/vapid'
 import { Card, Chip, Hero, List, ListRow, Podium, Ring, Tile, Tiles, Trophy } from '../ui'
 import { AppShell } from '../AppShell'
@@ -77,7 +77,7 @@ export default async function AppHomePage() {
   const welcome = needsOnboarding({
     signedIn: viewer.signedIn,
     denied: viewer.access.kind === 'denied',
-    hasMember: viewer.me != null,
+    hasMember: isDancer(viewer),
     cookiePresent: jar.has(ONBOARDING_COOKIE),
   })
 
@@ -199,7 +199,7 @@ export default async function AppHomePage() {
           — so it goes only when the subscription exists. `viewer.me != null` is
           the same gate the Dobrodošlica uses: a roster push never reaches a
           blagajna, a partner or `tehnika`, so it has nothing to tell them. */}
-      <NotificationsNudge isDancer={viewer.me != null} vapidPublicKey={vapidPublicKey()} />
+      <NotificationsNudge isDancer={isDancer(viewer)} vapidPublicKey={vapidPublicKey()} />
 
       {home.cards.length > 0 && <Tiles>{home.cards.map(renderTile)}</Tiles>}
 

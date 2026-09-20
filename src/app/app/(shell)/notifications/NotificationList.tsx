@@ -88,14 +88,7 @@ export function NotificationList({
     })
   }
 
-  if (rows.length === 0) {
-    return (
-      <Card className="app__empty">
-        <h2>{S.emptyTitle}</h2>
-        <p>{S.emptyBody}</p>
-      </Card>
-    )
-  }
+  if (rows.length === 0) return <InboxEmpty />
 
   return (
     <section className="app__more-group">
@@ -145,5 +138,23 @@ export function NotificationList({
         })}
       </List>
     </section>
+  )
+}
+
+/**
+ * An inbox with nothing in it.
+ *
+ * Exported since #682, because on a device that is not subscribed this card's
+ * promise ("javit ćemo ti") is not true, and the page hands it to the
+ * notifications widget to show INSTEAD of. Two cards, one saying we will tell
+ * you and the other saying this phone will not hear it, is the screen arguing
+ * with itself.
+ */
+export function InboxEmpty() {
+  return (
+    <Card className="app__empty">
+      <h2>{S.emptyTitle}</h2>
+      <p>{S.emptyBody}</p>
+    </Card>
   )
 }

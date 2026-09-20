@@ -1868,9 +1868,10 @@ export const APP_STRINGS = {
      * reading this on a laptop. The sentence is about the device in the hand,
      * never about what they have or have not got round to.
      *
-     * The body is the switch's `switchOff` promise rather than a second way of
-     * saying the same thing, so whichever screen a dancer meets it on tells
-     * them the same thing is waiting for them.
+     * The body promises what the switch's `switchOff` promises and adds the
+     * second half of it, because this card is met by somebody who has not been
+     * to Profil and does not know what they are turning on. The refusal
+     * sentence is not restated at all: `denied` above is reused verbatim.
      */
     nudgeTitle: 'Na ovom uređaju ne primaš obavijesti',
     nudgeBody: 'Uključi i javit ćemo ti kad fali ljudi i kad treba javiti dolazak.',

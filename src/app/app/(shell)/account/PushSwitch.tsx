@@ -1,13 +1,13 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { BellOff } from 'lucide-react'
 import { APP_STRINGS } from '@/lib/app/strings'
-import type { AppPlatform } from '@/lib/app/platform'
+import { pushRefusal } from '@/lib/app/push-refusal'
 import { Note, Switch } from '../../ui'
-import { hasPushSubscription, subscribeToPush, unsubscribeFromPush } from '../../push-client'
-import { pushSupported, readPlatform } from '../../use-install'
+import { subscribeToPush, unsubscribeFromPush } from '../../push-client'
+import { usePlatform, usePushFacts } from '../../use-install'
 
 // Does this phone ring (#569, Q49)?
 //
@@ -31,40 +31,19 @@ import { pushSupported, readPlatform } from '../../use-install'
 // inside Viber, a browser with no `PushManager` — is not a phone whose switch is
 // off. It is a phone with a thing to do first, so it gets the sentence that says
 // what, and the iPhone's links to the install guide that does it.
+//
+// The refusal itself moved out to `lib/app/push-refusal.ts` when #682 gave
+// Početna a card that has to agree with this switch about which phone can ring.
 
 const S = APP_STRINGS.push
 
-type State = 'looking' | 'off' | 'on'
-
-/** Why this device has no switch at all, or null when it has one. */
-function blockedReason(platform: AppPlatform | null): 'install' | 'inapp' | 'unsupported' | null {
-  if (platform === 'inapp') return 'inapp'
-  // An iPhone exposes no `PushManager` until the app is on the home screen, so
-  // on iOS the install IS the notification switch.
-  if (platform === 'ios') return 'install'
-  return pushSupported() ? null : 'unsupported'
-}
-
 export function PushSwitch({ vapidPublicKey }: { vapidPublicKey?: string | null }) {
-  const [platform, setPlatform] = useState<AppPlatform | null>(null)
-  const [state, setState] = useState<State>('looking')
+  const platform = usePlatform()
+  const facts = usePushFacts(vapidPublicKey)
+  /** What a toggle made it, until the next look. `null` follows the browser. */
+  const [toggled, setToggled] = useState<boolean | null>(null)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    let cancelled = false
-    const look = async () => {
-      const here = readPlatform()
-      const subscribed = vapidPublicKey ? await hasPushSubscription() : false
-      if (cancelled) return
-      setPlatform(here)
-      setState(subscribed === true ? 'on' : 'off')
-    }
-    void look()
-    return () => {
-      cancelled = true
-    }
-  }, [vapidPublicKey])
 
   async function toggle(next: boolean) {
     if (busy) return
@@ -72,22 +51,25 @@ export function PushSwitch({ vapidPublicKey }: { vapidPublicKey?: string | null 
     setError(null)
     if (next) {
       const result = await subscribeToPush(vapidPublicKey)
-      if (result === 'subscribed') setState('on')
+      if (result === 'subscribed') setToggled(true)
       else setError(result === 'denied' ? S.denied : S.failed)
     } else {
       // Only a successful unsubscribe turns the switch off (#457 review): a
       // failure that flipped it anyway would tell a dancer the phone is quiet
       // while it keeps ringing, and leave them no button to try again with.
       const ok = await unsubscribeFromPush()
-      if (ok) setState('off')
+      if (ok) setToggled(false)
       else setError(S.failed)
     }
     setBusy(false)
   }
 
-  if (state === 'looking') return null
+  if (facts.state === 'looking') return null
 
-  const blocked = vapidPublicKey ? blockedReason(platform) : 'unsupported'
+  const on = toggled ?? facts.subscribed === true
+  const blocked = vapidPublicKey
+    ? pushRefusal({ platform, pushSupported: facts.supported })
+    : 'unsupported'
 
   if (blocked === 'install') {
     return (
@@ -108,11 +90,11 @@ export function PushSwitch({ vapidPublicKey }: { vapidPublicKey?: string | null 
   return (
     <>
       <Switch
-        checked={state === 'on'}
+        checked={on}
         onChange={toggle}
         busy={busy}
         label={S.switchLabel}
-        note={state === 'on' ? S.switchOn : S.switchOff}
+        note={on ? S.switchOn : S.switchOff}
       />
       {error && <Note>{error}</Note>}
     </>
