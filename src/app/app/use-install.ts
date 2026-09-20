@@ -28,7 +28,7 @@ export interface BeforeInstallPromptEvent extends Event {
  * push call, so "can this browser subscribe at all" has ONE answer. The banner
  * reads it from here because that is where the rest of its facts live.
  */
-export { pushSupported } from './push-client'
+export { notificationPermission, pushSupported } from './push-client'
 
 /**
  * Is this browser running as an installed app?

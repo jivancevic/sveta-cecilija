@@ -1824,10 +1824,11 @@ export const APP_STRINGS = {
    * Push (#431): the banner on `/app`, the per-device switch and the voditelj's
    * manual alarm button.
    *
-   * An uninstalled iPhone never reaches these strings: Safari exposes no
-   * `PushManager` outside a home screen app, so `decideInstallStep` sends that
-   * device to the install copy above instead, and a button that silently does
-   * nothing is never rendered (#430, story 2; #455).
+   * An uninstalled iPhone never reaches most of these strings: Safari exposes
+   * no `PushManager` outside a home screen app, so that device is sent to the
+   * install copy above instead, and a button that silently does nothing is
+   * never rendered (#430, story 2; #455). The `nudge*` strings below are the
+   * same rule written once more for Početna (#682).
    */
   push: {
     title: 'Uključi obavijesti',
@@ -1859,6 +1860,22 @@ export const APP_STRINGS = {
     inapp:
       'Otvorio si aplikaciju unutar druge aplikacije, pa obavijesti nisu moguće. Otvori je u Safariju ili Chromeu.',
     unsupported: 'Ovaj preglednik ne podržava obavijesti.',
+    /**
+     * The widget on Početna, and in Obavijesti's empty state (#682).
+     *
+     * "Na ovom uređaju" for the switch's own reason, and here it carries more
+     * weight: the person may well have notifications on their phone and be
+     * reading this on a laptop. The sentence is about the device in the hand,
+     * never about what they have or have not got round to.
+     *
+     * The body is the switch's `switchOff` promise rather than a second way of
+     * saying the same thing, so whichever screen a dancer meets it on tells
+     * them the same thing is waiting for them.
+     */
+    nudgeTitle: 'Na ovom uređaju ne primaš obavijesti',
+    nudgeBody: 'Uključi i javit ćemo ti kad fali ljudi i kad treba javiti dolazak.',
+    nudgeAction: 'Uključi obavijesti',
+    nudgeActing: 'Uključujem…',
   },
 
   /**
