@@ -3,19 +3,10 @@
 import { useCallback, useState } from 'react'
 import Link from 'next/link'
 import { Download, RefreshCw } from 'lucide-react'
-import { decideInstallOffer } from '@/lib/app/install-nudge'
-import { chromeIntentUrl } from '@/lib/app/platform'
 import { APP_STRINGS } from '@/lib/app/strings'
+import { ChromeRoute } from './ChromeRoute'
 import { Button, Card, Note } from './ui'
-import {
-  snooze,
-  snoozeReinstall,
-  useInstaller,
-  useInstallPrompt,
-  usePlatform,
-  useReinstallSnoozed,
-  useSnoozed,
-} from './use-install'
+import { snooze, snoozeReinstall, useInstallOffer, useInstallPrompt } from './use-install'
 
 // The install offer on Početna (#616).
 //
@@ -42,15 +33,11 @@ import {
 const S = APP_STRINGS.install
 
 export function InstallNudge() {
-  const platform = usePlatform()
-  const installer = useInstaller()
   const { canPrompt, install } = useInstallPrompt()
-  const snoozed = useSnoozed()
-  const reinstallSnoozed = useReinstallSnoozed()
+  const decided = useInstallOffer(canPrompt)
   const [busy, setBusy] = useState(false)
   const [failed, setFailed] = useState(false)
-  const [copied, setCopied] = useState(false)
-  /** This tap installed it. `platform` is read once, so the card closes itself. */
+  /** This tap installed it. The offer is read once, so the card closes itself. */
   const [installed, setInstalled] = useState(false)
 
   // No local state for the snooze: `snooze()` writes localStorage and tells the
@@ -70,22 +57,9 @@ export function InstallNudge() {
     else setFailed(!canPrompt)
   }, [install, canPrompt])
 
-  const offer =
-    platform && installer && !installed
-      ? decideInstallOffer({ platform, snoozed, canPrompt, installer, reinstallSnoozed })
-      : 'none'
+  const offer = installed ? 'none' : (decided ?? 'none')
   if (offer === 'none') return null
-
-  if (offer === 'reinstall') {
-    return (
-      <ReinstallCard
-        copied={copied}
-        onCopy={() => {
-          void copyGuideLink().then(setCopied)
-        }}
-      />
-    )
-  }
+  if (offer === 'reinstall') return <ReinstallCard />
 
   const webview = offer === 'inapp'
 
@@ -125,16 +99,6 @@ export function InstallNudge() {
   )
 }
 
-/** The guide's address, copied for a browser that ignores the intent. */
-async function copyGuideLink(): Promise<boolean> {
-  try {
-    await navigator.clipboard.writeText(`${window.location.origin}/app/install`)
-    return true
-  } catch {
-    return false
-  }
-}
-
 /**
  * "Ova ikona je instalirana iz drugog preglednika" (#684).
  *
@@ -149,15 +113,11 @@ async function copyGuideLink(): Promise<boolean> {
  * chore somebody may reasonably put off, and asking again tomorrow would teach
  * them to stop reading the card.
  *
- * The way on is the guide's own pair (#668): an `intent://` link that opens
- * Chrome and nothing else, and a copy button beside it, because a browser that
- * does not understand the intent does nothing at all, silently. The intent
- * points at `/app/install` rather than `/app`, because Chrome is a different
- * browser with no session in it and nobody installs from a login screen.
+ * The way on is the guide's own pair, rendered by the guide's own component
+ * (`ChromeRoute`): the app has one way of handing somebody Chrome, and it is
+ * not written twice.
  */
-function ReinstallCard({ copied, onCopy }: { copied: boolean; onCopy: () => void }) {
-  const chromeUrl = chromeIntentUrl(`${window.location.origin}/app/install`)
-
+function ReinstallCard() {
   return (
     <Card className="app__nudge">
       <div className="app__nudge-head">
@@ -171,23 +131,11 @@ function ReinstallCard({ copied, onCopy }: { copied: boolean; onCopy: () => void
         </div>
       </div>
 
-      {copied && <Note>{S.playProtectCopied}</Note>}
-
-      <div className="ui-btns">
-        {chromeUrl && (
-          // A plain anchor: `intent://` is Android's and Next's Link would try
-          // to route it.
-          <a className="ui-btn ui-btn--ghost" href={chromeUrl}>
-            {S.playProtectOpen}
-          </a>
-        )}
-        <Button variant="ghost" onClick={onCopy}>
-          {S.playProtectCopy}
-        </Button>
+      <ChromeRoute look="card" renderNote={(text) => <Note>{text}</Note>}>
         <Button variant="link" onClick={() => snoozeReinstall()}>
           {S.snooze}
         </Button>
-      </div>
+      </ChromeRoute>
     </Card>
   )
 }

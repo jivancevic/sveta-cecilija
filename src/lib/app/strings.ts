@@ -1831,10 +1831,21 @@ export const APP_STRINGS = {
      */
     playProtectBody:
       'Neki Androidi jave "Nesigurna aplikacija blokirana" kad instalaciju pokreće preglednik koji nije Chrome. To nije do Cecilije: aplikaciju u tom slučaju sastavlja sam preglednik, a Android takve odbija.',
-    playProtectHow: 'Otvori ovu stranicu u Chromeu i instaliraj odande. Chrome ide drugim putem i Android ga pušta.',
-    playProtectOpen: 'Otvori u Chromeu',
-    playProtectCopy: 'Kopiraj poveznicu',
-    playProtectCopied: 'Poveznica je kopirana. Zalijepi je u Chrome.',
+    /**
+     * What Chrome does differently, and NOT a second "open this in Chrome":
+     * the lead above already says that, and #684 review caught the same
+     * instruction standing twice in one section.
+     */
+    playProtectHow: 'Chrome ide drugim putem: aplikaciju mu sastavlja Google, pa je Android pušta.',
+    /**
+     * The way into Chrome, and the copy button for a browser that ignores the
+     * intent. Named for the route rather than for Play Protect since #684:
+     * the guide and the reinstall card both render this pair, and only one of
+     * them is about Play Protect at all.
+     */
+    chromeOpen: 'Otvori u Chromeu',
+    chromeCopy: 'Kopiraj poveznicu',
+    chromeCopied: 'Poveznica je kopirana. Zalijepi je u Chrome.',
 
     /**
      * The card for somebody who is ALREADY in the wrong Cecilija (#684).
@@ -1847,7 +1858,7 @@ export const APP_STRINGS = {
      */
     reinstallTitle: 'Ova ikona je instalirana iz drugog preglednika',
     reinstallBody:
-      'Zato ima svoju prijavu, svoje obavijesti i svoje postavke, odvojene od Chromea. Što namjestiš u Chromeu, ovdje se ne vidi.',
+      'Zato ima svoju prijavu, svoje obavijesti i svoje postavke, odvojene od preglednika u kojem inače otvaraš Ceciliju. Što namjestiš ondje, ovdje se ne vidi.',
     reinstallHow:
       'Obriši ikonu s ekrana, otvori Ceciliju u Chromeu i instaliraj je odande. Obavijesti nakon toga treba ponovo uključiti.',
   },

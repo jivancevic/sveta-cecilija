@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState, useSyncExternalStore } from 'react'
+import { decideInstallOffer, type InstallOffer } from '@/lib/app/install-nudge'
 import {
   androidInstaller,
   detectPlatform,
@@ -182,6 +183,27 @@ export function useSnoozed(): boolean {
 /** The reinstall card's own snooze, read the same way (#684). */
 export function useReinstallSnoozed(): boolean {
   return useSyncExternalStore(subscribeToSnooze, isReinstallSnoozed, alwaysSnoozed)
+}
+
+/**
+ * The install card's answer for THIS browser, or `null` while it is unread.
+ *
+ * Both screens that render it — the card itself and #682's notifications
+ * widget, which goes quiet whenever the card is saying something — used to
+ * gather the same five facts and guard the same two nulls apiece. One reader,
+ * so a sixth fact is added in one place rather than remembered in two.
+ *
+ * `canPrompt` is the caller's, because `useInstallPrompt` also hands back the
+ * `install()` the card needs and asking for it twice would park two listeners
+ * on one event.
+ */
+export function useInstallOffer(canPrompt: boolean): InstallOffer | null {
+  const platform = usePlatform()
+  const installer = useInstaller()
+  const snoozed = useSnoozed()
+  const reinstallSnoozed = useReinstallSnoozed()
+  if (platform === null || installer === null) return null
+  return decideInstallOffer({ platform, snoozed, canPrompt, installer, reinstallSnoozed })
 }
 
 const alwaysSnoozed = () => true

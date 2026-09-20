@@ -2,20 +2,12 @@
 
 import { useCallback, useState } from 'react'
 import { BellOff } from 'lucide-react'
-import { decideInstallOffer } from '@/lib/app/install-nudge'
 import { decideNotificationsNudge } from '@/lib/app/notifications-nudge'
 import { pushRefusal } from '@/lib/app/push-refusal'
 import { APP_STRINGS } from '@/lib/app/strings'
 import { Button, Card, Note } from './ui'
 import { notificationPermission, subscribeToPush } from './push-client'
-import {
-  useInstaller,
-  useInstallPrompt,
-  usePlatform,
-  usePushFacts,
-  useReinstallSnoozed,
-  useSnoozed,
-} from './use-install'
+import { useInstallOffer, useInstallPrompt, usePlatform, usePushFacts } from './use-install'
 
 // "Na ovom uređaju ne primaš obavijesti" (#682).
 //
@@ -57,10 +49,8 @@ export function NotificationsNudge({
   fallback?: React.ReactNode
 }) {
   const platform = usePlatform()
-  const installer = useInstaller()
-  const snoozed = useSnoozed()
-  const reinstallSnoozed = useReinstallSnoozed()
   const { canPrompt } = useInstallPrompt()
+  const installOffer = useInstallOffer(canPrompt)
   const facts = usePushFacts(vapidPublicKey)
   /** This tap subscribed. `facts` is read once, so the card closes itself. */
   const [subscribed, setSubscribed] = useState(false)
@@ -86,25 +76,19 @@ export function NotificationsNudge({
     if (notificationPermission() !== 'denied') setError(S.failed)
   }, [busy, vapidPublicKey])
 
-  if (facts.state === 'looking' || platform === null || installer === null)
+  if (facts.state === 'looking' || platform === null || installOffer === null)
     return <>{fallback}</>
 
   const nudge = subscribed
     ? 'none'
     : decideNotificationsNudge({
         isDancer,
-        // #684's `reinstall` reaches this rule as "the install card is saying
+        // #684's `reinstall` reaches the rule as "the install card is saying
         // something", which is the right answer: a dancer about to delete this
         // icon will lose the subscription with it, so asking them to switch
         // notifications on in the app they are leaving would be work undone
         // five minutes later. The card they reinstall into says it instead.
-        installOffer: decideInstallOffer({
-          platform,
-          snoozed,
-          canPrompt,
-          installer,
-          reinstallSnoozed,
-        }),
+        installOffer,
         refusal: pushRefusal({ platform, pushSupported: facts.supported }),
         subscribed: facts.subscribed,
         permission: facts.permission,

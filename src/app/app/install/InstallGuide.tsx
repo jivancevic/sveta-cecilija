@@ -2,10 +2,11 @@
 
 import Link from 'next/link'
 import { useState } from 'react'
-import { androidInstaller, chromeIntentUrl, type AppPlatform } from '@/lib/app/platform'
+import { type AppPlatform } from '@/lib/app/platform'
 import { APP_STRINGS } from '@/lib/app/strings'
+import { ChromeRoute } from '../ChromeRoute'
 import { InstallSteps, type StepPlatform } from '../InstallSteps'
-import { useInstallPrompt, usePlatform, webviewHostIsIos } from '../use-install'
+import { useInstaller, useInstallPrompt, usePlatform, webviewHostIsIos } from '../use-install'
 
 // The full-screen install guide (#455).
 //
@@ -35,6 +36,9 @@ function initialDevice(platform: AppPlatform): StepPlatform {
 
 export function InstallGuide() {
   const detected = usePlatform()
+  // Which install route this browser has, read the same way the platform is
+  // (#684): one reader for the UA, rather than a second spelling in render.
+  const installer = useInstaller()
   // A completed install is the one thing that moves the platform under us, and
   // it is our own doing rather than something to detect again.
   const [installedNow, setInstalledNow] = useState(false)
@@ -72,16 +76,7 @@ export function InstallGuide() {
 
   const installed = platform === 'installed'
   const inapp = platform === 'inapp'
-  // Read here rather than in state: it is a fact about the browser, it cannot
-  // change while the page is open, and `window` is safe by now because the
-  // component has already returned null until the platform was read.
-  const ownApk = androidInstaller(navigator.userAgent) === 'own-apk'
-  // THIS page, not `/app` (#668 review). Chrome is a different browser with no
-  // session in it, so `/app` there is the login screen and the dancer cannot
-  // install from a login screen. `/app/install` is one of the two `/app` pages
-  // deliberately outside the access decision, because it is the rehearsal QR's
-  // target — which is exactly the property this needs.
-  const chromeUrl = chromeIntentUrl(`${window.location.origin}/app/install`)
+  const ownApk = installer === 'own-apk'
 
   return (
     <>
@@ -140,27 +135,10 @@ export function InstallGuide() {
           <p className="app__install-how">{APP_STRINGS.install.otherBrowserHow}</p>
           <p className="app__install-how">{APP_STRINGS.install.playProtectBody}</p>
           <p className="app__install-how">{APP_STRINGS.install.playProtectHow}</p>
-          <div className="app__hint-actions">
-            {/*
-              A plain anchor, deliberately: `intent://` is Android's, Next's
-              Link would try to route it, and a browser that does not understand
-              it must simply do nothing rather than throw. The copy button
-              beside it is the answer for that browser.
-            */}
-            {chromeUrl && (
-              <a className="app__button app__button--small" href={chromeUrl}>
-                {APP_STRINGS.install.playProtectOpen}
-              </a>
-            )}
-            <button
-              type="button"
-              className="app__button app__button--small"
-              onClick={() => copyLink('/app/install')}
-            >
-              {APP_STRINGS.install.playProtectCopy}
-            </button>
-          </div>
-          {copied && <p className="app__install-how">{APP_STRINGS.install.playProtectCopied}</p>}
+          <ChromeRoute
+            look="guide"
+            renderNote={(text) => <p className="app__install-how">{text}</p>}
+          />
         </section>
       )}
 
