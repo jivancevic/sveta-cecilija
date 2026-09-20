@@ -276,3 +276,21 @@ async function unreadCountOrZero(payload: unknown, userId: string | number): Pro
     return 0
   }
 }
+
+/**
+ * Whether a roster push could ever reach this login (#682).
+ *
+ * `me` is `access.self`, which is already "a linked, active moreškant", so this
+ * is that fact under the name the screens actually use it by. Three places were
+ * spelling `viewer.me != null` and calling the answer three things — Početna's
+ * `hasMember`, and the notifications widget on two screens — which is one
+ * sentence with several names, and the next one would have invented a fourth.
+ *
+ * It is NOT `isDancerLogin` (`access/permissions.ts`), which asks whether the
+ * permission set is a dancer's. A voditelj holds `moreska` and may or may not
+ * dance; an invited dancer holds `moreskant` and may not be linked yet. Push
+ * goes to the ROW, so this is the row's question.
+ */
+export function isDancer(viewer: Pick<AppViewer, 'me'>): boolean {
+  return viewer.me != null
+}

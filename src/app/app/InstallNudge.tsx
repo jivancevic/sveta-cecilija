@@ -65,9 +65,9 @@ export function InstallNudge() {
   const webview = offer === 'inapp'
 
   return (
-    <Card className="app__install-nudge">
-      <div className="app__install-nudge-head">
-        <span className="app__install-nudge-icon" aria-hidden="true">
+    <Card className="app__nudge">
+      <div className="app__nudge-head">
+        <span className="app__nudge-icon" aria-hidden="true">
           <Download size={20} strokeWidth={1.75} />
         </span>
         <div>
@@ -76,7 +76,7 @@ export function InstallNudge() {
         </div>
       </div>
 
-      {failed && <p className="app__install-nudge-failed">{S.failed}</p>}
+      {failed && <p className="app__nudge-failed">{S.failed}</p>}
 
       {/* Ghost and not primary, deliberately (Button's own rule: one primary per
           screen, and it is the thing you came to do). Nobody opens Početna to

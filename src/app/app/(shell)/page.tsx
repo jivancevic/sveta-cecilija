@@ -7,11 +7,13 @@ import { loadHomeCard, loadHomeScreen } from '@/lib/app/home-data'
 import { homeCardLabel, type HomeCard, type HomeCardable } from '@/lib/app/home-screen'
 import { ONBOARDING_COOKIE, needsOnboarding } from '@/lib/app/onboarding'
 import { APP_STRINGS } from '@/lib/app/strings'
-import { resolveAppViewer, type AppViewer } from '@/lib/app/viewer'
+import { isDancer, resolveAppViewer, type AppViewer } from '@/lib/app/viewer'
+import { vapidPublicKey } from '@/lib/push/vapid'
 import { Card, Chip, Hero, List, ListRow, Podium, Ring, Tile, Tiles, Trophy } from '../ui'
 import { AppShell } from '../AppShell'
 import { deniedFor } from '../DeniedPage'
 import { InstallNudge } from '../InstallNudge'
+import { NotificationsNudge } from '../NotificationsNudge'
 import { Answer } from './moreska/Answer'
 import { StateBar } from './moreska/StateBar'
 import { HeroHalves } from '../HeroHalves'
@@ -75,7 +77,7 @@ export default async function AppHomePage() {
   const welcome = needsOnboarding({
     signedIn: viewer.signedIn,
     denied: viewer.access.kind === 'denied',
-    hasMember: viewer.me != null,
+    hasMember: isDancer(viewer),
     cookiePresent: jar.has(ONBOARDING_COOKIE),
   })
 
@@ -188,6 +190,16 @@ export default async function AppHomePage() {
       )}
 
       <InstallNudge />
+
+      {/* "Na ovom uređaju ne primaš obavijesti" (#682). Under the install card
+          and never beside it: its rule returns `none` while that one is
+          showing, because an uninstalled iPhone would otherwise be told to
+          install the app twice in a row. Unlike that card it cannot be put off
+          — a dancer whose phone does not ring does not learn about the evening
+          — so it goes only when the subscription exists. `viewer.me != null` is
+          the same gate the Dobrodošlica uses: a roster push never reaches a
+          blagajna, a partner or `tehnika`, so it has nothing to tell them. */}
+      <NotificationsNudge isDancer={isDancer(viewer)} vapidPublicKey={vapidPublicKey()} />
 
       {home.cards.length > 0 && <Tiles>{home.cards.map(renderTile)}</Tiles>}
 

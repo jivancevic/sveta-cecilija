@@ -108,6 +108,24 @@ function urlBase64ToBytes(base64: string): ArrayBuffer {
   return out.buffer as ArrayBuffer
 }
 
+/**
+ * What the browser says about the notification permission, or null where there
+ * is no Notification API to ask (#682).
+ *
+ * Separate from `hasPushSubscription` because they answer different questions
+ * and disagree in the case that matters: permission survives an unsubscribe, so
+ * a phone that reinstalled the app reads `granted` with no subscription at all.
+ * Only `denied` changes what a screen may offer, which is why the widget reads
+ * it and the switch, which is already inside the settings, does not.
+ */
+export function notificationPermission(): NotificationPermission | null {
+  try {
+    return typeof Notification === 'undefined' ? null : Notification.permission
+  } catch {
+    return null
+  }
+}
+
 /** Does this browser have the three APIs a subscription needs? */
 export function pushSupported(): boolean {
   return (

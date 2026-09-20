@@ -28,7 +28,8 @@ export interface BeforeInstallPromptEvent extends Event {
  * push call, so "can this browser subscribe at all" has ONE answer. The banner
  * reads it from here because that is where the rest of its facts live.
  */
-export { pushSupported } from './push-client'
+export { notificationPermission, pushSupported } from './push-client'
+import { hasPushSubscription, notificationPermission, pushSupported } from './push-client'
 
 /**
  * Is this browser running as an installed app?
@@ -172,4 +173,55 @@ export function useInstallPrompt() {
   }, [event])
 
   return { canPrompt: event !== null, install }
+}
+
+/**
+ * Everything the browser knows about push on THIS device, read once (#682).
+ *
+ * Two screens ask the same four questions — Profil's switch and Početna's
+ * widget — and they used to ask them with the same twelve lines of effect
+ * apiece. The questions are asynchronous (only the subscription is, but the
+ * others are worthless without it) and they are facts of the browser, so they
+ * are read together and reported together: a screen that had the permission but
+ * not yet the subscription would render a frame of the wrong answer.
+ *
+ * `looking` is a state and not a flag, because "we have not asked yet" is a
+ * third thing and neither screen may draw either answer during it — a switch
+ * that shows "isključeno" for a beat to somebody who turned it on last week is
+ * a lie with a spinner.
+ */
+export type PushFacts =
+  | { state: 'looking' }
+  | {
+      state: 'known'
+      /** THIS browser holds a subscription; `null` when it will not say. */
+      subscribed: boolean | null
+      permission: NotificationPermission | null
+      supported: boolean
+    }
+
+export function usePushFacts(vapidPublicKey: string | null | undefined): PushFacts {
+  const [facts, setFacts] = useState<PushFacts>({ state: 'looking' })
+
+  useEffect(() => {
+    let cancelled = false
+    const look = async () => {
+      // No key means the deployment cannot send at all, which is a "no" a
+      // browser would never give us; asking it anyway would be theatre.
+      const subscribed = vapidPublicKey ? await hasPushSubscription() : false
+      if (cancelled) return
+      setFacts({
+        state: 'known',
+        subscribed,
+        permission: notificationPermission(),
+        supported: pushSupported(),
+      })
+    }
+    void look()
+    return () => {
+      cancelled = true
+    }
+  }, [vapidPublicKey])
+
+  return facts
 }

@@ -2,10 +2,8 @@ import { describe, expect, it } from 'vitest'
 import {
   androidInstaller,
   chromeIntentUrl,
-  decideInstallStep,
   detectPlatform,
   type AppPlatform,
-  type InstallStep,
 } from './platform'
 
 // Real UA strings, kept verbatim: the point of this file is that a fragment
@@ -123,37 +121,5 @@ describe('chromeIntentUrl', () => {
 
   it('refuses an address carrying a fragment, which would end the intent early', () => {
     expect(chromeIntentUrl('https://moreska.eu/app#Intent;package=com.evil;end')).toBe(null)
-  })
-})
-
-describe('decideInstallStep', () => {
-  const base = { platform: 'android' as AppPlatform, pushSupported: true, subscribed: false, snoozed: false }
-
-  const cases: Array<[string, Partial<typeof base>, InstallStep]> = [
-    // The bug this file exists for: an Android tab HAS a PushManager, so the
-    // old two-question order never reached the install offer there.
-    ['Android tab, nothing done yet', {}, 'push'],
-    ['Android tab, already subscribed', { subscribed: true }, 'on'],
-    // iOS in a tab: Safari exposes no PushManager at all, so "install" IS the
-    // notification answer rather than a separate nicety.
-    ['iPhone Safari tab', { platform: 'ios', pushSupported: false }, 'install'],
-    ['iPhone home screen app', { platform: 'installed', pushSupported: true }, 'push'],
-    ['iPhone home screen app, subscribed', { platform: 'installed', subscribed: true }, 'on'],
-    // A webview cannot install and cannot subscribe: the only move is out.
-    ['Viber webview', { platform: 'inapp', pushSupported: false }, 'inapp'],
-    ['webview that claims push support', { platform: 'inapp' }, 'inapp'],
-    // "Kasnije" silences every OFFER, and nothing else.
-    ['snoozed Android tab', { snoozed: true }, 'none'],
-    ['snoozed iPhone tab', { platform: 'ios', pushSupported: false, snoozed: true }, 'none'],
-    ['snoozed webview', { platform: 'inapp', pushSupported: false, snoozed: true }, 'none'],
-    ['snoozed but subscribed still shows the off switch', { snoozed: true, subscribed: true }, 'on'],
-    // Installed and no push anywhere: there is nothing left to ask.
-    ['installed browser without push', { platform: 'installed', pushSupported: false }, 'none'],
-    // A desktop browser without push is still offered the install.
-    ['desktop without push', { platform: 'desktop', pushSupported: false }, 'install'],
-  ]
-
-  it.each(cases)('%s → %s', (_name, patch, expected) => {
-    expect(decideInstallStep({ ...base, ...patch })).toBe(expected)
   })
 })

@@ -142,42 +142,6 @@ export function chromeIntentUrl(url: string): string | null {
   return `intent://${rest}#Intent;scheme=https;package=com.android.chrome;end`
 }
 
-/** What the banner offers right now. `none` renders nothing at all. */
-export type InstallStep = 'inapp' | 'install' | 'push' | 'on' | 'none'
-
-export interface StepInput {
-  platform: AppPlatform
-  /** `serviceWorker` + `PushManager` + `Notification` all present. */
-  pushSupported: boolean
-  /** THIS browser profile holds a push subscription. Never a server fact. */
-  subscribed: boolean
-  /** "Kasnije" is still in force on this device. */
-  snoozed: boolean
-}
-
-/**
- * THE banner decision.
- *
- * Read it as one sentence: a device that already rings needs no offer; a device
- * whose person said "later" gets silence until tomorrow; a webview gets the way
- * out; a browser with no push at all is asked to install, because on iOS that
- * IS the notification switch (Safari exposes no `PushManager` outside a home
- * screen app); everything else is offered notifications, which on Android work
- * in a plain tab and make installing a bonus rather than a toll.
- */
-export function decideInstallStep({
-  platform,
-  pushSupported,
-  subscribed,
-  snoozed,
-}: StepInput): InstallStep {
-  if (subscribed) return 'on'
-  if (snoozed) return 'none'
-  if (platform === 'inapp') return 'inapp'
-  if (!pushSupported) return platform === 'installed' ? 'none' : 'install'
-  return 'push'
-}
-
 /**
  * The `beforeinstallprompt` capture, injected by the `/app` layout.
  *

@@ -448,7 +448,7 @@ Three facts decide what `/app` offers, and all three are pure functions over bro
 
 - **`detectPlatform`** → `installed | inapp | ios | android | desktop`. `standalone` wins over every UA. An **in-app browser** (Viber, WhatsApp, Messenger, Instagram, any Android WebView) is its own platform, not a phone: the share sheet it shows belongs to the host app and has no "Add to Home Screen" at any scroll position, so the only useful thing to say there is "open this in Safari". That dead end is the most common way an invitation fails, because a link travels by Viber. iPadOS reports a Macintosh UA, so touch points are the tell.
 - **`decideInstallOffer`** (`src/lib/app/install-nudge.ts`, #616) → `none | install | inapp`, and it is the LIVE rule: a home screen app is offered nothing, snoozed or not, because `installed` is what the whole rule exists to read; "Kasnije" buys silence until tomorrow; a webview gets the way out. The clause that is not obvious is the desktop one — a desktop browser that has never fired `beforeinstallprompt` is Safari or Firefox, where the guide's "ikona u adresnoj traci" names a control that is not there, so on a desktop the browser's own capability is the permission to ask. A phone always has the three taps.
-- **`decideInstallStep`** → `inapp | install | push | on | none`. **Dead code: nothing calls it** (only `platform.test.ts` does). It was the retired banner's rule, which answered install and push in one breath; push is a switch on Profil now (#569) and the install is `decideInstallOffer`'s. Don't wire it back up — the two would disagree about the same device.
+- **`pushRefusal`** (`src/lib/app/push-refusal.ts`, extracted #682) → `install | inapp | unsupported | null`. Why this device cannot hold a subscription at all, and `null` when nothing does. It lived inside Profil's switch as a private `blockedReason` until Početna's notifications card needed the same three answers, and both now read it: otherwise one screen says "install the app first" while the other offers a button that does nothing. `decideInstallStep` used to sit here — the retired banner's rule, answering install and push in one breath — and **#682 deleted it**: it had no consumer at all after #569 and leaving it would have made a third place spelling the same refusals.
 - **`INSTALL_PROMPT_CAPTURE`**, injected inline by the `/app` layout ahead of hydration. Chromium fires `beforeinstallprompt` once and never replays it, so a React effect that has not hydrated yet misses it and the one-tap button never appears on the one platform that has one. The script only parks the event on `window`; every decision about it stays in the component.
 
 What this replaced, and why each half was wrong: the old banner asked "push supported?" first, so an Android tab (which always has a `PushManager`) never reached the install offer at all, and the install branch was dead code on the easiest platform; one × wrote a permanent `localStorage` flag, which silenced the banner forever on the iPhone where installing is the precondition for notifications; and one sentence of generic advice served every device, including the webviews where it cannot be followed.
@@ -1204,11 +1204,12 @@ webview inside Viber or Messenger, and a browser with no push at all.
 
 It replaced `InstallHint.tsx`, deleted by #569. That component asked "uključi
 obavijesti?" and answered with a button whose label flipped to "Isključi", and
-decided from `decideInstallStep` whether to ask about installing first instead
-— see [the install flow](#the-install-flow-455) for why that order was per
-platform (#455). A banner that asks a question is right the first time and noise
-the fifth; the install half is a whole screen (`/app/install`) one row away in
-Više, and `decideInstallStep` still runs the Dobrodošlica and that guide.
+decided for itself whether to ask about installing first instead — see [the
+install flow](#the-install-flow-455) for why that order is per platform (#455).
+A banner that asks a question is right the first time and noise the fifth; the
+install half is a whole screen (`/app/install`) one row away in Više.
+
+**Početna does say it, once, and it is not that banner** (#682). `NotificationsNudge` is a card rather than a question, it never flips its label, and it cannot be snoozed: it appears only when this device could subscribe and has not, and it goes when it has. The rule is `decideNotificationsNudge` and its two interesting clauses are that **the install card wins** (two cards under one greeting saying "first install the app" is the app talking over itself) and that **"cannot tell" is silence** — `hasPushSubscription` answers `boolean | null`, and being wrong out loud at somebody who already has notifications is worse than missing somebody who has not, who is still visible to a voditelj on Članovi. Audience is `isDancer(viewer)` (`viewer.me`, the linked active moreškant), because a roster push never reaches a blagajna, a partner or `tehnika`. Obavijesti shows the same card in place of its empty-inbox card — never beside it, because that card promises "javit ćemo ti".
 
 ## Triggered notifications (#436 — phase 4 batch B)
 
