@@ -1,0 +1,29 @@
+-- The Snimka: one video link per evening (#692).
+--
+-- `shows.video_url` holds a FINISHED URL and never an id, which is why there is
+-- one column here and not two. A YouTube video is normalised to
+-- `https://www.youtube.com/watch?v=<id>` before it is written
+-- (`src/lib/app/video-link.ts`); any other https link is stored as pasted. NULL
+-- and the empty string both read as "no video", and `hasVideo()` is the only
+-- check any screen performs — nothing downstream parses this value.
+--
+-- `character varying` with no length, because that is what Payload's `text`
+-- field generates and the drift gate compares against Payload's own `push`
+-- output. The 500-character cap is a write-boundary rule in the route, not a
+-- column constraint: a link already in the database must never become
+-- unreadable because the cap moved.
+--
+-- ORDERING: bootstrap-db.mjs applies db/schema/*.sql in plain filename order on
+-- every restart, with no dependency resolution (db/schema/README.md). This file
+-- touches only `shows`, created by `00-base.sql`, which sorts first. It keeps
+-- sorting BEFORE `migrate-zz-drop-users-role.sql`, which stays the last
+-- `migrate-*` file (#398, asserted by `src/lib/db-schema-safety.test.ts`):
+-- `zz-dp-` continues the `zz-d…` sequence after `zz-do-`, and `dp` < `drop`.
+--
+-- `00-base.sql` is deliberately NOT regenerated here, the same call #658 made
+-- for `list_keepers`: the drift gate asserts the bootstrap schema is a SUPERSET
+-- of what Payload push produces, and this file is what puts the column in it.
+--
+-- Guarded and safe to re-run: one IF NOT EXISTS, and it writes no rows.
+
+ALTER TABLE public.shows ADD COLUMN IF NOT EXISTS video_url character varying;

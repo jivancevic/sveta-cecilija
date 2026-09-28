@@ -57,6 +57,14 @@ export const APP_NOTIFICATION_KINDS = [
   'inquiry',
   'dispute',
   'message',
+  /**
+   * The video of an evening is out (#692). Event-driven only in the sense that
+   * a voditelj pressed a button: like `message` it is a person deciding to tell
+   * the roster something, which is why it is not sent by the Shows hook that
+   * announces a change. Adding a link is not a change to the evening and rings
+   * nobody — `diffPerformance` watches five facts and this is not one of them.
+   */
+  'video',
 ] as const
 
 export type AppNotificationKind = (typeof APP_NOTIFICATION_KINDS)[number]
@@ -100,6 +108,11 @@ const RULES: Record<AppNotificationKind, AudienceRule> = {
   // theirs to do. It pushes, because the whole point is reaching the phones
   // that can be reached; the inbox row is what reaches the rest.
   message: { group: 'roster', pushes: true, doorInbox: false },
+  // The video (#692). `roster`, for the same reason as `message`: the audience
+  // is the dancers. Deliberately NOT `doorInbox` even though the two
+  // performance kinds are — the door holds a tablet that scans tickets, and a
+  // recording of the dance is nothing it has to act on.
+  video: { group: 'roster', pushes: true, doorInbox: false },
 }
 
 export function audienceFor(kind: AppNotificationKind): AudienceRule {

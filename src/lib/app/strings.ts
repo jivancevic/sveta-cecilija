@@ -53,6 +53,32 @@ function croatianPlural(n: number, forms: { one: string; few: string; many: stri
 /** The phones a roster message rings (#654): 1 mobitel, 43 mobitela, 11 mobitela. */
 const PHONES = { one: 'mobitel', few: 'mobitela', many: 'mobitela' } as const
 
+/**
+ * "Zvonit će na 43 mobitela, a svih 76 će je naći u Sandučiću."
+ *
+ * The sentence two confirmation sheets say before ringing the whole roster: the
+ * voditelj's message (#654) and a video (#692). It is one function because it
+ * is one promise, and a second copy of it would be a second promise that
+ * drifts: what it counts is a receipt, and two receipts that disagree are worse
+ * than none.
+ *
+ * "je" is the *obavijest*, which is what lands in the Sandučić in both cases —
+ * a video is watched on YouTube, and what a dancer finds here is the notice
+ * that it exists. That is why one sentence serves both and neither needs a
+ * gender of its own.
+ *
+ * "mobitel" takes the three Croatian plural buckets; one person is named rather
+ * than counted, because "svih 1" is not Croatian.
+ */
+function ringCounts(devices: number, people: number): string {
+  const phones =
+    devices === 0
+      ? 'Neće zazvoniti ni jedan mobitel'
+      : `Zvonit će na ${croatianPlural(devices, PHONES)}`
+  const inbox = people === 1 ? 'jedan će je' : `svih ${people} će je`
+  return `${phones}, a ${inbox} naći u Sandučiću.`
+}
+
 export const APP_STRINGS = {
   /** The product name: the manifest, the header and the browser tab all use it. */
   name: 'Cecilija',
@@ -2009,6 +2035,66 @@ export const APP_STRINGS = {
   },
 
   /**
+   * The Snimka (#692): the video of an evening, added after it.
+   *
+   * Two separate acts with deliberately separate words. **Spremi link** stores
+   * it and rings nobody, so fixing a typo costs nothing; **Pošalji obavijest**
+   * rings the roster and can be done exactly once per evening. The one-shot is
+   * said out loud on the sheet (`once`) because it is the only thing about this
+   * screen a reader cannot undo, and #654's sheet — which can be sent again —
+   * has no such line.
+   *
+   * "Video" is the word on every surface, even though the glossary's term is
+   * *Snimka*: a dancer calls it a video. *Snimka* exists so the code and the
+   * docs have one unambiguous noun for the thing somebody filmed.
+   */
+  video: {
+    label: 'Video',
+    hint: 'Link na video s ove izvedbe. Vidi ga svaki moreškant, javnost nikad.',
+    placeholder: 'npr. https://youtu.be/...',
+    save: 'Spremi link',
+    saving: 'Spremam...',
+    saved: 'Link je spremljen.',
+    cleared: 'Link je uklonjen.',
+    /** The one refusal a paste can earn. Names what is wrong, not what a URL is. */
+    invalid: 'To nije ispravan link. Mora počinjati s https://',
+    missing: 'Ta izvedba ne postoji.',
+    failed: 'Link nije spremljen. Pokušaj ponovno.',
+    /** The button on Stanje, and the accessible name of the ▶︎ on a list row. */
+    watch: 'Pogledaj video',
+    mark: 'Ima video',
+
+    /** The ring: a second action, with its own sheet. */
+    ring: {
+      open: 'Pošalji obavijest',
+      title: 'Poslati obavijest o videu?',
+      hint: 'Ide svim aktivnim moreškantima.',
+      /** The sentence with both numbers. See `ringCounts`. */
+      counts: (devices: number, people: number) => ringCounts(devices, people),
+      withoutLogin: (count: number) =>
+        `${croatianPlural(count, {
+          one: 'aktivni moreškant nema račun i neće je dobiti',
+          few: 'aktivna moreškanta nemaju račun i neće je dobiti',
+          many: 'aktivnih moreškanata nema račun i neće je dobiti',
+        })}.`,
+      /** The half #654 does not have: there is no second send. */
+      once: 'Ovo se šalje samo jednom.',
+      send: 'Pošalji',
+      sending: 'Šaljem...',
+      cancel: 'Odustani',
+      /** "Obavijest poslana: 28. rujna u 21:14", the permanent receipt. */
+      sentAt: (when: string) => `Obavijest poslana: ${when}`,
+      sent: (people: number, devices: number) =>
+        `Obavijest je poslana. U Sandučiću je kod ${people}, a zazvonilo je ${croatianPlural(devices, PHONES)}.`,
+      /** The server's three refusals. */
+      noLink: 'Prvo spremi link na video.',
+      already: 'Obavijest je već poslana.',
+      nobody: 'Nijedan aktivni moreškant nema račun, pa obavijest nema kome poslati.',
+      failed: 'Obavijest nije poslana. Pokušaj ponovno.',
+    },
+  },
+
+  /**
    * The postava (#432, glossary: *Lineup (postava)*).
    *
    * `locked` is the sentence behind BOTH the read-only editor and the route's
@@ -3441,21 +3527,8 @@ export const APP_STRINGS = {
       sending: 'Šaljem...',
       cancel: 'Odustani',
       confirmTitle: 'Poslati poruku?',
-      /**
-       * "Zvonit će na 43 mobitela, a svih 76 će je naći u Sandučiću."
-       *
-       * "mobitel" takes the three Croatian plural buckets (1 mobitel, 43
-       * mobitela, 11 mobitela); one person is named rather than counted,
-       * because "svih 1" is not Croatian.
-       */
-      counts: (devices: number, people: number) => {
-        const phones =
-          devices === 0
-            ? 'Neće zazvoniti ni jedan mobitel'
-            : `Zvonit će na ${croatianPlural(devices, PHONES)}`
-        const inbox = people === 1 ? 'jedan će je' : `svih ${people} će je`
-        return `${phones}, a ${inbox} naći u Sandučiću.`
-      },
+      /** The sentence that says both numbers out loud. See `ringCounts`. */
+      counts: (devices: number, people: number) => ringCounts(devices, people),
       /**
        * Under the counts, only when somebody on the roster has no login at all.
        *
@@ -3708,6 +3781,25 @@ export const PUSH_MESSAGES = {
    */
   message: {
     title: 'Poruka voditelja',
+  },
+
+  /**
+   * The eighth kind (#692): the video of an evening is out.
+   *
+   * Deliberately NOT "Izašao je novi video". "Novi" would be a lie the first
+   * time a voditelj swaps in a re-edit — the link may be replaced any number of
+   * times and the ring only ever fires once, so the sentence has to be true of
+   * the one send there is.
+   *
+   * The kind word comes from `kindWord()`, never `KIND_LABELS`: this is the
+   * dancer's register, where a ship group reads "Vanredna" and never names the
+   * agency that booked it. And no time, unlike every other roster body: nobody
+   * is being asked to turn up, so the hour is noise.
+   */
+  video: {
+    title: 'Video s nastupa',
+    body: (input: { kind: string; date: string }) =>
+      `${input.kind}, ${formatPerformanceDate(input.date)}`,
   },
 
   createdBulk: {

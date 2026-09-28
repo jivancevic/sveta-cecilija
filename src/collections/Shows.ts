@@ -513,5 +513,22 @@ export const Shows: CollectionConfig = {
       },
       access: { read: rosterFieldRead, update: rosterFieldUpdate },
     },
+    // The Snimka (#692). One video link per evening, written from Cecilija's
+    // izvedba detail and normalised there — a YouTube video arrives here as
+    // `https://www.youtube.com/watch?v=<id>` with the Share token already
+    // stripped, anything else as pasted. Locked to `moreska` like every other
+    // roster field, which governs only the Backoffice: every Cecilija read runs
+    // through the seam with `overrideAccess: true`, so the box office sees the
+    // link on Izvedbe regardless. Empty means "no video" and is the only state
+    // besides a link.
+    {
+      name: 'videoUrl',
+      type: 'text',
+      admin: {
+        description:
+          'Link to the video of this performance, normally an unlisted YouTube video. Pasted from Cecilija; a YouTube link is rewritten to its canonical watch URL. Never shown on the public site.',
+      },
+      access: { read: rosterFieldRead, update: rosterFieldUpdate },
+    },
   ],
 }
