@@ -5,6 +5,7 @@ import { toIsoDate } from '@/lib/to-iso-date'
 import { relationIdString } from '@/lib/payload-relation'
 import { isDanceRole } from '@/lib/moreskant-profile'
 import { VENUE_LABEL, type Venue } from '@/lib/venues'
+import { hasVideo } from './video-link'
 import { SHOWN_PERFORMANCE_WHERE, type PerformanceKind } from '@/lib/show-performance'
 import { buildMySeason, type MySeason } from './my-season-loaders'
 import { initialsOf } from './members-screen'
@@ -73,6 +74,7 @@ function toPerformance(doc: Record<string, unknown>): DancerSeasonPerformance {
     confirmed: doc.lineupConfirmed === true,
     cancelled: doc.status === 'cancelled',
     isPublic: doc.isPublic === true,
+    hasVideo: hasVideo(doc.videoUrl),
   }
 }
 

@@ -18,6 +18,7 @@ const show = (
   confirmed: true,
   cancelled: false,
   isPublic: true,
+  hasVideo: false,
   ...over,
 })
 
