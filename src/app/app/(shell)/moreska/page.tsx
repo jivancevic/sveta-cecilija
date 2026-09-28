@@ -24,6 +24,7 @@ import {
   Section,
 } from '../../ui'
 import { AppShell } from '../../AppShell'
+import { MetaWithVideo } from '../../VideoMark'
 import { openScreen } from '../../gate'
 import { Answer, RowAnswer } from './Answer'
 import { StateBar } from './StateBar'
@@ -267,7 +268,7 @@ export default async function MoreskaPage() {
                     className={row.cancelled ? 'app__row--cancelled' : undefined}
                     lead={<DateDisc day={row.day} weekday={row.weekday} tone={row.tone} />}
                     title={row.title}
-                    meta={row.meta}
+                    meta={<MetaWithVideo meta={row.meta} hasVideo={row.hasVideo} />}
                     // Who danced, not that a list exists (#634). The green
                     // POPIS pill said somebody had typed the evening up, which
                     // is a step in the voditelj's workflow; a dancer reading

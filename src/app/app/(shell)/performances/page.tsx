@@ -24,6 +24,7 @@ import {
   Section,
 } from '../../ui'
 import { AppShell } from '../../AppShell'
+import { MetaWithVideo } from '../../VideoMark'
 import { AddPerformance } from '../../PerformanceForm'
 import { openScreen } from '../../gate'
 
@@ -69,7 +70,7 @@ function IzvedbaListRow({ row }: { row: IzvedbaRow }) {
       title={row.title}
       meta={
         <>
-          {row.meta}
+          <MetaWithVideo meta={row.meta} hasVideo={row.hasVideo} />
           {row.sales && (
             <span className="app__izv-sales">
               <b>{row.sales.sold}</b>
