@@ -37,6 +37,7 @@ import {
 } from './sales-view'
 import { pluralize, type MonthGroup, type RosterPerformance } from './roster-loaders'
 import { performancePlace } from './performance-place'
+import { hasVideo } from './video-link'
 import {
   APP_STRINGS,
   KIND_LABELS,
@@ -120,6 +121,8 @@ export interface IzvedbaRow {
   title: string
   /** "21:00 · Ljetno kino". */
   meta: string
+  /** Whether this evening has a Snimka (#692), for the ▶︎ beside the meta line. */
+  hasVideo: boolean
   cancelled: boolean
   sales: RowSales | null
   chip: { label: string; tone: ChipTone } | null
@@ -138,6 +141,7 @@ export function izvedbaRow(
     gold: performance.kind === 'redovna',
     title: izvedbaTitle(performance),
     meta: [performance.time, place].filter(Boolean).join(' · '),
+    hasVideo: hasVideo(performance.videoUrl),
     cancelled: performance.cancelled,
     sales: rowSales(sales),
     chip: rowChip(performance, sales),

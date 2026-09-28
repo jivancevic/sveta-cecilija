@@ -34,6 +34,7 @@
 // asserted, not a rendered page.
 
 import type { AppMember } from './access'
+import { hasVideo } from './video-link'
 import {
   APP_STRINGS,
   dayOfMonth,
@@ -117,6 +118,15 @@ export interface NastupRow {
   title: string
   /** "21:00 · Ljetno kino", plus "· otkazano" when it is off. */
   meta: string
+  /**
+   * Whether this evening has a Snimka (#692), for the ▶︎ beside the meta line.
+   *
+   * A boolean and not the link: a list row does not open the video, it says one
+   * exists and the evening's own screen is where it is watched. Drawn on a past
+   * row and a future one alike — a link is only ever added after the night, so
+   * the future case is a mis-paste showing itself rather than a state to hide.
+   */
+  hasVideo: boolean
   cancelled: boolean
   /** Null for a reader with no Member row: they have no answer to report. */
   /**
@@ -187,6 +197,7 @@ export function nastupRow(performance: RosterPerformance, opts: NastupRowOptions
     meta: [performance.time, place, performance.cancelled ? S.cancelled : null]
       .filter(Boolean)
       .join(' · '),
+    hasVideo: hasVideo(performance.videoUrl),
     cancelled: performance.cancelled,
     answer: opts.showAnswer ? performance.myAnswer : null,
     // A past evening is read, not answered (#624), and the loader has already

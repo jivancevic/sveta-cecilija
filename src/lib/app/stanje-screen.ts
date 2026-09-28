@@ -355,6 +355,15 @@ export interface StanjeView {
   keeperPicker: StanjePicker
   /** "Potvrdio: … · …", or null on an unconfirmed or unsigned postava. */
   confirmedBy: string | null
+  /**
+   * The Snimka's link (#692), or null when this evening has none.
+   *
+   * The LINK and not a flag, because Stanje is where the video is watched: this
+   * is the screen the push lands on, so the control here is a full button and
+   * not the ▶︎ a list row carries. Shown to every reader of the screen — a
+   * postava is readable by every moreškant (#670) and so is the video of it.
+   */
+  videoUrl: string | null
 }
 
 /**
@@ -840,5 +849,6 @@ export function stanjeView(detail: PerformanceDetail): StanjeView {
       confirmed && detail.lineup.confirmedBy
         ? K.confirmedBy(detail.lineup.confirmedBy, confirmedDay(detail.lineup.confirmedAt))
         : null,
+    videoUrl: detail.performance.videoUrl,
   }
 }

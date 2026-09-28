@@ -27,6 +27,7 @@ const performance = (over: Partial<RosterPerformance> = {}): RosterPerformance =
   client: null,
   cancelled: false,
   voditeljNote: null,
+  videoUrl: null,
   startMs: Date.parse('2026-09-14T19:00:00.000Z'),
   thresholdCrni: 8,
   thresholdBili: 8,
