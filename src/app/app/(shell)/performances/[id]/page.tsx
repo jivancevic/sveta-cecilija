@@ -195,7 +195,7 @@ export default async function PerformanceDetailPage({
             // (a voditelj) the field is locked rather than guessed at: the
             // route would refuse the change anyway, and a control that looks
             // editable until the save is a control that lies.
-            venueLocked={sales ? ticketedSeats(sales) > 0 : true}
+            sold={sales ? ticketedSeats(sales) > 0 : true}
             initial={{
               kind: p.kind,
               date: p.date,

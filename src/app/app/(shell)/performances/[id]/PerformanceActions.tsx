@@ -42,7 +42,7 @@ import { Toast } from '../../../ui/Toast'
 //
 // The two-step shape is the routes' own and is kept exactly: GET is a PREVIEW
 // that writes nothing and names who is about to be mailed; POST is the claim.
-// Cancel and Pomakni datum additionally offer a test send to the caller's own
+// Cancel and Pomakni termin additionally offer a test send to the caller's own
 // inbox, which is the only rehearsal available for an action that cannot be
 // undone.
 //
@@ -90,9 +90,17 @@ interface ReschedulePreview {
 }
 
 type RescheduleResult =
-  | { status: 'rescheduled'; oldDate: string; newDate: string; total: number; sent: number }
+  | {
+      status: 'rescheduled'
+      oldDate: string
+      newDate: string
+      oldTime: string
+      newTime: string
+      total: number
+      sent: number
+    }
   | { status: 'no-op' }
-  | { status: 'date-mismatch' }
+  | { status: 'schedule-mismatch' }
 
 interface MovePreview {
   alreadyMoved: boolean
@@ -196,6 +204,7 @@ export function PerformanceActions({
   const [lines, setLines] = useState<StoredLine[] | null>(null)
 
   const [newDate, setNewDate] = useState('')
+  const [newTime, setNewTime] = useState('')
   const [testNote, setTestNote] = useState<string | null>(null)
   const [retry, setRetry] = useState(false)
 
@@ -226,6 +235,7 @@ export function PerformanceActions({
     setMovePreview(null)
     setLines(null)
     setNewDate('')
+    setNewTime('')
   }, [])
 
   /**
@@ -337,16 +347,24 @@ export function PerformanceActions({
     )
   }
 
-  // ── Pomakni datum ────────────────────────────────────────────────────────
+  // ── Pomakni termin ───────────────────────────────────────────────────────
 
+  // Either half or both (#688). An empty field is "leave it alone", which is why
+  // the route takes an absent value rather than the current one echoed back: a
+  // caller that echoes is a caller that can overwrite an hour somebody else
+  // moved in the meantime, and the claim would happily accept it.
   async function postReschedule(test: boolean) {
-    if (!newDate) {
-      setError(S.reschedule.needsDate)
+    if (!newDate && !newTime) {
+      setError(S.reschedule.needsWhen)
       return
     }
     const body = await call<RescheduleResult & { to?: string }>(
       `/api/shows/${performanceId}/reschedule`,
-      json({ newDate, test }),
+      json({
+        ...(newDate ? { newDate } : {}),
+        ...(newTime ? { newTime } : {}),
+        test,
+      }),
     )
     if (!body) return
     if (test) {
@@ -354,8 +372,15 @@ export function PerformanceActions({
       return
     }
     if (body.status === 'no-op') return setError(S.reschedule.noop)
-    if (body.status === 'date-mismatch') return setError(S.reschedule.mismatch)
-    finish(S.reschedule.done(body.oldDate, body.newDate, body.sent, body.total))
+    if (body.status === 'schedule-mismatch') return setError(S.reschedule.mismatch)
+    finish(
+      S.reschedule.done(
+        `${body.oldDate} u ${body.oldTime}`,
+        `${body.newDate} u ${body.newTime}`,
+        body.sent,
+        body.total,
+      ),
+    )
   }
 
   // ── Preseli u zimsko ─────────────────────────────────────────────────────
@@ -544,21 +569,37 @@ export function PerformanceActions({
                 reschedulePreview.buyerCount,
               )}
             </p>
-            <label className="app__perf-field" htmlFor="reschedule-date">
-              <span>{S.reschedule.newDate}</span>
-              <input
-                id="reschedule-date"
-                className="app__input"
-                type="date"
-                value={newDate}
-                disabled={busy}
-                onChange={(e) => setNewDate(e.target.value)}
-              />
-            </label>
+            {/* The same pair, and the same side-by-side wrapper, the Uredi form
+                uses for a date and an hour — one of them may be left empty. */}
+            <div className="app__perf-when">
+              <label className="app__perf-field" htmlFor="reschedule-date">
+                <span>{S.reschedule.newDate}</span>
+                <input
+                  id="reschedule-date"
+                  className="app__input"
+                  type="date"
+                  value={newDate}
+                  disabled={busy}
+                  onChange={(e) => setNewDate(e.target.value)}
+                />
+              </label>
+              <label className="app__perf-field" htmlFor="reschedule-time">
+                <span>{S.reschedule.newTime}</span>
+                <input
+                  id="reschedule-time"
+                  className="app__input"
+                  type="time"
+                  value={newTime}
+                  disabled={busy}
+                  onChange={(e) => setNewTime(e.target.value)}
+                />
+              </label>
+            </div>
+            <span className="app__perf-locked">{S.reschedule.unchanged}</span>
             {testNote && <p className="app__alarm-result">{testNote}</p>}
             <Button
               variant="ghost"
-              disabled={busy || !newDate}
+              disabled={busy || (!newDate && !newTime)}
               onClick={() => void postReschedule(true)}
             >
               {S.reschedule.test}

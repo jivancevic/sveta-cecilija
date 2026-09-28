@@ -372,15 +372,21 @@ export const Shows: CollectionConfig = {
       },
       access: { update: () => false },
     },
-    // Reschedule audit. Populated by the "Reschedule show & notify buyers"
-    // action; read-only in the admin. NULL = never rescheduled. originalDate
-    // keeps the very first scheduled date across repeated reschedules.
+    // Move audit. Populated by the "Move show date/time & notify buyers"
+    // action; read-only in the admin. NULL = never moved. Since #688 the action
+    // moves the DATE, the START TIME or both, and all three stamp these two
+    // columns — so they answer "who last moved this evening, and when", not
+    // "who last moved its day". originalDate is the narrower fact and stays
+    // that way: it is written only when the DAY moves, and there is
+    // deliberately no originalTime sibling (nothing reads either column for
+    // logic, and a column nobody reads is a migration for nothing).
     {
       name: 'dateChangedAt',
       type: 'date',
       admin: {
         readOnly: true,
-        description: 'When this show was last rescheduled. NULL = never rescheduled.',
+        description:
+          'When this show’s date or start time was last moved. NULL = never moved.',
         condition: publicPerformanceOnly,
         date: { pickerAppearance: 'dayAndTime' },
       },
@@ -392,7 +398,7 @@ export const Shows: CollectionConfig = {
       relationTo: 'users',
       admin: {
         readOnly: true,
-        description: 'Admin who last rescheduled this show.',
+        description: 'Admin who last moved this show’s date or start time.',
         condition: publicPerformanceOnly,
       },
       access: { update: () => false },
@@ -402,7 +408,8 @@ export const Shows: CollectionConfig = {
       type: 'date',
       admin: {
         readOnly: true,
-        description: 'First scheduled date, before any reschedule. NULL = never rescheduled.',
+        description:
+          'First scheduled date, before any move of the DAY. NULL = the day has never moved (a time-only move does not fill this in).',
         condition: publicPerformanceOnly,
         date: { pickerAppearance: 'dayOnly', displayFormat: 'd MMM yyyy' },
       },

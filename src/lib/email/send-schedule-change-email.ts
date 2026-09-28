@@ -1,15 +1,26 @@
-// Brevo sender for the show-reschedule notice. Sent to each online buyer of a
-// show whose date has been moved. One message per buyer in their own locale (no
-// BCC — buyer emails must not leak to each other). Same fire-and-forget +
-// grep-able-log shape as the other senders; all mail goes through postBrevoEmail
-// so DEV_EMAIL_OVERRIDE applies. Sibling of send-venue-change-email.ts.
+// Brevo sender for the show-move notice. Sent to each online buyer of a show
+// whose DATE, START TIME, or both have been moved. One message per buyer in
+// their own locale (no BCC — buyer emails must not leak to each other). Same
+// fire-and-forget + grep-able-log shape as the other senders; all mail goes
+// through postBrevoEmail so DEV_EMAIL_OVERRIDE applies. Sibling of
+// send-venue-change-email.ts.
+//
+// #688 — it was the date-change notice until 2026-09-28, when an evening's hour
+// moved and nobody was told. The three shapes of the same message (`changeOf`)
+// are one sender rather than three because what the buyer has to know is
+// identical in all three: when it is now, that their ticket still works, that a
+// corrected one is on its way, and how to get their money back if the new time
+// does not suit them. A separate time-change sender would be a second copy of
+// all four of those, drifting from this one.
 //
 // Rebuilt to the current brand standard (ADR-0003 / the review email): gold top
 // rule, full-colour crest header, crossed-swords divider, near-black footer.
 // Leads with reassurance (tickets moved automatically, nothing to do) and offers
-// a SECONDARY self-serve refund CTA for the buyer who can't make the new date
+// a SECONDARY self-serve refund CTA for the buyer who can't make the new time
 // (ADR-0021) — replacing the old "reply to this email and we'll find a solution"
-// line, since the link IS the solution.
+// line, since the link IS the solution. The hour gets that CTA as readily as the
+// day: somebody who booked a 21:00 show and cannot be there at 18:00 has exactly
+// as good a claim as somebody who cannot come on the Tuesday.
 //
 // The notice is only half the story (#379): show-reschedule.ts also reissues the
 // ticket itself as a second message. The `reissue` copy line announces that and
@@ -24,7 +35,7 @@ import { postBrevoEmail } from './post-brevo-email'
 // below). One coherent show-mail identity, kept off the bilten marketing subdomain.
 const SENDER = { email: 'tickets@moreska.eu', name: 'HGD Sveta Cecilija' }
 
-// Buyers can independently confirm the new date on the official site — both
+// Buyers can independently confirm the new schedule on the official site — both
 // reassurance and a quiet anti-phishing cue (the change is verifiable, not just
 // asserted in an email). The link TEXT is the bare domain so the recipient sees
 // exactly where it goes (moreska.eu) rather than an opaque "click here" button.
@@ -35,10 +46,19 @@ const TICKETS_URL_DISPLAY = 'moreska.eu/tickets'
 // reliably (Outlook), so these are dedicated PNG copies under public/email/.
 const ASSET_BASE = 'https://moreska.eu/email'
 
-export interface SendDateChangeEmailInput {
+/** Which half of the schedule moved. Derived, never passed in. */
+export type ScheduleChangeOf = 'date' | 'time' | 'both'
+
+export interface SendScheduleChangeEmailInput {
   orderId: string
   buyer: { name: string; email: string }
-  show: { oldDate: string; newDate: string; time: string; venue: Venue }
+  show: {
+    oldDate: string
+    newDate: string
+    oldTime: string
+    newTime: string
+    venue: Venue
+  }
   locale?: 'en' | 'hr'
   // Absolute self-serve refund URL for THIS order (signed per-order token,
   // ADR-0021). Omitted only if the caller could not build it (no PAYLOAD_SECRET);
@@ -46,27 +66,59 @@ export interface SendDateChangeEmailInput {
   refundUrl?: string
 }
 
-export interface SendDateChangeEmailDeps {
+export interface SendScheduleChangeEmailDeps {
   fetch: typeof fetch
   brevoApiKey: string
+}
+
+/**
+ * What this notice is about, read off the two schedules rather than trusted from
+ * the caller: a route that passed 'date' for a move that only touched the hour
+ * would send a buyer a message about a day that never changed.
+ */
+export function scheduleChangeOf(show: SendScheduleChangeEmailInput['show']): ScheduleChangeOf {
+  const dateMoved = show.oldDate !== show.newDate
+  const timeMoved = show.oldTime !== show.newTime
+  if (dateMoved && timeMoved) return 'both'
+  return dateMoved ? 'date' : 'time'
 }
 
 // All buyer-facing copy in one place so EN and HR stay structurally in lockstep
 // (same shape as render-ticket-email.tsx). The performance is always named so a
 // guest who bought months ago and forgot recognises it instantly; the reason is
 // a fixed, gentle apology (this action never captures a specific cause).
+//
+// Four of the lines depend on WHICH half moved and are keyed by it; the rest of
+// the message is the same sentence whatever moved.
 const COPY = {
   en: {
-    subject: 'Your Moreška sword dance show has moved to a new date',
-    heading: 'Your Moreška performance has a new date',
+    subject: {
+      date: 'Your Moreška sword dance show has moved to a new date',
+      time: 'Your Moreška sword dance show has a new start time',
+      both: 'Your Moreška sword dance show has moved to a new date and time',
+    },
+    heading: {
+      date: 'Your Moreška performance has a new date',
+      time: 'Your Moreška performance has a new start time',
+      both: 'Your Moreška performance has a new date and time',
+    },
     greeting: (name: string) => `Hi ${name},`,
-    intro:
-      "We're sorry, we've had to reschedule this Moreška sword dance performance. Your tickets are automatically valid for the new date, there's nothing you need to do.",
-    reissue:
-      'We are also sending your ticket again in a separate email, with the new date printed on it. Your QR codes have not changed, so an older copy will still scan at the door.',
+    intro: {
+      date: "We're sorry, we've had to reschedule this Moreška sword dance performance. Your tickets are automatically valid for the new date, there's nothing you need to do.",
+      time: "We're sorry, we've had to move the start time of this Moreška sword dance performance. Your tickets are automatically valid for the new time, there's nothing you need to do.",
+      both: "We're sorry, we've had to reschedule this Moreška sword dance performance. Your tickets are automatically valid for the new date and time, there's nothing you need to do.",
+    },
+    reissue: {
+      date: 'We are also sending your ticket again in a separate email, with the new date printed on it. Your QR codes have not changed, so an older copy will still scan at the door.',
+      time: 'We are also sending your ticket again in a separate email, with the new start time printed on it. Your QR codes have not changed, so an older copy will still scan at the door.',
+      both: 'We are also sending your ticket again in a separate email, with the new date and time printed on it. Your QR codes have not changed, so an older copy will still scan at the door.',
+    },
     verify: 'You can confirm this change yourself on our official website:',
-    escapeHatch:
-      "If the new date no longer works for you, you can cancel your tickets and get a refund yourself, no need to contact us:",
+    escapeHatch: {
+      date: 'If the new date no longer works for you, you can cancel your tickets and get a refund yourself, no need to contact us:',
+      time: 'If the new start time no longer works for you, you can cancel your tickets and get a refund yourself, no need to contact us:',
+      both: 'If the new date and time no longer work for you, you can cancel your tickets and get a refund yourself, no need to contact us:',
+    },
     refundCta: 'Cancel & refund my tickets',
     signoff: 'With thanks,',
     org: 'Moreška by HGD Sveta Cecilija',
@@ -74,16 +126,33 @@ const COPY = {
       'You\'re receiving this because you hold a ticket for this performance. Legal entity: HGD Sveta Cecilija, Korčula, Croatia. Contact:',
   },
   hr: {
-    subject: 'Vaša Moreška izvedba premještena je na novi datum',
-    heading: 'Promjena datuma vaše Moreške izvedbe',
+    subject: {
+      date: 'Vaša Moreška izvedba premještena je na novi datum',
+      time: 'Vaša Moreška izvedba počinje u novo vrijeme',
+      both: 'Vaša Moreška izvedba premještena je na novi datum i vrijeme',
+    },
+    heading: {
+      date: 'Promjena datuma vaše Moreške izvedbe',
+      time: 'Promjena satnice vaše Moreške izvedbe',
+      both: 'Promjena datuma i satnice vaše Moreške izvedbe',
+    },
     greeting: (name: string) => `Poštovani ${name},`,
-    intro:
-      'Žao nam je, morali smo pomaknuti ovu izvedbu Moreške (mačevni ples) na novi datum. Vaše ulaznice automatski vrijede za novi termin, ne morate ništa poduzimati.',
-    reissue:
-      'Ulaznicu vam ponovno šaljemo u zasebnoj poruci, s ispisanim novim datumom. QR kodovi se nisu promijenili, pa će i starija kopija proći na ulazu.',
+    intro: {
+      date: 'Žao nam je, morali smo pomaknuti ovu izvedbu Moreške (mačevni ples) na novi datum. Vaše ulaznice automatski vrijede za novi termin, ne morate ništa poduzimati.',
+      time: 'Žao nam je, morali smo pomaknuti početak ove izvedbe Moreške (mačevni ples). Vaše ulaznice automatski vrijede za novo vrijeme, ne morate ništa poduzimati.',
+      both: 'Žao nam je, morali smo pomaknuti ovu izvedbu Moreške (mačevni ples) na novi datum i u novo vrijeme. Vaše ulaznice automatski vrijede za novi termin, ne morate ništa poduzimati.',
+    },
+    reissue: {
+      date: 'Ulaznicu vam ponovno šaljemo u zasebnoj poruci, s ispisanim novim datumom. QR kodovi se nisu promijenili, pa će i starija kopija proći na ulazu.',
+      time: 'Ulaznicu vam ponovno šaljemo u zasebnoj poruci, s ispisanim novim vremenom početka. QR kodovi se nisu promijenili, pa će i starija kopija proći na ulazu.',
+      both: 'Ulaznicu vam ponovno šaljemo u zasebnoj poruci, s ispisanim novim datumom i vremenom. QR kodovi se nisu promijenili, pa će i starija kopija proći na ulazu.',
+    },
     verify: 'Ovu promjenu možete sami provjeriti na našoj službenoj stranici:',
-    escapeHatch:
-      'Ako vam novi termin više ne odgovara, ovdje možete sami otkazati ulaznice i zatražiti povrat novca, bez kontaktiranja nas:',
+    escapeHatch: {
+      date: 'Ako vam novi termin više ne odgovara, ovdje možete sami otkazati ulaznice i zatražiti povrat novca, bez kontaktiranja nas:',
+      time: 'Ako vam novo vrijeme početka više ne odgovara, ovdje možete sami otkazati ulaznice i zatražiti povrat novca, bez kontaktiranja nas:',
+      both: 'Ako vam novi datum i vrijeme više ne odgovaraju, ovdje možete sami otkazati ulaznice i zatražiti povrat novca, bez kontaktiranja nas:',
+    },
     refundCta: 'Otkaži ulaznice i zatraži povrat',
     signoff: 'Srdačan pozdrav,',
     org: 'Moreška by HGD Sveta Cecilija',
@@ -106,7 +175,7 @@ function formatDate(iso: string, locale: 'en' | 'hr'): string {
 }
 
 // Venue line for a forgetful guest who may not remember where to go. The venue
-// is unchanged by a reschedule; we still state it. In English we append the
+// is unchanged by a move; we still state it. In English we append the
 // on-the-ground Croatian name in parens (that's what the signage in Korčula
 // says), and ", Korčula" unless the name already carries the town.
 function venueLine(venue: Venue, locale: 'en' | 'hr'): string {
@@ -116,9 +185,10 @@ function venueLine(venue: Venue, locale: 'en' | 'hr'): string {
   return base.includes('Korčula') ? base : `${base}, Korčula`
 }
 
-function renderHtml(input: SendDateChangeEmailInput, locale: 'en' | 'hr'): string {
+function renderHtml(input: SendScheduleChangeEmailInput, locale: 'en' | 'hr'): string {
   const { buyer, show, refundUrl } = input
   const c = COPY[locale]
+  const of = scheduleChangeOf(show)
   // Single-quote family names: these sit inside double-quoted style="…" attrs,
   // so a double-quoted "Segoe UI" would close the attribute early.
   const fontHeading = `'Bodoni Moda SC', 'Bodoni Moda', Georgia, serif`
@@ -130,8 +200,13 @@ function renderHtml(input: SendDateChangeEmailInput, locale: 'en' | 'hr'): strin
   const bodyText = '#3d372f'
   const muted = '#6b6257'
 
-  const oldLabel = `${formatDate(show.oldDate, locale)} · ${show.time}`
-  const newLabel = `${formatDate(show.newDate, locale)} · ${show.time}`
+  // On a time-only move the old side is the hour alone: repeating one unchanged
+  // date above another is noise the reader has to compare character by character
+  // to see that nothing there moved. The NEW side always carries the whole
+  // schedule, because that is the line somebody writes down.
+  const oldLabel =
+    of === 'time' ? show.oldTime : `${formatDate(show.oldDate, locale)} · ${show.oldTime}`
+  const newLabel = `${formatDate(show.newDate, locale)} · ${show.newTime}`
 
   // Stacked old → new (a downward arrow), so the long localised date strings
   // never have to share a line — robust on narrow mobile clients.
@@ -145,7 +220,7 @@ function renderHtml(input: SendDateChangeEmailInput, locale: 'en' | 'hr'): strin
   const refundBlock = refundUrl
     ? `
         <tr><td style="padding:2px 44px 4px 44px;background:#ffffff;">
-          <p style="margin:0 0 14px 0;font-size:15px;line-height:1.6;color:${muted};text-align:center;">${c.escapeHatch}</p>
+          <p style="margin:0 0 14px 0;font-size:15px;line-height:1.6;color:${muted};text-align:center;">${c.escapeHatch[of]}</p>
         </td></tr>
         <tr><td align="center" style="padding:0 32px 30px 32px;background:#ffffff;">
           <a href="${refundUrl}" style="display:inline-block;padding:12px 24px;text-decoration:none;font-family:${fontBody};font-weight:600;font-size:15px;letter-spacing:0.01em;border-radius:3px;color:${gold};background:#ffffff;border:1.5px solid ${gold};">${c.refundCta}</a>
@@ -168,13 +243,13 @@ function renderHtml(input: SendDateChangeEmailInput, locale: 'en' | 'hr'): strin
 
         <!-- body: heading + reassurance -->
         <tr><td style="padding:36px 44px 6px 44px;background:#ffffff;">
-          <h1 style="font-family:${fontHeading};font-size:28px;line-height:1.2;margin:0 0 20px 0;color:${ink};text-align:center;">${c.heading}</h1>
+          <h1 style="font-family:${fontHeading};font-size:28px;line-height:1.2;margin:0 0 20px 0;color:${ink};text-align:center;">${c.heading[of]}</h1>
           <p style="margin:0 0 16px 0;font-size:16px;line-height:1.6;color:${bodyText};">${c.greeting(buyer.name)}</p>
-          <p style="margin:0 0 12px 0;font-size:16px;line-height:1.6;color:${bodyText};">${c.intro}</p>
-          <p style="margin:0 0 8px 0;font-size:16px;line-height:1.6;color:${bodyText};">${c.reissue}</p>
+          <p style="margin:0 0 12px 0;font-size:16px;line-height:1.6;color:${bodyText};">${c.intro[of]}</p>
+          <p style="margin:0 0 8px 0;font-size:16px;line-height:1.6;color:${bodyText};">${c.reissue[of]}</p>
         </td></tr>
 
-        <!-- old → new date -->
+        <!-- old → new schedule -->
         <tr><td align="center" style="padding:10px 44px 4px 44px;background:#ffffff;">
           <div style="${oldBox}">${oldLabel}</div>
           <div style="font-size:22px;line-height:1.4;color:${gold};font-weight:700;">↓</div>
@@ -218,15 +293,15 @@ ${refundBlock}
 `.trim()
 }
 
-export async function sendDateChangeEmail(
-  input: SendDateChangeEmailInput,
-  deps: SendDateChangeEmailDeps,
+export async function sendScheduleChangeEmail(
+  input: SendScheduleChangeEmailInput,
+  deps: SendScheduleChangeEmailDeps,
 ): Promise<boolean> {
   const locale = input.locale ?? 'en'
   const body = {
     sender: SENDER,
     to: [{ email: input.buyer.email, name: input.buyer.name }],
-    subject: COPY[locale].subject,
+    subject: COPY[locale].subject[scheduleChangeOf(input.show)],
     htmlContent: renderHtml(input, locale),
     replyTo: { email: 'info@moreska.eu', name: 'HGD Sveta Cecilija' },
   }
@@ -235,14 +310,14 @@ export async function sendDateChangeEmail(
     if (!res.ok) {
       const txt = await res.text().catch(() => '')
       console.error(
-        `[sendDateChangeEmail] Brevo error orderId=${input.orderId} email=${input.buyer.email} status=${res.status} body=${txt}`,
+        `[sendScheduleChangeEmail] Brevo error orderId=${input.orderId} email=${input.buyer.email} status=${res.status} body=${txt}`,
       )
       return false
     }
     return true
   } catch (err) {
     console.error(
-      `[sendDateChangeEmail] fetch failed orderId=${input.orderId} email=${input.buyer.email} error=${
+      `[sendScheduleChangeEmail] fetch failed orderId=${input.orderId} email=${input.buyer.email} error=${
         err instanceof Error ? err.message : String(err)
       }`,
     )
@@ -252,9 +327,12 @@ export async function sendDateChangeEmail(
 
 // Exposed for the admin "send test to me" step so the modal can send exactly
 // what buyers will receive before anything goes out to them.
-export function renderDateChangePreview(
-  input: SendDateChangeEmailInput,
+export function renderScheduleChangePreview(
+  input: SendScheduleChangeEmailInput,
   locale: 'en' | 'hr',
 ): { subject: string; html: string } {
-  return { subject: COPY[locale].subject, html: renderHtml(input, locale) }
+  return {
+    subject: COPY[locale].subject[scheduleChangeOf(input.show)],
+    html: renderHtml(input, locale),
+  }
 }

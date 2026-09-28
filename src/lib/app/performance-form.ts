@@ -19,8 +19,8 @@
 // per ACTION in its own route and mapped for the screen by
 // `performance-actions.ts`. Two rules in this file are the same fact from the
 // inside: `handleCancelPerformance` stays the voditelj's and refuses a public
-// row, and Uredi on a public row carries neither the date nor a house that has
-// already sold a ticket.
+// row, and Uredi on a public row carries neither the date nor, once it has sold
+// a ticket, its house or its hour (#688).
 //
 // Pure + DI in the `note.ts` / `alarm.ts` shape: the cross-site guard first,
 // then the permission, then the validation, then the work. The writes are the
@@ -67,12 +67,13 @@ export interface PerformanceFormDeps {
    */
   permissions: readonly Permission[]
   /**
-   * Active tickets on one performance, for the venue lock (#502 review).
+   * Active tickets on one performance, for the venue and hour locks (#502
+   * review, #688).
    *
-   * Asked only when Uredi is about to change the HOUSE of a public row, so the
-   * common edit (a typo in the start time) costs no extra query. Active
+   * Asked only when Uredi is about to change the HOUSE or the START TIME of a
+   * public row, so an edit that touches neither costs no extra query. Active
    * tickets, not seats: a door line has no buyer to mail, so it is not what
-   * makes a venue change a thing people have to be told about.
+   * makes either change a thing people have to be told about.
    */
   activeTickets: (id: string) => Promise<number>
   /** The row the action is about; null when the id is not a performance. */
@@ -218,9 +219,9 @@ export async function handleCreatePerformance(
  *
  * What may change is decided by the ROW and not by the caller: a booking's five
  * fields include its date, a public evening's three deliberately do not
- * (#379's reschedule mails every buyer and reissues every ticket), and the
- * house of a public evening that has sold a ticket moves through *Preseli u
- * zimsko*, which tells the buyers.
+ * (#379's reschedule mails every buyer and reissues every ticket), and once a
+ * public evening has sold a ticket its house moves through *Preseli u zimsko*
+ * and its hour through *Pomakni termin* (#688), both of which tell the buyers.
  *
  * The cancelled case is a **409** rather than a 400: the request is
  * well-formed and the row is the voditelj's, it is simply in a state where
@@ -257,18 +258,30 @@ export async function handleEditPerformance(
     const parsed = parsePublicPerformanceEdit(body)
     if (!parsed.ok) return refuse(400, parsed.error)
 
-    // The house of a SOLD evening is not a field (#502 review). Moving one is
-    // `/api/shows/[id]/move-to-indoor`: it mails every buyer and stamps
-    // `venue_changed_at`. Changing the column here instead would move the room,
-    // tell nobody, and then hide the button that would have told them, because
-    // "Preseli u zimsko" is only offered on a Ljetno row. A 409 rather than a
-    // 403: the request is well-formed and the row IS theirs, it is simply in a
-    // state where this particular edit is the wrong way to do it — the same
-    // shape of refusal a cancelled row gets, and the message names the action
-    // that is the right way.
-    if (parsed.patch.venue !== found.row.venue) {
+    // Neither the house NOR the hour of a SOLD evening is a field (#502 review,
+    // widened by #688). Moving the house is `/api/shows/[id]/move-to-indoor` and
+    // moving the hour is `/api/shows/[id]/reschedule`: both mail every buyer and
+    // reissue or stamp what they have to. Changing either column here instead
+    // would move the evening, tell nobody, and then hide the button that would
+    // have told them. The hour was the quiet path that survived beside the loud
+    // one until #688 — it is how show 79 went from 17:00 to 18:00 under a ticket
+    // that kept printing 17:00 and an entrance time of 16:30 (#674).
+    //
+    // A 409 rather than a 403: the request is well-formed and the row IS theirs,
+    // it is simply in a state where this particular edit is the wrong way to do
+    // it — the same shape of refusal a cancelled row gets, and each message names
+    // the action that is the right way.
+    //
+    // One query for both locks, asked only when one of the two fields actually
+    // moved, so the common edit (correcting the kind) still costs nothing.
+    const venueMoved = parsed.patch.venue !== found.row.venue
+    const timeMoved = parsed.patch.time !== found.row.time
+    if (venueMoved || timeMoved) {
       if ((await deps.activeTickets(found.row.id)) > 0) {
-        return refuse(409, APP_STRINGS.performance.venueLocked)
+        return refuse(
+          409,
+          venueMoved ? APP_STRINGS.performance.venueLocked : APP_STRINGS.performance.timeLocked,
+        )
       }
     }
 

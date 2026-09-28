@@ -24,7 +24,7 @@ vi.mock('@/lib/show-reschedule', () => ({
   rescheduleShow: (...args: unknown[]) => rescheduleShow(...(args as [])),
   previewReschedule: vi.fn(),
 }))
-vi.mock('@/lib/email/send-date-change-email', () => ({ sendDateChangeEmail: vi.fn() }))
+vi.mock('@/lib/email/send-schedule-change-email', () => ({ sendScheduleChangeEmail: vi.fn() }))
 vi.mock('@/lib/email/send-order-ticket-email', () => ({ sendOrderTicketEmail: vi.fn() }))
 vi.mock('@/lib/push/push-data', () => ({
   createPushDeps: () => ({
@@ -54,12 +54,14 @@ const row = (over: Record<string, unknown> = {}) => ({
   ...over,
 })
 
-const req = (newDate: string) =>
+const post = (body: Record<string, unknown>) =>
   new NextRequest('http://localhost/api/shows/7/reschedule', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ newDate }),
+    body: JSON.stringify(body),
   })
+
+const req = (newDate: string) => post({ newDate })
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -87,6 +89,49 @@ describe('POST /api/shows/[id]/reschedule', () => {
     await POST(req('2026-08-09'), { params: Promise.resolve({ id: '7' }) })
 
     expect(release.mock.calls.map((c) => c.join(':'))).toEqual(['7:alarm', '7:reminder'])
+  })
+
+  // #688 — the hour takes the same path as the day, so the route has to accept
+  // it, hand it to the seam, and still tell the roster.
+  it('accepts a time-only move and passes it through', async () => {
+    pushQuery.mockReset()
+    pushQuery
+      .mockResolvedValueOnce({ rows: [row()] })
+      .mockResolvedValueOnce({ rows: [row({ time: '18:00' })] })
+
+    const res = await POST(post({ newTime: '18:00' }), { params: Promise.resolve({ id: '7' }) })
+
+    expect(res.status).toBe(200)
+    expect(rescheduleShow).toHaveBeenCalledWith(
+      { showId: '7', userId: '8', newDate: undefined, newTime: '18:00' },
+      expect.anything(),
+    )
+    await vi.waitFor(() => expect(send).toHaveBeenCalledTimes(1))
+    const [, message] = send.mock.calls[0] as unknown as [string[], { body: string }]
+    expect(message.body).toContain('Promijenjeno: vrijeme.')
+  })
+
+  it('carries both halves at once', async () => {
+    await POST(post({ newDate: '2026-08-09', newTime: '18:00' }), {
+      params: Promise.resolve({ id: '7' }),
+    })
+    expect(rescheduleShow).toHaveBeenCalledWith(
+      { showId: '7', userId: '8', newDate: '2026-08-09', newTime: '18:00' },
+      expect.anything(),
+    )
+  })
+
+  it('refuses a body that moves nothing, rather than quietly doing nothing', async () => {
+    const res = await POST(post({}), { params: Promise.resolve({ id: '7' }) })
+    expect(res.status).toBe(400)
+    expect(rescheduleShow).not.toHaveBeenCalled()
+  })
+
+  it('refuses a time that is not HH:MM', async () => {
+    const res = await POST(post({ newTime: '18h' }), { params: Promise.resolve({ id: '7' }) })
+    expect(res.status).toBe(400)
+    expect(await res.json()).toEqual({ error: 'newTime must be HH:MM' })
+    expect(rescheduleShow).not.toHaveBeenCalled()
   })
 
   it('answers the admin without waiting for the phones', async () => {

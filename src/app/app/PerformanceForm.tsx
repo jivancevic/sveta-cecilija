@@ -164,7 +164,7 @@ function PublicFields({
   onChange,
   disabled,
   withDate,
-  venueLocked,
+  sold,
 }: {
   idPrefix: string
   values: PublicFormValues
@@ -172,12 +172,16 @@ function PublicFields({
   disabled: boolean
   withDate: boolean
   /**
-   * Seats have been sold, so the house is not a field any more (#502 review).
-   * The select goes read-only and says which action moves it, because the route
-   * refuses the change with the same sentence and a control that looks editable
-   * until the save is a control that lies.
+   * Seats have been sold, which closes TWO of these fields (#502 review, #688):
+   * the house, which moves through *Preseli u zimsko*, and the start time, which
+   * moves through *Pomakni termin*. Each control goes read-only and says which
+   * action moves it, because the route refuses the change with the same sentence
+   * and a control that looks editable until the save is a control that lies.
+   *
+   * It is one flag rather than two because it is one fact — `ticketedSeats > 0`
+   * — and two props that must always be equal are two chances to disagree.
    */
-  venueLocked?: boolean
+  sold?: boolean
 }) {
   const set = <K extends keyof PublicFormValues>(key: K, value: PublicFormValues[K]) =>
     onChange({ ...values, [key]: value })
@@ -222,9 +226,10 @@ function PublicFields({
             className="app__input"
             type="time"
             value={values.time}
-            disabled={disabled}
+            disabled={disabled || sold === true}
             onChange={(e) => set('time', e.target.value)}
           />
+          {sold && <i className="app__perf-locked">{APP_STRINGS.performance.timeLocked}</i>}
         </label>
       </div>
 
@@ -234,7 +239,7 @@ function PublicFields({
           id={`${idPrefix}-venue`}
           className="app__select"
           value={values.venue}
-          disabled={disabled || venueLocked === true}
+          disabled={disabled || sold === true}
           onChange={(e) => set('venue', e.target.value as Venue)}
         >
           {VENUES.map((venue) => (
@@ -243,7 +248,7 @@ function PublicFields({
             </option>
           ))}
         </select>
-        {venueLocked && (
+        {sold && (
           <i className="app__perf-locked">{APP_STRINGS.performance.venueLocked}</i>
         )}
       </label>
@@ -401,18 +406,27 @@ export function AddPerformance({
  *
  * Three fields and not four. The date is missing on purpose and its absence is
  * the design: moving a public evening mails every buyer and reissues every
- * ticket, so it is "Pomakni datum" next door, with a preview and a test send,
- * rather than a field a thumb can nudge while fixing a typo in the start time.
+ * ticket, so it is "Pomakni termin" next door, with a preview and a test send,
+ * rather than a field a thumb can nudge while fixing a typo.
+ *
+ * Once the evening has sold a ticket, two of the three that remain are read-only
+ * as well (#688): the house, and the start time, which is the very typo this
+ * comment used to hold up as the safe edit. It was not — the hour is printed on
+ * the buyer's PDF and the entrance time on it is derived from that hour (#674),
+ * so it moves through "Pomakni termin" too, which tells them.
  */
 export function PublicPerformanceEditor({
   performanceId,
   initial,
-  venueLocked,
+  sold,
 }: {
   performanceId: string
   initial: PublicFormValues
-  /** Active tickets exist: the house moves through "Preseli u zimsko" instead. */
-  venueLocked: boolean
+  /**
+   * Active tickets exist: the house moves through "Preseli u zimsko" and the
+   * hour through "Pomakni termin" instead (#688), both of which tell the buyers.
+   */
+  sold: boolean
 }) {
   const router = useRouter()
   const [open, setOpen] = useState(false)
@@ -452,7 +466,7 @@ export function PublicPerformanceEditor({
             onChange={setValues}
             disabled={busy}
             withDate={false}
-            venueLocked={venueLocked}
+            sold={sold}
           />
           <div className="app__perf-actions">
             <Button variant="primary" disabled={busy} onClick={save}>

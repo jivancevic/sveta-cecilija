@@ -1408,10 +1408,14 @@ ACTION: see [the six named actions](#the-blagajnas-half-of-izvedbe-numbers-and-n
   handler. A voditelj reading the evening sees that button greyed with *traži
   Blagajnu* under it (never hidden, Q53) and the route refuses the request
   anyway: the caption is the courtesy half of a refusal, the 403 is the rule.
-- **Uredi on a public row carries no date, and no HOUSE once a ticket is sold.**
-  Moving a public evening's date mails every buyer and reissues every ticket
-  (#379), so it is *Pomakni datum* with a preview and a test send, not a field
-  beside the start time. The venue is the same shape of fact: moving a sold
+- **Uredi on a public row carries no date, and neither its HOUSE nor its HOUR
+  once a ticket is sold.** Moving a public evening's date mails every buyer and
+  reissues every ticket (#379), so it is *Pomakni termin* with a preview and a
+  test send, not a field on the form. Since #688 that action moves the start time
+  too and the form refuses it on a sold row for the same reason: the hour is
+  printed on the buyer's PDF, and the entrance time on it is derived from that
+  hour (#674), so an evening that slides from 17:00 to 18:00 leaves everybody
+  holding a document that is wrong twice. The venue is the same shape of fact: moving a sold
   evening to another house is *Preseli u zimsko*, which mails every buyer and
   stamps `venue_changed_at` — and that stamp is also what makes the button
   disappear afterwards, so a quiet edit of the column would move the room, tell
@@ -1536,7 +1540,7 @@ behaviour, the idempotency and the audit writes stay where they are:
 | Action | Route | Notes |
 |---|---|---|
 | Pauziraj / Nastavi online prodaju | `POST /api/app/performances/[id]/pause` | **The one new route.** #366 shipped the pause as a checkbox on the Shows form, so the only way to flip it was the Backoffice. Stops ONLINE checkout only; the sheet says so, because "pauzirano" must not read as "cancelled" |
-| Pomakni datum | `GET`/`POST /api/shows/[id]/reschedule` | preview → "pošalji probni mail meni" → confirm (#379) |
+| Pomakni termin | `GET`/`POST /api/shows/[id]/reschedule` | preview → "pošalji probni mail meni" → confirm (#379). Since #688 the sheet carries a date AND a start time and either may be left empty: what is filled in is what moves, the body sends only the halves that are set, and the claim is guarded on both (`schedule-mismatch`) |
 | Preseli u zimsko | `GET`/`POST /api/shows/[id]/move-to-indoor` | preview → confirm; offered only on a Ljetno row that has not already moved (#94) |
 | Prodaja na vratima | `GET`/`POST /api/shows/[id]/offline-sales` | door and legacy lines, negative corrections, a discount label required below face value; **allowed on a past evening**, because a season is backfilled after the fact (ADR-0025). The GET's existing lines are shown while a correction is typed, which is the safety half: a correction from memory can land the right seats and the wrong money. Its refusals are **translated by code**, not by message: the route answers a stable `OfflineSaleValidationError` code and `ledgerErrorMessage()` turns it into the Croatian sentence naming what to change, because these are the refusals a cashier at the entrance can fix. The mapping is typed `Record<OfflineSaleErrorCode, string>`, so a new code fails `tsc` rather than reaching them as "pokušaj ponovno" |
 | Narudžbe za ovu izvedbu | link to `/app/orders?show=<id>` | #501's filter, in the query string |
@@ -1544,7 +1548,8 @@ behaviour, the idempotency and the audit writes stay where they are:
 
 Each is a button with a sheet under it that names the consequence, never a
 `confirm()` and never a modal. Uredi on a public row is time, venue and kind and
-**not the date** — moving a public evening is *Pomakni datum*, with a preview.
+**not the date** — moving a public evening is *Pomakni termin*, with a preview —
+and once it has sold a ticket, neither the venue nor the time either (#688).
 
 ## Izvedbe in the redesign: one register, gated per action (#567)
 
@@ -1586,7 +1591,7 @@ answers as a prop rather than a set to re-derive.
 
 | Action | Needs | Greyed caption |
 |---|---|---|
-| Pauziraj / Nastavi, Pomakni datum, Preseli u zimsko, Prodaja na vratima, Narudžbe | `tickets` | *traži Blagajnu* |
+| Pauziraj / Nastavi, Pomakni termin, Preseli u zimsko, Prodaja na vratima, Narudžbe | `tickets` | *traži Blagajnu* |
 | Otkaži izvedbu | `tickets` **and** `refunds` | *traži Blagajnu* without the first, *traži dozvolu za povrate* without the second |
 
 A button a reader may not press is **greyed and still there** (Q53), because a
