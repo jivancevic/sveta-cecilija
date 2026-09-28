@@ -57,11 +57,13 @@ Pure DI orchestration in `src/lib/venue-change.ts`; route `POST/GET /api/shows/[
 *Pomakni termin* on Izvedbe, `RescheduleShowMenuItem` in the Backoffice; mirror of the venue-change flow. It moves the **date, the start time, or both** (#688) — the hour was a silent write until 2026-09-28, when show 79 went from 17:00 to 18:00 and every buyer's PDF kept printing 17:00 and, via #674, an entrance time of 16:30.
 
 1. **Preview** — current date + time + affected-buyer count + sample emails, **no writes**.
-2. **Send test to me** — sends the EN+HR email (in the real shape: date-only, time-only or both) to the **logged-in admin's own inbox** only; **no DB write, no buyer mail**. The "see it first" path.
+2. **Send test to me** — sends the EN+HR email (in the real shape: date-only, time-only or both) to the **logged-in user's own inbox** only; **no DB write, no buyer mail**. The "see it first" path.
 3. **Confirm & send** — **claims the new schedule atomically before sending mail**:
    ```sql
    UPDATE shows SET date=($newDate||' 12:00:00+00')::timestamptz, time=$newTime, date_changed_at=NOW(),
-          date_changed_by_id=$user, original_date=COALESCE(original_date,date), updated_at=NOW()
+          date_changed_by_id=$user,
+          -- COALESCE(original_date,date) only when the DAY moved; otherwise the column is left alone
+          original_date=<COALESCE(original_date,date) | original_date>, updated_at=NOW()
    WHERE id=$show AND date::date=$expectedOldDate AND time=$expectedOldTime RETURNING id
    ```
 
@@ -69,7 +71,7 @@ An omitted half means "leave it alone", resolved once in `rescheduleShow`, so th
 
 Optimistic-concurrency claim on the *current* date **and** time (not a one-shot flag like the venue move): a concurrent confirm whose expected pair no longer matches claims 0 rows → `schedule-mismatch`, no send. The time joined that guard with #688, or two people moving the hour at once would both win and both mail. `original_date` (via `COALESCE`) keeps the very first date across repeated moves and is written **only when the DAY moves** — a time-only move that filled it in would report a day change that never happened. There is deliberately **no `original_time`**: nothing reads either column for logic (both are read-only Backoffice display), and *who moved this evening and when* is already `date_changed_at` / `date_changed_by_id`, which a time move stamps too. A schedule equal to the current one → `no-op` (no mail). Orders reference the show by **id**, so existing tickets/QRs follow the new schedule automatically — this is **not a refund trigger**, though the notice offers the self-serve refund (ADR-0021) either way: a buyer who cannot make 18:00 has as good a claim as one who cannot make the new day.
 
-The **plain Uredi form refuses both the house and the hour** of a public row that has sold a ticket (409, `performance-form.ts`), naming *Preseli u zimsko* and *Pomakni termin* — otherwise the quiet path survives beside the loud one, which is exactly how #688 happened. The kind stays editable, because it reaches no buyer.
+The **plain Uredi form refuses both the house and the hour** of a public row that has sold a ticket (409, `performance-form.ts`), naming *Preseli u zimsko* and *Pomakni termin* — otherwise the quiet path survives beside the loud one, which is exactly how #688 happened. The kind stays editable, because it reaches no buyer. **One quiet path is still open and is NOT closed by #688**: the raw Shows form in the Backoffice writes `date` and `time` through `canEditScheduleField`, which asks for a permission and never about sales, so a `tickets` holder editing the column there still tells nobody. It predates #688 (the date has always been writable that way, since #379) and closing it means teaching Payload field access about ticket counts, which is its own decision: #689.
 
 The notice is **deduped by email** (`DISTINCT ON (lower(email))` — one per person) and **transactional** (never checks `marketing_optouts`). Pure DI orchestration in `src/lib/show-reschedule.ts`; sender `src/lib/email/send-schedule-change-email.ts`, whose `scheduleChangeOf` reads which half moved off the two schedules rather than trusting a flag, and whose subject, heading, reassurance and refund invitation are the four lines that differ between the three shapes; route `POST/GET /api/shows/[id]/reschedule`. Audit columns `date_changed_at` / `date_changed_by_id` / `original_date` added in `db/schema/app.sql`. The roster is told by the route's own `notifyRawPerformanceSave` (the claim is raw SQL, so no Payload hook fires) and `diffPerformance` already watched `time`, so a dancer learns it the way they always did.
 
@@ -82,7 +84,7 @@ So after the claim + notice, `rescheduleShow` **reissues the ticket itself** as 
 - **Per order, not per buyer** — the notice dedupes by email, a ticket cannot: each order carries its own QR codes and its own PDF. Same scope otherwise (`channel IN ('online','comp')`, `email IS NOT NULL`, `refund_status='none'`).
 - **Same QR tokens.** `sendOrderTicketEmail` re-renders the **existing** `tickets` rows from the already-moved show row. It writes nothing — no new tokens, no re-scan invalidation, and the old PDF a buyer is already holding at the door still scans `VALID`.
 - **Ticket sent last** so the newest ticket-shaped thing in the inbox is the correct one.
-- **Never a rollback.** The move is claimed and committed first; a reissue that returns false *or throws* is counted (`reissued` / `reissueFailed` in the result, surfaced in the admin modal) and logged, never unwound. A failure means someone still holds a PDF with the old schedule on it — fix it with the per-order **Resend ticket email** action.
+- **Never a rollback.** The move is claimed and committed first; a reissue that returns false *or throws* is counted (`reissued` / `reissueFailed` in the result, surfaced in the Backoffice modal) and logged, never unwound. A failure means someone still holds a PDF with the old schedule on it — fix it with the per-order **Resend ticket email** action.
 - The `reissue` copy line in `send-schedule-change-email.ts` announces the second message and states that the QR codes did not change. **Keep the two in sync** — if the reissue is ever dropped, drop that line with it.
 
 Items 2 (follow-up to non-openers via Brevo `opened` events) and 3 (admin view of non-openers) of #379 ship separately.

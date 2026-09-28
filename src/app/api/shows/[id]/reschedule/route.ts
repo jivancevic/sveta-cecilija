@@ -8,6 +8,8 @@ import {
   type RescheduleDeps,
 } from '@/lib/show-reschedule'
 import { sendScheduleChangeEmail } from '@/lib/email/send-schedule-change-email'
+// The one spelling of a start time, shared with the performance form (#688).
+import { TIME_RE } from '@/lib/performance-input'
 import { sendOrderTicketEmail, type OrderEmailPayload } from '@/lib/email/send-order-ticket-email'
 import { signRescheduleRefundToken } from '@/lib/refund/reschedule-refund-token'
 import { refundUrl } from '@/lib/site-url'
@@ -31,9 +33,6 @@ export const dynamic = 'force-dynamic'
 // is a caller that thinks it is moving something.
 
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/
-// Same shape the performance form validates (`performance-input.ts`): a 24-hour
-// HH:MM, which is what `shows.time` holds and what the ICS and the PDF parse.
-const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/
 
 type Pool = { query: (sql: string, params: unknown[]) => Promise<{ rows: Record<string, unknown>[] }> }
 
@@ -116,7 +115,7 @@ function buildDeps(
       // `original_date` is stamped only when the DAY actually moves. It means
       // "the first date this evening was ever scheduled for", and a time-only
       // move that filled it in would set it to the date the show is still on and
-      // make the admin's "NULL = never rescheduled" read as a move that never
+      // make the Backoffice's "NULL = never moved" read as a move that never
       // happened. There is deliberately NO original_time sibling: nothing reads
       // either column for logic (both are read-only display in the Backoffice),
       // and who moved this evening and when is already answered by
@@ -239,6 +238,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       if (!show) return NextResponse.json({ error: 'Show not found' }, { status: 404 })
       // #409 — the test send bypasses rescheduleShow, so it needs its own gate.
       assertPublicPerformance(show as unknown as Record<string, unknown>)
+      // …and so does the no-op check (#688). Without it, a body carrying only the
+      // show's CURRENT date renders a preview of a change nobody made: the notice
+      // would name a new start time and print the same hour on both sides,
+      // because the copy is chosen from whichever half differs. A preview of
+      // nothing is worse than a refusal.
+      if ((newDate ?? show.date) === show.date && (newTime ?? show.time) === show.time) {
+        return NextResponse.json({ error: 'That is already the schedule' }, { status: 400 })
+      }
       const sample = { orderId: 'TEST', buyer: { name: 'Ivan Horvat', email: adminEmail } }
       // The preview shows exactly the shape the buyers would get: a date-only, a
       // time-only or a both notice, decided by which halves this body carried

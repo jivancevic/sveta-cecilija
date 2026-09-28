@@ -1,4 +1,4 @@
-// Pure orchestration for the "move a show and notify buyers" admin action.
+// Pure orchestration for the "move a show and notify buyers" staff action.
 // Sibling of venue-change.ts (#94); the route wires the real DB + Brevo, this
 // stays DI + testable.
 //
@@ -87,7 +87,7 @@ export interface RescheduleDeps {
   /**
    * Atomic claim guarded on the schedule as this caller read it. True only if
    * this call moved it. `next` always carries BOTH halves resolved, so the
-   * writer never has to work out which one the admin typed.
+   * writer never has to work out which one the caller typed.
    */
   claimReschedule: (
     showId: string,

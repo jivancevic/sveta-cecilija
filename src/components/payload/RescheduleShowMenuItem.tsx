@@ -12,21 +12,10 @@ interface Preview {
   sampleEmails: string[]
 }
 
-type RescheduleResult =
-  | {
-      status: 'rescheduled'
-      oldDate: string
-      newDate: string
-      oldTime: string
-      newTime: string
-      total: number
-      sent: number
-      failed: number
-      reissued: number
-      reissueFailed: number
-    }
-  | { status: 'no-op'; date: string; time: string }
-  | { status: 'schedule-mismatch' }
+// The route's own answer, imported rather than re-typed (#688 review): it was
+// spelled out here and in Cecilija's sheet, so widening it for the hour meant
+// editing one union in three files. A type-only import costs nothing at runtime.
+import type { RescheduleResult } from '@/lib/show-reschedule'
 
 type TestResult = { status: 'test-sent'; to: string }
 

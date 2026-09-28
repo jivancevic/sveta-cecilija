@@ -43,7 +43,14 @@ export const NON_PUBLIC_KINDS = SHOWN_KINDS.filter(
 /** Long enough for "Spomenik sv. Todora, iza crkve" and nothing like a note. */
 export const MAX_PLACE_LENGTH = 120
 
-const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/
+/**
+ * The one shape of a start time: a 24-hour HH:MM, which is what `shows.time`
+ * holds and what the ICS and the ticket PDF parse.
+ *
+ * Exported since #688, when `POST /api/shows/[id]/reschedule` began taking a
+ * `newTime` and briefly carried its own copy of this regex.
+ */
+export const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/
 const DATE_RE = /^(\d{4})-(\d{2})-(\d{2})$/
 
 /** The two houses a public performance can be in; capacity is derived from it. */

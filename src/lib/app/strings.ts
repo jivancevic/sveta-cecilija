@@ -3097,7 +3097,12 @@ export const APP_STRINGS = {
       paused: 'Prodaja pauzirana',
       cancelled: 'Otkazano',
       moved: 'Preseljeno',
-      rescheduled: 'Datum pomaknut',
+      /**
+       * #688 — *Termin*, not *Datum*. The badge is drawn off `dateChangedAt`,
+       * which a time-only move stamps as surely as a day move does, so "Datum
+       * pomaknut" on an evening whose date never changed is simply false.
+       */
+      rescheduled: 'Termin pomaknut',
     },
     /** The detail's number list. `Prihod` appears for a `finance` holder only. */
     numbers: {
@@ -3293,12 +3298,19 @@ export const APP_STRINGS = {
       testSent: (to: string) => `Probni mail je poslan na ${to} (EN i HR). Provjeri pa potvrdi.`,
       confirm: 'Potvrdi i pošalji kupcima',
       needsWhen: 'Upiši novi datum, novo vrijeme ili oboje.',
+      /**
+       * Takes the four parts rather than two pre-joined phrases: the little word
+       * "u" between a day and an hour is Croatian copy, and copy lives here.
+       */
       done: (
-        oldWhen: string,
-        newWhen: string,
+        oldDate: string,
+        oldTime: string,
+        newDate: string,
+        newTime: string,
         sent: number,
         total: number,
-      ) => `Pomaknuto ${oldWhen} u ${newWhen}. Obaviješteno ${sent} od ${total} kupaca.`,
+      ) =>
+        `Pomaknuto ${oldDate} u ${oldTime} na ${newDate} u ${newTime}. Obaviješteno ${sent} od ${total} kupaca.`,
       noop: 'To je već termin ove izvedbe. Ništa nije promijenjeno.',
       mismatch: 'Termin se u međuvremenu promijenio. Otvori radnju ponovno. Nije poslana e-pošta.',
     },

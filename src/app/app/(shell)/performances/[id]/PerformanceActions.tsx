@@ -11,6 +11,7 @@ import type {
   PerformanceActionGates,
 } from '@/lib/app/performance-actions'
 import { MAX_DISCOUNT_LABEL_LENGTH } from '@/lib/offline-sales/lines'
+import type { RescheduleResult as LibRescheduleResult } from '@/lib/show-reschedule'
 import { Stepper } from '../../../Stepper'
 import { Button, type ButtonVariant } from '../../../ui/Button'
 import { Card } from '../../../ui/Card'
@@ -89,18 +90,14 @@ interface ReschedulePreview {
   buyerCount: number
 }
 
-type RescheduleResult =
-  | {
-      status: 'rescheduled'
-      oldDate: string
-      newDate: string
-      oldTime: string
-      newTime: string
-      total: number
-      sent: number
-    }
-  | { status: 'no-op' }
-  | { status: 'schedule-mismatch' }
+/**
+ * The route's own answer, imported rather than re-typed (#688 review).
+ *
+ * It was spelled out here and in the Backoffice menu item, so widening it for the
+ * hour meant editing the same union in three files — the shape of drift this
+ * ticket exists to stop. A type-only import costs nothing at runtime.
+ */
+type RescheduleResult = LibRescheduleResult
 
 interface MovePreview {
   alreadyMoved: boolean
@@ -374,12 +371,7 @@ export function PerformanceActions({
     if (body.status === 'no-op') return setError(S.reschedule.noop)
     if (body.status === 'schedule-mismatch') return setError(S.reschedule.mismatch)
     finish(
-      S.reschedule.done(
-        `${body.oldDate} u ${body.oldTime}`,
-        `${body.newDate} u ${body.newTime}`,
-        body.sent,
-        body.total,
-      ),
+      S.reschedule.done(body.oldDate, body.oldTime, body.newDate, body.newTime, body.sent, body.total),
     )
   }
 

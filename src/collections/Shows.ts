@@ -398,7 +398,7 @@ export const Shows: CollectionConfig = {
       relationTo: 'users',
       admin: {
         readOnly: true,
-        description: 'Admin who last moved this show’s date or start time.',
+        description: 'Who last moved this show’s date or start time.',
         condition: publicPerformanceOnly,
       },
       access: { update: () => false },

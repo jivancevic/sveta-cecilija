@@ -65,8 +65,11 @@ function buildCopy(locale: 'en' | 'hr', n: number, amount: string): PageCopy {
   if (locale === 'hr') {
     return {
       heading: 'Vaše ulaznice',
+      // #688 — "novi termin", not "novi datum": the page is reached from a notice
+      // about a moved day, a moved hour or both, and its only gate
+      // (`date_changed_at != null`) cannot tell which.
       intro:
-        'Termin ove izvedbe je promijenjen, a vaše ulaznice automatski vrijede za novi datum, ne morate ništa poduzimati.',
+        'Termin ove izvedbe je promijenjen, a vaše ulaznice automatski vrijede za novi termin, ne morate ništa poduzimati.',
       escapeHatch:
         'Ako vam novi termin ne odgovara, ovdje možete sami otkazati ulaznice i zatražiti povrat novca, bez kontaktiranja nas.',
       summaryTitle: 'Vaša narudžba',
@@ -102,12 +105,17 @@ function buildCopy(locale: 'en' | 'hr', n: number, amount: string): PageCopy {
   }
   return {
     heading: 'Your tickets',
+    // #688 — the page is reached from a notice about a moved DATE, a moved START
+    // TIME or both, and it cannot tell which: its only gate is
+    // `date_changed_at != null`, which all three stamp. So it names neither half
+    // and says the schedule changed, the way the Croatian copy already did. The
+    // actual day and hour are right underneath, in "New date and time".
     intro:
-      "This performance has been moved to a new date, and your tickets are automatically valid for it, there's nothing you need to do.",
+      "This performance's schedule has changed, and your tickets are automatically valid for the new one, there's nothing you need to do.",
     escapeHatch:
-      "If the new date doesn't work for you, you can cancel your tickets and get a refund yourself right here, no need to contact us.",
+      "If the new date or time doesn't work for you, you can cancel your tickets and get a refund yourself right here, no need to contact us.",
     summaryTitle: 'Your order',
-    labelWhen: 'New date',
+    labelWhen: 'New date and time',
     labelWhere: 'Venue',
     labelParty: 'Tickets',
     labelPaid: 'Paid',
