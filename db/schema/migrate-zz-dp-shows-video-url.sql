@@ -20,9 +20,17 @@
 -- `migrate-*` file (#398, asserted by `src/lib/db-schema-safety.test.ts`):
 -- `zz-dp-` continues the `zz-d…` sequence after `zz-do-`, and `dp` < `drop`.
 --
--- `00-base.sql` is deliberately NOT regenerated here, the same call #658 made
--- for `list_keepers`: the drift gate asserts the bootstrap schema is a SUPERSET
--- of what Payload push produces, and this file is what puts the column in it.
+-- The column is ALSO written into `00-base.sql`, in the position Payload's own
+-- `push` emits it (after `voditelj_note`, before `updated_at`), which is the
+-- same thing #658 did for `lineup_confirmed_by_id`. Both are needed and neither
+-- is redundant: `00-base.sql` is what a FRESH database gets, this file is what
+-- an EXISTING one gets, and on a fresh boot the ALTER below is a no-op.
+--
+-- The base file cannot be skipped, because the drift gate compares the two
+-- `pg_dump` outputs LINE BY LINE (`scripts/schema-diff.mjs`): a column appended
+-- by ALTER lands last in the table and pg_dump then prints it with no trailing
+-- comma, so the very same column reads as a different line from the one Payload
+-- produces mid-list. Adding a scalar column here and not there fails the gate.
 --
 -- Guarded and safe to re-run: one IF NOT EXISTS, and it writes no rows.
 
