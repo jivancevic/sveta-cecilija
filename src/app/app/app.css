@@ -9192,3 +9192,93 @@ a.app__statrow-main:focus-visible {
   background: var(--sunk);
   border-radius: var(--radius);
 }
+
+/* ══ The Snimka: one video per evening (#692) ═════════════════════════════════
+
+   Four surfaces, two shapes. A list row carries the MARK (Moreška's past rows,
+   Izvedbe's, the season profile's) and the evening's own screen carries a
+   BUTTON, because a mark says a video exists and a button opens it. */
+
+/* The ▶︎ on the end of a meta line. Gold, so it reads as a thing to act on
+   rather than as punctuation, and sitting on the text baseline rather than in
+   the middle of the line box — a 13px icon centred against 13px text hangs
+   about a pixel high, which is enough to look like a mistake. */
+.app__video-mark {
+  display: inline-block;
+  vertical-align: -1px;
+  color: var(--gold);
+}
+
+/* The button on Stanje, and on an izvedba detail for a reader who cannot edit
+   it. Not `.app__button`: that is gold, and gold on this screen belongs to
+   Potvrdi postavu and to the alarm. An outlined link says "this leaves the
+   app", which it does. */
+.app__video-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  margin: 0 0 16px;
+  padding: 13px;
+  border: 1px solid var(--gold);
+  border-radius: var(--radius);
+  color: var(--gold);
+  font-family: var(--font-ibm-plex-mono), system-ui, sans-serif;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+/* ── The editor, in the voditelj card ──────────────────────── */
+
+.app__video-edit {
+  margin-top: 20px;
+}
+
+/* Why the link is visible to everybody who opens the evening, said on the
+   screen rather than only in the glossary: "unlisted" is not private, and the
+   person pasting the link is the one who has to know that. */
+.app__video-hint {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* Spremi and Pošalji side by side, and never one above the other: they are two
+   different acts and stacking them reads as one flow with a second step. */
+.app__video-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+/* The editor's own watch link is a quiet line, not a second outlined button:
+   the card already has two controls and this one only confirms what was saved. */
+.app__video-watch {
+  display: inline-block;
+  margin-top: 10px;
+  font-size: 13px;
+  color: var(--gold);
+}
+
+/* The permanent receipt. Muted, because it is a record and not a message: it
+   stays on the card for as long as the evening exists. */
+.app__video-sent {
+  margin: 10px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* The one line #654's sheet does not carry. Bold, because it is the half of
+   this sheet a reader has to take in before pressing: the numbers say how far
+   it reaches and this says there is no second try. */
+.app__video-once {
+  margin: 10px 0 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+}

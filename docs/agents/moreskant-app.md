@@ -3095,3 +3095,38 @@ has nothing to clear, and offers two layout classes for a screen to opt into:
 `.app__col` (760px, a list or a form) and `.app__cols` (a detail: what happened
 on the left, what you can do on the right).
 
+
+## Snimka: the video of an evening (#692)
+
+Somebody films the moreška and publishes it to YouTube as an unlisted video after the night. A voditelj pastes the link onto the izvedba, presses one button, and the roster learns the video is out.
+
+**One column, holding a finished URL.** `shows.videoUrl`, a `text` field locked to `moreska` for read and update exactly like `voditeljNote`. A YouTube link in any shape the Share button or the address bar produces (`youtu.be/<id>`, `watch?v=`, `/live/`, `/shorts/`, `/embed/`, with `?si=` and `&t=`) is normalised on the way in to `https://www.youtube.com/watch?v=<id>`; any other `https://` link is stored as pasted, and that deliberately includes a YouTube channel or playlist page, which is YouTube and is not a video. `http://` is refused rather than upgraded. The rules are `src/lib/app/video-link.ts`, pure and table-tested; `hasVideo()` is the one question the screens ask, so nothing downstream parses a URL.
+
+Two columns (`videoId` + `videoUrl`) was the obvious alternative and was refused: it makes every screen ask which of the two is filled and admits a row where both are.
+
+**The field lock governs only the Backoffice.** Every Cecilija read runs through the seam with `overrideAccess: true`, so the box office sees the link on Izvedbe even though the field is locked to `moreska` — which is why showing it to two audiences cost no new access predicate.
+
+**Saving rings nobody, and that is a property of the watched set rather than of the route.** `diffPerformance` (`src/lib/push/performance-change.ts`) watches five facts — date, time, place, cancellation, voditelj note — and `videoUrl` is none of them, so `payload.update` on this field alone produces an empty diff and no `performance_changed` push. If anybody ever adds `videoUrl` to that set, `POST /api/app/performances/[id]/video` starts ringing the roster on every typo fix and the one-ring lock next door becomes a lie.
+
+**The ring is one per evening, and the lock is a claim rather than a flag.** `POST /api/app/performances/[id]/video/notify` takes the third `type` in `performance_notifications`, value `'video'`, with the same `INSERT … ON CONFLICT DO NOTHING` on `(performance_id, type)` that has kept the alarm and the reminder from firing twice since #431. So the lock and the RECEIPT are one record: the screen reads it back through `readNotificationClaim` to print "Obavijest poslana: …", and there is no second copy to disagree with the refusal a second press would get. It is never released — `CLAIMS_INVALIDATED_BY_A_MOVE` still lists only the alarm and the reminder, because a video of an evening that later moves is still that evening's video. `PerformanceNotificationType` is what widens the claim table's type without widening the schedule's.
+
+Two orderings in `src/lib/push/video-notification.ts` are load-bearing and both are asserted:
+
+- the **audience before the claim**, so a roster nobody can reach is a 409 that leaves the claim untaken rather than burning the evening's one ring;
+- the **claim before the send**, the call `roster-notifications` already makes for the alarm. A crash between them means the receipt says sent and nobody was rung, which a voditelj discovers and works around; the other order means a retry rings dozens of phones twice, which nobody can undo.
+
+A push that collapses entirely is still a 200 and the claim is kept, for #654's reason: the inbox rows are filed inside the sender before a single endpoint is posted to, so the roster has been told.
+
+**The audience is #654's own functions**, `rosterMessageAudience` and `activeMoreskantIds`, reused rather than re-derived: "every active moreškant" has to mean the same set in both places or the two confirmation sheets promise different things with the same sentence.
+
+**The copy.** `PUSH_MESSAGES.video` — title *Video s nastupa*, body `${kindWord(kind)}, ${formatPerformanceDate(date)}` — so the register is the dancer's (*nastup*) and the body never names the client: `kindWord()` and never `KIND_LABELS`, which would print "Adriatic DMC". No time, because nobody is being asked to turn up. Not "Izašao je novi video": "novi" is a lie the first time a voditelj swaps in a re-edit, and the ring only ever fires once. The tap lands on `/app/moreska/<id>`, `tag: video-<id>` (collapsing is safe precisely because of the claim), TTL 7 days.
+
+The confirmation sentence that says both numbers out loud is now `ringCounts` in `strings.ts`, shared with #654: it is one promise, and two copies of it drift. "je" in it is the *obavijest*, which is what lands in the Sandučić in both cases — the video itself is watched on YouTube.
+
+**Where it shows.** The `▶︎` (a lucide `Play`, not 🎬 — Cecilija's emoji already carry five learned meanings) sits on the end of the meta line of a past row on Moreška, on Izvedbe and on the season profile, which is also Moja sezona on Ljestvica. The row types carry `hasVideo` as a **boolean** and the mark is a component with an accessible name, because a glyph appended to a plain meta string is read out as a glyph. `MetaWithVideo` owns the separator so three screens do not each decide whether there is a dot in front of it.
+
+Stanje carries the link itself and a full **Pogledaj video** button: it is the screen the push lands on, so the control has to be the first thing a thumb finds, and a link is pressed while a header is read. A reader who is not the voditelj gets the same button on the izvedba detail — the box office checks that the link works and cannot change it.
+
+It opens **outside the app**, `target="_blank"` with `rel="noopener"`. An unlisted video embeds fine, but an iframe in the PWA means a third-party script, CSP work, and a worse player than the YouTube app on a phone.
+
+**What is deliberately absent.** No ADR: the column is easy to remove, nothing about it surprises a reader, and the one real trade-off is about content rather than architecture. No MCP tool — a sixth roster tool is a permanent cost for something done once per evening on a phone that already has the app open. No bulk entry screen. And nothing on `moreska.eu`: **unlisted is not private**, any dancer can forward the link, and a public archive of season videos is a different product and a decision about music rights and the dancers' consent (CONTEXT.md → *Snimka*).

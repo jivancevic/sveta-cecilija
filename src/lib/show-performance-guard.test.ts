@@ -61,6 +61,10 @@ export const ALLOW_LIST: Record<string, string> = {
     'Roster read (#433): the shared ICS feed carries EVERY performance of the current and future seasons, public or not (ADR-0024) — a ship call is an evening a dancer has to turn up for, and filtering on the predicate would hide it from the calendar the roster subscribes to. Token-authed route, no buyer surface.',
   'src/app/api/app/note/route.ts':
     'Roster write route (#436): the voditelj note is a roster field on EVERY performance, public or not (ADR-0024). The id-addressed read only checks the row exists before the update, behind requirePermission(moreska).',
+  'src/app/api/app/performances/[id]/video/route.ts':
+    'Roster write route (#692): the Snimka is a roster field on EVERY performance, public or not (ADR-0024) — a ship call gets filmed like any other evening. The id-addressed read only asks what KIND the row is, so a koncert can be refused, before the update, behind requirePermission(moreska).',
+  'src/app/api/app/performances/[id]/video/notify/route.ts':
+    'Roster notification route (#692): the one ring per evening covers EVERY performance, public or not (ADR-0024). The id-addressed read builds the push message (the date and the kind word) and checks a link is saved; it reaches no buyer surface and the caller is behind requirePermission(moreska).',
   'src/lib/push/push-data.ts':
     'Roster read (#431, #435): the moreškant notifications cover EVERY performance of the season, public or not (ADR-0024) — a ship call is an evening a dancer has to turn up for, so filtering on the predicate would silence the alarm for exactly the performances nobody has a ticket to. The sweep is bounded by the start instant and the cancelled flag, and the callers are a `moreska` route and the CRON_SECRET job.',
   'src/lib/app/show-row.ts':
