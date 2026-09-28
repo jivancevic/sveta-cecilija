@@ -2086,7 +2086,8 @@ export const APP_STRINGS = {
       sentAt: (when: string) => `Obavijest poslana: ${when}`,
       sent: (people: number, devices: number) =>
         `Obavijest je poslana. U Sandučiću je kod ${people}, a zazvonilo je ${croatianPlural(devices, PHONES)}.`,
-      /** The server's three refusals. */
+      /** The server's four refusals. */
+      unconfirmed: 'Obavijest potvrdi prije slanja.',
       noLink: 'Prvo spremi link na video.',
       already: 'Obavijest je već poslana.',
       nobody: 'Nijedan aktivni moreškant nema račun, pa obavijest nema kome poslati.',

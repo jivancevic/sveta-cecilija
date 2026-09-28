@@ -57,6 +57,21 @@ export const EVENING_BEFORE_TIME = '18:00'
 /** The two scheduled notification kinds; also the claim table's `type`. */
 export type ScheduledNotificationType = 'alarm' | 'reminder'
 
+/**
+ * Every value `performance_notifications.type` may hold.
+ *
+ * Wider than `ScheduledNotificationType` on purpose, and the distinction is not
+ * pedantry: the two scheduled kinds are decided by a CLOCK — the cron asks "is
+ * the alarm due" — and are released and re-claimed when an evening moves
+ * (`CLAIMS_INVALIDATED_BY_A_MOVE`). `video` (#692) is claimed because a person
+ * pressed a button, is due never, and must survive a move: a video of an
+ * evening that got rescheduled is still that evening's video, and releasing its
+ * claim would ring the roster a second time for a link that has not changed.
+ *
+ * So the claim TABLE takes this type and the SCHEDULE keeps the narrow one.
+ */
+export type PerformanceNotificationType = ScheduledNotificationType | 'video'
+
 /** The only thing the timing rules need to know about a performance. */
 export interface ScheduledPerformance {
   /** YYYY-MM-DD */

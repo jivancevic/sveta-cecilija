@@ -11,7 +11,7 @@
 // and from a probe script without dragging the CMS along.
 
 import { poolQuery as poolQueryOf, type PoolQuery } from '@/lib/db/pool-query'
-import type { ScheduledNotificationType } from './schedule'
+import type { PerformanceNotificationType } from './schedule'
 
 /** The pool view every raw-table store shares (`src/lib/db/pool-query.ts`). */
 export type PushQuery = PoolQuery
@@ -141,7 +141,7 @@ export async function loadUserIdsByMember(
 export async function claimNotification(
   query: PushQuery,
   performanceId: string,
-  type: ScheduledNotificationType,
+  type: PerformanceNotificationType,
 ): Promise<boolean> {
   const res = await query(
     `INSERT INTO performance_notifications (performance_id, type)
@@ -157,7 +157,7 @@ export async function claimNotification(
 export async function releaseNotification(
   query: PushQuery,
   performanceId: string,
-  type: ScheduledNotificationType,
+  type: PerformanceNotificationType,
 ): Promise<void> {
   await query(
     `DELETE FROM performance_notifications WHERE performance_id = $1 AND type = $2`,
@@ -165,11 +165,39 @@ export async function releaseNotification(
   )
 }
 
+/**
+ * When (performance, type) was claimed, or null when it never was.
+ *
+ * The read side of the claim, added for the video ring (#692): the claim is not
+ * only the lock that stops a second send, it is the RECEIPT the screen shows
+ * ("Obavijest poslana: 28. rujna u 21:14") for as long as the evening exists.
+ * That receipt is why nothing else records the send — a second record of the
+ * same fact is a second thing that can disagree with the lock.
+ *
+ * `claimed_at` is `timestamptz(3)`, so what comes back is an instant; the
+ * screen is what renders it in the Zagreb wall clock.
+ */
+export async function readNotificationClaim(
+  query: PushQuery,
+  performanceId: string,
+  type: PerformanceNotificationType,
+): Promise<{ claimedAt: Date } | null> {
+  const res = await query(
+    `SELECT claimed_at FROM performance_notifications
+     WHERE performance_id = $1 AND type = $2`,
+    [Number(performanceId), type],
+  )
+  const row = res.rows[0] as { claimed_at?: unknown } | undefined
+  if (!row) return null
+  const claimedAt = row.claimed_at instanceof Date ? row.claimed_at : new Date(String(row.claimed_at))
+  return Number.isNaN(claimedAt.getTime()) ? null : { claimedAt }
+}
+
 /** Record the outcome on a claim that is already taken. Cosmetic. */
 export async function finalizeNotification(
   query: PushQuery,
   performanceId: string,
-  type: ScheduledNotificationType,
+  type: PerformanceNotificationType,
   devices: number,
 ): Promise<void> {
   await query(
