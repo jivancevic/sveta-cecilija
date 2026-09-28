@@ -1242,6 +1242,17 @@ export const APP_STRINGS = {
      */
     venueLocked:
       'Ova izvedba ima prodane ulaznice, pa se mjesto mijenja radnjom "Preseli u zimsko", koja o tome obavijesti kupce.',
+    /**
+     * The hour of a SOLD evening, for the same reason as the house (#688).
+     *
+     * Correcting a typo in the start time of an evening nobody has bought into
+     * is an edit. Moving the hour of one somebody holds a ticket for is a thing
+     * they have to be told: their PDF prints that hour and, since #674, an
+     * entrance time derived from it. So the field is refused while there are
+     * seats sold, and *Pomakni termin* is named as the way that does tell them.
+     */
+    timeLocked:
+      'Ova izvedba ima prodane ulaznice, pa se vrijeme početka mijenja radnjom "Pomakni termin", koja o tome obavijesti kupce i ponovno im pošalje ulaznice.',
     missing: 'Ta izvedba ne postoji.',
     failed: 'Izvedba nije spremljena. Pokušaj ponovno.',
     rejected: 'Zahtjev nije prihvaćen. Pokušaj ponovno iz aplikacije.',
@@ -3086,7 +3097,12 @@ export const APP_STRINGS = {
       paused: 'Prodaja pauzirana',
       cancelled: 'Otkazano',
       moved: 'Preseljeno',
-      rescheduled: 'Datum pomaknut',
+      /**
+       * #688 — *Termin*, not *Datum*. The badge is drawn off `dateChangedAt`,
+       * which a time-only move stamps as surely as a day move does, so "Datum
+       * pomaknut" on an evening whose date never changed is simply false.
+       */
+      rescheduled: 'Termin pomaknut',
     },
     /** The detail's number list. `Prihod` appears for a `finance` holder only. */
     numbers: {
@@ -3260,21 +3276,43 @@ export const APP_STRINGS = {
       retry:
         'Dio posla nije prošao. Pokreni radnju ponovno: preskače sve što je već obavljeno i ponavlja samo ovo.',
     },
-    /** Pomakni datum: the #379 route, with its test send. */
+    /**
+     * Pomakni termin: the #379 route, with its test send, and since #688 the
+     * HOUR as well as the day.
+     *
+     * It is *termin* rather than *datum* because one control now moves either
+     * half or both, and because that is the word for what a buyer actually
+     * holds: a day and an hour. Either field may be left as it is; what is
+     * filled in is what moves, and the same notice and the same reissued ticket
+     * follow whichever it was.
+     */
     reschedule: {
-      action: 'Pomakni datum',
-      title: 'Pomakni datum izvedbe',
+      action: 'Pomakni termin',
+      title: 'Pomakni termin izvedbe',
       lead: (date: string, time: string, buyers: number) =>
-        `Sada ${date} u ${time}. Obavijest ide na ${buyers} kupaca, a ulaznice se šalju ponovno s novim datumom.`,
+        `Sada ${date} u ${time}. Promijeni datum, vrijeme ili oboje. Obavijest ide na ${buyers} kupaca, a ulaznice se šalju ponovno s novim terminom.`,
       newDate: 'Novi datum',
+      newTime: 'Novo vrijeme početka',
+      unchanged: 'Ostavi prazno što se ne mijenja.',
       test: 'Pošalji probni mail meni',
       testSent: (to: string) => `Probni mail je poslan na ${to} (EN i HR). Provjeri pa potvrdi.`,
       confirm: 'Potvrdi i pošalji kupcima',
-      needsDate: 'Prvo odaberi novi datum.',
-      done: (oldDate: string, newDate: string, sent: number, total: number) =>
-        `Pomaknuto ${oldDate} u ${newDate}. Obaviješteno ${sent} od ${total} kupaca.`,
-      noop: 'To je već datum ove izvedbe. Ništa nije promijenjeno.',
-      mismatch: 'Datum se u međuvremenu promijenio. Otvori radnju ponovno. Nije poslana e-pošta.',
+      needsWhen: 'Upiši novi datum, novo vrijeme ili oboje.',
+      /**
+       * Takes the four parts rather than two pre-joined phrases: the little word
+       * "u" between a day and an hour is Croatian copy, and copy lives here.
+       */
+      done: (
+        oldDate: string,
+        oldTime: string,
+        newDate: string,
+        newTime: string,
+        sent: number,
+        total: number,
+      ) =>
+        `Pomaknuto ${oldDate} u ${oldTime} na ${newDate} u ${newTime}. Obaviješteno ${sent} od ${total} kupaca.`,
+      noop: 'To je već termin ove izvedbe. Ništa nije promijenjeno.',
+      mismatch: 'Termin se u međuvremenu promijenio. Otvori radnju ponovno. Nije poslana e-pošta.',
     },
     /** Preseli u zimsko: the #94 route. Ljetno only, once. */
     move: {

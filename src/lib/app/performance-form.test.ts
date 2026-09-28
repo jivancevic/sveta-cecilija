@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import type { Permission } from '@/lib/access/permissions'
 import type { PerformancePatch, PerformanceRow } from '@/lib/repo/shows'
 import type { AppRequestMeta } from './request-guard'
+import { APP_STRINGS } from './strings'
 import {
   MAX_THRESHOLD,
   handleCancelPerformance,
@@ -172,7 +173,7 @@ describe('handleEditPerformance', () => {
   // evening are not a permission refusal any more, they are the wrong body —
   // the public half asks for a house and this one has none. The date it carries
   // is refused by omission, which is the rule that matters: moving a public
-  // evening is *Pomakni datum*, with a preview and a mail to every buyer.
+  // evening is *Pomakni termin*, with a preview and a mail to every buyer.
   it('refuses a booking’s body at a PUBLIC performance, and writes nothing', async () => {
     const { deps: d, updated } = deps(REDOVNA)
     const res = await handleEditPerformance('9', GOOD_BODY, d)
@@ -402,8 +403,25 @@ describe('Uredi, on a PUBLIC performance', () => {
     expect(updated).toEqual([])
   })
 
-  it('still lets the hour and the kind change on that sold evening', async () => {
+  // #688 — the hour was the quiet path that survived beside the loud one. A
+  // buyer's PDF prints the start time and, since #674, an entrance time derived
+  // from it, so moving the hour under a sold ticket is exactly as much a thing
+  // people have to be told as moving the house.
+  it('refuses to move the HOUR once a ticket has been sold, naming Pomakni termin', async () => {
     const { deps: d, updated } = deps(REDOVNA, OK_REQUEST, ['tickets'], 40)
+    const res = await handleEditPerformance(
+      '9',
+      { time: '21:30', kind: 'ostalo', venue: 'ljetno-kino' },
+      d,
+    )
+
+    expect(res.status).toBe(409)
+    expect(res.body).toEqual({ error: APP_STRINGS.performance.timeLocked })
+    expect(updated).toEqual([])
+  })
+
+  it('moves the hour freely while nothing has been sold', async () => {
+    const { deps: d, updated } = deps(REDOVNA, OK_REQUEST, ['tickets'], 0)
     const res = await handleEditPerformance(
       '9',
       { time: '21:30', kind: 'ostalo', venue: 'ljetno-kino' },
@@ -416,17 +434,37 @@ describe('Uredi, on a PUBLIC performance', () => {
     ])
   })
 
+  it('still lets the KIND change on a sold evening, which reaches no buyer', async () => {
+    const { deps: d, updated } = deps(REDOVNA, OK_REQUEST, ['tickets'], 40)
+    const res = await handleEditPerformance(
+      '9',
+      { time: '10:30', kind: 'ostalo', venue: 'ljetno-kino' },
+      d,
+    )
+
+    expect(res.status).toBe(200)
+    expect(updated).toEqual([
+      { id: '9', patch: { time: '10:30', kind: 'ostalo', venue: 'ljetno-kino' } },
+    ])
+  })
+
+  it('names the HOUSE when both it and the hour moved, since that is the action to reach for', async () => {
+    const { deps: d } = deps(REDOVNA, OK_REQUEST, ['tickets'], 1)
+    const res = await handleEditPerformance('9', EDIT, d)
+    expect(res.body).toEqual({ error: APP_STRINGS.performance.venueLocked })
+  })
+
   it('moves the house freely while nothing has been sold', async () => {
     const { deps: d, updated } = deps(REDOVNA, OK_REQUEST, ['tickets'], 0)
     expect((await handleEditPerformance('9', EDIT, d)).status).toBe(200)
     expect(updated[0]!.patch.venue).toBe('zimsko-kino')
   })
 
-  it('does not even ask how many tickets there are when the house is unchanged', async () => {
-    // One less query on the common edit (a typo in the start time), and it is
-    // also what keeps a sold evening editable at all.
+  it('does not even ask how many tickets there are when neither house nor hour moved', async () => {
+    // One less query on an edit that reaches no buyer (#688 put the hour beside
+    // the house in the lock, so the free edit is now the kind alone).
     const { deps: d, activeTickets } = deps(REDOVNA, OK_REQUEST, ['tickets'], 12)
-    await handleEditPerformance('9', { ...EDIT, venue: 'ljetno-kino' }, d)
+    await handleEditPerformance('9', { time: '10:30', kind: 'ostalo', venue: 'ljetno-kino' }, d)
     expect(activeTickets).not.toHaveBeenCalled()
   })
 

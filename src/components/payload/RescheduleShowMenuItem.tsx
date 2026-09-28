@@ -12,19 +12,10 @@ interface Preview {
   sampleEmails: string[]
 }
 
-type RescheduleResult =
-  | {
-      status: 'rescheduled'
-      oldDate: string
-      newDate: string
-      total: number
-      sent: number
-      failed: number
-      reissued: number
-      reissueFailed: number
-    }
-  | { status: 'no-op'; date: string }
-  | { status: 'date-mismatch' }
+// The route's own answer, imported rather than re-typed (#688 review): it was
+// spelled out here and in Cecilija's sheet, so widening it for the hour meant
+// editing one union in three files. A type-only import costs nothing at runtime.
+import type { RescheduleResult } from '@/lib/show-reschedule'
 
 type TestResult = { status: 'test-sent'; to: string }
 
@@ -79,12 +70,13 @@ export function RescheduleShowMenuItem() {
   const [loading, setLoading] = useState(false)
   const [preview, setPreview] = useState<Preview | null>(null)
   const [newDate, setNewDate] = useState('')
+  const [newTime, setNewTime] = useState('')
   const [result, setResult] = useState<RescheduleResult | null>(null)
   const [testResult, setTestResult] = useState<TestResult | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  // A non-public performance has no buyers to notify (#409); move its date by
-  // editing the field instead.
+  // A non-public performance has no buyers to notify (#409); move its date or
+  // its hour by editing the field instead.
   if (!visible) return null
 
   const openPreview = async () => {
@@ -109,8 +101,11 @@ export function RescheduleShowMenuItem() {
   }
 
   const post = async (test: boolean) => {
-    if (!newDate) {
-      setError('Pick a new date first.')
+    // Either half, or both (#688). An empty field is sent as absent rather than
+    // echoed back from the row: echoing is how a caller overwrites an hour
+    // somebody else moved between the preview and the confirm.
+    if (!newDate && !newTime) {
+      setError('Pick a new date, a new time, or both.')
       return
     }
     setLoading(true)
@@ -120,7 +115,11 @@ export function RescheduleShowMenuItem() {
       const res = await fetch(`/api/shows/${id}/reschedule`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ newDate, test }),
+        body: JSON.stringify({
+          ...(newDate ? { newDate } : {}),
+          ...(newTime ? { newTime } : {}),
+          test,
+        }),
       })
       const data = await res.json()
       if (!res.ok) {
@@ -142,6 +141,7 @@ export function RescheduleShowMenuItem() {
     setOpen(false)
     setPreview(null)
     setNewDate('')
+    setNewTime('')
     setResult(null)
     setTestResult(null)
     setError(null)
@@ -150,14 +150,14 @@ export function RescheduleShowMenuItem() {
   if (!open) {
     return (
       <button onClick={openPreview} style={labelStyle}>
-        Reschedule show & notify buyers
+        Move show date/time & notify buyers
       </button>
     )
   }
 
   return (
     <div style={{ padding: '10px 16px', minWidth: 300 }}>
-      <p style={{ margin: '0 0 8px', fontSize: 13, fontWeight: 600 }}>Reschedule show</p>
+      <p style={{ margin: '0 0 8px', fontSize: 13, fontWeight: 600 }}>Move show date/time</p>
 
       {loading && <p style={{ margin: '0 0 8px', fontSize: 12, color: 'var(--theme-elevation-500)' }}>Working…</p>}
 
@@ -171,25 +171,31 @@ export function RescheduleShowMenuItem() {
           {result.status === 'rescheduled' && (
             <>
               <p style={{ margin: 0 }}>
-                Rescheduled {result.oldDate} → {result.newDate}. Notified {result.sent} of {result.total} buyer
+                Moved {result.oldDate} {result.oldTime} → {result.newDate} {result.newTime}. Notified{' '}
+                {result.sent} of {result.total} buyer
                 {result.total === 1 ? '' : 's'}
                 {result.failed > 0 ? `, ${result.failed} failed (see logs).` : '.'}
               </p>
               {/* Reissue is per ORDER, so this count can exceed the buyer count
                   (one person, several orders). A failure here means someone is
-                  still holding a PDF with the old date — resend it from the
+                  still holding a PDF with the old schedule — resend it from the
                   order's "Resend ticket email" action. */}
               <p style={{ margin: '4px 0 0' }}>
-                Reissued {result.reissued} ticket{result.reissued === 1 ? '' : 's'} with the new date
+                Reissued {result.reissued} ticket{result.reissued === 1 ? '' : 's'} with the new
+                schedule
                 {result.reissueFailed > 0
                   ? `, ${result.reissueFailed} failed (resend from the order, see logs).`
                   : '.'}
               </p>
             </>
           )}
-          {result.status === 'no-op' && <p style={{ margin: 0 }}>That is already the show&apos;s date. Nothing changed.</p>}
-          {result.status === 'date-mismatch' && (
-            <p style={{ margin: 0 }}>The date changed in another tab. Reopen to try again. No email sent.</p>
+          {result.status === 'no-op' && (
+            <p style={{ margin: 0 }}>That is already the show&apos;s schedule. Nothing changed.</p>
+          )}
+          {result.status === 'schedule-mismatch' && (
+            <p style={{ margin: 0 }}>
+              The date or time changed in another tab. Reopen to try again. No email sent.
+            </p>
           )}
           <button onClick={close} style={{ ...secondaryBtn, marginTop: 8 }}>Close</button>
         </div>
@@ -211,6 +217,12 @@ export function RescheduleShowMenuItem() {
           <label style={{ display: 'block', marginBottom: 4, fontWeight: 600 }}>New date</label>
           <input type="date" value={newDate} onChange={(e) => setNewDate(e.target.value)} style={dateInput} />
 
+          <label style={{ display: 'block', marginBottom: 4, fontWeight: 600 }}>New start time</label>
+          <input type="time" value={newTime} onChange={(e) => setNewTime(e.target.value)} style={dateInput} />
+          <p style={{ margin: '0 0 10px', color: 'var(--theme-elevation-500)' }}>
+            Leave either field empty to keep it as it is.
+          </p>
+
           {testResult && (
             <p style={{ margin: '0 0 8px', color: 'var(--theme-success-500, #2f855a)' }}>
               Test sent to {testResult.to} (EN + HR). Check your inbox, then confirm.
@@ -218,10 +230,10 @@ export function RescheduleShowMenuItem() {
           )}
 
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-            <button onClick={() => post(true)} disabled={loading || !newDate} style={secondaryBtn}>
+            <button onClick={() => post(true)} disabled={loading || (!newDate && !newTime)} style={secondaryBtn}>
               Send test to me
             </button>
-            <button onClick={() => post(false)} disabled={loading || !newDate} style={primaryBtn}>
+            <button onClick={() => post(false)} disabled={loading || (!newDate && !newTime)} style={primaryBtn}>
               Confirm &amp; send to buyers
             </button>
             <button onClick={close} disabled={loading} style={secondaryBtn}>Cancel</button>

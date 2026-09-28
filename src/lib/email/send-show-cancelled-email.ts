@@ -1,7 +1,7 @@
 // Brevo sender for the show-CANCELLATION notice (#497). Sent to every buyer of
 // a cancelled public performance who has an address on file. One message per
 // order in the buyer's own locale (no BCC, buyer emails must not leak to each
-// other). Sibling of send-date-change-email.ts and built on the same brand
+// other). Sibling of send-schedule-change-email.ts and built on the same brand
 // shell; all mail goes through postBrevoEmail so DEV_EMAIL_OVERRIDE applies.
 //
 // The reschedule notice leads with reassurance ("your tickets still work").

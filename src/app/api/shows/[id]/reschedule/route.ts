@@ -7,7 +7,9 @@ import {
   type RescheduleBuyer,
   type RescheduleDeps,
 } from '@/lib/show-reschedule'
-import { sendDateChangeEmail } from '@/lib/email/send-date-change-email'
+import { sendScheduleChangeEmail } from '@/lib/email/send-schedule-change-email'
+// The one spelling of a start time, shared with the performance form (#688).
+import { TIME_RE } from '@/lib/performance-input'
 import { sendOrderTicketEmail, type OrderEmailPayload } from '@/lib/email/send-order-ticket-email'
 import { signRescheduleRefundToken } from '@/lib/refund/reschedule-refund-token'
 import { refundUrl } from '@/lib/site-url'
@@ -20,11 +22,15 @@ import { loadPerformanceFacts, notifyRawPerformanceSave } from '@/lib/push/raw-s
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-// Admin-only "Reschedule show & notify buyers" workflow.
-//   GET  → preview: current date + affected online-buyer count + sample emails.
-//   POST { newDate }            → confirm: atomically move the date + audit, notify buyers,
-//                                 then reissue each affected order's ticket email/PDF/ICS (#379).
-//   POST { newDate, test:true } → send the EN+HR preview to the logged-in admin only; no writes, no buyer mail.
+// Admin-only "Move show & notify buyers" workflow.
+//   GET  → preview: current date + time + affected online-buyer count + sample emails.
+//   POST { newDate? , newTime? }  → confirm: atomically move the schedule + audit, notify buyers,
+//                                   then reissue each affected order's ticket email/PDF/ICS (#379).
+//   POST { …, test:true }         → send the EN+HR preview to the logged-in admin only; no writes, no buyer mail.
+//
+// #688 — either half, or both. At least one has to be present: a body with
+// neither is a 400 rather than a silent no-op, because the only way to send it
+// is a caller that thinks it is moving something.
 
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/
 
@@ -99,25 +105,45 @@ function buildDeps(
         locale: r.locale === 'hr' ? 'hr' : r.locale === 'en' ? 'en' : null,
       }))
     },
-    claimReschedule: async (showId, userId, expectedOldDate, newDate): Promise<boolean> => {
+    claimReschedule: async (showId, userId, expected, next): Promise<boolean> => {
       // Store at 12:00:00+00 like the seed so date::date is timezone-stable.
-      // Optimistic concurrency: only the call whose expected old date still
-      // matches wins; a concurrent confirm claims 0 rows → date-mismatch.
+      // Optimistic concurrency: only the call whose expected old date AND old
+      // time still match wins; a concurrent confirm claims 0 rows →
+      // schedule-mismatch. The time is in the guard since #688, so two people
+      // moving the hour at once cannot both win and both mail.
+      //
+      // `original_date` is stamped only when the DAY actually moves. It means
+      // "the first date this evening was ever scheduled for", and a time-only
+      // move that filled it in would set it to the date the show is still on and
+      // make the Backoffice's "NULL = never moved" read as a move that never
+      // happened. There is deliberately NO original_time sibling: nothing reads
+      // either column for logic (both are read-only display in the Backoffice),
+      // and who moved this evening and when is already answered by
+      // date_changed_at + date_changed_by_id, which a time move stamps too.
+      const dateMoved = next.date !== expected.date
       const res = await pool.query(
         `UPDATE shows
          SET date = ($2 || ' 12:00:00+00')::timestamptz,
+             time = $3,
              date_changed_at = NOW(),
-             date_changed_by_id = $3,
-             original_date = COALESCE(original_date, date),
+             date_changed_by_id = $4,
+             original_date = ${dateMoved ? 'COALESCE(original_date, date)' : 'original_date'},
              updated_at = NOW()
-         WHERE id = $1 AND date::date = $4
+         WHERE id = $1 AND date::date = $5 AND time = $6
          RETURNING id`,
-        [Number(showId), newDate, Number(userId), expectedOldDate],
+        [
+          Number(showId),
+          next.date,
+          next.time,
+          Number(userId),
+          expected.date,
+          expected.time,
+        ],
       )
       return res.rows.length > 0
     },
-    sendDateChangeEmail: async (buyer, show): Promise<boolean> =>
-      sendDateChangeEmail(
+    sendScheduleChangeEmail: async (buyer, show): Promise<boolean> =>
+      sendScheduleChangeEmail(
         {
           orderId: buyer.orderId,
           buyer: { name: buyer.name, email: buyer.email },
@@ -176,11 +202,25 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: 'BREVO_API_KEY not configured' }, { status: 500 })
   }
 
-  const body = (await req.json().catch(() => ({}))) as { newDate?: unknown; test?: unknown }
-  const newDate = typeof body.newDate === 'string' ? body.newDate : ''
-  if (!ISO_DATE_RE.test(newDate)) {
+  const body = (await req.json().catch(() => ({}))) as {
+    newDate?: unknown
+    newTime?: unknown
+    test?: unknown
+  }
+  // An absent half means "leave it alone" (#688); a present one must be valid.
+  const rawDate = typeof body.newDate === 'string' ? body.newDate.trim() : ''
+  const rawTime = typeof body.newTime === 'string' ? body.newTime.trim() : ''
+  if (!rawDate && !rawTime) {
+    return NextResponse.json({ error: 'Send newDate, newTime, or both' }, { status: 400 })
+  }
+  if (rawDate && !ISO_DATE_RE.test(rawDate)) {
     return NextResponse.json({ error: 'newDate must be YYYY-MM-DD' }, { status: 400 })
   }
+  if (rawTime && !TIME_RE.test(rawTime)) {
+    return NextResponse.json({ error: 'newTime must be HH:MM' }, { status: 400 })
+  }
+  const newDate = rawDate || undefined
+  const newTime = rawTime || undefined
 
   const secret = process.env.PAYLOAD_SECRET ?? ''
   const pool = (payload.db as unknown as { pool: Pool }).pool
@@ -198,14 +238,31 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       if (!show) return NextResponse.json({ error: 'Show not found' }, { status: 404 })
       // #409 — the test send bypasses rescheduleShow, so it needs its own gate.
       assertPublicPerformance(show as unknown as Record<string, unknown>)
+      // …and so does the no-op check (#688). Without it, a body carrying only the
+      // show's CURRENT date renders a preview of a change nobody made: the notice
+      // would name a new start time and print the same hour on both sides,
+      // because the copy is chosen from whichever half differs. A preview of
+      // nothing is worse than a refusal.
+      if ((newDate ?? show.date) === show.date && (newTime ?? show.time) === show.time) {
+        return NextResponse.json({ error: 'That is already the schedule' }, { status: 400 })
+      }
       const sample = { orderId: 'TEST', buyer: { name: 'Ivan Horvat', email: adminEmail } }
-      const showDates = { oldDate: show.date, newDate, time: show.time, venue: show.venue }
+      // The preview shows exactly the shape the buyers would get: a date-only, a
+      // time-only or a both notice, decided by which halves this body carried
+      // (#688). An omitted half is the show's own, so it reads as unchanged.
+      const showDates = {
+        oldDate: show.date,
+        newDate: newDate ?? show.date,
+        oldTime: show.time,
+        newTime: newTime ?? show.time,
+        venue: show.venue,
+      }
       // Sign a real token for the sample so the CTA renders and lands on the
       // refund page (it will show the neutral "not valid" state for TEST — the
       // admin is checking layout + that the link resolves, not refunding).
       const sampleRefundUrl = buildRefundUrl('TEST', secret)
       for (const locale of ['en', 'hr'] as const) {
-        await sendDateChangeEmail(
+        await sendScheduleChangeEmail(
           { ...sample, show: showDates, locale, refundUrl: sampleRefundUrl },
           { fetch: globalThis.fetch, brevoApiKey },
         )
@@ -220,7 +277,10 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
   const push = createPushDeps(payload as unknown as PushPayload)
   const before = await loadPerformanceFacts(push.query, id)
   try {
-    const result = await rescheduleShow({ showId: id, userId: String(user.id), newDate }, deps)
+    const result = await rescheduleShow(
+      { showId: id, userId: String(user.id), newDate, newTime },
+      deps,
+    )
 
     // The write is a raw `UPDATE … RETURNING` claim, so no Payload hook fires
     // for it (#441 review): the roster is told here instead, from the row as it

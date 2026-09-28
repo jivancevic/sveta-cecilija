@@ -20,7 +20,7 @@ function makeDeps(overrides: Partial<RescheduleDeps> = {}): RescheduleDeps {
     getShow: vi.fn().mockResolvedValue(show()),
     findBuyers: vi.fn().mockResolvedValue([buyer({ orderId: '1' }), buyer({ orderId: '2', email: 'b@x.hr', locale: 'hr' })]),
     claimReschedule: vi.fn().mockResolvedValue(true),
-    sendDateChangeEmail: vi.fn().mockResolvedValue(true),
+    sendScheduleChangeEmail: vi.fn().mockResolvedValue(true),
     findReissueOrderIds: vi.fn().mockResolvedValue(['1', '2']),
     reissueTicket: vi.fn().mockResolvedValue(true),
     ...overrides,
@@ -31,6 +31,8 @@ const RESCHEDULED = {
   status: 'rescheduled',
   oldDate: '2026-06-22',
   newDate: '2026-06-23',
+  oldTime: '21:00',
+  newTime: '21:00',
   total: 2,
   sent: 2,
   failed: 0,
@@ -42,11 +44,22 @@ describe('rescheduleShow', () => {
   it('claims the new date then emails every buyer', async () => {
     const deps = makeDeps()
     const result = await rescheduleShow({ showId: '7', userId: '3', newDate: '2026-06-23' }, deps)
-    expect(deps.claimReschedule).toHaveBeenCalledWith('7', '3', '2026-06-22', '2026-06-23')
-    expect(deps.sendDateChangeEmail).toHaveBeenCalledTimes(2)
-    expect(deps.sendDateChangeEmail).toHaveBeenCalledWith(
+    expect(deps.claimReschedule).toHaveBeenCalledWith(
+      '7',
+      '3',
+      { date: '2026-06-22', time: '21:00' },
+      { date: '2026-06-23', time: '21:00' },
+    )
+    expect(deps.sendScheduleChangeEmail).toHaveBeenCalledTimes(2)
+    expect(deps.sendScheduleChangeEmail).toHaveBeenCalledWith(
       expect.objectContaining({ orderId: '1' }),
-      { oldDate: '2026-06-22', newDate: '2026-06-23', time: '21:00', venue: 'ljetno-kino' },
+      {
+        oldDate: '2026-06-22',
+        newDate: '2026-06-23',
+        oldTime: '21:00',
+        newTime: '21:00',
+        venue: 'ljetno-kino',
+      },
     )
     expect(result).toEqual(RESCHEDULED)
   })
@@ -55,7 +68,7 @@ describe('rescheduleShow', () => {
     const order: string[] = []
     const deps = makeDeps({
       claimReschedule: vi.fn(async () => { order.push('claim'); return true }),
-      sendDateChangeEmail: vi.fn(async () => { order.push('send'); return true }),
+      sendScheduleChangeEmail: vi.fn(async () => { order.push('send'); return true }),
     })
     await rescheduleShow({ showId: '7', userId: '3', newDate: '2026-06-23' }, deps)
     expect(order[0]).toBe('claim')
@@ -64,23 +77,23 @@ describe('rescheduleShow', () => {
   it('is a no-op when the new date equals the current date', async () => {
     const deps = makeDeps()
     const result = await rescheduleShow({ showId: '7', userId: '3', newDate: '2026-06-22' }, deps)
-    expect(result).toEqual({ status: 'no-op', date: '2026-06-22' })
+    expect(result).toEqual({ status: 'no-op', date: '2026-06-22', time: '21:00' })
     expect(deps.claimReschedule).not.toHaveBeenCalled()
-    expect(deps.sendDateChangeEmail).not.toHaveBeenCalled()
+    expect(deps.sendScheduleChangeEmail).not.toHaveBeenCalled()
     expect(deps.reissueTicket).not.toHaveBeenCalled()
   })
 
-  it('reports date-mismatch (no send) when the atomic claim loses the race', async () => {
+  it('reports schedule-mismatch (no send) when the atomic claim loses the race', async () => {
     const deps = makeDeps({ claimReschedule: vi.fn().mockResolvedValue(false) })
     const result = await rescheduleShow({ showId: '7', userId: '3', newDate: '2026-06-23' }, deps)
-    expect(result).toEqual({ status: 'date-mismatch' })
-    expect(deps.sendDateChangeEmail).not.toHaveBeenCalled()
+    expect(result).toEqual({ status: 'schedule-mismatch' })
+    expect(deps.sendScheduleChangeEmail).not.toHaveBeenCalled()
     expect(deps.reissueTicket).not.toHaveBeenCalled()
   })
 
   it('counts partial send failures', async () => {
     const deps = makeDeps({
-      sendDateChangeEmail: vi.fn().mockResolvedValueOnce(true).mockResolvedValueOnce(false),
+      sendScheduleChangeEmail: vi.fn().mockResolvedValueOnce(true).mockResolvedValueOnce(false),
     })
     const result = await rescheduleShow({ showId: '7', userId: '3', newDate: '2026-06-23' }, deps)
     expect(result).toEqual({ ...RESCHEDULED, sent: 1, failed: 1 })
@@ -92,6 +105,95 @@ describe('rescheduleShow', () => {
   })
 })
 
+// #688 — the hour is as material to a ticket holder as the day, and the wrong
+// hour also means the wrong entrance time on their PDF (#674). A time move takes
+// the same path: one claim, one notice, one reissue.
+describe('rescheduleShow moves the TIME (#688)', () => {
+  it('moves the hour alone, keeping the date, and tells every buyer both hours', async () => {
+    const deps = makeDeps()
+    const result = await rescheduleShow({ showId: '7', userId: '3', newTime: '18:00' }, deps)
+
+    expect(deps.claimReschedule).toHaveBeenCalledWith(
+      '7',
+      '3',
+      { date: '2026-06-22', time: '21:00' },
+      { date: '2026-06-22', time: '18:00' },
+    )
+    expect(deps.sendScheduleChangeEmail).toHaveBeenCalledWith(expect.anything(), {
+      oldDate: '2026-06-22',
+      newDate: '2026-06-22',
+      oldTime: '21:00',
+      newTime: '18:00',
+      venue: 'ljetno-kino',
+    })
+    // The ticket itself is reissued for a time move exactly as for a date move:
+    // the PDF carries the hour AND the derived entrance time.
+    expect(deps.reissueTicket).toHaveBeenCalledTimes(2)
+    expect(result).toEqual({
+      ...RESCHEDULED,
+      newDate: '2026-06-22',
+      newTime: '18:00',
+    })
+  })
+
+  it('moves both halves at once', async () => {
+    const deps = makeDeps()
+    const result = await rescheduleShow(
+      { showId: '7', userId: '3', newDate: '2026-06-23', newTime: '18:00' },
+      deps,
+    )
+    expect(deps.claimReschedule).toHaveBeenCalledWith(
+      '7',
+      '3',
+      { date: '2026-06-22', time: '21:00' },
+      { date: '2026-06-23', time: '18:00' },
+    )
+    expect(result).toEqual({ ...RESCHEDULED, newTime: '18:00' })
+  })
+
+  it('is a no-op when the new time equals the current time', async () => {
+    const deps = makeDeps()
+    const result = await rescheduleShow({ showId: '7', userId: '3', newTime: '21:00' }, deps)
+    expect(result).toEqual({ status: 'no-op', date: '2026-06-22', time: '21:00' })
+    expect(deps.claimReschedule).not.toHaveBeenCalled()
+    expect(deps.sendScheduleChangeEmail).not.toHaveBeenCalled()
+  })
+
+  it('is a no-op when neither half is given', async () => {
+    const deps = makeDeps()
+    const result = await rescheduleShow({ showId: '7', userId: '3' }, deps)
+    expect(result).toEqual({ status: 'no-op', date: '2026-06-22', time: '21:00' })
+    expect(deps.claimReschedule).not.toHaveBeenCalled()
+  })
+
+  it('sends nobody anything when the evening has no emailable order, and still claims', async () => {
+    const deps = makeDeps({
+      findBuyers: vi.fn().mockResolvedValue([]),
+      findReissueOrderIds: vi.fn().mockResolvedValue([]),
+    })
+    const result = await rescheduleShow({ showId: '7', userId: '3', newTime: '18:00' }, deps)
+    expect(deps.claimReschedule).toHaveBeenCalledTimes(1)
+    expect(deps.sendScheduleChangeEmail).not.toHaveBeenCalled()
+    expect(deps.reissueTicket).not.toHaveBeenCalled()
+    expect(result).toEqual({
+      ...RESCHEDULED,
+      newDate: '2026-06-22',
+      newTime: '18:00',
+      total: 0,
+      sent: 0,
+      reissued: 0,
+    })
+  })
+
+  it('refuses a non-public performance, the hour as much as the day', async () => {
+    const deps = makeDeps({ getShow: vi.fn().mockResolvedValue(show({ isPublic: false })) })
+    await expect(
+      rescheduleShow({ showId: '7', userId: '3', newTime: '18:00' }, deps),
+    ).rejects.toThrow(/not a public performance/i)
+    expect(deps.claimReschedule).not.toHaveBeenCalled()
+  })
+})
+
 // #379 — the notice alone left buyers holding a PDF with the old date. After the
 // move we reissue the ticket itself, once per affected ORDER (not per buyer: the
 // notice is deduped by email, a ticket is not).
@@ -100,7 +202,7 @@ describe('rescheduleShow ticket reissue', () => {
     const calls: string[] = []
     const deps = makeDeps({
       findReissueOrderIds: vi.fn().mockResolvedValue(['1', '2', '3']),
-      sendDateChangeEmail: vi.fn(async () => { calls.push('notice'); return true }),
+      sendScheduleChangeEmail: vi.fn(async () => { calls.push('notice'); return true }),
       reissueTicket: vi.fn(async (orderId: string) => { calls.push(`reissue:${orderId}`); return true }),
     })
 
@@ -124,12 +226,12 @@ describe('rescheduleShow ticket reissue', () => {
       findReissueOrderIds: vi.fn().mockResolvedValue(['1', '2']),
     })
     const result = await rescheduleShow({ showId: '7', userId: '3', newDate: '2026-06-23' }, deps)
-    expect(deps.sendDateChangeEmail).toHaveBeenCalledTimes(1)
+    expect(deps.sendScheduleChangeEmail).toHaveBeenCalledTimes(1)
     expect(deps.reissueTicket).toHaveBeenCalledTimes(2)
     expect(result).toEqual({ ...RESCHEDULED, total: 1, sent: 1, reissued: 2 })
   })
 
-  it('does not roll back the date change when a reissue fails', async () => {
+  it('does not roll back the move when a reissue fails', async () => {
     const deps = makeDeps({
       reissueTicket: vi.fn().mockResolvedValueOnce(true).mockResolvedValueOnce(false),
     })
@@ -195,7 +297,7 @@ describe('non-public performances (#409)', () => {
       rescheduleShow({ showId: '7', userId: '3', newDate: '2026-06-23' }, deps),
     ).rejects.toThrow(/not a public performance/i)
     expect(deps.claimReschedule).not.toHaveBeenCalled()
-    expect(deps.sendDateChangeEmail).not.toHaveBeenCalled()
+    expect(deps.sendScheduleChangeEmail).not.toHaveBeenCalled()
     expect(deps.reissueTicket).not.toHaveBeenCalled()
   })
 

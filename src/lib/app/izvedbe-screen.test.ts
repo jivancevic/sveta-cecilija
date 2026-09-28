@@ -199,7 +199,9 @@ describe('izvedbaHead', () => {
     const head = izvedbaHead(performance(), sales({ paused: true, rescheduled: true }))
     expect(head.chips).toEqual([
       { label: 'Prodaja pauzirana', tone: 'warn' },
-      { label: 'Datum pomaknut', tone: 'plain' },
+      // *Termin*, not *Datum*, since #688: the badge comes off `dateChangedAt`,
+      // which a time-only move stamps too.
+      { label: 'Termin pomaknut', tone: 'plain' },
     ])
   })
 })

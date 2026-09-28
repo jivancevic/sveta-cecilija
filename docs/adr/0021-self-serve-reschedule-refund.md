@@ -5,7 +5,7 @@
 
 ## Context
 
-When HGD moves a show to a new date (the reschedule flow — `src/lib/show-reschedule.ts`, `send-date-change-email.ts`), every online buyer's tickets are **automatically carried over** to the new date; nothing is required of them. But a minority genuinely can't make the new date. Until now the email's only escape hatch was *"reply to this email and we'll find a solution"* — a manual, staff-mediated refund (`POST /api/orders/[id]/refund`, admin-only).
+When HGD moves a show to a new date (the move flow — `src/lib/show-reschedule.ts`, `send-schedule-change-email.ts`, renamed from `send-date-change-email.ts` by #688), every online buyer's tickets are **automatically carried over**; nothing is required of them. But a minority genuinely can't make the new one. **Since #688 the same flow moves the START TIME**, and this refund is offered on an hour change exactly as on a day change: a buyer who booked 21:00 and cannot be there at 18:00 has as good a claim as one who cannot come on the new Tuesday. Until now the email's only escape hatch was *"reply to this email and we'll find a solution"* — a manual, staff-mediated refund (`POST /api/orders/[id]/refund`, admin-only).
 
 We want the buyer to be able to **cancel and refund their own order without any staff intervention**, reached from a link in the reschedule email. Refunds are otherwise admin-only for good reason (they move real money and free seats), so opening a self-serve path needs deliberate scoping.
 
