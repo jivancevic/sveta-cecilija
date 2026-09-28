@@ -29,7 +29,7 @@ import { toIsoDate } from '@/lib/to-iso-date'
 import { isShownKind, shownPerformanceSql } from '@/lib/show-performance'
 import type { AlarmPerformance } from './alarm'
 import type { DuePerformance } from './roster-notifications'
-import { LOOKAHEAD_MS, type ScheduledNotificationType } from './schedule'
+import { LOOKAHEAD_MS, type PerformanceNotificationType } from './schedule'
 import {
   claimNotification,
   finalizeNotification,
@@ -242,11 +242,13 @@ export function createPushDeps(payload: PushPayload) {
     loadMoreskanti: () => loadActiveMoreskanti(payload),
     loadUserIdsByMember: (memberIds: readonly string[]) => loadUserIdsByMember(query, memberIds),
     send: createSender(query),
-    claim: (performanceId: string, type: ScheduledNotificationType) =>
+    // The CLAIM table's type, wider than the schedule's: the video ring (#692)
+    // claims a `video` row and is due never. See `PerformanceNotificationType`.
+    claim: (performanceId: string, type: PerformanceNotificationType) =>
       claimNotification(query, performanceId, type),
-    release: (performanceId: string, type: ScheduledNotificationType) =>
+    release: (performanceId: string, type: PerformanceNotificationType) =>
       releaseNotification(query, performanceId, type),
-    finalize: (performanceId: string, type: ScheduledNotificationType, devices: number) =>
+    finalize: (performanceId: string, type: PerformanceNotificationType, devices: number) =>
       finalizeNotification(query, performanceId, type, devices),
   }
 }

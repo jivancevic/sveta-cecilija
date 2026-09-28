@@ -26,7 +26,6 @@ import { APP_STRINGS } from './strings'
 import { readVideoLink } from './video-link'
 
 export interface VideoBody {
-  performanceId?: unknown
   url?: unknown
 }
 
@@ -47,27 +46,29 @@ export interface VideoResult {
   body: { ok: true; url: string | null } | { error: string }
 }
 
-function id(value: unknown): string {
-  if (typeof value === 'string') return value.trim()
-  if (typeof value === 'number') return String(value)
-  return ''
-}
-
-/** POST /api/app/performances/[id]/video. The permission guard is the route's job. */
+/**
+ * POST /api/app/performances/[id]/video. The permission guard is the route's job.
+ *
+ * The id comes from the PATH and never from the body, the shape
+ * `handleThresholds` uses: the address of the row is the address, and a body
+ * carrying it too is a second claim about which evening this is that can
+ * disagree with the first.
+ */
 export async function handleVideoSave(
+  performanceId: string,
   body: VideoBody | null | undefined,
   deps: VideoDeps,
 ): Promise<VideoResult> {
   const rejection = rejectAppRequest(deps.request)
   if (rejection) return { status: rejection.status, body: { error: APP_STRINGS.push.rejected } }
 
-  const performanceId = id(body?.performanceId)
-  if (!performanceId) return { status: 400, body: { error: APP_STRINGS.video.missing } }
+  const id = performanceId.trim()
+  if (!id) return { status: 400, body: { error: APP_STRINGS.video.missing } }
 
   const read = readVideoLink(body?.url)
   if (!read.ok) return { status: 400, body: { error: APP_STRINGS.video.invalid } }
 
-  const performance = await deps.loadPerformance(performanceId)
+  const performance = await deps.loadPerformance(id)
   // A koncert is checked here rather than only hidden on the screen: the screen
   // it would be hidden on does not exist (a koncert detail is a 404), so this is
   // the only place the rule can live at all.
@@ -75,6 +76,6 @@ export async function handleVideoSave(
     return { status: 400, body: { error: APP_STRINGS.video.missing } }
   }
 
-  await deps.saveVideo(performanceId, read.url)
+  await deps.saveVideo(id, read.url)
   return { status: 200, body: { ok: true, url: read.url } }
 }
