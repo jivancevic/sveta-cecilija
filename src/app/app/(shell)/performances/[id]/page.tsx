@@ -1,4 +1,8 @@
 import { notFound } from 'next/navigation'
+import { Play } from 'lucide-react'
+import { getVideoNotifiedAt } from '@/lib/app/video-data'
+import { getRosterMessageCounts } from '@/lib/app/roster-message-data'
+import { notificationTimeLabel } from '@/lib/app/notification-view'
 import { can } from '@/lib/access/permissions'
 import { getPerformanceDetail } from '@/lib/app/detail-data'
 import { loadPerformanceSales } from '@/lib/app/sales-data'
@@ -22,6 +26,7 @@ import { CompTickets } from '../../../CompTickets'
 import { NoteEditor } from '../../../NoteEditor'
 import { PerformanceEditor, PublicPerformanceEditor } from '../../../PerformanceForm'
 import { ThresholdEditor } from '../../../ThresholdEditor'
+import { VideoEditor } from '../../../VideoEditor'
 import { PerformanceActions } from './PerformanceActions'
 
 // `/app/performances/[id]` — one izvedba, as the box office reads it (#567).
@@ -86,6 +91,14 @@ export default async function PerformanceDetailPage({
   // seats, and null without `finance`, because it is money: the sentence never
   // reaches the markup, so no condition here can leak it.
   const partnerFace = sales ? partnerFaceNote(sales, canFinance) : null
+
+  // The Snimka (#692), for the voditelj card only: the receipt read back off
+  // the claim that is also the lock, and the two numbers the confirmation sheet
+  // says out loud. Both are skipped for everybody else, so a blagajna opening
+  // this screen pays for neither.
+  const [videoNotifiedAt, videoCounts] = voditelj
+    ? await Promise.all([getVideoNotifiedAt(p.id), getRosterMessageCounts()])
+    : [null, null]
 
   const head = izvedbaHead(p, sales)
   // Who may press what, decided here from the caller's own set and handed down
@@ -219,6 +232,23 @@ export default async function PerformanceDetailPage({
         )}
       </Card>
 
+      {/* A reader who is not the voditelj still gets to WATCH it (#692, Q7): the
+          box office checks that the link Dora pasted works. They cannot change
+          it — the route asks for `moreska` — so this is the link and nothing
+          else. The voditelj sees theirs inside the editor below, where it
+          follows what was just saved. */}
+      {!voditelj && p.videoUrl && (
+        <a
+          className="app__video-link"
+          href={p.videoUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <Play size={16} aria-hidden="true" />
+          {APP_STRINGS.video.watch}
+        </a>
+      )}
+
       {voditelj && (
         <>
           <Card eyebrow={APP_STRINGS.lead.title}>
@@ -230,6 +260,21 @@ export default async function PerformanceDetailPage({
                 about the dance, and the collection's own field access says the
                 same (`canEditRosterField` never asks about the row). */}
             <ThresholdEditor performanceId={p.id} crni={p.thresholdCrni} bili={p.thresholdBili} />
+            {/* The Snimka (#692): the link, and the one ring. Here rather than
+                among the six named actions, which are the blagajna's money and
+                buyer actions and are offered on public rows only — a video is
+                neither money nor public-only. Saving the link rings nobody;
+                Pošalji obavijest rings the roster once and never again. */}
+            {videoCounts && (
+              <VideoEditor
+                performanceId={p.id}
+                initialUrl={p.videoUrl}
+                notifiedLabel={
+                  videoNotifiedAt ? notificationTimeLabel(videoNotifiedAt.toISOString()) : null
+                }
+                counts={videoCounts}
+              />
+            )}
           </Card>
 
           {/* The postava editor was here until #658, which is the ticket #566

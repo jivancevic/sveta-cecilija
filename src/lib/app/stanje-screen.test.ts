@@ -34,6 +34,7 @@ function detail(over: Partial<PerformanceDetail> = {}): PerformanceDetail {
       client: null,
       cancelled: false,
       voditeljNote: 'Skup u 20:15',
+      videoUrl: null,
       startMs: Date.parse('2026-09-19T19:00:00.000Z'),
       thresholdCrni: 3,
       thresholdBili: 2,

@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation'
+import { Play } from 'lucide-react'
 import { getPerformanceDetail } from '@/lib/app/detail-data'
 import { stanjeView } from '@/lib/app/stanje-screen'
 import { APP_STRINGS } from '@/lib/app/strings'
@@ -80,6 +81,25 @@ export default async function StanjePage({ params }: { params: Promise<{ id: str
       back={{ href: '/app/moreska', label: S.back }}
     >
       {view.note && <Note>{view.note}</Note>}
+      {/* The Snimka (#692). A full button rather than a header line, for two
+          reasons: this is the screen the video push lands on, so it must be the
+          first thing a thumb finds, and a link is pressed while a header is
+          read. It opens OUTSIDE the app — an unlisted YouTube video plays
+          better in the YouTube app than in an iframe a PWA would have to load a
+          third-party script for. Shown to every reader of this screen: a
+          postava is readable by every moreškant (#670) and so is the video of
+          it. */}
+      {view.videoUrl && (
+        <a
+          className="app__video-link"
+          href={view.videoUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <Play size={16} aria-hidden="true" />
+          {APP_STRINGS.video.watch}
+        </a>
+      )}
       <Stanje
         view={view}
         // `moreska` — the alarm and naming a Zaduženi, and nothing else since

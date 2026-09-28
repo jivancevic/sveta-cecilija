@@ -60,6 +60,15 @@ export interface RosterPerformance {
   client: string | null
   cancelled: boolean
   voditeljNote: string | null
+  /**
+   * The Snimka's link (#692), or null when this evening has none.
+   *
+   * Carried on the spine rather than fetched per screen because four surfaces
+   * ask the same question of it — Moreška's past rows, Stanje, Izvedbe's past
+   * rows and the izvedba detail — and all four ask only `hasVideo`. A finished
+   * URL, so nothing downstream parses it.
+   */
+  videoUrl: string | null
   /** Epoch ms of the start instant, Europe/Zagreb. */
   startMs: number
   /** Minimum crni / bili moreškanti for this evening (#408). */
@@ -171,6 +180,7 @@ export function toRosterPerformance(row: Record<string, unknown>): RosterPerform
     cancelled: row.status === 'cancelled',
     lineupConfirmed: row.lineupConfirmed === true,
     voditeljNote: text(row.voditeljNote),
+    videoUrl: text(row.videoUrl),
     startMs: date && time ? showStartMs(date, time) : Number.NaN,
     thresholdCrni: threshold(row.thresholdCrni),
     thresholdBili: threshold(row.thresholdBili),

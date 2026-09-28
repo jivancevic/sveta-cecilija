@@ -1,0 +1,37 @@
+-- The Snimka: one video link per evening (#692).
+--
+-- `shows.video_url` holds a FINISHED URL and never an id, which is why there is
+-- one column here and not two. A YouTube video is normalised to
+-- `https://www.youtube.com/watch?v=<id>` before it is written
+-- (`src/lib/app/video-link.ts`); any other https link is stored as pasted. NULL
+-- and the empty string both read as "no video", and `hasVideo()` is the only
+-- check any screen performs — nothing downstream parses this value.
+--
+-- `character varying` with no length, because that is what Payload's `text`
+-- field generates and the drift gate compares against Payload's own `push`
+-- output. The 500-character cap is a write-boundary rule in the route, not a
+-- column constraint: a link already in the database must never become
+-- unreadable because the cap moved.
+--
+-- ORDERING: bootstrap-db.mjs applies db/schema/*.sql in plain filename order on
+-- every restart, with no dependency resolution (db/schema/README.md). This file
+-- touches only `shows`, created by `00-base.sql`, which sorts first. It keeps
+-- sorting BEFORE `migrate-zz-drop-users-role.sql`, which stays the last
+-- `migrate-*` file (#398, asserted by `src/lib/db-schema-safety.test.ts`):
+-- `zz-dp-` continues the `zz-d…` sequence after `zz-do-`, and `dp` < `drop`.
+--
+-- The column is ALSO written into `00-base.sql`, in the position Payload's own
+-- `push` emits it (after `voditelj_note`, before `updated_at`), which is the
+-- same thing #658 did for `lineup_confirmed_by_id`. Both are needed and neither
+-- is redundant: `00-base.sql` is what a FRESH database gets, this file is what
+-- an EXISTING one gets, and on a fresh boot the ALTER below is a no-op.
+--
+-- The base file cannot be skipped, because the drift gate compares the two
+-- `pg_dump` outputs LINE BY LINE (`scripts/schema-diff.mjs`): a column appended
+-- by ALTER lands last in the table and pg_dump then prints it with no trailing
+-- comma, so the very same column reads as a different line from the one Payload
+-- produces mid-list. Adding a scalar column here and not there fails the gate.
+--
+-- Guarded and safe to re-run: one IF NOT EXISTS, and it writes no rows.
+
+ALTER TABLE public.shows ADD COLUMN IF NOT EXISTS video_url character varying;

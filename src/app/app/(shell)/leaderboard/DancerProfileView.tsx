@@ -6,6 +6,7 @@ import type { ProfileRingPart } from '@/lib/app/profile-rings'
 import type { MySeasonMonth } from '@/lib/app/my-season-loaders'
 import { flameNiz } from '@/lib/app/niz'
 import { Card, CountUp, Flame, List, ListRow, Ring, RoleMark, Section } from '../../ui'
+import { MetaWithVideo } from '../../VideoMark'
 import { StandingCard } from './StandingCard'
 
 // One moreškant's season, and Moja sezona, which is this same screen with the
@@ -346,7 +347,12 @@ export function DancerProfileView({
               title={dayAndMonth(evening.date)}
               // A vanredna carries no venue, by the loader's decision: the
               // dancer's register names the kind of evening and never the client.
-              meta={[weekdayLabel(evening.date), evening.place].filter(Boolean).join(' · ')}
+              meta={
+                <MetaWithVideo
+                  meta={[weekdayLabel(evening.date), evening.place].filter(Boolean).join(' · ')}
+                  hasVideo={evening.hasVideo}
+                />
+              }
               trail={<span className="app__pf-kind">{KIND_LABELS[evening.kind]}</span>}
             >
               <span className="app__sr-only">{ROLE_LABELS[evening.role]}</span>

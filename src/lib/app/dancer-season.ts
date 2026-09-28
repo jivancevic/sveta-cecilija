@@ -103,6 +103,14 @@ export interface DancerEvening {
   place: string | null
   /** What they wore that evening. */
   role: DanceRole
+  /**
+   * Whether this evening has a Snimka (#692), for the ▶︎ beside the meta line.
+   *
+   * A boolean, like every other list row: the profile is where a dancer looks
+   * back at their own season, so "is there a video of that night" is the
+   * question this answers, and Stanje is where the answer is watched.
+   */
+  hasVideo: boolean
 }
 
 /** One performance of the season, flattened to what the list needs. */
@@ -116,6 +124,8 @@ export interface DancerSeasonPerformance {
   cancelled: boolean
   /** A booking rather than one of the society's own evenings. */
   isPublic: boolean
+  /** Whether this evening has a Snimka (#692). */
+  hasVideo: boolean
 }
 
 /** One lineup row, flattened to ids. */
@@ -156,6 +166,7 @@ export function dancerEvenings(input: {
       // The society's own evening names its house; a booking names nothing.
       place: performance.isPublic ? performance.place : null,
       role: row.role,
+      hasVideo: performance.hasVideo,
     })
   }
 

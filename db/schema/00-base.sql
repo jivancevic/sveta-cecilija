@@ -606,6 +606,7 @@ CREATE TABLE IF NOT EXISTS public.shows (
     lineup_confirmed_at timestamp(3) with time zone,
     lineup_confirmed_by_id integer,
     voditelj_note character varying,
+    video_url character varying,
     updated_at timestamp(3) with time zone DEFAULT now() NOT NULL,
     created_at timestamp(3) with time zone DEFAULT now() NOT NULL
 );
