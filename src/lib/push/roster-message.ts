@@ -89,6 +89,26 @@ export function rosterMessageAudience(
   return { roster: memberIds.length, userIds, withoutLogin: memberIds.length - userIds.length }
 }
 
+/**
+ * The whole audience in one call: load the roster, look its logins up, reduce.
+ *
+ * The three-line sequence `loadMoreskanti → activeMoreskantIds →
+ * rosterMessageAudience` had been written out three times — here, in the counts
+ * a confirmation sheet shows (`roster-message-data.ts`) and in #692's video ring
+ * — and the whole point of the shared functions is that "every active
+ * moreškant" means ONE set. A sheet that promises a number and a send that
+ * reaches a different set is the bug this closes; the two loaders stay injected,
+ * because one caller reads through the push deps and another straight off the
+ * seam.
+ */
+export async function loadRosterAudience(loaders: {
+  loadMoreskanti: () => Promise<AttendanceMember[]>
+  loadUserIdsByMember: (memberIds: string[]) => Promise<Map<string, string>>
+}): Promise<RosterMessageAudience> {
+  const members = await loaders.loadMoreskanti()
+  return rosterMessageAudience(members, await loaders.loadUserIdsByMember(activeMoreskantIds(members)))
+}
+
 /** The audience as Member ids, which is what the login lookup is keyed on. */
 export function activeMoreskantIds(members: readonly AttendanceMember[]): string[] {
   return [
@@ -180,11 +200,7 @@ export async function handleRosterMessage(
   const read = readRosterMessage(body)
   if (!read.ok) return { status: 400, body: { error: read.error } }
 
-  const members = await deps.loadMoreskanti()
-  const audience = rosterMessageAudience(
-    members,
-    await deps.loadUserIdsByMember(activeMoreskantIds(members)),
-  )
+  const audience = await loadRosterAudience(deps)
 
   if (audience.userIds.length === 0) {
     return { status: 409, body: { error: APP_STRINGS.notifications.message.nobody } }

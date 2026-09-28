@@ -3127,6 +3127,6 @@ The confirmation sentence that says both numbers out loud is now `ringCounts` in
 
 Stanje carries the link itself and a full **Pogledaj video** button: it is the screen the push lands on, so the control has to be the first thing a thumb finds, and a link is pressed while a header is read. A reader who is not the voditelj gets the same button on the izvedba detail — the box office checks that the link works and cannot change it.
 
-It opens **outside the app**, `target="_blank"` with `rel="noopener"`. An unlisted video embeds fine, but an iframe in the PWA means a third-party script, CSP work, and a worse player than the YouTube app on a phone.
+It opens **outside the app**, `target="_blank"` with `rel="noopener noreferrer"`. An unlisted video embeds fine, but an iframe in the PWA means a third-party script, CSP work, and a worse player than the YouTube app on a phone.
 
 **What is deliberately absent.** No ADR: the column is easy to remove, nothing about it surprises a reader, and the one real trade-off is about content rather than architecture. No MCP tool — a sixth roster tool is a permanent cost for something done once per evening on a phone that already has the app open. No bulk entry screen. And nothing on `moreska.eu`: **unlisted is not private**, any dancer can forward the link, and a public archive of season videos is a different product and a decision about music rights and the dancers' consent (CONTEXT.md → *Snimka*).

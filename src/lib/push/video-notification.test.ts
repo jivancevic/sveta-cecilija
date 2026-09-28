@@ -121,7 +121,12 @@ describe('handleVideoNotification — the refusals', () => {
   })
 
   it('refuses an evening with no link saved yet', async () => {
-    for (const videoUrl of [null, undefined, '', '   ']) {
+    // `undefined` is in here behind a cast on purpose: the FIELD is required, so
+    // a loader that forgets the column fails `tsc` rather than reaching this
+    // branch, but the runtime guard still has to hold for a value that arrives
+    // from a raw read anyway.
+    const empties = [null, undefined, '', '   '] as unknown as (string | null)[]
+    for (const videoUrl of empties) {
       const { deps: d, calls } = deps({
         loadPerformance: async () => ({ ...PERFORMANCE, videoUrl }),
       })

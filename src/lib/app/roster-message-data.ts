@@ -19,7 +19,7 @@
 // being told nothing will happen rather than a voditelj sending into the dark.
 
 import { getRepo } from '@/lib/repo'
-import { activeMoreskantIds, rosterMessageAudience } from '@/lib/push/roster-message'
+import { loadRosterAudience } from '@/lib/push/roster-message'
 import { countSubscriptions, loadUserIdsByMember } from '@/lib/push/store'
 
 export interface RosterMessageCounts {
@@ -41,13 +41,13 @@ export async function getRosterMessageCounts(): Promise<RosterMessageCounts> {
   try {
     const repo = getRepo()
     // `listMoreskanti()` returns the retired rows too, on purpose (Članovi lists
-    // them). `rosterMessageAudience` drops them, which is where "every ACTIVE
-    // moreškant" is decided — once, in a tested pure function.
-    const members = await repo.members.listMoreskanti()
-    const audience = rosterMessageAudience(
-      members,
-      await loadUserIdsByMember(repo.db.query, activeMoreskantIds(members)),
-    )
+    // them). `loadRosterAudience` drops them, which is where "every ACTIVE
+    // moreškant" is decided — once, for the counts, the message and the video
+    // ring alike, so a sheet cannot promise a set the send does not reach.
+    const audience = await loadRosterAudience({
+      loadMoreskanti: () => repo.members.listMoreskanti(),
+      loadUserIdsByMember: (memberIds) => loadUserIdsByMember(repo.db.query, memberIds),
+    })
     return {
       devices: await countSubscriptions(repo.db.query, audience.userIds),
       people: audience.userIds.length,

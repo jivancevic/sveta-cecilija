@@ -41,7 +41,13 @@ export interface VideoPerformanceFacts {
   id: string
   date: string
   kind: string
-  videoUrl?: string | null
+  /**
+   * Required, not optional: a loader that forgets to read the column would
+   * otherwise silently hand over `undefined` and every ring would refuse with
+   * `noLink`. `tsc` is the right place to find that, the same reason
+   * `CollectedOrderRow` carries its channel as a required field.
+   */
+  videoUrl: string | null
 }
 
 export interface VideoNotificationBody {

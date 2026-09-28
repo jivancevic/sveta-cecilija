@@ -96,8 +96,9 @@ export default async function PerformanceDetailPage({
   // the claim that is also the lock, and the two numbers the confirmation sheet
   // says out loud. Both are skipped for everybody else, so a blagajna opening
   // this screen pays for neither.
-  const videoNotifiedAt = voditelj ? await getVideoNotifiedAt(p.id) : null
-  const videoCounts = voditelj ? await getRosterMessageCounts() : null
+  const [videoNotifiedAt, videoCounts] = voditelj
+    ? await Promise.all([getVideoNotifiedAt(p.id), getRosterMessageCounts()])
+    : [null, null]
 
   const head = izvedbaHead(p, sales)
   // Who may press what, decided here from the caller's own set and handed down

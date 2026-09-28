@@ -1,8 +1,9 @@
 import { NextResponse } from 'next/server'
 import { requirePermission } from '@/lib/access/route-guard'
+import { toIsoDate } from '@/lib/to-iso-date'
 import { appRequestMeta } from '@/lib/app/request-guard'
 import { createPushDeps, type PushPayload } from '@/lib/push/push-data'
-import { activeMoreskantIds, rosterMessageAudience } from '@/lib/push/roster-message'
+import { loadRosterAudience } from '@/lib/push/roster-message'
 import { handleVideoNotification } from '@/lib/push/video-notification'
 
 // POST /api/app/performances/[id]/video/notify — the one ring per evening (#692).
@@ -52,10 +53,10 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         const row = doc as { date?: unknown; kind?: unknown; videoUrl?: unknown }
         return {
           id,
-          // `shows.date` comes back from Payload as a string here, but a raw pg
-          // read of the same column hands back a Date (a gotcha this repo has
-          // paid for), so it is normalised to the YYYY-MM-DD the copy expects.
-          date: String(row.date ?? '').slice(0, 10),
+          // `shows.date` reads back as a string through the local API and as a
+          // Date through a raw pg query, a gotcha this repo already paid for and
+          // already has one answer to.
+          date: toIsoDate(row.date),
           kind: String(row.kind ?? ''),
           videoUrl: typeof row.videoUrl === 'string' ? row.videoUrl : null,
         }
@@ -65,11 +66,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
     },
 
     loadAudience: async () => {
-      const members = await deps.loadMoreskanti()
-      const audience = rosterMessageAudience(
-        members,
-        await deps.loadUserIdsByMember(activeMoreskantIds(members)),
-      )
+      const audience = await loadRosterAudience(deps)
       return { userIds: audience.userIds, withoutLogin: audience.withoutLogin }
     },
 
