@@ -72,6 +72,48 @@ export async function voidSingleTicket(
   return { voided: rowsOf(res).length }
 }
 
+// The comp void (#701) leaves a SCANNED ticket alone: a scanned comp is somebody
+// who came in, and voiding it would rewrite the evening's "ušlo X od Y". The
+// `scanned = false` clause sits in the UPDATE rather than in a check before it,
+// so a ticket scanned at the door while the void is in flight stays active.
+// Refunds and the partner storno keep the unconditional statements above.
+
+/** Void all active, unscanned tickets of an order. Returns how many were newly cancelled. */
+export async function voidUnscannedOrderTickets(
+  db: TicketVoidExecutor,
+  orderId: string,
+  reason: CancelReason,
+): Promise<VoidTicketsResult> {
+  const res = await db.execute(sql`
+    UPDATE tickets
+    SET status = 'cancelled',
+        cancelled_at = NOW(),
+        cancel_reason = ${reason},
+        updated_at = NOW()
+    WHERE order_id = ${Number(orderId)} AND status = 'active' AND scanned = false
+    RETURNING id
+  `)
+  return { voided: rowsOf(res).length }
+}
+
+/** Void one active, unscanned ticket. Returns how many were newly cancelled (0 or 1). */
+export async function voidUnscannedTicket(
+  db: TicketVoidExecutor,
+  ticketId: string,
+  reason: CancelReason,
+): Promise<VoidTicketsResult> {
+  const res = await db.execute(sql`
+    UPDATE tickets
+    SET status = 'cancelled',
+        cancelled_at = NOW(),
+        cancel_reason = ${reason},
+        updated_at = NOW()
+    WHERE id = ${Number(ticketId)} AND status = 'active' AND scanned = false
+    RETURNING id
+  `)
+  return { voided: rowsOf(res).length }
+}
+
 // Un-void (restore) mirror (ADR-0017, #146). Restore re-activates tickets that a
 // storno just cancelled, so a partner's delete-then-undo can put seats back. Only
 // rows with cancel_reason='storno' are restorable — refund-voided tickets stay

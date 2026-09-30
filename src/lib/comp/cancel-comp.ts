@@ -13,7 +13,13 @@
 //     order here would cancel seats without a refund, and a partner order has its
 //     own storno path, so both are rejected by construction;
 //   - a single-ticket target MUST belong to the named order (defence against
-//     pairing a foreign ticket id with a comp order id).
+//     pairing a foreign ticket id with a comp order id);
+//   - a SCANNED ticket is never voided (#701): it is somebody who came in, and
+//     voiding it would rewrite the evening's "ušlo X od Y" after the fact. A
+//     single scanned ticket is refused (TICKET_SCANNED); a whole-order void
+//     voids only the unscanned tickets, which the injected void owns in SQL
+//     (`AND scanned = false`), so a ticket scanned between the check and the
+//     UPDATE still stays active.
 //
 // The actual void is idempotent and race-safe (WHERE status='active'); because
 // seats derive from active tickets, a successful cancel frees the seat and drops
@@ -24,6 +30,7 @@ export type CancelCompErrorCode =
   | 'ORDER_NOT_FOUND'
   | 'NOT_A_COMP'
   | 'TICKET_NOT_IN_ORDER'
+  | 'TICKET_SCANNED'
   | 'NOTHING_TO_VOID'
 
 export class CancelCompError extends Error {
@@ -50,11 +57,11 @@ export interface CancelCompInput {
 
 export interface CancelCompDeps {
   loadOrder: (orderId: string) => Promise<CancelCompOrder | null>
-  /** The order id a ticket belongs to, or null if the ticket is unknown. */
-  ticketOrderId: (ticketId: string) => Promise<string | null>
-  /** Void all active tickets of the order (reason=storno); count newly voided. */
+  /** The order a ticket belongs to and whether it was scanned, or null if unknown. */
+  loadTicket: (ticketId: string) => Promise<{ orderId: string; scanned: boolean } | null>
+  /** Void all active UNSCANNED tickets of the order (reason=storno); count newly voided. */
   voidOrder: () => Promise<number>
-  /** Void one active ticket (reason=storno); returns 0 or 1. */
+  /** Void one active unscanned ticket (reason=storno); returns 0 or 1. */
   voidTicket: (ticketId: string) => Promise<number>
 }
 
@@ -68,6 +75,7 @@ export interface CancelCompResult {
  *   - ORDER_NOT_FOUND: no order with that id.
  *   - NOT_A_COMP: the order is online/partner — refuse (protects paid seats).
  *   - TICKET_NOT_IN_ORDER: single-ticket target not under this order.
+ *   - TICKET_SCANNED: single-ticket target already scanned at the door.
  *   - NOTHING_TO_VOID: authorized, but no active ticket matched (already
  *     cancelled or unknown) — the route maps this to 409.
  */
@@ -84,9 +92,12 @@ export async function cancelComp(
   }
 
   if (input.target.kind === 'ticket') {
-    const owner = await deps.ticketOrderId(input.target.ticketId)
-    if (owner == null || String(owner) !== String(input.orderId)) {
+    const ticket = await deps.loadTicket(input.target.ticketId)
+    if (ticket == null || String(ticket.orderId) !== String(input.orderId)) {
       throw new CancelCompError('TICKET_NOT_IN_ORDER', 'Ticket not found for this comp')
+    }
+    if (ticket.scanned) {
+      throw new CancelCompError('TICKET_SCANNED', 'This ticket was scanned at the door and stays')
     }
   }
 

@@ -6,13 +6,13 @@ import { cancelComp, CancelCompError, type CancelCompDeps, type CancelCompOrder 
 function deps(
   over: Partial<{
     order: CancelCompOrder | null
-    ticketOrderId: string | null
+    ticket: { orderId: string; scanned: boolean } | null
     orderVoided: number
     ticketVoided: number
   }> = {},
 ): CancelCompDeps & {
   loadOrder: ReturnType<typeof vi.fn>
-  ticketOrderId: ReturnType<typeof vi.fn>
+  loadTicket: ReturnType<typeof vi.fn>
   voidOrder: ReturnType<typeof vi.fn>
   voidTicket: ReturnType<typeof vi.fn>
 } {
@@ -20,7 +20,9 @@ function deps(
     loadOrder: vi.fn().mockResolvedValue(
       'order' in over ? over.order : ({ channel: 'comp' } satisfies CancelCompOrder),
     ),
-    ticketOrderId: vi.fn().mockResolvedValue('ticketOrderId' in over ? over.ticketOrderId : 'ord_1'),
+    loadTicket: vi
+      .fn()
+      .mockResolvedValue('ticket' in over ? over.ticket : { orderId: 'ord_1', scanned: false }),
     voidOrder: vi.fn().mockResolvedValue(over.orderVoided ?? 3),
     voidTicket: vi.fn().mockResolvedValue(over.ticketVoided ?? 1),
   }
@@ -36,7 +38,7 @@ describe('cancelComp', () => {
   })
 
   it('voids a single comp ticket that belongs to the order', async () => {
-    const d = deps({ ticketOrderId: 'ord_1' })
+    const d = deps({ ticket: { orderId: 'ord_1', scanned: false } })
     const res = await cancelComp({ orderId: 'ord_1', target: { kind: 'ticket', ticketId: 't_9' } }, d)
     expect(res).toEqual({ voided: 1 })
     expect(d.voidTicket).toHaveBeenCalledWith('t_9')
@@ -67,7 +69,7 @@ describe('cancelComp', () => {
   })
 
   it('rejects a ticket that belongs to another order with TICKET_NOT_IN_ORDER', async () => {
-    const d = deps({ ticketOrderId: 'ord_OTHER' })
+    const d = deps({ ticket: { orderId: 'ord_OTHER', scanned: false } })
     await expect(
       cancelComp({ orderId: 'ord_1', target: { kind: 'ticket', ticketId: 't_9' } }, d),
     ).rejects.toMatchObject({ code: 'TICKET_NOT_IN_ORDER' })
@@ -75,9 +77,27 @@ describe('cancelComp', () => {
   })
 
   it('rejects an unknown ticket id with TICKET_NOT_IN_ORDER', async () => {
-    const d = deps({ ticketOrderId: null })
+    const d = deps({ ticket: null })
     await expect(
       cancelComp({ orderId: 'ord_1', target: { kind: 'ticket', ticketId: 't_x' } }, d),
+    ).rejects.toMatchObject({ code: 'TICKET_NOT_IN_ORDER' })
+  })
+
+  // #701: a scanned comp is somebody who came in. Voiding it would rewrite the
+  // evening's "ušlo X od Y" after the fact, so the refusal is the domain's and
+  // every screen inherits it.
+  it('refuses a SCANNED ticket with TICKET_SCANNED and voids nothing', async () => {
+    const d = deps({ ticket: { orderId: 'ord_1', scanned: true } })
+    await expect(
+      cancelComp({ orderId: 'ord_1', target: { kind: 'ticket', ticketId: 't_9' } }, d),
+    ).rejects.toMatchObject({ code: 'TICKET_SCANNED' })
+    expect(d.voidTicket).not.toHaveBeenCalled()
+  })
+
+  it('checks the ticket belongs to the order before saying it is scanned', async () => {
+    const d = deps({ ticket: { orderId: 'ord_OTHER', scanned: true } })
+    await expect(
+      cancelComp({ orderId: 'ord_1', target: { kind: 'ticket', ticketId: 't_9' } }, d),
     ).rejects.toMatchObject({ code: 'TICKET_NOT_IN_ORDER' })
   })
 
