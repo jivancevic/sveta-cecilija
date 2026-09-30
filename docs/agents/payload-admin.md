@@ -54,3 +54,12 @@ This is why `editor` got its own branch in #500 rather than falling through: it 
 `@payloadcms/ui`'s `DatePicker.onChange` sets `12 - tzOffset` local hours on the value for `dayOnly`, `default` and `monthOnly` appearances — **noon UTC in every timezone** — and it does so only for a day the editor actually picks. A day nobody touched goes back as the instant it arrived as.
 
 Both halves matter to anything that compares a stored `date` against an incoming one (#689's schedule lock is the first): an untouched value is byte-identical, and a picked one sits in the middle of its UTC day, so the UTC calendar day is stable and `toIsoDate` is the one definition of a show's day. The tempting defensive move — comparing the day in `Europe/Zagreb` in case the picker hands back a local midnight — buys nothing here and costs a second, divergent definition of "the day". Read the installed package before writing that kind of guard.
+
+## A collection `beforeChange` never sees a partial `data` on an update
+
+Payload runs the **field-level** `beforeValidate` pass before the collection's `beforeChange`, and that pass fills every field the incoming patch omitted with a clone of the stored value (`payload/dist/fields/hooks/beforeValidate/getFallbackValue.js`). It does so even when field-level access *denied* the field. So by the time a collection `beforeChange` is asked, `data` carries the whole document, not just what the caller sent.
+
+Two consequences for any hook that reacts to a field changing (#689's schedule lock is the first):
+
+- **Compare values, never key presence.** `'time' in data` is effectively always true on an update, so a guard written as "this save does not touch the field" silently guards nothing. What keeps an unrelated save (a sale ticking `onlineSold`) out of such a rule is that the filled-in value equals the stored one.
+- **Test with the shape Payload delivers.** A unit test that posts `{ onlineSold: 41 }` and asserts the rule stayed quiet proves nothing, because no Payload write ever looks like that. Post the full document with one field changed.
