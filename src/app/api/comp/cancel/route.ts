@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requirePermission } from '@/lib/access/route-guard'
 import { cancelComp, CancelCompError, type CancelCompOrder } from '@/lib/comp/cancel-comp'
-import { voidOrderTickets, voidSingleTicket, type TicketVoidExecutor } from '@/lib/tickets/ticket-void'
+import {
+  voidUnscannedOrderTickets,
+  voidUnscannedTicket,
+  type TicketVoidExecutor,
+} from '@/lib/tickets/ticket-void'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -18,7 +22,10 @@ export const dynamic = 'force-dynamic'
 // distinguished by channel='comp', so no new enum value), refuses to touch a
 // paid online or partner order, and frees the seat via the active-ticket count
 // so it re-enters remaining capacity + the per-show comp count immediately. A
-// voided comp slip then scans to a clear CANCELLED state (scan-token).
+// voided comp slip then scans to a clear CANCELLED state (scan-token). A SCANNED
+// comp is never voided (#701): one scanned ticket is a 409, and a whole-order
+// void leaves the scanned ones active. Called from Gratis and from the
+// Narudžbe order detail.
 export async function POST(req: NextRequest) {
   const gate = await requirePermission(req, 'tickets')
   if (gate.error) return gate.error
@@ -47,15 +54,16 @@ export async function POST(req: NextRequest) {
           if (!doc) return null
           return { channel: ((doc as { channel?: CancelCompOrder['channel'] }).channel ?? 'online') }
         },
-        ticketOrderId: async (tid) => {
+        loadTicket: async (tid) => {
           const t = await payload.findByID({ collection: 'tickets', id: tid, depth: 0 }).catch(() => null)
           if (!t) return null
-          const oid = (t as { order?: number | string }).order
-          return oid == null ? null : String(oid)
+          const { order: oid, scanned } = t as { order?: number | string; scanned?: boolean | null }
+          return oid == null ? null : { orderId: String(oid), scanned: scanned === true }
         },
-        // Idempotent, race-safe void (WHERE status='active'); reason='storno'.
-        voidOrder: async () => (await voidOrderTickets(drizzle, orderId, 'storno')).voided,
-        voidTicket: async (tid) => (await voidSingleTicket(drizzle, tid, 'storno')).voided,
+        // Idempotent, race-safe void (WHERE status='active' AND scanned=false);
+        // reason='storno'.
+        voidOrder: async () => (await voidUnscannedOrderTickets(drizzle, orderId, 'storno')).voided,
+        voidTicket: async (tid) => (await voidUnscannedTicket(drizzle, tid, 'storno')).voided,
       },
     )
     return NextResponse.json({ voided })
@@ -66,7 +74,7 @@ export async function POST(req: NextRequest) {
           ? 404
           : err.code === 'NOT_A_COMP'
             ? 400
-            : 409 // NOTHING_TO_VOID
+            : 409 // NOTHING_TO_VOID, TICKET_SCANNED
       return NextResponse.json({ error: err.message, code: err.code }, { status })
     }
     console.error('[comp/cancel] unexpected error', err)

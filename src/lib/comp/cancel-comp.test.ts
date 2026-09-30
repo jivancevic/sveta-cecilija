@@ -1,18 +1,24 @@
 import { describe, it, expect, vi } from 'vitest'
-import { cancelComp, CancelCompError, type CancelCompDeps, type CancelCompOrder } from './cancel-comp'
+import {
+  cancelComp,
+  CancelCompError,
+  compVoidCounts,
+  type CancelCompDeps,
+  type CancelCompOrder,
+} from './cancel-comp'
 
 // Fresh spies per call so we can assert which void path ran. Defaults model a
 // comp order whose whole-order void cancels 3 tickets and single-ticket void 1.
 function deps(
   over: Partial<{
     order: CancelCompOrder | null
-    ticketOrderId: string | null
+    ticket: { orderId: string; scanned: boolean } | null
     orderVoided: number
     ticketVoided: number
   }> = {},
 ): CancelCompDeps & {
   loadOrder: ReturnType<typeof vi.fn>
-  ticketOrderId: ReturnType<typeof vi.fn>
+  loadTicket: ReturnType<typeof vi.fn>
   voidOrder: ReturnType<typeof vi.fn>
   voidTicket: ReturnType<typeof vi.fn>
 } {
@@ -20,7 +26,9 @@ function deps(
     loadOrder: vi.fn().mockResolvedValue(
       'order' in over ? over.order : ({ channel: 'comp' } satisfies CancelCompOrder),
     ),
-    ticketOrderId: vi.fn().mockResolvedValue('ticketOrderId' in over ? over.ticketOrderId : 'ord_1'),
+    loadTicket: vi
+      .fn()
+      .mockResolvedValue('ticket' in over ? over.ticket : { orderId: 'ord_1', scanned: false }),
     voidOrder: vi.fn().mockResolvedValue(over.orderVoided ?? 3),
     voidTicket: vi.fn().mockResolvedValue(over.ticketVoided ?? 1),
   }
@@ -36,7 +44,7 @@ describe('cancelComp', () => {
   })
 
   it('voids a single comp ticket that belongs to the order', async () => {
-    const d = deps({ ticketOrderId: 'ord_1' })
+    const d = deps({ ticket: { orderId: 'ord_1', scanned: false } })
     const res = await cancelComp({ orderId: 'ord_1', target: { kind: 'ticket', ticketId: 't_9' } }, d)
     expect(res).toEqual({ voided: 1 })
     expect(d.voidTicket).toHaveBeenCalledWith('t_9')
@@ -67,7 +75,7 @@ describe('cancelComp', () => {
   })
 
   it('rejects a ticket that belongs to another order with TICKET_NOT_IN_ORDER', async () => {
-    const d = deps({ ticketOrderId: 'ord_OTHER' })
+    const d = deps({ ticket: { orderId: 'ord_OTHER', scanned: false } })
     await expect(
       cancelComp({ orderId: 'ord_1', target: { kind: 'ticket', ticketId: 't_9' } }, d),
     ).rejects.toMatchObject({ code: 'TICKET_NOT_IN_ORDER' })
@@ -75,9 +83,27 @@ describe('cancelComp', () => {
   })
 
   it('rejects an unknown ticket id with TICKET_NOT_IN_ORDER', async () => {
-    const d = deps({ ticketOrderId: null })
+    const d = deps({ ticket: null })
     await expect(
       cancelComp({ orderId: 'ord_1', target: { kind: 'ticket', ticketId: 't_x' } }, d),
+    ).rejects.toMatchObject({ code: 'TICKET_NOT_IN_ORDER' })
+  })
+
+  // #701: a scanned comp is somebody who came in. Voiding it would rewrite the
+  // evening's "ušlo X od Y" after the fact, so the refusal is the domain's and
+  // every screen inherits it.
+  it('refuses a SCANNED ticket with TICKET_SCANNED and voids nothing', async () => {
+    const d = deps({ ticket: { orderId: 'ord_1', scanned: true } })
+    await expect(
+      cancelComp({ orderId: 'ord_1', target: { kind: 'ticket', ticketId: 't_9' } }, d),
+    ).rejects.toMatchObject({ code: 'TICKET_SCANNED' })
+    expect(d.voidTicket).not.toHaveBeenCalled()
+  })
+
+  it('checks the ticket belongs to the order before saying it is scanned', async () => {
+    const d = deps({ ticket: { orderId: 'ord_OTHER', scanned: true } })
+    await expect(
+      cancelComp({ orderId: 'ord_1', target: { kind: 'ticket', ticketId: 't_9' } }, d),
     ).rejects.toMatchObject({ code: 'TICKET_NOT_IN_ORDER' })
   })
 
@@ -93,5 +119,27 @@ describe('cancelComp', () => {
     await expect(
       cancelComp({ orderId: 'ord_1', target: { kind: 'order' } }, d),
     ).rejects.toBeInstanceOf(CancelCompError)
+  })
+})
+
+describe('compVoidCounts (#701)', () => {
+  it('counts only active tickets, splitting the scanned ones out', () => {
+    expect(
+      compVoidCounts([
+        { cancelled: false, scanned: false },
+        { cancelled: false, scanned: false },
+        { cancelled: false, scanned: true },
+        { cancelled: true, scanned: false },
+        { cancelled: true, scanned: true },
+      ]),
+    ).toEqual({ voidable: 2, keptScanned: 1 })
+  })
+
+  it('is zero on an empty or fully voided order', () => {
+    expect(compVoidCounts([])).toEqual({ voidable: 0, keptScanned: 0 })
+    expect(compVoidCounts([{ cancelled: true, scanned: false }])).toEqual({
+      voidable: 0,
+      keptScanned: 0,
+    })
   })
 })

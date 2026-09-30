@@ -1,11 +1,14 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import type { CompOrderRow, CompTicket } from '@/lib/comp/comp-report'
+import { compVoidCounts } from '@/lib/comp/cancel-comp'
+import { ordersHref } from '@/lib/app/orders-query'
 import { shortShowDay } from '@/lib/app/partner-screen'
 import { APP_STRINGS, shortMonthLabel } from '@/lib/app/strings'
 import { Button, Card, Section } from '../../ui'
+import { compVoidOrderBody, useCompVoid } from '../../use-comp-void'
 
 // "Zadnji gratisi" (#506): the list a comp is voided from.
 //
@@ -19,14 +22,19 @@ import { Button, Card, Section } from '../../ui'
 // that the thing she just cancelled is cancelled; a row that vanished would
 // read as a comp that was never issued.
 //
-// Nothing here is optimistic. The void runs `UPDATE tickets … WHERE
-// status='active'` on the server, so the honest answer only exists after the
-// round trip; a success calls `router.refresh()` and the server re-renders the
-// rows and the season table below them.
+// A SCANNED ticket carries no trash (#701): somebody came in on it, so the
+// route refuses to void it, and a whole-order void leaves it standing — which
+// the confirmation says in numbers. The request itself is `useCompVoid`, shared
+// with the comp order on Narudžbe. The list is the newest eight; the rest are
+// one link away, on Narudžbe's Gratis filter, where there is a search and a
+// pager.
 
 const S = APP_STRINGS.gratis
 
-type Target = { order: CompOrderRow; ticket: CompTicket | null }
+type Target = { orderId: string; ticketId?: string; order: CompOrderRow; ticket: CompTicket | null }
+
+/** Narudžbe, filtered to comps: where every comp older than the eight lives. */
+const ALL_COMPS = ordersHref({ q: '', showId: null, state: 'comp', page: 1 })
 
 /** "17. srp 14:32" — when the comp was issued, in Zagreb time. */
 function issuedAt(iso: string): string {
@@ -48,12 +56,8 @@ function issuedAt(iso: string): string {
 }
 
 export function RecentComps({ initial }: { initial: CompOrderRow[] }) {
-  const router = useRouter()
   const [open, setOpen] = useState<Set<string>>(new Set())
-  const [target, setTarget] = useState<Target | null>(null)
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [done, setDone] = useState<string | null>(null)
+  const { target, busy, error, done, ask: askVoid, close, confirm } = useCompVoid<Target>()
 
   const toggle = (orderId: string) =>
     setOpen((prev) => {
@@ -63,39 +67,8 @@ export function RecentComps({ initial }: { initial: CompOrderRow[] }) {
       return next
     })
 
-  function ask(order: CompOrderRow, ticket: CompTicket | null) {
-    setTarget({ order, ticket })
-    setError(null)
-    setDone(null)
-  }
-
-  async function confirm() {
-    if (!target || busy) return
-    setBusy(true)
-    setError(null)
-    try {
-      const res = await fetch('/api/comp/cancel', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(
-          target.ticket
-            ? { orderId: target.order.orderId, ticketId: target.ticket.id }
-            : { orderId: target.order.orderId },
-        ),
-      })
-      if (!res.ok) {
-        setError(S.cancelFailed)
-        return
-      }
-      setTarget(null)
-      setDone(S.cancelled)
-      router.refresh()
-    } catch {
-      setError(S.network)
-    } finally {
-      setBusy(false)
-    }
-  }
+  const ask = (order: CompOrderRow, ticket: CompTicket | null) =>
+    askVoid({ orderId: order.orderId, ticketId: ticket?.id, order, ticket })
 
   return (
     <section className="app__comp-recent">
@@ -112,6 +85,7 @@ export function RecentComps({ initial }: { initial: CompOrderRow[] }) {
           {initial.map((order) => {
             const expanded = open.has(order.orderId)
             const people = order.tickets.length
+            const counts = compVoidCounts(order.tickets)
             return (
               <li key={order.orderId} className="app__sale">
                 <div className="app__sale-row">
@@ -139,7 +113,7 @@ export function RecentComps({ initial }: { initial: CompOrderRow[] }) {
                     >
                       <DownloadIcon />
                     </a>
-                    {order.activeCount > 0 ? (
+                    {counts.voidable > 0 ? (
                       <button
                         type="button"
                         className="app__icon-button app__icon-button--warn"
@@ -149,9 +123,9 @@ export function RecentComps({ initial }: { initial: CompOrderRow[] }) {
                       >
                         <TrashIcon />
                       </button>
-                    ) : (
+                    ) : order.activeCount === 0 ? (
                       <span className="app__badge app__badge--refunded">{S.allCancelled}</span>
-                    )}
+                    ) : null}
                   </div>
                 </div>
 
@@ -168,7 +142,7 @@ export function RecentComps({ initial }: { initial: CompOrderRow[] }) {
                           {t.cancelled && ` · ${S.statusCancelled}`}
                           {!t.cancelled && t.scanned && ` · ${S.statusScanned}`}
                         </span>
-                        {!t.cancelled && (
+                        {!t.cancelled && !t.scanned && (
                           <button
                             type="button"
                             className="app__icon-button app__icon-button--warn"
@@ -203,15 +177,14 @@ export function RecentComps({ initial }: { initial: CompOrderRow[] }) {
           <p>
             {target.ticket
               ? S.confirmTicketBody(target.ticket.ref)
-              : S.confirmOrderBody(target.order.code, target.order.activeCount)}
+              : compVoidOrderBody(target.order.code, compVoidCounts(target.order.tickets))}
           </p>
-          {target.ticket?.scanned && <p className="app__comp-warn">{S.confirmScanned}</p>}
           {error && <p className="app__error">{error}</p>}
           <div className="ui-btns">
             <Button variant="destructive" disabled={busy} onClick={confirm}>
               {busy ? S.cancelling : S.confirm}
             </Button>
-            <Button variant="link" disabled={busy} onClick={() => setTarget(null)}>
+            <Button variant="link" disabled={busy} onClick={close}>
               {S.cancel}
             </Button>
           </div>
@@ -219,6 +192,12 @@ export function RecentComps({ initial }: { initial: CompOrderRow[] }) {
       )}
 
       {error && !target && <p className="app__error">{error}</p>}
+
+      {initial.length > 0 && (
+        <Link className="app__fact-link app__comp-all" href={ALL_COMPS}>
+          {S.allComps} →
+        </Link>
+      )}
     </section>
   )
 }

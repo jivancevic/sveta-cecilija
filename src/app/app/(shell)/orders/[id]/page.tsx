@@ -12,10 +12,12 @@ import {
   zagrebStamp,
 } from '@/lib/app/orders-view'
 import { APP_STRINGS } from '@/lib/app/strings'
+import { compVoidCounts } from '@/lib/comp/cancel-comp'
 import { AppShell } from '../../../AppShell'
 import { openScreen } from '../../../gate'
-import { Card, Chip, List, ListRow, Section } from '../../../ui'
+import { Card, Chip, Section } from '../../../ui'
 import { OrderActions } from './OrderActions'
+import { OrderTickets } from './OrderTickets'
 
 // `/app/orders/[id]` — one order (#501, redressed by #570).
 //
@@ -30,6 +32,12 @@ import { OrderActions } from './OrderActions'
 // rather than receiving it disabled. The route behind it re-checks the
 // permission anyway (CLAUDE.md hard rule) — this is the half that keeps an
 // action nobody may take off the screen entirely.
+//
+// A comp gets Poništi gratis where a paid order gets Povrat (#701), decided the
+// same way: on the server, from `can(viewer, 'tickets')` (the permission
+// `/api/comp/cancel` re-checks), and only while a ticket is active and
+// unscanned. A comp has no payment, so the "nije plaćeno" note it used to carry
+// in Povrat's place goes with it.
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -71,8 +79,27 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
   }
 
   const buyer = (order.buyerName ?? '').trim() || D.noName
-  const refund = refundOffer(order, can({ permissions: viewer.permissions }, 'refunds'))
+  const isComp = order.channel === 'comp'
+  const refund = isComp
+    ? 'hidden'
+    : refundOffer(order, can({ permissions: viewer.permissions }, 'refunds'))
+  const mayVoidComp = isComp && can({ permissions: viewer.permissions }, 'tickets')
   const amount = totalLabel(order)
+  let adults = 0
+  let children = 0
+  const tickets = order.tickets.map((ticket) => {
+    const view = ticketView(ticket)
+    const n = ticket.type === 'child' ? ++children : ++adults
+    return {
+      id: ticket.id,
+      label: order.code ? `${order.code} · ${view.type} ${n}` : `${view.type} ${n}`,
+      type: view.type,
+      state: view.state,
+      scan: view.scan,
+      cancelled: view.cancelled,
+      voidable: mayVoidComp && !ticket.cancelled && !ticket.scanned,
+    }
+  })
 
   return (
     <AppShell
@@ -115,6 +142,9 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
         amount={amount}
         email={order.email}
         buyerName={order.buyerName ?? ''}
+        compVoid={
+          mayVoidComp ? { code: order.code ?? '', counts: compVoidCounts(order.tickets) } : null
+        }
       />
 
       <Section title={D.ticketsTitle} />
@@ -123,20 +153,7 @@ export default async function OrderDetailPage({ params }: { params: Promise<{ id
           <p>{D.noTickets}</p>
         </Card>
       ) : (
-        <List>
-          {order.tickets.map((ticket) => {
-            const view = ticketView(ticket)
-            return (
-              <ListRow
-                key={ticket.id}
-                className={view.cancelled ? 'app__ticket--void' : undefined}
-                title={view.type}
-                meta={view.scan}
-                trail={<Chip tone={view.cancelled ? 'warn' : 'plain'}>{view.state}</Chip>}
-              />
-            )
-          })}
-        </List>
+        <OrderTickets orderId={order.id} tickets={tickets} />
       )}
     </AppShell>
   )

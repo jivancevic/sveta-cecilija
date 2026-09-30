@@ -4,7 +4,9 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { APP_STRINGS } from '@/lib/app/strings'
 import { MAX_BUYER_EMAIL, MAX_BUYER_NAME } from '@/lib/app/orders-buyer'
+import type { CompVoidCounts } from '@/lib/comp/cancel-comp'
 import { Button, Card } from '../../../ui'
+import { compVoidOrderBody, useCompVoid } from '../../../use-comp-void'
 
 // The four named actions of one order (#501, #476's "named actions only"),
 // in the T1 skin (#570).
@@ -28,11 +30,18 @@ import { Button, Card } from '../../../ui'
 // they are. The fourth, Uredi kupca, is the one new route (#501) and the only
 // thing on this screen that writes to an order.
 //
+// **Poništi gratis is a comp's fifth** (#701), in Povrat's place, since a comp
+// has no money to return: the order a secretary finds by name is the one she
+// voids, rather than hunting for it among Gratis's newest eight. It calls the
+// same `/api/comp/cancel` through `useCompVoid`, and its confirmation says how
+// many tickets go and how many scanned ones stay.
+//
 // Nothing here is optimistic. A refund is a Stripe round trip and an edit runs
 // the Orders hooks, so the honest answer only exists after the response; a
 // success calls `router.refresh()` and the server re-renders the facts above.
 
 const S = APP_STRINGS.orders
+const G = APP_STRINGS.gratis
 
 type Confirm = 'refund' | 'resend' | 'edit' | null
 
@@ -42,6 +51,7 @@ export function OrderActions({
   amount,
   email,
   buyerName,
+  compVoid,
 }: {
   orderId: string
   /** From `refundOffer()`: the server has already applied `can(viewer, 'refunds')`. */
@@ -50,6 +60,8 @@ export function OrderActions({
   amount: string
   email: string | null
   buyerName: string
+  /** A comp's void, offered only to `tickets`; null on every other order. */
+  compVoid: { code: string; counts: CompVoidCounts } | null
 }) {
   const router = useRouter()
   const [confirm, setConfirm] = useState<Confirm>(null)
@@ -58,8 +70,10 @@ export function OrderActions({
   const [done, setDone] = useState<string | null>(null)
   const [name, setName] = useState(buyerName)
   const [address, setAddress] = useState(email ?? '')
+  const comp = useCompVoid<{ orderId: string }>()
 
   function open(next: Confirm) {
+    comp.close()
     setConfirm(next)
     setError(null)
     setDone(null)
@@ -137,6 +151,7 @@ export function OrderActions({
   return (
     <section className="app__actions">
       {done && <p className="app__done">{done}</p>}
+      {comp.done && <p className="app__done">{comp.done}</p>}
 
       <div className="ui-btns">
         <Button variant="primary" onClick={() => open('resend')}>
@@ -158,7 +173,30 @@ export function OrderActions({
 
         {/* Last, and quiet (#570, Q41). The red is in the confirmation. */}
         {refund === 'available' && <Button onClick={() => open('refund')}>{S.actions.refund}</Button>}
+
+        {compVoid && compVoid.counts.voidable > 0 && (
+          <Button
+            onClick={() => {
+              setConfirm(null)
+              comp.ask({ orderId })
+            }}
+          >
+            {G.cancelOrder}
+          </Button>
+        )}
       </div>
+
+      {comp.target && compVoid && (
+        <Confirmation
+          title={G.confirmOrderTitle}
+          body={compVoidOrderBody(compVoid.code, compVoid.counts)}
+          error={comp.error}
+          busy={comp.busy}
+          confirm={() => void comp.confirm()}
+          close={comp.close}
+          danger
+        />
+      )}
 
       {refund === 'already' && <p className="app__quiet">{S.refund.already}</p>}
       {refund === 'not-payable' && <p className="app__quiet">{S.refund.notPayable}</p>}
