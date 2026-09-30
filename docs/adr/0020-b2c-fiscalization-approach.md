@@ -1,9 +1,9 @@
 # ADR-0020: B2C fiscalization of online ticket sales — SaaS vs in-house CIS
 
 **Status:** Proposed — build-vs-buy decision stands; still contingent on the external "unblock" checklist below (see the 2026-08-21 amendment for what has since closed and what has not)
-**Date:** 2026-06-25 (renumbered 0018 → 0020 on 2026-07-07; legal + vendor claims re-verified against current sources the same day — see the verification note under Context. **Amended 2026-08-21** with the accountant's corrections and the vendor-inquiry results — read the amendment first, it overrides several claims below.)
+**Date:** 2026-06-25 (renumbered 0018 → 0020 on 2026-07-07; legal + vendor claims re-verified against current sources the same day — see the verification note under Context. **Amended 2026-08-21** with the accountant's corrections and the vendor-inquiry results, **updated 2026-09-30** with the fiscalization parameters and the vendor pick — read the amendment first, it overrides several claims below.)
 
-> ## Amendment 2026-08-21 — accountant's facts override the leanings below
+> ## Amendment 2026-08-21, updated 2026-09-30 — accountant's facts override the leanings below
 >
 > The body of this ADR was written before the org's accountant and secretary
 > answered. **Where they disagree, their answer governs.** Read this section
@@ -51,22 +51,50 @@
 > from launch through the 2026 season, has produced a fiscalized račun. The
 > working decision is to **draw a line at go-live** and fiscalize forward, leaving
 > the prior period to the accountant to settle in the books rather than
-> back-filling hundreds of receipts into CIS with wrong dates. **This is pending
-> the accountant's explicit confirmation** and is the one open item where being
-> wrong means filing bad data.
+> back-filling hundreds of receipts into CIS with wrong dates. **Confirmed
+> 2026-08-26** (the secretary, relaying a verbal agreement with the accountant):
+> the society acknowledges it has been in breach since cash fiscalization became
+> mandatory, mitigated by PDV having been calculated and paid monthly throughout.
 >
-> **6. Vendor selection has moved.** See the amended vendor section below —
-> Fiskalio was never actually contacted, and the two vendors who did reply
-> changed the picture.
+> **6. The vendor is Adeo POS** (neoinfo.hr), settled 2026-08-25 on a seasonal
+> model. See the amended vendor section below: Fiskalio was never actually
+> contacted, and the two vendors who did reply changed the picture.
 >
-> **Still open and blocking the build** (owner: Marija Šestanović, accountant, via
-> Tatjana): the **poslovni prostor label** and its ePorezna registration as an
-> internetska trgovina, the **naplatni uređaj label**, the **operater OIB**, the
-> mandatory receipt notes, the **interni akt** and its starting number for the WEB
-> series, how a **refund/storno** is fiscalized (we have buyer self-serve refunds
-> per ADR-0021, so storno must be automatable), and the deadline for deferred
-> submission when CIS is unreachable. Without the first four, no receipt can be
-> sent at all.
+> **7. The parameters (2026-09-13 to 2026-09-30).**
+> - **One poslovni prostor, `WEB1`, registered in ePorezna as an internetska
+>   trgovina; one naplatni uređaj, `1`.** Receipts read **`1/WEB1/1`**: ordinal /
+>   premises code / device code, the ordinal restarting at 1 each 1 January. The
+>   year is **never** a member of the number (a proposed `01/WEB/2026` would have
+>   declared a device called "2026", to be re-declared in the akt and re-created
+>   at the vendor every January).
+> - **Web only, by decision** (2026-09-30). Door sales at Ljetno kino and Centar za
+>   kulturu are physical premises, not the internetska trgovina, and stay
+>   unfiscalized on the ADR-0025 ledger for now. Fiscalizing them later means
+>   registering one more premises; the web registration and its numbering are
+>   untouched.
+> - **Operater = the society's own OIB**, with no named person, because the
+>   receipt is issued by an unattended system.
+> - **A refund is a storno receipt**: the next number in the same series, a
+>   negative amount, its own JIR and ZKI, referencing the original. At Adeo this is
+>   `InvoiceType=02` plus `RefDocFiscalNumber` (a structured reference that reaches
+>   CIS) and a `PrintRemark` reading "Storno računa …". Automatable, which is what
+>   ADR-0021's self-serve refunds need.
+> - **We do not generate the number.** Adeo assigns it and returns
+>   `InvoiceFiscalNumber`; R1 receipts come back in the same field on the B2B
+>   channel, so the accountant's single series holds by construction. Adeo also
+>   queues per device and re-sends when CIS is unreachable (`WaitingForFiscalization`,
+>   `FiscalizationError`), so the deferred-submission deadline is the vendor's to
+>   meet and ours to **alarm on**.
+> - **The interni akt is not uploaded anywhere.** The accountant drafts it; it is
+>   printed, signed and kept at the society for an inspection. The vendor takes
+>   only the society OIB, `WEB1`, `1`, the operater OIB and the certificate.
+>
+> **Still open and blocking the build** (2026-09-30): the **ePorezna filing** of
+> `WEB1` itself and the **interni akt** (both the accountant's), the **`.p12` file**
+> in the developer's hands and verified as the ZKI-signing application
+> certificate (item 2 below), and the **month Adeo production is activated**,
+> which is a cost decision because the seasonal contract bills a four-month
+> minimum.
 >
 > Two edge cases the accountant still has to rule on, both created by ADRs written
 > after this one: **comp tickets** (`channel='comp'`, `total=0` — ADR-0019) and
@@ -169,7 +197,9 @@ tax fields: buyer name/email, `adultCount`/`childCount`, `total` (EUR cents),
 `orderCode`, show date/time/venue, `paymentIntentId`, `locale`. Fixed prices
 (€20 adult / €10 child) are known. Missing: VAT treatment (exempt vs rate), the
 fiscalization **number sequence** (a gap-free `broj/prostor/uređaj` per year),
-the **premises/device labels**, and the **signing certificate**.
+the **premises/device labels**, and the **signing certificate**. (Since the vendor
+became Adeo, the sequence is assigned by the vendor and returned to us; see
+amendment item 7.)
 
 ## Decision
 
@@ -242,17 +272,20 @@ critical-events log (ADR-0016) for out-of-band re-issue.
 > for. Its seasonal pricing model is otherwise the best fit here, which is worth
 > remembering if either gap ever closes.
 >
-> **Adeo POS is the leading candidate**, and the only respondent that satisfies
-> every functional requirement. The open question is cost: €1.200/yr flat for an
-> org that sells tickets four months a year. On **2026-08-21** a reply was sent
-> asking for **seasonal pricing or dormancy in no-revenue months**, declining the
-> €1.000 integration support, and asking how certificate handover, expiry and a
-> test environment work. **If they refuse seasonal pricing, re-open Fiskalio and
-> FiskalAPI for a web-only integration** and let the org buy a POS separately —
-> the "one vendor for both" criterion was the secretary's convenience, not a legal
-> requirement, and it is what removed the two cheapest candidates from
-> consideration in the first place. Lock-in stays bounded either way: JIR and ZKI
-> land on our own Order.
+> **Adeo POS is the vendor**, the only respondent that satisfied every
+> functional requirement. The one objection was cost (€1.200/yr flat for an org
+> that sells tickets four months a year), and on **2026-08-25** they accepted a
+> **seasonal model: €100 + PDV per ACTIVE month, a minimum of four active months a
+> year, dormant and free the rest** (≈ €400 + PDV/yr, and June to September is
+> exactly the minimum), 1.000 transactions per active month included and €0,30 +
+> PDV above. Our own FINA certificate, which stays ours; the handover channel is
+> agreed at setup, not by mail; renewal is ours to watch. A **test environment**
+> covers issuing and storno. The €1.000 integration support stays declined; we
+> integrate against *Fiscalization API v1.14*. No POS blagajna is taken in this
+> phase (web only, amendment item 7), so the "one vendor for both" criterion that
+> filtered out Fiskalio and FiskalAPI no longer binds, but re-opening them would
+> buy nothing Adeo does not already give. Lock-in stays bounded: JIR and ZKI land
+> on our own Order.
 >
 > Everything from here to the end of this section is the **original 2026-06-25
 > reasoning, retained for context**.
@@ -289,6 +322,11 @@ Knjigovodstveni servis ŠESTA, `marija6anovic@gmail.com`) + secretary (Tatjana
 Vigna, who relays rather than decides) + FINA, not by the developer. **None of
 the code below ships until items 1–4 are done.**
 
+> **Checklist status 2026-09-30.** Items 3 and 4 have their **content settled**
+> (amendment item 7: `WEB1`, device `1`, `1/WEB1/1`, operater = society OIB) and
+> are waiting only on the accountant to file and to draft; item 5's vendor is
+> Adeo, not Fiskalio. Item 2 is unchanged: the file is still not in hand.
+>
 > **Checklist status 2026-08-21.** Item 1 is **answered** (25% PDV included in
 > the price — see the amendment at the top; a ministry opinion for a lower rate is
 > a separate, non-blocking track). Item 2 is **mostly closed** — the certificate
