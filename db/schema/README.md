@@ -65,6 +65,17 @@ columns/constraints `00-base`'s `CREATE … IF NOT EXISTS` can't (the table
 already exists). Keep adding new changes to `app.sql`, then regenerate
 `00-base.sql` (below). **Do not hand-edit `00-base.sql`.**
 
+**A `migrate-*.sql` file alone does NOT satisfy the drift gate, and the reason is
+worth knowing before you assume it does.** The gate compares the two `pg_dump`
+outputs **line by line** (`scripts/schema-diff.mjs` builds a Set of normalised
+lines), and `pg_dump` prints a table's LAST column with no trailing comma. So a
+scalar column appended by `ALTER TABLE … ADD COLUMN` lands last in the table and
+reads as `foo character varying`, while Payload `push` emits the same column
+mid-list as `foo character varying,` — one line missing, one red build, and the
+diff output names a column that plainly IS in `db/schema/`. The fix is the
+regeneration below and never a hand-edit that happens to match; #692 shipped a
+hand-edit under time pressure and it is the reason this paragraph exists.
+
 ### Regenerating `00-base.sql`
 
 Whenever a Payload collection changes (a field, a `select` option, a new
