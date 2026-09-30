@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import {
+  RESCHEDULE_ACTION_LABEL,
   decideScheduleLock,
   scheduleLockMessage,
   scheduleMove,
@@ -47,14 +48,13 @@ describe('scheduleMove', () => {
     expect(scheduleMove(PUBLIC_ROW, { date: '2026-10-02T12:00:00.000Z' })).toEqual(['date'])
   })
 
-  it('does not call a re-serialised local midnight of the same day a move', () => {
-    // What the `dayOnly` picker may hand back when the editor touched only the
-    // note. In UTC this is 30 September; in Zagreb it is still 1 October, which
-    // is why the comparison is made there. Getting this wrong would refuse every
-    // ordinary save on a selling show.
-    expect(scheduleMove(PUBLIC_ROW, { date: '2026-09-30T22:00:00.000Z' })).toEqual([])
-    // A whole day later is a move in any zone.
-    expect(scheduleMove(PUBLIC_ROW, { date: '2026-10-01T22:00:00.000Z' })).toEqual(['date'])
+  it('reads the day the `dayOnly` picker actually writes', () => {
+    // Verified against @payloadcms/ui DatePicker.onChange, which sets
+    // `12 - tzOffset` local hours on a day the editor PICKS: noon UTC, in every
+    // timezone. A day the editor does NOT touch goes back as the instant it
+    // arrived as, which is this row's own value and compares equal.
+    expect(scheduleMove(PUBLIC_ROW, { date: '2026-10-02T12:00:00.000Z' })).toEqual(['date'])
+    expect(scheduleMove(PUBLIC_ROW, { date: PUBLIC_ROW.date })).toEqual([])
   })
 
   it('sees the hour move on its own', () => {
@@ -80,9 +80,9 @@ describe('scheduleLockMessage', () => {
   })
 
   it('names the action that does tell the buyers', () => {
-    // The label of the edit-menu item on the same screen. If that button is
-    // ever renamed, this is the assertion that says so.
-    expect(scheduleLockMessage(['time'])).toContain('Move show date/time & notify buyers')
+    // The label of the edit-menu item on the same screen — one constant the
+    // button itself renders, so the two cannot drift apart.
+    expect(scheduleLockMessage(['time'])).toContain(RESCHEDULE_ACTION_LABEL)
   })
 })
 

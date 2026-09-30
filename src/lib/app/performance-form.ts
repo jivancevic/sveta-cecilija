@@ -274,6 +274,12 @@ export async function handleEditPerformance(
     //
     // One query for both locks, asked only when one of the two fields actually
     // moved, so the common edit (correcting the kind) still costs nothing.
+    //
+    // The same rule guards the Backoffice's raw Shows form one layer lower
+    // (`refuseQuietScheduleMove`, #689). Two refusals rather than one shared
+    // one, because they answer different readers: this one is Croatian, names
+    // *Pomakni termin* and also covers the house, which that form moves through
+    // an action of its own.
     const venueMoved = parsed.patch.venue !== found.row.venue
     const timeMoved = parsed.patch.time !== found.row.time
     if (venueMoved || timeMoved) {

@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
+import { RESCHEDULE_ACTION_LABEL } from '@/lib/show-schedule-lock'
 import { useDocumentInfo } from '@payloadcms/ui'
 import { useRouter } from 'next/navigation'
 import { useSalesActionsVisible } from './useSalesActionsVisible'
@@ -150,7 +151,8 @@ export function RescheduleShowMenuItem() {
   if (!open) {
     return (
       <button onClick={openPreview} style={labelStyle}>
-        Move show date/time & notify buyers
+        {/* The one spelling of this label: the #689 refusal names it back. */}
+        {RESCHEDULE_ACTION_LABEL}
       </button>
     )
   }
