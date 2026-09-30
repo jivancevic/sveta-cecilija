@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
+import { RESCHEDULE_ACTION_LABEL } from './show-reschedule'
 import {
-  RESCHEDULE_ACTION_LABEL,
   decideScheduleLock,
   scheduleLockMessage,
   scheduleMove,
@@ -68,7 +68,7 @@ describe('scheduleMove', () => {
 
   it('treats a missing row as carrying neither value', () => {
     expect(scheduleMove(undefined, { time: '21:00' })).toEqual(['time'])
-    expect(scheduleMove(PUBLIC_ROW, null)).toEqual([])
+    expect(scheduleMove(PUBLIC_ROW, undefined)).toEqual([])
   })
 })
 
@@ -127,6 +127,22 @@ describe('decideScheduleLock', () => {
     const { promise, activeTickets } = decide({ patch: { onlineSold: 41 } })
     expect((await promise).refuse).toBe(false)
     expect(activeTickets).not.toHaveBeenCalled()
+  })
+
+  it('costs no query on the shape Payload actually hands over', async () => {
+    // The real path never omits a key: the field-level beforeValidate pass fills
+    // every one the patch left out with a clone of the stored value, so `data` is
+    // the WHOLE document by the time this is asked. A sale ticking onlineSold
+    // therefore arrives carrying date and time too, and must still be free.
+    const { promise, activeTickets } = decide({ patch: { ...PUBLIC_ROW, onlineSold: 41 } })
+    expect((await promise).refuse).toBe(false)
+    expect(activeTickets).not.toHaveBeenCalled()
+  })
+
+  it('still refuses on that shape when the hour really moved', async () => {
+    const decision = await decide({ patch: { ...PUBLIC_ROW, time: '21:00' } }).promise
+    expect(decision.refuse).toBe(true)
+    expect(decision.moved).toEqual(['time'])
   })
 
   it('costs no query on a create', async () => {

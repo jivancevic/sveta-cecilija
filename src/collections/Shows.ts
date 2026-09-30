@@ -18,7 +18,8 @@ import {
   showsUpdateAccess,
 } from '@/lib/access/shows-access'
 import { notifyRosterOnShowChange } from '@/lib/push/shows-hook'
-import { RESCHEDULE_ACTION_LABEL, decideScheduleLock } from '@/lib/show-schedule-lock'
+import { decideScheduleLock } from '@/lib/show-schedule-lock'
+import { RESCHEDULE_ACTION_LABEL } from '@/lib/show-reschedule'
 import { poolQuery } from '@/lib/db/pool-query'
 import { getActiveTicketCountForShow } from '@/lib/tickets/sold-seats'
 import {
@@ -112,34 +113,25 @@ const SOLD_SCHEDULE_NOTE =
 
 // Refuse the quiet way to move a sold evening (#689).
 //
-// The rule is `src/lib/show-schedule-lock.ts`, pure and tested without a
-// database; this is Payload's calling convention and the one query it needs.
-// `beforeChange` rather than field access, because the answer depends on the
-// ROW (how many tickets it has sold) and not on the editor's permission, and
-// because a hook covers the admin form, REST, GraphQL and the local API at once
-// — a `readOnly` field would also refuse the harmless case, correcting a typo on
-// an evening nobody has bought into.
+// WHY the rule exists and why it is a hook rather than a field lock is in
+// `src/lib/show-schedule-lock.ts`, which owns the decision; this is Payload's
+// calling convention, the one query the decision needs, and the two things
+// specific to being a hook here.
 //
-// The three routes that move a schedule LOUDLY are outside this by
-// construction, not by an exemption: `/api/shows/[id]/{reschedule,cancel,
-// move-to-indoor}` all write with raw SQL, so no collection hook fires for
-// them. Cecilija's Uredi form reaches the same refusal one layer earlier, in
-// `src/lib/app/performance-form.ts`, with a Croatian sentence for its reader.
+// A 409, matching the sibling refusal in `src/lib/app/performance-form.ts`
+// (Croatian, for Cecilija's reader): the request is well-formed and the row is
+// the editor's to change, it is simply in a state where this is the wrong way
+// to do it.
 //
-// A 409, matching that sibling: the request is well-formed and the row is the
-// editor's to change, it is simply in a state where this is the wrong way to do
-// it.
-//
-// Two things this hook does DIFFERENTLY from `notifyRosterOnShowChange`, both
-// deliberate. It does not swallow its own failures: that one must never fail a
-// save because a push is a courtesy, while this one exists precisely to fail
-// saves, so a pool it cannot reach (`poolQuery` throws) has to come out as a
-// 500 rather than as a silently permitted quiet move. And it reads the count
-// through the pool rather than inside `req`'s transaction, so a sale landing
-// between the count and the write is not serialised against — a race whose
-// window is milliseconds and whose loser is a save that should have been
-// refused; the loud route guards its own writes with an optimistic claim on the
-// old schedule, which is where that guarantee belongs.
+// Two ways this differs from `notifyRosterOnShowChange`, both deliberate. It
+// does not swallow its own failures — that one must never fail a save because a
+// push is a courtesy, while this one exists precisely to fail saves, so a pool
+// it cannot reach (`poolQuery` throws) has to surface as a 500 rather than as a
+// silently permitted quiet move. And it counts through the pool rather than
+// inside `req`'s transaction, so a sale landing between the count and the write
+// is not serialised against: a window of milliseconds whose loser is a save that
+// should have been refused, while the loud route guards its own writes with an
+// optimistic claim on the old schedule, which is where that guarantee belongs.
 export const refuseQuietScheduleMove: CollectionBeforeChangeHook = async ({
   data,
   originalDoc,

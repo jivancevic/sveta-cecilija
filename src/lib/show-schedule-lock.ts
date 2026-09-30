@@ -1,41 +1,46 @@
 // The last quiet way to move a sold evening, and the rule that closes it (#689).
 //
-// Three surfaces can write a public show's `date` or `time`, and two of them
-// tell the buyers:
+// Three surfaces can write a public show's `date` or `time`. Exactly ONE of them
+// tells the buyers, and one of the other two used to say nothing at all:
 //
-//   - `POST /api/shows/[id]/reschedule` (#379, widened to the hour by #688)
-//     mails every buyer, reissues every ticket on the same QR tokens and stamps
-//     `date_changed_at`, which is what opens the self-serve refund (ADR-0021).
-//   - Cecilija's **Uredi** form refuses the hour and the house of a sold row
-//     with a 409 naming the action that does tell them.
+//   - `POST /api/shows/[id]/reschedule` (#379, widened to the hour by #688) is
+//     the one that tells them: it mails every buyer, reissues every ticket on the
+//     same QR tokens and stamps `date_changed_at`, which is what opens the
+//     self-serve refund (ADR-0021).
+//   - Cecilija's **Uredi** form does not tell anybody either, and does not have
+//     to: it REFUSES the hour and the house of a sold row with a 409 that names
+//     the action above.
 //   - The raw **Shows** form in the Backoffice did neither. `canEditScheduleField`
 //     asks WHICH PERMISSION the editor holds and never WHETHER THE EVENING HAS
-//     SOLD A TICKET, so a `tickets` holder could type a new hour, save, and
-//     leave somebody holding a PDF printing the old one — and, since #674, a
-//     derived entrance time that is wrong with it.
+//     SOLD A TICKET, so a `tickets` holder could type a new hour, save, and leave
+//     somebody holding a PDF printing the old one — and, since #674, a derived
+//     entrance time that is wrong with it.
 //
-// That third hole is what this file closes, as a decision rather than as a
-// field lock: field access is per-field and would need a ticket count per
-// render, while `readOnly` would also refuse the harmless case (correcting a
-// typo on an evening nobody has bought into). So the rule is asked once, in a
-// `beforeChange` hook, over the two snapshots Payload already has:
+// That third hole is what this file closes, as a decision rather than as a field
+// lock: field access is per-field and would need a ticket count per render, while
+// `readOnly` would also refuse the harmless case — correcting a typo on an
+// evening nobody has bought into. So the rule is asked once, in a `beforeChange`
+// hook, over the two snapshots Payload already has:
 //
 //     a PUBLIC row + a moved date or time + at least one active ticket = refuse
 //
 // It runs for every writer of the collection — the admin form, the REST API,
 // GraphQL, the local API — and cannot be bypassed by loosening field access.
-// The three loud routes are outside it by construction, not by an exemption:
-// all three write with raw SQL, so no collection hook fires for them.
+// `reschedule` is outside it by construction rather than by an exemption: it
+// claims the move with raw SQL, so no collection hook fires for it. (So do
+// `cancel` and `move-to-indoor`, but neither writes `date` or `time`, so neither
+// would meet this rule even if it did go through the collection.)
 //
 // Everything here is pure and takes its one fact (the ticket count) as a
 // dependency, so the rule is unit-tested without a database; `Shows.ts` is only
 // the wiring.
 
+import { RESCHEDULE_ACTION_LABEL } from '@/lib/show-reschedule'
 import { isPublicPerformance } from '@/lib/show-performance'
 import { toIsoDate } from '@/lib/to-iso-date'
 
 /** A Shows row or a patch of one, as Payload hands it to a collection hook. */
-export type ScheduleRow = Record<string, unknown> | null | undefined
+export type ScheduleRow = Record<string, unknown> | undefined
 
 /** The two halves of a start instant, named the way the copy names them. */
 export type ScheduleHalf = 'date' | 'time'
@@ -64,9 +69,13 @@ export type ScheduleHalf = 'date' | 'time'
  * 409 on a save that should have gone through — the safe direction, and one that
  * names the action to use instead.
  *
- * A key the patch does not carry is a field this save does not touch, so it
- * never counts as moved. That is what keeps the ordinary save — a note, a
- * threshold, a sold counter ticking on a sale — outside the rule entirely.
+ * What keeps the ordinary save — a note, a threshold, a sold counter ticking on a
+ * sale — outside the rule is the comparison of VALUES, and not the absence of a
+ * key. On Payload's own path there is no absence to rely on: the field-level
+ * `beforeValidate` pass runs before this collection hook and fills every key the
+ * patch omitted with a clone of the stored value (`getFallbackValue`), so by the
+ * time the decision is asked, `data` carries the whole document. The `in` checks
+ * below are the belt for a caller that hands over a bare patch, and cost nothing.
  */
 export function scheduleMove(original: ScheduleRow, patch: ScheduleRow): ScheduleHalf[] {
   const before = original ?? {}
@@ -93,8 +102,6 @@ function timeOf(value: unknown): string {
  * drift apart. Cecilija's sibling refusal is Croatian and names *Pomakni termin*,
  * because that is what its reader sees (`APP_STRINGS.performance.timeLocked`).
  */
-export const RESCHEDULE_ACTION_LABEL = 'Move show date/time & notify buyers'
-
 export function scheduleLockMessage(moved: readonly ScheduleHalf[]): string {
   const what =
     moved.length > 1 ? 'date and start time' : moved[0] === 'time' ? 'start time' : 'date'

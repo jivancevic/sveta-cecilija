@@ -43,6 +43,19 @@
 import type { Venue } from './venues'
 import { assertPublicPerformance } from './show-admin-actions'
 
+/**
+ * The Backoffice edit-menu item that moves a schedule and tells the buyers.
+ *
+ * One spelling, in the module the button and the #689 refusal both already
+ * import: the button renders it, and the refusal on the quiet path names it back
+ * so the editor is pointed at a control they can see on the same screen. It
+ * lives HERE rather than in `show-schedule-lock.ts` because that module is the
+ * decision and this one is the action — and because `RescheduleShowMenuItem` is
+ * a client component that imports this file anyway, so the label costs its
+ * bundle nothing.
+ */
+export const RESCHEDULE_ACTION_LABEL = 'Move show date/time & notify buyers'
+
 export interface RescheduleShow {
   id: string
   /** Current scheduled date, YYYY-MM-DD. */

@@ -402,10 +402,16 @@ type BeforeChange = (args: {
 
 const beforeChange = (Shows.hooks?.beforeChange as unknown as BeforeChange[])[0]
 
-/** A Payload instance whose pool answers one number: the active ticket count. */
-function payloadSelling(sold: number) {
-  const query = vi.fn(async () => ({ rows: [{ sold }] }))
-  return { payload: { db: { pool: { query } } }, query }
+/**
+ * A `req` whose Payload pool answers one number: the active ticket count.
+ *
+ * `poolQuery` is the only thing the hook takes off `req`, so this is the whole
+ * surface. The returned `poolQuery` handle is the mock itself, kept beside the
+ * req so a test can assert the query was never asked for.
+ */
+function reqSelling(sold: number) {
+  const poolQuery = vi.fn(async () => ({ rows: [{ sold }] }))
+  return { payload: { db: { pool: { query: poolQuery } } }, poolQuery }
 }
 
 const SOLD_SHOW = {
@@ -422,7 +428,7 @@ describe('Shows beforeChange — a sold evening’s schedule', () => {
   })
 
   it('refuses a quiet hour move with a 409 naming the action that tells the buyers', async () => {
-    const req = payloadSelling(12)
+    const req = reqSelling(12)
     await expect(
       beforeChange({ data: { time: '21:00' }, originalDoc: SOLD_SHOW, operation: 'update', req }),
     ).rejects.toThrow(/Move show date\/time & notify buyers/)
@@ -436,7 +442,7 @@ describe('Shows beforeChange — a sold evening’s schedule', () => {
   })
 
   it('lets the same edit through on an evening that has sold nothing', async () => {
-    const req = payloadSelling(0)
+    const req = reqSelling(0)
     const out = await beforeChange({
       data: { time: '21:00' },
       originalDoc: SOLD_SHOW,
@@ -447,13 +453,13 @@ describe('Shows beforeChange — a sold evening’s schedule', () => {
   })
 
   it('asks the pool nothing when the save did not move the schedule', async () => {
-    const req = payloadSelling(12)
+    const req = reqSelling(12)
     await beforeChange({
       data: { onlineSold: 41 },
       originalDoc: SOLD_SHOW,
       operation: 'update',
       req,
     })
-    expect(req.query).not.toHaveBeenCalled()
+    expect(req.poolQuery).not.toHaveBeenCalled()
   })
 })
