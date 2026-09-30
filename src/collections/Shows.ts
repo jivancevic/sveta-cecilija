@@ -1,4 +1,9 @@
-import { APIError, type CollectionBeforeDeleteHook, type CollectionConfig } from 'payload'
+import {
+  APIError,
+  type CollectionBeforeChangeHook,
+  type CollectionBeforeDeleteHook,
+  type CollectionConfig,
+} from 'payload'
 import {
   canEditPlacementField,
   canEditRosterField,
@@ -13,6 +18,10 @@ import {
   showsUpdateAccess,
 } from '@/lib/access/shows-access'
 import { notifyRosterOnShowChange } from '@/lib/push/shows-hook'
+import { decideScheduleLock } from '@/lib/show-schedule-lock'
+import { RESCHEDULE_ACTION_LABEL } from '@/lib/show-reschedule'
+import { poolQuery } from '@/lib/db/pool-query'
+import { getActiveTicketCountForShow } from '@/lib/tickets/sold-seats'
 import {
   PerformanceValidationError,
   isPublicPerformance,
@@ -95,6 +104,54 @@ export const cascadeShowLineupDelete: CollectionBeforeDeleteHook = async ({ req,
   })
 }
 
+// What both halves of the schedule say on the form, so the refusal below is not
+// the first the editor hears of it (#689).
+const SOLD_SCHEDULE_NOTE =
+  `Once this show has sold a ticket, the schedule is moved with "${RESCHEDULE_ACTION_LABEL}" in ` +
+  'the edit menu, never here: that action mails every buyer and reissues their tickets. On an ' +
+  'evening that has sold nothing this field is a plain edit.'
+
+// Refuse the quiet way to move a sold evening (#689).
+//
+// WHY the rule exists and why it is a hook rather than a field lock is in
+// `src/lib/show-schedule-lock.ts`, which owns the decision; this is Payload's
+// calling convention, the one query the decision needs, and the two things
+// specific to being a hook here.
+//
+// A 409, matching the sibling refusal in `src/lib/app/performance-form.ts`
+// (Croatian, for Cecilija's reader): the request is well-formed and the row is
+// the editor's to change, it is simply in a state where this is the wrong way
+// to do it.
+//
+// Two ways this differs from `notifyRosterOnShowChange`, both deliberate. It
+// does not swallow its own failures — that one must never fail a save because a
+// push is a courtesy, while this one exists precisely to fail saves, so a pool
+// it cannot reach (`poolQuery` throws) has to surface as a 500 rather than as a
+// silently permitted quiet move. And it counts through the pool rather than
+// inside `req`'s transaction, so a sale landing between the count and the write
+// is not serialised against: a window of milliseconds whose loser is a save that
+// should have been refused, while the loud route guards its own writes with an
+// optimistic claim on the old schedule, which is where that guarantee belongs.
+export const refuseQuietScheduleMove: CollectionBeforeChangeHook = async ({
+  data,
+  originalDoc,
+  operation,
+  req,
+}) => {
+  const decision = await decideScheduleLock(
+    {
+      operation: operation === 'create' ? 'create' : 'update',
+      original: originalDoc as Record<string, unknown> | undefined,
+      patch: data as Record<string, unknown>,
+    },
+    {
+      activeTickets: (showId) => getActiveTicketCountForShow(poolQuery(req.payload), showId),
+    },
+  )
+  if (decision.refuse) throw new APIError(decision.message, 409)
+  return data
+}
+
 export const Shows: CollectionConfig = {
   slug: 'shows',
   access: {
@@ -147,6 +204,8 @@ export const Shows: CollectionConfig = {
     // releases the alarm/reminder claims so the cron reschedules. Everything
     // is decided in src/lib/push/notify.ts and nothing here can fail a save.
     afterChange: [notifyRosterOnShowChange],
+    // A sold public evening's date and hour are not fields on this form (#689).
+    beforeChange: [refuseQuietScheduleMove],
     // The kind/isPublic invariants (ADR-0024). The rules themselves are a pure,
     // unit-tested function in src/lib/show-performance.ts; this hook is only the
     // Payload plumbing. `beforeValidate` (not `beforeChange`) so the forced
@@ -187,6 +246,9 @@ export const Shows: CollectionConfig = {
       required: true,
       admin: {
         date: { pickerAppearance: 'dayOnly', displayFormat: 'd MMM yyyy' },
+        // A statement of fact, not a promise (CLAUDE.md): `refuseQuietScheduleMove`
+        // is what makes it true, and the sentence would not be here without it.
+        description: SOLD_SCHEDULE_NOTE,
       },
       // A voditelj may correct the date of a private booking, never of a public
       // show: moving one mails every buyer (#404, stories 3 and 10).
@@ -203,6 +265,7 @@ export const Shows: CollectionConfig = {
         if (h > 23 || m > 59) return 'Invalid time value'
         return true
       },
+      admin: { description: SOLD_SCHEDULE_NOTE },
       access: { update: scheduleFieldUpdate },
     },
     // Every performance of the season lives in this collection (ADR-0024): the

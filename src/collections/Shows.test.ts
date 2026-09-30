@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { Shows } from './Shows'
 import { PERFORMANCE_KINDS } from '@/lib/show-performance'
 
@@ -139,16 +139,19 @@ describe('Shows non-public field conditions (#409)', () => {
     //
     // The hooks that DO exist are the beforeValidate validator, two cascades on
     // delete (#422 attendance and #432 lineups, both because their FK is SET
-    // NULL on a NOT NULL column), and the #436 roster afterChange, which sends
-    // WEB PUSH to the moreškanti (never email, ADR-0024) and swallows its own
-    // failures so it cannot fail a save. This assertion is exact, so another
-    // hook has to be justified here.
+    // NULL on a NOT NULL column), the #436 roster afterChange, which sends WEB
+    // PUSH to the moreškanti (never email, ADR-0024) and swallows its own
+    // failures so it cannot fail a save, and the #689 beforeChange, which only
+    // ever REFUSES a save and sends nothing at all. This assertion is exact, so
+    // another hook has to be justified here.
     expect(Object.keys(Shows.hooks ?? {}).sort()).toEqual([
       'afterChange',
+      'beforeChange',
       'beforeDelete',
       'beforeValidate',
     ])
     expect(Shows.hooks?.beforeValidate).toHaveLength(1)
+    expect(Shows.hooks?.beforeChange).toHaveLength(1)
     expect(Shows.hooks?.beforeDelete).toHaveLength(2)
     expect(Shows.hooks?.afterChange).toHaveLength(1)
   })
@@ -381,5 +384,82 @@ describe('Shows beforeValidate: what a voditelj may author (#567)', () => {
       req: {},
     })
     expect(out.isPublic).toBe(true)
+  })
+})
+
+// ── The schedule lock (#689) ───────────────────────────────────────────────
+//
+// The rule itself is unit-tested in src/lib/show-schedule-lock.test.ts; what is
+// asserted here is that it is WIRED — registered as a beforeChange hook, handed
+// Payload's own two snapshots, and turning a refusal into a 409 rather than
+// swallowing it.
+type BeforeChange = (args: {
+  data: Record<string, unknown>
+  originalDoc?: Record<string, unknown>
+  operation: string
+  req: { payload: unknown }
+}) => Promise<Record<string, unknown>>
+
+const beforeChange = (Shows.hooks?.beforeChange as unknown as BeforeChange[])[0]
+
+/**
+ * A `req` whose Payload pool answers one number: the active ticket count.
+ *
+ * `poolQuery` is the only thing the hook takes off `req`, so this is the whole
+ * surface. The returned `poolQuery` handle is the mock itself, kept beside the
+ * req so a test can assert the query was never asked for.
+ */
+function reqSelling(sold: number) {
+  const poolQuery = vi.fn(async () => ({ rows: [{ sold }] }))
+  return { payload: { db: { pool: { query: poolQuery } } }, poolQuery }
+}
+
+const SOLD_SHOW = {
+  id: 79,
+  isPublic: true,
+  kind: 'redovna',
+  date: new Date('2026-10-01T12:00:00.000Z'),
+  time: '18:00',
+}
+
+describe('Shows beforeChange — a sold evening’s schedule', () => {
+  it('is registered', () => {
+    expect(typeof beforeChange).toBe('function')
+  })
+
+  it('refuses a quiet hour move with a 409 naming the action that tells the buyers', async () => {
+    const req = reqSelling(12)
+    await expect(
+      beforeChange({ data: { time: '21:00' }, originalDoc: SOLD_SHOW, operation: 'update', req }),
+    ).rejects.toThrow(/Move show date\/time & notify buyers/)
+
+    // APIError carries the status; a 400 would read as "you typed it wrong".
+    // Asserted through `rejects.toMatchObject` rather than in a `.catch`, which
+    // would silently assert nothing the day this stopped throwing.
+    await expect(
+      beforeChange({ data: { time: '21:00' }, originalDoc: SOLD_SHOW, operation: 'update', req }),
+    ).rejects.toMatchObject({ status: 409 })
+  })
+
+  it('lets the same edit through on an evening that has sold nothing', async () => {
+    const req = reqSelling(0)
+    const out = await beforeChange({
+      data: { time: '21:00' },
+      originalDoc: SOLD_SHOW,
+      operation: 'update',
+      req,
+    })
+    expect(out).toEqual({ time: '21:00' })
+  })
+
+  it('asks the pool nothing when the save did not move the schedule', async () => {
+    const req = reqSelling(12)
+    await beforeChange({
+      data: { onlineSold: 41 },
+      originalDoc: SOLD_SHOW,
+      operation: 'update',
+      req,
+    })
+    expect(req.poolQuery).not.toHaveBeenCalled()
   })
 })

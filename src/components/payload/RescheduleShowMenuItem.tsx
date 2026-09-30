@@ -14,8 +14,10 @@ interface Preview {
 
 // The route's own answer, imported rather than re-typed (#688 review): it was
 // spelled out here and in Cecilija's sheet, so widening it for the hour meant
-// editing one union in three files. A type-only import costs nothing at runtime.
-import type { RescheduleResult } from '@/lib/show-reschedule'
+// editing one union in three files. The button's own label comes from the same
+// module (#689), so the refusal on the quiet path can name this control exactly;
+// that one is a value import, and the module it pulls in is pure arithmetic.
+import { RESCHEDULE_ACTION_LABEL, type RescheduleResult } from '@/lib/show-reschedule'
 
 type TestResult = { status: 'test-sent'; to: string }
 
@@ -150,7 +152,8 @@ export function RescheduleShowMenuItem() {
   if (!open) {
     return (
       <button onClick={openPreview} style={labelStyle}>
-        Move show date/time & notify buyers
+        {/* The one spelling of this label: the #689 refusal names it back. */}
+        {RESCHEDULE_ACTION_LABEL}
       </button>
     )
   }

@@ -130,6 +130,14 @@ export function canAuthorPublicFlag(user: PermissionUser): boolean {
  * performance (a moved ship call is corrected in one place, #404 story 3) and
  * never on a public one, where a date change mails 300 buyers (story 10).
  *
+ * This predicate is about the EDITOR and can never be about the row's sales: it
+ * is asked per field, per render, with no ticket count in reach. So the second
+ * half of the schedule rule lives elsewhere — `refuseQuietScheduleMove` in
+ * `Shows.ts` (#689) refuses a moved `date` or `time` on a PUBLIC row that has
+ * sold a ticket, whoever the editor is, because that move is a thing every buyer
+ * has to be told and *Move show date/time & notify buyers* is what tells them.
+ * A `tickets` holder passing this predicate is therefore not the last word.
+ *
  * `doc` is the stored row; Payload passes it to field access on every update.
  * When it is missing we deny rather than guess — the safe direction.
  */
