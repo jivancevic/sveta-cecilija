@@ -1,5 +1,11 @@
 import { describe, it, expect, vi } from 'vitest'
-import { cancelComp, CancelCompError, type CancelCompDeps, type CancelCompOrder } from './cancel-comp'
+import {
+  cancelComp,
+  CancelCompError,
+  compVoidCounts,
+  type CancelCompDeps,
+  type CancelCompOrder,
+} from './cancel-comp'
 
 // Fresh spies per call so we can assert which void path ran. Defaults model a
 // comp order whose whole-order void cancels 3 tickets and single-ticket void 1.
@@ -113,5 +119,27 @@ describe('cancelComp', () => {
     await expect(
       cancelComp({ orderId: 'ord_1', target: { kind: 'order' } }, d),
     ).rejects.toBeInstanceOf(CancelCompError)
+  })
+})
+
+describe('compVoidCounts (#701)', () => {
+  it('counts only active tickets, splitting the scanned ones out', () => {
+    expect(
+      compVoidCounts([
+        { cancelled: false, scanned: false },
+        { cancelled: false, scanned: false },
+        { cancelled: false, scanned: true },
+        { cancelled: true, scanned: false },
+        { cancelled: true, scanned: true },
+      ]),
+    ).toEqual({ voidable: 2, keptScanned: 1 })
+  })
+
+  it('is zero on an empty or fully voided order', () => {
+    expect(compVoidCounts([])).toEqual({ voidable: 0, keptScanned: 0 })
+    expect(compVoidCounts([{ cancelled: true, scanned: false }])).toEqual({
+      voidable: 0,
+      keptScanned: 0,
+    })
   })
 })

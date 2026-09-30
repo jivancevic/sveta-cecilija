@@ -7048,11 +7048,17 @@ a.app__statrow-main:focus-visible {
   border-radius: var(--radius);
 }
 
-.app__comp-warn {
-  margin: 0 0 8px;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--warn);
+/* A comp ticket's state chip and its trash, side by side (#701). */
+.app__ticket-trail {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Under Zadnji gratisi: every older comp is on Narudžbe (#701). */
+.app__comp-all {
+  display: inline-block;
+  margin-top: 10px;
 }
 
 /* The printed holder and the address, at the foot of an expanded comp: the two

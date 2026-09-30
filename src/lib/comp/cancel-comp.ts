@@ -112,3 +112,28 @@ export async function cancelComp(
 
   return { voided }
 }
+
+export interface CompVoidCounts {
+  /** Active, unscanned tickets: what a whole-order void would cancel. */
+  voidable: number
+  /** Active, scanned tickets: what a whole-order void leaves standing. */
+  keptScanned: number
+}
+
+/**
+ * What Poništi gratis would do to an order, counted the way the SQL does it
+ * (#701): only an active, unscanned ticket is voided. Both screens that offer
+ * the void read this, so the confirmation says the same numbers on each.
+ */
+export function compVoidCounts(
+  tickets: ReadonlyArray<{ cancelled: boolean; scanned: boolean }>,
+): CompVoidCounts {
+  let voidable = 0
+  let keptScanned = 0
+  for (const t of tickets) {
+    if (t.cancelled) continue
+    if (t.scanned) keptScanned += 1
+    else voidable += 1
+  }
+  return { voidable, keptScanned }
+}

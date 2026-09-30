@@ -3647,14 +3647,26 @@ export const APP_STRINGS = {
     confirm: 'Potvrdi',
     cancel: 'Odustani',
     confirmOrderTitle: 'Poništiti cijeli gratis?',
-    confirmOrderBody: (code: string, tickets: number) =>
-      `${code}: ${tickets} ulaznica prestaje vrijediti i mjesta se vraćaju u prodaju. Poništenje se ne može vratiti.`,
+    /**
+     * Both numbers out loud (#701): a scanned ticket is somebody who came in and
+     * is never voided, so a whole-order void can leave some standing. The
+     * counts arrive already pluralised, "27 ulaznica", "3 ulaznice".
+     */
+    confirmOrderBody: (code: string, voidable: string, keptScanned: string | null) =>
+      `${code}: za poništenje ${voidable}, mjesta se vraćaju u prodaju.` +
+      (keptScanned ? ` Skenirane na ulazu ostaju: ${keptScanned}.` : '') +
+      ' Poništenje se ne može vratiti.',
     confirmTicketTitle: 'Poništiti jednu ulaznicu?',
     confirmTicketBody: (ref: string) =>
       `${ref} prestaje vrijediti i mjesto se vraća u prodaju. Poništenje se ne može vratiti.`,
-    confirmScanned: 'Pažnja: ta je ulaznica već skenirana na ulazu.',
+    ticketCount: { one: 'ulaznica', few: 'ulaznice', many: 'ulaznica' },
     cancelled: 'Gratis je poništen.',
     cancelFailed: 'Poništenje nije uspjelo. Pokušaj ponovno.',
+    /** The route's two 409s (#701), in the reader's words rather than its code. */
+    scannedRefused: 'Ta je ulaznica u međuvremenu skenirana na ulazu i ostaje.',
+    nothingToVoid: 'Nema se što poništiti: ulaznice su već poništene ili skenirane.',
+    /** Under Zadnji gratisi: the rest of them live on Narudžbe (#701). */
+    allComps: 'Svi gratisi',
 
     /** Gratis po članu: the season report. */
     perMemberTitle: 'Gratis po članu',

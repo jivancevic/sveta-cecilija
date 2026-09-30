@@ -2690,7 +2690,7 @@ e-mail left, the PDF to print) is in it.
 | Section | What it does | Route behind it |
 |---|---|---|
 | Podijeli gratis | Izvedba picker with seats left, a REQUIRED member picker with search and an inline **Dodaj člana**, the two steppers, the holder name prefilled from the member, an optional e-mail | `POST /api/comp/issue`, plus `POST /api/comp/members` for the inline add |
-| Zadnji gratisi | The eight newest comps, each expanding to its per-person tickets; **Poništi gratis** on the whole order or on one ticket | `POST /api/comp/cancel` |
+| Zadnji gratisi | The eight newest comps, each expanding to its per-person tickets; **Poništi gratis** on the whole order or on one unscanned ticket, and *Svi gratisi →* to `/app/orders?state=comp` for the rest (#701, where the comp order detail on Narudžbe gained the same two actions) | `POST /api/comp/cancel` |
 | Gratis po članu | The season's comps per member: adult, child, issued and voided, with a season picker (`?season=`) | a read, through `repo.comp` |
 
 **The member is required and the form says so by staying disabled.** Per-member
