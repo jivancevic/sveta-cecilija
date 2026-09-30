@@ -48,16 +48,21 @@ export type ScheduleHalf = 'date' | 'time'
  * that reads back as a `Date` through the local API and as an ISO string through
  * REST, and `time` is free text that is trimmed.
  *
- * The day is compared **in Zagreb**, not in UTC, and that is the load-bearing
- * choice here rather than a flourish. A save of a sold evening that changes only
- * the note still re-posts the whole document, and the `dayOnly` picker is free to
- * hand back the same day as a local midnight (`2026-09-30T22:00:00Z` for 1
- * October) — in UTC that reads as a different day, which would refuse every
- * ordinary save on a selling show. Shows are stored at **noon UTC**, which is
- * mid-afternoon in Zagreb, so no re-serialisation of an untouched value can cross
- * a Zagreb midnight, while a real move is a whole day and crosses it in any zone.
- * It is also the more honest question: the day an evening IS, is the day the house
- * is in.
+ * The day is compared as a bare YYYY-MM-DD in **UTC**, which is this repo's one
+ * definition of a show's day (`toIsoDate`) and is safe here for a reason worth
+ * writing down, because the opposite conclusion is the tempting one. Saving a
+ * sold evening re-posts the whole document, so a comparison that mistook an
+ * untouched value for a move would refuse every ordinary save on a selling show.
+ * It cannot: Payload's `dayOnly` picker normalises a day the editor PICKS to noon
+ * UTC (`DatePicker.onChange` sets `12 - tzOffset` local hours, in any timezone),
+ * and a day the editor does not touch goes back as the very instant it arrived
+ * as. So an untouched value is byte-identical and a picked one is at noon, which
+ * is the middle of the UTC day from either side.
+ *
+ * A hand-written REST client is free to post an instant near a UTC midnight, and
+ * that can read as the neighbouring day. The cost of being wrong that way is a
+ * 409 on a save that should have gone through — the safe direction, and one that
+ * names the action to use instead.
  *
  * A key the patch does not carry is a field this save does not touch, so it
  * never counts as moved. That is what keeps the ordinary save — a note, a
@@ -67,25 +72,9 @@ export function scheduleMove(original: ScheduleRow, patch: ScheduleRow): Schedul
   const before = original ?? {}
   const after = patch ?? {}
   const moved: ScheduleHalf[] = []
-  if ('date' in after && dayOf(after.date) !== dayOf(before.date)) moved.push('date')
+  if ('date' in after && toIsoDate(after.date) !== toIsoDate(before.date)) moved.push('date')
   if ('time' in after && timeOf(after.time) !== timeOf(before.time)) moved.push('time')
   return moved
-}
-
-const ZAGREB_DAY = new Intl.DateTimeFormat('en-CA', {
-  timeZone: 'Europe/Zagreb',
-  year: 'numeric',
-  month: '2-digit',
-  day: '2-digit',
-})
-
-/** The Zagreb calendar day of whatever shape the column arrived in. */
-function dayOf(value: unknown): string {
-  if (value === undefined || value === null || value === '') return ''
-  const ms = value instanceof Date ? value.getTime() : Date.parse(String(value))
-  // An unparseable value is compared as itself rather than collapsed to '',
-  // which would read as "the day was cleared" and refuse a save over nothing.
-  return Number.isNaN(ms) ? toIsoDate(value) || String(value) : ZAGREB_DAY.format(ms)
 }
 
 function timeOf(value: unknown): string {
@@ -97,18 +86,21 @@ function timeOf(value: unknown): string {
  * the buyers.
  *
  * English, like the rest of this form's own copy (the field validators, the
- * `admin.description` lines): the Backoffice is developer-facing, and the
- * action it names — *Move show date/time & notify buyers* — is the label of the
- * edit-menu item sitting on the very same screen. Cecilija's sibling refusal is
- * Croatian and names *Pomakni termin*, because that is what its reader sees
- * (`APP_STRINGS.performance.timeLocked`).
+ * `admin.description` lines): the Backoffice is developer-facing, and the action
+ * it names is the label of the edit-menu item sitting on the very same screen —
+ * which is why {@link RESCHEDULE_ACTION_LABEL} is one constant that the button
+ * itself renders, rather than the same sentence typed in three places that can
+ * drift apart. Cecilija's sibling refusal is Croatian and names *Pomakni termin*,
+ * because that is what its reader sees (`APP_STRINGS.performance.timeLocked`).
  */
+export const RESCHEDULE_ACTION_LABEL = 'Move show date/time & notify buyers'
+
 export function scheduleLockMessage(moved: readonly ScheduleHalf[]): string {
   const what =
     moved.length > 1 ? 'date and start time' : moved[0] === 'time' ? 'start time' : 'date'
   return (
     `This show has sold tickets, so its ${what} cannot be changed on this form: ` +
-    'it would move the evening and tell nobody. Use "Move show date/time & notify buyers" ' +
+    `it would move the evening and tell nobody. Use "${RESCHEDULE_ACTION_LABEL}" ` +
     'in the edit menu instead — it mails every buyer, reissues their tickets on the same QR ' +
     'codes and opens the self-serve refund.'
   )
@@ -137,6 +129,12 @@ export type ScheduleLockDecision =
  * The count is asked only when a public row's schedule actually moved, so the
  * common save costs no query at all — which matters because every online sale
  * writes a Shows row.
+ *
+ * What the count COUNTS is every active ticket, whatever channel it came through
+ * — an online sale, a partner's counter, a comp. The question is not "will an
+ * email go out", it is "is anybody holding a document that prints this hour", and
+ * a partner's buyer and a comped member hold exactly the same PDF. Cecilija's
+ * sibling lock reads the same number for the same reason (#688).
  *
  * Publicness is read from the row as it is AND as it would be: a save that
  * moves the hour while turning a sold evening private would otherwise slip out

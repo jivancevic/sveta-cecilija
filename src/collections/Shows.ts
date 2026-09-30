@@ -18,7 +18,7 @@ import {
   showsUpdateAccess,
 } from '@/lib/access/shows-access'
 import { notifyRosterOnShowChange } from '@/lib/push/shows-hook'
-import { decideScheduleLock } from '@/lib/show-schedule-lock'
+import { RESCHEDULE_ACTION_LABEL, decideScheduleLock } from '@/lib/show-schedule-lock'
 import { poolQuery } from '@/lib/db/pool-query'
 import { getActiveTicketCountForShow } from '@/lib/tickets/sold-seats'
 import {
@@ -106,9 +106,9 @@ export const cascadeShowLineupDelete: CollectionBeforeDeleteHook = async ({ req,
 // What both halves of the schedule say on the form, so the refusal below is not
 // the first the editor hears of it (#689).
 const SOLD_SCHEDULE_NOTE =
-  'Once this show has sold a ticket, the schedule is moved with "Move show date/time & notify ' +
-  'buyers" in the edit menu, never here: that action mails every buyer and reissues their tickets. ' +
-  'On an evening that has sold nothing this field is a plain edit.'
+  `Once this show has sold a ticket, the schedule is moved with "${RESCHEDULE_ACTION_LABEL}" in ` +
+  'the edit menu, never here: that action mails every buyer and reissues their tickets. On an ' +
+  'evening that has sold nothing this field is a plain edit.'
 
 // Refuse the quiet way to move a sold evening (#689).
 //
@@ -129,6 +129,17 @@ const SOLD_SCHEDULE_NOTE =
 // A 409, matching that sibling: the request is well-formed and the row is the
 // editor's to change, it is simply in a state where this is the wrong way to do
 // it.
+//
+// Two things this hook does DIFFERENTLY from `notifyRosterOnShowChange`, both
+// deliberate. It does not swallow its own failures: that one must never fail a
+// save because a push is a courtesy, while this one exists precisely to fail
+// saves, so a pool it cannot reach (`poolQuery` throws) has to come out as a
+// 500 rather than as a silently permitted quiet move. And it reads the count
+// through the pool rather than inside `req`'s transaction, so a sale landing
+// between the count and the write is not serialised against — a race whose
+// window is milliseconds and whose loser is a save that should have been
+// refused; the loud route guards its own writes with an optimistic claim on the
+// old schedule, which is where that guarantee belongs.
 export const refuseQuietScheduleMove: CollectionBeforeChangeHook = async ({
   data,
   originalDoc,

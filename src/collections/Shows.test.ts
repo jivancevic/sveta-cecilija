@@ -426,15 +426,13 @@ describe('Shows beforeChange — a sold evening’s schedule', () => {
     await expect(
       beforeChange({ data: { time: '21:00' }, originalDoc: SOLD_SHOW, operation: 'update', req }),
     ).rejects.toThrow(/Move show date\/time & notify buyers/)
+
     // APIError carries the status; a 400 would read as "you typed it wrong".
-    await beforeChange({
-      data: { time: '21:00' },
-      originalDoc: SOLD_SHOW,
-      operation: 'update',
-      req,
-    }).catch((err) => {
-      expect((err as { status?: number }).status).toBe(409)
-    })
+    // Asserted through `rejects.toMatchObject` rather than in a `.catch`, which
+    // would silently assert nothing the day this stopped throwing.
+    await expect(
+      beforeChange({ data: { time: '21:00' }, originalDoc: SOLD_SHOW, operation: 'update', req }),
+    ).rejects.toMatchObject({ status: 409 })
   })
 
   it('lets the same edit through on an evening that has sold nothing', async () => {
