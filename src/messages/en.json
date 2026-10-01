@@ -369,7 +369,7 @@
       "heroSubtitle": "Europe's last authentic war dance, performed since 1666.",
       "lead": "Of all the sword dances that once spanned the Mediterranean, from Spain to Sicily, from Venice to the Greek islands, only the Moreška of Korčula has survived intact. Not as a museum piece, but as a living performance. Performed in the original 17th-century Korčulan dialect, with heavy iron swords striking hard enough to produce sparks.",
       "storyHeadline": "The Story",
-      "storyBody": "Two kings. One captive maiden. Seven battles to decide her fate. The White King, Osman, arrives to reclaim his betrothed, the Bula, from the Black King, Moro, who has taken her by force. The Bula refuses to yield: \"Far more pain for me is your unwanted love than the steel.\" What follows is the Sfida, the challenge, and then seven kolapi: a sequence of increasingly intense sword-clash figures that escalates from lyrical circling to furious final combat. The Black army is surrounded, their circle shrinking with each figure, until the Black King surrenders his sword at Osman's feet. The Bula is freed. Virtue wins. It has always won.",
+      "storyBody": "Two kings. One captive maiden. Seven battles to decide her fate. The White King, Osman, arrives to reclaim his betrothed, the Bula, from the Black King, Moro, who has taken her by force. The Bula refuses to yield: \"Far more pain for me is your unwanted love than the steel.\" What follows is the Sfida, the challenge, and then seven kolpi: a sequence of increasingly intense sword-clash figures that escalates from lyrical circling to furious final combat. The Black army is surrounded, their circle shrinking with each figure, until the Black King surrenders his sword at Osman's feet. The Bula is freed. Virtue wins. It has always won.",
       "danceHeadline": "The Dance",
       "danceBody": "The Moreška is unique in European folk tradition for its double-sword technique: every dancer wields two iron blades: the right hand strikes, the left parries. The choreography is fixed and has been passed down unchanged for generations. Each of the seven figures has a name: Rugier, Moreška, Finta, Moro in dentro, Križ, Rugier de fuorivia, and the Final Figure, executed at full speed in 4/4 time. The sound alone is worth the journey. Iron on iron, echoing off the stone walls of the old town.",
       "costumeHeadline": "The Costume",
@@ -398,8 +398,8 @@
     }
   },
   "programmePage": {
-    "metaTitle": "Moreška Programme: the Story, the Cast and the Seven Kolapi",
-    "metaDescription": "What you are watching tonight: who the two kings and the Bula are, what happens in each part of the evening, and the seven kolapi of the Moreška sword dance.",
+    "metaTitle": "Moreška Programme: the Story, the Cast and the Seven Kolpi",
+    "metaDescription": "What you are watching tonight: who the two kings and the Bula are, what happens in each part of the evening, and the seven kolpi of the Moreška sword dance.",
     "eyebrow": "Programme",
     "headline": "Moreška",
     "lead": "Two kings, one captive maiden, and seven battles to decide her fate.",
@@ -438,12 +438,12 @@
       },
       {
         "title": "Moreška with the wind orchestra",
-        "line": "The story is told first, then the Sfida, the challenge, then the seven kolapi, until the Black King surrenders."
+        "line": "The story is told first, then the Sfida, the challenge, then the seven kolpi, until the Black King surrenders."
       }
     ],
     "frontRow": "The front rows are the place for the sparks and the sound of iron. With small children, sit a few rows back.",
     "storyHeading": "The story",
-    "kolapiHeading": "The seven kolapi",
+    "kolapiHeading": "The seven kolpi",
     "kolapiIntro": "Every dancer holds two iron swords: the right hand strikes, the left parries. The figures follow a fixed order and each one is faster than the last.",
     "kolapi": [
       {

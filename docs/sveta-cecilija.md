@@ -72,9 +72,9 @@ Represents dynastic authority and the weight of the enemy army.
 The performance opens with a scene of psychological tension. Moro is seen dragging the Bula in chains, attempting to win her affection. The Bula's response is one of steadfast loyalty to Osman, expressed in blank verse: "My dear, sweet love... all I ask of far more pain for me is your unwanted love than the steel". This dialogue sets the stakes for the ensuing physical combat; the battle is not just over a girl, but over the principles of honor and the sanctity of marriage.   
 
 Choreographic Structure and Symbolic Combat
-The transition from the dramatic prologue to the dance is marked by the "Sfida"—the challenge. The Black King dances alone, performing a graceful yet menacing solo in 6/8 rhythm to provoke the White King. This solo serves as a kinetic declaration of war, leading directly into the entry of both armies—the "White" army (in red) and the "Black" army (in black)—who clash in a series of seven ritualized battles known as kolapi (strikes).   
+The transition from the dramatic prologue to the dance is marked by the "Sfida"—the challenge. The Black King dances alone, performing a graceful yet menacing solo in 6/8 rhythm to provoke the White King. This solo serves as a kinetic declaration of war, leading directly into the entry of both armies—the "White" army (in red) and the "Black" army (in black)—who clash in a series of seven ritualized battles known as kolpi (strikes).   
 
-The Seven Kolapa (Figures)
+The Seven Kolpi (Figures)
 The sequence of the dance is fixed, with each figure escalating in tempo and physical intensity. The clashing of the swords is rhythmic and forceful, often producing sparks as the iron blades strike one another.   
 
 Figure	Traditional Name	Description and Rhythmic Profile

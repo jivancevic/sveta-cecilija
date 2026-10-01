@@ -110,7 +110,7 @@ Of all the sword dances that once spanned the Mediterranean (from Spain to Sicil
 
 Two kings. One captive maiden. Seven battles to decide her fate.
 
-The White King, Osman, arrives to reclaim his betrothed, the Bula, from the Black King, Moro, who has taken her by force. The Bula refuses to yield: *"All I ask of you... far more pain for me is your unwanted love than the steel."* What follows is the Sfida (the challenge) and then the seven kolapi: a sequence of increasingly intense sword-clash figures that escalates from lyrical circling to furious final combat.
+The White King, Osman, arrives to reclaim his betrothed, the Bula, from the Black King, Moro, who has taken her by force. The Bula refuses to yield: *"All I ask of you... far more pain for me is your unwanted love than the steel."* What follows is the Sfida (the challenge) and then the seven kolpi: a sequence of increasingly intense sword-clash figures that escalates from lyrical circling to furious final combat.
 
 The Black army is surrounded, their circle shrinking with each figure until the Black King surrenders his sword at Osman's feet. The Bula is freed. Virtue wins. It has always won.
 
@@ -183,7 +183,7 @@ A full private performance of Europe's last authentic sword dance, for groups, a
 **Body:**
 Whether you are organising a corporate retreat, a cruise shore excursion, a cultural programme, or a private celebration, HGD Sveta Cecilija can stage Moreška exclusively for your group.
 
-Your guests will witness the complete performance: the dramatic dialogue in archaic Korčulan verse, the brass orchestra live, and all seven kolapi, culminating in the surrender of the Black King and the liberation of the Bula.
+Your guests will witness the complete performance: the dramatic dialogue in archaic Korčulan verse, the brass orchestra live, and all seven kolpi, culminating in the surrender of the Black King and the liberation of the Bula.
 
 Private performances are available at two Korčula venues:
 - **Summer Cinema** (Ljetno Kino): the traditional open-air home of the Moreška

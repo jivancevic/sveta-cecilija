@@ -35,7 +35,7 @@ The dialogue is spoken in an **archaic 17th-century Korčulan dialect**, so you 
 A typical performance comes in two parts:
 
 1. **The klapa**, the evening begins with [Klapa Sveta Cecilija](/sections/klapa), a male a cappella ensemble singing traditional Dalmatian song. This is your moment to settle in.
-2. **The Moreška**, danced to the live [Wind Orchestra](/sections/wind-orchestra). It opens with the spoken confrontation between the kings and the Bula, which sets up the conflict, and then comes the dance itself: the seven *kolapi* (sword-clash figures), each faster and fiercer than the last, ending in the surrender of the Black King and the freeing of the Bula.
+2. **The Moreška**, danced to the live [Wind Orchestra](/sections/wind-orchestra). It opens with the spoken confrontation between the kings and the Bula, which sets up the conflict, and then comes the dance itself: the seven *kolpi* (sword-clash figures), each faster and fiercer than the last, ending in the surrender of the Black King and the freeing of the Bula.
 
 Plan for an evening of roughly an hour end to end. The combat itself is the climax, so if the opening songs feel slow, stay with it; the payoff is worth it.
 
@@ -71,7 +71,7 @@ Come for the swords. Stay for the realisation that you are watching something al
 - Founded 1883; HGD as institutional steward — `docs/sveta-cecilija.md` lines 41, 112.
 - Plot (Bula, Moro/Black King, Osman/White King), Bula's line, archaic Korčulan dialect — `docs/sveta-cecilija.md` lines 52–72; `docs/copywriting.md` lines 110–113.
 - Two-part structure (klapa, then the Moreška danced to the wind orchestra, with the spoken prologue inside that half); "arrive early"; front-row safety; runtime "about an hour" — `docs/marketing.md` §3 experience findings, as settled in #541.
-- Double-sword technique, ~1kg iron, sparks, "bam bam bam", seven named kolapi — `docs/sveta-cecilija.md` lines 75–109; `docs/copywriting.md` lines 115–119.
+- Double-sword technique, ~1kg iron, sparks, "bam bam bam", seven named kolpi — `docs/sveta-cecilija.md` lines 75–109; `docs/copywriting.md` lines 115–119.
 - Showtime 21:00, prices €20/€10, groups every 5th free — `docs/copywriting.md` lines 33–35.
 
 ### Verify before publishing

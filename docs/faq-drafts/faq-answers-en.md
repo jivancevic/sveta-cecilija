@@ -121,7 +121,7 @@ The *sfida* is the challenge that opens the sword dance. The Black King dances a
 ### How many dance figures does the Moreška have?
 *Q20, Koliko plesnih figura ima moreška?*
 
-The Moreška has **seven** main figures, called *kolapi*, preceded by the opening *sfida* (the challenge). Each figure has a traditional name, Rugier, Moreška, Finta, Moro in dentro, Križ (the Cross), Rugier de fuorivia, and the Final Figure, and they escalate in tempo to a furious finale in 4/4 time. — *sc 75–103; cw 117*
+The Moreška has **seven** main figures, called *kolpi*, preceded by the opening *sfida* (the challenge). Each figure has a traditional name, Rugier, Moreška, Finta, Moro in dentro, Križ (the Cross), Rugier de fuorivia, and the Final Figure, and they escalate in tempo to a furious finale in 4/4 time. — *sc 75–103; cw 117*
 
 ### What colours are the two opposing armies?
 *Q21, Koje boje su sukobljene vojske u moreški?*

@@ -26,7 +26,7 @@ The Moreška is the more theatrically elaborate of the two, and it's the one sta
 
 - **It's a drama as well as a dance.** There's a written story, two kings, **Moro** (the Black King) and **Osman** (the White King), fight over a captured young woman, the **Bula**, performed in archaic 17th-century Korčulan verse before the fighting begins.
 - **It uses a double-sword technique.** Every dancer wields *two* iron blades, the right hand striking and the left parrying, a feature that sets the Moreška apart from most European sword dances.
-- **Seven named figures.** The combat unfolds in seven named *kolapi*, escalating in tempo to a furious finale, accompanied by a **brass-band score composed by Krsto Odak in 1937**.
+- **Seven named figures.** The combat unfolds in seven named *kolpi*, escalating in tempo to a furious finale, accompanied by a **brass-band score composed by Krsto Odak in 1937**.
 - **A Mediterranean pedigree.** The Moreška belongs to the *Moros y Cristianos* ("Moors and Christians") tradition, traceable to a performance in Lérida, Spain, in 1150, and documented in Korčula since 1666.
 
 It is recognised as a **protected cultural good of the Republic of Croatia**, and Korčula is the last place where this authentic war-dance form survived intact. You can read its full story in our [history of the Moreška](/blog/history-of-moreska-sword-dance).
@@ -56,7 +56,7 @@ Korčula didn't keep *a* sword dance alive, it kept a whole family of them. The 
 ### Sources
 - Korčula "treasure chest"; 1997 Sword Dance Festival; Kumpanjija + Moštra in Žrnovo, Blato, Vela Luka; Korčula Tourist Board / Dr. Goran Oreb — `docs/sveta-cecilija.md` line 193.
 - Moreška drama (Moro/Osman/Bula), archaic verse — `docs/sveta-cecilija.md` lines 52–72; `docs/copywriting.md` lines 110–113.
-- Double-sword technique; seven kolapi; Odak 1937 score — `docs/sveta-cecilija.md` lines 77–109, 173–174.
+- Double-sword technique; seven kolpi; Odak 1937 score — `docs/sveta-cecilija.md` lines 77–109, 173–174.
 - Moros y Cristianos; 1150 Lérida; 1666 Korčula; "last bastion"; protected cultural good — `docs/sveta-cecilija.md` lines 5, 8, 10, 196.
 - HGD founded 1883 — `docs/sveta-cecilija.md` lines 41, 112.
 
