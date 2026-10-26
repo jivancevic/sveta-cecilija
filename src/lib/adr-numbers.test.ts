@@ -14,19 +14,27 @@ import { describe, expect, it } from 'vitest'
  * written in `docs/agents/worktree-dev.md`; this is what the convention lacked,
  * a check that runs. It lives in `vitest` rather than a workflow of its own
  * because `vitest` is already a required check and a new job is one more thing
- * to keep required.
+ * to keep required — which is also why `ci.yml`'s docs-only skip has one
+ * exception for `docs/adr/`: an ADR PR is docs-only, and a guard that is
+ * skipped on the PR that adds the duplicate would fire on the next innocent
+ * code PR instead.
  *
  * The second assertion is the other half of a renumber: a `sed` on paths
- * leaves the file's own `# ADR-NNNN:` heading (and every link label) saying
- * the old number, which reads correctly and lies.
+ * leaves the file's own `# ADR-NNNN:` heading saying the old number, which
+ * reads correctly and lies. Link labels elsewhere are not checked here.
  */
 
 const ADR_DIR = path.resolve(__dirname, '../../docs/adr')
 const FILENAME = /^(\d{4})-[a-z0-9-]+\.md$/
 
+/**
+ * Every entry, not only `*.md`: a `0031-x.MD` or a `0032-x.md.bak` would
+ * otherwise never reach the shape check and could carry a duplicate number
+ * unseen. The shape assertion is what refuses them, by name.
+ */
 function adrFiles(): string[] {
   return readdirSync(ADR_DIR)
-    .filter((name) => name.endsWith('.md'))
+    .filter((name) => !name.startsWith('.'))
     .sort()
 }
 
