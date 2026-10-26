@@ -100,7 +100,7 @@ which is the intended behaviour, not a failure.
 
 ## Deploy triggers
 
-Both apps connect to the repo via the same Coolify **GitHub App** (no per-repo deploy webhook — its hook lives at the App/installation level, so `gh api repos/.../hooks` is empty by design). Whether a push to `main` deploys is governed by each app's **Automatic Deployment** toggle, and since 2026-09-12 **both are ON** (ADR-0026). If either stops auto-deploying, check that per-app toggle first: it is `application_settings.is_auto_deploy_enabled`, and `Application::isDeployable()` reads nothing else. Unlike the Git branch field, this toggle really does persist — verify it in Coolify's own database rather than trusting the UI.
+Both apps connect to the repo via the same Coolify **GitHub App** (no per-repo deploy webhook — its hook lives at the App/installation level, so `gh api repos/.../hooks` is empty by design). Whether a push to `main` deploys is governed by each app's **Automatic Deployment** toggle: **production ON** (ADR-0026, since 2026-09-12), **staging OFF** since #649 (`dev.moreska.eu` ships on a click; read back 2026-10-26: `zek88…` `t`, `h3yfd…` `f`). If production stops auto-deploying, check that per-app toggle first: it is `application_settings.is_auto_deploy_enabled`, and `Application::isDeployable()` reads nothing else. Unlike the Git branch field, this toggle really does persist — verify it in Coolify's own database rather than trusting the UI.
 
 ### If auto-deploy isn't firing (two non-obvious gotchas, both cost real time in #226)
 
