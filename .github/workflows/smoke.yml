@@ -1,0 +1,101 @@
+name: smoke
+
+# Post-merge smoke check of production (#691, #703).
+#
+# Coolify deploys every push to `main` by webhook (ADR-0026), so after a merge
+# this waits for that deploy and then asks `/api/health` for a 200 whose
+# `commit` is the merged commit. A red run means roll back
+# (docs/agents/deployment.md, "Rollback"): either prod stopped answering, or
+# the merge never reached prod — a dropped webhook delivery (#691: one push in
+# ten went missing and sat unshipped for six hours while every alarm stayed
+# green), a failed build, or a new container that never passed its HEALTHCHECK
+# and left the old one answering with the previous commit. The three existing
+# watchers (uptime.yml, Coolify mail, the health gate) all ask whether the site
+# is UP; this is the only one that asks WHICH commit it is running.
+#
+# A docs-only push does not deploy, by design: Coolify's `watch_paths` exclude
+# `docs/**` and `**/*.md`, and `/api/health` then keeps reporting the commit in
+# the image rather than the tip of `main` (CLAUDE.md, "a docs-only change
+# neither gates nor deploys"). Waiting for it would go red on every docs merge,
+# so the same classification ci.yml uses decides first whether there is a
+# deploy to wait for. Default is to WAIT: a push whose diff cannot be read
+# (missing base) is treated as a code change.
+#
+# `/api/health` answers the SHORT sha (`shortCommit`, 7 characters), so the
+# comparison is on the first seven of the merged sha.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Two quick merges leave one run, for the newer commit: the older one can no
+# longer come true, because prod will answer with the newer sha.
+concurrency:
+  group: smoke
+  cancel-in-progress: true
+
+jobs:
+  health:
+    name: health
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Decide whether this push deploys
+        id: scope
+        run: |
+          set -euo pipefail
+          decision=wait
+          if [ "${{ github.event_name }}" = "push" ]; then
+            base="${{ github.event.before }}"
+            head="${{ github.sha }}"
+            if [ -n "$base" ] && [ "$base" != "0000000000000000000000000000000000000000" ] \
+               && git cat-file -e "$base^{commit}" 2>/dev/null; then
+              changed=$(git diff --name-only "$base" "$head")
+              if [ -n "$changed" ] && ! echo "$changed" | grep -qvE '(^docs/|\.md$)'; then
+                decision=skip
+              fi
+              echo "Changed files:"; echo "$changed"
+            else
+              echo "No usable base sha ($base) — waiting for a deploy."
+            fi
+          fi
+          echo "decision=$decision" >> "$GITHUB_OUTPUT"
+          echo "Decision: $decision"
+
+      - name: Docs-only push, nothing deploys
+        if: steps.scope.outputs.decision == 'skip'
+        run: echo "Only docs/** and *.md changed — Coolify's watch_paths exclude these, so prod keeps the previous commit by design."
+
+      # Measured 2026-09-16..19 over five prod deploys: 152-160 s from the push
+      # to the new container answering. Ten minutes leaves room for a queued or
+      # slower build without passing the old container off as the new one.
+      - name: GET https://moreska.eu/api/health returns 200 with commit ${{ github.sha }}
+        if: steps.scope.outputs.decision == 'wait'
+        env:
+          WANT: ${{ github.sha }}
+        run: |
+          want="${WANT:0:7}"
+          deadline=$((SECONDS + 600))
+          while :; do
+            body=$(curl --silent --show-error --max-time 20 \
+              --write-out '\n%{http_code}' https://moreska.eu/api/health || true)
+            code=${body##*$'\n'}
+            json=${body%$'\n'*}
+            commit=$(printf '%s' "$json" | jq -r '.commit // "null"' 2>/dev/null || echo "unparsable")
+            [ -n "$commit" ] || commit=none
+            echo "HTTP $code commit $commit (want $want)"
+            if [ "$code" = 200 ] && [ "${commit:0:7}" = "$want" ]; then
+              echo "merge $WANT is live"
+              exit 0
+            fi
+            if [ "$SECONDS" -ge "$deadline" ]; then
+              echo "::error::merge $WANT did not reach prod in 10 min: /api/health answers HTTP $code with commit $commit. Roll back: docs/agents/deployment.md, Rollback. If the commit is the previous one and Coolify shows no deployment for $want, the push webhook was dropped (#691): scripts/coolify-env.sh redeploy ships the tip of main."
+              exit 1
+            fi
+            sleep 15
+          done

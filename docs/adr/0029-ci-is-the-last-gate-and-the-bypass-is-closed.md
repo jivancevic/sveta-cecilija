@@ -31,6 +31,10 @@ Alongside it, and for the same reason — the gate should be worth the three min
 - A required check that is skipped rather than run reads as forever-pending and wedges the PR. This is why `docker`, `drift` and (since #649) the `ci.yml` jobs always report a conclusion and decide *internally* whether there is work to do, instead of using `paths:` filters.
 - The lock protects nothing about what happens *after* the merge. Coolify still deploys on the push webhook, so a green merge of a genuinely broken change reaches production just as fast as before. This ADR closes the bypass; it does not add a post-merge gate, and adding one was considered and rejected in ADR-0026.
 
+### Amendment 2026-10-26 (#703): auto-merge under the lock
+
+*Allow auto-merge* is switched on for the repository and the merge becomes `gh pr merge --auto --squash`, the exact command `/ship` runs and the only one `.claude/settings.json` allows (no wildcard, so it cannot be stretched to `--admin`). This is not a loosening: auto-merge is GitHub waiting for the same five required checks this ADR made mandatory, under the same `enforce_admins: true`, and then merging — the lock is unchanged, and the party that used to poll the checks and decide they were green is removed from the loop. Squash is the merge for every PR `/ship` lands; a stacked chain merged by hand with `--merge` (`docs/agents/worktree-dev.md`) is the one exception and passes the same gate. If CI is *broken* rather than failing, the recovery is still the two conscious acts above, and an armed auto-merge simply never fires until the checks report.
+
 ## Alternatives considered
 
 **A named emergency path** — a reduced check set (say `vitest` + `docker`) usable under declared urgency, with the reason recorded. Rejected: it reintroduces the judgement call the lock exists to remove, and the moment when someone declares an emergency is precisely the moment their judgement is worst.
