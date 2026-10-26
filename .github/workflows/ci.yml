@@ -48,11 +48,19 @@ jobs:
             head="${{ github.sha }}"
           fi
 
+          # One exception to "docs-only skips": a change under docs/adr/ RUNS.
+          # The ADR-number guard (#679, src/lib/adr-numbers.test.ts) lives in
+          # vitest, and a PR that adds or renumbers an ADR is almost always
+          # docs-only, so without this clause the duplicate would merge behind
+          # a green skip and the test would go red on the next unrelated code
+          # PR. docker.yml and schema-drift.yml keep skipping: an ADR needs no
+          # image and no schema compare, and it still does not deploy.
           decision=run
           if [ -n "$base" ] && [ "$base" != "0000000000000000000000000000000000000000" ] \
              && git cat-file -e "$base^{commit}" 2>/dev/null; then
             changed=$(git diff --name-only "$base" "$head")
-            if [ -n "$changed" ] && ! echo "$changed" | grep -qvE '(^docs/|\.md$)'; then
+            if [ -n "$changed" ] && ! echo "$changed" | grep -qvE '(^docs/|\.md$)' \
+               && ! echo "$changed" | grep -qE '^docs/adr/'; then
               decision=skip
             fi
             echo "Changed files:"; echo "$changed"
