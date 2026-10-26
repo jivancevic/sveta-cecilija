@@ -29,7 +29,7 @@
 # USAGE
 #   scripts/coolify-env.sh health                 # curl https://moreska.eu/api/health
 #   scripts/coolify-env.sh app-uuid               # the uuid every other command targets
-#   scripts/coolify-env.sh settings               # health check + images-to-keep settings (read-only)
+#   scripts/coolify-env.sh settings               # health check settings (read-only)
 #   scripts/coolify-env.sh env-get                # list env KEYS on the app (no values)
 #   scripts/coolify-env.sh env-set KEY VALUE      # set/update one env var
 #   scripts/coolify-env.sh env-set-file KEY PATH  # set env var value from a file
@@ -109,14 +109,17 @@ cmd_app_uuid() { load_config; resolve_uuid; }
 
 # The settings the shipping runbook depends on, read back rather than trusted:
 # the health check (this app's probe is the Dockerfile HEALTHCHECK, ADR-0026
-# alternative 7, so `custom_healthcheck_found` is what matters here) and how
-# many images the Rollback tab offers.
+# alternative 7, so `custom_healthcheck_found` is what matters here). NOT
+# `docker_images_to_keep`: Coolify 4.5.0 keeps it in `application_settings`
+# and never returns it here (it read `null` while the box held 5, #707), so
+# printing it would say "unset" about a value that is set. The Rollback tab
+# in the UI has the number; `rollback-images` lists what is actually kept.
 cmd_settings() {
   load_config; local uuid; uuid="$(resolve_uuid)"
   api_ok GET "/api/v1/applications/$uuid" | jq '{
     name, fqdn, git_branch, build_pack,
     health_check_enabled, health_check_host, health_check_path, health_check_port,
-    custom_healthcheck_found, docker_images_to_keep
+    custom_healthcheck_found
   }'
 }
 
