@@ -1,6 +1,6 @@
 # Deployment (Coolify on Hetzner)
 
-Two Coolify apps on one Hetzner box both track `main`, but **only prod auto-deploys** ([ADR-0026](../adr/0026-production-auto-deploy-from-main.md), superseding ADR-0009's manual-prod half; staging's auto-deploy was turned off by #649): a push to `main` lands on **`moreska.eu` (prod)**, and **`dev.moreska.eu`** ships when you click it. They were never chained — staging has never been a gate in front of prod, it is a second app that happens to track the same branch — and once prod stopped waiting for a human, a staging build on every push verified nothing prod would not find seconds later while taking half of a 4-vCPU box from the build that matters (measured 2026-09-16: prod 225 s and staging 172 s, concurrent, on the same push). What gates prod is machinery, not a click: all five status checks are required on `main`, CI boots the real Docker image against a throwaway Postgres, and Coolify refuses to promote a container whose `HEALTHCHECK` fails (the old container keeps serving instead).
+Two Coolify apps on one Hetzner box both track `main`, but **only prod auto-deploys** ([ADR-0026](../adr/0026-production-auto-deploy-from-main.md), superseding ADR-0009's manual-prod half; staging's auto-deploy was turned off by #649): a push to `main` lands on **`moreska.eu` (prod)**, and **`dev.moreska.eu`** ships when you click it. They were never chained — staging has never been a gate in front of prod, it is a second app that happens to track the same branch — and once prod stopped waiting for a human, a staging build on every push verified nothing prod would not find seconds later while taking half of a 4-vCPU box from the build that matters (measured 2026-09-16: prod 225 s and staging 172 s, concurrent, on the same push). What gates prod is machinery, not a click: all five status checks are required on `main`, CI boots the real Docker image against a throwaway Postgres, and Coolify refuses to promote a container whose `HEALTHCHECK` fails (the old container keeps serving instead). After the merge, the `smoke` workflow (`.github/workflows/smoke.yml`, #703) waits up to 10 min for `https://moreska.eu/api/health` to answer with the merged commit's short sha — the one watcher that asks *which* commit prod runs rather than whether it is up (#691: a dropped push webhook left `main` and production disagreeing for six hours with every alarm green). Red means [Rollback](#rollback). How a PR gets to `main` at all is `AGENTS.md` → How work ships.
 
 **`watch_paths` on both apps is exactly these two lines** (applied 2026-09-16, #649), so a markdown commit does not restart a container taking card payments for an image `.dockerignore` makes byte-identical:
 
@@ -11,7 +11,7 @@ Two Coolify apps on one Hetzner box both track `main`, but **only prod auto-depl
 
 Spell the second one `**/*.md`, never `*.md`: Coolify compiles a pattern to an **anchored** regex in which `*` does not cross `/` (`app/Models/Application.php`, `globToRegex`), so `*.md` would catch `CLAUDE.md` and miss `docs/agents/deployment.md`. The rest of that matcher is why this is safe to set at all: patterns are evaluated in order and the last match wins, and a changed file matching **no** pattern is **included** when every pattern is an exclusion. A path nobody thought of therefore still deploys — the failure mode is a needless deploy, never a silently skipped one. The accepted consequence (#649): the Cecilija footer's build line and `/api/health` report **the commit in the image**, which can trail the tip of `main` by a run of docs commits. Hotfixes are just "merge to main"; no special path. No `dev` git branch (single trunk). Don't use Vercel — Payload's long-lived Postgres pool + bootstrap-on-start fights serverless.
 
-> **The merge button is the last checkpoint, and since 2026-09-12 an agent may click it** once all five checks are green (CLAUDE.md; a pending check is not a passing one). With the Redeploy click gone, nothing stands between a merge and the live payment site except CI. Coolify auto-deploys on the *push webhook*, not on CI success, so branch protection is what keeps a red commit off `main` — and since #649 the bypass is **shut**, not merely discouraged: `enforce_admins` is `true` ([ADR-0029](../adr/0029-ci-is-the-last-gate-and-the-bypass-is-closed.md)). **Never force-merge past a failing check**; the container health gate is a backstop, not permission.
+> **The merge is the last checkpoint, and since #703 GitHub performs it**: `/ship` arms `gh pr merge --auto --squash` and the merge happens the moment all five required checks pass (`AGENTS.md` → How work ships). With the Redeploy click gone, nothing stands between a merge and the live payment site except CI. Coolify auto-deploys on the *push webhook*, not on CI success, so branch protection is what keeps a red commit off `main` — and since #649 the bypass is **shut**, not merely discouraged: `enforce_admins` is `true` ([ADR-0029](../adr/0029-ci-is-the-last-gate-and-the-bypass-is-closed.md)). **Never force-merge past a failing check**; the container health gate is a backstop, not permission.
 
 > **If you do Redeploy by hand** (a rollback, or re-running a deploy without a new commit), **pick the *right* app.** That same Coolify instance also hosts an unrelated **`korcula-stays`** project (e.g. `korcula-pms`) — easy to Redeploy by mistake. Prod moreska.eu is **project `moreska-eu` → production → app `sveta-cecilija:main-zek88q652dijih0ywodgffux`** (domains `moreska.eu` + `www.moreska.eu`, Build Pack: Dockerfile). Before clicking Redeploy, confirm the breadcrumb reads `moreska-eu › production › sveta-cecilija…`; after, confirm the deploy log line `Importing jivancevic/sveta-cecilija:main (commit sha …)` matches the commit you just merged. The Coolify UI is reached via an SSH tunnel to `localhost:8000`; if it shows an error page, the tunnel dropped (`curl localhost:8000` → `000`) — re-establish it first.
 
@@ -106,7 +106,68 @@ Both apps connect to the repo via the same Coolify **GitHub App** (no per-repo d
 
 1. **Inbound firewall must allow GitHub → Coolify webhook.** The GitHub App's `push` webhook is *inbound* to Coolify at `http://<box-ip>:8000`; manual **Redeploy** is *outbound* (the box clones GitHub), so Redeploy working tells you nothing about the webhook. If GitHub App → **Recent Deliveries** show `push` events failing with **"failed to connect to host"** (and `curl http://<box-ip>:8000` returns `code=000`), TCP 8000 is firewalled. Fix: add an **inbound rule in the Hetzner Cloud Firewall** — TCP, port **8000**, source = the GitHub `hooks` ranges from `https://api.github.com/meta` (re-check, they drift), **never `0.0.0.0/0`** (that exposes the Coolify dashboard). In the Hetzner rule form the CIDRs go in the **Source IPs** field (the "Any IPv4 / Any IPv6" box, type each + Enter), and `8000` goes in the **Port** field — a CIDR in the Port field errors "End port have to be higher than the start port". Host `ufw` was not a second blocker here, but check `sudo ufw status` if the cloud-firewall rule alone doesn't fix it.
 
-2. **Coolify waits for required CI checks before it deploys.** Even with the webhook reaching Coolify (delivery returns **200**), a deploy only fires once the commit's required checks (the vitest CI gate) pass. So **don't validate by "Redeliver" of a stale push** — that returns 200 but won't deploy, because the redelivered commit has no passing checks attached. Validate with a *real merge to `main`* and watch the deploy start after CI goes green.
+2. **Coolify deploys on the push webhook, not on CI success** ([ADR-0026](../adr/0026-production-auto-deploy-from-main.md)); what keeps a red commit off `main` is branch protection, and a commit only ever reaches `main` with its checks green, which is why it *looks* as if Coolify waited for CI. (This paragraph used to claim it did, from #226; the ADRs and CLAUDE.md say the opposite and they are right.) So **don't validate the webhook by "Redeliver" of a stale push** — in #226 that returned 200 and deployed nothing, because the redelivered commit was already the one running. Validate with a *real merge to `main`*: `smoke` goes green when the new container answers with the merged commit. And know that a **single delivery can be dropped** while the integration is healthy (#691: the next merge deployed on its own and carried the missed commit as an ancestor); `smoke` is what notices, and `scripts/coolify-env.sh redeploy` ships the tip of `main` without waiting for the next one.
+
+## Rollback
+
+Every merge to `main` goes to production with no staging in the path, so this is the undo. It was written down (#703) before *Allow auto-merge* was switched on, and it is the first thing to reach for when `smoke` is red or the app misbehaves after a merge. Diagnose after.
+
+**1. Find the bad and the last good commit.**
+
+```bash
+scripts/coolify-env.sh deployments   # status, commit, started, finished — newest first
+scripts/coolify-env.sh health        # what prod answers right now: {"ok":true,"commit":"<short sha>","dbOk":true}
+```
+
+The newest `finished` row before the bad one is the commit to go back to. `git log --oneline origin/main` names what each sha is.
+
+**2. Put the last good image back (about a minute, no rebuild).**
+
+```bash
+scripts/coolify-env.sh rollback-images        # tags (= commit shas) still on the server
+scripts/coolify-env.sh rollback <good-sha>    # redeploy that image
+scripts/coolify-env.sh health                 # commit = <good-sha> → the old code is live again
+```
+
+`/api/health`'s `commit` is the sha of the image that answers, so the good sha there means the rollback took. The `smoke` run of the bad merge stays red: it wanted the bad commit.
+
+Only the images Coolify kept are offered: `docker_images_to_keep` was raised from 2 to 5 for prod in ADR-0026 (read it back with `scripts/coolify-env.sh settings`; the Rollback tab in the UI shows the same list). Older than that, the revert PR below is the only way back. The rollback API needs Coolify 4.3.23+ (`scripts/coolify-env.sh version`); on an older server both commands exit with a message saying so, and the same thing is done by hand: Coolify UI → **`moreska-eu` › production › `sveta-cecilija:main-zek88…`** → **Rollback** → the image tagged with the last good commit → **Rollback**. Check the breadcrumb first: the same Coolify hosts the unrelated `korcula-pms`, and the staging app `dev.moreska.eu` is one row away.
+
+**3. Revert on `main`, always.** Step 2 only swaps what runs; `main` still holds the bad commit and the next merge deploys it again. The revert also works alone when the good image is gone: about 3 min of CI and ~155 s of rollout, so prod is back in about five minutes.
+
+```bash
+git fetch origin
+git switch -c revert-<short-sha> origin/main
+git revert --no-edit <bad-sha>
+git push -u origin HEAD
+gh pr create --fill
+gh pr merge --auto --squash
+```
+
+**Migrations do not roll back.** `bootstrap-db.mjs` applies `db/schema/*.sql` forward on every boot (`db-bootstrap.md`), so old code on a schema that only gained columns, tables or enum values works. A migration that drops or rewrites data cannot be undone by any of the above, which is why it never merges without asking first (STANDARDS gate G2).
+
+## Driving Coolify from a script
+
+`scripts/coolify-env.sh` (Sufler's, copied with this app's uuid and health path; #703) talks to the Coolify API for the prod app `zek88q652dijih0ywodgffux` — the uuid is a constant in the script and never resolved from the domain, because `dev.moreska.eu` contains `moreska.eu`. It loads its config from **one place outside any checkout** (a worktree does not copy gitignored files), `~/.config/moreska/` or `$MORESKA_DEPLOY_DIR`:
+
+| File | Holds (names only; values never appear in the repo) |
+|---|---|
+| `deploy.env` | `COOLIFY_BASE_URL` (the control plane, `https://…` behind Cloudflare Access, or `http://localhost:8000` over the `ssh coolify` tunnel); optionally `COOLIFY_APP_UUID` and `APP_DOMAIN` to point it elsewhere |
+| `deploy.secrets` (chmod 600) | `COOLIFY_TOKEN`; `CF_ACCESS_CLIENT_ID` and `CF_ACCESS_CLIENT_SECRET` when the base URL goes through Cloudflare Access (omit them over the tunnel) |
+
+Both files are `source`-d: one `KEY=value` per line, quoted if it has spaces, no multi-line values. These are deploy secrets, not app runtime env — the app's env is the list above and is set in Coolify. The token is a Coolify API token for the instance both of Josip's Coolify apps share; where it is kept, and the move to a secrets manager, is the operator's business and not this repo's.
+
+```bash
+scripts/coolify-env.sh health            # GET https://moreska.eu/api/health
+scripts/coolify-env.sh settings          # health check + docker_images_to_keep, read back (read-only)
+scripts/coolify-env.sh version           # Coolify version (rollback needs 4.3.23+)
+scripts/coolify-env.sh deployments       # last 10 deployments with their commits
+scripts/coolify-env.sh rollback-images / rollback <sha>   # see Rollback
+scripts/coolify-env.sh redeploy          # deploy the tip of main again, no new commit (a dropped webhook, an env change)
+scripts/coolify-env.sh env-get / env-set K V               # app env, keys only on read
+```
+
+**The health probe here is the Dockerfile `HEALTHCHECK`, not Coolify's HTTP check** (ADR-0026, alternative 7: Coolify's generated probe is `curl … || wget …` and the `node:22-slim` runtime image has neither, so turning the UI check on fails a healthy container). `settings` shows `health_check_enabled` and `custom_healthcheck_found`; the second is the one that must be true. `healthcheck-host` is kept from Sufler as a read-back tool and does not turn the check on. To let an agent run the script without a per-call prompt a human adds `Bash(scripts/coolify-env.sh:*)` to `.claude/settings.json`; the agent never widens its own permissions.
 
 ## Runbook: subscribe the live webhook to Stripe dispute events (#380)
 

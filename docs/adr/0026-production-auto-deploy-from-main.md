@@ -48,6 +48,10 @@ It moved one step earlier, to the merge button. Since the Redeploy click is gone
 
 At the time of this ADR that gate was a human one: CLAUDE.md forbade an agent from merging its own PR. **That was relaxed later the same day (2026-09-12)** — an agent may now merge once all six required checks are green, never via the admin bypass. The gate is therefore CI, not a person, and the reasoning above should be read as an argument about the *gate*, not about who clicks it. Current rule: CLAUDE.md hard rules.
 
+### Amendment 2026-10-26 (#703): GitHub presses the button
+
+The merge is now armed rather than clicked: `/ship` runs its review round and then `gh pr merge --auto --squash`, and GitHub performs the merge the moment the five required checks pass. Under `enforce_admins: true` (ADR-0029) that gives exactly the guarantee this ADR asked of the merge button — nothing reaches `main` before every check is green — with GitHub waiting instead of an agent polling the checks and reading them, which removes the one step where a pending check could be mistaken for a passing one. Squash replaces the merge commit: the two ADRs protect the gates, not the shape of history, and one commit per PR is what the post-merge check, the rollback and a `git revert` want. The post-merge gate this ADR declined to add still does not exist, but a post-merge **check** does: the `smoke` workflow asserts that production answers `/api/health` with the merged commit (#691 showed a push webhook can be dropped with every alarm green). The rollback it points at is written down for the first time as a command, `scripts/coolify-env.sh rollback <sha>`, in `docs/agents/deployment.md` → Rollback. The facts live in `AGENTS.md` → How work ships, bound to `~/.agents/STANDARDS.md`.
+
 ## Alternatives considered
 
 1. **Keep the manual Redeploy.** Rejected. It verified nothing a machine was not better placed to verify, and its measurable effect was a 10-commit production lag. "A human is in the loop" is only a safety property if the human is checking something; here the human was clicking a button.
