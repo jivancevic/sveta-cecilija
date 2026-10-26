@@ -131,7 +131,7 @@ scripts/coolify-env.sh health                 # commit = <good-sha> → the old 
 
 `/api/health`'s `commit` is the sha of the image that answers, so the good sha there means the rollback took. The `smoke` run of the bad merge stays red: it wanted the bad commit.
 
-Only the images Coolify kept are offered: `docker_images_to_keep` was raised from 2 to 5 for prod in ADR-0026 (read it back with `scripts/coolify-env.sh settings`; the Rollback tab in the UI shows the same list). Older than that, the revert PR below is the only way back. The rollback API needs Coolify 4.3.23+ (`scripts/coolify-env.sh version`); on an older server both commands exit with a message saying so, and the same thing is done by hand: Coolify UI → **`moreska-eu` › production › `sveta-cecilija:main-zek88…`** → **Rollback** → the image tagged with the last good commit → **Rollback**. Check the breadcrumb first: the same Coolify hosts the unrelated `korcula-pms`, and the staging app `dev.moreska.eu` is one row away.
+Only the images Coolify kept are offered: `docker_images_to_keep` was raised from 2 to 5 for prod in ADR-0026 (verified 5 on 2026-10-26). The API does not return that number (Coolify 4.5.0 keeps it in `application_settings`, not on the application body, and `PATCH` ignores it), so read it in the UI, the app's **Rollback** tab, or on the box: `ssh hetzner "docker exec coolify-db psql -U coolify -d coolify -tAc \"select s.docker_images_to_keep from application_settings s join applications a on a.id=s.application_id where a.uuid='zek88q652dijih0ywodgffux'\""`. `scripts/coolify-env.sh rollback-images` lists what is actually there. Older than that, the revert PR below is the only way back. The rollback API needs Coolify 4.3.23+ (`scripts/coolify-env.sh version`); on an older server both commands exit with a message saying so, and the same thing is done by hand: Coolify UI → **`moreska-eu` › production › `sveta-cecilija:main-zek88…`** → **Rollback** → the image tagged with the last good commit → **Rollback**. Check the breadcrumb first: the same Coolify hosts the unrelated `korcula-pms`, and the staging app `dev.moreska.eu` is one row away.
 
 **3. Revert on `main`, always.** Step 2 only swaps what runs; `main` still holds the bad commit and the next merge deploys it again. The revert also works alone when the good image is gone: about 3 min of CI and ~155 s of rollout, so prod is back in about five minutes.
 
@@ -159,7 +159,7 @@ Both files are `source`-d: one `KEY=value` per line, quoted if it has spaces, no
 
 ```bash
 scripts/coolify-env.sh health            # GET https://moreska.eu/api/health
-scripts/coolify-env.sh settings          # health check + docker_images_to_keep, read back (read-only)
+scripts/coolify-env.sh settings          # health check settings, read back (read-only; images-to-keep is not in the API, see Rollback)
 scripts/coolify-env.sh version           # Coolify version (rollback needs 4.3.23+)
 scripts/coolify-env.sh deployments       # last 10 deployments with their commits
 scripts/coolify-env.sh rollback-images / rollback <sha>   # see Rollback

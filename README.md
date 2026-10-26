@@ -4,14 +4,15 @@ Website and online ticketing system for [HGD Sveta Cecilija](https://moreska.eu)
 
 The site sells tickets to public Moreška performances, takes enquiries for private shows and the "Moreška Experience", and runs the door: every ticket is a per-person QR code scanned on arrival.
 
-> **Status:** This is the replacement for the legacy `korcula-moreska.com` site. Cutover to `moreska.eu` is targeted before the 2026 peak season; until then `dev.moreska.eu` runs staging and the live ticketing site stays on the old domain.
+> **Status:** Live. `moreska.eu` replaced the legacy `korcula-moreska.com` site in June 2026 and takes real Stripe sales; both legacy domains redirect to it. `dev.moreska.eu` is staging. The project is in its operate phase: open work is in GitHub Issues, and how a change reaches production is `AGENTS.md` → How work ships.
 
 ## What it does
 
 - **Public site** — homepage, about, section pages (Moreška, wind orchestra, klapa, choir), service enquiry pages, and a blog, fully bilingual EN/HR (locale via cookie — there are no `/en` or `/hr` URL prefixes).
 - **Ticketing** — public show schedule, Stripe checkout (cards + Google/Apple Pay), fixed pricing (€20 adult / €10 child), capacity derived per venue rather than stored.
 - **Per-person QR tickets** — one QR per attendee, emailed as a branded PDF; door staff scan at `/scan/[token]` with an atomic mark-and-read so a code can't be reused.
-- **Admin & stats** — Payload CMS admin with role-aware dashboards (`superadmin` / `admin` / `tehnika` / `partner`) and admin-initiated, idempotent refunds.
+- **Cecilija** — the staff and member app at `/app` ([ADR-0027](./docs/adr/0027-cecilija-one-staff-app-payload-backoffice.md)), Croatian only, installable as a PWA: the box office (orders, refunds, door scanning, enquiries, season statistics and finance), the reseller's sales and monthly statement, and the Moreška roster (attendance, lineups, leaderboard, push notifications). What an account sees is decided by its set of permissions, never by a role ([ADR-0023](./docs/adr/0023-permissions-replace-roles-app-surface.md)).
+- **Backoffice** — the raw-edit Payload CMS UI at `/admin`, for the few who hold `dev` or `editor`.
 - **Reseller channel** — partner logins that see only their own orders and tickets, with per-partner commission.
 
 ## Stack
@@ -48,7 +49,7 @@ Open [http://localhost:3000](http://localhost:3000) for the public site, or `/ad
 
 ## Deployment
 
-Production runs on **Coolify** (Hetzner Cloud) from a multi-stage **Dockerfile** that produces a Next.js standalone image ([ADR-0012](./docs/adr/0012-container-build-dockerfile-standalone.md)) — not Vercel, since Payload's long-lived Postgres pool and bootstrap-on-start don't fit a serverless model. `dev.moreska.eu` is a second Coolify app that tracks the same branch. **Both auto-deploy every push to `main`** ([ADR-0026](./docs/adr/0026-production-auto-deploy-from-main.md)); what gates production is CI plus the image's own `HEALTHCHECK`, not a human click. See [`docs/agents/deployment.md`](./docs/agents/deployment.md) for the build gotchas and debugging playbook.
+Production runs on **Coolify** (Hetzner Cloud) from a multi-stage **Dockerfile** that produces a Next.js standalone image ([ADR-0012](./docs/adr/0012-container-build-dockerfile-standalone.md)) — not Vercel, since Payload's long-lived Postgres pool and bootstrap-on-start don't fit a serverless model. **Every push to `main` deploys to production** ([ADR-0026](./docs/adr/0026-production-auto-deploy-from-main.md)); what gates it is the five required CI checks, which nobody can bypass ([ADR-0029](./docs/adr/0029-ci-is-the-last-gate-and-the-bypass-is-closed.md)), plus the image's own `HEALTHCHECK`. After a merge the `smoke` workflow asserts that `https://moreska.eu/api/health` answers with the merged commit, and the way back is `scripts/coolify-env.sh rollback <good-sha>` plus a revert PR. `dev.moreska.eu` is a second Coolify app on the same branch that ships on a click, not on push (#649). The rules are in [`AGENTS.md`](./AGENTS.md) → How work ships; the runbook, the build gotchas and the debugging playbook are in [`docs/agents/deployment.md`](./docs/agents/deployment.md).
 
 ## Learn More
 
