@@ -26,8 +26,8 @@
 #     COOLIFY_BASE_URL=http://localhost:8000 scripts/coolify-env.sh version
 #
 # The Cloudflare Access headers go only to the control plane behind Access:
-# never to a localhost base URL, even though the wrapper still injects the two
-# CF_ACCESS_* keys into the process.
+# never to a base URL whose host is localhost or 127.0.0.1, even though the
+# wrapper still injects the two CF_ACCESS_* keys into the process.
 #
 # The app uuid is PRODUCTION (`zek88q652dijih0ywodgffux`, the app
 # docs/agents/deployment.md names). It is a constant and never resolved from the
@@ -68,7 +68,7 @@ api() {
   local method="$1" path="$2"; shift 2
   local -a cf=()
   case "$COOLIFY_BASE_URL" in
-    http://localhost*|http://127.0.0.1*) ;;
+    *://localhost|*://localhost:*|*://127.0.0.1|*://127.0.0.1:*) ;;
     *) if [ -n "${CF_ACCESS_CLIENT_ID:-}" ]; then
          cf=(-H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" -H "CF-Access-Client-Secret: ${CF_ACCESS_CLIENT_SECRET:?CF_ACCESS_CLIENT_SECRET is not set}")
        fi ;;
