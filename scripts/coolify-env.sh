@@ -14,7 +14,10 @@
 # is not in the environment, this script re-executes itself under `bws run`
 # through ~/.agents/bin/with-secrets, so the secrets exist only inside that one
 # process. The call does not change: `scripts/coolify-env.sh health`. A missing
-# wrapper or project is set up with ~/.agents/scripts/secrets-setup.sh.
+# wrapper or project is named in the error, and ~/.agents/scripts/secrets-setup.sh
+# sets it up. `help`, `health` (a public URL) and `app-uuid` (a constant) need no
+# secret and answer before the re-exec, so reading prod's health body during a
+# rollback never waits on Bitwarden.
 #
 # Everything else the script needs is not secret and is a constant below; the
 # environment overrides any of them for a one-off run. The one override in use
@@ -22,8 +25,9 @@
 #
 #     COOLIFY_BASE_URL=http://localhost:8000 scripts/coolify-env.sh version
 #
-# The Cloudflare Access headers are sent only while CF_ACCESS_CLIENT_ID is set
-# (the control plane behind Access; the box itself takes no notice of them).
+# The Cloudflare Access headers go only to the control plane behind Access:
+# never to a localhost base URL, even though the wrapper still injects the two
+# CF_ACCESS_* keys into the process.
 #
 # The app uuid is PRODUCTION (`zek88q652dijih0ywodgffux`, the app
 # docs/agents/deployment.md names). It is a constant and never resolved from the
@@ -50,36 +54,28 @@ set -euo pipefail
 
 die() { echo "ERROR: $*" >&2; exit 1; }
 
-# Help needs no secrets, so it answers before the re-exec. The range is the
-# comment block above, from the title line to the DRY_RUN line.
-case "${1:-help}" in help|-h|--help) sed -n '2,48p' "$0"; exit 0 ;; esac
-
-# Re-exec under bws when the secrets are not in the environment. WITH_SECRETS=1
-# marks the second run: no token then means the project lacks the key, so fail
-# instead of looping.
-if [ -z "${COOLIFY_TOKEN:-}" ]; then
-  [ "${WITH_SECRETS:-}" = 1 ] && die "COOLIFY_TOKEN is not in Secrets Manager project coolify; add it with ~/.agents/scripts/secrets-setup.sh (spec: ~/.agents/specs/secrets.md)"
-  exec "${AGENTS_DIR:-$HOME/.agents}/bin/with-secrets" coolify -- "$0" "$@"
-fi
-
 # Non-secret config of the one production deployment (see the header).
 COOLIFY_BASE_URL="${COOLIFY_BASE_URL:-https://coolify.josip-ivancevic.from.hr}"
 COOLIFY_APP_UUID="${COOLIFY_APP_UUID:-zek88q652dijih0ywodgffux}"
 APP_DOMAIN="${APP_DOMAIN:-moreska.eu}"
 HEALTH_PATH="/api/health"
 
-# curl wrapper: Coolify bearer, plus the CF Access headers when configured
-# (the control plane behind Cloudflare Access; an SSH tunnel to :8000 needs
-# none). Args: METHOD PATH [curl-args…]
+# curl wrapper: Coolify bearer, plus the CF Access headers when the control
+# plane sits behind Cloudflare Access. The `ssh coolify` tunnel (a localhost
+# base URL) has no Access in front, so the service token is not sent there.
+# Args: METHOD PATH [curl-args…]
 api() {
   local method="$1" path="$2"; shift 2
   local -a cf=()
-  if [ -n "${CF_ACCESS_CLIENT_ID:-}" ]; then
-    cf=(-H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" -H "CF-Access-Client-Secret: ${CF_ACCESS_CLIENT_SECRET:?CF_ACCESS_CLIENT_SECRET is not set}")
-  fi
+  case "$COOLIFY_BASE_URL" in
+    http://localhost*|http://127.0.0.1*) ;;
+    *) if [ -n "${CF_ACCESS_CLIENT_ID:-}" ]; then
+         cf=(-H "CF-Access-Client-Id: $CF_ACCESS_CLIENT_ID" -H "CF-Access-Client-Secret: ${CF_ACCESS_CLIENT_SECRET:?CF_ACCESS_CLIENT_SECRET is not set}")
+       fi ;;
+  esac
   curl -sS -m 40 -X "$method" \
     -H "Authorization: Bearer $COOLIFY_TOKEN" \
-    "${cf[@]}" \
+    ${cf[@]+"${cf[@]}"} \
     -H "Content-Type: application/json" \
     "$@" "$COOLIFY_BASE_URL$path"
 }
@@ -208,9 +204,27 @@ cmd_rollback() {
   printf '%s' "$body" | jq -r '.message // .'
 }
 
+# The commands that need no secret answer first: help prints the header block
+# above (the title line down to the DRY_RUN line), health reads a public URL,
+# app-uuid echoes a constant.
+case "${1:-help}" in
+  help|-h|--help)   sed -n '2,/^set -euo pipefail$/p' "$0" | sed '$d'; exit 0 ;;
+  health)           shift; cmd_health "$@"; exit 0 ;;
+  app-uuid)         shift; cmd_app_uuid "$@"; exit 0 ;;
+esac
+
+# Re-exec under bws when the secrets are not in the environment. WITH_SECRETS=1
+# marks the second run: no token then means the project lacks the key, so fail
+# instead of looping. A missing wrapper is named, not left to bash's "No such
+# file or directory".
+if [ -z "${COOLIFY_TOKEN:-}" ]; then
+  wrapper="${AGENTS_DIR:-$HOME/.agents}/bin/with-secrets"
+  [ "${WITH_SECRETS:-}" = 1 ] && die "COOLIFY_TOKEN is not in Secrets Manager project coolify; add it with ~/.agents/scripts/secrets-setup.sh (spec: ~/.agents/specs/secrets.md)"
+  [ -x "$wrapper" ] || die "no $wrapper: clone jivancevic/agents to ~/.agents (or set AGENTS_DIR), then run ~/.agents/scripts/secrets-setup.sh (spec: ~/.agents/specs/secrets.md)"
+  exec "$wrapper" coolify -- "$0" "$@"
+fi
+
 case "$1" in
-  health)           shift; cmd_health "$@" ;;
-  app-uuid)         shift; cmd_app_uuid "$@" ;;
   settings)         shift; cmd_settings "$@" ;;
   env-get)          shift; cmd_env_get "$@" ;;
   env-set)          shift; cmd_env_set "$@" ;;
