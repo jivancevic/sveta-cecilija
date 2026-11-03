@@ -148,14 +148,9 @@ gh pr merge --auto --squash
 
 ## Driving Coolify from a script
 
-`scripts/coolify-env.sh` (Sufler's, copied with this app's uuid and health path; #703) talks to the Coolify API for the prod app `zek88q652dijih0ywodgffux` — the uuid is a constant in the script and never resolved from the domain, because `dev.moreska.eu` contains `moreska.eu`. It loads its config from **one place outside any checkout** (a worktree does not copy gitignored files), `~/.config/moreska/` or `$MORESKA_DEPLOY_DIR`:
+`scripts/coolify-env.sh` (Sufler's, copied with this app's uuid and health path; #703) talks to the Coolify API for the prod app `zek88q652dijih0ywodgffux` — the uuid is a constant in the script and never resolved from the domain, because `dev.moreska.eu` contains `moreska.eu`. So is everything else it needs that is not secret (`COOLIFY_BASE_URL`, `APP_DOMAIN`); the environment overrides a constant for a one-off run, which is how the `ssh coolify` tunnel case works: `COOLIFY_BASE_URL=http://localhost:8000 scripts/coolify-env.sh version`.
 
-| File | Holds (names only; values never appear in the repo) |
-|---|---|
-| `deploy.env` | `COOLIFY_BASE_URL` (the control plane, `https://…` behind Cloudflare Access, or `http://localhost:8000` over the `ssh coolify` tunnel); optionally `COOLIFY_APP_UUID` and `APP_DOMAIN` to point it elsewhere |
-| `deploy.secrets` (chmod 600) | `COOLIFY_TOKEN`; `CF_ACCESS_CLIENT_ID` and `CF_ACCESS_CLIENT_SECRET` when the base URL goes through Cloudflare Access (omit them over the tunnel) |
-
-Both files are `source`-d: one `KEY=value` per line, quoted if it has spaces, no multi-line values. These are deploy secrets, not app runtime env — the app's env is the list above and is set in Coolify. The token is a Coolify API token for the instance both of Josip's Coolify apps share; where it is kept, and the move to a secrets manager, is the operator's business and not this repo's.
+**The secrets are not on disk** (#710, decided 2026-11-02 in `~/.agents/specs/secrets.md`). The three deploy secrets — `COOLIFY_TOKEN`, and `CF_ACCESS_CLIENT_ID` / `CF_ACCESS_CLIENT_SECRET` for the control plane behind Cloudflare Access — live in **Bitwarden Secrets Manager, project `coolify`**, one project for every repo that deploys to this Coolify instance (Sufler shares it). They reach a process only through `~/.agents/bin/with-secrets coolify -- <command>` (`bws run` underneath; machine account `mac`, its access token in the macOS Keychain), for the life of that process. The script re-executes itself under the wrapper when `COOLIFY_TOKEN` is not in its environment, so the call stays `scripts/coolify-env.sh health` and nothing is sourced. When the wrapper or the project is missing, the script says so and names the setup: `~/.agents/scripts/secrets-setup.sh`, the wizard that creates the project, grants `mac` read access and verifies the three names. These are deploy secrets, not app runtime env — the app's env is the list above and is set in Coolify. A token entered by hand for one run goes in through `read -rs`, never on the command line (shell history).
 
 ```bash
 scripts/coolify-env.sh health            # GET https://moreska.eu/api/health
