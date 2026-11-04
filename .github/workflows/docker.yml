@@ -4,7 +4,7 @@ name: Docker
 #
 # CI's `build` job runs `next build` on an ubuntu runner with setup-node. That is
 # NOT what Coolify runs. Coolify runs `docker build` against the repo-root
-# Dockerfile on node:22-slim, and the failures that class produces (a
+# Dockerfile on node:26-slim, and the failures that class produces (a
 # .dockerignore that hides a font next/font resolves at build time, a runtime
 # dependency Next's standalone trace missed, a glibc-only binary) pass `build`
 # and fail the deploy. Until now the only thing catching them was staging plus a

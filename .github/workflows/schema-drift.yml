@@ -37,7 +37,7 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:16
+        image: postgres:18-alpine
         env:
           POSTGRES_PASSWORD: postgres
         ports:
@@ -93,17 +93,17 @@ jobs:
       - uses: actions/setup-node@v4
         if: steps.scope.outputs.decision == 'check'
         with:
-          node-version: '22'
+          node-version: '26'
           cache: 'npm'
 
-      # Match the Postgres 16 server so pg_dump doesn't refuse on a version skew.
-      - name: Install postgresql-client-16
+      # Match the Postgres 18 server so pg_dump doesn't refuse on a version skew.
+      - name: Install postgresql-client-18
         if: steps.scope.outputs.decision == 'check'
         run: |
           sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
           curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/pgdg.gpg
           sudo apt-get update
-          sudo apt-get install -y postgresql-client-16
+          sudo apt-get install -y postgresql-client-18
           echo "/usr/lib/postgresql/16/bin" >> "$GITHUB_PATH"
 
       - run: npm ci

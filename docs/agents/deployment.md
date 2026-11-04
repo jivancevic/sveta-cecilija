@@ -15,7 +15,7 @@ Spell the second one `**/*.md`, never `*.md`: Coolify compiles a pattern to an *
 
 > **If you do Redeploy by hand** (a rollback, or re-running a deploy without a new commit), **pick the *right* app.** That same Coolify instance also hosts an unrelated **`korcula-stays`** project (e.g. `korcula-pms`) — easy to Redeploy by mistake. Prod moreska.eu is **project `moreska-eu` → production → app `sveta-cecilija:main-zek88q652dijih0ywodgffux`** (domains `moreska.eu` + `www.moreska.eu`, Build Pack: Dockerfile). Before clicking Redeploy, confirm the breadcrumb reads `moreska-eu › production › sveta-cecilija…`; after, confirm the deploy log line `Importing jivancevic/sveta-cecilija:main (commit sha …)` matches the commit you just merged. The Coolify UI is reached via an SSH tunnel to `localhost:8000`; if it shows an error page, the tunnel dropped (`curl localhost:8000` → `000`) — re-establish it first.
 
-Each deploy: Coolify pulls the commit and runs `docker build` against the repo-root **`Dockerfile`** ([ADR-0012](../adr/0012-container-build-dockerfile-standalone.md)) — Nixpacks was dropped in #193. The multi-stage build is `deps` (`npm ci`, cached on the lockfile) → `build` (`next build` → `.next/standalone`) → `runtime` (a slim `node:22-slim` image holding only the standalone output plus the bits `bootstrap-db.mjs` needs). The container's `CMD` is `node scripts/bootstrap-db.mjs && node server.js` (schema bootstrap, then the standalone server — there is no `npm start` in the image).
+Each deploy: Coolify pulls the commit and runs `docker build` against the repo-root **`Dockerfile`** ([ADR-0012](../adr/0012-container-build-dockerfile-standalone.md)) — Nixpacks was dropped in #193. The multi-stage build is `deps` (`npm ci`, cached on the lockfile) → `build` (`next build` → `.next/standalone`) → `runtime` (a slim `node:26-slim` image holding only the standalone output plus the bits `bootstrap-db.mjs` needs). The container's `CMD` is `node scripts/bootstrap-db.mjs && node server.js` (schema bootstrap, then the standalone server — there is no `npm start` in the image).
 
 ## Database topology
 
@@ -42,8 +42,8 @@ Coolify runs its *own* internal Postgres in a separate `coolify-db` container �
   ```sh
   docker build -t moreska-build-check .
   ```
-  Exit 0 = will pass on Coolify. macOS-only `next build` validation isn't enough; the multi-stage build runs on `node:22-slim` (glibc) and surfaces platform/trace issues a local build won't.
-- **Pin Node in `package.json` `engines`.** Source of truth lives in the repo, not Coolify env. Currently `">=22 <23"`; the `Dockerfile` bases all stages on `node:22-slim` to match.
+  Exit 0 = will pass on Coolify. macOS-only `next build` validation isn't enough; the multi-stage build runs on `node:26-slim` (glibc) and surfaces platform/trace issues a local build won't.
+- **Pin Node in `package.json` `engines`.** Source of truth lives in the repo, not Coolify env. Currently `">=26 <27"`; the `Dockerfile` bases all stages on `node:26-slim` to match.
 - **Keep `overrides.esbuild` until vitest's nested esbuild stops triggering EBADPLATFORM.** Pin to the version closest to what most direct deps want (currently `^0.25.0`).
 - **Never add ARG/ENV for real secrets in the `Dockerfile`.** Coolify warns about this (`SecretsUsedInArgOrEnv`); use runtime env vars instead. The only build-time `ENV`s are the *dummy throwaway* `PAYLOAD_SECRET`/`DATABASE_URL` that `next build` needs to evaluate `payload.config.ts` — never real values.
 - **A runtime dependency read dynamically (not statically imported) is missed by Next's standalone trace and must be COPYed explicitly in the `runtime` stage.** This already bit `pg` (bootstrap script) and the ticket-PDF fonts/logo (#216) — see the comments in the `Dockerfile`.
@@ -52,7 +52,7 @@ Coolify runs its *own* internal Postgres in a separate `coolify-db` container �
 
 1. **Read `docs/logs.txt` (where the user pastes Coolify output) or fetch from Coolify directly.** Look for the first `ERROR:` line — Docker's BuildKit shows errors in reverse-stack order, so scroll *up* from that to find the source.
 2. **Identify the stage** from the BuildKit `[stage N/M]` / stage-name marker: `deps` = `npm ci` (lockfile/platform issues); `build` = `next build` (schema, type, or trace issues); `runtime` = image assembly / a missing dynamically-read file.
-3. **Reproduce locally** with `docker build .` (same `Dockerfile`, same `node:22-slim` base Coolify uses). Most failures reproduce there — the few that don't are env-var-shaped (missing `DATABASE_URL` etc.).
+3. **Reproduce locally** with `docker build .` (same `Dockerfile`, same `node:26-slim` base Coolify uses). Most failures reproduce there — the few that don't are env-var-shaped (missing `DATABASE_URL` etc.).
 4. **Server Components 500s in production** show only a `digest` string in the browser console — the real message is hidden. Grep Coolify logs for the digest or the error class name to find the actual exception.
 
 ## Env vars that must be set in Coolify
@@ -162,7 +162,7 @@ scripts/coolify-env.sh redeploy          # deploy the tip of main again, no new 
 scripts/coolify-env.sh env-get / env-set K V               # app env, keys only on read
 ```
 
-**The health probe here is the Dockerfile `HEALTHCHECK`, not Coolify's HTTP check** (ADR-0026, alternative 7: Coolify's generated probe is `curl … || wget …` and the `node:22-slim` runtime image has neither, so turning the UI check on fails a healthy container). `settings` shows `health_check_enabled` and `custom_healthcheck_found`; the second is the one that must be true. `healthcheck-host` is kept from Sufler as a read-back tool and does not turn the check on. To let an agent run the script without a per-call prompt a human adds `Bash(scripts/coolify-env.sh:*)` to `.claude/settings.json`; the agent never widens its own permissions.
+**The health probe here is the Dockerfile `HEALTHCHECK`, not Coolify's HTTP check** (ADR-0026, alternative 7: Coolify's generated probe is `curl … || wget …` and the `node:26-slim` runtime image has neither, so turning the UI check on fails a healthy container). `settings` shows `health_check_enabled` and `custom_healthcheck_found`; the second is the one that must be true. `healthcheck-host` is kept from Sufler as a read-back tool and does not turn the check on. To let an agent run the script without a per-call prompt a human adds `Bash(scripts/coolify-env.sh:*)` to `.claude/settings.json`; the agent never widens its own permissions.
 
 ## Runbook: subscribe the live webhook to Stripe dispute events (#380)
 
