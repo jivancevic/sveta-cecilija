@@ -1,9 +1,9 @@
 # ADR-0020: B2C fiscalization of online ticket sales — SaaS vs in-house CIS
 
 **Status:** Proposed — build-vs-buy decision stands; still contingent on the external "unblock" checklist below (see the 2026-08-21 amendment for what has since closed and what has not)
-**Date:** 2026-06-25 (renumbered 0018 → 0020 on 2026-07-07; legal + vendor claims re-verified against current sources the same day — see the verification note under Context. **Amended 2026-08-21** with the accountant's corrections and the vendor-inquiry results, **updated 2026-09-30** with the fiscalization parameters and the vendor pick — read the amendment first, it overrides several claims below.)
+**Date:** 2026-06-25 (renumbered 0018 → 0020 on 2026-07-07; legal + vendor claims re-verified against current sources the same day — see the verification note under Context. **Amended 2026-08-21** with the accountant's corrections and the vendor-inquiry results, **updated 2026-09-30** with the fiscalization parameters and the vendor pick, **updated 2026-11-04** with the verified FINA certificate — read the amendment first, it overrides several claims below.)
 
-> ## Amendment 2026-08-21, updated 2026-09-30 — accountant's facts override the leanings below
+> ## Amendment 2026-08-21, updated 2026-09-30 and 2026-11-04 — accountant's facts override the leanings below
 >
 > The body of this ADR was written before the org's accountant and secretary
 > answered. **Where they disagree, their answer governs.** Read this section
@@ -20,17 +20,18 @@
 > configuration value, never a constant** — a successful opinion changes one
 > setting, not the integration.
 >
-> **2. The FINA certificate exists.** Issued **2026-07-02**, ref
-> `FFAA0D6B7A59FD63D914`, in the name of the physical person **Velebit Veršić**
-> linked to the business entity HGD SV. CECILIJA-KORČULA. The secretary
-> downloaded it and set a password. Checklist item 2 is therefore **mostly
-> closed**, with two caveats: the `.p12`/`.pfx` file has **not yet been handed to
-> the developer**, and the issuance mail describes a *"NRA1"* certificate issued
-> to a physical person, so it must be **verified to be the fiscalization
-> application certificate** (the one that signs the ZKI) and not a business
-> certificate for ePorezna access. Verify from the file's subject before
-> committing to a vendor. The password was transmitted in plain-text email and
-> should be treated as compromised: re-download with a new one if practical.
+> **2. The FINA certificate exists and is verified (2026-11-04).** Issuance mail
+> 2026-07-02, ref `FFAA0D6B7A59FD63D914`, naming the physical person **Velebit
+> Veršić** linked to the business entity HGD SV. CECILIJA-KORČULA. The secretary
+> downloaded it, set a password and emailed the `.p12` to the developer on
+> 2026-08-26. Read from the
+> file: subject `O=HGD SV. CECILIJA-KORČULA, organizationIdentifier=HR52537805408,
+> CN=FISKAL 1`, issuer `Fina RDC 2025`, valid **2026-07-07 to 2031-07-07**. So it
+> is the fiscalization application certificate (the one that signs the ZKI), held
+> by the society and not by a physical person, and it is a production certificate.
+> Checklist item 2 is closed. One caveat remains: the password travelled in
+> plain-text email and should be treated as compromised, so re-export the `.p12`
+> with a new one before it is handed to Adeo.
 >
 > **3. New requirement this ADR never covered: R1 company invoices.** The
 > accountant wants the web shop itself to issue an **R1 račun** (company buyer:
@@ -89,12 +90,10 @@
 >   printed, signed and kept at the society for an inspection. The vendor takes
 >   only the society OIB, `WEB1`, `1`, the operater OIB and the certificate.
 >
-> **Still open and blocking the build** (2026-09-30): the **ePorezna filing** of
-> `WEB1` itself and the **interni akt** (both the accountant's), the **`.p12` file**
-> in the developer's hands and verified as the ZKI-signing application
-> certificate (item 2 below), and the **month Adeo production is activated**,
-> which is a cost decision because the seasonal contract bills a four-month
-> minimum.
+> **Still open and blocking the build** (2026-11-04): the **ePorezna filing** of
+> `WEB1` itself and the **interni akt** (both the accountant's), and the **month
+> Adeo production is activated**, which is a cost decision because the seasonal
+> contract bills a four-month minimum.
 >
 > Two edge cases the accountant still has to rule on, both created by ADRs written
 > after this one: **comp tickets** (`channel='comp'`, `total=0` — ADR-0019) and
@@ -349,12 +348,13 @@ the code below ships until items 1–4 are done.**
       **Fiscalization is owed regardless of the answer** — even VAT-exempt /
       outside-the-VAT-system entities fiscalize B2C (the message just carries a
       "not in PDV system" flag).
-- [ ] **2. FINA application certificate** ("poslovni aplikacijski certifikat za
+- [x] **2. FINA application certificate** ("poslovni aplikacijski certifikat za
       fiskalizaciju"). €39.82 + VAT, 5-year validity, **requested by HGD itself**
       (the legal entity — an implementer can't request it for them). For
       Approach A this is then **uploaded to the SaaS**. A **free demo cert** lets
       us build and test against TEST CIS (`cistest.apis-it.hr`) before the
-      production cert exists. *Owner: Tatjana / FINA procedure (in progress).*
+      production cert exists. *Done: obtained and verified 2026-11-04, valid to
+      2031-07-07 (see the amendment, item 2).*
 - [ ] **3. ePorezna registration of the poslovni prostor as
       "internetska trgovina"** (online shop). The naplatni uređaj is **not**
       entered in ePorezna — its label lives in the interni akt + the billing
