@@ -2,7 +2,7 @@
 #
 # Multi-stage build → Next.js standalone runtime (ADR-0012).
 # Replaces Coolify/Nixpacks. Target runtime image ~400-600 MB.
-# Node 22 is the ceiling (package.json `engines`; nixpkgs only goes to nodejs_22).
+# Node major is pinned in package.json `engines`; every stage below matches it.
 #
 # Stages:
 #   deps    — install full deps, cached on the lockfile
@@ -13,7 +13,7 @@
 # deps: install node_modules. Cached on package.json + package-lock.json so an
 # unchanged-deps rebuild reuses this layer and skips npm ci entirely.
 # ---------------------------------------------------------------------------
-FROM node:22-slim AS deps
+FROM node:26-slim AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
@@ -28,7 +28,7 @@ RUN npm ci
 # values — never real secrets — so it is safe for them to live in build layers.
 # Real secrets are injected at runtime via the container's env, never as ARG/ENV.
 # ---------------------------------------------------------------------------
-FROM node:22-slim AS build
+FROM node:26-slim AS build
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
@@ -55,11 +55,11 @@ RUN npm run build
 #      any dependency on Next's trace layout for the bootstrap step.
 #
 #   2. sharp — Payload needs it at runtime for image handling. Next standalone
-#      traces it into .next/standalone/node_modules. node:22-slim is glibc
+#      traces it into .next/standalone/node_modules. node:26-slim is glibc
 #      (Debian), so sharp's prebuilt linux-x64 binary loads fine. No extra copy
 #      needed; it rides along in the standalone bundle.
 # ---------------------------------------------------------------------------
-FROM node:22-slim AS runtime
+FROM node:26-slim AS runtime
 WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=3000

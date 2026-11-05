@@ -81,7 +81,7 @@ jobs:
       - uses: actions/setup-node@v4
         if: needs.scope.outputs.decision == 'run'
         with:
-          node-version: '22'
+          node-version: '26'
           cache: 'npm'
       - run: npm ci
         if: needs.scope.outputs.decision == 'run'
@@ -106,7 +106,7 @@ jobs:
       - uses: actions/setup-node@v4
         if: needs.scope.outputs.decision == 'run'
         with:
-          node-version: '22'
+          node-version: '26'
           cache: 'npm'
       - run: npm ci
         if: needs.scope.outputs.decision == 'run'
@@ -120,7 +120,7 @@ jobs:
   #
   # `prod-install` used to sit beside it, running `npm ci --omit=dev` to mirror
   # what Coolify installed. Since ADR-0012 Coolify builds the repo-root
-  # Dockerfile, whose deps stage runs a full `npm ci` on node:22-slim — the same
+  # Dockerfile, whose deps stage runs a full `npm ci` on node:26-slim — the same
   # npm major this job pinned. It guarded a path production no longer takes, so
   # it was removed in #649 rather than left as sincere-looking noise.
   build:
@@ -138,7 +138,7 @@ jobs:
       - uses: actions/setup-node@v4
         if: needs.scope.outputs.decision == 'run'
         with:
-          node-version: '22'
+          node-version: '26'
           cache: 'npm'
       - run: npm ci
         if: needs.scope.outputs.decision == 'run'
