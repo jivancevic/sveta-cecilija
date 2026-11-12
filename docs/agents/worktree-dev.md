@@ -35,21 +35,22 @@ After merging a PR with `gh`, run `git fetch origin main` before you `git checko
 
 ## Stacked PRs don't get CI, so the required checks never report
 
-`.github/workflows/ci.yml` triggers only on `pull_request` to `main` (and push to `main`). A PR opened with a base branch other than `main` — a *stacked* PR — gets **zero CI runs**, so the five required checks (`vitest`, `lint-types`, `build`, `docker`, `drift`) never report and the PR sits `BLOCKED` ("waiting for status") even though it's `MERGEABLE`.
+`.github/workflows/ci.yml` triggers only on `pull_request` to `main` (and push to `main`). A PR opened with a base branch other than `main` — a *stacked* PR — gets **zero CI runs**, so the CI required checks (`vitest`, `lint-types`, `build`, `docker`, `drift`) never report and the PR sits `BLOCKED` ("waiting for status") even though it's `MERGEABLE`.
 
 Retargeting it (`gh pr edit <n> --base main`) doesn't help: that fires a `pull_request` `edited` event, which isn't in the default trigger set `[opened, synchronize, reopened]`. To fire CI without a code change, **close then reopen the PR** (`gh pr close <n> && gh pr reopen <n>` → `reopened` event).
 
 Also: GitHub auto-retargets a child PR's base only when the parent *branch* is deleted, not when the parent PR merges — so after merging the parent you must `gh pr edit <child> --base main` yourself.
 
-**Merge a stacked chain like this** (use merge commits, never squash — squashing the parent rewrites its commits so the child then conflicts):
+**Land a stacked chain like this** (decided 2026-11-12, jivancevic/agents#37): the parent goes through `/ship` and is squash-merged like any PR. Squashing rewrites the parent's commits, so the child is then rebased onto `main`, dropping the parent's original commits, and pushed; the push fires CI, and the child goes through `/ship` like any PR:
 
 ```sh
-gh pr merge <parent> --merge
-gh pr edit <child> --base main                # parent's changes are now in main
-gh pr close <child> && gh pr reopen <child>   # fire CI so the checks report
-# wait for the vitest check to pass, then:
-gh pr merge <child> --merge
+git fetch origin main
+git rebase --onto origin/main <parent-branch> <child-branch>
+git push --force-with-lease origin <child-branch>   # your own branch only
+gh pr edit <child> --base main
 ```
+
+The by-hand `--merge` recipe this section used to carry is retired: `main` also requires the `ship-review` status, which only `/ship` sets, and `enforce_admins` is on, so a merge outside `/ship` cannot pass.
 
 Prefer **not** stacking unless the PRs genuinely overlap files — independent PRs off `main` each get CI for free.
 
@@ -72,4 +73,4 @@ A worktree-isolated session may only run git operations it can prove target its 
 
 Neither is a permission denial, so retrying verbatim does not help. **Split them into plain, separate commands**: write the body with the Write tool, then call `gh pr create --body-file <path>` on its own. Paths already resolve inside the worktree, so the `cd "$(git rev-parse …)"` was never needed in the first place. A related guard blocks `python3 - <<'PY' … PY` edits of files under `docs/`; use the Edit tool for those.
 
-> **The stacked chain above is the one by-hand exception to how work ships** (`AGENTS.md` → How work ships, #703): every ordinary PR is merged by `/ship` as `gh pr merge --auto --squash`, and `/ship` never runs this recipe. The `--merge` here exists only because squashing the parent rewrites its commits under the child; it is a shape-of-history choice, not a loosening of any gate, so the same five checks must be green and `gh pr merge --admin` will not get you past a red one — since #649 `enforce_admins` is **true** ([ADR-0029](../adr/0029-ci-is-the-last-gate-and-the-bypass-is-closed.md)), because a push to `main` deploys straight to production ([ADR-0026](../adr/0026-production-auto-deploy-from-main.md)). If a required check is wedged rather than failing (a stacked PR, see above), fix the PR's base — do not reach for the flag. Prefer not to stack at all.
+> **There is no by-hand exception to how work ships** (`AGENTS.md` → How work ships, #703): every PR, a stacked child included, is merged by `/ship` as `gh pr merge --auto --squash`. All six required checks must be green and `gh pr merge --admin` will not get you past a red one — since #649 `enforce_admins` is **true** ([ADR-0029](../adr/0029-ci-is-the-last-gate-and-the-bypass-is-closed.md)), because a push to `main` deploys straight to production ([ADR-0026](../adr/0026-production-auto-deploy-from-main.md)). If a required check is wedged rather than failing (a stacked PR, see above), fix the PR's base — do not reach for the flag. Prefer not to stack at all.
