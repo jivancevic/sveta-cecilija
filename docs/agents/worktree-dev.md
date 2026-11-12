@@ -41,13 +41,13 @@ Retargeting it (`gh pr edit <n> --base main`) doesn't help: that fires a `pull_r
 
 Also: GitHub auto-retargets a child PR's base only when the parent *branch* is deleted, not when the parent PR merges — so after merging the parent you must `gh pr edit <child> --base main` yourself.
 
-**Land a stacked chain like this** (decided 2026-11-12, jivancevic/agents#37): the parent goes through `/ship` and is squash-merged like any PR. Squashing rewrites the parent's commits, so the child is then rebased onto `main`, dropping the parent's original commits, and pushed; the push fires CI, and the child goes through `/ship` like any PR:
+**Land a stacked chain like this** (decided 2026-11-12, jivancevic/agents#37): the parent goes through `/ship` and is squash-merged like any PR. Squashing rewrites the parent's commits, so the child's base moves to `main` first (CI only runs for PRs into `main`), then the child is rebased onto `main`, dropping the parent's original commits, and pushed; that push is a `synchronize` into `main`, so CI runs, and the child goes through `/ship` like any PR:
 
 ```sh
+gh pr edit <child> --base main
 git fetch origin main
 git rebase --onto origin/main <parent-branch> <child-branch>
 git push --force-with-lease origin <child-branch>   # your own branch only
-gh pr edit <child> --base main
 ```
 
 The by-hand `--merge` recipe this section used to carry is retired: `main` also requires the `ship-review` status, which only `/ship` sets, and `enforce_admins` is on, so a merge outside `/ship` cannot pass.
