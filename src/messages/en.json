@@ -566,5 +566,25 @@
     "runtime": "The performance runs about an hour.",
     "parts": "The klapa opens the evening, and the Moreška is then danced to the live wind orchestra, the story spoken in several languages before the combat.",
     "seating": "Seating is first come, first served, so arriving early means a better seat."
+  },
+  "directions": {
+    "heading": "How to find us",
+    "mapLabel": "Open in Google Maps",
+    "ljetnoKino": {
+      "venue": "Summer Cinema (Ljetno kino), Korčula",
+      "prose": [
+        "Head for the Town Gate (Gradska vrata), the main gate into the old town."
+      ],
+      "walk": "The Summer Cinema is 20 metres from the Town Gate.",
+      "entrance": "It is on your left, before you start climbing up to the Town Gate."
+    },
+    "zimskoKino": {
+      "venue": "Cultural Center Korčula (Centar za kulturu)",
+      "prose": [
+        "Head for the Town Gate (Gradska vrata), the main gate into the old town."
+      ],
+      "walk": "From the Town Gate it is a 2-minute walk.",
+      "entrance": "The Cultural Center is on the other side of Blue Centar Korčula."
+    }
   }
 }
