@@ -63,6 +63,12 @@ describe('renderTicketEmail: what to expect, how to find us, the programme (#543
   for (const locale of ['en', 'hr'] as const) {
     const messages = locale === 'en' ? en : hr
 
+    it(`${locale}: ships no placeholder in the directions`, () => {
+      // The text was held for Josip as "DRAFT, AWAITING JOSIP" / "NACRT, ČEKA
+      // JOSIPA"; a buyer must never receive either.
+      expect(JSON.stringify(messages.directions)).not.toMatch(/DRAFT|NACRT|AWAITING|ČEKA JOSIPA/)
+    })
+
     it(`${locale}: repeats the three evening facts in the site's own words and order`, async () => {
       const { html } = await renderTicketEmail(makeInput({ locale }))
       const text = decode(html)
@@ -100,7 +106,8 @@ describe('renderTicketEmail: what to expect, how to find us, the programme (#543
       // And not the other venue's.
       const other = directionsFor(locale, 'zimsko-kino')
       expect(html).not.toContain(`href="${other.mapUrl}"`)
-      expect(text).not.toContain(other.prose[0])
+      // Both routes start at the Town Gate, so the venue-specific sentence is the walk.
+      expect(text).not.toContain(other.walk)
     })
 
     it(`${locale}: gives the Cultural Center directions for a zimsko-kino show, with its map link`, async () => {
@@ -110,7 +117,9 @@ describe('renderTicketEmail: what to expect, how to find us, the programme (#543
       for (const s of d.prose) expect(text).toContain(s)
       expect(html).toContain(`href="${d.mapUrl}"`)
       expect(d.mapUrl).toBe(messages.performancesPage.rainPlanMapUrl)
-      expect(text).not.toContain(directionsFor(locale, 'ljetno-kino').prose[0])
+      expect(text).toContain(d.walk)
+      expect(text).toContain(d.entrance)
+      expect(text).not.toContain(directionsFor(locale, 'ljetno-kino').walk)
     })
 
     it(`${locale}: prose comes before the map link`, async () => {

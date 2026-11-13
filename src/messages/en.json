@@ -573,18 +573,18 @@
     "ljetnoKino": {
       "venue": "Summer Cinema (Ljetno kino), Korčula",
       "prose": [
-        "DRAFT, AWAITING JOSIP: two or three sentences from a named old-town landmark to the Summer Cinema."
+        "Head for the Town Gate (Gradska vrata), the main gate into the old town."
       ],
-      "walk": "DRAFT, AWAITING JOSIP: how long the walk takes.",
-      "entrance": "DRAFT, AWAITING JOSIP: what the entrance looks like."
+      "walk": "The Summer Cinema is 20 metres from the Town Gate.",
+      "entrance": "It is on your left, before you start climbing up to the Town Gate."
     },
     "zimskoKino": {
       "venue": "Cultural Center Korčula (Centar za kulturu)",
       "prose": [
-        "DRAFT, AWAITING JOSIP: two or three sentences from a named old-town landmark to the Cultural Center."
+        "Head for the Town Gate (Gradska vrata), the main gate into the old town."
       ],
-      "walk": "DRAFT, AWAITING JOSIP: how long the walk takes.",
-      "entrance": "DRAFT, AWAITING JOSIP: what the entrance looks like."
+      "walk": "From the Town Gate it is a 2-minute walk.",
+      "entrance": "The Cultural Center is on the other side of Blue Centar Korčula."
     }
   }
 }

@@ -573,18 +573,18 @@
     "ljetnoKino": {
       "venue": "Ljetno kino, Korčula",
       "prose": [
-        "NACRT, ČEKA JOSIPA: dvije-tri rečenice od orijentira u starom gradu do Ljetnog kina."
+        "Krenite prema Gradskim vratima, glavnom ulazu u stari grad."
       ],
-      "walk": "NACRT, ČEKA JOSIPA: koliko traje hod.",
-      "entrance": "NACRT, ČEKA JOSIPA: kako izgleda ulaz."
+      "walk": "Ljetno kino je 20 metara od Gradskih vrata.",
+      "entrance": "Nalazi se s lijeve strane, prije nego se počnete penjati prema Gradskim vratima."
     },
     "zimskoKino": {
       "venue": "Centar za kulturu, Korčula",
       "prose": [
-        "NACRT, ČEKA JOSIPA: dvije-tri rečenice od orijentira u starom gradu do Centra za kulturu."
+        "Krenite prema Gradskim vratima, glavnom ulazu u stari grad."
       ],
-      "walk": "NACRT, ČEKA JOSIPA: koliko traje hod.",
-      "entrance": "NACRT, ČEKA JOSIPA: kako izgleda ulaz."
+      "walk": "Od Gradskih vrata ima 2 minute hoda.",
+      "entrance": "Centar za kulturu je s druge strane Blue Centra Korčula."
     }
   }
 }
