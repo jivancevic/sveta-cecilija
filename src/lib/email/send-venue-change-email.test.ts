@@ -26,6 +26,14 @@ describe('venue-change e-mail carries the NEW venue directions (#543)', () => {
     })
   }
 
+  it('escapes the buyer name, which is checkout input', () => {
+    for (const locale of ['en', 'hr'] as const) {
+      const { html } = renderVenueChangePreview({ ...input, buyer: { ...input.buyer, name: '<b>Ana</b> & "Co"' } }, locale)
+      expect(html).not.toContain('<b>Ana</b>')
+      expect(html).toContain('&lt;b&gt;Ana&lt;/b&gt; &amp; &quot;Co&quot;')
+    }
+  })
+
   it('is still one send per buyer', async () => {
     const fetch = vi.fn().mockResolvedValue(new Response('{}', { status: 201 }))
     await expect(sendVenueChangeEmail({ ...input, locale: 'hr' }, { fetch, brevoApiKey: 'k' })).resolves.toBe(true)

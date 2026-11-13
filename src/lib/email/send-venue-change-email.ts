@@ -33,7 +33,7 @@ function renderDirectionsHtml(locale: 'en' | 'hr', gold: string, text: string): 
           ${d.prose.map(p).join('\n          ')}
           ${p(d.walk)}
           ${p(d.entrance)}
-          <p style="margin:4px 0 0 0;font-size:15px;"><a href="${d.mapUrl}" style="color:${gold};">${escapeHtml(d.mapLabel)}</a></p>
+          <p style="margin:4px 0 0 0;font-size:15px;"><a href="${escapeHtml(d.mapUrl)}" style="color:${gold};">${escapeHtml(d.mapLabel)}</a></p>
         </td></tr>
       </table>
     </td></tr>`
@@ -74,12 +74,12 @@ function renderHtml(input: SendVenueChangeEmailInput, locale: 'en' | 'hr'): stri
   <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:560px;margin:0 auto;background:#fff;border:1px solid #e6dfd1;">
     <tr><td style="padding:36px 32px 12px 32px;">
       <h1 style="font-family:${fontHeading};font-size:26px;line-height:1.2;margin:0 0 16px 0;color:${text};">Promjena lokacije izvedbe</h1>
-      <p style="margin:0 0 16px 0;font-size:16px;line-height:1.55;">Poštovani ${buyer.name},</p>
+      <p style="margin:0 0 16px 0;font-size:16px;line-height:1.55;">Poštovani ${escapeHtml(buyer.name)},</p>
       <p style="margin:0 0 16px 0;font-size:16px;line-height:1.55;">Zbog vremenskih uvjeta, izvedba <strong>${show.date} u ${show.time}</strong> premještena je iz ${oldVenue} u <strong>${newVenue}</strong>. Izvedba se održava prema rasporedu, vaše ulaznice i dalje vrijede.</p>
     </td></tr>
 ${renderDirectionsHtml('hr', gold, text)}
     <tr><td align="center" style="padding:4px 32px 24px 32px;">
-      <a href="${directionsFor('hr', 'zimsko-kino').mapUrl}" style="${buttonStyle}">Pogledaj novu lokaciju na karti</a>
+      <a href="${escapeHtml(directionsFor('hr', 'zimsko-kino').mapUrl)}" style="${buttonStyle}">Pogledaj novu lokaciju na karti</a>
     </td></tr>
     <tr><td style="padding:0 32px 28px 32px;">
       <p style="margin:0;font-size:15px;line-height:1.55;">Ako vam nova lokacija ne odgovara, jednostavno odgovorite na ovaj e-mail i pronaći ćemo rješenje.</p>
@@ -100,12 +100,12 @@ ${renderDirectionsHtml('hr', gold, text)}
   <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="max-width:560px;margin:0 auto;background:#fff;border:1px solid #e6dfd1;">
     <tr><td style="padding:36px 32px 12px 32px;">
       <h1 style="font-family:${fontHeading};font-size:26px;line-height:1.2;margin:0 0 16px 0;color:${text};">Your performance has moved venue</h1>
-      <p style="margin:0 0 16px 0;font-size:16px;line-height:1.55;">Hi ${buyer.name},</p>
+      <p style="margin:0 0 16px 0;font-size:16px;line-height:1.55;">Hi ${escapeHtml(buyer.name)},</p>
       <p style="margin:0 0 16px 0;font-size:16px;line-height:1.55;">Because of the weather, the performance on <strong>${show.date} at ${show.time}</strong> has moved from the ${oldVenue} to the <strong>${newVenue}</strong>. The show goes ahead as scheduled and your tickets remain valid.</p>
     </td></tr>
 ${renderDirectionsHtml('en', gold, text)}
     <tr><td align="center" style="padding:4px 32px 24px 32px;">
-      <a href="${directionsFor('en', 'zimsko-kino').mapUrl}" style="${buttonStyle}">See the new venue on the map</a>
+      <a href="${escapeHtml(directionsFor('en', 'zimsko-kino').mapUrl)}" style="${buttonStyle}">See the new venue on the map</a>
     </td></tr>
     <tr><td style="padding:0 32px 28px 32px;">
       <p style="margin:0;font-size:15px;line-height:1.55;">If the new venue no longer works for you, just reply to this email and we will sort it out with you.</p>
