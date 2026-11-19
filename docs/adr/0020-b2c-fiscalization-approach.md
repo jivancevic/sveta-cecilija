@@ -321,6 +321,11 @@ Knjigovodstveni servis ŠESTA, `marija6anovic@gmail.com`) + secretary (Tatjana
 Vigna, who relays rather than decides) + FINA, not by the developer. **None of
 the code below ships until items 1–4 are done.**
 
+> **Checklist status 2026-11-04.** Item 2 is **closed**: the `.p12` has been in
+> the developer's hands since 2026-08-26 (so the 2026-09-30 line below was
+> already out of date) and was verified on 2026-11-04 as the society's
+> fiscalization certificate (amendment item 2). Items 3 and 4 are unchanged.
+>
 > **Checklist status 2026-09-30.** Items 3 and 4 have their **content settled**
 > (amendment item 7: `WEB1`, device `1`, `1/WEB1/1`, operater = society OIB) and
 > are waiting only on the accountant to file and to draft; item 5's vendor is
